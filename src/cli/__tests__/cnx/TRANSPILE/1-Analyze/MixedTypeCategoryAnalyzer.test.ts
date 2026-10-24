@@ -523,17 +523,6 @@ describe("MixedTypeCategoryAnalyzer", () => {
 
     it.each([
       [
-        "an unsigned plus an enum",
-        "u32 r <- a + c;",
-        "unsigned and enum Color",
-      ],
-      ["two different enums", "u32 r <- c + sh;", "enum Color and enum Shape"],
-      [
-        "a character literal times an unsigned",
-        "u32 r <- a * 'A';",
-        "unsigned and character",
-      ],
-      [
         "an unsigned compared with a character literal",
         "bool r <- ch = 'A';",
         "unsigned and character",
@@ -557,6 +546,17 @@ describe("MixedTypeCategoryAnalyzer", () => {
       const errors = analyze(`${ENUMS} void main() { ${LOCALS} ${body} }`);
       expect(errors).toHaveLength(1);
       expect(errors[0].message).toContain(`(${pair})`);
+    });
+
+    // #1191: an operand its operator does not take is Rule 10.1's (E0925),
+    // so the mix it is part of is not reported a second time here
+    it.each([
+      ["an unsigned plus an enum", "u32 r <- a + c;"],
+      ["two different enums", "u32 r <- c + sh;"],
+      ["a character literal times an unsigned", "u32 r <- a * 'A';"],
+    ])("leaves %s to Rule 10.1", (_label, body) => {
+      const errors = analyze(`${ENUMS} void main() { ${LOCALS} ${body} }`);
+      expect(errors).toHaveLength(0);
     });
 
     it.each([

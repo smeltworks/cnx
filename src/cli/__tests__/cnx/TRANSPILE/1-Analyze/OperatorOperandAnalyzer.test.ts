@@ -1,18 +1,18 @@
 /**
- * Unit tests for BooleanOperandAnalyzer
+ * Unit tests for OperatorOperandAnalyzer
  * Tests detection of arithmetic, bitwise, shift and relational operators
  * applied to an essentially Boolean operand
  * (MISRA C:2012 Rule 10.1, Issue #1183).
  */
 import { describe, it, expect } from "vitest";
-import BooleanOperandAnalyzer from "../../../../../cnx/TRANSPILE/1-Analyze/BooleanOperandAnalyzer";
+import OperatorOperandAnalyzer from "../../../../../cnx/TRANSPILE/1-Analyze/OperatorOperandAnalyzer";
 import testAnalysisContextFor from "./testAnalysisContextFor";
 
 function analyze(source: string) {
   const { syntax, context } = testAnalysisContextFor(source, {
     cppMode: false,
   });
-  return new BooleanOperandAnalyzer(context).analyze(syntax);
+  return new OperatorOperandAnalyzer(context).analyze(syntax);
 }
 
 /** Wrap a statement in a function with two bool locals and an integer local. */
@@ -27,7 +27,7 @@ function inMain(statement: string) {
   `;
 }
 
-describe("BooleanOperandAnalyzer", () => {
+describe("OperatorOperandAnalyzer", () => {
   describe("bool operands of guarded operators (rejected)", () => {
     it.each([
       ["+", "bool c <- a + b;"],
@@ -301,14 +301,15 @@ describe("BooleanOperandAnalyzer", () => {
       expect(errors[0].message).toContain("'flags[0][1]'");
     });
 
-    it("does not treat a partially indexed bool array as a bool", () => {
-      // flags[0] on a bool[2][3] is bool[3] -- an array, not a bool. Arithmetic
-      // on it is a separate defect, tracked as #1191.
+    it("reports a partially indexed bool array as an array, not a bool", () => {
+      // flags[0] on a bool[2][3] is bool[3] -- an array, not a bool (#1191)
       const errors = analyze(`
         bool[2][3] flags;
         void main() { u8 c <- flags[0] / flags[1]; }
       `);
-      expect(errors).toHaveLength(0);
+      expect(errors.map((e) => [e.code, e.message])).toEqual([
+        ["E0925", "Operator '/' is not valid on an array operand"],
+      ]);
     });
 
     it("does not flag an integer array element", () => {
@@ -437,13 +438,13 @@ describe("BooleanOperandAnalyzer", () => {
 
 // #1991: read off 1.2's syntax, so which operand a report names is asserted
 // by where it lands.
-describe("BooleanOperandAnalyzer -- reports the bool operand", () => {
+describe("OperatorOperandAnalyzer -- reports the bool operand", () => {
   const where = (line: string) => {
     const { syntax, context } = testAnalysisContextFor(
       `void main() {\n    bool f <- true;\n    u8 n <- 1;\n${line}\n}`,
       { cppMode: false },
     );
-    return new BooleanOperandAnalyzer(context)
+    return new OperatorOperandAnalyzer(context)
       .analyze(syntax)
       .map((e) => [e.code, e.line, e.column]);
   };
@@ -453,5 +454,75 @@ describe("BooleanOperandAnalyzer -- reports the bool operand", () => {
     ["on the right", "    u8 r <- n + f;", 16],
   ])("names the bool %s", (_side, line, column) => {
     expect(where(line)).toEqual([["E0807", 4, column]]);
+  });
+});
+
+// #1191: each operator takes a set of operand types; anything else is E0925
+describe("OperatorOperandAnalyzer -- operands outside the operator's set", () => {
+  const PRELUDE = `
+    enum EMode { IDLE, RUN }
+    struct Point { u8 x; }
+    bitmap8 Flags { a, b, c, d, e, f, g, h }
+    Flags fl;
+    u8[3] row;
+    u8[2][3] grid;
+    Point p;
+    string<4> s <- "ab";
+  `;
+  const run = (body: string) =>
+    analyze(
+      `${PRELUDE} void main() { f32 k <- 1.5; EMode m <- EMode.RUN; u8 n <- 1; mut u8 t <- 0; ${body} }`,
+    ).map((e) => [e.code, e.message]);
+
+  it.each([
+    ["a whole array", "u8 r <- row + 1;", "+", "an array operand"],
+    [
+      "a partly indexed array",
+      "u8 r <- grid[0] + grid[1];",
+      "+",
+      "an array operand",
+    ],
+    ["a struct", "u8 r <- p + 1;", "+", "a struct operand"],
+    ["a string under <", "bool r <- s < s;", "<", "a string operand"],
+    ["a float under <<", "u32 r <- k << 1;", "<<", "a float operand"],
+    ["a float under &", "u32 r <- k & 1;", "&", "a float operand"],
+    ["a float under unary ~", "u32 r <- ~k;", "~", "a float operand"],
+    ["a float as a shift amount", "u32 r <- 1 << k;", "<<", "a float operand"],
+    ["an enum under +", "u8 r <- m + 1;", "+", "an enum operand"],
+    ["a char literal under *", "u8 r <- n * 'A';", "*", "a char operand"],
+    ["an array in a compound value", "t +<- row;", "+<-", "an array operand"],
+  ])("rejects %s", (_label, body, operator, noun) => {
+    expect(run(body)).toEqual([
+      ["E0925", `Operator '${operator}' is not valid on ${noun}`],
+    ]);
+  });
+
+  it.each([
+    ["an element", "u8 r <- grid[0][1] + row[2];"],
+    ["a field", "u8 r <- p.x + 1;"],
+    ["a whole bitmap (ADR-034)", "u8 r <- fl + 1;"],
+    ["string concatenation", "string<8> r <- s + s;"],
+    ["float arithmetic", "f32 r <- k * 2.0;"],
+    ["float comparison", "bool r <- k < 2.0;"],
+    ["enum comparison", "bool r <- m < EMode.RUN;"],
+    ["char plus an integer", "u8 r <- 'A' + n;"],
+    ["a bit range", "u8 r <- n[0, 4] + 1;"],
+    ["unsuffixed literals", "u8 r <- ~5 + (3 << 1);"],
+  ])("takes %s", (_label, body) => {
+    expect(run(body)).toEqual([]);
+  });
+
+  it("reads a member of the enum being declared as an i32 (ADR-017)", () => {
+    const errors = analyze(
+      "enum EPerm { READ <- 1, WRITE <- 2, RW <- EPerm.READ | EPerm.WRITE }",
+    );
+    expect(errors).toEqual([]);
+  });
+
+  it("still rejects another enum's member in a member value", () => {
+    const errors = analyze(
+      "enum EMode { IDLE, RUN } enum EPerm { READ <- 1, RW <- EMode.RUN | 2 }",
+    );
+    expect(errors.map((e) => e.code)).toEqual(["E0925"]);
   });
 });

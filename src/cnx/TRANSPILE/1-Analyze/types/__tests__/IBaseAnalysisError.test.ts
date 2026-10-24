@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from "vitest";
 import IBaseAnalysisError from "../IBaseAnalysisError";
-import IFloatModuloError from "../IFloatModuloError";
+import IOperatorOperandError from "../IOperatorOperandError";
 import IDivisionByZeroError from "../IDivisionByZeroError";
 import IFunctionCallError from "../IFunctionCallError";
 import INullCheckError from "../INullCheckError";
@@ -15,8 +15,8 @@ import IStructFieldError from "../IStructFieldError";
 
 describe("IBaseAnalysisError", () => {
   describe("interface extension", () => {
-    it("allows IFloatModuloError to be used as base error", () => {
-      const error: IFloatModuloError = {
+    it("allows IOperatorOperandError to be used as base error", () => {
+      const error: IOperatorOperandError = {
         code: "E0804",
         line: 10,
         column: 5,
@@ -153,7 +153,7 @@ describe("IBaseAnalysisError", () => {
           line: 1,
           column: 1,
           message: "Float modulo error",
-        } as IFloatModuloError,
+        } as IOperatorOperandError,
         {
           code: "E0800",
           operator: "/",

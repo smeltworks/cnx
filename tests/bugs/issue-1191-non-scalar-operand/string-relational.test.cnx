@@ -1,0 +1,10 @@
+// test-error
+// E0925: a string compares with '=' / '!=' only; '<' compared addresses
+
+#pragma target host
+
+void main() {
+    string<4> a <- "ab";
+    string<4> b <- "cd";
+    bool c <- a < b;
+}

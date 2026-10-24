@@ -32,10 +32,9 @@ import UndeclaredTypeAnalyzer from "./UndeclaredTypeAnalyzer";
 import UndeclaredValueAnalyzer from "./UndeclaredValueAnalyzer";
 import NullCheckAnalyzer from "./NullCheckAnalyzer";
 import DivisionByZeroAnalyzer from "./DivisionByZeroAnalyzer";
-import FloatModuloAnalyzer from "./FloatModuloAnalyzer";
 import ArrayIndexTypeAnalyzer from "./ArrayIndexTypeAnalyzer";
 import ShiftAnalyzer from "./ShiftAnalyzer";
-import BooleanOperandAnalyzer from "./BooleanOperandAnalyzer";
+import OperatorOperandAnalyzer from "./OperatorOperandAnalyzer";
 import MixedTypeCategoryAnalyzer from "./MixedTypeCategoryAnalyzer";
 import ReturnPathAnalyzer from "./ReturnPathAnalyzer";
 import ReturnValueUseAnalyzer from "./ReturnValueUseAnalyzer";
@@ -304,10 +303,6 @@ function runAnalyzers(
       run: () => new ConstantDimensionAnalyzer(context).analyze(parsed.program),
     },
     {
-      label: "float modulo (% with f32/f64)",
-      run: () => new FloatModuloAnalyzer(context).analyze(parsed.program),
-    },
-    {
       label: "array index type (ADR-054: unsigned indexes only)",
       run: () => new ArrayIndexTypeAnalyzer(context).analyze(parsed.program),
     },
@@ -317,11 +312,12 @@ function runAnalyzers(
       run: () => new ShiftAnalyzer(context).analyze(parsed.program),
     },
     {
-      // Before the Rule 10.4 check, so a bool in an arithmetic expression is
-      // reported as "not a number" rather than as a category mismatch with
+      // Before the Rule 10.4 check, so an operand its operator does not take
+      // is reported as "not a number" rather than as a category mismatch with
       // whatever it was combined with.
-      label: "boolean operands (MISRA C:2012 Rule 10.1, Issue #1183)",
-      run: () => new BooleanOperandAnalyzer(context).analyze(parsed.program),
+      label:
+        "operator operand types (MISRA C:2012 Rule 10.1, E0804/E0806/E0807/E0925)",
+      run: () => new OperatorOperandAnalyzer(context).analyze(parsed.program),
     },
     {
       label:

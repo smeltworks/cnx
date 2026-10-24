@@ -1,0 +1,14 @@
+7:13 error[E0925]: Operator '<<' is not valid on a float operand
+       help: MISRA C:2012 Rule 10.1: shift and bitwise operators take integers only.
+8:13 error[E0925]: Operator '>>' is not valid on a float operand
+       help: MISRA C:2012 Rule 10.1: shift and bitwise operators take integers only.
+9:13 error[E0925]: Operator '&' is not valid on a float operand
+       help: MISRA C:2012 Rule 10.1: shift and bitwise operators take integers only.
+10:13 error[E0925]: Operator '~' is not valid on a float operand
+       help: MISRA C:2012 Rule 10.1: shift and bitwise operators take integers only.
+11:18 error[E0925]: Operator '<<' is not valid on a float operand
+       help: MISRA C:2012 Rule 10.1: shift and bitwise operators take integers only.
+12:13 error[E0925]: Operator '|' is not valid on a float operand
+       help: MISRA C:2012 Rule 10.1: shift and bitwise operators take integers only.
+13:13 error[E0925]: Operator '^' is not valid on a float operand
+       help: MISRA C:2012 Rule 10.1: shift and bitwise operators take integers only.

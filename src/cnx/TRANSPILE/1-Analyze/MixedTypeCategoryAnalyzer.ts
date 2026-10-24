@@ -45,7 +45,7 @@
 
 import type TExpression from "../../types/syntax/TExpression";
 import IMixedTypeCategoryError from "./types/IMixedTypeCategoryError";
-import BooleanOperandAnalyzer from "./BooleanOperandAnalyzer";
+import OperatorOperandAnalyzer from "./OperatorOperandAnalyzer";
 import EnumValueResolver from "./EnumValueResolver";
 import OperandTyper from "../../utils/OperandTyper";
 import CompoundOperator from "../../utils/CompoundOperator";
@@ -174,7 +174,7 @@ class MixedCategoryCheck {
     for (let i = 1; i < operands.length; i += 1) {
       const right = this.operandCategory(operands[i]);
       const operator = expr.operators[i - 1];
-      if (this.reportsPair(operands[i - 1], operands[i], level)) {
+      if (this.reportsPair(operands[i - 1], operands[i], level, operator)) {
         if (MixedCategoryCheck.differ(running, right, operator)) {
           this.analyzer.addError(
             operands[i].span.line,
@@ -200,12 +200,13 @@ class MixedCategoryCheck {
     left: TExpression,
     right: TExpression,
     level: TBinaryOperatorLevel,
+    operator: string,
   ): boolean {
     if (this.enumComparison(left, right, level)) return false;
-    return !MixedCategoryCheck.ownedElsewhere(
-      this.operandCategory(left),
-      this.operandCategory(right),
-      level,
+    return !this.ownedElsewhere(
+      operator,
+      OperandTyper.typeOf(left, this.context),
+      OperandTyper.typeOf(right, this.context),
     );
   }
 
@@ -251,17 +252,17 @@ class MixedCategoryCheck {
   }
 
   /**
-   * Whether Rule 10.1 reports this pair: a Boolean operand anywhere it admits
-   * none (E0806/E0807), so that one defect has one code.
+   * Whether Rule 10.1 reports this pair: an operand its operator does not
+   * take (E0804/E0806/E0807/E0925), so that one defect has one code.
    */
-  private static ownedElsewhere(
-    left: Category,
-    right: Category,
-    level: TBinaryOperatorLevel | "compound",
+  private ownedElsewhere(
+    operator: string,
+    left: IOperandType | null,
+    right: IOperandType | null,
   ): boolean {
     return (
-      !BooleanOperandAnalyzer.admitsBoolean(level) &&
-      (left === "boolean" || right === "boolean")
+      !OperatorOperandAnalyzer.admits(operator, left, this.context) ||
+      !OperatorOperandAnalyzer.admits(operator, right, this.context)
     );
   }
 
@@ -316,11 +317,19 @@ class MixedCategoryCheck {
     if (operator === null || NOT_RULE_10_4_OPERATORS.has(operator)) return;
 
     const value = site.value;
-    const left = MixedCategoryCheck.rule104Category(
-      OperandTyper.typeOfTarget(site.target, this.context),
-    );
+    const target = OperandTyper.typeOfTarget(site.target, this.context);
+    if (
+      OperandTyper.isBoolean(target) ||
+      this.ownedElsewhere(
+        operator,
+        target,
+        OperandTyper.typeOf(value, this.context),
+      )
+    ) {
+      return;
+    }
+    const left = MixedCategoryCheck.rule104Category(target);
     const right = this.operandCategory(value);
-    if (MixedCategoryCheck.ownedElsewhere(left, right, "compound")) return;
     if (MixedCategoryCheck.differ(left, right, operator)) {
       this.analyzer.addError(
         value.span.line,

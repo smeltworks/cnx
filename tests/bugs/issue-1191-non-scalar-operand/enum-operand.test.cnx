@@ -1,0 +1,15 @@
+// test-error
+// E0925: an enum is not a number outside its own member values (ADR-017)
+
+#pragma target host
+
+enum EMode {
+    IDLE,
+    RUN
+}
+
+void main() {
+    EMode m <- EMode.RUN;
+    u8 a <- m + 1;
+    u8 b <- m & 1;
+}
