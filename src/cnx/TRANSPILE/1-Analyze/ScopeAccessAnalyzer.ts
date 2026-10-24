@@ -41,7 +41,7 @@ import ExpressionNodes from "../../utils/ExpressionNodes";
 import StatementNodes from "../../utils/StatementNodes";
 import type ISourceSpan from "../../types/ISourceSpan";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
 import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
 import type TTypeSyntax from "../../types/syntax/TTypeSyntax";
@@ -73,13 +73,7 @@ class ScopeAccessCheck {
    * callback. Reproduced rather than closed; a variable's or parameter's
    * qualified type IS checked, as it was.
    */
-  public declaration(declaration: TDeclarationSyntax): void {
-    if (declaration.kind === "scope") {
-      for (const member of declaration.members) {
-        this.declaration(member.declaration);
-      }
-      return;
-    }
+  public declaration(declaration: TMemberDeclaration): void {
     const types = declaration.kind !== "struct";
     for (const part of DeclarationParts.of(declaration)) {
       if (types && part.kind === "type") this.type(part.type);
@@ -90,7 +84,7 @@ class ScopeAccessCheck {
 
   /** A `case Scope.member:` label names a scope member too */
   private caseLabels(
-    func: Extract<TDeclarationSyntax, { kind: "function" }>,
+    func: Extract<TMemberDeclaration, { kind: "function" }>,
   ): void {
     for (const label of StatementNodes.caseLabels(func)) {
       if (label.kind === "qualified") this.qualified(label.path, label.span);
@@ -262,7 +256,7 @@ class ScopeAccessAnalyzer {
   /** 1.2's syntax: declarations, then each function's case labels (#1991) */
   public analyze(program: IProgramSyntax): IScopeAccessError[] {
     const check = new ScopeAccessCheck(this.context);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       check.declaration(member.declaration);
     }
     return check

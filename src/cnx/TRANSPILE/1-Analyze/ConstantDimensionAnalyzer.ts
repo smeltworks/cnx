@@ -31,7 +31,7 @@ import type TType from "../../types/TType";
 import type TConstExpr from "../../types/TConstExpr";
 import type ILexicalFrame from "../../types/ILexicalFrame";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
 import type TSyntaxPart from "../../types/syntax/TSyntaxPart";
 import type TTypeSyntax from "../../types/syntax/TTypeSyntax";
@@ -43,7 +43,7 @@ import type IConstantDimensionError from "./types/IConstantDimensionError";
 /** Every dimension 1.2 returned: the ones after a name and the ones in a type */
 class Dimensions {
   static in(
-    declaration: TDeclarationSyntax,
+    declaration: TMemberDeclaration,
   ): ReadonlyArray<TExpression | null> {
     return [
       ...Dimensions.afterNames(declaration),
@@ -53,13 +53,9 @@ class Dimensions {
 
   /** `u8 buf[4]`: a variable's, a parameter's, a field's, a `for` header's */
   private static afterNames(
-    declaration: TDeclarationSyntax,
+    declaration: TMemberDeclaration,
   ): ReadonlyArray<TExpression | null> {
     switch (declaration.kind) {
-      case "scope":
-        return declaration.members.flatMap((member) =>
-          Dimensions.afterNames(member.declaration),
-        );
       case "variableDeclaration":
         return declaration.dimensions;
       case "struct":
@@ -156,7 +152,7 @@ class ConstantDimensionAnalyzer {
 
   public analyze(program: IProgramSyntax): IConstantDimensionError[] {
     const check = new ConstantDimensionCheck(this.context);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       for (const dimension of Dimensions.in(member.declaration)) {
         check.check(dimension);
       }

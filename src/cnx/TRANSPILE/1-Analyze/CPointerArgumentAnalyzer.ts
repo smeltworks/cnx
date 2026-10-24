@@ -211,7 +211,7 @@ class CPointerArgumentAnalyzer {
 
   public analyze(program: IProgramSyntax): IBaseAnalysisError[] {
     const check = new CPointerArgumentCheck(this.context);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       for (const part of DeclarationParts.of(member.declaration)) {
         for (const expr of ExpressionNodes.of(part))
           check.checkExpression(expr);

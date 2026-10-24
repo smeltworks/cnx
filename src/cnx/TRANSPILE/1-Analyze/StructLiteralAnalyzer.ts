@@ -129,7 +129,7 @@ class StructLiteralAnalyzer {
     positions: ReadonlyMap<TExpression, IValuePosition>,
   ): IStructLiteralError[] {
     const check = new StructLiteralCheck(this.context, positions);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       for (const expr of DeclarationParts.of(member.declaration).flatMap(
         ExpressionNodes.of,
       )) {

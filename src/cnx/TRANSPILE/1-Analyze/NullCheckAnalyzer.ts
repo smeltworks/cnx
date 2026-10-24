@@ -21,7 +21,7 @@ import StatementChildren from "../../utils/StatementChildren";
 import TypeParts from "../../utils/TypeParts";
 import type IFunctionDeclarationSyntax from "../../types/syntax/IFunctionDeclarationSyntax";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
 import type TStatement from "../../types/syntax/TStatement";
 import type TSyntaxPart from "../../types/syntax/TSyntaxPart";
@@ -292,13 +292,8 @@ class NullCheckWalk {
   // Declarations and statements
   // ========================================================================
 
-  declaration(declaration: TDeclarationSyntax): void {
+  declaration(declaration: TMemberDeclaration): void {
     switch (declaration.kind) {
-      case "scope":
-        for (const member of declaration.members) {
-          this.declaration(member.declaration);
-        }
-        return;
       case "function":
         this.function(declaration);
         return;
@@ -647,7 +642,7 @@ class NullCheckAnalyzer {
   public analyze(program: IProgramSyntax): INullCheckError[] {
     this.errors = [];
     const walk = new NullCheckWalk(this);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       walk.declaration(member.declaration);
     }
     return this.errors;

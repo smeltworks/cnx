@@ -94,16 +94,8 @@ function statementsDefinitelyReturn(
 /** Every function the file declares, top-level and scope members alike */
 function functionsOf(program: IProgramSyntax): IFunctionDeclarationSyntax[] {
   const functions: IFunctionDeclarationSyntax[] = [];
-  for (const { declaration } of program.declarations) {
-    if (declaration.kind === "function") {
-      functions.push(declaration);
-    } else if (declaration.kind === "scope") {
-      for (const member of declaration.members) {
-        if (member.declaration.kind === "function") {
-          functions.push(member.declaration);
-        }
-      }
-    }
+  for (const { declaration } of program.members) {
+    if (declaration.kind === "function") functions.push(declaration);
   }
   return functions;
 }

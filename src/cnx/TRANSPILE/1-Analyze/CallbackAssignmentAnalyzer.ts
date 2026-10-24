@@ -52,7 +52,7 @@ import StatementNodes from "../../utils/StatementNodes";
 import VariableDeclarations from "../../utils/VariableDeclarations";
 import OperandTyper from "../../utils/OperandTyper";
 import type IVariableDeclarationSyntax from "../../types/syntax/IVariableDeclarationSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import IFunctionSymbol from "../../types/symbols/IFunctionSymbol";
 import TypeResolver from "../../utils/TypeResolver";
 import CCallbackSignature from "./helpers/CCallbackSignature";
@@ -370,11 +370,7 @@ class CallbackAssignmentAnalyzer {
     positions: ReadonlyMap<TExpression, IValuePosition>,
   ): ICallbackAssignmentError[] {
     const check = new CallbackAssignmentCheck(this.context, positions);
-    const visit = (declaration: TDeclarationSyntax): void => {
-      if (declaration.kind === "scope") {
-        for (const member of declaration.members) visit(member.declaration);
-        return;
-      }
+    const visit = (declaration: TMemberDeclaration): void => {
       for (const site of StatementNodes.assignments(declaration)) {
         check.checkSite(site);
       }
@@ -382,7 +378,7 @@ class CallbackAssignmentAnalyzer {
     for (const entry of VariableDeclarations.in(program)) {
       check.checkDeclaration(entry.declaration);
     }
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       visit(member.declaration);
       for (const expr of DeclarationParts.of(member.declaration).flatMap(
         ExpressionNodes.of,

@@ -118,7 +118,7 @@ class ArrayIndexTypeAnalyzer {
   public analyze(program: IProgramSyntax): IArrayIndexTypeError[] {
     this.errors = [];
     const check = new IndexTypeCheck(this, this.context);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       for (const expr of DeclarationParts.of(member.declaration).flatMap(
         ExpressionNodes.of,
       )) {

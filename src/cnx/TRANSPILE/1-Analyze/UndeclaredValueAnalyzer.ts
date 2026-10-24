@@ -203,7 +203,7 @@ class UndeclaredValueAnalyzer {
     this.errors.length = 0;
 
     const walk = new UndeclaredValueWalk(this);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       for (const part of DeclarationParts.of(member.declaration))
         walk.part(part);
       for (const label of StatementNodes.caseLabels(member.declaration)) {

@@ -460,7 +460,7 @@ class ConstAssignmentAnalyzer {
 
   public analyze(program: IProgramSyntax): IConstAssignmentError[] {
     const check = new ConstAssignmentCheck(this.context);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       for (const site of StatementNodes.assignments(member.declaration)) {
         check.checkSite(site);
       }

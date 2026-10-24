@@ -71,7 +71,7 @@ import VariableDeclarations from "../../utils/VariableDeclarations";
 import OperandTyper from "../../utils/OperandTyper";
 import ExpressionShape from "../../utils/ExpressionShape";
 import type IVariableDeclarationSyntax from "../../types/syntax/IVariableDeclarationSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import TYPE_WIDTH from "../../types/TYPE_WIDTH";
 import invariant from "../../utils/invariant";
 import TypeCheckUtils from "../../utils/TypeCheckUtils";
@@ -677,11 +677,7 @@ class IntegerConversionAnalyzer {
     positions: ReadonlyMap<TExpression, IValuePosition>,
   ): IIntegerConversionError[] {
     const check = new IntegerConversionCheck(this.context, positions);
-    const visit = (declaration: TDeclarationSyntax): void => {
-      if (declaration.kind === "scope") {
-        for (const member of declaration.members) visit(member.declaration);
-        return;
-      }
+    const visit = (declaration: TMemberDeclaration): void => {
       for (const statement of StatementNodes.in(declaration)) {
         if (statement.kind === "return" && statement.value) {
           check.checkAt(statement.value);
@@ -694,7 +690,7 @@ class IntegerConversionAnalyzer {
     for (const entry of VariableDeclarations.in(program)) {
       check.checkDeclaration(entry.declaration);
     }
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       visit(member.declaration);
       for (const expr of DeclarationParts.of(member.declaration).flatMap(
         ExpressionNodes.of,

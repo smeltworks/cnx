@@ -342,7 +342,7 @@ class MixedTypeCategoryAnalyzer {
   public analyze(program: IProgramSyntax): IMixedTypeCategoryError[] {
     this.errors = [];
     const check = new MixedCategoryCheck(this, this.context);
-    const expressions = program.declarations.flatMap((member) =>
+    const expressions = program.members.flatMap((member) =>
       DeclarationParts.of(member.declaration).flatMap(ExpressionNodes.of),
     );
 
@@ -360,7 +360,7 @@ class MixedTypeCategoryAnalyzer {
       check.checkLevel(expr, level);
     }
 
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       for (const site of StatementNodes.assignments(member.declaration)) {
         check.checkCompound(site);
       }

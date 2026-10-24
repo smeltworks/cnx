@@ -42,7 +42,7 @@ import type IAnalysisContext from "./types/IAnalysisContext";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type ISyntaxNode from "../../types/syntax/ISyntaxNode";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
 import type TStatement from "../../types/syntax/TStatement";
 
@@ -70,13 +70,7 @@ class LoopCheck {
   }
 
   /** Every function, a scope's included, with the type it returns */
-  public declaration(declaration: TDeclarationSyntax): void {
-    if (declaration.kind === "scope") {
-      for (const member of declaration.members) {
-        this.declaration(member.declaration);
-      }
-      return;
-    }
+  public declaration(declaration: TMemberDeclaration): void {
     if (declaration.kind !== "function") return;
     for (const statement of StatementNodes.of(declaration.body.statements)) {
       this.statement(statement, declaration.returnType.text);
@@ -239,7 +233,7 @@ class LoopAnalyzer {
 
   public analyze(program: IProgramSyntax): ILoopError[] {
     const check = new LoopCheck(this.context);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       check.declaration(member.declaration);
       for (const part of DeclarationParts.of(member.declaration)) {
         for (const expr of ExpressionNodes.of(part))

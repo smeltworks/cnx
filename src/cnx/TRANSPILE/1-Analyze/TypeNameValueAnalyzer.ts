@@ -26,7 +26,7 @@ class TypeNameValueAnalyzer {
 
   /** Every chain, read or written; a chain's head is asked as the chain */
   public analyze(program: IProgramSyntax): ITypeNameValueError[] {
-    return program.declarations.flatMap((member) =>
+    return program.members.flatMap((member) =>
       DeclarationParts.of(member.declaration).flatMap((part) =>
         this.checkPart(part),
       ),

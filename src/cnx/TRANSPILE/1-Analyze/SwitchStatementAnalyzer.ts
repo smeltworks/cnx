@@ -41,7 +41,7 @@ import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type ISourceSpan from "../../types/ISourceSpan";
 import type TCaseLabelSyntax from "../../types/syntax/TCaseLabelSyntax";
 import type TSwitchStatement from "../../types/syntax/TSwitchStatement";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 
 type TSwitchCase = TSwitchStatement["cases"][number];
 type TDefaultCase = NonNullable<TSwitchStatement["defaultCase"]>;
@@ -70,7 +70,7 @@ class SwitchStatementCheck {
   }
 
   /** Every switch in a function, a scope's included (#1991) */
-  public declaration(declaration: TDeclarationSyntax): void {
+  public declaration(declaration: TMemberDeclaration): void {
     for (const statement of StatementNodes.switches(declaration)) {
       this.statement(statement);
     }
@@ -539,7 +539,7 @@ class SwitchStatementAnalyzer {
 
   public analyze(program: IProgramSyntax): ISwitchStatementError[] {
     const check = new SwitchStatementCheck(this.context);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       check.declaration(member.declaration);
     }
     return check.errors();

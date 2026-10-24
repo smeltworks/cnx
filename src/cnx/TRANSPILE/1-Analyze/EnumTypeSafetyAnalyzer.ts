@@ -186,7 +186,7 @@ class EnumTypeSafetyAnalyzer {
     for (const entry of VariableDeclarations.in(program)) {
       check.checkDeclaration(entry.declaration);
     }
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       for (const part of DeclarationParts.of(member.declaration)) {
         for (const expr of ExpressionNodes.of(part)) {
           check.checkComparison(expr);

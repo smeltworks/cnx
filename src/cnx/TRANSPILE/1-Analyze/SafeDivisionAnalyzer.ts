@@ -45,7 +45,7 @@ class SafeDivisionAnalyzer {
   constructor(private readonly context: IAnalysisContext) {}
 
   public analyze(program: IProgramSyntax): ISafeDivisionError[] {
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       for (const part of DeclarationParts.of(member.declaration)) {
         for (const expr of ExpressionNodes.of(part)) this.check(expr);
       }

@@ -132,7 +132,7 @@ class CompoundAssignmentAnalyzer {
   /** #1991: reads 1.2's syntax, not the parse tree */
   public analyze(program: IProgramSyntax): ICompoundAssignmentError[] {
     const check = new CompoundAssignmentCheck(this.context);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       for (const site of StatementNodes.assignments(member.declaration)) {
         check.checkSite(site);
       }

@@ -34,7 +34,7 @@ import type ISourcePosition from "../../utils/types/ISourcePosition";
 import type ILocalDeclaration from "../../types/ILocalDeclaration";
 import type TChainRoot from "../../types/TChainRoot";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TStatement from "../../types/syntax/TStatement";
 import type IAnalysisContext from "./types/IAnalysisContext";
 
@@ -79,13 +79,8 @@ class InitializationWalk {
     this.analyzer = analyzer;
   }
 
-  declaration(declaration: TDeclarationSyntax): void {
+  declaration(declaration: TMemberDeclaration): void {
     switch (declaration.kind) {
-      case "scope":
-        for (const member of declaration.members) {
-          this.declaration(member.declaration);
-        }
-        return;
       case "function":
         this.function(declaration);
         return;
@@ -464,7 +459,7 @@ class InitializationAnalyzer {
     this.collectStructDefinitions(program);
     this.createGlobalScope(program);
     const walk = new InitializationWalk(this);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       walk.declaration(member.declaration);
     }
     return this.errors;
@@ -480,46 +475,26 @@ class InitializationAnalyzer {
    * does when it has an initializer or one of the scope's functions assigns it.
    */
   private createGlobalScope(program: IProgramSyntax): void {
-    for (const member of program.declarations) {
-      const declaration = member.declaration;
-      if (declaration.kind === "variableDeclaration") {
-        this.declareVariable(
-          ScopeUtils.getTranspiledCName({
-            name: declaration.name,
-            scopePath: "",
-          }),
-          {
-            name: declaration.name,
-            line: declaration.span.line,
-            column: declaration.span.column,
-          },
-          true,
-          InitializationAnalyzer.userTypeName(declaration.type),
-        );
-      } else if (declaration.kind === "scope") {
-        this._processScopeMembers(declaration);
+    const assignedIn = new Map<string, Set<TInitKey>>();
+    for (const { declaration, scope } of program.members) {
+      if (declaration.kind !== "variableDeclaration") continue;
+      const scopePath =
+        scope === null ? "" : this.context.program.scopePathOf(scope);
+      const fullName = ScopeUtils.qualifyInScope(declaration.name, scopePath); // Transpiled C name
+      if (scope !== null && !assignedIn.has(scope)) {
+        assignedIn.set(scope, this._findAssignedScopeMembers(program, scope));
       }
-    }
-  }
-
-  private _processScopeMembers(
-    scopeDecl: Extract<TDeclarationSyntax, { kind: "scope" }>,
-  ): void {
-    const scopePath = this.context.program.scopePathOf(scopeDecl.name);
-    const assignedMembers = this._findAssignedScopeMembers(scopeDecl);
-    for (const member of scopeDecl.members) {
-      const variable = member.declaration;
-      if (variable.kind !== "variableDeclaration") continue;
-      const fullName = ScopeUtils.qualifyInScope(variable.name, scopePath); // Transpiled C name
       this.declareVariable(
         fullName,
         {
-          name: variable.name,
-          line: variable.span.line,
-          column: variable.span.column,
+          name: declaration.name,
+          line: declaration.span.line,
+          column: declaration.span.column,
         },
-        variable.initializer !== null || assignedMembers.has(fullName),
-        InitializationAnalyzer.userTypeName(variable.type),
+        scope === null ||
+          declaration.initializer !== null ||
+          assignedIn.get(scope)!.has(fullName),
+        InitializationAnalyzer.userTypeName(declaration.type),
       );
     }
   }
@@ -530,16 +505,17 @@ class InitializationAnalyzer {
    * for reads in other functions within the same scope.
    */
   private _findAssignedScopeMembers(
-    scopeDecl: Extract<TDeclarationSyntax, { kind: "scope" }>,
+    program: IProgramSyntax,
+    scope: string,
   ): Set<TInitKey> {
     const assigned = new Set<TInitKey>();
-
-    for (const member of scopeDecl.members) {
-      if (member.declaration.kind !== "function") continue;
+    for (const member of program.members) {
+      if (member.scope !== scope || member.declaration.kind !== "function") {
+        continue;
+      }
       // Scan the function body for assignments to scope members
       this._collectAssignments(member.declaration.body.statements, assigned);
     }
-
     return assigned;
   }
 

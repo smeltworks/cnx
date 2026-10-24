@@ -12,7 +12,7 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
 import type TStatement from "../../types/syntax/TStatement";
 import type TBinaryExpression from "../../types/syntax/TBinaryExpression";
@@ -35,20 +35,14 @@ class DivisionByZeroAnalyzer {
 
   public analyze(program: IProgramSyntax): IDivisionByZeroError[] {
     this.errors = [];
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       this.declaration(member.declaration);
     }
     // Binary levels, then compound writes; report in source order
     return this.errors.sort(SourceOrder.compare);
   }
 
-  private declaration(declaration: TDeclarationSyntax): void {
-    if (declaration.kind === "scope") {
-      for (const member of declaration.members) {
-        this.declaration(member.declaration);
-      }
-      return;
-    }
+  private declaration(declaration: TMemberDeclaration): void {
     const atRunTime = new Set(
       declaration.kind === "function"
         ? DivisionByZeroAnalyzer.runTimeRoots(
@@ -68,7 +62,7 @@ class DivisionByZeroAnalyzer {
    * `x /<- d` and `x %<- d` divide `x` by `d`, in a statement or a `for`
    * header (#1770)
    */
-  private compoundDivisions(declaration: TDeclarationSyntax): void {
+  private compoundDivisions(declaration: TMemberDeclaration): void {
     for (const site of StatementNodes.assignments(declaration)) {
       const operator = CompoundOperator.binaryOf(site.operator);
       if (operator !== "/" && operator !== "%") continue;

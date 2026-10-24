@@ -1,4 +1,4 @@
-import type TDeclarationSyntax from "../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../types/syntax/TMemberDeclaration";
 import type IAssignmentSyntax from "../types/syntax/IAssignmentSyntax";
 import type TCaseLabelSyntax from "../types/syntax/TCaseLabelSyntax";
 import type TStatement from "../types/syntax/TStatement";
@@ -13,23 +13,18 @@ import StatementWrites from "./StatementWrites";
  * children.
  */
 class StatementNodes {
-  static in(declaration: TDeclarationSyntax): readonly TStatement[] {
+  static in(declaration: TMemberDeclaration): readonly TStatement[] {
     return StatementNodes.of(StatementNodes.roots(declaration));
   }
 
-  /** A declaration's outermost statements: a function's body, each scope member's */
-  static roots(declaration: TDeclarationSyntax): readonly TStatement[] {
-    if (declaration.kind === "scope") {
-      return declaration.members.flatMap((member) =>
-        StatementNodes.roots(member.declaration),
-      );
-    }
+  /** A declaration's outermost statements: a function's body */
+  static roots(declaration: TMemberDeclaration): readonly TStatement[] {
     return declaration.kind === "function" ? declaration.body.statements : [];
   }
 
-  /** Every switch in a declaration, nested ones and a scope member's too */
+  /** Every switch in a declaration, nested ones too */
   static switches(
-    declaration: TDeclarationSyntax,
+    declaration: TMemberDeclaration,
   ): readonly TSwitchStatement[] {
     return StatementNodes.in(declaration).filter(
       (statement): statement is TSwitchStatement => statement.kind === "switch",
@@ -38,7 +33,7 @@ class StatementNodes {
 
   /** Every `case` label in a declaration's switches, in source order */
   static caseLabels(
-    declaration: TDeclarationSyntax,
+    declaration: TMemberDeclaration,
   ): readonly TCaseLabelSyntax[] {
     return StatementNodes.switches(declaration).flatMap((statement) =>
       statement.cases.flatMap((switchCase) => switchCase.labels),
@@ -52,7 +47,7 @@ class StatementNodes {
    * `in` lists a `for`'s init as a statement too, which would count it twice.
    */
   static assignments(
-    declaration: TDeclarationSyntax,
+    declaration: TMemberDeclaration,
   ): readonly IAssignmentSyntax[] {
     const walk = (
       statements: readonly TStatement[],

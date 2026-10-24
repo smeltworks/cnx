@@ -75,7 +75,7 @@ class ExpectedEnums {
     valuePositions: IValuePositions,
   ): ExpectedEnums {
     const forClauses = new Set<object>();
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       for (const statement of StatementNodes.in(member.declaration)) {
         if (statement.kind !== "for") continue;
         if (statement.init) forClauses.add(statement.init);
@@ -148,7 +148,7 @@ class BareEnumMemberAnalyzer {
     valuePositions: IValuePositions,
   ): IBareEnumMemberError[] {
     const expected = ExpectedEnums.of(program, this.context, valuePositions);
-    const expressions = program.declarations
+    const expressions = program.members
       .flatMap((member) => DeclarationParts.of(member.declaration))
       .flatMap(ExpressionNodes.of);
     // A chain's head and an assignment's target name a value; they are not one.
@@ -156,7 +156,7 @@ class BareEnumMemberAnalyzer {
     for (const expr of expressions) {
       if (expr.kind === "postfix") notValues.add(expr.primary);
     }
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       for (const site of StatementNodes.assignments(member.declaration)) {
         notValues.add(site.target);
       }

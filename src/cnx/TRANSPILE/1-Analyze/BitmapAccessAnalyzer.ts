@@ -171,7 +171,7 @@ class BitmapAccessAnalyzer {
    */
   public analyze(program: IProgramSyntax): IBitmapAccessError[] {
     const check = new BitmapAccessCheck(this.context);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       const sites = StatementNodes.assignments(member.declaration);
       const targets = new Set<TExpression>(sites.map((site) => site.target));
       for (const expr of DeclarationParts.of(member.declaration).flatMap(

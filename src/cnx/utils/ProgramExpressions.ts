@@ -11,7 +11,7 @@ import TypeParts from "./TypeParts";
  */
 class ProgramExpressions {
   static of(program: IProgramSyntax): readonly TExpression[] {
-    return program.declarations.flatMap((member) =>
+    return program.members.flatMap((member) =>
       DeclarationParts.of(member.declaration).flatMap(ProgramExpressions.part),
     );
   }

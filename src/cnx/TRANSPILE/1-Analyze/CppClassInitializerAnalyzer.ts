@@ -48,7 +48,7 @@ import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import FunctionReference from "./helpers/FunctionReference";
 import ValuePositions from "./helpers/ValuePositions";
 import type IValuePosition from "../../types/IValuePosition";
@@ -129,11 +129,7 @@ class CppClassInitializerAnalyzer {
   ): ICppClassInitializerError[] {
     if (!this.context.program.cppMode()) return [];
     const check = new CppClassInitializerCheck(this.context, positions);
-    const visit = (declaration: TDeclarationSyntax): void => {
-      if (declaration.kind === "scope") {
-        for (const member of declaration.members) visit(member.declaration);
-        return;
-      }
+    const visit = (declaration: TMemberDeclaration): void => {
       if (declaration.kind === "function") return;
       for (const expr of DeclarationParts.of(declaration).flatMap(
         ExpressionNodes.of,
@@ -141,7 +137,7 @@ class CppClassInitializerAnalyzer {
         check.checkExpression(expr);
       }
     };
-    for (const member of program.declarations) visit(member.declaration);
+    for (const member of program.members) visit(member.declaration);
     return check.errors();
   }
 }

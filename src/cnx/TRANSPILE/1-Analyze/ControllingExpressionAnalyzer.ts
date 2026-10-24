@@ -243,7 +243,7 @@ class ControllingExpressionAnalyzer {
 
   public analyze(program: IProgramSyntax): IControllingExpressionError[] {
     const check = new ControllingExpressionCheck(this.context);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       for (const statement of StatementNodes.in(member.declaration)) {
         check.checkStatement(statement);
       }

@@ -225,7 +225,7 @@ class ArrayIndexBoundsAnalyzer {
   /** Every chain 1.2 returned, values and assignment targets alike (#1991) */
   public analyze(program: IProgramSyntax): IArrayIndexBoundsError[] {
     const check = new ArrayIndexBoundsCheck(this.context);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       for (const part of DeclarationParts.of(member.declaration)) {
         for (const expr of ExpressionNodes.of(part)) check.checkChain(expr);
       }

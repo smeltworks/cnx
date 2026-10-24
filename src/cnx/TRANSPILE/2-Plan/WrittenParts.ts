@@ -1,5 +1,5 @@
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
@@ -17,19 +17,16 @@ class WrittenParts {
     program: IProgramSyntax,
     unwritten: IUnwrittenSyntax,
   ): readonly IWrittenPart[] {
-    return program.declarations.flatMap(({ declaration }) =>
-      declaration.kind === "scope"
-        ? declaration.members
-            .filter(
-              (member) =>
-                !WrittenParts.headerText(member.declaration) &&
-                !unwritten.declarations.has(member.declaration),
-            )
-            .flatMap((member) =>
-              WrittenParts.inDeclaration(member.declaration, declaration.name),
-            )
-        : WrittenParts.inDeclaration(declaration, null),
-    );
+    return program.members
+      .filter(
+        ({ declaration, scope }) =>
+          scope === null ||
+          (!WrittenParts.headerText(declaration) &&
+            !unwritten.declarations.has(declaration)),
+      )
+      .flatMap(({ declaration, scope }) =>
+        WrittenParts.inDeclaration(declaration, scope),
+      );
   }
 
   /**
@@ -49,7 +46,7 @@ class WrittenParts {
    * #1300: a scope's struct, enum or bitmap is written into the `.c` as the
    * header's text, so 2.3 renders none of its parts
    */
-  private static headerText(declaration: TDeclarationSyntax): boolean {
+  private static headerText(declaration: TMemberDeclaration): boolean {
     return (
       declaration.kind === "struct" ||
       declaration.kind === "enum" ||
@@ -58,7 +55,7 @@ class WrittenParts {
   }
 
   private static inDeclaration(
-    declaration: TDeclarationSyntax,
+    declaration: TMemberDeclaration,
     scope: string | null,
   ): IWrittenPart[] {
     return DeclarationParts.of(WrittenParts.asSpelled(declaration)).map(
@@ -68,8 +65,8 @@ class WrittenParts {
 
   /** `main(string args[])` is written `int main(int argc, char *argv[])`, so 2.3 spells none of its parameters */
   private static asSpelled(
-    declaration: TDeclarationSyntax,
-  ): TDeclarationSyntax {
+    declaration: TMemberDeclaration,
+  ): TMemberDeclaration {
     return declaration.kind === "function" &&
       MainSignature.takesArgs(declaration.name, declaration.parameters)
       ? { ...declaration, parameters: null }

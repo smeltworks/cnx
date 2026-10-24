@@ -1,5 +1,5 @@
 import type IVariableDeclarationSyntax from "../types/syntax/IVariableDeclarationSyntax";
-import type TDeclarationSyntax from "../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../types/syntax/TMemberDeclaration";
 import type TExpression from "../types/syntax/TExpression";
 import type TStatement from "../types/syntax/TStatement";
 import type TSyntaxPart from "../types/syntax/TSyntaxPart";
@@ -17,12 +17,8 @@ import TypeParts from "./TypeParts";
  * until it is placed (#1991).
  */
 class DeclarationParts {
-  static of(declaration: TDeclarationSyntax): readonly TSyntaxPart[] {
+  static of(declaration: TMemberDeclaration): readonly TSyntaxPart[] {
     switch (declaration.kind) {
-      case "scope":
-        return declaration.members.flatMap((member) =>
-          DeclarationParts.of(member.declaration),
-        );
       case "variableDeclaration":
       case "constructorDeclaration":
         return DeclarationParts.statement(declaration);

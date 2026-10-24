@@ -14,8 +14,9 @@ import type IRegisterDeclarationSyntax from "../../types/syntax/IRegisterDeclara
 import type IStructDeclarationSyntax from "../../types/syntax/IStructDeclarationSyntax";
 import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
 import type TExpression from "../../types/syntax/TExpression";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
+import type IProgramMember from "../../types/syntax/IProgramMember";
 
-type TMemberDeclaration = Exclude<TDeclarationSyntax, { kind: "scope" }>;
 type TDirective = IProgramSyntax["directives"][number];
 
 /**
@@ -32,6 +33,10 @@ class ProgramLowering {
       comments && ctx.start
         ? comments.getCommentsBefore(ctx.start.tokenIndex)
         : [];
+    const declarations = tree.declaration().map((declaration) => ({
+      declaration: ProgramLowering.declaration(declaration),
+      leadingComments: leadingComments(declaration),
+    }));
     return {
       span: ParserUtils.getSpan(tree),
       includes: tree.includeDirective().map((include) => ({
@@ -43,11 +48,25 @@ class ProgramLowering {
         ...SyntaxLowering.node(directive),
         leadingComments: leadingComments(directive),
       })),
-      declarations: tree.declaration().map((declaration) => ({
-        declaration: ProgramLowering.declaration(declaration),
-        leadingComments: leadingComments(declaration),
-      })),
+      declarations,
+      members: declarations.flatMap(({ declaration }) =>
+        ProgramLowering.members(declaration),
+      ),
     };
+  }
+
+  /** A file-level declaration, or each member of a scope with its scope */
+  private static members(
+    declaration: TDeclarationSyntax,
+  ): readonly IProgramMember[] {
+    if (declaration.kind !== "scope") {
+      return [{ declaration, scope: null, visibility: null }];
+    }
+    return declaration.members.map((member) => ({
+      declaration: member.declaration,
+      scope: declaration.name,
+      visibility: member.visibility,
+    }));
   }
 
   static declaration(ctx: Parser.DeclarationContext): TDeclarationSyntax {

@@ -39,7 +39,7 @@ import ExpressionShape from "../../utils/ExpressionShape";
 import FloatBits from "../../utils/FloatBits";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
 import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
 import DeclarationParts from "../../utils/DeclarationParts";
@@ -302,11 +302,7 @@ class BitAccessAnalyzer {
    */
   public analyze(program: IProgramSyntax): IBitAccessError[] {
     const check = new BitAccessCheck(this.context);
-    const visit = (declaration: TDeclarationSyntax): void => {
-      if (declaration.kind === "scope") {
-        for (const member of declaration.members) visit(member.declaration);
-        return;
-      }
+    const visit = (declaration: TMemberDeclaration): void => {
       const inFunction = declaration.kind === "function";
       const sites = StatementNodes.assignments(declaration);
       const targets = new Set<TExpression>(sites.map((site) => site.target));
@@ -317,7 +313,7 @@ class BitAccessAnalyzer {
       }
       for (const site of sites) check.checkSite(site);
     };
-    for (const member of program.declarations) visit(member.declaration);
+    for (const member of program.members) visit(member.declaration);
     return check.errors().sort(SourceOrder.compare);
   }
 }

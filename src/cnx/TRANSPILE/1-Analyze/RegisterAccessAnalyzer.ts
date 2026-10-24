@@ -189,7 +189,7 @@ class RegisterAccessAnalyzer {
   /** #1991: reads 1.2's syntax, not the parse tree */
   public analyze(program: IProgramSyntax): IRegisterAccessError[] {
     const check = new RegisterAccessCheck(this.context);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       const sites = StatementNodes.assignments(member.declaration);
       const targets = new Set<TExpression>(sites.map((site) => site.target));
       for (const expr of DeclarationParts.of(member.declaration).flatMap(

@@ -51,7 +51,7 @@ import ILengthPropertyError from "./types/ILengthPropertyError";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import type TExpression from "../../types/syntax/TExpression";
 import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IOperandType from "../../types/IOperandType";
 
@@ -283,15 +283,8 @@ class LengthPropertyCheck {
    * read, and a written chain was never one of their subjects.
    */
   public static targetsIn(
-    declaration: TDeclarationSyntax,
+    declaration: TMemberDeclaration,
   ): ReadonlySet<TExpression> {
-    if (declaration.kind === "scope") {
-      return new Set(
-        declaration.members.flatMap((member) => [
-          ...LengthPropertyCheck.targetsIn(member.declaration),
-        ]),
-      );
-    }
     if (declaration.kind !== "function") return new Set();
     return new Set(
       StatementNodes.of(declaration.body.statements).flatMap((statement) => {
@@ -336,11 +329,7 @@ class LengthPropertyAnalyzer {
     const check = new LengthPropertyCheck(this.context);
     // only a function body is inside a function -- a scope's members are at
     // file scope
-    const visit = (declaration: TDeclarationSyntax): void => {
-      if (declaration.kind === "scope") {
-        for (const member of declaration.members) visit(member.declaration);
-        return;
-      }
+    const visit = (declaration: TMemberDeclaration): void => {
       const targets = LengthPropertyCheck.targetsIn(declaration);
       const inFunction = declaration.kind === "function";
       for (const part of DeclarationParts.of(declaration)) {
@@ -349,7 +338,7 @@ class LengthPropertyAnalyzer {
         }
       }
     };
-    for (const member of program.declarations) visit(member.declaration);
+    for (const member of program.members) visit(member.declaration);
     return check.errors();
   }
 }

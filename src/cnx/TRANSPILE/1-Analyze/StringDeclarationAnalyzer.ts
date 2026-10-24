@@ -11,7 +11,7 @@ import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IVariableDeclarationSyntax from "../../types/syntax/IVariableDeclarationSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TStringPart from "../../types/TStringPart";
 import type IValuePositions from "../../types/IValuePositions";
 import StringWriteSites from "./helpers/StringWriteSites";
@@ -343,17 +343,13 @@ class StringDeclarationAnalyzer {
     const fileScope = VariableDeclarations.fileScopeValues(program);
     // A slice write's range is ADR-007's, not a substring read
     const targets = new Set<TExpression>();
-    const visit = (declaration: TDeclarationSyntax): void => {
-      if (declaration.kind === "scope") {
-        for (const member of declaration.members) visit(member.declaration);
-        return;
-      }
+    const visit = (declaration: TMemberDeclaration): void => {
       for (const site of StatementNodes.assignments(declaration)) {
         targets.add(site.target);
         check.assignment(site);
       }
     };
-    for (const entry of program.declarations) visit(entry.declaration);
+    for (const entry of program.members) visit(entry.declaration);
     for (const { value, write, capacity } of StringWriteSites.of(positions)) {
       if (write === "field") {
         check.field(value, capacity, fileScope.has(value));

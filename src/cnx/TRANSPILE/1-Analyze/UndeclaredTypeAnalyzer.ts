@@ -46,7 +46,7 @@ import QualifiedCName from "../../utils/QualifiedCName";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionChildren from "../../utils/ExpressionChildren";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
 import type TTypeSyntax from "../../types/syntax/TTypeSyntax";
 import type IAnalysisContext from "./types/IAnalysisContext";
@@ -60,13 +60,7 @@ import type ISourceSpan from "../../types/ISourceSpan";
 class UndeclaredTypeWalk {
   public constructor(private readonly analyzer: UndeclaredTypeAnalyzer) {}
 
-  public declaration(declaration: TDeclarationSyntax, scope: string): void {
-    if (declaration.kind === "scope") {
-      for (const member of declaration.members) {
-        this.declaration(member.declaration, declaration.name);
-      }
-      return;
-    }
+  public declaration(declaration: TMemberDeclaration, scope: string): void {
     for (const part of DeclarationParts.of(declaration)) {
       if (part.kind === "type") this.type(part.type, scope);
       else this.expression(part.expression, scope);
@@ -157,8 +151,8 @@ class UndeclaredTypeAnalyzer {
     this.knowsEveryName = !this.context.reachesForeignHeader;
 
     const walk = new UndeclaredTypeWalk(this);
-    for (const member of program.declarations) {
-      walk.declaration(member.declaration, "");
+    for (const member of program.members) {
+      walk.declaration(member.declaration, member.scope ?? "");
     }
     return this.errors;
   }

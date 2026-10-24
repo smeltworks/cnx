@@ -10,7 +10,7 @@
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import type IFunctionDeclarationSyntax from "../../types/syntax/IFunctionDeclarationSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TStatement from "../../types/syntax/TStatement";
 import type TSyntaxPart from "../../types/syntax/TSyntaxPart";
 import DeclarationParts from "../../utils/DeclarationParts";
@@ -41,13 +41,8 @@ const CNX_BUILTINS: Set<string> = new Set(StdlibFunctions.builtinNames());
 class FunctionCallWalk {
   constructor(private readonly analyzer: FunctionCallAnalyzer) {}
 
-  declaration(declaration: TDeclarationSyntax, scope: string): void {
+  declaration(declaration: TMemberDeclaration, scope: string): void {
     switch (declaration.kind) {
-      case "scope":
-        for (const member of declaration.members) {
-          this.declaration(member.declaration, declaration.name);
-        }
-        return;
       case "function":
         this.function(declaration, scope);
         return;
@@ -196,8 +191,8 @@ class FunctionCallAnalyzer {
     this.collectIncludes(program);
     this.collectAllLocalFunctions(program);
     const walk = new FunctionCallWalk(this);
-    for (const member of program.declarations) {
-      walk.declaration(member.declaration, "");
+    for (const member of program.members) {
+      walk.declaration(member.declaration, member.scope ?? "");
     }
     return this.errors;
   }
@@ -260,21 +255,16 @@ class FunctionCallAnalyzer {
    * every scope member.
    */
   private collectAllLocalFunctions(program: IProgramSyntax): void {
-    for (const member of program.declarations) {
-      const declaration = member.declaration;
-      if (declaration.kind === "function") {
-        this.allLocalFunctions.add(declaration.name);
-      }
-      if (declaration.kind === "scope") {
-        const scopePath = this.scopePathOf(declaration.name);
-        for (const scoped of declaration.members) {
-          if (scoped.declaration.kind === "function") {
-            this.allLocalFunctions.add(
-              ScopeUtils.qualifyInScope(scoped.declaration.name, scopePath),
-            );
-          }
-        }
-      }
+    for (const { declaration, scope } of program.members) {
+      if (declaration.kind !== "function") continue;
+      this.allLocalFunctions.add(
+        scope === null
+          ? declaration.name
+          : ScopeUtils.qualifyInScope(
+              declaration.name,
+              this.scopePathOf(scope),
+            ),
+      );
     }
   }
 

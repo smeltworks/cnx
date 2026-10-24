@@ -20,7 +20,7 @@ import ISizeofError from "./types/ISizeofError";
 
 class SizeofAnalyzer {
   public analyze(program: IProgramSyntax): ISizeofError[] {
-    return program.declarations.flatMap(({ declaration }) =>
+    return program.members.flatMap(({ declaration }) =>
       DeclarationParts.of(declaration).flatMap((part) =>
         ExpressionNodes.of(part)
           .filter((expr) => expr.kind === "sizeof")

@@ -24,7 +24,7 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TStatement from "../../types/syntax/TStatement";
 import StatementNodes from "../../utils/StatementNodes";
 import BoundDeclaration from "./helpers/BoundDeclaration";
@@ -93,18 +93,14 @@ class ConstructorArgumentAnalyzer {
   /** #1991: reads 1.2's syntax, not the parse tree */
   public analyze(program: IProgramSyntax): IConstructorArgumentError[] {
     const check = new ConstructorArgumentCheck(this.context);
-    const visit = (declaration: TDeclarationSyntax): void => {
-      if (declaration.kind === "scope") {
-        for (const member of declaration.members) visit(member.declaration);
-        return;
-      }
+    const visit = (declaration: TMemberDeclaration): void => {
       if (declaration.kind === "constructorDeclaration")
         check.check(declaration);
       for (const statement of StatementNodes.in(declaration)) {
         if (statement.kind === "constructorDeclaration") check.check(statement);
       }
     };
-    for (const member of program.declarations) visit(member.declaration);
+    for (const member of program.members) visit(member.declaration);
     return check.errors();
   }
 }
