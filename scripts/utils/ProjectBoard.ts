@@ -128,16 +128,17 @@ class ProjectBoard {
    */
   static columnCards(projectId: string, status: string): IBacklogCard[] {
     const cards: IBacklogCard[] = [];
-    let cursor = "";
-    for (;;) {
-      const page = ProjectBoard.graphql(
-        `
-        query($projectId: ID!, $cursor: String) {
-          node(id: $projectId) {
-            ... on ProjectV2 {
-              items(first: 100, after: $cursor) {
-                pageInfo { hasNextPage endCursor }
-                nodes {
+    for (const node of ProjectBoard.itemNodes<{
+      id: string;
+      content: {
+        number?: number;
+        title?: string;
+        blockedBy?: { totalCount: number; nodes: { number: number }[] };
+      } | null;
+      status: { name?: string } | null;
+    }>(
+      projectId,
+      `
                   id
                   content {
                     ... on Issue {
@@ -153,7 +154,44 @@ class ProjectBoard {
                   status: fieldValueByName(name: "${ProjectBoard.STATUS_FIELD}") {
                     ... on ProjectV2ItemFieldSingleSelectValue { name }
                   }
-                }
+`,
+    )) {
+      if (node.content?.number === undefined) {
+        continue;
+      }
+      if (node.status?.name !== status) {
+        continue;
+      }
+      cards.push({
+        number: node.content.number,
+        itemId: node.id,
+        blockedBy: ProjectBoard.blockers(
+          node.content.number,
+          node.content.blockedBy,
+        ),
+        title: node.content.title ?? "",
+      });
+    }
+    return cards;
+  }
+
+  /**
+   * Every item on the board, each with `fields` selected: the one paginated
+   * read (#1416, #2115), so no caller can stop at page one
+   */
+  private static itemNodes<TNode>(projectId: string, fields: string): TNode[] {
+    const nodes: TNode[] = [];
+    let cursor = "";
+    for (;;) {
+      const page = ProjectBoard.graphql(
+        `
+        query($projectId: ID!, $cursor: String) {
+          node(id: $projectId) {
+            ... on ProjectV2 {
+              items(first: 100, after: $cursor) {
+                pageInfo { hasNextPage endCursor }
+                nodes {
+${fields}                }
               }
             }
           }
@@ -164,40 +202,12 @@ class ProjectBoard {
         node: {
           items: {
             pageInfo: { hasNextPage: boolean; endCursor: string };
-            nodes: {
-              id: string;
-              content: {
-                number?: number;
-                title?: string;
-                blockedBy?: { totalCount: number; nodes: { number: number }[] };
-              } | null;
-              status: { name?: string } | null;
-            }[];
+            nodes: TNode[];
           };
         };
       };
-
-      for (const node of page.node.items.nodes) {
-        if (node.content?.number === undefined) {
-          continue;
-        }
-        if (node.status?.name !== status) {
-          continue;
-        }
-        cards.push({
-          number: node.content.number,
-          itemId: node.id,
-          blockedBy: ProjectBoard.blockers(
-            node.content.number,
-            node.content.blockedBy,
-          ),
-          title: node.content.title ?? "",
-        });
-      }
-
-      if (!page.node.items.pageInfo.hasNextPage) {
-        return cards;
-      }
+      nodes.push(...page.node.items.nodes);
+      if (!page.node.items.pageInfo.hasNextPage) return nodes;
       cursor = page.node.items.pageInfo.endCursor;
     }
   }
@@ -244,16 +254,17 @@ class ProjectBoard {
    */
   static items(projectId: string): IBoardItem[] {
     const items: IBoardItem[] = [];
-    let cursor = "";
-    for (;;) {
-      const page = ProjectBoard.graphql(
-        `
-        query($projectId: ID!, $cursor: String) {
-          node(id: $projectId) {
-            ... on ProjectV2 {
-              items(first: 100, after: $cursor) {
-                pageInfo { hasNextPage endCursor }
-                nodes {
+    for (const node of ProjectBoard.itemNodes<{
+      id: string;
+      content: {
+        id?: string;
+        number?: number;
+        repository?: { nameWithOwner: string };
+      } | null;
+      status: { name?: string } | null;
+    }>(
+      projectId,
+      `
                   id
                   content {
                     ... on Issue { id number repository { nameWithOwner } }
@@ -262,52 +273,25 @@ class ProjectBoard {
                   status: fieldValueByName(name: "${ProjectBoard.STATUS_FIELD}") {
                     ... on ProjectV2ItemFieldSingleSelectValue { name }
                   }
-                }
-              }
-            }
-          }
-        }
-      `,
-        cursor === "" ? { projectId } : { projectId, cursor },
-      ) as unknown as {
-        node: {
-          items: {
-            pageInfo: { hasNextPage: boolean; endCursor: string };
-            nodes: {
-              id: string;
-              content: {
-                id?: string;
-                number?: number;
-                repository?: { nameWithOwner: string };
-              } | null;
-              status: { name?: string } | null;
-            }[];
-          };
-        };
-      };
-
-      for (const node of page.node.items.nodes) {
-        const content = node.content;
-        if (
-          content?.id === undefined ||
-          content.number === undefined ||
-          content.repository === undefined
-        ) {
-          continue;
-        }
-        items.push({
-          itemId: node.id,
-          contentId: content.id,
-          status: node.status?.name,
-          repository: content.repository.nameWithOwner,
-          number: content.number,
-        });
+`,
+    )) {
+      const content = node.content;
+      if (
+        content?.id === undefined ||
+        content.number === undefined ||
+        content.repository === undefined
+      ) {
+        continue;
       }
-      if (!page.node.items.pageInfo.hasNextPage) {
-        return items;
-      }
-      cursor = page.node.items.pageInfo.endCursor;
+      items.push({
+        itemId: node.id,
+        contentId: content.id,
+        status: node.status?.name,
+        repository: content.repository.nameWithOwner,
+        number: content.number,
+      });
     }
+    return items;
   }
 
   /** The Status field's id and its options, which every Status write takes. */
