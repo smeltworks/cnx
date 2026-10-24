@@ -1287,7 +1287,7 @@ test("Issue #580: C++ mode gives correct transitive const inference", () => {
 
     // Key assertion: Handler__passThrough should have NON-const Config&
     // because it calls Modifier.reset which modifies config
-    const handlerCpp = read("Handler.cpp");
+    const handlerCpp = readFileSync(join(tempDir, "Handler.cpp"), "utf-8");
     assert(
       handlerCpp.includes("Handler__passThrough(Config& config)"),
       "Handler__passThrough should have non-const Config& (calls mutating function)",
