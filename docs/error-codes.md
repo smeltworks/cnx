@@ -143,6 +143,10 @@ last. The value position is both halves of it — a name READ and the same name 
 which level to search and a name visible at one level is not thereby visible at another.
 What is diagnosed is the name a spelling starts from; whether a member further along a
 chain exists is a separate question neither code answers.
+E0426's define-before-use half — a type used above its definition, or inside it — covers
+every type spelling: bare `T`, `this.T`, `global.T` and `Scope.T` (#1332, #2339). Whether a
+qualified spelling names a type at all is still checked for the bare spelling only (#1458),
+so `global.Nope c;` is not yet diagnosed while `global.Config c;` above `Config` is E0426.
 Both are reported only where the transpiler knows the file's whole name universe —
 a file including an unparsed C/C++ header keeps the previous permissive behavior, because
 rejecting a type the compiler will supply is a regression while failing to diagnose is

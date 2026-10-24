@@ -92,7 +92,7 @@ class UndeclaredTypeWalk {
       case "scoped":
         this.analyzer.checkQualifiedUse(
           type.text,
-          scope ? `${scope}.${type.name}` : type.name,
+          ScopeUtils.getCnxScopedName({ name: type.name, scopePath: scope }),
           type.span,
         );
         return;
@@ -172,7 +172,12 @@ class UndeclaredTypeAnalyzer {
     if (BUILTIN_TYPE_NAMES.has(typeName)) {
       return;
     }
-    const spellings = scope ? [`${scope}.${typeName}`, typeName] : [typeName];
+    const spellings = scope
+      ? [
+          ScopeUtils.getCnxScopedName({ name: typeName, scopePath: scope }),
+          typeName,
+        ]
+      : [typeName];
     const definition = this.definitionAfter(spellings, line, column);
     if (definition !== null) {
       this.addUsedBeforeDefinitionError(typeName, line, column, definition);

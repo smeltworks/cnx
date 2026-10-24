@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-905 fixture(s) assert a diagnostic; 891 carry a code.
+909 fixture(s) assert a diagnostic; 895 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -648,9 +648,13 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1430-e0427-order-dependence/consumer-first.test.cnx                                      | E0427                             |
 | tests/bugs/issue-1430-e0427-order-dependence/source-first.test.cnx                                        | E0427                             |
 | tests/bugs/issue-1458-qualified-define-before-use/global-forward.test.cnx                                 | E0426                             |
+| tests/bugs/issue-1458-qualified-define-before-use/global-self.test.cnx                                    | E0426                             |
 | tests/bugs/issue-1458-qualified-define-before-use/global-to-scope.test.cnx                                | E0426                             |
+| tests/bugs/issue-1458-qualified-define-before-use/scope-mutual.test.cnx                                   | E0426                             |
 | tests/bugs/issue-1458-qualified-define-before-use/scope-to-scope.test.cnx                                 | E0426                             |
 | tests/bugs/issue-1458-qualified-define-before-use/this-forward.test.cnx                                   | E0426                             |
+| tests/bugs/issue-1458-qualified-define-before-use/this-mutual.test.cnx                                    | E0426                             |
+| tests/bugs/issue-1458-qualified-define-before-use/this-self.test.cnx                                      | E0426                             |
 | tests/bugs/issue-1472-scope-function-as-type/undefined-still-rejected.test.cnx                            | E0422                             |
 | tests/bugs/issue-1514-cross-file-bitmap-register/cross-file-bitmap-register-bracket-error.test.cnx        | E0883                             |
 | tests/bugs/issue-1514-cross-file-bitmap-register/cross-file-bitmap-register-out-of-closure-error.test.cnx | E0426                             |

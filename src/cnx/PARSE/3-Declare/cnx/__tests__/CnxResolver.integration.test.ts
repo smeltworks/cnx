@@ -238,7 +238,7 @@ describe("CnxResolver Integration", () => {
     });
   });
 
-  describe("two-pass collection", () => {
+  describe("bitmaps and registers", () => {
     it("collects bitmaps before registers reference them", () => {
       const code = `
         bitmap8 StatusFlags {
