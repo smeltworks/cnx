@@ -58,43 +58,6 @@ describe("VariableDeclHelper", () => {
     state = new TranspileState();
   });
 
-  describe("finalizeCppClassAssignments", () => {
-    it("adds a semicolon when no assignments are pending", () => {
-      expect(
-        VariableDeclHelper.finalizeCppClassAssignments("x", "MyClass x", state),
-      ).toBe("MyClass x;");
-    });
-
-    it("appends the queued assignments and drains the queue", () => {
-      state.inFunctionBody = true;
-      state.pendingCppClassAssignments = ["a = 1;", "b = 2;"];
-
-      const result = VariableDeclHelper.finalizeCppClassAssignments(
-        "obj",
-        "MyClass obj",
-        state,
-      );
-
-      expect(result).toBe("MyClass obj;\nobj.a = 1;\nobj.b = 2;");
-      expect(state.pendingCppClassAssignments).toEqual([]);
-    });
-
-    // #1322: this method DRAINS a queue another node filled, so the assertion
-    // is about where the drain happens, not about the declaration it names.
-    it("asserts the invariant when the queue is non-empty outside a function", () => {
-      state.inFunctionBody = false;
-      state.pendingCppClassAssignments = ["a = 1;"];
-
-      expect(() =>
-        VariableDeclHelper.finalizeCppClassAssignments(
-          "obj",
-          "MyClass obj",
-          state,
-        ),
-      ).toThrow("E0508");
-    });
-  });
-
   describe("renderArrayDeclaration", () => {
     it("reports not-an-array and leaves the declaration alone", () => {
       const result = VariableDeclHelper.renderArrayDeclaration(
@@ -192,6 +155,21 @@ describe("VariableDeclHelper", () => {
   });
 
   describe("renderVariableInitializer", () => {
+    // #1534: the C++ class's fields are the declaration's own, written after
+    it("constructs a C++ class object for the cppClass arm", () => {
+      const renderFill = vi.fn(() => ["unused"]);
+
+      expect(
+        VariableDeclHelper.renderVariableInitializer(
+          { kind: "cppClass", renderFill },
+          "CppTestClass obj",
+          false,
+          state,
+        ),
+      ).toBe("CppTestClass obj = {}");
+      expect(renderFill).not.toHaveBeenCalled();
+    });
+
     it("renders the zero initializer for the ADR-015 arm", () => {
       const plan: TPlannedVariableInitializer = {
         kind: "zero",
@@ -360,6 +338,26 @@ describe("VariableDeclHelper", () => {
 
       expect(VariableDeclHelper.renderVariableDecl(plan, state)).toBe(
         "const uint8_t main__x = 0;",
+      );
+    });
+
+    // #1534: the fill names the EMITTED object, the one the declaration made
+    it("fills a C++ class object by its emitted name after declaring it", () => {
+      const plan: TPlannedVariableDecl = {
+        kind: "plain",
+        sourceName: "obj",
+        emittedName: "main__obj",
+        modifierPrefix: "",
+        type: "CppTestClass",
+        array: arrayPlan(),
+        initializer: {
+          kind: "cppClass",
+          renderFill: (target) => [`${target}.value = 9;`],
+        },
+      };
+
+      expect(VariableDeclHelper.renderVariableDecl(plan, state)).toBe(
+        "CppTestClass main__obj = {};\nmain__obj.value = 9;",
       );
     });
 

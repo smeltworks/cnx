@@ -75,7 +75,7 @@ class ControllingExpressionCheck {
 
   public checkTernary(expr: TExpression): void {
     if (expr.kind !== "ternary") return;
-    if (ExpressionCalls.callsAtTop(expr.condition)) {
+    if (ExpressionCalls.callsAnywhere(expr.condition)) {
       this.reportCall(expr.condition, "ternary");
       return;
     }
@@ -85,7 +85,7 @@ class ControllingExpressionCheck {
   // --- The one decision -----------------------------------------------------
 
   private check(expr: TExpression, kind: string): void {
-    if (ExpressionCalls.callsAtTop(expr)) {
+    if (ExpressionCalls.callsAnywhere(expr)) {
       this.reportCall(expr, kind);
       return;
     }

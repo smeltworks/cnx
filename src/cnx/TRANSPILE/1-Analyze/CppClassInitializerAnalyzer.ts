@@ -8,10 +8,10 @@
  * ## The throw was at the drain, not at the offender, and that is a defect
  *
  * A C++ class is not an aggregate, so `{ value: 42 }` cannot be a designated
- * initializer; codegen lowers it to `obj.value = 42;` and pushes those onto
- * `CodeGenState.pendingCppClassAssignments` from inside the initializer, then
- * drains the queue at the NEXT variable declaration it finalizes. Those are
- * different nodes, and the gap between them is observable:
+ * initializer; codegen lowers it to `obj.value = 42;`. Until #1534 it pushed
+ * those onto a queue from inside the initializer and drained it at the NEXT
+ * variable declaration it finalized. Those are different nodes, and the gap
+ * between them was observable:
  *
  * - a scope member's initializer pushes and is never drained, so
  *   `private CppTestClass inner <- { value: 5 }` emitted

@@ -11,6 +11,7 @@
  */
 
 import ComplianceAnnotations from "../ComplianceAnnotations";
+import type IComplianceAnnotation from "../types/IComplianceAnnotation";
 
 /**
  * `/* MISRA C:2012 Rule 8.4: what (why). *\/`, or the language's own rule:
@@ -49,6 +50,21 @@ describe("ComplianceAnnotations", () => {
     );
   });
 
+  it("lists every fixed row in all()", () => {
+    // #2335 review: STRING_BUILT_APART was left out of all(), so none of the
+    // checks above ever saw it. The parameterized rows are methods, so all()
+    // lists those by hand.
+    const rows = Object.values(ComplianceAnnotations).filter(
+      (value): value is IComplianceAnnotation =>
+        typeof value === "object" && value !== null && "citation" in value,
+    );
+
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(ComplianceAnnotations.all()).toContain(row);
+    }
+  });
+
   it("cites exactly the rules it is known to cite", () => {
     // Fails loudly when a rule is added or removed, so the set an auditor would
     // enumerate stays visible in review rather than growing quietly.
@@ -57,9 +73,13 @@ describe("ComplianceAnnotations", () => {
     expect(rules.sort()).toEqual([
       "C11 6.2.1p4, C++ [basic.scope.hiding]",
       "C11 6.2.1p7, C++ [basic.scope.pdecl]",
+      "C11 6.5.13p4, C++ [expr.log.and]",
+      "C11 6.5.14p4, C++ [expr.log.or]",
+      "C11 6.5.15p4, C++ [expr.cond]",
       "C11 6.7.9p4",
       "MISRA C:2012 Rule 11.9",
       "MISRA C:2012 Rule 14.3",
+      "MISRA C:2012 Rule 19.1",
       "MISRA C:2012 Rule 19.1",
       "MISRA C:2012 Rule 21.15",
       "MISRA C:2012 Rule 21.15",

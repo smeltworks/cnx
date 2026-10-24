@@ -13,6 +13,7 @@
 
 int main(void) {
     Outer::Inner::Widget w = {};
+    /* ADR-014 / Issue #517, C++20 §9.4.2 (aggregates): a class with a user-declared constructor is not an aggregate, so no designated initializer can build it; it is constructed, then each field is assigned. */
     w.x = 10;
     w.y = 20;
     if (w.x != 10) {
@@ -22,6 +23,7 @@ int main(void) {
         return 2;
     }
     Outer::Inner::Widget w2 = {};
+    /* ADR-014 / Issue #517, C++20 §9.4.2 (aggregates): a class with a user-declared constructor is not an aggregate, so no designated initializer can build it; it is constructed, then each field is assigned. */
     w2.x = 100;
     w2.y = 200;
     if (w2.x != 100) {

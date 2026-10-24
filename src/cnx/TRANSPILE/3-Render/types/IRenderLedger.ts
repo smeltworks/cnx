@@ -16,6 +16,8 @@ interface IRenderLedger {
   readonly minimums: Set<TExpression>;
   readonly complementCasts: Set<TExpression>;
   readonly structInitializers: Set<TExpression>;
+  readonly lazyOperands: Set<TExpression>;
+  readonly lazyTernaries: Set<TExpression>;
   readonly narrowings: Set<TExpression>;
   readonly clampChains: Set<TExpression>;
   readonly floatBitWrites: Set<TExpression>;

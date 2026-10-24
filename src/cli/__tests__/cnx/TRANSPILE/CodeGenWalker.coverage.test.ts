@@ -34,7 +34,7 @@ import TestSourceSpan from "../../../../cnx/types/__testUtils__/testSourceSpan";
  */
 function setupGenerator(
   source: string,
-  options: { cppMode: boolean },
+  options: { cppMode: boolean; cppConstructors?: readonly string[] },
 ): {
   tree: Parser.ProgramContext;
   generator: CodeGenWalker;
@@ -67,6 +67,19 @@ function setupGenerator(
   // Issue #831: Register TSymbols in SymbolTable (single source of truth)
   symbolTable.addTSymbols(tSymbols);
   const symbols = TSymbolInfoAdapter.convert(tSymbols);
+  // Issue #517: a class's constructor is the function symbol `Class::Class`,
+  // which is what a C++ header gives the table in a run
+  for (const className of options.cppConstructors ?? []) {
+    symbolTable.addCppSymbol({
+      name: `${className}::${className}`,
+      kind: "function",
+      type: "void",
+      visibility: "public",
+      sourceFile: "Class.hpp",
+      span: TestSourceSpan.at(1),
+      sourceLanguage: ESourceLanguage.Cpp,
+    });
+  }
 
   // #1445 box 3: the walk and the render-side services are two objects now.
   // The host is constructed here and injected, so assertions about the host.state
@@ -99,6 +112,133 @@ beforeEach(() => {
 });
 
 describe("CodeGenWalker Coverage Tests", () => {
+  // ==========================================================================
+  // #1534: a C++ class initializer fills the object it builds
+  // ==========================================================================
+  describe("C++ class initializer fill (#1534)", () => {
+    const generateCpp = (body: string) =>
+      setupGenerator(
+        [
+          "struct Widget { i32 value; }",
+          "u32 main() {",
+          body,
+          "return 0;",
+          "}",
+        ].join("\n"),
+        { cppMode: true, cppConstructors: ["Widget"] },
+      ).code;
+
+    it("fills a declaration's own object after declaring it", () => {
+      const code = generateCpp("Widget d <- { value: 12 };");
+      expect(code).toMatch(/Widget d = \{\};\n(?:.*\n)*?\s*d\.value = 12;/);
+    });
+
+    it("builds an assigned object before the statement, not on the next declaration", () => {
+      const code = generateCpp(
+        "mut Widget o;\no <- { value: 9 };\nu32 later <- 1;",
+      );
+      expect(code).toMatch(
+        /Widget cnx_tmp0 = \{\};\n(?:.*\n)*?\s*cnx_tmp0\.value = 9;\n\s*o = cnx_tmp0;/,
+      );
+      expect(code).not.toContain("later.value");
+    });
+  });
+
+  describe("a temporary built only when its operand runs (#2332)", () => {
+    const generateCpp = (body: string) =>
+      setupGenerator(
+        [
+          "struct Widget { i32 value; }",
+          "i32 v(Widget w) {",
+          "return w.value;",
+          "}",
+          "u32 main() {",
+          "u32 a <- 0;",
+          body,
+          "return 0;",
+          "}",
+        ].join("\n"),
+        { cppMode: true, cppConstructors: ["Widget"] },
+      ).code;
+
+    it("builds the right operand of && under the left one", () => {
+      const code = generateCpp("bool b <- (a = 1) && (v({ value: 2 }) = 2);");
+      expect(code).toMatch(
+        /bool cnx_tmp1 = \(a == 1\);\n\s*if \(cnx_tmp1\) \{\n\s*Widget cnx_tmp0 = \{\};\n(?:.*\n)*?\s*cnx_tmp0\.value = 2;\n\s*cnx_tmp1 = \(v\(cnx_tmp0\) == 2\);\n\s*\}\n\s*const bool b = cnx_tmp1;/,
+      );
+    });
+
+    it("builds the right operand of || when the left one is false", () => {
+      const code = generateCpp("bool b <- (a = 1) || (v({ value: 2 }) = 2);");
+      expect(code).toMatch(
+        /bool cnx_tmp1 = \(a == 1\);\n\s*if \(!cnx_tmp1\) \{/,
+      );
+    });
+
+    it("joins an operand that builds nothing to the value so far", () => {
+      const code = generateCpp(
+        "bool b <- (a = 1) && (v({ value: 2 }) = 2) && (a = 0);",
+      );
+      expect(code).toContain("const bool b = cnx_tmp1 && (a == 0);");
+    });
+
+    it("leaves a chain that builds nothing as one expression", () => {
+      const code = generateCpp("bool b <- (a = 1) && (a = 2);");
+      expect(code).toContain("const bool b = (a == 1) && (a == 2);");
+    });
+
+    it("builds each arm of a ternary in its own branch", () => {
+      const code = generateCpp(
+        "Widget p <- (a = 1) ? { value: 3 } : { value: 4 };",
+      );
+      expect(code).toMatch(
+        /Widget cnx_tmp2;\n\s*if \(a == 1\) \{\n\s*Widget cnx_tmp0 = \{\};\n(?:.*\n)*?\s*cnx_tmp2 = cnx_tmp0;\n\s*\} else \{\n\s*Widget cnx_tmp1 = \{\};\n(?:.*\n)*?\s*cnx_tmp2 = cnx_tmp1;\n\s*\}\n\s*const Widget p = cnx_tmp2;/,
+      );
+    });
+
+    it("leaves a ternary whose arms build nothing as a ternary", () => {
+      const code = generateCpp("u32 x <- (a = 1) ? 2 : 3;");
+      expect(code).toContain("const uint32_t x = (a == 1) ? 2U : 3U;");
+    });
+
+    it("leaves a float bit read in a while condition in the condition", () => {
+      const code = setupGenerator(
+        [
+          "u32 main() {",
+          "mut u32 i <- 0;",
+          "f32 x <- 1.5;",
+          "while ((i < 3) && (x[0, 8] = 0)) {",
+          "i <- i + 1;",
+          "}",
+          "return i;",
+          "}",
+        ].join("\n"),
+        { cppMode: false },
+      ).code;
+      expect(code).toMatch(/while \(\(i < 3\) && /);
+      expect(code).not.toContain("bool cnx_tmp");
+    });
+
+    it("keeps an operand whose typedef evaluates nothing in one expression", () => {
+      const code = setupGenerator(
+        [
+          "u32 sumTwo(u8[2] b) {",
+          "return b[0] + b[1];",
+          "}",
+          "u32 main() {",
+          "u32 i <- 0;",
+          "bool ok <- (i < 2) && (sumTwo([1, 2]) > 0);",
+          "return 0;",
+          "}",
+        ].join("\n"),
+        { cppMode: true },
+      ).code;
+      expect(code).toMatch(
+        /typedef const uint8_t cnx_tmp0_t\[2\];\n\s*const bool ok = \(i < 2\) && \(sumTwo\(/,
+      );
+    });
+  });
+
   // ==========================================================================
   // NEW CODE IN PR: _isArrayAccessStringExpression (lines 811-852)
   // ==========================================================================

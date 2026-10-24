@@ -1,0 +1,39 @@
+// test-execution
+// test-no-warnings
+// Tests: #2332 - a lowered ternary with a u32 arm and an unsuffixed literal arm, standing where nothing gives it a type (a comparison's operand), takes the typed arm's type
+struct Named {
+    string<8> s;
+    u32 n;
+}
+
+mut u32 calls;
+
+u32 w(Named x) {
+    return x.n;
+}
+
+u32 bump() {
+    calls <- calls + 1;
+    return 1;
+}
+
+u32 main() {
+    u32 a <- 0;
+    u32 c <- 1;
+    string<8> t <- "hi";
+    bool skipped <- (a = 1) && (((c = 1) ? w({ s: t, n: bump() }) : 0) = 1);
+    if (skipped != false) {
+        return 1;
+    }
+    if (calls != 0) {
+        return 2;
+    }
+    bool taken <- (c = 1) && (((c = 1) ? w({ s: t, n: bump() }) : 0) = 1);
+    if (taken != true) {
+        return 3;
+    }
+    if (calls != 1) {
+        return 4;
+    }
+    return 0;
+}

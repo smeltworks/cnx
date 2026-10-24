@@ -344,6 +344,33 @@ of a global -- a scope member becomes a file-scope definition. So the rule is
 about where the initializer stands, not about what it initializes, which is why
 it lives beside E0357 rather than with the interop decisions.
 
+A `for` header's declaration is not such a position (#2304, owner ruling
+2026-10-24, [session](https://app.devin.ai/sessions/6ec2c4641b414aecada31ec19906856b): _"A, and update the adr with this example"_). Its object is built before the loop, the same way it is for any
+statement, and the loop variable starts as a copy of it. With
+`tests/include/CppTestClass.hpp`, a class with a constructor and an `int value`:
+
+```cnx
+#include "CppTestClass.hpp"
+u32 main() {
+    mut u32 laps <- 0;
+    for (mut CppTestClass c <- { value: 1 }; c.value < 3; c.value +<- 1) {
+        laps <- laps + 1;
+    }
+    return laps; // 2
+}
+```
+
+```cpp
+CppTestClass cnx_tmp0 = {};
+cnx_tmp0.value = 1;
+for (CppTestClass c = cnx_tmp0; c.value < 3; c.value += 1) {
+    laps = cnx_clamp_add_u32(laps, 1U);
+}
+```
+
+Before #1534 this compiled to `for (CppTestClass c = {}; ...)`: `value: 1` was
+dropped and the loop ran three times.
+
 ## Scope-Context Matrix (#1219)
 
 Severity follows the eslint model: `off` records that a cell **cannot exist**,
@@ -422,13 +449,11 @@ Severity follows the eslint model: `off` records that a cell **cannot exist**,
 | scope method       | imported transitive | off      |
 | global variable    | imported transitive | error    |
 | scope member       | imported transitive | error    |
-| for header         | same file           | warn     |
-| for header         | imported direct     | warn     |
-| for header         | imported transitive | warn     |
+| for header         | same file           | off      |
+| for header         | imported direct     | off      |
+| for header         | imported transitive | off      |
 
-off: E0508 only fires outside a function body; inside a function or a method the fields are assigned as statements.
-
-warn: a `for` header's declaration has no statement position after it either, so E0508 should fire there; it does not, and the fields are dropped or assigned to an unrelated declaration in the loop body (#2304).
+off: E0508 only fires outside a function body; inside a function or a method the fields are assigned as statements. A `for` header is inside a function: its object is built before the loop and the loop variable starts as a copy (#2304, owner ruling 2026-10-24).
 
 E0357 is decided entirely within the file that writes the initializer, because
 whether the position supplies a type is a question about the initializer's own
@@ -480,6 +505,29 @@ fieldInitializer
 2. Generate `= {0}` for uninitialized struct variables
 3. Generate `(Type){ .field = value }` for struct initializers
 4. Handle struct member access with `.`
+5. Issue #517 / #1534: in C++, a struct initializer for a class with a
+   user-declared constructor cannot be an aggregate initializer (C++20 §9.4.2,
+   aggregates). The object is constructed with `= {}` and each field is
+   assigned to it after. A declaration fills its own object. Anywhere else
+   (an assignment, an argument, a return, an array element, a field) the
+   object is built as a temporary before the statement, and that temporary
+   is the value. Issue #2332: a temporary built inside an operand that runs
+   only sometimes -- the right of `&&` or `||`, an arm of `?:` -- is built
+   only when that operand runs (C11 §6.5.13-§6.5.15). The left side becomes a
+   `bool` the operand's `if` tests, and a ternary's value a variable each
+   branch sets; a `string<N>` field's temporary (#2236) is built the same way.
+   2.2 decides which operands these are, and only an operand holding such an
+   initializer is lowered; any other temporary (a float bit read, #2157's
+   typedef) is still written before the statement. This holds where a
+   statement's temporaries come before it: a declaration, an assignment, a
+   `return`, an argument. A loop's condition cannot hold such an initializer:
+   it is built for a call, and E0702 admits no call anywhere in a controlling
+   expression, a subscript or an argument included (owner ruling 2026-10-24).
+   A `for` update is run again with nothing written before it, so it is not
+   lowered and its initializer is still built once before the loop (#2343).
+   An `else if` condition (#2340), a `switch` subject (#2342) and a `return`
+   of a scope-qualified type (#2345) still put or spell their temporary
+   wrongly.
 
 ## References
 
