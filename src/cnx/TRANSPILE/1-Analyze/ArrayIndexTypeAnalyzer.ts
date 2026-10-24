@@ -15,6 +15,7 @@
  */
 
 import IArrayIndexTypeError from "./types/IArrayIndexTypeError";
+import SourceOrder from "../../utils/SourceOrder";
 import type ISourceSpan from "../../types/ISourceSpan";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TExpression from "../../types/syntax/TExpression";
@@ -121,9 +122,7 @@ class ArrayIndexTypeAnalyzer {
         check.checkExpression(expr);
       }
     }
-    return this.errors.sort(
-      (a, b) => a.span.line - b.span.line || a.span.column - b.span.column,
-    );
+    return this.errors.sort(SourceOrder.bySpan);
   }
 
   /**

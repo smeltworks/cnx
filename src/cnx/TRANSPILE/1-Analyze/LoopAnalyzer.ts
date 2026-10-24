@@ -31,6 +31,7 @@
  */
 
 import REJECTED_KEYWORDS from "./REJECTED_KEYWORDS";
+import SourceOrder from "../../utils/SourceOrder";
 import LiteralUtils from "../../utils/LiteralUtils";
 import ForHeaderAssignment from "../../utils/ForHeaderAssignment";
 import DeclarationParts from "../../utils/DeclarationParts";
@@ -227,11 +228,7 @@ class LoopAnalyzer {
       }
     }
     // Read off 1.2's syntax (#1991); reported in source order
-    return check
-      .errors()
-      .sort(
-        (a, b) => a.span.line - b.span.line || a.span.column - b.span.column,
-      );
+    return check.errors().sort(SourceOrder.bySpan);
   }
 }
 

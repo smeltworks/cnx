@@ -14,6 +14,7 @@
  * block's declarations in its body frame.
  */
 import type ILexicalFrame from "../../types/ILexicalFrame";
+import SourceOrder from "../../utils/SourceOrder";
 import type ILocalDeclaration from "../../types/ILocalDeclaration";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import IRedeclarationError from "./types/IRedeclarationError";
@@ -44,9 +45,7 @@ class RedeclarationAnalyzer {
   /** Every declaration after the first of its name, in source order */
   private oneScope(declarations: readonly ILocalDeclaration[]): void {
     const seen = new Set<string>();
-    const inOrder = [...declarations].sort(
-      (a, b) => a.span.line - b.span.line || a.span.column - b.span.column,
-    );
+    const inOrder = [...declarations].sort(SourceOrder.bySpan);
     for (const declaration of inOrder) {
       if (seen.has(declaration.name)) {
         this.found.push({

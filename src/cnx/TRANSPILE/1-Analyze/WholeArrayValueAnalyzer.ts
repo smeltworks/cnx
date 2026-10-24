@@ -18,6 +18,7 @@
  */
 
 import ArrayListCount from "./helpers/ArrayListCount";
+import SourceOrder from "../../utils/SourceOrder";
 import StructInitializerType from "./helpers/StructInitializerType";
 import ExpressionChildren from "../../utils/ExpressionChildren";
 import ExpressionShape from "../../utils/ExpressionShape";
@@ -62,9 +63,7 @@ class WholeArrayValueAnalyzer {
       found.push(...WholeArrayValueAnalyzer.check(value, at, this.context));
     }
     found.push(...this.forClauseArrays(positions));
-    return found.sort(
-      (a, b) => a.span.line - b.span.line || a.span.column - b.span.column,
-    );
+    return found.sort(SourceOrder.bySpan);
   }
 
   /**

@@ -29,6 +29,7 @@
  */
 
 import OperandTyper from "../../utils/OperandTyper";
+import SourceOrder from "../../utils/SourceOrder";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import StatementNodes from "../../utils/StatementNodes";
@@ -482,11 +483,7 @@ class ConstAssignmentAnalyzer {
     }
     check.checkUnusedMut();
     // Read off 1.2's syntax (#1991); reported in source order
-    return check
-      .errors()
-      .sort(
-        (a, b) => a.span.line - b.span.line || a.span.column - b.span.column,
-      );
+    return check.errors().sort(SourceOrder.bySpan);
   }
 }
 

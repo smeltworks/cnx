@@ -41,6 +41,7 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
+import SourceOrder from "../../utils/SourceOrder";
 import type TExpression from "../../types/syntax/TExpression";
 import type TTypeSyntax from "../../types/syntax/TTypeSyntax";
 import type ISourcePosition from "../../utils/types/ISourcePosition";
@@ -167,9 +168,7 @@ class BareEnumMemberAnalyzer {
       const error = this.check(expr, expected.at(expr));
       if (error !== null) found.push(error);
     }
-    return found.sort(
-      (a, b) => a.span.line - b.span.line || a.span.column - b.span.column,
-    );
+    return found.sort(SourceOrder.bySpan);
   }
 
   private check(

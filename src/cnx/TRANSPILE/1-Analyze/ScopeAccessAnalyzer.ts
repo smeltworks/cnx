@@ -35,6 +35,7 @@
  */
 
 import ScopeUtils from "../../utils/ScopeUtils";
+import SourceOrder from "../../utils/SourceOrder";
 import OperandTyper from "../../utils/OperandTyper";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
@@ -247,11 +248,7 @@ class ScopeAccessAnalyzer {
     for (const member of program.members) {
       check.declaration(member.declaration);
     }
-    return check
-      .errors()
-      .sort(
-        (a, b) => a.span.line - b.span.line || a.span.column - b.span.column,
-      );
+    return check.errors().sort(SourceOrder.bySpan);
   }
 }
 

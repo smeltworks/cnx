@@ -47,6 +47,7 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
+import SourceOrder from "../../utils/SourceOrder";
 import type TExpression from "../../types/syntax/TExpression";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
@@ -127,11 +128,7 @@ class StructLiteralAnalyzer {
         check.checkExpression(expr);
       }
     }
-    return check
-      .errors()
-      .sort(
-        (a, b) => a.span.line - b.span.line || a.span.column - b.span.column,
-      );
+    return check.errors().sort(SourceOrder.bySpan);
   }
 }
 
