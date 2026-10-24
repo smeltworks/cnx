@@ -111,7 +111,12 @@ class CommentExtractor {
       this.errors.push({
         rule: "3.2",
         message: String.raw`Line comment ends with '\' which causes line-splice (MISRA C:2012 Rule 3.2)`,
-        span: CommentExtractor.markerAt(comment, comment.content.length - 1),
+        span: {
+          line: comment.line,
+          column: comment.column,
+          endLine: comment.line,
+          endColumn: comment.column + comment.raw.length,
+        },
       });
     }
   }
