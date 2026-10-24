@@ -1,0 +1,6 @@
+17:11 error[E0702]: while condition may not call a function: '(i < 3) && (arr[w({ s: t, n: 1 })] = 1)'
+       help: MISRA C:2012 Rule 13.5: Store the function result in a variable first.
+24:13 error[E0702]: do-while condition may not call a function: '(d < 3) && (arr[w({ s: t, n: 1 })] = 1)'
+       help: MISRA C:2012 Rule 13.5: Store the function result in a variable first.
+26:25 error[E0702]: for condition may not call a function: '(j < 3) && (arr[w({ s: t, n: 1 })] = 1)'
+       help: MISRA C:2012 Rule 13.5: Store the function result in a variable first.

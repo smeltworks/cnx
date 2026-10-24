@@ -674,10 +674,10 @@ class FilePlanner {
    * with a constructor, or one with a `string<N>` field copied in -- is built
    * only when the `&&`/`||` operand or `?:` arm holding it runs. Each such
    * operand and ternary is lowered to an `if`: a `bool` holds the chain's
-   * value so far, and a ternary's value is a variable of its own type. Only
-   * where the statement's temporaries are written just before it, each time
-   * it runs: a loop's condition and a `for` update are tested again without
-   * the statement before them, so they keep the hoist they had (#2343).
+   * value so far, and a ternary's value is a variable of its own type. A
+   * `for` update is run again with nothing written before it, so it keeps
+   * the hoist it had (#2343); a loop condition cannot hold one, since E0702
+   * admits no call there.
    */
   private planLazyOperands(
     program: IProgramSyntax,
@@ -701,7 +701,7 @@ class FilePlanner {
             node.fields.some((field) => stringFields.has(field.value))),
       );
     const retested = new Set(
-      FilePlanner.loopHeads(program).flatMap((head) =>
+      FilePlanner.forUpdates(program).flatMap((head) =>
         ExpressionNodes.direct(head),
       ),
     );
@@ -757,21 +757,14 @@ class FilePlanner {
     return typeName;
   }
 
-  /** Every loop condition and `for` update: expressions tested again after their statement starts */
-  private static loopHeads(program: IProgramSyntax): TExpression[] {
+  /** Every `for` update's expressions: run again each pass, after nothing written before them */
+  private static forUpdates(program: IProgramSyntax): TExpression[] {
     return program.declarations.flatMap(({ declaration }) =>
-      StatementNodes.in(declaration).flatMap((statement) => {
-        if (statement.kind === "while" || statement.kind === "doWhile") {
-          return [statement.condition];
-        }
-        if (statement.kind !== "for") return [];
-        return [
-          ...(statement.condition === null ? [] : [statement.condition]),
-          ...(statement.update === null
-            ? []
-            : [statement.update.target, statement.update.value]),
-        ];
-      }),
+      StatementNodes.in(declaration).flatMap((statement) =>
+        statement.kind === "for" && statement.update !== null
+          ? [statement.update.target, statement.update.value]
+          : [],
+      ),
     );
   }
 

@@ -52,16 +52,16 @@ describe("2.2 plans the operands built only when they run (#2332)", () => {
     expect(planned.lazyTernaries.size).toBe(0);
   });
 
-  it("leaves an operand in a loop condition alone: it is tested again without its statement", () => {
+  it("leaves a ternary in a for update alone: it runs again without its statement (#2343)", () => {
     const planned = plan([
-      "  u32[2] arr <- [0, 1];",
-      "  mut u32 i <- 0;",
-      "  while ((i < 3) && (arr[w({ s: t, n: 1 })] = 1)) {",
-      "    i <- i + 1;",
+      "  u32 c <- 1;",
+      "  mut u32 n <- 0;",
+      "  for (mut u32 j <- 0; j < 3; j <- j + ((c = 1) ? w({ s: t, n: 1 }) : 1)) {",
+      "    n <- n + 1;",
       "  }",
     ]);
 
-    expect(planned.lazyOperands.size).toBe(0);
+    expect(planned.lazyTernaries.size).toBe(0);
   });
 
   it("types a ternary of a u32 and a literal by its typed arm", () => {

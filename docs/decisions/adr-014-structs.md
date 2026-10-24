@@ -520,12 +520,13 @@ fieldInitializer
    initializer is lowered; any other temporary (a float bit read, #2157's
    typedef) is still written before the statement. This holds where a
    statement's temporaries come before it: a declaration, an assignment, a
-   `return`, an argument. A loop's condition and a `for` update are tested
-   again with nothing written before them each time, so an initializer there
-   is not lowered: it reaches a condition through a subscript or an argument,
-   which E0702 does not look into, and is still built once before the loop
-   (#2343). An `else if` condition (#2340) and a `switch` subject (#2342)
-   still put their temporary in the wrong place.
+   `return`, an argument. A loop's condition cannot hold such an initializer:
+   it is built for a call, and E0702 admits no call anywhere in a controlling
+   expression, a subscript or an argument included (owner ruling 2026-10-24).
+   A `for` update is run again with nothing written before it, so it is not
+   lowered and its initializer is still built once before the loop (#2343).
+   An `else if` condition (#2340) and a `switch` subject (#2342) still put
+   their temporary in the wrong place.
 
 ## References
 

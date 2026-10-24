@@ -1,6 +1,5 @@
-// test-execution
-// test-no-warnings
-// Tests: #2332 - a struct initializer built apart reaches a loop condition through a subscript (E0702 does not look into one); the condition is not lowered before the loop, so while, do-while and for still end
+// test-error
+// Tests: #2332 - E0702 admits no call anywhere in a loop condition: a call inside a subscript (here one building a struct initializer) is a call in the condition, in while, do-while and for alike
 struct Named {
     string<8> s;
     u32 n;
@@ -18,24 +17,14 @@ u32 main() {
     while ((i < 3) && (arr[w({ s: t, n: 1 })] = 1)) {
         i <- i + 1;
     }
-    if (i != 3) {
-        return 1;
-    }
 
     mut u32 d <- 0;
     do {
         d <- d + 1;
     } while ((d < 3) && (arr[w({ s: t, n: 1 })] = 1));
-    if (d != 3) {
-        return 2;
-    }
 
-    mut u32 laps <- 0;
     for (mut u32 j <- 0; (j < 3) && (arr[w({ s: t, n: 1 })] = 1); j <- j + 1) {
-        laps <- laps + 1;
+        i <- i + 1;
     }
-    if (laps != 3) {
-        return 3;
-    }
-    return 0;
+    return i;
 }
