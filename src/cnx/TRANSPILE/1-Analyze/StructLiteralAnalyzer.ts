@@ -47,10 +47,9 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
+import ProgramAccesses from "../../utils/ProgramAccesses";
 import SourceOrder from "../../utils/SourceOrder";
 import type TExpression from "../../types/syntax/TExpression";
-import DeclarationParts from "../../utils/DeclarationParts";
-import ExpressionNodes from "../../utils/ExpressionNodes";
 import StructInitializerType from "./helpers/StructInitializerType";
 import ValuePositions from "./helpers/ValuePositions";
 import type IValuePosition from "../../types/IValuePosition";
@@ -121,12 +120,8 @@ class StructLiteralAnalyzer {
     positions: ReadonlyMap<TExpression, IValuePosition>,
   ): IStructLiteralError[] {
     const check = new StructLiteralCheck(this.context, positions);
-    for (const member of program.members) {
-      for (const expr of DeclarationParts.of(member.declaration).flatMap(
-        ExpressionNodes.of,
-      )) {
-        check.checkExpression(expr);
-      }
+    for (const expr of ProgramAccesses.expressions(program)) {
+      check.checkExpression(expr);
     }
     return check.errors().sort(SourceOrder.bySpan);
   }

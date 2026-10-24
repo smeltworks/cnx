@@ -131,9 +131,26 @@ class SyntaxLowering {
   private static postfixTargetOp(
     ctx: Parser.PostfixTargetOpContext,
   ): TPostfixOpSyntax {
+    return (
+      SyntaxLowering.memberOrSubscript(ctx) ?? {
+        kind: "missing",
+        ...SyntaxLowering.node(ctx),
+      }
+    );
+  }
+
+  /**
+   * `.name`, `[i]` or `[i, j]`: what a target's op and a value's op have in
+   * common, lowered once (#2115). Null when the op is neither -- a call, or
+   * nothing the grammar recovered.
+   */
+  private static memberOrSubscript(
+    ctx: Parser.PostfixTargetOpContext | Parser.PostfixOpContext,
+  ): TPostfixOpSyntax | null {
     const node = SyntaxLowering.node(ctx);
     const identifier = ctx.IDENTIFIER();
     if (identifier) {
+      // a name the parser conjured to recover was never written
       if (identifier.symbol.tokenIndex < 0) return { kind: "missing", ...node };
       return {
         kind: "member",
@@ -152,7 +169,7 @@ class SyntaxLowering {
     if (indexes.length === 2) {
       return { kind: "subscript", indexes: [indexes[0], indexes[1]], ...node };
     }
-    return { kind: "missing", ...node };
+    return null;
   }
 
   /**
@@ -343,28 +360,9 @@ class SyntaxLowering {
   }
 
   private static postfixOp(ctx: Parser.PostfixOpContext): TPostfixOpSyntax {
+    const op = SyntaxLowering.memberOrSubscript(ctx);
+    if (op) return op;
     const node = SyntaxLowering.node(ctx);
-    const identifier = ctx.IDENTIFIER();
-    if (identifier) {
-      // a name the parser conjured to recover was never written
-      if (identifier.symbol.tokenIndex < 0) return { kind: "missing", ...node };
-      return {
-        kind: "member",
-        name: identifier.getText(),
-        nameSpan: ParserUtils.getSpan({
-          start: identifier.symbol,
-          stop: identifier.symbol,
-        }),
-        ...node,
-      };
-    }
-    const indexes = ctx.expression().map((e) => SyntaxLowering.expression(e));
-    if (indexes.length === 1) {
-      return { kind: "subscript", indexes: [indexes[0]], ...node };
-    }
-    if (indexes.length === 2) {
-      return { kind: "subscript", indexes: [indexes[0], indexes[1]], ...node };
-    }
     if (!ctx.LPAREN()) return { kind: "missing", ...node };
     return {
       kind: "call",

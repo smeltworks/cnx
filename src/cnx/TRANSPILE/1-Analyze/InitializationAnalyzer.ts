@@ -12,6 +12,7 @@
  */
 
 import LengthProperty from "../../utils/LengthProperty";
+import ProgramExpressions from "../../utils/ProgramExpressions";
 import type ISourceSpan from "../../types/ISourceSpan";
 import IInitializationError from "./types/IInitializationError";
 import IDeclarationInfo from "./types/IDeclarationInfo";
@@ -93,13 +94,7 @@ class InitializationWalk {
   }
 
   private function(fn: IFunctionDeclarationSyntax): void {
-    this.part({ kind: "type", type: fn.returnType });
-    for (const parameter of fn.parameters ?? []) {
-      this.part({ kind: "type", type: parameter.type });
-      for (const part of TypeParts.dimensions(parameter.dimensions)) {
-        this.part(part);
-      }
-    }
+    for (const part of DeclarationParts.signature(fn)) this.part(part);
     this.statements(fn.body.statements);
   }
 
@@ -289,13 +284,7 @@ class InitializationWalk {
   // ========================================================================
 
   private part(part: TSyntaxPart): void {
-    if (part.kind === "type") {
-      for (const inner of TypeParts.of(part.type)) {
-        this.part(inner);
-      }
-      return;
-    }
-    this.expression(part.expression);
+    for (const expr of ProgramExpressions.inPart(part)) this.expression(expr);
   }
 
   private expression(expr: TExpression): void {

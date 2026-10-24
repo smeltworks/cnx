@@ -44,11 +44,9 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
+import ProgramAccesses from "../../utils/ProgramAccesses";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TExpression from "../../types/syntax/TExpression";
-import DeclarationParts from "../../utils/DeclarationParts";
-import ExpressionNodes from "../../utils/ExpressionNodes";
-import StatementNodes from "../../utils/StatementNodes";
 import IRegisterMember from "./types/IRegisterMember";
 import IRegisterAccessError from "./types/IRegisterAccessError";
 import ZeroValue from "./helpers/ZeroValue";
@@ -181,16 +179,9 @@ class RegisterAccessAnalyzer {
   /** #1991: reads 1.2's syntax, not the parse tree */
   public analyze(program: IProgramSyntax): IRegisterAccessError[] {
     const check = new RegisterAccessCheck(this.context);
-    for (const member of program.members) {
-      const sites = StatementNodes.assignments(member.declaration);
-      const targets = new Set<TExpression>(sites.map((site) => site.target));
-      for (const expr of DeclarationParts.of(member.declaration).flatMap(
-        ExpressionNodes.of,
-      )) {
-        if (!targets.has(expr)) check.checkExpression(expr);
-      }
-      for (const site of sites) check.checkSite(site);
-    }
+    for (const expr of ProgramAccesses.reads(program))
+      check.checkExpression(expr);
+    for (const site of ProgramAccesses.writes(program)) check.checkSite(site);
     return check.errors().sort(SourceOrder.bySpan);
   }
 }

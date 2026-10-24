@@ -12,14 +12,17 @@ import TypeParts from "./TypeParts";
 class ProgramExpressions {
   static of(program: IProgramSyntax): readonly TExpression[] {
     return program.members.flatMap((member) =>
-      DeclarationParts.of(member.declaration).flatMap(ProgramExpressions.part),
+      DeclarationParts.of(member.declaration).flatMap(
+        ProgramExpressions.inPart,
+      ),
     );
   }
 
-  private static part(part: TSyntaxPart): readonly TExpression[] {
+  /** A part's outermost expressions: itself, or a written type's dimensions */
+  static inPart(part: TSyntaxPart): readonly TExpression[] {
     return part.kind === "expression"
       ? [part.expression]
-      : TypeParts.of(part.type).flatMap(ProgramExpressions.part);
+      : TypeParts.of(part.type).flatMap(ProgramExpressions.inPart);
   }
 }
 

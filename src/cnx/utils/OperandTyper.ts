@@ -1266,14 +1266,8 @@ class OperandTyper {
     }
     // A function is typed by the call that follows it, as it was before the
     // binder named it (#1760 review)
-    if (binding && binding.kind !== "function") {
-      const t = OperandTyper.boundValue(binding, ctx);
-      return {
-        binding,
-        value: t ? { k: "value", t, registerMember: null } : UNKNOWN,
-        ops,
-      };
-    }
+    const valued = OperandTyper.valueStart(binding, ops, ctx);
+    if (valued) return valued;
     const scopePath =
       root === "this"
         ? ctx.program.lexicalFrameAt(ctx.sourceFile, at).scopePath
@@ -1281,6 +1275,25 @@ class OperandTyper {
     return {
       binding: null,
       value: OperandTyper.memberOfScope(scopePath, name, ctx),
+      ops,
+    };
+  }
+
+  /**
+   * A chain starting at a binding that holds a value: a local or a variable.
+   * An allow-list (#2115): a function is typed by the call after it, a scope
+   * and a foreign name each have their own start.
+   */
+  private static valueStart(
+    binding: TValueBinding | null,
+    ops: TChainOps,
+    ctx: ITypingContext,
+  ): IChainStart | null {
+    if (binding?.kind !== "local" && binding?.kind !== "variable") return null;
+    const t = OperandTyper.boundValue(binding, ctx);
+    return {
+      binding,
+      value: t ? { k: "value", t, registerMember: null } : UNKNOWN,
       ops,
     };
   }
@@ -1300,14 +1313,8 @@ class OperandTyper {
         ops,
       };
     }
-    if (binding && binding.kind !== "foreign" && binding.kind !== "function") {
-      const t = OperandTyper.boundValue(binding, ctx);
-      return {
-        binding,
-        value: t ? { k: "value", t, registerMember: null } : UNKNOWN,
-        ops,
-      };
-    }
+    const valued = OperandTyper.valueStart(binding, ops, ctx);
+    if (valued) return valued;
 
     const scopePath = ctx.program.lexicalFrameAt(ctx.sourceFile, at).scopePath;
     const nextIsCall = ops[0] !== undefined && OperandTyper.isCall(ops[0]);

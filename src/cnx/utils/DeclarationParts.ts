@@ -1,3 +1,4 @@
+import type IFunctionDeclarationSyntax from "../types/syntax/IFunctionDeclarationSyntax";
 import type IVariableDeclarationSyntax from "../types/syntax/IVariableDeclarationSyntax";
 import type TMemberDeclaration from "../types/syntax/TMemberDeclaration";
 import type TExpression from "../types/syntax/TExpression";
@@ -24,11 +25,7 @@ class DeclarationParts {
         return DeclarationParts.statement(declaration);
       case "function":
         return [
-          DeclarationParts.type(declaration.returnType),
-          ...(declaration.parameters ?? []).flatMap((parameter) => [
-            DeclarationParts.type(parameter.type),
-            ...TypeParts.dimensions(parameter.dimensions),
-          ]),
+          ...DeclarationParts.signature(declaration),
           ...DeclarationParts.statements(declaration.body.statements),
         ];
       case "register":
@@ -58,6 +55,17 @@ class DeclarationParts {
         return unplaced;
       }
     }
+  }
+
+  /** A function's return type, then each parameter's type and dimensions */
+  static signature(fn: IFunctionDeclarationSyntax): readonly TSyntaxPart[] {
+    return [
+      DeclarationParts.type(fn.returnType),
+      ...(fn.parameters ?? []).flatMap((parameter) => [
+        DeclarationParts.type(parameter.type),
+        ...TypeParts.dimensions(parameter.dimensions),
+      ]),
+    ];
   }
 
   static statements(statements: readonly TStatement[]): readonly TSyntaxPart[] {

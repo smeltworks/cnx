@@ -43,16 +43,13 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
+import ProgramAccesses from "../../utils/ProgramAccesses";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
-import DeclarationParts from "../../utils/DeclarationParts";
-import ExpressionNodes from "../../utils/ExpressionNodes";
-import StatementNodes from "../../utils/StatementNodes";
 import VariableDeclarations from "../../utils/VariableDeclarations";
 import OperandTyper from "../../utils/OperandTyper";
 import type IVariableDeclarationSyntax from "../../types/syntax/IVariableDeclarationSyntax";
-import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import IFunctionSymbol from "../../types/symbols/IFunctionSymbol";
 import TypeResolver from "../../utils/TypeResolver";
 import CCallbackSignature from "./helpers/CCallbackSignature";
@@ -356,21 +353,12 @@ class CallbackAssignmentAnalyzer {
     positions: ReadonlyMap<TExpression, IValuePosition>,
   ): ICallbackAssignmentError[] {
     const check = new CallbackAssignmentCheck(this.context, positions);
-    const visit = (declaration: TMemberDeclaration): void => {
-      for (const site of StatementNodes.assignments(declaration)) {
-        check.checkSite(site);
-      }
-    };
     for (const entry of VariableDeclarations.in(program)) {
       check.checkDeclaration(entry.declaration);
     }
-    for (const member of program.members) {
-      visit(member.declaration);
-      for (const expr of DeclarationParts.of(member.declaration).flatMap(
-        ExpressionNodes.of,
-      )) {
-        check.checkExpression(expr);
-      }
+    for (const site of ProgramAccesses.writes(program)) check.checkSite(site);
+    for (const expr of ProgramAccesses.expressions(program)) {
+      check.checkExpression(expr);
     }
     check.checkCTypedefCallbacks();
     return check.errors().sort(SourceOrder.bySpan);

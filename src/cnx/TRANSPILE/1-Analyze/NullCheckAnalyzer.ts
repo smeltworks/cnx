@@ -13,13 +13,13 @@
  */
 
 import INullCheckError from "./types/INullCheckError";
+import ProgramExpressions from "../../utils/ProgramExpressions";
 import type ISourceSpan from "../../types/ISourceSpan";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionChildren from "../../utils/ExpressionChildren";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import ExpressionShape from "../../utils/ExpressionShape";
 import StatementChildren from "../../utils/StatementChildren";
-import TypeParts from "../../utils/TypeParts";
 import type IFunctionDeclarationSyntax from "../../types/syntax/IFunctionDeclarationSyntax";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
@@ -311,13 +311,7 @@ class NullCheckWalk {
 
   private function(fn: IFunctionDeclarationSyntax): void {
     this.pushScope();
-    this.part({ kind: "type", type: fn.returnType });
-    for (const parameter of fn.parameters ?? []) {
-      this.part({ kind: "type", type: parameter.type });
-      for (const part of TypeParts.dimensions(parameter.dimensions)) {
-        this.part(part);
-      }
-    }
+    for (const part of DeclarationParts.signature(fn)) this.part(part);
     for (const statement of fn.body.statements) {
       this.statement(statement);
     }
@@ -436,13 +430,7 @@ class NullCheckWalk {
   // ========================================================================
 
   private part(part: TSyntaxPart): void {
-    if (part.kind === "type") {
-      for (const inner of TypeParts.of(part.type)) {
-        this.part(inner);
-      }
-      return;
-    }
-    this.expression(part.expression);
+    for (const expr of ProgramExpressions.inPart(part)) this.expression(expr);
   }
 
   private expression(expr: TExpression): void {
