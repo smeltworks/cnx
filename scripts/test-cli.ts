@@ -1082,27 +1082,42 @@ scope Serial {
 }
 `;
 
+/**
+ * Issue #565: write Config and the given Storage, Handler and Serial, then
+ * transpile Serial.cnx with --cpp (const inference only applies in C++ mode).
+ * Returns a reader for each generated file.
+ */
+function transpileConstChain(
+  tempDir: string,
+  storage: string,
+  handler: string,
+  serial: string,
+): (file: string) => string {
+  writeFileSync(join(tempDir, "Config.cnx"), multiFileConstConfig, "utf-8");
+  writeFileSync(join(tempDir, "Storage.cnx"), storage, "utf-8");
+  writeFileSync(join(tempDir, "Handler.cnx"), handler, "utf-8");
+  writeFileSync(join(tempDir, "Serial.cnx"), serial, "utf-8");
+  const result = runCliInDir(tempDir, [
+    "Serial.cnx",
+    "--cpp",
+    "--target",
+    "host",
+  ]);
+  assert(result.success, `Compile should succeed: ${result.output}`);
+  return (file) => readFileSync(join(tempDir, file), "utf-8");
+}
+
 test("Issue #565: multi-file transitive const inference propagates correctly", () => {
   const tempDir = mkdtempSync(join(tmpdir(), "cnx-multifile-const-"));
 
   try {
-    // Create the multi-file test case
-    writeFileSync(join(tempDir, "Config.cnx"), multiFileConstConfig, "utf-8");
-    writeFileSync(join(tempDir, "Storage.cnx"), multiFileConstStorage, "utf-8");
-    writeFileSync(join(tempDir, "Handler.cnx"), multiFileConstHandler, "utf-8");
-    writeFileSync(join(tempDir, "Serial.cnx"), multiFileConstSerial, "utf-8");
-
-    // Transpile with --cpp flag (const inference only applies in C++ mode)
-    const result = runCliInDir(tempDir, [
-      "Serial.cnx",
-      "--cpp",
-      "--target",
-      "host",
-    ]);
-    assert(result.success, `Compile should succeed: ${result.output}`);
-
-    // Read the generated Serial.cpp
-    const serialCpp = readFileSync(join(tempDir, "Serial.cpp"), "utf-8");
+    const read = transpileConstChain(
+      tempDir,
+      multiFileConstStorage,
+      multiFileConstHandler,
+      multiFileConstSerial,
+    );
+    const serialCpp = read("Serial.cpp");
 
     // Key assertion: Serial__handleReset should have NON-const Config&
     // because it calls Handler.reset which calls Storage.loadDefaults which modifies config
@@ -1116,13 +1131,13 @@ test("Issue #565: multi-file transitive const inference propagates correctly", (
     );
 
     // Also verify the intermediate functions are correct
-    const handlerCpp = readFileSync(join(tempDir, "Handler.cpp"), "utf-8");
+    const handlerCpp = read("Handler.cpp");
     assert(
       handlerCpp.includes("Handler__reset(Config& cfg)"),
       "Handler__reset should have non-const Config&",
     );
 
-    const storageCpp = readFileSync(join(tempDir, "Storage.cpp"), "utf-8");
+    const storageCpp = read("Storage.cpp");
     assert(
       storageCpp.includes("Storage__loadDefaults(Config& config)"),
       "Storage__loadDefaults should have non-const Config&",
@@ -1166,33 +1181,27 @@ scope Serial {
 `;
 
   try {
-    writeFileSync(join(tempDir, "Config.cnx"), multiFileConstConfig, "utf-8");
-    writeFileSync(join(tempDir, "Storage.cnx"), readOnlyStorage, "utf-8");
-    writeFileSync(join(tempDir, "Handler.cnx"), readOnlyHandler, "utf-8");
-    writeFileSync(join(tempDir, "Serial.cnx"), readOnlySerial, "utf-8");
-
-    const result = runCliInDir(tempDir, [
-      "Serial.cnx",
-      "--cpp",
-      "--target",
-      "host",
-    ]);
-    assert(result.success, `Compile should succeed: ${result.output}`);
+    const read = transpileConstChain(
+      tempDir,
+      readOnlyStorage,
+      readOnlyHandler,
+      readOnlySerial,
+    );
 
     // All functions should have const since none modify
-    const serialCpp = readFileSync(join(tempDir, "Serial.cpp"), "utf-8");
+    const serialCpp = read("Serial.cpp");
     assert(
       serialCpp.includes("Serial__readValue(const Config& config)"),
       "Serial__readValue should have const Config& (read-only chain)",
     );
 
-    const handlerCpp = readFileSync(join(tempDir, "Handler.cpp"), "utf-8");
+    const handlerCpp = read("Handler.cpp");
     assert(
       handlerCpp.includes("Handler__read(const Config& cfg)"),
       "Handler__read should have const Config&",
     );
 
-    const storageCpp = readFileSync(join(tempDir, "Storage.cpp"), "utf-8");
+    const storageCpp = read("Storage.cpp");
     assert(
       storageCpp.includes("Storage__getValue(const Config& config)"),
       "Storage__getValue should have const Config&",
@@ -1278,7 +1287,7 @@ test("Issue #580: C++ mode gives correct transitive const inference", () => {
 
     // Key assertion: Handler__passThrough should have NON-const Config&
     // because it calls Modifier.reset which modifies config
-    const handlerCpp = readFileSync(join(tempDir, "Handler.cpp"), "utf-8");
+    const handlerCpp = read("Handler.cpp");
     assert(
       handlerCpp.includes("Handler__passThrough(Config& config)"),
       "Handler__passThrough should have non-const Config& (calls mutating function)",
