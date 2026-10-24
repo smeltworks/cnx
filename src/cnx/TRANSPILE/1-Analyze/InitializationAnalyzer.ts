@@ -12,6 +12,7 @@
  */
 
 import LengthProperty from "../../utils/LengthProperty";
+import type ISourceSpan from "../../types/ISourceSpan";
 import IInitializationError from "./types/IInitializationError";
 import IDeclarationInfo from "./types/IDeclarationInfo";
 import ESourceLanguage from "../../utils/types/ESourceLanguage";
@@ -264,13 +265,7 @@ class InitializationWalk {
     );
     // A compound assignment (`+<-`) reads the target first
     if (assignment.operator !== "<-") {
-      this.analyzer.checkRead(
-        key,
-        name,
-        assignment.span.line,
-        assignment.span.column,
-        fieldName,
-      );
+      this.analyzer.checkRead(key, name, assignment.span, fieldName);
     }
     this.analyzer.recordAssignment(key, fieldName);
   }
@@ -356,7 +351,7 @@ class InitializationWalk {
   /** A read of `name`, followed by `ops`: the whole variable, or its first field */
   private read(
     name: string,
-    at: ISourcePosition,
+    at: ISourceSpan,
     ops: readonly TPostfixOpSyntax[],
   ): void {
     if (this.inFunctionCallArgs > 0) return;
@@ -366,11 +361,11 @@ class InitializationWalk {
       if (this.isCompileTimeLength(key, ops)) return;
       const first = ops[0];
       if (first.kind === "member") {
-        this.analyzer.checkRead(key, name, at.line, at.column, first.name);
+        this.analyzer.checkRead(key, name, at, first.name);
         return;
       }
     }
-    this.analyzer.checkRead(key, name, at.line, at.column);
+    this.analyzer.checkRead(key, name, at);
   }
 
   /**
@@ -693,8 +688,7 @@ class InitializationAnalyzer {
   public checkRead(
     key: TInitKey,
     name: string,
-    line: number,
-    column: number,
+    span: ISourceSpan,
     field?: string,
   ): void {
     const state = this.states.get(key);
@@ -705,9 +699,9 @@ class InitializationAnalyzer {
     }
 
     if (field) {
-      this.checkFieldRead(name, line, column, field, state);
+      this.checkFieldRead(name, span, field, state);
     } else if (!state.initialized) {
-      this.addError(name, line, column, state.declaration, false);
+      this.addError(name, span, state.declaration, false);
     }
   }
 
@@ -717,18 +711,17 @@ class InitializationAnalyzer {
    */
   private checkFieldRead(
     name: string,
-    line: number,
-    column: number,
+    span: ISourceSpan,
     field: string,
     state: IVariableState,
   ): void {
     if (state.isStruct && state.typeName) {
-      this.checkStructFieldRead(name, line, column, field, state);
+      this.checkStructFieldRead(name, span, field, state);
       return;
     }
 
     if (state.isStringType) {
-      this.checkStringPropertyRead(name, line, column, field, state);
+      this.checkStringPropertyRead(name, span, field, state);
     }
     // Other types: .field is a compile-time property, no check needed
   }
@@ -738,8 +731,7 @@ class InitializationAnalyzer {
    */
   private checkStructFieldRead(
     name: string,
-    line: number,
-    column: number,
+    span: ISourceSpan,
     field: string,
     state: IVariableState,
   ): void {
@@ -747,7 +739,7 @@ class InitializationAnalyzer {
     if (!structFieldSet?.has(field)) return;
 
     if (!state.initializedFields.has(field)) {
-      this.addError(`${name}.${field}`, line, column, state.declaration, false);
+      this.addError(`${name}.${field}`, span, state.declaration, false);
     }
   }
 
@@ -756,14 +748,13 @@ class InitializationAnalyzer {
    */
   private checkStringPropertyRead(
     name: string,
-    line: number,
-    column: number,
+    span: ISourceSpan,
     field: string,
     state: IVariableState,
   ): void {
     const runtimeProperties = ["length", "capacity", "size"];
     if (runtimeProperties.includes(field) && !state.initialized) {
-      this.addError(name, line, column, state.declaration, false);
+      this.addError(name, span, state.declaration, false);
     }
   }
 
@@ -827,8 +818,7 @@ class InitializationAnalyzer {
 
   private addError(
     variable: string,
-    line: number,
-    column: number,
+    span: ISourceSpan,
     declaration: IDeclarationInfo,
     mayBeUninitialized: boolean,
   ): void {
@@ -836,8 +826,7 @@ class InitializationAnalyzer {
     this.errors.push({
       code: "E0381",
       variable,
-      line,
-      column,
+      span,
       declaration,
       mayBeUninitialized,
       message: `use of ${certainty}uninitialized variable '${variable}'`,

@@ -127,8 +127,8 @@ describe("BooleanOperandAnalyzer", () => {
 
     it("reports the position of the offending operand", () => {
       const errors = analyze(inMain("bool c <- a / b;"));
-      expect(errors[0].line).toBeGreaterThan(0);
-      expect(errors[0].column).toBeGreaterThanOrEqual(0);
+      expect(errors[0].span.line).toBeGreaterThan(0);
+      expect(errors[0].span.column).toBeGreaterThanOrEqual(0);
     });
 
     it("carries help text naming the rule and the valid operators", () => {
@@ -445,7 +445,7 @@ describe("BooleanOperandAnalyzer -- reports the bool operand", () => {
     );
     return new BooleanOperandAnalyzer(context)
       .analyze(syntax)
-      .map((e) => [e.code, e.line, e.column]);
+      .map((e) => [e.code, e.span.line, e.span.column]);
   };
 
   it.each([

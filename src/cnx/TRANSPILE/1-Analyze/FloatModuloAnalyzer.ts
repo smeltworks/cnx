@@ -39,8 +39,7 @@ class FloatModuloAnalyzer {
             if (this.isFloat(left) || this.isFloat(expr.operands[i + 1])) {
               errors.push({
                 code: "E0804",
-                line: left.span.line,
-                column: left.span.column,
+                span: left.span,
                 message:
                   "Modulo operator not supported for floating-point types",
                 helpText:

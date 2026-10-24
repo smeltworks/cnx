@@ -66,8 +66,7 @@ class CompoundAssignmentCheck {
 
     this.found.push({
       code: "E0857",
-      line: site.span.line,
-      column: site.span.column,
+      span: site.span,
       message: `Compound assignment operators are not supported on a ${reason}`,
       helpText:
         "A compound operator reads, modifies and writes back one storage location. Write the read and the write out separately.",

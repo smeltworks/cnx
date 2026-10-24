@@ -62,7 +62,9 @@ class WholeArrayValueAnalyzer {
       found.push(...WholeArrayValueAnalyzer.check(value, at, this.context));
     }
     found.push(...this.forClauseArrays(positions));
-    return found.sort((a, b) => a.line - b.line || a.column - b.column);
+    return found.sort(
+      (a, b) => a.span.line - b.span.line || a.span.column - b.span.column,
+    );
   }
 
   /**
@@ -92,8 +94,7 @@ class WholeArrayValueAnalyzer {
       }
       found.push({
         code: "E0917",
-        line: target.span.line,
-        column: target.span.column,
+        span: target.span,
         message: ForHeaderVariable.assignmentMessage(target.written),
         helpText: ForHeaderVariable.ASSIGNMENT_HELP,
       });
@@ -126,8 +127,7 @@ class WholeArrayValueAnalyzer {
     return [
       {
         code: "E0866",
-        line: value.span.line,
-        column: value.span.column,
+        span: value.span,
         message: `An array of shape ${shape(given)} is passed for a parameter of shape ${shape(taken)}`,
         helpText:
           "Pass an array of the parameter's shape, or write its elements as a list (ADR-014).",
@@ -171,8 +171,7 @@ class WholeArrayValueAnalyzer {
     return [
       {
         code: "E0866",
-        line: value.span.line,
-        column: value.span.column,
+        span: value.span,
         message: `An array of ${given} is passed for a parameter of ${taken}`,
         helpText:
           "Pass an array of the parameter's element type; an array is passed by reference and is not converted (ADR-014).",

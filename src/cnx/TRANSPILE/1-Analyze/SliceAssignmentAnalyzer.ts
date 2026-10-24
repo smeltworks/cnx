@@ -99,64 +99,70 @@ class SliceAssignmentListener {
 
     const offset = this.constantOf(subscripts[0]);
     if (offset === undefined) {
-      this.report(
-        subscripts[0],
-        "E0859",
-        `Slice assignment offset must be a compile-time constant for '${name}'`,
-        "A runtime offset cannot be bounds-checked at compile time. Use a literal or a read-only binding whose value is known at compile time.",
-      );
+      this.found.push({
+        code: "E0859",
+        span: subscripts[0].span,
+        message: `Slice assignment offset must be a compile-time constant for '${name}'`,
+        helpText:
+          "A runtime offset cannot be bounds-checked at compile time. Use a literal or a read-only binding whose value is known at compile time.",
+      });
       return;
     }
 
     const length = this.constantOf(subscripts[1]);
     if (length === undefined) {
-      this.report(
-        subscripts[1],
-        "E0859",
-        `Slice assignment length must be a compile-time constant for '${name}'`,
-        "A runtime length cannot be bounds-checked at compile time. Use a literal or a read-only binding whose value is known at compile time.",
-      );
+      this.found.push({
+        code: "E0859",
+        span: subscripts[1].span,
+        message: `Slice assignment length must be a compile-time constant for '${name}'`,
+        helpText:
+          "A runtime length cannot be bounds-checked at compile time. Use a literal or a read-only binding whose value is known at compile time.",
+      });
       return;
     }
 
     if (offset < 0) {
-      this.report(
-        subscripts[0],
-        "E0860",
-        `Slice assignment offset cannot be negative: ${offset}`,
-        "An offset is an element index into the buffer, counted from zero.",
-      );
+      this.found.push({
+        code: "E0860",
+        span: subscripts[0].span,
+        message: `Slice assignment offset cannot be negative: ${offset}`,
+        helpText:
+          "An offset is an element index into the buffer, counted from zero.",
+      });
       return;
     }
 
     if (length <= 0) {
-      this.report(
-        subscripts[1],
-        "E0860",
-        `Slice assignment length must be positive: ${length}`,
-        "A slice writes at least one byte; a zero-length slice writes nothing and is almost certainly a mistake.",
-      );
+      this.found.push({
+        code: "E0860",
+        span: subscripts[1].span,
+        message: `Slice assignment length must be positive: ${length}`,
+        helpText:
+          "A slice writes at least one byte; a zero-length slice writes nothing and is almost certainly a mistake.",
+      });
       return;
     }
 
     if (length % destination.elementBytes !== 0) {
-      this.report(
-        subscripts[1],
-        "E0860",
-        `Slice assignment length (${length}) must be a multiple of the element size (${destination.elementBytes} bytes) for '${name}'`,
-        "The length is a BYTE count and the copy writes whole elements, so it has to divide evenly.",
-      );
+      this.found.push({
+        code: "E0860",
+        span: subscripts[1].span,
+        message: `Slice assignment length (${length}) must be a multiple of the element size (${destination.elementBytes} bytes) for '${name}'`,
+        helpText:
+          "The length is a BYTE count and the copy writes whole elements, so it has to divide evenly.",
+      });
       return;
     }
 
     const elementCount = length / destination.elementBytes;
     if (offset + elementCount > destination.capacity) {
-      this.report(
-        subscripts[0],
-        "E0860",
-        `Slice assignment out of bounds: offset(${offset}) + ${elementCount} element(s) = ${offset + elementCount} exceeds buffer capacity(${destination.capacity}) for '${name}'`,
-        "The offset is an element index and the capacity an element count, so the span is compared in elements, not bytes.",
-      );
+      this.found.push({
+        code: "E0860",
+        span: subscripts[0].span,
+        message: `Slice assignment out of bounds: offset(${offset}) + ${elementCount} element(s) = ${offset + elementCount} exceeds buffer capacity(${destination.capacity}) for '${name}'`,
+        helpText:
+          "The offset is an element index and the capacity an element count, so the span is compared in elements, not bytes.",
+      });
       return;
     }
 
@@ -178,12 +184,12 @@ class SliceAssignmentListener {
     }
 
     if (declared.dimensions.length > 1) {
-      this.report(
-        at,
-        "E0858",
-        `Slice assignment is only valid on one-dimensional arrays; '${name}' has ${declared.dimensions.length} dimensions`,
-        `Index the outer dimensions first, e.g. ${name}[index][offset, length].`,
-      );
+      this.found.push({
+        code: "E0858",
+        span: at.span,
+        message: `Slice assignment is only valid on one-dimensional arrays; '${name}' has ${declared.dimensions.length} dimensions`,
+        helpText: `Index the outer dimensions first, e.g. ${name}[index][offset, length].`,
+      });
       return null;
     }
 
@@ -194,21 +200,22 @@ class SliceAssignmentListener {
       // byte chunks -- that needs type punning, which ADR-052 does not do.
       // `bool` is excluded for the same reason even though it has a width.
       if (element !== null && !TYPE_WIDTH[element]) return null;
-      this.report(
-        at,
-        "E0858",
-        `Slice assignment is not supported for element type '${element ?? "unknown"}' of '${name}'`,
-        "Only integer and string buffers can be sliced; a float or bool element would need type punning.",
-      );
+      this.found.push({
+        code: "E0858",
+        span: at.span,
+        message: `Slice assignment is not supported for element type '${element ?? "unknown"}' of '${name}'`,
+        helpText:
+          "Only integer and string buffers can be sliced; a float or bool element would need type punning.",
+      });
       return null;
     }
     if (element === "bool") {
-      this.report(
-        at,
-        "E0858",
-        `Slice assignment is not supported for element type 'bool' of '${name}'`,
-        "Only integer and string buffers can be sliced.",
-      );
+      this.found.push({
+        code: "E0858",
+        span: at.span,
+        message: `Slice assignment is not supported for element type 'bool' of '${name}'`,
+        helpText: "Only integer and string buffers can be sliced.",
+      });
       return null;
     }
 
@@ -217,12 +224,13 @@ class SliceAssignmentListener {
       // A dimension this pass cannot fold -- a C macro, or a size that did not
       // settle, which UNRESOLVED_DIMENSION records as 0 (#1175). Reporting a
       // bounds error would mean guessing at the bound.
-      this.report(
-        at,
-        "E0858",
-        `Cannot determine the size of '${name}' at compile time`,
-        "A sliced buffer needs a dimension that folds at compile time, so the span can be checked.",
-      );
+      this.found.push({
+        code: "E0858",
+        span: at.span,
+        message: `Cannot determine the size of '${name}' at compile time`,
+        helpText:
+          "A sliced buffer needs a dimension that folds at compile time, so the span can be checked.",
+      });
       return null;
     }
 
@@ -255,12 +263,12 @@ class SliceAssignmentListener {
         truncated >= 1n << BigInt(8 * length) ||
         truncated < -(1n << BigInt(8 * length - 1))
       ) {
-        this.report(
-          value,
-          "E0861",
-          `Slice assignment literal value (${literal}) does not fit in the ${length}-byte slice for '${name}'`,
-          "Narrow the value, or widen the slice.",
-        );
+        this.found.push({
+          code: "E0861",
+          span: value.span,
+          message: `Slice assignment literal value (${literal}) does not fit in the ${length}-byte slice for '${name}'`,
+          helpText: "Narrow the value, or widen the slice.",
+        });
       }
       return;
     }
@@ -276,22 +284,24 @@ class SliceAssignmentListener {
       sourceType.startsWith("f") ||
       sourceType === "bool"
     ) {
-      this.report(
-        value,
-        "E0861",
-        `Slice assignment source must be an integer value; the value assigned to '${name}' has type '${sourceType}'`,
-        "A slice copies the source's bytes, so the source has to be an integer.",
-      );
+      this.found.push({
+        code: "E0861",
+        span: value.span,
+        message: `Slice assignment source must be an integer value; the value assigned to '${name}' has type '${sourceType}'`,
+        helpText:
+          "A slice copies the source's bytes, so the source has to be an integer.",
+      });
       return;
     }
 
     if (length > bits / 8) {
-      this.report(
-        value,
-        "E0861",
-        `Slice assignment length (${length} bytes) exceeds the source value width (${bits / 8} bytes) for '${name}'`,
-        "Copying more bytes than the source holds would shift past its width, which is undefined behavior.",
-      );
+      this.found.push({
+        code: "E0861",
+        span: value.span,
+        message: `Slice assignment length (${length} bytes) exceeds the source value width (${bits / 8} bytes) for '${name}'`,
+        helpText:
+          "Copying more bytes than the source holds would shift past its width, which is undefined behavior.",
+      });
     }
   }
 
@@ -305,21 +315,6 @@ class SliceAssignmentListener {
    */
   private constantOf(expr: TExpression): number | undefined {
     return ConstantExpression.valueAt(expr, this.context) ?? undefined;
-  }
-
-  private report(
-    at: TExpression,
-    code: string,
-    message: string,
-    helpText: string,
-  ): void {
-    this.found.push({
-      code,
-      line: at.span.line,
-      column: at.span.column,
-      message,
-      helpText,
-    });
   }
 }
 

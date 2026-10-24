@@ -36,7 +36,7 @@ describe("FunctionCallAnalyzer", () => {
       const { syntax, analyzer } = analyzerFor(code);
       return analyzer
         .analyze(syntax)
-        .map((e) => [e.code, e.functionName, e.line]);
+        .map((e) => [e.code, e.functionName, e.span.line]);
     }
 
     it("checks a call nested in a statement's body", () => {
@@ -496,8 +496,8 @@ describe("FunctionCallAnalyzer", () => {
       const { syntax, analyzer } = analyzerFor(code);
       const errors = analyzer.analyze(syntax);
 
-      expect(errors[0].line).toBe(2);
-      expect(errors[0].column).toBeGreaterThan(0);
+      expect(errors[0].span.line).toBe(2);
+      expect(errors[0].span.column).toBeGreaterThan(0);
     });
   });
 

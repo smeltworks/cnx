@@ -1,3 +1,4 @@
+import type ISourceSpan from "../../types/ISourceSpan";
 import ECommentType from "../../types/ECommentType";
 import CommentScanner from "../../PARSE/2-Parse/CommentScanner";
 import IComment from "../../types/IComment";
@@ -57,11 +58,7 @@ class CommentExtractor {
         rule: "3.1",
         message:
           "Nested comment marker '/*' found inside comment (MISRA C:2012 Rule 3.1)",
-        line: comment.line,
-        column:
-          comment.column +
-          CommentScanner.markerLength(comment.type) +
-          nestedBlockStart,
+        span: CommentExtractor.markerAt(comment, nestedBlockStart),
       });
     }
 
@@ -80,17 +77,25 @@ class CommentExtractor {
           rule: "3.1",
           message:
             "Nested comment marker '//' found inside comment (MISRA C:2012 Rule 3.1)",
-          line: comment.line,
-          column:
-            comment.column +
-            CommentScanner.markerLength(comment.type) +
-            slashSlash,
+          span: CommentExtractor.markerAt(comment, slashSlash),
         });
         break; // Only report first occurrence
       }
 
       searchStart = slashSlash + 2;
     }
+  }
+
+  /** The two-character marker `offset` characters into a comment's content */
+  private static markerAt(comment: IComment, offset: number): ISourceSpan {
+    const column =
+      comment.column + CommentScanner.markerLength(comment.type) + offset;
+    return {
+      line: comment.line,
+      column,
+      endLine: comment.line,
+      endColumn: column + 2,
+    };
   }
 
   /**
@@ -106,8 +111,7 @@ class CommentExtractor {
       this.errors.push({
         rule: "3.2",
         message: String.raw`Line comment ends with '\' which causes line-splice (MISRA C:2012 Rule 3.2)`,
-        line: comment.line,
-        column: comment.column,
+        span: CommentExtractor.markerAt(comment, comment.content.length - 1),
       });
     }
   }

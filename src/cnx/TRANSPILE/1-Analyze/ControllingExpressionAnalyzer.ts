@@ -93,8 +93,7 @@ class ControllingExpressionCheck {
     if (expr.kind === "ternary") {
       this.found.push({
         code: "E0701",
-        line: expr.span.line,
-        column: expr.span.column,
+        span: expr.span,
         message: `${kind} condition must be a comparison, not a ternary`,
         helpText:
           "MISRA C:2012 Rule 14.4: lift the ternary into a variable and compare that.",
@@ -156,8 +155,7 @@ class ControllingExpressionCheck {
   private reportNotComparison(node: TExpression, kind: string): void {
     this.found.push({
       code: "E0701",
-      line: node.span.line,
-      column: node.span.column,
+      span: node.span,
       message: `${kind} condition must be a comparison, not '${node.written}'`,
       helpText: `MISRA C:2012 Rule 14.4: ${this.suggestionFor(node)}`,
     });
@@ -166,8 +164,7 @@ class ControllingExpressionCheck {
   private reportCall(node: TExpression, kind: string): void {
     this.found.push({
       code: "E0702",
-      line: node.span.line,
-      column: node.span.column,
+      span: node.span,
       message: `${kind} condition may not call a function: '${node.written}'`,
       helpText: `MISRA C:2012 Rule 13.5: ${CALL_HELP}`,
     });
@@ -254,7 +251,9 @@ class ControllingExpressionAnalyzer {
     // Read off 1.2's syntax (#1991); reported in source order
     return check
       .errors()
-      .sort((a, b) => a.line - b.line || a.column - b.column);
+      .sort(
+        (a, b) => a.span.line - b.span.line || a.span.column - b.span.column,
+      );
   }
 }
 

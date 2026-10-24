@@ -149,7 +149,7 @@ describe("CallbackAssignmentAnalyzer", () => {
         "E0879",
       ]);
       expect(found[0].message).toContain("does not match callback type");
-      expect(found[0].column).toBeGreaterThan(0);
+      expect(found[0].span.column).toBeGreaterThan(0);
     });
 
     it("accepts a function whose declared signature matches exactly", () => {

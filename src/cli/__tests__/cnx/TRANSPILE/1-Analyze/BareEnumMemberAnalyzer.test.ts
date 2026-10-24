@@ -57,7 +57,7 @@ describe("BareEnumMemberAnalyzer (E0424)", () => {
       "}",
     ].join("\n");
     const found = errors(source);
-    expect(found.map((e) => [e.code, e.line])).toEqual([
+    expect(found.map((e) => [e.code, e.span.line])).toEqual([
       ["E0424", 2],
       ["E0424", 4],
       ["E0424", 6],
@@ -66,7 +66,7 @@ describe("BareEnumMemberAnalyzer (E0424)", () => {
     expect(found[0].message).toBe(
       "'RED' is not defined; did you mean 'Color.RED'?",
     );
-    expect(found[0].column).toBeGreaterThan(0);
+    expect(found[0].span.column).toBeGreaterThan(0);
   });
 
   it("names every enum that declares an ambiguous member", () => {
@@ -98,7 +98,7 @@ describe("BareEnumMemberAnalyzer (E0424)", () => {
       "    u8 v <- data[COUNT];",
       "}",
     ].join("\n");
-    expect(errors(source).map((e) => e.line)).toEqual([4, 6, 7]);
+    expect(errors(source).map((e) => e.span.line)).toEqual([4, 6, 7]);
   });
 
   it("leaves a declared name of the same spelling alone", () => {
@@ -134,7 +134,7 @@ describe("BareEnumMemberAnalyzer -- positions on 1.2's syntax", () => {
         ...body.map((line) => `    ${line}`),
         "}",
       ].join("\n"),
-    ).map((e) => `${e.code}@${e.line}:${e.column}`);
+    ).map((e) => `${e.code}@${e.span.line}:${e.span.column}`);
 
   it("a comparison names no enum, even inside an enum's position", () => {
     expect(codes(["Color d <- (pair[0] = RED) ? GREEN : RED;"])).toEqual([
@@ -178,7 +178,7 @@ describe("BareEnumMemberAnalyzer reads 2.1's value sites (#1991 review)", () => 
     "Color[4] arr <- [Color.RED*];",
   ];
   const codes = (body: string[]) =>
-    errors([...header, ...body].join("\n")).map((error) => error.line);
+    errors([...header, ...body].join("\n")).map((error) => error.span.line);
 
   it("rejects a member written to a slice", () => {
     expect(codes(["void main() {", "    arr[0, 1] <- GREEN;", "}"])).toEqual([

@@ -50,8 +50,7 @@ class ArrayListCount {
   static notAList(value: TExpression): IArrayDeclarationError {
     return {
       code: "E0866",
-      line: value.span.line,
-      column: value.span.column,
+      span: value.span,
       message: `An array must be given a list, not '${value.written}'`,
       helpText:
         "Write the elements out in brackets, or set them one at a time (ADR-035).",
@@ -65,8 +64,7 @@ class ArrayListCount {
   ): IArrayDeclarationError {
     return {
       code: "E0866",
-      line: fill.span.line,
-      column: fill.span.column,
+      span: fill.span,
       message: `A fill-all [${fill.written}*] other than zero needs a size cnx can fold, and '${size}' does not`,
       helpText:
         "Write the elements out, fill with zero, or size the array with a cnx constant (ADR-035).",
@@ -80,8 +78,7 @@ class ArrayListCount {
   private static rowFill(fill: TExpression): IArrayDeclarationError {
     return {
       code: "E0866",
-      line: fill.span.line,
-      column: fill.span.column,
+      span: fill.span,
       message: `A fill-all for an array of rows fills each row with a list, not '${fill.written}'`,
       helpText: `Give each row its own fill-all, such as [[${fill.written}*], [${fill.written}*]] (ADR-035).`,
     };
@@ -94,8 +91,7 @@ class ArrayListCount {
   ): IArrayDeclarationError {
     return {
       code: "E0866",
-      line: value.span.line,
-      column: value.span.column,
+      span: value.span,
       message: `A string array's element in a list must be a string literal, not '${value.written}'`,
       helpText: isFill
         ? 'Fill a string array with a string literal, such as [""*] (ADR-035).'
@@ -129,8 +125,7 @@ class ArrayListCount {
       const where = level > 0 ? ` at nesting level ${level + 1}` : "";
       found.push({
         code: "E0866",
-        line: initializer.span.line,
-        column: initializer.span.column,
+        span: initializer.span,
         message: `Array size mismatch: declared [${declared}] but the initializer has ${elements.length} element(s)${where}`,
         helpText:
           "Give one element per slot, or use the fill-all form such as [0*] (ADR-035).",

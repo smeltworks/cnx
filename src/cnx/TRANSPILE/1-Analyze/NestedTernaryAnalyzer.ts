@@ -67,8 +67,7 @@ class NestedTernaryAnalyzer {
     if (!NestedTernaryAnalyzer.containsTernary(value)) return;
     this.found.push({
       code: "E0710",
-      line: value.span.line,
-      column: value.span.column,
+      span: value.span,
       message: `Nested ternary not allowed in ${branch}`,
       helpText:
         "A ternary inside a ternary is hard to read and hard to certify (ADR-022). Use if/else, or lift the inner expression into a named variable first.",

@@ -145,8 +145,7 @@ class ThisOutsideScopeAnalyzer {
           };
     this.found.push({
       code: "E0431",
-      line: span.line,
-      column: span.column,
+      span: span,
       ...text,
     });
   }

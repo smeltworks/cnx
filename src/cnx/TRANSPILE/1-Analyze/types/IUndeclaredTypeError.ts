@@ -1,3 +1,4 @@
+import type ISourceSpan from "../../../types/ISourceSpan";
 /**
  * A name in a type position that does not name a type.
  *
@@ -8,8 +9,7 @@
 interface IUndeclaredTypeError {
   readonly code: string;
   readonly typeName: string;
-  readonly line: number;
-  readonly column: number;
+  readonly span: ISourceSpan;
   readonly message: string;
 }
 

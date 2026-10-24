@@ -316,7 +316,7 @@ describe("FloatModuloAnalyzer", () => {
       const analyzer = new FloatModuloAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
-      expect(errors[0].line).toBe(3);
+      expect(errors[0].span.line).toBe(3);
     });
   });
 

@@ -1,3 +1,4 @@
+import type ISourceSpan from "../../../types/ISourceSpan";
 /**
  * MISRA C:2012 comment violation (ADR-043)
  */
@@ -7,9 +8,7 @@ interface ICommentError {
   /** Error message */
   message: string;
   /** Line number (1-based) */
-  line: number;
-  /** Column (0-based) */
-  column: number;
+  span: ISourceSpan;
 }
 
 export default ICommentError;

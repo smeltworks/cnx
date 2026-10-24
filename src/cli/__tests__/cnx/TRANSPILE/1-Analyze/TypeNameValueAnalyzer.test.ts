@@ -49,7 +49,7 @@ describe("TypeNameValueAnalyzer", () => {
       expect(found).toHaveLength(1);
       expect(found[0].code).toBe("E0897");
       expect(found[0].message).toBe(message);
-      expect(found[0].line).toBe(5);
+      expect(found[0].span.line).toBe(5);
     }
   });
 

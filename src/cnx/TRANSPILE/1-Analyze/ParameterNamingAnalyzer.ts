@@ -81,8 +81,7 @@ class ParameterNamingAnalyzer {
       code: "E0227",
       parameterName,
       functionName,
-      line: at.line,
-      column: at.column,
+      span: at,
       message: formatParameterNamingError(parameterName, functionName),
       helpText: `Consider renaming to a name that doesn't start with '${functionName}_'`,
     });

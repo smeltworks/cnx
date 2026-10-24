@@ -140,8 +140,7 @@ class EnumTypeSafetyCheck {
 
     this.found.push({
       code: "E0428",
-      line: value.span.line,
-      column: value.span.column,
+      span: value.span,
       message: `Cannot assign ${EnumTypeSafetyCheck.describe(verdict)} to ${targetType} enum`,
       helpText: ASSIGN_HELP,
     });
@@ -166,8 +165,7 @@ class EnumTypeSafetyCheck {
 
     this.found.push({
       code: "E0434",
-      line: expr.operands[1].span.line,
-      column: expr.operands[1].span.column,
+      span: expr.operands[1].span,
       message: `Cannot compare ${EnumTypeSafetyCheck.describe(left)} to ${EnumTypeSafetyCheck.describe(right)}`,
       helpText: COMPARE_HELP,
     });
@@ -196,7 +194,7 @@ class EnumTypeSafetyAnalyzer {
         check.checkSite(site);
       }
     }
-    return check.errors().sort(SourceOrder.compare);
+    return check.errors().sort(SourceOrder.bySpan);
   }
 }
 

@@ -46,8 +46,6 @@ class ConstructorArgumentCheck {
   }
 
   public check(declaration: TConstructorDeclaration): void {
-    const line = declaration.span.line;
-    const column = declaration.span.column;
     for (const argument of declaration.arguments) {
       const name = argument.name;
       // What the name binds to before this declaration, through Program's
@@ -65,8 +63,7 @@ class ConstructorArgumentCheck {
       if (!declared) {
         this.found.push({
           code: "E0433",
-          line,
-          column,
+          span: declaration.span,
           message: `Constructor argument '${name}' is not declared`,
           helpText: `Declare '${name}' before the constructor, or pass a literal.`,
         });
@@ -75,8 +72,7 @@ class ConstructorArgumentCheck {
       if (!declared.isConst) {
         this.found.push({
           code: "E0432",
-          line,
-          column,
+          span: declaration.span,
           message: `Constructor argument '${name}' must be read-only`,
           helpText:
             "A C++ constructor runs during static initialization, before main, so it may only read a value fixed at compile time. Remove `mut` from the argument's declaration.",

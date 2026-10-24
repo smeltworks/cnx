@@ -75,12 +75,14 @@ class StructLiteralCheck {
     // -- and deliberately not "which type", which a C-header struct's field
     // cannot answer in this pass. See `IValuePosition.supplied`.
     if (!at.supplied) {
-      this.report(
-        init,
-        "E0357",
-        "Cannot infer struct type: nothing here says which struct this is",
-        "Put the initializer where a type is declared -- a variable, an assignment target, a field, an argument, or a return (ADR-014).",
-      );
+      this.found.push({
+        code: "E0357",
+        span: init.span,
+        message:
+          "Cannot infer struct type: nothing here says which struct this is",
+        helpText:
+          "Put the initializer where a type is declared -- a variable, an assignment target, a field, an argument, or a return (ADR-014).",
+      });
       return;
     }
 
@@ -98,25 +100,14 @@ class StructLiteralCheck {
       this.context,
     );
     if (target === null) return;
-    this.report(
-      init,
-      "E0358",
-      `A struct initializer cannot be a value of '${target.typeName}', which is not a struct`,
-      target.isBitmap
+    this.found.push({
+      code: "E0358",
+      span: init.span,
+      message: `A struct initializer cannot be a value of '${target.typeName}', which is not a struct`,
+      helpText: target.isBitmap
         ? `A bitmap's value is its backing integer, set field by field after: '${target.typeName} v <- 0; v.<field> <- true;' (ADR-034).`
         : `Give a value of type '${target.typeName}'; only a struct takes '{ field: value }' (ADR-014).`,
-    );
-  }
-
-  private report(
-    at: TExpression,
-    code: string,
-    message: string,
-    helpText: string,
-  ): void {
-    const line = at.span.line;
-    const column = at.span.column;
-    this.found.push({ code, line, column, message, helpText });
+    });
   }
 }
 
@@ -138,7 +129,9 @@ class StructLiteralAnalyzer {
     }
     return check
       .errors()
-      .sort((a, b) => a.line - b.line || a.column - b.column);
+      .sort(
+        (a, b) => a.span.line - b.span.line || a.span.column - b.span.column,
+      );
   }
 }
 

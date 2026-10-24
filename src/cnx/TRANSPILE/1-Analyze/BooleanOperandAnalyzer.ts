@@ -29,6 +29,7 @@
  */
 
 import IBooleanOperandError from "./types/IBooleanOperandError";
+import type ISourceSpan from "../../types/ISourceSpan";
 import OperandTyper from "../../utils/OperandTyper";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
@@ -84,19 +85,14 @@ class BooleanOperandCheck {
       )
     ) {
       this.analyzer.addCompoundAssignmentError(
-        site.target.span.line,
-        site.target.span.column,
+        site.target.span,
         site.target.written,
       );
       return;
     }
 
     if (this.isBooleanOperand(site.value)) {
-      this.analyzer.addError(
-        site.value.span.line,
-        site.value.span.column,
-        site.operator,
-      );
+      this.analyzer.addError(site.value.span, site.operator);
     }
   }
 
@@ -115,11 +111,7 @@ class BooleanOperandCheck {
       if (!leftIsBoolean && !this.isBooleanOperand(right)) return;
 
       const offending = leftIsBoolean ? left : right;
-      this.analyzer.addError(
-        offending.span.line,
-        offending.span.column,
-        operator,
-      );
+      this.analyzer.addError(offending.span, operator);
     });
   }
 
@@ -128,7 +120,7 @@ class BooleanOperandCheck {
     if (expr.kind !== "unary") return;
     if (expr.operator !== "-" && expr.operator !== "~") return;
     if (this.isBooleanOperand(expr.operand)) {
-      this.analyzer.addError(expr.span.line, expr.span.column, expr.operator);
+      this.analyzer.addError(expr.span, expr.operator);
     }
   }
 }
@@ -189,11 +181,10 @@ class BooleanOperandAnalyzer {
   /**
    * Add a Boolean-operand error.
    */
-  public addError(line: number, column: number, operator: string): void {
+  public addError(span: ISourceSpan, operator: string): void {
     this.errors.push({
       code: "E0807",
-      line,
-      column,
+      span,
       message: `Operator '${operator}' is not valid on a bool operand`,
       helpText:
         "MISRA C:2012 Rule 10.1: a bool is not a number. Use the logical operators " +
@@ -207,15 +198,10 @@ class BooleanOperandAnalyzer {
    * `flags[0] +<- true` used to suggest `flags <- !flags`, which does not
    * compile).
    */
-  public addCompoundAssignmentError(
-    line: number,
-    column: number,
-    target: string,
-  ): void {
+  public addCompoundAssignmentError(span: ISourceSpan, target: string): void {
     this.errors.push({
       code: "E0806",
-      line,
-      column,
+      span,
       message: `Compound assignment is not valid on bool '${target}' - only '<-' is`,
       helpText: `MISRA C:2012 Rule 10.1: a bool is not a number. To flip it, use '${target} <- !${target}'.`,
     });

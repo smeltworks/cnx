@@ -330,7 +330,7 @@ describe("ShiftAnalyzer", () => {
       const analyzer = new ShiftAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
-      expect(errors[0].line).toBe(3);
+      expect(errors[0].span.line).toBe(3);
     });
   });
 
@@ -640,7 +640,7 @@ describe("ShiftAnalyzer", () => {
         cppMode: false,
       });
       const errors = new ShiftAnalyzer(context).analyze(syntax);
-      expect(errors.map((e) => [e.code, e.line])).toEqual([["E0805", 5]]);
+      expect(errors.map((e) => [e.code, e.span.line])).toEqual([["E0805", 5]]);
     });
 
     it("should not flag unsigned struct field shift", () => {
@@ -695,8 +695,8 @@ describe("ShiftAnalyzer -- E0873 shift amount (MISRA C:2012 Rule 12.2)", () => {
     const found = errors(inMain("    u8 b <- a << 8;"));
     expect(found).toHaveLength(1);
     expect(found[0].code).toBe("E0873");
-    expect(found[0].line).toBe(3);
-    expect(found[0].column).toBeGreaterThan(10);
+    expect(found[0].span.line).toBe(3);
+    expect(found[0].span.column).toBeGreaterThan(10);
     expect(found[0].message).toContain(
       "Shift amount (8) exceeds type width (8 bits) for type 'u8'",
     );
@@ -728,7 +728,7 @@ describe("ShiftAnalyzer -- E0873 shift amount (MISRA C:2012 Rule 12.2)", () => {
   it("rejects the compound forms, which codegen never checked", () => {
     // REGRESSION. `a <<<- 9` on a u8 emitted `a = (uint8_t)(a << 9U)`.
     const found = errors(inMain("    a <<<- 9;\n    a >><- 8;\n    a <<<- 7;"));
-    expect(found.map((e) => [e.code, e.line])).toEqual([
+    expect(found.map((e) => [e.code, e.span.line])).toEqual([
       ["E0873", 3],
       ["E0873", 4],
     ]);
@@ -768,7 +768,9 @@ describe("ShiftAnalyzer -- E0873 shift amount (MISRA C:2012 Rule 12.2)", () => {
       "    u8 d <- (a + 1) << 9;",
       "}",
     ].join("\n");
-    expect(errors(source).map((e) => [e.code, e.line])).toEqual([["E0873", 3]]);
+    expect(errors(source).map((e) => [e.code, e.span.line])).toEqual([
+      ["E0873", 3],
+    ]);
   });
 
   it("reports the signed rule and not the width rule on a signed operand", () => {
@@ -790,7 +792,7 @@ describe("ShiftAnalyzer -- E0873 shift amount (MISRA C:2012 Rule 12.2)", () => {
       "    arr[1] <<<- 8;",
       "}",
     ].join("\n");
-    expect(errors(source).map((e) => e.line)).toEqual([3, 4]);
+    expect(errors(source).map((e) => e.span.line)).toEqual([3, 4]);
   });
 });
 
@@ -861,7 +863,7 @@ describe("ShiftAnalyzer -- positions and for headers", () => {
     return new ShiftAnalyzer(context).analyze(syntax);
   };
   const where = (body: string) =>
-    errors(body).map((e) => [e.code, e.line, e.column]);
+    errors(body).map((e) => [e.code, e.span.line, e.span.column]);
 
   it("reports a signed operand where it starts", () => {
     expect(where("    i8 x <- 5;\n    i8 r <- x << 2;")).toEqual([
@@ -877,7 +879,7 @@ describe("ShiftAnalyzer -- positions and for headers", () => {
     const found = errors(
       "    u8 a <- 1;\n    for (u8 i <- 0; i < 3; a <<<- 9) { }",
     );
-    expect(found.map((e) => [e.code, e.line, e.column])).toEqual([
+    expect(found.map((e) => [e.code, e.span.line, e.span.column])).toEqual([
       ["E0873", 3, 34],
     ]);
     expect(found[0].message).toContain("(expression: a <<<- 9)");

@@ -182,8 +182,7 @@ class ReturnValueUseAnalyzer {
         );
         if (funcName === null) continue;
         errors.push({
-          line: statement.span.line,
-          column: statement.span.column,
+          span: statement.span,
           code: "E0708",
           message: `Return value of non-void function '${funcName}' is discarded`,
           helpText: `Use the value, or discard it explicitly: (void) ${funcName}(...);`,

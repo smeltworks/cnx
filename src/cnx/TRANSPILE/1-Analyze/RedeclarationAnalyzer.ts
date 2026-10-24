@@ -49,11 +49,9 @@ class RedeclarationAnalyzer {
     );
     for (const declaration of inOrder) {
       if (seen.has(declaration.name)) {
-        const { line, column } = declaration.span;
         this.found.push({
           code: "E0425",
-          line,
-          column,
+          span: declaration.span,
           message: `'${declaration.name}' is already declared in this scope`,
           helpText:
             "Rename one declaration; a function's parameters and its outermost block share one scope, as in C",

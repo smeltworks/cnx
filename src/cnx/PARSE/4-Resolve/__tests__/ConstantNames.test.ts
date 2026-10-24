@@ -26,7 +26,7 @@ beforeEach(() => {
 
 const FILE = "a.cnx";
 /** At file scope, after every declaration a source here makes (#1643) */
-const TOP = { line: 1000, column: 0 };
+const TOP = { line: 1000, column: 0, endLine: 1000, endColumn: 0 };
 
 function build(
   source: string,
@@ -88,7 +88,13 @@ function ask(
     kind: "name",
     root: options.root ?? null,
     path,
-    at: options.at ?? TOP,
+    at: options.at
+      ? {
+          ...options.at,
+          endLine: options.at.line,
+          endColumn: options.at.column,
+        }
+      : TOP,
   });
 }
 

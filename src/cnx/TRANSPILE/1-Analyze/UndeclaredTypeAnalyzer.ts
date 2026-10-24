@@ -77,12 +77,7 @@ class UndeclaredTypeWalk {
   private type(type: TTypeSyntax, scope: string): void {
     switch (type.kind) {
       case "user":
-        this.analyzer.checkUse(
-          type.name,
-          scope,
-          type.span.line,
-          type.span.column,
-        );
+        this.analyzer.checkUse(type.name, scope, type.span);
         return;
       case "scoped":
         this.analyzer.checkQualifiedUse(
@@ -158,32 +153,26 @@ class UndeclaredTypeAnalyzer {
   }
 
   /** One written type name: before its definition, unknown, or a register */
-  checkUse(
-    typeName: string,
-    scope: string,
-    line: number,
-    column: number,
-  ): void {
+  checkUse(typeName: string, scope: string, span: ISourceSpan): void {
     if (BUILTIN_TYPE_NAMES.has(typeName)) {
       return;
     }
     const definition = this.definitionAfter(
       this.boundName(typeName, scope),
-      line,
-      column,
+      span,
     );
     if (definition !== null) {
-      this.addUsedBeforeDefinitionError(typeName, line, column, definition);
+      this.addUsedBeforeDefinitionError(typeName, span, definition);
       return;
     }
     if (!this.knowsEveryName || this.isVisibleType(typeName, scope)) {
       return;
     }
     if (this.isRegister(typeName, scope)) {
-      this.addRegisterInTypePositionError(typeName, line, column);
+      this.addRegisterInTypePositionError(typeName, span);
       return;
     }
-    this.addError(typeName, line, column);
+    this.addError(typeName, span);
   }
 
   /**
@@ -213,14 +202,9 @@ class UndeclaredTypeAnalyzer {
     scopedName: string,
     span: ISourceSpan,
   ): void {
-    const definition = this.definitionAfter(scopedName, span.line, span.column);
+    const definition = this.definitionAfter(scopedName, span);
     if (definition !== null) {
-      this.addUsedBeforeDefinitionError(
-        written,
-        span.line,
-        span.column,
-        definition,
-      );
+      this.addUsedBeforeDefinitionError(written, span, definition);
     }
   }
 
@@ -230,11 +214,7 @@ class UndeclaredTypeAnalyzer {
    * the use sits inside it (a struct holding itself). Null when the name is not
    * this file's type, or is defined above.
    */
-  definitionAfter(
-    scopedName: string,
-    line: number,
-    column: number,
-  ): ISourceSpan | null {
+  definitionAfter(scopedName: string, at: ISourceSpan): ISourceSpan | null {
     this.typesHere ??= new Map(
       this.context.program
         .symbolsInFile(this.context.sourceFile)
@@ -251,7 +231,8 @@ class UndeclaredTypeAnalyzer {
       return null;
     }
     const closesAfter =
-      line < span.endLine || (line === span.endLine && column < span.endColumn);
+      at.line < span.endLine ||
+      (at.line === span.endLine && at.column < span.endColumn);
     return closesAfter ? span : null;
   }
 
@@ -329,32 +310,24 @@ class UndeclaredTypeAnalyzer {
     return test(typeName, symbols, symbolTable);
   }
 
-  addError(typeName: string, line: number, column: number): void {
-    this._push(
-      "E0426",
-      typeName,
-      line,
-      column,
-      `type '${typeName}' is not defined`,
-    );
+  addError(typeName: string, span: ISourceSpan): void {
+    this._push("E0426", typeName, span, `type '${typeName}' is not defined`);
   }
 
   /** E0426 for a use of this file's type before its definition closes */
   addUsedBeforeDefinitionError(
     typeName: string,
-    line: number,
-    column: number,
+    span: ISourceSpan,
     definition: ISourceSpan,
   ): void {
     const where =
-      line >= definition.line
+      span.line >= definition.line
         ? `inside its own definition (line ${definition.line}): a type cannot hold itself`
         : `before its definition at line ${definition.line}`;
     this._push(
       "E0426",
       typeName,
-      line,
-      column,
+      span,
       `type '${typeName}' is not defined here: it is used ${where} (ADR-030: define before use)`,
     );
   }
@@ -368,16 +341,11 @@ class UndeclaredTypeAnalyzer {
    * this diagnostic is retired outright -- delete the method, its call site,
    * `NameExistence.isRegisterName`, the fixture, and the E0429 registry row.
    */
-  addRegisterInTypePositionError(
-    typeName: string,
-    line: number,
-    column: number,
-  ): void {
+  addRegisterInTypePositionError(typeName: string, span: ISourceSpan): void {
     this._push(
       "E0429",
       typeName,
-      line,
-      column,
+      span,
       `'${typeName}' is a register, not a type`,
     );
   }
@@ -385,11 +353,10 @@ class UndeclaredTypeAnalyzer {
   private _push(
     code: string,
     typeName: string,
-    line: number,
-    column: number,
+    span: ISourceSpan,
     message: string,
   ): void {
-    this.errors.push({ code, typeName, line, column, message });
+    this.errors.push({ code, typeName, span, message });
   }
 }
 

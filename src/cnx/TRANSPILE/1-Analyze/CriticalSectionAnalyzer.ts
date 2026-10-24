@@ -79,8 +79,7 @@ class CriticalSectionAnalyzer {
     ) {
       this.found.push({
         code: "E0916",
-        line: statement.span.line,
-        column: statement.span.column,
+        span: statement.span,
         message: `target '${this.target.name}' has no critical section: disabling interrupts there does not shut out every other execution context`,
         helpText: CriticalSectionAnalyzer.NO_CRITICAL_SECTION_HELP,
       });
@@ -88,8 +87,7 @@ class CriticalSectionAnalyzer {
     if (statement.kind === "return" && inCritical) {
       this.found.push({
         code: "E0853",
-        line: statement.span.line,
-        column: statement.span.column,
+        span: statement.span,
         message:
           "Cannot use 'return' inside critical section - would leave interrupts disabled",
         helpText:

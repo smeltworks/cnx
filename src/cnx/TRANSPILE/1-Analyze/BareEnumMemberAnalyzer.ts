@@ -167,7 +167,9 @@ class BareEnumMemberAnalyzer {
       const error = this.check(expr, expected.at(expr));
       if (error !== null) found.push(error);
     }
-    return found.sort((a, b) => a.line - b.line || a.column - b.column);
+    return found.sort(
+      (a, b) => a.span.line - b.span.line || a.span.column - b.span.column,
+    );
   }
 
   private check(
@@ -194,8 +196,7 @@ class BareEnumMemberAnalyzer {
     }
     return {
       code: "E0424",
-      line: identifier.span.line,
-      column: identifier.span.column,
+      span: identifier.span,
       message: EnumMemberSuggestion.message(name, declaring),
       helpText:
         "A bare enum member is accepted only where its enum is already named -- a declaration or assignment of that type, a return from a function of that type, a field of that type. Elsewhere, qualify it (ADR-017).",

@@ -23,7 +23,7 @@ const codes = (source: string): string[] => {
   const { syntax, context, positions } = setUp(source);
   return new StaticInitializerAnalyzer(context)
     .analyze(syntax, positions)
-    .map((e) => `${e.line}:${e.code}`);
+    .map((e) => `${e.span.line}:${e.code}`);
 };
 
 const spelled = (source: string): (string | null)[] => {

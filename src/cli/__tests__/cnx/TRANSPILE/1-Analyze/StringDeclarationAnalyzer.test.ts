@@ -108,7 +108,7 @@ describe("StringDeclarationAnalyzer", () => {
         "    }",
         "}",
       ].join("\n");
-      expect(errors(source).map((e) => [e.code, e.line])).toEqual([
+      expect(errors(source).map((e) => [e.code, e.span.line])).toEqual([
         ["E0864", 1],
         ["E0864", 4],
       ]);

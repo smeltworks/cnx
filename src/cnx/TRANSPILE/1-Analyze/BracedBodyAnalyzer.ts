@@ -85,12 +85,10 @@ class BracedBodyAnalyzer {
 
   private body(keyword: TBodyKeyword, body: TStatement): void {
     if (body.kind !== "block" && body.kind !== "missing") {
-      const { line, column } = body.span;
       const example = keyword === "else" ? "else" : `${keyword} (...)`;
       this.found.push({
         code: "E0716",
-        line,
-        column,
+        span: body.span,
         message: `'${keyword}' body must be a braced block`,
         helpText: `Wrap the body in braces: \`${example} { ... }\` (MISRA C:2012 Rule 15.6)`,
       });

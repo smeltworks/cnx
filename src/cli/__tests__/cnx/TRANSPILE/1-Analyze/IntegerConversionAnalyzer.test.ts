@@ -34,8 +34,8 @@ describe("IntegerConversionAnalyzer", () => {
       const found = errors(inMain("    u8 x <- 256;"));
       expect(found).toHaveLength(1);
       expect(found[0].code).toBe("E0868");
-      expect(found[0].line).toBe(5);
-      expect(found[0].column).toBeGreaterThan(0);
+      expect(found[0].span.line).toBe(5);
+      expect(found[0].span.column).toBeGreaterThan(0);
     });
 
     it("accepts the bound itself, in every base", () => {
@@ -205,7 +205,7 @@ describe("IntegerConversionAnalyzer", () => {
         "scope S {\n    u32 wide <- 1000;\n    u8 narrow <- this.wide;\n}",
       );
       expect(found).toHaveLength(1);
-      expect(found[0].line).toBe(3);
+      expect(found[0].span.line).toBe(3);
     });
   });
 
@@ -250,7 +250,7 @@ describe("IntegerConversionAnalyzer", () => {
           'u32 give() {\n    return "r";\n}\n' +
           inMain('    wide <- "a";\n    take("b");\n    P p <- { v: "c" };'),
       );
-      expect(found.map((e) => [e.code, e.line, e.column])).toEqual([
+      expect(found.map((e) => [e.code, e.span.line, e.span.column])).toEqual([
         ["E0914", 8, 11],
         ["E0914", 14, 12],
         ["E0914", 15, 9],
@@ -294,7 +294,7 @@ describe("IntegerConversionAnalyzer", () => {
             '    mut string<8> s <- "x";\n    s <- byte;\n    take(wide);\n    s <- (wide = 1) ? "y" : byte;',
           ),
       );
-      expect(found.map((e) => [e.code, e.line, e.column])).toEqual([
+      expect(found.map((e) => [e.code, e.span.line, e.span.column])).toEqual([
         ["E0923", 8, 9],
         ["E0923", 9, 9],
         ["E0923", 10, 9],

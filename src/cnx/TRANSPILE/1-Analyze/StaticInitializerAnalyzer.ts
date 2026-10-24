@@ -28,15 +28,11 @@ class StaticInitializerAnalyzer {
       valuePositions.positions,
     )) {
       const settled = StaticInitializers.check(value, resolved, sourceFile);
-      const at = {
-        line: value.value.span.line,
-        column: value.value.span.column,
-      };
       if (settled?.kind === "overflow") {
         const form = StaticInitializers.formOf(value);
         errors.push({
           code: "E0910",
-          ...at,
+          span: value.value.span,
           message: `Static initializer overflows ${settled.typeName} at compile time: ${StaticInitializerAnalyzer.overflowCause(form, settled.typeName)}`,
           helpText:
             form === "cast" || form === "name"
@@ -50,7 +46,7 @@ class StaticInitializerAnalyzer {
       ) {
         errors.push({
           code: "E0909",
-          ...at,
+          span: value.value.span,
           message: `Static initializer must be known at compile time: ${ConstantDiagnostics.why(settled)}, and cnx cannot read its value to check the arithmetic does not clamp or wrap (ADR-044)`,
           helpText:
             "Declare the value in cnx, or #define it as an integer literal cnx can read",
@@ -64,7 +60,7 @@ class StaticInitializerAnalyzer {
         if (why === null) continue;
         errors.push({
           code: "E0909",
-          ...at,
+          span: value.value.span,
           message: `Static initializer must be known at compile time: ${why}`,
           helpText:
             "A file-scope or scope variable's initializer is a value fixed at compile time (ADR-044), in C++ as in C: literals, read-only bindings that are not `volatile` (ADR-064), length properties (.type_byte_length) and casts",

@@ -107,12 +107,13 @@ class StringDeclarationCheck {
     atFileScope: boolean,
   ): void {
     if (atFileScope && !ExpressionShape.isStringLiteral(value)) {
-      this.report(
-        value,
-        "E0863",
-        `A string field at file scope may only be initialized by a literal, not '${value.written}'`,
-        "Copying, concatenating and extracting a substring all need runtime calls, which C cannot make before `main`. Move the declaration into a function, or initialize the field empty and assign it later.",
-      );
+      this.found.push({
+        code: "E0863",
+        span: value.span,
+        message: `A string field at file scope may only be initialized by a literal, not '${value.written}'`,
+        helpText:
+          "Copying, concatenating and extracting a substring all need runtime calls, which C cannot make before `main`. Move the declaration into a function, or initialize the field empty and assign it later.",
+      });
       return;
     }
     this.checkFit(value, capacity, "field");
@@ -129,12 +130,13 @@ class StringDeclarationCheck {
     if (last?.kind !== "subscript") return;
     const length = last.indexes.at(1);
     if (length === undefined || this.constantOf(length) !== null) return;
-    this.report(
-      length,
-      "E0922",
-      `A substring's length must be a compile-time constant, not '${length.written}'`,
-      "Write the length as a literal or a constant, so the substring is known to fit what it is copied into (ADR-045). The start may be computed at run time.",
-    );
+    this.found.push({
+      code: "E0922",
+      span: length.span,
+      message: `A substring's length must be a compile-time constant, not '${length.written}'`,
+      helpText:
+        "Write the length as a literal or a constant, so the substring is known to fit what it is copied into (ADR-045). The start may be computed at run time.",
+    });
   }
 
   /** E0864/E0865 for the form `StringValueForm` gives the value */
@@ -173,12 +175,12 @@ class StringDeclarationCheck {
   ): void {
     const length = StringUtils.literalLength(literal.written);
     if (length <= capacity) return;
-    this.report(
-      value,
-      "E0864",
-      `String literal (${length} chars) exceeds string<${capacity}> capacity`,
-      `Widen ${StringDeclarationCheck.whose(write)} to string<${length}>, or shorten the literal.`,
-    );
+    this.found.push({
+      code: "E0864",
+      span: value.span,
+      message: `String literal (${length} chars) exceeds string<${capacity}> capacity`,
+      helpText: `Widen ${StringDeclarationCheck.whose(write)} to string<${length}>, or shorten the literal.`,
+    });
   }
 
   /** E0865: a substring's bounds stay within its source. True when reported. */
@@ -195,12 +197,13 @@ class StringDeclarationCheck {
       return false;
     }
     if (start + length <= sourceCapacity) return false;
-    this.report(
-      value,
-      "E0865",
-      `Substring bounds [${start}, ${length}] exceed the source string<${sourceCapacity}>`,
-      "The bounds are counted in characters from zero; keep start + length within the source's capacity.",
-    );
+    this.found.push({
+      code: "E0865",
+      span: value.span,
+      message: `Substring bounds [${start}, ${length}] exceed the source string<${sourceCapacity}>`,
+      helpText:
+        "The bounds are counted in characters from zero; keep start + length within the source's capacity.",
+    });
     return true;
   }
 
@@ -212,12 +215,12 @@ class StringDeclarationCheck {
   ): void {
     const length = this.lengthOf(part);
     if (length === null || length <= capacity) return;
-    this.report(
-      value,
-      "E0864",
-      `Substring length ${length} exceeds destination string<${capacity}> capacity`,
-      `Widen ${StringDeclarationCheck.whose(write)} to string<${length}>, or take fewer characters.`,
-    );
+    this.found.push({
+      code: "E0864",
+      span: value.span,
+      message: `Substring length ${length} exceeds destination string<${capacity}> capacity`,
+      helpText: `Widen ${StringDeclarationCheck.whose(write)} to string<${length}>, or take fewer characters.`,
+    });
   }
 
   private checkConcat(
@@ -233,12 +236,12 @@ class StringDeclarationCheck {
     if (required <= capacity) return;
     const where = StringDeclarationCheck.whose(write);
     const least = each.includes(null) ? "at least " : "";
-    this.report(
-      value,
-      "E0864",
-      `String concatenation requires ${least}capacity ${required}, but ${where} is string<${capacity}>`,
-      `Widen ${where} to string<${required}>, or shorten the operands.`,
-    );
+    this.found.push({
+      code: "E0864",
+      span: value.span,
+      message: `String concatenation requires ${least}capacity ${required}, but ${where} is string<${capacity}>`,
+      helpText: `Widen ${where} to string<${required}>, or shorten the operands.`,
+    });
   }
 
   private checkCopy(
@@ -249,12 +252,16 @@ class StringDeclarationCheck {
   ): void {
     const sourceCapacity = this.capacityOf({ kind: "whole", value: source });
     if (sourceCapacity === null || sourceCapacity <= capacity) return;
-    this.report(
-      value,
-      "E0864",
-      StringDeclarationCheck.copyMessage(write, sourceCapacity, capacity),
-      `Widen ${StringDeclarationCheck.whose(write)} to string<${sourceCapacity}>, or extract a substring of the source.`,
-    );
+    this.found.push({
+      code: "E0864",
+      span: value.span,
+      message: StringDeclarationCheck.copyMessage(
+        write,
+        sourceCapacity,
+        capacity,
+      ),
+      helpText: `Widen ${StringDeclarationCheck.whose(write)} to string<${sourceCapacity}>, or extract a substring of the source.`,
+    });
   }
 
   /**
@@ -311,21 +318,6 @@ class StringDeclarationCheck {
 
   private constantOf(expr: TExpression): number | null {
     return ConstantExpression.valueAt(expr, this.context);
-  }
-
-  private report(
-    at: TExpression,
-    code: string,
-    message: string,
-    helpText: string,
-  ): void {
-    this.found.push({
-      code,
-      line: at.span.line,
-      column: at.span.column,
-      message,
-      helpText,
-    });
   }
 }
 

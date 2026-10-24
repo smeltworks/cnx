@@ -5,7 +5,7 @@ import type IConstantEnvironment from "../types/IConstantEnvironment";
 import CNX_TO_C_TYPE_MAP from "../constants/TypeMappings";
 import QualifiedCName from "../QualifiedCName";
 
-const AT = { line: 1, column: 0 };
+const AT = { line: 1, column: 0, endLine: 1, endColumn: 0 };
 const lit = (digits: string): TConstExpr => ({
   kind: "literal",
   digits,

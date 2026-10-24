@@ -31,7 +31,7 @@ describe("SafeDivisionAnalyzer (E0884)", () => {
     const [found] = errors(wrap(body));
     expect(found.code).toBe("E0884");
     expect(found.message).toContain(`not ${count}`);
-    expect(found.line).toBe(4);
+    expect(found.span.line).toBe(4);
   });
 
   it("accepts exactly four, for both builtins", () => {
@@ -80,13 +80,13 @@ describe("SafeDivisionAnalyzer (E0885)", () => {
     ].join("\n");
     const found = errors(program);
     // Only `helper`, on line 13: `total` and the member `sum` are variables
-    expect(found.map((e) => [e.code, e.line])).toEqual([["E0885", 13]]);
+    expect(found.map((e) => [e.code, e.span.line])).toEqual([["E0885", 13]]);
   });
 
   // #1991: the position comes from 1.2's span of the first argument.
   it("reports E0885 at the first argument", () => {
     const [found] = errors(wrap("    err <- safe_div(1 + 1, 10, 2, 0);"));
-    expect([found.line, found.column]).toEqual([4, 20]);
+    expect([found.span.line, found.span.column]).toEqual([4, 20]);
   });
 
   it("checks only a bare call, not an index or a chain", () => {

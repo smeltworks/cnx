@@ -4,7 +4,7 @@ import type TConstExpr from "../../types/TConstExpr";
 import type TEnumMemberValue from "../../types/TEnumMemberValue";
 import type IConstantEnvironment from "../types/IConstantEnvironment";
 
-const AT = { line: 1, column: 0 };
+const AT = { line: 1, column: 0, endLine: 1, endColumn: 0 };
 const lit = (digits: string): TConstExpr => ({
   kind: "literal",
   digits,

@@ -62,12 +62,12 @@ class BitmapAccessCheck {
     const value = ConstantExpression.valueAt(site.value, this.context);
     const maximum = 2 ** field.layout.width - 1;
     if (value === null || value <= maximum) return;
-    this.report(
-      site.value,
-      "E0881",
-      `Value ${value} exceeds ${field.layout.width}-bit field '${field.fieldName}' maximum of ${maximum}`,
-      `A ${field.layout.width}-bit field holds 0 through ${maximum}; widen the field in the bitmap declaration, or write a value that fits (ADR-034).`,
-    );
+    this.found.push({
+      code: "E0881",
+      span: site.value.span,
+      message: `Value ${value} exceeds ${field.layout.width}-bit field '${field.fieldName}' maximum of ${maximum}`,
+      helpText: `A ${field.layout.width}-bit field holds 0 through ${maximum}; widen the field in the bitmap declaration, or write a value that fits (ADR-034).`,
+    });
   }
 
   /**
@@ -88,22 +88,22 @@ class BitmapAccessCheck {
       if (!bitmap || fields === undefined) continue;
       if (step.before!.dimensions.length > 0) {
         if (step.member === null || step.property !== null) continue;
-        this.report(
-          node,
-          "E0921",
-          `Field '${step.member}' of an array of '${bitmap}' names no element`,
-          `A field belongs to one '${bitmap}' value; index every dimension first, e.g. NAME[i].${step.member} (ADR-034).`,
-        );
+        this.found.push({
+          code: "E0921",
+          span: node.span,
+          message: `Field '${step.member}' of an array of '${bitmap}' names no element`,
+          helpText: `A field belongs to one '${bitmap}' value; index every dimension first, e.g. NAME[i].${step.member} (ADR-034).`,
+        });
         return null;
       }
       // ADR-034 addresses a bitmap by named field, never by bit index
       if (step.subscript !== null) {
-        this.report(
-          node,
-          "E0883",
-          `Cannot use bracket indexing on bitmap type '${bitmap}'`,
-          `A bitmap is addressed by named field, not by bit index -- write ${BitmapAccessCheck.spellingBefore(node, steps.length, i)}.FIELD_NAME (ADR-034).`,
-        );
+        this.found.push({
+          code: "E0883",
+          span: node.span,
+          message: `Cannot use bracket indexing on bitmap type '${bitmap}'`,
+          helpText: `A bitmap is addressed by named field, not by bit index -- write ${BitmapAccessCheck.spellingBefore(node, steps.length, i)}.FIELD_NAME (ADR-034).`,
+        });
         return null;
       }
       // ADR-058's properties describe the type's shape rather than name a
@@ -115,14 +115,15 @@ class BitmapAccessCheck {
       if (!fields.has(field)) {
         const known = [...fields.keys()];
         const quoted = known.map((k) => `'${k}'`).join(", ");
-        this.report(
-          node,
-          "E0882",
-          `Unknown bitmap field '${field}' on '${bitmap}'`,
-          known.length === 0
-            ? "The bitmap declares no fields (ADR-034)."
-            : `'${bitmap}' declares ${quoted} (ADR-034).`,
-        );
+        this.found.push({
+          code: "E0882",
+          span: node.span,
+          message: `Unknown bitmap field '${field}' on '${bitmap}'`,
+          helpText:
+            known.length === 0
+              ? "The bitmap declares no fields (ADR-034)."
+              : `'${bitmap}' declares ${quoted} (ADR-034).`,
+        });
         return null;
       }
     }
@@ -143,21 +144,6 @@ class BitmapAccessCheck {
       return node.primary.kind === "identifier" ? node.primary.name : "NAME";
     }
     return op.kind === "member" ? op.name : "NAME";
-  }
-
-  private report(
-    at: TExpression,
-    code: string,
-    message: string,
-    helpText: string,
-  ): void {
-    this.found.push({
-      code,
-      line: at.span.line,
-      column: at.span.column,
-      message,
-      helpText,
-    });
   }
 }
 
@@ -181,7 +167,7 @@ class BitmapAccessAnalyzer {
       }
       for (const site of sites) check.checkSite(site);
     }
-    return check.errors().sort(SourceOrder.compare);
+    return check.errors().sort(SourceOrder.bySpan);
   }
 }
 

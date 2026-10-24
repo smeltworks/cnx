@@ -64,6 +64,7 @@ import StructLiteralAnalyzer from "./StructLiteralAnalyzer";
 import WholeArrayValueAnalyzer from "./WholeArrayValueAnalyzer";
 import ConstAssignmentAnalyzer from "./ConstAssignmentAnalyzer";
 import type IMutSite from "../../types/IMutSite";
+import type ISourceSpan from "../../types/ISourceSpan";
 import LoopAnalyzer from "./LoopAnalyzer";
 import SliceAssignmentAnalyzer from "./SliceAssignmentAnalyzer";
 import ControllingExpressionAnalyzer from "./ControllingExpressionAnalyzer";
@@ -92,8 +93,7 @@ import type IAnalyzerOptions from "./types/IAnalyzerOptions";
  * (#1306). A field missing from an accepting type drops data without failing.
  */
 interface IAnalyzerError {
-  line: number;
-  column: number;
+  span: ISourceSpan;
   message: string;
   code?: string;
   rule?: string;
@@ -119,8 +119,8 @@ function collectErrors<E extends IAnalyzerError>(
     // which is the evidence the advice now reaches a user rather than a cost to
     // route around.
     target.push({
-      line: err.line,
-      column: err.column,
+      line: err.span.line,
+      column: err.span.column,
       message: formatMessage(err),
       severity: err.severity ?? "error",
       helpText: err.helpText,

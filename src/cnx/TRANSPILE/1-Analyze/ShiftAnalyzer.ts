@@ -28,6 +28,7 @@
  */
 
 import IShiftError from "./types/IShiftError";
+import type ISourceSpan from "../../types/ISourceSpan";
 import OperandTyper from "../../utils/OperandTyper";
 import TypeCheckUtils from "../../utils/TypeCheckUtils";
 import DeclarationParts from "../../utils/DeclarationParts";
@@ -56,7 +57,7 @@ class ShiftCheck {
 
       const left = level.operands[i];
       if (this.isSigned(left)) {
-        this.analyzer.addError(left.span.line, left.span.column, operator);
+        this.analyzer.addError(left.span, operator);
         continue;
       }
 
@@ -84,11 +85,7 @@ class ShiftCheck {
 
     const targetType = OperandTyper.typeOfTarget(site.target, this.context);
     if (targetType?.category === "signed") {
-      this.analyzer.addError(
-        site.target.span.line,
-        site.target.span.column,
-        site.operator,
-      );
+      this.analyzer.addError(site.target.span, site.operator);
       return;
     }
     this.checkAmount(targetType, site.value, site.written);
@@ -143,12 +140,10 @@ class ShiftCheck {
     const leftType = shifted.typeName ?? shifted.category;
     const amount = OperandTyper.constantOf(amountExpr, this.context);
     if (amount === null) return;
-    const line = amountExpr.span.line;
-    const column = amountExpr.span.column;
+    const span = amountExpr.span;
     if (amount < 0) {
       this.analyzer.addAmountError(
-        line,
-        column,
+        span,
         `Negative shift amount (${amount}) is undefined behavior (type: ${leftType}, expression: ${written})`,
         "Shift amounts must be non-negative (MISRA C:2012 Rule 12.2).",
       );
@@ -156,8 +151,7 @@ class ShiftCheck {
     }
     if (amount >= width) {
       this.analyzer.addAmountError(
-        line,
-        column,
+        span,
         `Shift amount (${amount}) exceeds type width (${width} bits) for type '${leftType}' (expression: ${written})`,
         `Shift amount must be < ${width} for ${width}-bit types; shifting by the width or more is undefined behavior (MISRA C:2012 Rule 12.2).`,
       );
@@ -193,17 +187,16 @@ class ShiftAnalyzer {
     }
 
     // Levels, then assignments; report in source order
-    return this.errors.sort(SourceOrder.compare);
+    return this.errors.sort(SourceOrder.bySpan);
   }
 
   /**
    * Add a signed shift error
    */
-  public addError(line: number, column: number, operator: string): void {
+  public addError(span: ISourceSpan, operator: string): void {
     this.errors.push({
       code: "E0805",
-      line,
-      column,
+      span,
       message: `Shift operator '${operator}' not allowed on signed integer types`,
       helpText:
         "Shift operations on signed integers have undefined (<<) or implementation-defined (>>) behavior. Use unsigned types (u8, u16, u32, u64) for bit manipulation.",
@@ -214,12 +207,11 @@ class ShiftAnalyzer {
    * Add a shift amount error (E0873)
    */
   public addAmountError(
-    line: number,
-    column: number,
+    span: ISourceSpan,
     message: string,
     helpText: string,
   ): void {
-    this.errors.push({ code: "E0873", line, column, message, helpText });
+    this.errors.push({ code: "E0873", span, message, helpText });
   }
 }
 

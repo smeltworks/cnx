@@ -389,7 +389,7 @@ describe("InitializationAnalyzer", () => {
     const found = (code: string) =>
       new InitializationAnalyzer(contextFor(code))
         .analyze(ProgramLowering.program(parse(code), null))
-        .map((e) => [e.code, e.variable, e.line]);
+        .map((e) => [e.code, e.variable, e.span.line]);
 
     it("reads a do-while's condition after its body", () => {
       expect(

@@ -72,13 +72,13 @@ class CPointerArgumentCheck {
         return;
       }
       if (pointee === null) return;
-      this.report(
-        arg,
-        `cnx cannot see how '${callee.name}' uses parameter ${index + 1}, so passing '${arg.written}' to it is not memory safe`,
-        `Consider converting '${callee.name}' to cnx.`,
-        "E0896",
-        "warning",
-      );
+      this.found.push({
+        code: "E0896",
+        span: arg.span,
+        message: `cnx cannot see how '${callee.name}' uses parameter ${index + 1}, so passing '${arg.written}' to it is not memory safe`,
+        helpText: `Consider converting '${callee.name}' to cnx.`,
+        severity: "warning",
+      });
     });
   }
 
@@ -105,36 +105,56 @@ class CPointerArgumentCheck {
       return false;
     }
     if (callee.signatures.length > 1) {
-      this.report(
-        arg,
-        `'${arg.written}' is read-only, and every overload of '${name}' this call can reach may write through argument ${index + 1}`,
-        `Declare '${arg.written}' \`mut\`, or give '${name}' an overload that takes it const.`,
-        "E0900",
-      );
+      this.found.push({
+        code: "E0900",
+        span: arg.span,
+        message: `'${arg.written}' is read-only, and every overload of '${name}' this call can reach may write through argument ${index + 1}`,
+        helpText: `Declare '${arg.written}' \`mut\`, or give '${name}' an overload that takes it const.`,
+        severity: "error",
+        declaredAt: MutSite.of(
+          WrittenBinding.ofExpression(arg, this.context)?.binding ?? null,
+          this.context,
+        ),
+      });
     } else if (parameter === undefined) {
       const object = arg.kind === "unary" ? arg.operand : arg;
-      this.report(
-        arg,
-        `'${object.written}' is read-only, and argument ${index + 1} of '${name}' fills its '...', which '${name}' may write through`,
-        `Declare '${object.written}' \`mut\`.`,
-        "E0900",
-      );
+      this.found.push({
+        code: "E0900",
+        span: arg.span,
+        message: `'${object.written}' is read-only, and argument ${index + 1} of '${name}' fills its '...', which '${name}' may write through`,
+        helpText: `Declare '${object.written}' \`mut\`.`,
+        severity: "error",
+        declaredAt: MutSite.of(
+          WrittenBinding.ofExpression(arg, this.context)?.binding ?? null,
+          this.context,
+        ),
+      });
     } else if (pointee !== null) {
       const objectType = this.objectTypeOf(arg);
       const typeSuffix = objectType === null ? "" : ` ${objectType}`;
-      this.report(
-        arg,
-        `'${arg.written}' is read-only${typeSuffix}, and parameter ${index + 1} of '${name}' is a pointer '${name}' may write through`,
-        `Declare '${arg.written}' \`mut\`, or declare the C parameter const ${pointee}*.`,
-        "E0900",
-      );
+      this.found.push({
+        code: "E0900",
+        span: arg.span,
+        message: `'${arg.written}' is read-only${typeSuffix}, and parameter ${index + 1} of '${name}' is a pointer '${name}' may write through`,
+        helpText: `Declare '${arg.written}' \`mut\`, or declare the C parameter const ${pointee}*.`,
+        severity: "error",
+        declaredAt: MutSite.of(
+          WrittenBinding.ofExpression(arg, this.context)?.binding ?? null,
+          this.context,
+        ),
+      });
     } else {
-      this.report(
-        arg,
-        `'${arg.written}' is read-only, and parameter ${index + 1} of '${name}' is ${parameter.isArray ? "an array" : "a reference"} '${name}' may write through`,
-        `Declare '${arg.written}' \`mut\`, or declare the C parameter const.`,
-        "E0900",
-      );
+      this.found.push({
+        code: "E0900",
+        span: arg.span,
+        message: `'${arg.written}' is read-only, and parameter ${index + 1} of '${name}' is ${parameter.isArray ? "an array" : "a reference"} '${name}' may write through`,
+        helpText: `Declare '${arg.written}' \`mut\`, or declare the C parameter const.`,
+        severity: "error",
+        declaredAt: MutSite.of(
+          WrittenBinding.ofExpression(arg, this.context)?.binding ?? null,
+          this.context,
+        ),
+      });
     }
     return true;
   }
@@ -169,40 +189,19 @@ class CPointerArgumentCheck {
     ) {
       return false;
     }
-    this.report(
-      arg,
-      `'${arg.written}' is ${argType}, and parameter ${index + 1} of '${name}' points to ${pointee}`,
-      `A C pointer parameter takes an object of the type it points to; pass a ${pointee}, or an array of them.`,
-    );
+    this.found.push({
+      code: "E0895",
+      span: arg.span,
+      message: `'${arg.written}' is ${argType}, and parameter ${index + 1} of '${name}' points to ${pointee}`,
+      helpText: `A C pointer parameter takes an object of the type it points to; pass a ${pointee}, or an array of them.`,
+      severity: "error",
+    });
     return true;
   }
 
   /** `widget_t` and the `_widget_t` it aliases are one type (#958) */
   private structIdentity(cType: string): string {
     return this.context.symbolTable.getStructTagForTypedef(cType) ?? cType;
-  }
-
-  private report(
-    at: TExpression,
-    message: string,
-    helpText: string,
-    code = "E0895",
-    severity: IBaseAnalysisError["severity"] = "error",
-  ) {
-    this.found.push({
-      code,
-      line: at.span.line,
-      column: at.span.column,
-      message,
-      helpText,
-      severity,
-      ...(code === "E0900" && {
-        declaredAt: MutSite.of(
-          WrittenBinding.ofExpression(at, this.context)?.binding ?? null,
-          this.context,
-        ),
-      }),
-    });
   }
 }
 

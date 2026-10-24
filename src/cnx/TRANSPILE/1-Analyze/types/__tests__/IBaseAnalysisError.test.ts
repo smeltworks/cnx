@@ -18,16 +18,15 @@ describe("IBaseAnalysisError", () => {
     it("allows IFloatModuloError to be used as base error", () => {
       const error: IFloatModuloError = {
         code: "E0804",
-        line: 10,
-        column: 5,
+        span: { line: 10, column: 5, endLine: 10, endColumn: 5 },
         message: "Modulo operator not supported for floating-point types",
       };
 
       // Should be assignable to base type
       const baseError: IBaseAnalysisError = error;
       expect(baseError.code).toBe("E0804");
-      expect(baseError.line).toBe(10);
-      expect(baseError.column).toBe(5);
+      expect(baseError.span.line).toBe(10);
+      expect(baseError.span.column).toBe(5);
       expect(baseError.message).toBe(
         "Modulo operator not supported for floating-point types",
       );
@@ -37,8 +36,7 @@ describe("IBaseAnalysisError", () => {
       const error: IDivisionByZeroError = {
         code: "E0800",
         operator: "/",
-        line: 20,
-        column: 10,
+        span: { line: 20, column: 10, endLine: 20, endColumn: 10 },
         message: "Division by zero",
         helpText: "Use safe_div for runtime safety",
       };
@@ -52,8 +50,7 @@ describe("IBaseAnalysisError", () => {
       const error: IFunctionCallError = {
         code: "E0422",
         functionName: "undefinedFunc",
-        line: 15,
-        column: 3,
+        span: { line: 15, column: 3, endLine: 15, endColumn: 3 },
         message: "Function 'undefinedFunc' is not defined",
       };
 
@@ -66,8 +63,7 @@ describe("IBaseAnalysisError", () => {
       const error: INullCheckError = {
         code: "E0901",
         functionName: "fopen",
-        line: 30,
-        column: 12,
+        span: { line: 30, column: 12, endLine: 30, endColumn: 12 },
         message: "C library function can return NULL",
         helpText: "Check for NULL before use",
       };
@@ -80,8 +76,7 @@ describe("IBaseAnalysisError", () => {
       const error: IInitializationError = {
         code: "E0381",
         variable: "x",
-        line: 5,
-        column: 8,
+        span: { line: 5, column: 8, endLine: 5, endColumn: 8 },
         declaration: { name: "x", line: 3, column: 4 },
         mayBeUninitialized: false,
         message: "use of uninitialized variable 'x'",
@@ -96,8 +91,7 @@ describe("IBaseAnalysisError", () => {
         code: "E0227",
         parameterName: "foo_bar",
         functionName: "foo",
-        line: 10,
-        column: 15,
+        span: { line: 10, column: 15, endLine: 10, endColumn: 15 },
         message: "Parameter 'foo_bar' conflicts with function name",
       };
 
@@ -110,8 +104,7 @@ describe("IBaseAnalysisError", () => {
         code: "E0355",
         structName: "MyStruct",
         fieldName: "type",
-        line: 12,
-        column: 6,
+        span: { line: 12, column: 6, endLine: 12, endColumn: 6 },
         message: "Reserved field name 'type'",
       };
 
@@ -124,8 +117,7 @@ describe("IBaseAnalysisError", () => {
     it("allows errors without helpText", () => {
       const error: IBaseAnalysisError = {
         code: "E0000",
-        line: 1,
-        column: 1,
+        span: { line: 1, column: 1, endLine: 1, endColumn: 1 },
         message: "Test error",
       };
 
@@ -135,8 +127,7 @@ describe("IBaseAnalysisError", () => {
     it("allows errors with helpText", () => {
       const error: IBaseAnalysisError = {
         code: "E0000",
-        line: 1,
-        column: 1,
+        span: { line: 1, column: 1, endLine: 1, endColumn: 1 },
         message: "Test error",
         helpText: "Here is how to fix it",
       };
@@ -150,30 +141,27 @@ describe("IBaseAnalysisError", () => {
       const errors: IBaseAnalysisError[] = [
         {
           code: "E0804",
-          line: 1,
-          column: 1,
+          span: { line: 1, column: 1, endLine: 1, endColumn: 1 },
           message: "Float modulo error",
         } as IFloatModuloError,
         {
           code: "E0800",
           operator: "/",
-          line: 2,
-          column: 5,
+          span: { line: 2, column: 5, endLine: 2, endColumn: 5 },
           message: "Division by zero",
         } as IDivisionByZeroError,
         {
           code: "E0422",
           functionName: "test",
-          line: 3,
-          column: 10,
+          span: { line: 3, column: 10, endLine: 3, endColumn: 10 },
           message: "Undefined function",
         } as IFunctionCallError,
       ];
 
       expect(errors).toHaveLength(3);
       expect(errors.every((e) => typeof e.code === "string")).toBe(true);
-      expect(errors.every((e) => typeof e.line === "number")).toBe(true);
-      expect(errors.every((e) => typeof e.column === "number")).toBe(true);
+      expect(errors.every((e) => typeof e.span.line === "number")).toBe(true);
+      expect(errors.every((e) => typeof e.span.column === "number")).toBe(true);
       expect(errors.every((e) => typeof e.message === "string")).toBe(true);
     });
   });

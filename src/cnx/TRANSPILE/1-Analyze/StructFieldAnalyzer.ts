@@ -56,8 +56,7 @@ class StructFieldAnalyzer {
       code: "E0355",
       structName,
       fieldName,
-      line: at.line,
-      column: at.column,
+      span: at,
       message: formatStructFieldError(fieldName, structName),
       helpText: `Reserved field names: ${reservedNames}. Consider using 'len', 'size', or 'count' instead.`,
     });

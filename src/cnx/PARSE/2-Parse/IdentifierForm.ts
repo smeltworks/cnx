@@ -17,10 +17,10 @@
  */
 
 import { ParseTreeWalker, TerminalNode } from "antlr4ng";
+import FormError from "./FormError";
 import { CnxListener } from "./grammar/CnxListener";
 import * as Parser from "./grammar/CnxParser";
 import type ITranspileError from "../../types/ITranspileError";
-import CodedErrorText from "../../utils/CodedErrorText";
 import ReservedCnxName from "../../utils/ReservedCnxName";
 import TIdentifierViolation from "./types/TIdentifierViolation";
 
@@ -209,16 +209,14 @@ class IdentifierSyntaxListener extends CnxListener {
     if (violation === null) {
       return;
     }
-    this.found.push({
-      line: identifier.symbol.line,
-      column: identifier.symbol.column,
-      message: CodedErrorText.of(
+    this.found.push(
+      FormError.at(
+        identifier.symbol,
         VIOLATION_CODES[violation],
         formatIdentifierSyntaxError(identifierName, violation),
+        formatIdentifierSyntaxHelp(identifierName, violation),
       ),
-      helpText: formatIdentifierSyntaxHelp(identifierName, violation),
-      severity: "error",
-    });
+    );
   }
 }
 

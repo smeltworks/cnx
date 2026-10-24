@@ -79,12 +79,9 @@ class CppClassInitializerCheck {
     );
     if (cppClass === null) return;
 
-    const line = init.span.line;
-    const column = init.span.column;
     this.found.push({
       code: "E0508",
-      line,
-      column,
+      span: init.span,
       message: `C++ class '${cppClass}' has a constructor, so struct initializer syntax cannot be used outside a function body`,
       helpText:
         "A class with a constructor is not an aggregate, so the fields are assigned one at a time -- and a declaration outside a function body has no statement to assign them in. Initialize it inside a function, or use constructor syntax.",

@@ -29,7 +29,7 @@ function constantAt(
     kind: "name",
     root: null,
     path: [name],
-    at,
+    at: { ...at, endLine: at.line, endColumn: at.column },
   });
   return result.kind === "value"
     ? { value: Number(result.value), typeName: result.typeName }

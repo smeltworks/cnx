@@ -647,7 +647,11 @@ describe("MixedTypeCategoryAnalyzer", () => {
 // joins each pair, and an inner level's folded category are asserted directly.
 describe("MixedTypeCategoryAnalyzer -- positions, operators, inner levels", () => {
   const where = (body: string) =>
-    analyze(`void main() {\n${body}\n}`).map((e) => [e.code, e.line, e.column]);
+    analyze(`void main() {\n${body}\n}`).map((e) => [
+      e.code,
+      e.span.line,
+      e.span.column,
+    ]);
 
   it.each([
     ["at a binary level's right operand", "    u8 r <- u + s;", 4, 16],

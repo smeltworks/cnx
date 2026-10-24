@@ -51,8 +51,7 @@ class ArrayDeclarationCheck {
     if ((typed?.dimensions.length ?? 0) === 0) return;
     this.found.push({
       code: "E0917",
-      line: declaration.span.line,
-      column: declaration.span.column,
+      span: declaration.span,
       message: ForHeaderVariable.message(true, declaration.name),
       helpText: ForHeaderVariable.HELP,
     });

@@ -28,8 +28,8 @@ describe("ThisOutsideScopeAnalyzer", () => {
     const found = errors("u32 count <- 0;\nu32 shadow <- this.count;");
     expect(found).toHaveLength(1);
     expect(found[0].code).toBe("E0431");
-    expect(found[0].line).toBe(2);
-    expect(found[0].column).toBeGreaterThan(0);
+    expect(found[0].span.line).toBe(2);
+    expect(found[0].span.column).toBeGreaterThan(0);
   });
 
   it("rejects `this` inside a top-level function", () => {
@@ -37,7 +37,7 @@ describe("ThisOutsideScopeAnalyzer", () => {
       "u32 count <- 0;\nu32 main() {\n    u32 x <- this.count;\n    return x;\n}",
     );
     expect(found).toHaveLength(1);
-    expect(found[0].line).toBe(3);
+    expect(found[0].span.line).toBe(3);
   });
 
   it("rejects `this` in an assignment target outside a scope", () => {
@@ -63,7 +63,7 @@ describe("ThisOutsideScopeAnalyzer", () => {
         "}",
       ].join("\n"),
     );
-    expect(found.map((e) => [e.code, e.line, e.column])).toEqual([
+    expect(found.map((e) => [e.code, e.span.line, e.span.column])).toEqual([
       ["E0431", 4, 13],
       ["E0431", 5, 13],
     ]);
@@ -123,7 +123,7 @@ describe("ThisOutsideScopeAnalyzer", () => {
         "}",
       ].join("\n"),
     );
-    expect(found.map((e) => e.line)).toEqual([1, 3, 4]);
+    expect(found.map((e) => e.span.line)).toEqual([1, 3, 4]);
   });
 
   it("reports each offending `this` separately, unlike the throw it replaces", () => {
@@ -132,7 +132,7 @@ describe("ThisOutsideScopeAnalyzer", () => {
     // regenerated snapshot.
     const found = errors("u32 a <- 0;\nu32 b <- this.a;\nu32 c <- this.a;");
     expect(found).toHaveLength(2);
-    expect(found.map((e) => e.line)).toEqual([2, 3]);
+    expect(found.map((e) => e.span.line)).toEqual([2, 3]);
   });
 
   it("rejects `global` at file level (#2087)", () => {
@@ -147,7 +147,7 @@ describe("ThisOutsideScopeAnalyzer", () => {
         "struct Holder { global.Pt inner; }",
       ].join("\n"),
     );
-    expect(found.map((e) => e.line)).toEqual([4, 5, 6, 7]);
+    expect(found.map((e) => e.span.line)).toEqual([4, 5, 6, 7]);
     expect(found[0].message).toBe(
       "'global' can only be used inside a scope or a function",
     );

@@ -7,6 +7,7 @@
  * the C compiler or runtime.
  */
 
+import type ISourceSpan from "../../types/ISourceSpan";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import type IFunctionDeclarationSyntax from "../../types/syntax/IFunctionDeclarationSyntax";
@@ -117,8 +118,7 @@ class FunctionCallWalk {
     if (!target.foundCall) return;
     this.analyzer.checkFunctionCall(
       target.resolvedName,
-      expr.span.line,
-      expr.span.column,
+      expr.span,
       scope,
       target.isGlobalCall,
     );
@@ -405,15 +405,13 @@ class FunctionCallAnalyzer {
   /**
    * Check if a function call is valid (function is defined or external)
    * @param name The function name being called
-   * @param line Source line number
-   * @param column Source column number
+   * @param span Where the call is written
    * @param currentScopePath Path of the scope enclosing the call; `""` at file scope
    * @param isGlobalCall Whether the call used global. prefix
    */
   public checkFunctionCall(
     name: string,
-    line: number,
-    column: number,
+    span: ISourceSpan,
     currentScopePath: string,
     isGlobalCall: boolean = false,
   ): void {
@@ -422,8 +420,7 @@ class FunctionCallAnalyzer {
       this.errors.push({
         code: "E0423",
         functionName: name,
-        line,
-        column,
+        span,
         message: `recursive call to '${name}' is forbidden (MISRA C:2012 Rule 17.2)`,
       });
       return;
@@ -431,7 +428,12 @@ class FunctionCallAnalyzer {
 
     // Everything the author wrote themselves, in one group -- see the method.
     if (
-      this.resolvesToCnxDefinition(name, line, currentScopePath, isGlobalCall)
+      this.resolvesToCnxDefinition(
+        name,
+        span.line,
+        currentScopePath,
+        isGlobalCall,
+      )
     ) {
       return; // OK - the author's own code
     }
@@ -450,8 +452,7 @@ class FunctionCallAnalyzer {
       this.errors.push({
         code: DynamicAllocation.CODE,
         functionName: name,
-        line,
-        column,
+        span,
         message: DynamicAllocation.message(name),
         helpText: DynamicAllocation.helpText(name),
       });
@@ -464,7 +465,9 @@ class FunctionCallAnalyzer {
     }
 
     // Check if function is external (from symbol table)
-    if (this.isExternalFunction(name, line, currentScopePath, isGlobalCall)) {
+    if (
+      this.isExternalFunction(name, span.line, currentScopePath, isGlobalCall)
+    ) {
       return; // OK - external C/C++ function
     }
 
@@ -482,8 +485,7 @@ class FunctionCallAnalyzer {
     this.errors.push({
       code: "E0422",
       functionName: name,
-      line,
-      column,
+      span,
       message,
     });
   }

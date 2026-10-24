@@ -23,7 +23,8 @@
  * records the rest for the ADR's owner, since closing it is a language change
  * on code the corpus treats as valid.
  */
-import { ParserRuleContext, ParseTreeWalker } from "antlr4ng";
+import { ParseTreeWalker } from "antlr4ng";
+import FormError from "./FormError";
 import { CnxListener } from "./grammar/CnxListener";
 import * as Parser from "./grammar/CnxParser";
 import SyntaxLowering from "./SyntaxLowering";
@@ -77,21 +78,25 @@ class ArrayFormListener extends CnxListener {
     const typeText = ctx.type().getText();
     if (trailing.length > 0) {
       const after = ArrayFormListener.dimensionText(trailing);
-      this.report(
-        ctx,
-        "E0874",
-        `C-style array parameter is not allowed. Use '${typeText}${after} ${name}' instead of '${typeText} ${name}${after}'`,
-        "cnx puts every array dimension in the type, before the name (ADR-036).",
+      this.found.push(
+        FormError.at(
+          ParserUtils.getPosition(ctx),
+          "E0874",
+          `C-style array parameter is not allowed. Use '${typeText}${after} ${name}' instead of '${typeText} ${name}${after}'`,
+          "cnx puts every array dimension in the type, before the name (ADR-036).",
+        ),
       );
       return;
     }
     const dimensions = ctx.type().arrayType()?.arrayTypeDimension() ?? [];
     if (dimensions.some((dimension) => dimension.expression() === null)) {
-      this.report(
-        ctx,
-        "E0875",
-        "Unbounded array parameters are not allowed. All dimensions must have explicit sizes for memory safety.",
-        "A parameter's dimensions are what the callee can trust; write the size, e.g. `u8[8] data` (ADR-036).",
+      this.found.push(
+        FormError.at(
+          ParserUtils.getPosition(ctx),
+          "E0875",
+          "Unbounded array parameters are not allowed. All dimensions must have explicit sizes for memory safety.",
+          "A parameter's dimensions are what the callee can trust; write the size, e.g. `u8[8] data` (ADR-036).",
+        ),
       );
     }
   };
@@ -126,22 +131,6 @@ class ArrayFormListener extends CnxListener {
       })
       .join("");
   }
-
-  private report(
-    at: ParserRuleContext,
-    code: string,
-    message: string,
-    helpText: string,
-  ): void {
-    const position = ParserUtils.getPosition(at);
-    this.found.push({
-      line: position.line,
-      column: position.column,
-      message: CodedErrorText.of(code, message),
-      helpText,
-      severity: "error",
-    });
-  }
 }
 
 /** ADR-035/036 on the variable declarations `VariableDeclarations` walks (#2073) */
@@ -161,11 +150,13 @@ class ArrayVariableForm {
     const type = declaration.type;
     const isArray = type.kind === "array" || declaration.dimensions.length > 0;
     if (!isArray && type.kind !== "string") return;
-    this.report(
-      declaration.span,
-      "E0917",
-      ForHeaderVariable.message(isArray, declaration.name),
-      ForHeaderVariable.HELP,
+    this.found.push(
+      FormError.at(
+        declaration.span,
+        "E0917",
+        ForHeaderVariable.message(isArray, declaration.name),
+        ForHeaderVariable.HELP,
+      ),
     );
   }
 
@@ -181,11 +172,13 @@ class ArrayVariableForm {
         type.kind === "array" ? type.dimensions : [],
       );
       const after = ArrayVariableForm.dimensionText(trailing);
-      this.report(
-        declaration.span,
-        "E0874",
-        `C-style array declaration is not allowed. Use '${base}${existing}${after} ${declaration.name}' instead of '${base}${existing} ${declaration.name}${after}'`,
-        "cnx puts every array dimension in the type, before the name (ADR-036).",
+      this.found.push(
+        FormError.at(
+          declaration.span,
+          "E0874",
+          `C-style array declaration is not allowed. Use '${base}${existing}${after} ${declaration.name}' instead of '${base}${existing} ${declaration.name}${after}'`,
+          "cnx puts every array dimension in the type, before the name (ADR-036).",
+        ),
       );
       return;
     }
@@ -255,21 +248,25 @@ class ArrayVariableForm {
       if (ExpressionShape.givesWholeArray(initializer, type.element.text)) {
         return; // `u8[] s <- "Hello"` (ADR-035)
       }
-      this.report(
-        initializer.span,
-        "E0866",
-        `An array must be initialized by a list, not '${initializer.written}'`,
-        "Write the elements out in brackets, or declare it empty and assign the elements afterwards (ADR-035).",
+      this.found.push(
+        FormError.at(
+          initializer.span,
+          "E0866",
+          `An array must be initialized by a list, not '${initializer.written}'`,
+          "Write the elements out in brackets, or declare it empty and assign the elements afterwards (ADR-035).",
+        ),
       );
       return;
     }
     const inferred = type.dimensions.some((size) => size === null);
     if (inferred && initializer.fill !== null) {
-      this.report(
-        initializer.span,
-        "E0876",
-        `Fill-all syntax ${initializer.written} requires explicit array size`,
-        "An inferred size comes from counting the elements, and the fill-all form has none to count; write the dimension (ADR-035).",
+      this.found.push(
+        FormError.at(
+          initializer.span,
+          "E0876",
+          `Fill-all syntax ${initializer.written} requires explicit array size`,
+          "An inferred size comes from counting the elements, and the fill-all form has none to count; write the dimension (ADR-035).",
+        ),
       );
     }
   }
@@ -278,21 +275,6 @@ class ArrayVariableForm {
     return sizes
       .map((size) => `[${size === null ? "" : size.written}]`)
       .join("");
-  }
-
-  private report(
-    at: ISourceSpan,
-    code: string,
-    message: string,
-    helpText: string,
-  ): void {
-    this.found.push({
-      line: at.line,
-      column: at.column,
-      message: CodedErrorText.of(code, message),
-      helpText,
-      severity: "error",
-    });
   }
 }
 

@@ -158,13 +158,10 @@ class ArrayIndexBoundsCheck {
       this.context,
     );
     if (index === null) return;
-    const line = subscript.at.line;
-    const column = subscript.at.column;
     if (index < 0) {
       this.found.push({
         code: "E0854",
-        line,
-        column,
+        span: subscript.at,
         message: `Array index out of bounds: ${index} is negative for '${name}' dimension ${subscript.dimension}`,
         helpText: "An index counts from zero (ADR-036).",
       });
@@ -173,8 +170,7 @@ class ArrayIndexBoundsCheck {
     if (bound > 0 && index >= bound) {
       this.found.push({
         code: "E0854",
-        line,
-        column,
+        span: subscript.at,
         message: `Array index out of bounds: ${index} >= ${bound} for '${name}' dimension ${subscript.dimension}`,
         helpText: `The last valid index is ${bound - 1} (ADR-036).`,
       });

@@ -6,7 +6,7 @@ import type TSettledConst from "../../../../types/TSettledConst";
 import type TranspileState from "../../../TranspileState";
 import type IGeneratorState from "../generators/IGeneratorState";
 
-const AT = { line: 1, column: 0 };
+const AT = { line: 1, column: 0, endLine: 1, endColumn: 0 };
 
 const ENUM = {
   kind: "enum",

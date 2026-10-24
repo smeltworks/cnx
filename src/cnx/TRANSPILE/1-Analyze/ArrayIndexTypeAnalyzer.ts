@@ -15,6 +15,7 @@
  */
 
 import IArrayIndexTypeError from "./types/IArrayIndexTypeError";
+import type ISourceSpan from "../../types/ISourceSpan";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import DeclarationParts from "../../utils/DeclarationParts";
@@ -49,12 +50,7 @@ class IndexTypeCheck {
     for (const leaf of OperandTyper.valueLeaves(index, this.context)) {
       const verdict = IndexTypeCheck.verdictOf(leaf);
       if (verdict === null) continue;
-      this.analyzer.addError(
-        index.span.line,
-        index.span.column,
-        verdict.code,
-        verdict.actualType,
-      );
+      this.analyzer.addError(index.span, verdict.code, verdict.actualType);
       return;
     }
   }
@@ -125,22 +121,18 @@ class ArrayIndexTypeAnalyzer {
         check.checkExpression(expr);
       }
     }
-    return this.errors.sort((a, b) => a.line - b.line || a.column - b.column);
+    return this.errors.sort(
+      (a, b) => a.span.line - b.span.line || a.span.column - b.span.column,
+    );
   }
 
   /**
    * Add an index type error
    */
-  public addError(
-    line: number,
-    column: number,
-    code: string,
-    actualType: string,
-  ): void {
+  public addError(span: ISourceSpan, code: string, actualType: string): void {
     this.errors.push({
       code,
-      line,
-      column,
+      span,
       actualType,
       message: `Subscript index must be an unsigned integer type; got '${actualType}'`,
       helpText:

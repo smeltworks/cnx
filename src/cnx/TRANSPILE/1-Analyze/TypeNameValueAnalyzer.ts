@@ -54,8 +54,7 @@ class TypeNameValueAnalyzer {
     const span = at?.span ?? chain.span;
     return {
       code: "E0897",
-      line: span.line,
-      column: span.column,
+      span: span,
       message: TypeNameValueAnalyzer.message(chain, at),
       helpText: HELP,
     };

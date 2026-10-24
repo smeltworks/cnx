@@ -12,6 +12,7 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
+import type ISourceSpan from "../../types/ISourceSpan";
 import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
 import type TStatement from "../../types/syntax/TStatement";
@@ -39,7 +40,7 @@ class DivisionByZeroAnalyzer {
       this.declaration(member.declaration);
     }
     // Binary levels, then compound writes; report in source order
-    return this.errors.sort(SourceOrder.compare);
+    return this.errors.sort(SourceOrder.bySpan);
   }
 
   private declaration(declaration: TMemberDeclaration): void {
@@ -67,12 +68,7 @@ class DivisionByZeroAnalyzer {
       const operator = CompoundOperator.binaryOf(site.operator);
       if (operator !== "/" && operator !== "%") continue;
       if (site.value.kind === "missing" || !this.isZero(site.value)) continue;
-      this.addError(
-        operator,
-        site.value.span.line,
-        site.value.span.column,
-        true,
-      );
+      this.addError(operator, site.value.span, true);
     }
   }
 
@@ -81,12 +77,7 @@ class DivisionByZeroAnalyzer {
       if (operator !== "/" && operator !== "%") return;
       const divisor = expr.operands[i + 1];
       if (this.isZero(divisor)) {
-        this.addError(
-          operator,
-          divisor.span.line,
-          divisor.span.column,
-          atRunTime,
-        );
+        this.addError(operator, divisor.span, atRunTime);
       }
     });
   }
@@ -142,8 +133,7 @@ class DivisionByZeroAnalyzer {
 
   private addError(
     operator: string,
-    line: number,
-    column: number,
+    span: ISourceSpan,
     atRunTime: boolean,
   ): void {
     const isDivision = operator === "/";
@@ -154,8 +144,7 @@ class DivisionByZeroAnalyzer {
     this.errors.push({
       code,
       operator,
-      line,
-      column,
+      span,
       message: `${opName} by zero`,
       helpText: atRunTime
         ? `Consider using ${builtin}(output, numerator, divisor, defaultValue) for runtime safety`

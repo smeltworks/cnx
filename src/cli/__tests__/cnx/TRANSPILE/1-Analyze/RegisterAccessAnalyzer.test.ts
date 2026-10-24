@@ -40,8 +40,8 @@ describe("RegisterAccessAnalyzer", () => {
       );
       expect(found).toHaveLength(1);
       expect(found[0].code).toBe("E0870");
-      expect(found[0].line).toBe(2);
-      expect(found[0].column).toBeGreaterThan(0);
+      expect(found[0].span.line).toBe(2);
+      expect(found[0].span.column).toBeGreaterThan(0);
       expect(found[0].message).toContain("R.CMD has 'wo'");
     });
 
@@ -68,7 +68,7 @@ describe("RegisterAccessAnalyzer", () => {
         "}",
       ].join("\n");
       const found = errors(source);
-      expect(found.map((e) => e.line)).toEqual([2, 3, 5, 7]);
+      expect(found.map((e) => e.span.line)).toEqual([2, 3, 5, 7]);
       expect(found[0].message).toContain("this.R.CMD");
       expect(found[3].message).toContain("global.Board.R.CMD");
     });
@@ -132,7 +132,7 @@ describe("RegisterAccessAnalyzer", () => {
         "    public void d() { global.Board.R.ST <- 1; }",
         "}",
       ].join("\n");
-      expect(errors(source).map((e) => [e.code, e.line])).toEqual([
+      expect(errors(source).map((e) => [e.code, e.span.line])).toEqual([
         ["E0871", 2],
         ["E0871", 3],
         ["E0871", 5],
@@ -172,7 +172,7 @@ describe("RegisterAccessAnalyzer", () => {
         register("R", { SET: "wo" }) +
           inMain("    R.SET[3] <- 0x0;\n    R.SET[3] <- 0b0;"),
       );
-      expect(found.map((e) => e.line)).toEqual([2, 3]);
+      expect(found.map((e) => e.span.line)).toEqual([2, 3]);
     });
 
     it("accepts true, a non-zero value, and a runtime value", () => {
@@ -193,7 +193,7 @@ describe("RegisterAccessAnalyzer", () => {
             "    R.S[1] <- false;\n    R.C[1] <- false;\n    R.D[1] <- false;",
           ),
       );
-      expect(found.map((e) => e.line)).toEqual([2, 3]);
+      expect(found.map((e) => e.span.line)).toEqual([2, 3]);
     });
 
     it("leaves a bitmap field write to the bitmap rules", () => {
@@ -216,7 +216,7 @@ describe("RegisterAccessAnalyzer", () => {
         FIELDS +
           inMain("    PWM.FLAGS.Enable <- false;\n    PWM.FLAGS.Mode <- 0;"),
       );
-      expect(found.map((e) => [e.code, e.line])).toEqual([
+      expect(found.map((e) => [e.code, e.span.line])).toEqual([
         ["E0872", 2],
         ["E0872", 3],
       ]);

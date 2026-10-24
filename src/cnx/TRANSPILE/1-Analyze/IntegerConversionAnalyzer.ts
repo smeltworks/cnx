@@ -355,12 +355,12 @@ class IntegerConversionCheck {
         ? value < 1n << BigInt(width)
         : value >= -(1n << BigInt(width - 1));
     if (!fits) {
-      this.report(
-        at,
-        "E0868",
-        `Value ${text} has bits outside ${target}'s ${width} bits`,
-        "Widen the target type, or drop the bits it cannot hold.",
-      );
+      this.found.push({
+        code: "E0868",
+        span: at.span,
+        message: `Value ${text} has bits outside ${target}'s ${width} bits`,
+        helpText: "Widen the target type, or drop the bits it cannot hold.",
+      });
     }
   }
 
@@ -377,12 +377,12 @@ class IntegerConversionCheck {
     const literal = IntegerConversionCheck.integerLiteralText(leaf);
     if (literal !== null || result === null) return literal;
     if (result.kind === "overflow") {
-      this.report(
-        leaf,
-        "E0910",
-        `Value overflows ${result.typeName} at compile time: ${ConstantDiagnostics.OVERFLOW_CAUSE}`,
-        ConstantDiagnostics.OVERFLOW_HELP,
-      );
+      this.found.push({
+        code: "E0910",
+        span: leaf.span,
+        message: `Value overflows ${result.typeName} at compile time: ${ConstantDiagnostics.OVERFLOW_CAUSE}`,
+        helpText: ConstantDiagnostics.OVERFLOW_HELP,
+      });
       return null;
     }
     // A typed value's range is its type's, which E0869 judges
@@ -423,12 +423,13 @@ class IntegerConversionCheck {
     if (OperandTyper.isStringValue(value, this.context) !== false) {
       return false;
     }
-    this.report(
-      value,
-      "E0923",
-      `A value that is not a string cannot be assigned to ${target}: '${value.written}'`,
-      "A string<N> holds only a string (ADR-045): a literal, another string<N>, a concatenation, a substring or a C string",
-    );
+    this.found.push({
+      code: "E0923",
+      span: value.span,
+      message: `A value that is not a string cannot be assigned to ${target}: '${value.written}'`,
+      helpText:
+        "A string<N> holds only a string (ADR-045): a literal, another string<N>, a concatenation, a substring or a C string",
+    });
     return true;
   }
 
@@ -448,12 +449,13 @@ class IntegerConversionCheck {
     );
     if (target === null || !this.isScalar(target, value)) return false;
     if (!this.landsString(value)) return false;
-    this.report(
-      value,
-      "E0914",
-      `A string value cannot be assigned to ${target}: '${value.written}'`,
-      "A string lands only in a string<N> (ADR-045); a u8 array may be initialized by a string literal (ADR-035)",
-    );
+    this.found.push({
+      code: "E0914",
+      span: value.span,
+      message: `A string value cannot be assigned to ${target}: '${value.written}'`,
+      helpText:
+        "A string lands only in a string<N> (ADR-045); a u8 array may be initialized by a string literal (ADR-035)",
+    });
     return true;
   }
 
@@ -551,12 +553,12 @@ class IntegerConversionCheck {
       OperandTyper.valueLeaves(value, this.context),
     );
     if (floating === null) return false;
-    this.report(
-      value,
-      "E0891",
-      `Implicit conversion from floating ${floating} to integer ${target}`,
-      `Write the conversion as a cast, which saturates: (${target})value (ADR-024)`,
-    );
+    this.found.push({
+      code: "E0891",
+      span: value.span,
+      message: `Implicit conversion from floating ${floating} to integer ${target}`,
+      helpText: `Write the conversion as a cast, which saturates: (${target})value (ADR-024)`,
+    });
     return true;
   }
 
@@ -564,24 +566,24 @@ class IntegerConversionCheck {
     const value = IntegerConversionCheck.literalValue(text);
 
     if (TypeCheckUtils.isUnsigned(target) && value < 0n) {
-      this.report(
-        at,
-        "E0868",
-        `Negative value ${text} cannot be assigned to unsigned type ${target}`,
-        `An unsigned type holds no negative values; use a signed type such as i${TYPE_WIDTH[target]}.`,
-      );
+      this.found.push({
+        code: "E0868",
+        span: at.span,
+        message: `Negative value ${text} cannot be assigned to unsigned type ${target}`,
+        helpText: `An unsigned type holds no negative values; use a signed type such as i${TYPE_WIDTH[target]}.`,
+      });
       return;
     }
     const range = TypeCheckUtils.integerRange(target);
     invariant(range, `every caller checks that ${target} is an integer`);
     const [min, max] = range;
     if (value < min || value > max) {
-      this.report(
-        at,
-        "E0868",
-        `Value ${text} exceeds ${target} range (${min} to ${max})`,
-        "Widen the target type, or narrow the value.",
-      );
+      this.found.push({
+        code: "E0868",
+        span: at.span,
+        message: `Value ${text} exceeds ${target} range (${min} to ${max})`,
+        helpText: "Widen the target type, or narrow the value.",
+      });
     }
   }
 
@@ -597,21 +599,21 @@ class IntegerConversionCheck {
     const targetWidth = TYPE_WIDTH[target];
 
     if (TYPE_WIDTH[source] > targetWidth) {
-      this.report(
-        at,
-        "E0869",
-        `Cannot ${verb} ${source} to ${target} (narrowing)`,
-        `Use bit indexing to say which bits you mean: ${subject}[0, ${targetWidth}]`,
-      );
+      this.found.push({
+        code: "E0869",
+        span: at.span,
+        message: `Cannot ${verb} ${source} to ${target} (narrowing)`,
+        helpText: `Use bit indexing to say which bits you mean: ${subject}[0, ${targetWidth}]`,
+      });
       return;
     }
     if (TypeCheckUtils.isSigned(source) !== TypeCheckUtils.isSigned(target)) {
-      this.report(
-        at,
-        "E0869",
-        `Cannot ${verb} ${source} to ${target} (sign change)`,
-        `Use bit indexing to reinterpret the bits explicitly: ${subject}[0, ${targetWidth}]`,
-      );
+      this.found.push({
+        code: "E0869",
+        span: at.span,
+        message: `Cannot ${verb} ${source} to ${target} (sign change)`,
+        helpText: `Use bit indexing to reinterpret the bits explicitly: ${subject}[0, ${targetWidth}]`,
+      });
     }
   }
 
@@ -651,21 +653,6 @@ class IntegerConversionCheck {
     if (t.category === "unsigned") return `u${t.bitWidth}`;
     return null;
   }
-
-  private report(
-    at: TExpression,
-    code: string,
-    message: string,
-    helpText: string,
-  ): void {
-    this.found.push({
-      code,
-      line: at.span.line,
-      column: at.span.column,
-      message,
-      helpText,
-    });
-  }
 }
 
 class IntegerConversionAnalyzer {
@@ -698,7 +685,7 @@ class IntegerConversionAnalyzer {
         check.checkExpression(expr);
       }
     }
-    return check.errors().sort(SourceOrder.compare);
+    return check.errors().sort(SourceOrder.bySpan);
   }
 }
 

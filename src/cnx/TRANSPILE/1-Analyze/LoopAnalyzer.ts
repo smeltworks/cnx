@@ -41,7 +41,6 @@ import ILoopError from "./types/ILoopError";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
-import type ISyntaxNode from "../../types/syntax/ISyntaxNode";
 import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
 import type TStatement from "../../types/syntax/TStatement";
@@ -82,12 +81,13 @@ class LoopCheck {
     if (expr.kind !== "identifier" || !REJECTED_KEYWORDS.has(expr.name)) {
       return;
     }
-    this.report(
-      expr,
-      "E0703",
-      `'${expr.name}' is not supported in cnx - use structured conditions instead`,
-      "ADR-026 rejects `break` and `continue`: an early exit hides the loop's real condition. Fold the exit into the loop condition, or split the body into a function that returns.",
-    );
+    this.found.push({
+      code: "E0703",
+      span: expr.span,
+      message: `'${expr.name}' is not supported in cnx - use structured conditions instead`,
+      helpText:
+        "ADR-026 rejects `break` and `continue`: an early exit hides the loop's real condition. Fold the exit into the loop condition, or split the body into a function that returns.",
+    });
   }
 
   private statement(statement: TStatement, returnType: string): void {
@@ -95,12 +95,13 @@ class LoopCheck {
       case "forever":
         // E0705: `forever` never yields a value, so only a void function may hold one.
         if (returnType === "void") return;
-        this.report(
-          statement,
-          "E0705",
-          "forever loop in non-void function",
-          "a forever loop never returns a value; make the function return void, or use a while loop with an exit condition",
-        );
+        this.found.push({
+          code: "E0705",
+          span: statement.span,
+          message: "forever loop in non-void function",
+          helpText:
+            "a forever loop never returns a value; make the function return void, or use a while loop with an exit condition",
+        });
         return;
       case "for":
         this.forStatement(statement);
@@ -125,12 +126,12 @@ class LoopCheck {
     }
     // E0707: `for (;;)` is an infinite loop with the wrong spelling.
     if (statement.condition === null) {
-      this.report(
-        statement,
-        "E0707",
-        "for-loop has no controlling expression (infinite loop)",
-        FOREVER_HELP,
-      );
+      this.found.push({
+        code: "E0707",
+        span: statement.span,
+        message: "for-loop has no controlling expression (infinite loop)",
+        helpText: FOREVER_HELP,
+      });
       return;
     }
     this.checkAlwaysTrue(statement.condition);
@@ -140,24 +141,24 @@ class LoopCheck {
   private checkHeaderAssignment(site: IAssignmentSyntax, help: string): void {
     const form = ForHeaderAssignment.rejectedForm(site, this.context);
     if (form === null) return;
-    this.report(
-      site,
-      "E0715",
-      `a for-loop header cannot hold this assignment: ${form}`,
-      help,
-    );
+    this.found.push({
+      code: "E0715",
+      span: site.span,
+      message: `a for-loop header cannot hold this assignment: ${form}`,
+      helpText: help,
+    });
   }
 
   /** E0707: an always-true literal comparison as a loop condition. */
   private checkAlwaysTrue(condition: TExpression): void {
     const comparison = LoopCheck.asSingleLiteralComparison(condition);
     if (comparison === null || !LoopCheck.isAlwaysTrue(comparison)) return;
-    this.report(
-      condition,
-      "E0707",
-      `loop condition '${condition.written}' is always true`,
-      FOREVER_HELP,
-    );
+    this.found.push({
+      code: "E0707",
+      span: condition.span,
+      message: `loop condition '${condition.written}' is always true`,
+      helpText: FOREVER_HELP,
+    });
   }
 
   /**
@@ -211,21 +212,6 @@ class LoopCheck {
         return false;
     }
   }
-
-  private report(
-    at: ISyntaxNode,
-    code: string,
-    message: string,
-    helpText: string,
-  ): void {
-    this.found.push({
-      code,
-      line: at.span.line,
-      column: at.span.column,
-      message,
-      helpText,
-    });
-  }
 }
 
 class LoopAnalyzer {
@@ -243,7 +229,9 @@ class LoopAnalyzer {
     // Read off 1.2's syntax (#1991); reported in source order
     return check
       .errors()
-      .sort((a, b) => a.line - b.line || a.column - b.column);
+      .sort(
+        (a, b) => a.span.line - b.span.line || a.span.column - b.span.column,
+      );
   }
 }
 
