@@ -27,7 +27,6 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
-import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
 import StatementNodes from "../../utils/StatementNodes";
 import StdlibFunctions from "./StdlibFunctions";
