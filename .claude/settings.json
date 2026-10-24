@@ -1,7 +1,4 @@
 {
-  "enabledPlugins": {
-    "claude-md-management@claude-plugins-official": true
-  },
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -15,5 +12,9 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "claude-md-management@claude-plugins-official": true,
+    "github-triage@trailofbits": true
   }
 }
