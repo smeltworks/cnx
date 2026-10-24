@@ -12,11 +12,14 @@
 
 void test(void) {
     CppTestClass localMulti = {};
+    /* ADR-014 / Issue #517, C++20 §9.4.2 (aggregates): a class with a user-declared constructor is not an aggregate, so no designated initializer can build it; it is constructed, then each field is assigned. */
     localMulti.value = 50;
     localMulti.name = "local";
     CppTestClass localSingle = {};
+    /* ADR-014 / Issue #517, C++20 §9.4.2 (aggregates): a class with a user-declared constructor is not an aggregate, so no designated initializer can build it; it is constructed, then each field is assigned. */
     localSingle.value = 42;
     CppTestClass obj = {};
+    /* ADR-014 / Issue #517, C++20 §9.4.2 (aggregates): a class with a user-declared constructor is not an aggregate, so no designated initializer can build it; it is constructed, then each field is assigned. */
     obj.value = 10;
     obj.name = "updated";
 }

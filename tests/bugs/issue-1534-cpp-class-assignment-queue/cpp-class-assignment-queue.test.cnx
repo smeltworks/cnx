@@ -1,0 +1,113 @@
+// test-cpp-only
+// test-execution
+// test-no-warnings
+// Issue #1534: a C++ class initializer's field assignments belong to the value
+// it builds, wherever that value is written -- not to the next declaration.
+
+#include "CppTestClass.hpp"
+
+mut CppTestClass shadowed;
+
+struct Holder {
+    CppTestClass c;
+    u32 n;
+}
+
+i32 valueOf(CppTestClass o) {
+    return o.value;
+}
+
+CppTestClass made() {
+    return { value: 6 };
+}
+
+u32 main() {
+    // Assignment, then an unrelated declaration (the issue's reproduction)
+    mut CppTestClass obj;
+    obj <- { value: 9 };
+    u32 later <- 1;
+    if (obj.value != 9) {
+        return 1;
+    }
+    if (later != 1) {
+        return 2;
+    }
+
+    // Assignment with no declaration after it
+    mut CppTestClass last;
+    last <- { value: 3 };
+    if (last.value != 3) {
+        return 3;
+    }
+
+    // Array element assignment
+    mut CppTestClass[2] arr;
+    arr[1] <- { value: 4 };
+    if (arr[1].value != 4) {
+        return 4;
+    }
+
+    // Struct field assignment
+    mut Holder h;
+    h.c <- { value: 5 };
+    if (h.c.value != 5) {
+        return 5;
+    }
+
+    // Return value
+    CppTestClass r <- made();
+    if (r.value != 6) {
+        return 6;
+    }
+
+    // Function argument
+    i32 passed <- valueOf({ value: 7 });
+    if (passed != 7) {
+        return 7;
+    }
+
+    // Field of a cnx struct initializer
+    Holder nested <- { c: { value: 8 }, n: 2 };
+    if (nested.c.value != 8) {
+        return 8;
+    }
+    if (nested.n != 2) {
+        return 9;
+    }
+
+    // Array initializer elements
+    CppTestClass[2] items <- [{ value: 10 }, { value: 11 }];
+    if (items[0].value != 10) {
+        return 10;
+    }
+    if (items[1].value != 11) {
+        return 11;
+    }
+
+    // Declaration: the form that already works stays working
+    CppTestClass declared <- { value: 12 };
+    if (declared.value != 12) {
+        return 12;
+    }
+
+    // Declaration shadowing a global: the fill names the local (ADR-057)
+    CppTestClass shadowed <- { value: 13 };
+    if (shadowed.value != 13) {
+        return 13;
+    }
+    if (global.shadowed.value != 0) {
+        return 14;
+    }
+
+    // A for header's declaration (#2304): built before the loop, then copied in
+    mut u32 laps <- 0;
+    for (mut CppTestClass c <- { value: 1 }; c.value < 3; c.value +<- 1) {
+        u32 step <- 1;
+        laps <- laps + step;
+    }
+    if (laps != 2) {
+        return 15;
+    }
+
+    return 0;
+}

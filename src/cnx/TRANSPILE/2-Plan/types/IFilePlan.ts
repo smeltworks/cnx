@@ -163,6 +163,14 @@ interface IFilePlan {
     TExpressionOf<"structInitializer">,
     TStructInitializerForm
   >;
+  /**
+   * #2332: each `&&`/`||` operand after the first that holds a struct
+   * initializer built before its statement, so it is built only when the
+   * operand runs
+   */
+  readonly lazyOperands: ReadonlySet<TExpression>;
+  /** #2332: the same for `?:`, by the C type of the value each branch sets */
+  readonly lazyTernaries: ReadonlyMap<TExpressionOf<"ternary">, string>;
 
   /** What the file's text costs: its system includes, helpers and requirements */
   readonly emission: IEmissionPlan;

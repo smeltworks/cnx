@@ -110,6 +110,7 @@ import type IValuePosition from "../../types/IValuePosition";
 import type IValueSite from "../../types/IValueSite";
 import type TValueSite from "../../types/TValueSite";
 import type IPlannedExpectedType from "./types/IPlannedExpectedType";
+import type ITypeGenerationDeps from "./types/ITypeGenerationDeps";
 import type IFilePlan from "./types/IFilePlan";
 import type IPlannedClamp from "./types/IPlannedClamp";
 import type IPlannedSliceSource from "./types/IPlannedSliceSource";
@@ -221,11 +222,15 @@ class FilePlanner {
    * its comment.
    */
   cTypeOf(plan: IPlannedType): string {
-    return TypeGenerationHelper.generate(plan, {
+    return TypeGenerationHelper.generate(plan, this.typeGenerationDeps());
+  }
+
+  private typeGenerationDeps(): ITypeGenerationDeps {
+    return {
       checkNeedsStructKeyword: (name) =>
         this.state.symbolTable.checkNeedsStructKeyword(name),
       isCrossFileDeclaration: (name) => this.state.isCrossFileDeclaration(name),
-    });
+    };
   }
 
   private planType(type: TTypeSyntax, scopePath: string): IPlannedType {
@@ -664,6 +669,104 @@ class FilePlanner {
    * literal. A whole array's list is its temporary's declaration initializer
    * (#1782), so its elements are plain too.
    */
+  /**
+   * #2332: a struct initializer built before its statement -- a C++ class
+   * with a constructor, or one with a `string<N>` field copied in -- is built
+   * only when the `&&`/`||` operand or `?:` arm holding it runs. Each such
+   * operand and ternary is lowered to an `if`: a `bool` holds the chain's
+   * value so far, and a ternary's value is a variable of its own type. A
+   * `for` update is run again with nothing written before it, so it keeps
+   * the hoist it had (#2343); a loop condition cannot hold one, since E0702
+   * admits no call there.
+   */
+  private planLazyOperands(
+    program: IProgramSyntax,
+    unwritten: IUnwrittenSyntax,
+    structInitializers: ReadonlyMap<
+      TExpressionOf<"structInitializer">,
+      TStructInitializerForm
+    >,
+    stringFields: ReadonlyMap<TExpression, number>,
+    expectedTypes: ReadonlyMap<TExpression, IPlannedExpectedType>,
+    cTypes: Set<string>,
+  ): {
+    readonly operands: ReadonlySet<TExpression>;
+    readonly ternaries: ReadonlyMap<TExpressionOf<"ternary">, string>;
+  } {
+    const buildsApart = (expr: TExpression): boolean =>
+      ExpressionNodes.direct(expr).some(
+        (node) =>
+          node.kind === "structInitializer" &&
+          (structInitializers.get(node) === "cppClass" ||
+            node.fields.some((field) => stringFields.has(field.value))),
+      );
+    const retested = new Set(
+      FilePlanner.forUpdates(program).flatMap((head) =>
+        ExpressionNodes.direct(head),
+      ),
+    );
+    const operands = new Set<TExpression>();
+    const ternaries = new Map<TExpressionOf<"ternary">, string>();
+    for (const expr of FilePlanner.writtenExpressions(program, unwritten)) {
+      if (retested.has(expr)) continue;
+      if (
+        expr.kind === "binary" &&
+        (expr.level === "and" || expr.level === "or")
+      ) {
+        for (const operand of expr.operands.slice(1)) {
+          if (buildsApart(operand)) operands.add(operand);
+        }
+      }
+      if (
+        expr.kind === "ternary" &&
+        (buildsApart(expr.whenTrue) || buildsApart(expr.whenFalse))
+      ) {
+        const cType = TypeGenerationHelper.generateByName(
+          this.lazyTernaryType(expr, expectedTypes),
+          this.typeGenerationDeps(),
+        );
+        cTypes.add(cType);
+        ternaries.set(expr, cType);
+      }
+    }
+    if (operands.size > 0) cTypes.add("bool");
+    return { operands, ternaries };
+  }
+
+  /**
+   * #2332: the type a lowered ternary's variable holds -- its position's, and
+   * where none gives one (a comparison's operand) its typed arm's, which an
+   * unsuffixed literal arm (the typer's `int`) takes on as C's conversion would
+   */
+  private lazyTernaryType(
+    expr: TExpressionOf<"ternary">,
+    expectedTypes: ReadonlyMap<TExpression, IPlannedExpectedType>,
+  ): string {
+    const typing = this.state.typingContext();
+    const typeName =
+      expectedTypes.get(expr)?.type ??
+      [expr.whenTrue, expr.whenFalse]
+        .map((arm) => OperandTyper.typeOf(arm, typing)?.typeName ?? null)
+        .find((name) => name !== null && name !== "int") ??
+      null;
+    invariant(
+      typeName !== null,
+      `the ternary on line ${expr.span.line} has a typed arm: one holds a call or a struct initializer, which E0357 types from its position`,
+    );
+    return typeName;
+  }
+
+  /** Every `for` update's expressions: run again each pass, after nothing written before them */
+  private static forUpdates(program: IProgramSyntax): TExpression[] {
+    return program.declarations.flatMap(({ declaration }) =>
+      StatementNodes.in(declaration).flatMap((statement) =>
+        statement.kind === "for" && statement.update !== null
+          ? [statement.update.target, statement.update.value]
+          : [],
+      ),
+    );
+  }
+
   private planStructInitializers(
     program: IProgramSyntax,
     unwritten: IUnwrittenSyntax,
@@ -1179,6 +1282,14 @@ class FilePlanner {
         ...wholeArrayArguments.keys(),
       ]),
     );
+    const lazy = this.planLazyOperands(
+      program,
+      unwritten,
+      structInitializers,
+      stringCopies.fields,
+      expectedTypes,
+      decidedCTypes,
+    );
     const argumentPlans = this.planArguments(
       valuePositions,
       stringCopies.arguments,
@@ -1255,6 +1366,8 @@ class FilePlanner {
       expectedTypes,
       narrowings,
       structInitializers,
+      lazyOperands: lazy.operands,
+      lazyTernaries: lazy.ternaries,
     };
     return {
       ...decided,

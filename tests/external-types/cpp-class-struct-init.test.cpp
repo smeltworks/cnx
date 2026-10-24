@@ -13,6 +13,7 @@
 
 void test(void) {
     CppTestClass obj = {};
+    /* ADR-014 / Issue #517, C++20 §9.4.2 (aggregates): a class with a user-declared constructor is not an aggregate, so no designated initializer can build it; it is constructed, then each field is assigned. */
     obj.value = 42;
 }
 

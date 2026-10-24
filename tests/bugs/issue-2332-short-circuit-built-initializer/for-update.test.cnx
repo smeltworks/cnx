@@ -1,0 +1,23 @@
+// test-execution
+// test-no-warnings
+// Tests: #2332 - a ternary building a struct initializer in a for update reads the loop variable; it is not lowered before the loop (where j is not declared), so the loop runs three times. How often its arm runs is #2343
+struct Named {
+    string<8> s;
+    u32 n;
+}
+
+u32 w(Named x) {
+    return x.n;
+}
+
+u32 main() {
+    string<8> t <- "hi";
+    mut u32 n <- 0;
+    for (mut u32 j <- 0; j < 3; j <- j + ((j = 0) ? w({ s: t, n: 1 }) : 1)) {
+        n <- n + 1;
+    }
+    if (n != 3) {
+        return 1;
+    }
+    return 0;
+}

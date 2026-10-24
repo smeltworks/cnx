@@ -358,7 +358,7 @@ cell is declared by the ADR that owns it.
 | top-level function | -         | -      | -          | n/a         | n/a        |
 | scope member       | ok        | ok     | ok         | n/a         | n/a        |
 | scope method       | -         | -      | -          | n/a         | n/a        |
-| for header         | warn      | warn   | warn       | n/a         | n/a        |
+| for header         | -         | -      | -          | n/a         | n/a        |
 
 ## ADR-014 E0866
 

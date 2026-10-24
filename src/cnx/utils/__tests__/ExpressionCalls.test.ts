@@ -39,6 +39,26 @@ function extractExpression(exprText: string): ExpressionContext | null {
   return varDecl.expression() ?? null;
 }
 
+describe("ExpressionCalls.callsAnywhere (E0702)", () => {
+  it.each([
+    ["finds a call in a subscript's index", "arr[idx(1)]", true],
+    ["finds a call in a call's argument", "f(g(1))", true],
+    ["finds a call at the top too", "getValue() + 1", true],
+    ["finds no call in a member read", "point.x + arr[i]", false],
+  ])("%s", (_name, text, expected) => {
+    const expr = extractExpression(text);
+    expect(expr).not.toBeNull();
+    expect(
+      ExpressionCalls.callsAnywhere(SyntaxLowering.expression(expr!)),
+    ).toBe(expected);
+  });
+
+  it("differs from callsAtTop exactly at a subscript", () => {
+    const expr = SyntaxLowering.expression(extractExpression("arr[idx(1)]")!);
+    expect(ExpressionCalls.callsAtTop(expr)).toBe(false);
+  });
+});
+
 describe("ExpressionCalls.callsAtTop", () => {
   it.each([
     ["should detect simple function call", "getValue()", true],

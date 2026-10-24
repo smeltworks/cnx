@@ -1,0 +1,85 @@
+// test-execution
+// test-no-warnings
+// Tests: #2332 - a struct initializer with a string<N> field is built before its statement, yet its field values run only when the operand holding it runs: the right of && and of ||, a middle operand of a chain, and each arm of a ternary
+struct Named {
+    string<8> s;
+    u32 n;
+}
+
+mut u32 calls;
+
+u32 w(Named x) {
+    return x.n;
+}
+
+u32 bump() {
+    calls <- calls + 1;
+    return 1;
+}
+
+u32 main() {
+    u32 a <- 0;
+    string<8> t <- "hi";
+
+    bool skippedAnd <- (a = 1) && (w({ s: t, n: bump() }) = 1);
+    if (skippedAnd != false) {
+        return 1;
+    }
+    if (calls != 0) {
+        return 2;
+    }
+    bool ranAnd <- (a = 0) && (w({ s: t, n: bump() }) = 1);
+    if (ranAnd != true) {
+        return 3;
+    }
+    if (calls != 1) {
+        return 4;
+    }
+
+    bool skippedOr <- (a = 0) || (w({ s: t, n: bump() }) = 1);
+    if (skippedOr != true) {
+        return 5;
+    }
+    if (calls != 1) {
+        return 6;
+    }
+    bool ranOr <- (a = 1) || (w({ s: t, n: bump() }) = 1);
+    if (ranOr != true) {
+        return 7;
+    }
+    if (calls != 2) {
+        return 8;
+    }
+
+    bool chain <- (a = 0) && (w({ s: t, n: bump() }) = 1) && (a = 1);
+    if (chain != false) {
+        return 9;
+    }
+    if (calls != 3) {
+        return 10;
+    }
+
+    u32 falseArm <- (a = 1) ? w({ s: t, n: bump() }) : 7;
+    if (falseArm != 7) {
+        return 11;
+    }
+    if (calls != 3) {
+        return 12;
+    }
+    u32 trueArm <- (a = 0) ? w({ s: t, n: bump() }) : 7;
+    if (trueArm != 1) {
+        return 13;
+    }
+    if (calls != 4) {
+        return 14;
+    }
+    u32 elseArm <- (a = 0) ? 5 : w({ s: t, n: bump() });
+    if (elseArm != 5) {
+        return 15;
+    }
+    if (calls != 4) {
+        return 16;
+    }
+
+    return 0;
+}

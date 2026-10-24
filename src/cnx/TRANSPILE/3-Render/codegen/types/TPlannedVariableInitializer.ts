@@ -19,6 +19,15 @@ type TPlannedVariableInitializer =
       readonly renderTypeName: () => string;
       readonly renderExpression: () => string;
       readonly resolveExpressionType: () => string | null;
+    }
+  /**
+   * Issue #517 / #1534: a C++ class with a constructor is not an aggregate, so
+   * the declaration constructs its own object and the fields are assigned to
+   * it after, by name.
+   */
+  | {
+      readonly kind: "cppClass";
+      readonly renderFill: (target: string) => readonly string[];
     };
 
 export default TPlannedVariableInitializer;

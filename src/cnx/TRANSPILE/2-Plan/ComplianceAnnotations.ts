@@ -81,6 +81,30 @@ class ComplianceAnnotations {
   };
 
   /**
+   * #2332: a temporary the right of `&&` builds is built under a test of the
+   * left side, because building it before the statement would run it always.
+   */
+  static readonly AND_OPERAND: IComplianceAnnotation = {
+    citation: "C11 6.5.13p4, C++ [expr.log.and]",
+    what: "right operand of `&&` built under a test of the left one",
+    why: "building its temporary before the statement would evaluate the operand's calls even when the left side is false",
+  };
+
+  /** #2332: `||`'s right operand, the same as `AND_OPERAND` with the test negated. */
+  static readonly OR_OPERAND: IComplianceAnnotation = {
+    citation: "C11 6.5.14p4, C++ [expr.log.or]",
+    what: "right operand of `||` built under a test of the left one",
+    why: "building its temporary before the statement would evaluate the operand's calls even when the left side is true",
+  };
+
+  /** #2332: each arm of `?:` that builds a temporary is built in its own branch. */
+  static readonly TERNARY_ARM: IComplianceAnnotation = {
+    citation: "C11 6.5.15p4, C++ [expr.cond]",
+    what: "each arm of `?:` built in its own branch",
+    why: "building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen",
+  };
+
+  /**
    * #1735, #1765: a value in a file-scope or scope variable's initializer
    * that reads a name, written as the value cnx folded it to.
    */
@@ -201,6 +225,10 @@ class ComplianceAnnotations {
       ComplianceAnnotations.FOREVER_LOOP,
       ComplianceAnnotations.INIT_PROTOTYPE,
       ComplianceAnnotations.STRING_SELF_COPY,
+      ComplianceAnnotations.STRING_BUILT_APART,
+      ComplianceAnnotations.AND_OPERAND,
+      ComplianceAnnotations.OR_OPERAND,
+      ComplianceAnnotations.TERNARY_ARM,
       ComplianceAnnotations.STATIC_VALUE,
       ComplianceAnnotations.NULL_POINTER,
       ComplianceAnnotations.sliceUnroll("uint8_t", "uint32_t"),

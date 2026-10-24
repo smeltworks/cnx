@@ -58,45 +58,6 @@ class VariableDeclHelper {
   // Tier 1: Pure Operations (CodeGenState only)
   // ========================================================================
 
-  /**
-   * Handle pending C++ class field assignments.
-   * In function body, generates assignments after declaration.
-   *
-   * #1322: the rejection that stood at the end of this method is E0508 in pass
-   * 2.1, and it is not a transcription of what was here. This method DRAINS a
-   * queue another node filled, so the declaration it was reported against was
-   * not necessarily the one that filled it: a scope member pushed and was never
-   * drained (the initializer vanished at exit 0), and an unrelated global after
-   * one reported `C++ class 'u32' with constructor`. `CppClassInitializerAnalyzer`
-   * decides at the initializer itself.
-   *
-   * The queue can therefore no longer be non-empty here outside a function
-   * body, which is what the assertion says.
-   *
-   * @param name - Variable name
-   * @param decl - Current declaration string
-   * @returns Final declaration with semicolon and any pending assignments
-   */
-  static finalizeCppClassAssignments(
-    name: string,
-    decl: string,
-    state: TranspileState,
-  ): string {
-    if (state.pendingCppClassAssignments.length === 0) {
-      return `${decl};`;
-    }
-
-    invariant(
-      state.inFunctionBody,
-      "E0508 rejects this in pass 2.1, before this runs",
-    );
-    const assignments = state.pendingCppClassAssignments
-      .map((a) => `${name}.${a}`)
-      .join("\n");
-    state.pendingCppClassAssignments = [];
-    return `${decl};\n${assignments}`;
-  }
-
   // ========================================================================
   // Tier 2: Rendering one half of a declaration
   // ========================================================================
@@ -169,6 +130,9 @@ class VariableDeclHelper {
     if (plan.kind === "zero") {
       // ADR-015: Zero initialization for uninitialized variables
       return `${decl} = ${plan.render(isArray)}`;
+    }
+    if (plan.kind === "cppClass") {
+      return `${decl} = {}`;
     }
 
     const typeName = plan.renderTypeName();
@@ -278,12 +242,14 @@ class VariableDeclHelper {
       state,
     );
 
-    // Handle pending C++ class field assignments
-    return VariableDeclHelper.finalizeCppClassAssignments(
-      plan.sourceName,
-      decl,
-      state,
-    );
+    // #1534: the fill is written against the emitted object, by name (ADR-057)
+    const initializer = plan.initializer;
+    if (initializer.kind === "cppClass") {
+      return [`${decl};`, ...initializer.renderFill(plan.emittedName)].join(
+        "\n",
+      );
+    }
+    return `${decl};`;
   }
 }
 
