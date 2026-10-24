@@ -11,6 +11,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import chalk from "chalk";
+import CheckOutcome from "./utils/CheckOutcome";
 
 import AdrIndependence from "./adr-independence/AdrIndependence";
 
@@ -18,11 +19,7 @@ const rootDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 const outcome = AdrIndependence.run(rootDir);
 
-for (const violation of outcome.failures) {
-  console.log(
-    `${chalk.red("error")}  ${violation.file}:${violation.line}  ${violation.kind}  ${violation.detail}`,
-  );
-}
+CheckOutcome.printViolations(outcome.failures);
 
 console.log(
   `Scanned ${outcome.scanned} ADR(s). No exemption mechanism exists: every ADR is checked.`,

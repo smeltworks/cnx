@@ -12,6 +12,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 import chalk from "chalk";
+import CheckOutcome from "./utils/CheckOutcome";
 
 import ScopeJoinSites from "./scope-joins/ScopeJoinSites";
 import FileScanner from "./utils/FileScanner";
@@ -63,13 +64,7 @@ async function main(): Promise<void> {
     document,
   );
 
-  for (const line of outcome.info) {
-    console.log(chalk.green(line));
-  }
-  if (!outcome.ok) {
-    console.error(chalk.red(outcome.errors.join("\n")));
-    process.exit(1);
-  }
+  CheckOutcome.report(outcome);
 }
 
 void main();

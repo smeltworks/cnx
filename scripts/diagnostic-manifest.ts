@@ -17,6 +17,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import chalk from "chalk";
+import CheckOutcome from "./utils/CheckOutcome";
 
 import DiagnosticManifest from "./diagnostics/DiagnosticManifest";
 import GeneratedMarkdown from "./utils/GeneratedMarkdown";
@@ -56,16 +57,7 @@ async function main(): Promise<void> {
     );
   }
 
-  for (const line of outcome.warnings) {
-    console.warn(chalk.yellow(line));
-  }
-  for (const line of outcome.info) {
-    console.log(chalk.green(line));
-  }
-  if (!outcome.ok) {
-    console.error(chalk.red(outcome.errors.join("\n")));
-    process.exit(1);
-  }
+  CheckOutcome.report(outcome);
 }
 
 main().catch((err) => {
