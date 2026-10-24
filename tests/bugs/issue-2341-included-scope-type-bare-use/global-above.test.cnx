@@ -1,0 +1,29 @@
+// test-execution
+// Issue #2341 control: the same program with the global `T` declared above the
+// scope block. Bare `T` still binds to the included `S.T`: the initializer's
+// field `x` exists only on `S.T`.
+
+#include "scope-types-lib.cnx"
+
+struct T {
+    u32 y;
+}
+
+scope S {
+    public struct H {
+        T t;
+    }
+
+    public u32 go() {
+        this.H h <- { t: { x: 4 } };
+        return h.t.x;
+    }
+}
+
+u32 main() {
+    u32 got <- S.go();
+    if (got != 4) {
+        return 1;
+    }
+    return 0;
+}

@@ -42,6 +42,7 @@ import IUndeclaredTypeError from "./types/IUndeclaredTypeError";
 import NameExistence from "../../PARSE/3-Declare/NameExistence";
 import type IResolvedSymbols from "../../types/IResolvedSymbols";
 import ScopeUtils from "../../utils/ScopeUtils";
+import QualifiedCName from "../../utils/QualifiedCName";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionChildren from "../../utils/ExpressionChildren";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
@@ -102,7 +103,7 @@ class UndeclaredTypeWalk {
       case "qualified":
         this.analyzer.checkQualifiedUse(
           type.text,
-          type.path.join("."),
+          QualifiedCName.fromSourceParts(type.path),
           type.span,
         );
         return;
@@ -172,13 +173,11 @@ class UndeclaredTypeAnalyzer {
     if (BUILTIN_TYPE_NAMES.has(typeName)) {
       return;
     }
-    const spellings = scope
-      ? [
-          ScopeUtils.getCnxScopedName({ name: typeName, scopePath: scope }),
-          typeName,
-        ]
-      : [typeName];
-    const definition = this.definitionAfter(spellings, line, column);
+    const definition = this.definitionAfter(
+      this.spellingsOf(typeName, scope),
+      line,
+      column,
+    );
     if (definition !== null) {
       this.addUsedBeforeDefinitionError(typeName, line, column, definition);
       return;
@@ -191,6 +190,35 @@ class UndeclaredTypeAnalyzer {
       return;
     }
     this.addError(typeName, line, column);
+  }
+
+  /**
+   * The `cnxScopedName`s a bare `T` written in `scope` may denote, nearest
+   * first. #2341: when the scope has its own `T` (ADR-057), that is what the
+   * name binds to, wherever it is declared -- so a global `T` is not a
+   * candidate, even when the scope's `T` comes from an include and so is not
+   * in `typesHere`.
+   */
+  private spellingsOf(typeName: string, scope: string): string[] {
+    if (!scope) {
+      return [typeName];
+    }
+    const scoped = ScopeUtils.getCnxScopedName({
+      name: typeName,
+      scopePath: scope,
+    });
+    if (
+      UndeclaredTypeAnalyzer._scopeSpelling(
+        typeName,
+        scope,
+        this.context.symbols,
+        this.context.symbolTable,
+        UndeclaredTypeAnalyzer._isTypeName,
+      )
+    ) {
+      return [scoped];
+    }
+    return [scoped, typeName];
   }
 
   /**
@@ -262,9 +290,16 @@ class UndeclaredTypeAnalyzer {
       scope,
       this.context.symbols,
       this.context.symbolTable,
-      (name, fileSymbols, table) =>
-        NameExistence.isTypeName(name, fileSymbols, table),
+      UndeclaredTypeAnalyzer._isTypeName,
     );
+  }
+
+  private static _isTypeName(
+    name: string,
+    symbols: ICodeGenSymbols,
+    symbolTable: IResolvedSymbols,
+  ): boolean {
+    return NameExistence.isTypeName(name, symbols, symbolTable);
   }
 
   /**
@@ -315,14 +350,33 @@ class UndeclaredTypeAnalyzer {
       symbolTable: IResolvedSymbols,
     ) => boolean,
   ): boolean {
-    if (scope) {
-      const qualified = ScopeUtils.qualifyInScope(typeName, scope);
-      if (test(qualified, symbols, symbolTable)) {
-        return true;
-      }
-    }
+    return (
+      UndeclaredTypeAnalyzer._scopeSpelling(
+        typeName,
+        scope,
+        symbols,
+        symbolTable,
+        test,
+      ) || test(typeName, symbols, symbolTable)
+    );
+  }
 
-    return test(typeName, symbols, symbolTable);
+  /** The scope-qualified half of `_eitherSpelling`, also asked alone by `spellingsOf` */
+  private static _scopeSpelling(
+    typeName: string,
+    scope: string,
+    symbols: ICodeGenSymbols,
+    symbolTable: IResolvedSymbols,
+    test: (
+      name: string,
+      symbols: ICodeGenSymbols,
+      symbolTable: IResolvedSymbols,
+    ) => boolean,
+  ): boolean {
+    return (
+      scope !== "" &&
+      test(ScopeUtils.qualifyInScope(typeName, scope), symbols, symbolTable)
+    );
   }
 
   addError(typeName: string, line: number, column: number): void {
