@@ -201,6 +201,24 @@ describe("CodeGenWalker Coverage Tests", () => {
       expect(code).toContain("const uint32_t x = (a == 1) ? 2U : 3U;");
     });
 
+    it("leaves a float bit read in a while condition in the condition", () => {
+      const code = setupGenerator(
+        [
+          "u32 main() {",
+          "mut u32 i <- 0;",
+          "f32 x <- 1.5;",
+          "while ((i < 3) && (x[0, 8] = 0)) {",
+          "i <- i + 1;",
+          "}",
+          "return i;",
+          "}",
+        ].join("\n"),
+        { cppMode: false },
+      ).code;
+      expect(code).toMatch(/while \(\(i < 3\) && /);
+      expect(code).not.toContain("bool cnx_tmp");
+    });
+
     it("keeps an operand whose typedef evaluates nothing in one expression", () => {
       const code = setupGenerator(
         [

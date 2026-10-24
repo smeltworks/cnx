@@ -11,6 +11,7 @@
  */
 
 import ComplianceAnnotations from "../ComplianceAnnotations";
+import type IComplianceAnnotation from "../types/IComplianceAnnotation";
 
 /**
  * `/* MISRA C:2012 Rule 8.4: what (why). *\/`, or the language's own rule:
@@ -47,6 +48,21 @@ describe("ComplianceAnnotations", () => {
         expect(annotation.why.endsWith(".")).toBe(false);
       },
     );
+  });
+
+  it("lists every fixed row in all()", () => {
+    // #2335 review: STRING_BUILT_APART was left out of all(), so none of the
+    // checks above ever saw it. The parameterized rows are methods, so all()
+    // lists those by hand.
+    const rows = Object.values(ComplianceAnnotations).filter(
+      (value): value is IComplianceAnnotation =>
+        typeof value === "object" && value !== null && "citation" in value,
+    );
+
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(ComplianceAnnotations.all()).toContain(row);
+    }
   });
 
   it("cites exactly the rules it is known to cite", () => {

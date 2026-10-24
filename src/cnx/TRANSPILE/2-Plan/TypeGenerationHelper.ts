@@ -35,6 +35,7 @@ import AdrProvenance from "../../instrumentation/AdrProvenance";
 import type INamedTypeResolution from "../../types/INamedTypeResolution";
 import type IPlannedType from "./types/IPlannedType";
 import userCType from "../../utils/userCType";
+import type ITypeGenerationDeps from "./types/ITypeGenerationDeps";
 
 /**
  * Result of generating a primitive type.
@@ -42,23 +43,6 @@ import userCType from "../../utils/userCType";
 interface IPrimitiveTypeResult {
   cType: string;
   include: TIncludeHeader | null;
-}
-
-/**
- * Dependencies required for type generation that involve external state.
- */
-interface ITypeGenerationDeps {
-  checkNeedsStructKeyword: (name: string) => boolean;
-  /**
-   * #1508 / ADR-010: does this settled type name refer to a declaration in a
-   * DIFFERENT file? Injected like `isScopeType` rather than read from global
-   * state, so this helper stays unit-testable.
-   *
-   * Required, not optional. An omitted predicate defaulting to "no" would make
-   * ADR-010 occupancy silently empty -- the `cppMode?: boolean` shape that let
-   * two sites emit the wrong header extension (#1319).
-   */
-  isCrossFileDeclaration: (typeName: string) => boolean;
 }
 
 class TypeGenerationHelper {
@@ -84,6 +68,17 @@ class TypeGenerationHelper {
    * Generate string type (bounded strings).
    * Returns the base type for char arrays.
    */
+  /**
+   * #2332: a cnx type name as C spells it, for a value with no written type
+   * of its own (a ternary's)
+   */
+  static generateByName(typeName: string, deps: ITypeGenerationDeps): string {
+    return (
+      TYPE_MAP[typeName] ??
+      userCType(typeName, deps.checkNeedsStructKeyword(typeName))
+    );
+  }
+
   static generateStringType(): string {
     return "char";
   }

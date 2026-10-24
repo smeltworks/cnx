@@ -1,5 +1,6 @@
 // test-cpp-only
 // test-execution
+// test-no-warnings
 // Issue #1534: a C++ class initializer's field assignments belong to the value
 // it builds, wherever that value is written -- not to the next declaration.
 
@@ -96,6 +97,16 @@ u32 main() {
     }
     if (global.shadowed.value != 0) {
         return 14;
+    }
+
+    // A for header's declaration (#2304): built before the loop, then copied in
+    mut u32 laps <- 0;
+    for (mut CppTestClass c <- { value: 1 }; c.value < 3; c.value +<- 1) {
+        u32 step <- 1;
+        laps <- laps + step;
+    }
+    if (laps != 2) {
+        return 15;
     }
 
     return 0;

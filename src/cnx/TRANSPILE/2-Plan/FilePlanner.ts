@@ -110,6 +110,7 @@ import type IValuePosition from "../../types/IValuePosition";
 import type IValueSite from "../../types/IValueSite";
 import type TValueSite from "../../types/TValueSite";
 import type IPlannedExpectedType from "./types/IPlannedExpectedType";
+import type ITypeGenerationDeps from "./types/ITypeGenerationDeps";
 import type IFilePlan from "./types/IFilePlan";
 import type IPlannedClamp from "./types/IPlannedClamp";
 import type IPlannedSliceSource from "./types/IPlannedSliceSource";
@@ -221,11 +222,15 @@ class FilePlanner {
    * its comment.
    */
   cTypeOf(plan: IPlannedType): string {
-    return TypeGenerationHelper.generate(plan, {
+    return TypeGenerationHelper.generate(plan, this.typeGenerationDeps());
+  }
+
+  private typeGenerationDeps(): ITypeGenerationDeps {
+    return {
       checkNeedsStructKeyword: (name) =>
         this.state.symbolTable.checkNeedsStructKeyword(name),
       isCrossFileDeclaration: (name) => this.state.isCrossFileDeclaration(name),
-    });
+    };
   }
 
   private planType(type: TTypeSyntax, scopePath: string): IPlannedType {
@@ -664,6 +669,69 @@ class FilePlanner {
    * literal. A whole array's list is its temporary's declaration initializer
    * (#1782), so its elements are plain too.
    */
+  /**
+   * #2332: a struct initializer built before its statement -- a C++ class
+   * with a constructor, or one with a `string<N>` field copied in -- is built
+   * only when the `&&`/`||` operand or `?:` arm holding it runs. Each such
+   * operand and ternary is lowered to an `if`: a `bool` holds the chain's
+   * value so far, and a ternary's value is a variable of its own type.
+   */
+  private planLazyOperands(
+    program: IProgramSyntax,
+    unwritten: IUnwrittenSyntax,
+    structInitializers: ReadonlyMap<
+      TExpressionOf<"structInitializer">,
+      TStructInitializerForm
+    >,
+    stringFields: ReadonlyMap<TExpression, number>,
+    expectedTypes: ReadonlyMap<TExpression, IPlannedExpectedType>,
+    cTypes: Set<string>,
+  ): {
+    readonly operands: ReadonlySet<TExpression>;
+    readonly ternaries: ReadonlyMap<TExpressionOf<"ternary">, string>;
+  } {
+    const buildsApart = (expr: TExpression): boolean =>
+      ExpressionNodes.direct(expr).some(
+        (node) =>
+          node.kind === "structInitializer" &&
+          (structInitializers.get(node) === "cppClass" ||
+            node.fields.some((field) => stringFields.has(field.value))),
+      );
+    const operands = new Set<TExpression>();
+    const ternaries = new Map<TExpressionOf<"ternary">, string>();
+    for (const expr of FilePlanner.writtenExpressions(program, unwritten)) {
+      if (
+        expr.kind === "binary" &&
+        (expr.level === "and" || expr.level === "or")
+      ) {
+        for (const operand of expr.operands.slice(1)) {
+          if (buildsApart(operand)) operands.add(operand);
+        }
+      }
+      if (
+        expr.kind === "ternary" &&
+        (buildsApart(expr.whenTrue) || buildsApart(expr.whenFalse))
+      ) {
+        const typeName =
+          expectedTypes.get(expr)?.type ??
+          OperandTyper.typeOf(expr, this.state.typingContext())?.typeName ??
+          null;
+        invariant(
+          typeName !== null,
+          `the ternary on line ${expr.span.line} that builds a temporary in an arm has a type`,
+        );
+        const cType = TypeGenerationHelper.generateByName(
+          typeName,
+          this.typeGenerationDeps(),
+        );
+        cTypes.add(cType);
+        ternaries.set(expr, cType);
+      }
+    }
+    if (operands.size > 0) cTypes.add("bool");
+    return { operands, ternaries };
+  }
+
   private planStructInitializers(
     program: IProgramSyntax,
     unwritten: IUnwrittenSyntax,
@@ -1179,6 +1247,14 @@ class FilePlanner {
         ...wholeArrayArguments.keys(),
       ]),
     );
+    const lazy = this.planLazyOperands(
+      program,
+      unwritten,
+      structInitializers,
+      stringCopies.fields,
+      expectedTypes,
+      decidedCTypes,
+    );
     const argumentPlans = this.planArguments(
       valuePositions,
       stringCopies.arguments,
@@ -1255,6 +1331,8 @@ class FilePlanner {
       expectedTypes,
       narrowings,
       structInitializers,
+      lazyOperands: lazy.operands,
+      lazyTernaries: lazy.ternaries,
     };
     return {
       ...decided,

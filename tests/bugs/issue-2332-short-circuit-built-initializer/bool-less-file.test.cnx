@@ -1,0 +1,29 @@
+// test-execution
+// test-no-warnings
+// Tests: #2332 - a file whose only bool is the one a lowered && writes still includes <stdbool.h>
+#include "lib/bool-take.h"
+
+struct Named {
+    string<8> s;
+    u32 n;
+}
+
+mut u32 calls;
+
+u32 w(Named x) {
+    calls <- calls + 1;
+    return x.n;
+}
+
+u32 main() {
+    u32 a <- 0;
+    string<8> t <- "hi";
+    u32 r <- take((a = 1) && (w({ s: t, n: 1 }) = 1));
+    if (r != 2) {
+        return 1;
+    }
+    if (calls != 0) {
+        return 2;
+    }
+    return 0;
+}

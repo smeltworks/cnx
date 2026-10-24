@@ -191,8 +191,8 @@ class ArrayInitHelper {
     renderedValue: string,
     state: TranspileState,
   ): string {
-    if (!state.pendingInertDeclarations.includes(ARGUMENT_COMMENT)) {
-      state.pendingInertDeclarations.push(ARGUMENT_COMMENT);
+    if (!state.pendingTempDeclarations.includes(ARGUMENT_COMMENT)) {
+      state.pendingTempDeclarations.push(ARGUMENT_COMMENT);
     }
     // A compound literal and a functional cast take a braced list; a string
     // in braces initializes a `uint8_t` array (C11 6.7.9p14, C++ [dcl.init.string])
@@ -200,7 +200,7 @@ class ArrayInitHelper {
     const shape = ArrayInitHelper.shapeOf(array);
     if (!state.cppMode) return `(const ${array.elementCType}${shape})${init}`;
     const type = `${state.getNextTempVarName()}_t`;
-    state.pendingInertDeclarations.push(
+    state.pendingTempDeclarations.push(
       `typedef const ${array.elementCType} ${type}${shape};`,
     );
     return `static_cast<${type}&>(${type}${init})`;

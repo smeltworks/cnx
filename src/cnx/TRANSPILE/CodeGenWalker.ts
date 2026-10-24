@@ -9,7 +9,6 @@ import HeaderEmissionCapture from "./3-Render/headers/HeaderEmissionCapture";
 import type IHeaderEmissionFacts from "./3-Render/headers/types/IHeaderEmissionFacts";
 import type IRenderedSource from "./3-Render/codegen/types/IRenderedSource";
 import userCType from "../utils/userCType";
-import TYPE_MAP from "./2-Plan/types/TYPE_MAP";
 /**
  * CodeGenWalker -- the walk over one file's plain-data `IProgramSyntax`
  * that drives code generation.
@@ -432,33 +431,25 @@ class CodeGenWalker {
     if (expr.kind !== "ternary") {
       return { kind: "value", code: this.renderBinary(expr) };
     }
+    const cType = this.filePlan.lazyTernaries.get(expr);
+    if (cType === undefined) {
+      return {
+        kind: "ternary",
+        renderCondition: () => this.renderBinary(expr.condition),
+        renderTrue: () => this.renderBinary(expr.whenTrue),
+        renderFalse: () => this.renderBinary(expr.whenFalse),
+      };
+    }
+    this.rendering.lazyTernaries.add(expr);
     const condition = this.renderBinary(expr.condition);
     const whenTrue = this.renderQueuing(() => this.renderBinary(expr.whenTrue));
     const whenFalse = this.renderQueuing(() =>
       this.renderBinary(expr.whenFalse),
     );
-    if (whenTrue.queued.length === 0 && whenFalse.queued.length === 0) {
-      return {
-        kind: "ternary",
-        renderCondition: () => condition,
-        renderTrue: () => whenTrue.code,
-        renderFalse: () => whenFalse.code,
-      };
-    }
-    const typeName =
-      this.filePlan.expectedTypes.get(expr)?.type ??
-      OperandTyper.typeOf(expr, this.host.state.typingContext())?.typeName;
     invariant(
-      typeName !== undefined && typeName !== null,
-      `the ternary on line ${expr.span.line} that builds a temporary in an arm has a type`,
+      whenTrue.queued.length + whenFalse.queued.length > 0,
+      `2.2's lazy ternary on line ${expr.span.line} builds a temporary in an arm`,
     );
-    const cType =
-      TYPE_MAP[typeName] ??
-      userCType(
-        typeName,
-        !this.host.state.cppMode &&
-          this.host.state.symbolTable.checkNeedsStructKeyword(typeName),
-      );
     const temp = this.host.state.getNextTempVarName();
     const indent = FormatUtils.indent(1);
     const arm = (rendered: { code: string; queued: string[] }): string[] => [
@@ -495,32 +486,35 @@ class CodeGenWalker {
 
   /**
    * #2332: `&&` and `||`. An operand after the first runs only when the ones
-   * before it leave the value undecided, so a temporary it builds is built
-   * under that same test rather than before the statement.
+   * before it leave the value undecided, so a temporary 2.2 found it builds
+   * is built under that same test rather than before the statement.
    */
   private renderShortCircuit(
     operands: readonly TExpression[],
     separator: " && " | " || ",
   ): string {
-    const [first, ...rest] = operands.map((operand) =>
-      this.renderQueuing(() => {
-        const result = this.renderBinaryLevel(this.planBinaryExpr(operand));
-        this.host.applyEffects(result.effects);
-        return result.code;
-      }),
-    );
+    const renderOperand = (operand: TExpression): string => {
+      const result = this.renderBinaryLevel(this.planBinaryExpr(operand));
+      this.host.applyEffects(result.effects);
+      return result.code;
+    };
+    const first = operands[0];
     invariant(first !== undefined, "a logical chain has operands");
-    const pending = this.host.state.pendingTempDeclarations;
-    pending.push(...first.queued);
-    let value = first.code;
-    for (const operand of rest) {
-      if (operand.queued.length === 0) {
-        value = `${value}${separator}${operand.code}`;
+    let value = renderOperand(first);
+    for (const operand of operands.slice(1)) {
+      if (!this.filePlan.lazyOperands.has(operand)) {
+        value = `${value}${separator}${renderOperand(operand)}`;
         continue;
       }
+      this.rendering.lazyOperands.add(operand);
+      const built = this.renderQueuing(() => renderOperand(operand));
+      invariant(
+        built.queued.length > 0,
+        `2.2's lazy operand on line ${operand.span.line} builds a temporary`,
+      );
       const temp = this.host.state.getNextTempVarName();
       const indent = FormatUtils.indent(1);
-      pending.push(
+      this.host.state.pendingTempDeclarations.push(
         ComplianceAnnotations.render(
           separator === " && "
             ? ComplianceAnnotations.AND_OPERAND
@@ -528,8 +522,8 @@ class CodeGenWalker {
         ),
         `bool ${temp} = ${value};`,
         `if (${separator === " && " ? temp : `!${temp}`}) {`,
-        ...operand.queued.map((line) => indent + line),
-        `${indent}${temp} = ${operand.code};`,
+        ...built.queued.map((line) => indent + line),
+        `${indent}${temp} = ${built.code};`,
         "}",
       );
       value = temp;
@@ -1485,6 +1479,8 @@ class CodeGenWalker {
       minimums: new Set(),
       complementCasts: new Set(),
       structInitializers: new Set(),
+      lazyOperands: new Set(),
+      lazyTernaries: new Set(),
       narrowings: new Set(),
       clampChains: new Set(),
       floatBitWrites: new Set(),
@@ -1643,6 +1639,16 @@ class CodeGenWalker {
       this.filePlan.structInitializers.keys(),
       this.rendering.structInitializers,
       "struct initializer",
+    );
+    CodeGenWalker.assertAllRendered(
+      this.filePlan.lazyOperands,
+      this.rendering.lazyOperands,
+      "lazy operand",
+    );
+    CodeGenWalker.assertAllRendered(
+      this.filePlan.lazyTernaries.keys(),
+      this.rendering.lazyTernaries,
+      "lazy ternary",
     );
     CodeGenWalker.assertAllRendered(
       CodeGenWalker.decidedSites(

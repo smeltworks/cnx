@@ -428,7 +428,7 @@ Severity follows the eslint model: `off` records that a cell **cannot exist**,
 
 off: E0508 only fires outside a function body; inside a function or a method the fields are assigned as statements.
 
-warn: a `for` header's declaration has no statement position after it either, so E0508 should fire there; it does not, and the fields are dropped or assigned to an unrelated declaration in the loop body (#2304).
+warn: a `for` header's declaration has no statement position after it either, so E0508 should fire there; it does not (#2304). Since #1534 the fields are not lost: the object is built as a temporary before the loop and the loop variable is initialized from it.
 
 E0357 is decided entirely within the file that writes the initializer, because
 whether the position supplies a type is a question about the initializer's own
@@ -491,6 +491,13 @@ fieldInitializer
    only when that operand runs (C11 §6.5.13-§6.5.15). The left side becomes a
    `bool` the operand's `if` tests, and a ternary's value a variable each
    branch sets; a `string<N>` field's temporary (#2236) is built the same way.
+   2.2 decides which operands these are, and only an operand holding such an
+   initializer is lowered; any other temporary (a float bit read, #2157's
+   typedef) is still written before the statement. This holds where a
+   statement's temporaries come before it: a declaration, an assignment, a
+   `return`, an argument. A loop's condition cannot hold such an initializer,
+   because E0702 rejects the call it needs. An `else if` condition still
+   puts its temporary in the wrong place (#2340).
 
 ## References
 
