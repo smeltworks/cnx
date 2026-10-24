@@ -88,11 +88,9 @@ scope Shadow {
     }
 }
 
-// The control uses a global ENUM rather than a global struct, deliberately: a
-// scope struct whose field names a global STRUCT is emitted before that struct's
-// typedef, so the header does not compile. That is a pre-existing ordering
-// defect on main (#1332), unrelated to kind-awareness -- routing
-// around it keeps this fixture pinning the rule it is here for.
+// Two controls, one per type-forming kind ADR-057 lets a scope variable share a
+// name with: a global ENUM (`NoCapture`) and the global STRUCT `Config` above
+// (`NoCaptureStruct`). Each field type stays the global type.
 enum Mode {
     ALPHA <- 1,
     BETA <- 2
@@ -112,6 +110,21 @@ scope NoCapture {
         // variable is not type-forming.
         Holder h <- { m: global.Mode.BETA };
         return (u32)h.m + Mode;
+    }
+}
+
+scope NoCaptureStruct {
+    u32 Config <- 5;
+
+    public struct Holder {
+        Config c;
+    }
+
+    public u32 run() {
+        // As above, for a struct: the field stays the global `Config`, and in
+        // VALUE position the bare name is the scope variable.
+        Holder h <- { c: { x: 2 } };
+        return h.c.x + Config;
     }
 }
 
@@ -137,6 +150,12 @@ u32 main() {
     u32 uncaptured <- NoCapture.run();
     if (uncaptured != 7) {
         return 4;
+    }
+
+    // The same for a global struct: the field's x (2) + the scope variable (5).
+    u32 uncapturedStruct <- NoCaptureStruct.run();
+    if (uncapturedStruct != 7) {
+        return 5;
     }
 
     return 0;

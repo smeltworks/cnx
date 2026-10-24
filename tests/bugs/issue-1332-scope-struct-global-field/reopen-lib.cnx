@@ -1,0 +1,8 @@
+// Helper for reopen-cross-file.test.cnx (#1332): the first block of scope S,
+// which the including file reopens.
+
+scope S {
+    public struct A {
+        u32 x;
+    }
+}

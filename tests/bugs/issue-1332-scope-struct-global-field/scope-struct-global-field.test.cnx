@@ -1,0 +1,100 @@
+// test-execution
+// Issue #1332: the header defines structs in the order their symbols were
+// collected, and a scope's structs used to be collected ahead of every
+// top-level struct. A public scope struct whose field is a global struct was
+// then defined before that struct, and the header did not compile.
+//
+// ADR-030 (define before use) makes source order a valid order, so each case
+// below declares a type, then a struct that uses it.
+
+struct Config {
+    u32 x;
+}
+
+// The original report: global, then scope.
+scope S {
+    u32 other <- 5;
+
+    public struct Holder {
+        Config c;
+    }
+
+    public u32 read(Holder h) {
+        return h.c.x;
+    }
+}
+
+// Scope, then global: the global struct must follow the scope struct it uses.
+struct Top {
+    S.Holder h;
+}
+
+// A reopened scope (#1333): this block's struct comes after a global declared
+// between the two blocks of S, not with the first block.
+struct Limits {
+    u32 max;
+}
+
+scope S {
+    public struct Bounded {
+        Limits l;
+        Holder h;
+    }
+}
+
+// Controls, which compiled before the fix and must keep compiling: one scope's
+// struct used by a later scope's struct, and a private scope struct (defined in
+// the .c, not the header) whose field is a global struct.
+scope A {
+    public struct Inner {
+        u32 y;
+    }
+}
+
+scope B {
+    struct Hidden {
+        Config c;
+    }
+
+    public struct Outer {
+        A.Inner i;
+    }
+
+    public u32 viaHidden() {
+        Hidden hid <- { c: { x: 11 } };
+        return hid.c.x;
+    }
+}
+
+u32 main() {
+    S.Holder held <- { c: { x: 7 } };
+    u32 readBack <- S.read(held);
+    if (readBack != 7) {
+        return 1;
+    }
+
+    Top t <- { h: { c: { x: 9 } } };
+    if (t.h.c.x != 9) {
+        return 2;
+    }
+
+    S.Bounded b <- { l: { max: 4 }, h: { c: { x: 6 } } };
+    if (b.l.max != 4) {
+        return 3;
+    }
+    if (b.h.c.x != 6) {
+        return 4;
+    }
+
+    B.Outer o <- { i: { y: 8 } };
+    if (o.i.y != 8) {
+        return 5;
+    }
+
+    u32 hidden <- B.viaHidden();
+    if (hidden != 11) {
+        return 6;
+    }
+
+    return 0;
+}

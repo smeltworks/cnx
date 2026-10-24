@@ -17,13 +17,13 @@ extern "C" {
 typedef uint32_t (*tickDefault_fp)(void);
 
 /* Struct definitions */
-typedef struct Outer__Nested {
-    tickDefault_fp handler;
-} Outer__Nested;
 typedef struct Ticker {
     tickDefault_fp handler;
     uint32_t count;
 } Ticker;
+typedef struct Outer__Nested {
+    tickDefault_fp handler;
+} Outer__Nested;
 
 /* External variables */
 extern const Ticker globalTicker;

@@ -14,15 +14,15 @@ extern "C" {
 #endif
 
 /* Struct definitions */
+typedef struct Point {
+    int32_t x;
+    int32_t y;
+} Point;
 typedef struct ArrayStructMember__Sensor {
     uint16_t id;
     int32_t value;
     bool active;
 } ArrayStructMember__Sensor;
-typedef struct Point {
-    int32_t x;
-    int32_t y;
-} Point;
 
 /* External variables */
 extern Point points[3];

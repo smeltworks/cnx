@@ -1,0 +1,17 @@
+// test-error
+// #2339: two scopes' structs holding each other through `Scope.T`.
+scope A {
+    public struct X {
+        B.Y y;
+    }
+}
+
+scope B {
+    public struct Y {
+        A.X x;
+    }
+}
+
+u32 main() {
+    return 0;
+}

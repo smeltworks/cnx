@@ -1,0 +1,5 @@
+scope S {
+    public struct T {
+        u32 x;
+    }
+}

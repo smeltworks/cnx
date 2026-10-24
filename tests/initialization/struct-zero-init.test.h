@@ -14,15 +14,15 @@ extern "C" {
 #endif
 
 /* Struct definitions */
+typedef struct Point {
+    int32_t x;
+    int32_t y;
+} Point;
 typedef struct ZeroInit__Config {
     uint32_t baudRate;
     uint8_t dataBits;
     bool enabled;
 } ZeroInit__Config;
-typedef struct Point {
-    int32_t x;
-    int32_t y;
-} Point;
 
 /* External variables */
 extern const Point origin;

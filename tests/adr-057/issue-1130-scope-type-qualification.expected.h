@@ -27,6 +27,9 @@ typedef enum {
 } A__Mode;
 
 /* Struct definitions */
+typedef struct Config {
+    uint8_t x;
+} Config;
 typedef struct A__S {
     uint8_t x;
     A__B kind;
@@ -35,9 +38,6 @@ typedef struct A__Wrapper {
     Mode mode;
     uint8_t v;
 } A__Wrapper;
-typedef struct Config {
-    uint8_t x;
-} Config;
 
 /* External variables */
 extern const A__B A__current;

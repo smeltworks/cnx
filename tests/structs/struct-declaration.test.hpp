@@ -13,16 +13,16 @@ extern "C" {
 #endif
 
 /* Struct definitions */
+typedef struct Point {
+    int32_t x;
+    int32_t y;
+} Point;
 typedef struct StructDecl__Color {
     uint8_t r;
     uint8_t g;
     uint8_t b;
     uint8_t a;
 } StructDecl__Color;
-typedef struct Point {
-    int32_t x;
-    int32_t y;
-} Point;
 
 #ifdef __cplusplus
 }

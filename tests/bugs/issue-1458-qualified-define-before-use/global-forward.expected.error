@@ -1,0 +1,1 @@
+5:8 error[E0426]: type 'global.Config' is not defined here: it is used before its definition at line 9 (ADR-030: define before use)

@@ -1,0 +1,12 @@
+// test-error
+// #2339: a scope struct holding itself through `this.T`. Before the qualified
+// spellings were checked this reached codegen and overflowed its stack.
+scope S {
+    public struct Node {
+        this.Node n;
+    }
+}
+
+u32 main() {
+    return 0;
+}

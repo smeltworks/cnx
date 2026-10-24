@@ -1,0 +1,15 @@
+// test-error
+// #2339: two structs of one scope holding each other through `this.T`.
+scope S {
+    public struct A {
+        this.B b;
+    }
+
+    public struct B {
+        this.A a;
+    }
+}
+
+u32 main() {
+    return 0;
+}

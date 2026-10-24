@@ -1,6 +1,7 @@
 /**
  * CnxResolver - Orchestrates symbol collection from cnx parse trees.
- * Uses two-pass collection to handle forward references (bitmaps before registers).
+ * Records every scope's type names first, then collects every declaration in
+ * source order (#1332): the header defines types in symbol order.
  *
  * Produces TType-based symbols with proper IScopeSymbol references.
  */
@@ -97,19 +98,10 @@ class CnxResolver {
     const isScopeType = (qualifiedName: string): boolean =>
       declaredScopeTypes.has(qualifiedName);
 
-    // Pass 1: Collect all bitmaps, including those in scopes. Whether a
-    // register member's type IS a bitmap is not decided here: the bitmap may be
-    // another file's, which only 1.4 Resolve can see (#1514).
-    CnxResolver.collectBitmapsPass1(
-      registry,
-      program,
-      sourceFile,
-      symbols,
-      isScopeType,
-    );
-
-    // Pass 2: Collect everything else
-    CnxResolver.collectAllPass2(
+    // Pass 1: Collect every declaration in source order. Whether a register
+    // member's type IS a bitmap is not decided here: the bitmap may be another
+    // file's, which only 1.4 Resolve can see (#1514).
+    CnxResolver.collectInSourceOrder(
       registry,
       program,
       sourceFile,
@@ -213,106 +205,19 @@ class CnxResolver {
   }
 
   /**
-   * Pass 1: Collect all bitmaps (including those in scopes).
-   * Also collects structs in scopes early for type availability.
-   * SonarCloud S3776: Refactored to use helper methods.
+   * Pass 1: Collect every declaration, in source order.
+   *
+   * #1332: source order is the order the header defines types in, so it is a
+   * rule of this pass, pinned by the "source order" tests. ADR-030 (define
+   * before use, E0426) is what makes it a valid definition order.
    */
-  private static collectBitmapsPass1(
+  private static collectInSourceOrder(
     registry: SymbolRegistry,
     program: IProgramSyntax,
     sourceFile: string,
     symbols: TSymbol[],
     isScopeType: (qualifiedName: string) => boolean,
   ): void {
-    // #1298: file scope is the empty path; the global scope object itself is
-    // only needed where a mutable member list is.
-    const globalScopePath = "";
-
-    for (const { declaration: syntax } of program.declarations) {
-      // Top-level bitmaps
-      if (syntax.kind === "bitmap") {
-        const symbol = BitmapCollector.collect(
-          syntax,
-          sourceFile,
-          globalScopePath,
-          ScopeUtils.getTopLevelVisibility(),
-        );
-        symbols.push(symbol);
-      }
-
-      // Bitmaps and structs inside scopes (collected early)
-      if (syntax.kind === "scope") {
-        CnxResolver.collectScopedBitmapsAndStructs(
-          registry,
-          syntax,
-          sourceFile,
-          symbols,
-          isScopeType,
-        );
-      }
-    }
-  }
-
-  /**
-   * Collect bitmaps and structs from within a scope declaration.
-   * SonarCloud S3776: Extracted from collectBitmapsPass1().
-   */
-  private static collectScopedBitmapsAndStructs(
-    registry: SymbolRegistry,
-    scopeSyntax: Extract<TDeclarationSyntax, { kind: "scope" }>,
-    sourceFile: string,
-    symbols: TSymbol[],
-    isScopeType: (qualifiedName: string) => boolean,
-  ): void {
-    const scopeName = scopeSyntax.name;
-    const scopePath = ScopeUtils.pathOf(registry.getOrCreateScope(scopeName));
-
-    for (const member of scopeSyntax.members) {
-      const declaration = member.declaration;
-      // #1300: these are the scoped bitmap and struct symbols that SURVIVE --
-      // `collectScopeDeclaration` drops ScopeCollector's copies of both kinds.
-      // Ask the same helper that pass 2 asks, so one fact has one answer.
-      const visibility = ScopeUtils.memberVisibility(
-        member.visibility,
-        declaration.kind === "function",
-      );
-
-      if (declaration.kind === "bitmap") {
-        const symbol = BitmapCollector.collect(
-          declaration,
-          sourceFile,
-          scopePath,
-          visibility,
-        );
-        symbols.push(symbol);
-      }
-
-      // Collect structs early so they're available as types
-      if (declaration.kind === "struct") {
-        const symbol = StructCollector.collect(
-          declaration,
-          sourceFile,
-          scopePath,
-          visibility,
-          isScopeType,
-        );
-        symbols.push(symbol);
-      }
-    }
-  }
-
-  /**
-   * Pass 2: Collect all remaining symbols.
-   * Bitmaps and scoped structs were already collected in pass 1.
-   */
-  private static collectAllPass2(
-    registry: SymbolRegistry,
-    program: IProgramSyntax,
-    sourceFile: string,
-    symbols: TSymbol[],
-    isScopeType: (qualifiedName: string) => boolean,
-  ): void {
-    // `_collectDeclaration` has no bitmap branch: pass 1 owns bitmaps
     for (const { declaration: syntax } of program.declarations) {
       CnxResolver._collectDeclaration(
         registry,
@@ -349,6 +254,18 @@ class CnxResolver {
         symbols,
         isScopeType,
       );
+      return;
+    }
+
+    // Top-level bitmaps
+    if (syntax.kind === "bitmap") {
+      const symbol = BitmapCollector.collect(
+        syntax,
+        sourceFile,
+        globalScopePath,
+        ScopeUtils.getTopLevelVisibility(),
+      );
+      symbols.push(symbol);
       return;
     }
 
@@ -421,7 +338,7 @@ class CnxResolver {
   }
 
   /**
-   * Collect scope declaration and its non-bitmap/non-struct members.
+   * Collect a scope declaration and its members, in source order.
    */
   private static _collectScopeDeclaration(
     registry: SymbolRegistry,
@@ -439,13 +356,9 @@ class CnxResolver {
 
     symbols.push(result.scopeSymbol);
 
-    // Add member symbols, but skip bitmaps and structs (already collected in pass 1)
-    for (const memberSymbol of result.memberSymbols) {
-      if (memberSymbol.kind === "bitmap" || memberSymbol.kind === "struct") {
-        continue;
-      }
-      symbols.push(memberSymbol);
-    }
+    // #1332 / #2338: a scope's members join the one source-order stream here,
+    // not in an earlier pass ahead of every top-level declaration.
+    symbols.push(...result.memberSymbols);
   }
 }
 

@@ -1,0 +1,18 @@
+// test-error
+// #1458 / #1332: a global struct whose field names a scope struct declared
+// below it. The header defines structs in source order, so this would name
+// `S__Holder` before its typedef; ADR-030 (define before use) makes it E0426,
+// as the bare spelling already is.
+struct Top {
+    S.Holder h;
+}
+
+scope S {
+    public struct Holder {
+        u32 x;
+    }
+}
+
+u32 main() {
+    return 0;
+}

@@ -14,15 +14,15 @@ extern "C" {
 #endif
 
 /* Struct definitions */
-typedef struct StrMember__Config {
-    char key[33];
-    char value[257];
-} StrMember__Config;
 typedef struct Person {
     char name[65];
     char bio[129];
     uint32_t age;
 } Person;
+typedef struct StrMember__Config {
+    char key[33];
+    char value[257];
+} StrMember__Config;
 
 /* Function prototypes */
 uint32_t getNameLength(const Person& p);

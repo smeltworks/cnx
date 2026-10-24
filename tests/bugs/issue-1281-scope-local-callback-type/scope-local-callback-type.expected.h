@@ -31,15 +31,18 @@ typedef struct Timing__Config {
 typedef struct Later__Holder {
     Later__producer_fp make;
 } Later__Holder;
+typedef struct Config {
+    uint32_t x;
+} Config;
 typedef struct Shadow__Wrapper {
     Shadow__Config_fp c;
 } Shadow__Wrapper;
 typedef struct NoCapture__Holder {
     Mode m;
 } NoCapture__Holder;
-typedef struct Config {
-    uint32_t x;
-} Config;
+typedef struct NoCaptureStruct__Holder {
+    Config c;
+} NoCaptureStruct__Holder;
 
 /* Function prototypes */
 uint32_t Timing__tickSource(void);
@@ -49,6 +52,7 @@ uint32_t Later__run(void);
 uint32_t Shadow__Config(void);
 uint32_t Shadow__run(void);
 uint32_t NoCapture__run(void);
+uint32_t NoCaptureStruct__run(void);
 
 #ifdef __cplusplus
 }

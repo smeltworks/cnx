@@ -14,15 +14,15 @@ extern "C" {
 #endif
 
 /* Struct definitions */
+typedef struct Point {
+    int32_t x;
+    int32_t y;
+} Point;
 typedef struct SimpleStruct__Sensor {
     uint16_t id;
     float temperature;
     bool active;
 } SimpleStruct__Sensor;
-typedef struct Point {
-    int32_t x;
-    int32_t y;
-} Point;
 
 /* Function prototypes */
 int32_t getPointX(const Point* p);

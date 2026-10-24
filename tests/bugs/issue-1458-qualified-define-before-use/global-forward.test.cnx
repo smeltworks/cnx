@@ -1,0 +1,15 @@
+// test-error
+// #1458: `global.T` naming a global struct declared later in the file.
+scope S {
+    public struct Holder {
+        global.Config c;
+    }
+}
+
+struct Config {
+    u32 x;
+}
+
+u32 main() {
+    return 0;
+}

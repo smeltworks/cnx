@@ -1,0 +1,1 @@
+5:8 error[E0426]: type 'B.Inner' is not defined here: it is used before its definition at line 10 (ADR-030: define before use)

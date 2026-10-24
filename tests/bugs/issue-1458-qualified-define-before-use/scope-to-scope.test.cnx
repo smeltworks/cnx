@@ -1,0 +1,17 @@
+// test-error
+// #1458: one scope's struct naming a later scope's struct through `Scope.T`.
+scope A {
+    public struct Holder {
+        B.Inner i;
+    }
+}
+
+scope B {
+    public struct Inner {
+        u32 x;
+    }
+}
+
+u32 main() {
+    return 0;
+}

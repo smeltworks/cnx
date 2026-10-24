@@ -1,0 +1,15 @@
+// test-error
+// #1458: `this.T` naming a struct declared later in the same scope.
+scope S {
+    public struct First {
+        this.Second s;
+    }
+
+    public struct Second {
+        u32 x;
+    }
+}
+
+u32 main() {
+    return 0;
+}

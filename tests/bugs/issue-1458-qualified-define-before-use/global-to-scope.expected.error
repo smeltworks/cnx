@@ -1,0 +1,1 @@
+7:4 error[E0426]: type 'S.Holder' is not defined here: it is used before its definition at line 11 (ADR-030: define before use)

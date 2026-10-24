@@ -1,0 +1,1 @@
+4:4 error[E0426]: type 'global.Node' is not defined here: it is used inside its own definition (line 3): a type cannot hold itself (ADR-030: define before use)

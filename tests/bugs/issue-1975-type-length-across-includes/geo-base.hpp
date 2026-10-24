@@ -19,14 +19,14 @@ typedef enum {
 } Mode;
 
 /* Struct definitions */
-typedef struct Geo__Box {
-    uint8_t w;
-    uint16_t h;
-} Geo__Box;
 typedef struct Point {
     uint32_t x;
     uint8_t y;
 } Point;
+typedef struct Geo__Box {
+    uint8_t w;
+    uint16_t h;
+} Geo__Box;
 
 #ifdef __cplusplus
 }

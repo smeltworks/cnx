@@ -14,14 +14,14 @@ extern "C" {
 #endif
 
 /* Struct definitions */
-typedef struct AutoConst__Config {
-    uint32_t value;
-    bool enabled;
-} AutoConst__Config;
 typedef struct Point {
     int32_t x;
     int32_t y;
 } Point;
+typedef struct AutoConst__Config {
+    uint32_t value;
+    bool enabled;
+} AutoConst__Config;
 
 /* Function prototypes */
 int32_t getPointSum(const Point* p);

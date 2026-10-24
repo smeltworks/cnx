@@ -1,0 +1,30 @@
+// test-execution
+// Issue #2341: inside scope S (reopened from the include), bare `T` binds to the
+// included `S.T` (ADR-057), which is defined above everything in this file. A
+// global `T` declared below the use is a different type, so it is not a
+// define-before-use error (was a false E0426).
+
+#include "scope-types-lib.cnx"
+
+scope S {
+    public struct H {
+        T t;
+    }
+
+    public u32 go() {
+        this.H h <- { t: { x: 4 } };
+        return h.t.x;
+    }
+}
+
+struct T {
+    u32 y;
+}
+
+u32 main() {
+    u32 got <- S.go();
+    if (got != 4) {
+        return 1;
+    }
+    return 0;
+}

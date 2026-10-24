@@ -1,0 +1,9 @@
+// test-error
+// #2339: a global struct holding itself through `global.T`.
+struct Node {
+    global.Node n;
+}
+
+u32 main() {
+    return 0;
+}

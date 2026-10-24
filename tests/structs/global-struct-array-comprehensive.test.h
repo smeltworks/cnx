@@ -14,14 +14,14 @@ extern "C" {
 #endif
 
 /* Struct definitions */
-typedef struct GlobalStruct__Outer {
-    ExternalStruct inner;
-    uint8_t direct[8];
-} GlobalStruct__Outer;
 typedef struct CnxStruct {
     uint8_t buffer[16];
     uint32_t values[4];
 } CnxStruct;
+typedef struct GlobalStruct__Outer {
+    ExternalStruct inner;
+    uint8_t direct[8];
+} GlobalStruct__Outer;
 
 /* External variables */
 extern const ExternalStruct globalExternal;
