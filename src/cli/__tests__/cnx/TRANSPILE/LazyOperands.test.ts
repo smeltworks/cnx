@@ -64,6 +64,25 @@ describe("2.2 plans the operands built only when they run (#2332)", () => {
     expect(planned.lazyTernaries.size).toBe(0);
   });
 
+  it("types a ternary by its position before its arms", () => {
+    const planned = ProgramGeneration.planSource(
+      [
+        ...NAMED,
+        "f32 wf(Named x) {",
+        "  return 1.5;",
+        "}",
+        "u32 main() {",
+        "  u32 c <- 1;",
+        '  string<8> t <- "hi";',
+        "  f32 fx <- (c = 1) ? 0.5 : wf({ s: t, n: 1 });",
+        "  return 0;",
+        "}",
+      ].join("\n"),
+    );
+
+    expect([...planned.lazyTernaries.values()]).toEqual(["float"]);
+  });
+
   it("types a ternary of a u32 and a literal by its typed arm", () => {
     const planned = plan([
       "  u32 c <- 1;",

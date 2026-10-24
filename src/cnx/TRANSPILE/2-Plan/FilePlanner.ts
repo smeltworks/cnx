@@ -734,10 +734,9 @@ class FilePlanner {
   }
 
   /**
-   * #2332: the cnx type a lowered ternary's variable holds -- its typed arm's,
-   * which an unsuffixed literal arm (the typer's `int`) takes on as C's
-   * conversion would; arms that are struct initializers have only their
-   * position's
+   * #2332: the type a lowered ternary's variable holds -- its position's, and
+   * where none gives one (a comparison's operand) its typed arm's, which an
+   * unsuffixed literal arm (the typer's `int`) takes on as C's conversion would
    */
   private lazyTernaryType(
     expr: TExpressionOf<"ternary">,
@@ -745,10 +744,10 @@ class FilePlanner {
   ): string {
     const typing = this.state.typingContext();
     const typeName =
+      expectedTypes.get(expr)?.type ??
       [expr.whenTrue, expr.whenFalse]
         .map((arm) => OperandTyper.typeOf(arm, typing)?.typeName ?? null)
         .find((name) => name !== null && name !== "int") ??
-      expectedTypes.get(expr)?.type ??
       null;
     invariant(
       typeName !== null,

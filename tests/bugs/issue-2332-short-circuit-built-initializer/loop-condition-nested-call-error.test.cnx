@@ -1,5 +1,5 @@
 // test-error
-// Tests: #2332 - E0702 admits no call anywhere in a loop condition: a call inside a subscript (here one building a struct initializer) is a call in the condition, in while, do-while and for alike
+// Tests: #2332 - E0702 admits no call anywhere in a controlling expression: a call inside a subscript (here one building a struct initializer) is a call in the condition, in while, do-while, for, if and a ternary alike
 struct Named {
     string<8> s;
     u32 n;
@@ -26,5 +26,9 @@ u32 main() {
     for (mut u32 j <- 0; (j < 3) && (arr[w({ s: t, n: 1 })] = 1); j <- j + 1) {
         i <- i + 1;
     }
-    return i;
+    if ((i < 3) && (arr[w({ s: t, n: 1 })] = 1)) {
+        i <- 0;
+    }
+    u32 v <- (arr[w({ s: t, n: 1 })] = 1) ? 1 : 2;
+    return i + v;
 }

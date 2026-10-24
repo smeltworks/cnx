@@ -286,7 +286,9 @@ the no-call rule (E0702): `(isValid()) = true` runs `isValid()` exactly as
 bracketed.
 
 E0702 admits no call anywhere in a controlling expression, a call inside a
-subscript or an argument included (owner ruling 2026-10-24, #2332:
+subscript or an argument included, in an `if`, `while`, `do-while` and `for`
+condition and a ternary's alike: that is this ADR's rule, which the check had
+stopped short of (owner ruling 2026-10-24, #2332, [session](https://app.devin.ai/sessions/6ec2c4641b414aecada31ec19906856b):
 _"NO CALLS IN A LOOP CONDITION"_). `while ((i < 3) && (arr[w(x)] = 1))` calls
 `w` in the condition as surely as `while (w(x) = 1)` does; the check used to
 stop at a subscript (#254, #366), which let a struct initializer's temporary

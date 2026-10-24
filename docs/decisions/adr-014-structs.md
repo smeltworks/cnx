@@ -345,7 +345,7 @@ about where the initializer stands, not about what it initializes, which is why
 it lives beside E0357 rather than with the interop decisions.
 
 A `for` header's declaration is not such a position (#2304, owner ruling
-2026-10-24). Its object is built before the loop, the same way it is for any
+2026-10-24, [session](https://app.devin.ai/sessions/6ec2c4641b414aecada31ec19906856b): _"A, and update the adr with this example"_). Its object is built before the loop, the same way it is for any
 statement, and the loop variable starts as a copy of it. With
 `tests/include/CppTestClass.hpp`, a class with a constructor and an `int value`:
 
@@ -525,8 +525,9 @@ fieldInitializer
    expression, a subscript or an argument included (owner ruling 2026-10-24).
    A `for` update is run again with nothing written before it, so it is not
    lowered and its initializer is still built once before the loop (#2343).
-   An `else if` condition (#2340) and a `switch` subject (#2342) still put
-   their temporary in the wrong place.
+   An `else if` condition (#2340), a `switch` subject (#2342) and a `return`
+   of a scope-qualified type (#2345) still put or spell their temporary
+   wrongly.
 
 ## References
 
