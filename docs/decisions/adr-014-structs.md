@@ -344,6 +344,33 @@ of a global -- a scope member becomes a file-scope definition. So the rule is
 about where the initializer stands, not about what it initializes, which is why
 it lives beside E0357 rather than with the interop decisions.
 
+A `for` header's declaration is not such a position (#2304, owner ruling
+2026-10-24). Its object is built before the loop, the same way it is for any
+statement, and the loop variable starts as a copy of it. With
+`tests/include/CppTestClass.hpp`, a class with a constructor and an `int value`:
+
+```cnx
+#include "CppTestClass.hpp"
+u32 main() {
+    mut u32 laps <- 0;
+    for (mut CppTestClass c <- { value: 1 }; c.value < 3; c.value +<- 1) {
+        laps <- laps + 1;
+    }
+    return laps; // 2
+}
+```
+
+```cpp
+CppTestClass cnx_tmp0 = {};
+cnx_tmp0.value = 1;
+for (CppTestClass c = cnx_tmp0; c.value < 3; c.value += 1) {
+    laps = cnx_clamp_add_u32(laps, 1U);
+}
+```
+
+Before #1534 this compiled to `for (CppTestClass c = {}; ...)`: `value: 1` was
+dropped and the loop ran three times.
+
 ## Scope-Context Matrix (#1219)
 
 Severity follows the eslint model: `off` records that a cell **cannot exist**,
@@ -422,13 +449,11 @@ Severity follows the eslint model: `off` records that a cell **cannot exist**,
 | scope method       | imported transitive | off      |
 | global variable    | imported transitive | error    |
 | scope member       | imported transitive | error    |
-| for header         | same file           | warn     |
-| for header         | imported direct     | warn     |
-| for header         | imported transitive | warn     |
+| for header         | same file           | off      |
+| for header         | imported direct     | off      |
+| for header         | imported transitive | off      |
 
-off: E0508 only fires outside a function body; inside a function or a method the fields are assigned as statements.
-
-warn: a `for` header's declaration has no statement position after it either, so E0508 should fire there; it does not (#2304). Since #1534 the fields are not lost: the object is built as a temporary before the loop and the loop variable is initialized from it.
+off: E0508 only fires outside a function body; inside a function or a method the fields are assigned as statements. A `for` header is inside a function: its object is built before the loop and the loop variable starts as a copy (#2304, owner ruling 2026-10-24).
 
 E0357 is decided entirely within the file that writes the initializer, because
 whether the position supplies a type is a question about the initializer's own
@@ -495,9 +520,12 @@ fieldInitializer
    initializer is lowered; any other temporary (a float bit read, #2157's
    typedef) is still written before the statement. This holds where a
    statement's temporaries come before it: a declaration, an assignment, a
-   `return`, an argument. A loop's condition cannot hold such an initializer,
-   because E0702 rejects the call it needs. An `else if` condition still
-   puts its temporary in the wrong place (#2340).
+   `return`, an argument. A loop's condition and a `for` update are tested
+   again with nothing written before them each time, so an initializer there
+   is not lowered: it reaches a condition through a subscript or an argument,
+   which E0702 does not look into, and is still built once before the loop
+   (#2343). An `else if` condition (#2340) and a `switch` subject (#2342)
+   still put their temporary in the wrong place.
 
 ## References
 

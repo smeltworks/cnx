@@ -674,7 +674,10 @@ class FilePlanner {
    * with a constructor, or one with a `string<N>` field copied in -- is built
    * only when the `&&`/`||` operand or `?:` arm holding it runs. Each such
    * operand and ternary is lowered to an `if`: a `bool` holds the chain's
-   * value so far, and a ternary's value is a variable of its own type.
+   * value so far, and a ternary's value is a variable of its own type. Only
+   * where the statement's temporaries are written just before it, each time
+   * it runs: a loop's condition and a `for` update are tested again without
+   * the statement before them, so they keep the hoist they had (#2343).
    */
   private planLazyOperands(
     program: IProgramSyntax,
@@ -697,9 +700,15 @@ class FilePlanner {
           (structInitializers.get(node) === "cppClass" ||
             node.fields.some((field) => stringFields.has(field.value))),
       );
+    const retested = new Set(
+      FilePlanner.loopHeads(program).flatMap((head) =>
+        ExpressionNodes.direct(head),
+      ),
+    );
     const operands = new Set<TExpression>();
     const ternaries = new Map<TExpressionOf<"ternary">, string>();
     for (const expr of FilePlanner.writtenExpressions(program, unwritten)) {
+      if (retested.has(expr)) continue;
       if (
         expr.kind === "binary" &&
         (expr.level === "and" || expr.level === "or")
@@ -712,16 +721,8 @@ class FilePlanner {
         expr.kind === "ternary" &&
         (buildsApart(expr.whenTrue) || buildsApart(expr.whenFalse))
       ) {
-        const typeName =
-          expectedTypes.get(expr)?.type ??
-          OperandTyper.typeOf(expr, this.state.typingContext())?.typeName ??
-          null;
-        invariant(
-          typeName !== null,
-          `the ternary on line ${expr.span.line} that builds a temporary in an arm has a type`,
-        );
         const cType = TypeGenerationHelper.generateByName(
-          typeName,
+          this.lazyTernaryType(expr, expectedTypes),
           this.typeGenerationDeps(),
         );
         cTypes.add(cType);
@@ -730,6 +731,48 @@ class FilePlanner {
     }
     if (operands.size > 0) cTypes.add("bool");
     return { operands, ternaries };
+  }
+
+  /**
+   * #2332: the cnx type a lowered ternary's variable holds -- its typed arm's,
+   * which an unsuffixed literal arm (the typer's `int`) takes on as C's
+   * conversion would; arms that are struct initializers have only their
+   * position's
+   */
+  private lazyTernaryType(
+    expr: TExpressionOf<"ternary">,
+    expectedTypes: ReadonlyMap<TExpression, IPlannedExpectedType>,
+  ): string {
+    const typing = this.state.typingContext();
+    const typeName =
+      [expr.whenTrue, expr.whenFalse]
+        .map((arm) => OperandTyper.typeOf(arm, typing)?.typeName ?? null)
+        .find((name) => name !== null && name !== "int") ??
+      expectedTypes.get(expr)?.type ??
+      null;
+    invariant(
+      typeName !== null,
+      `the ternary on line ${expr.span.line} has a typed arm: one holds a call or a struct initializer, which E0357 types from its position`,
+    );
+    return typeName;
+  }
+
+  /** Every loop condition and `for` update: expressions tested again after their statement starts */
+  private static loopHeads(program: IProgramSyntax): TExpression[] {
+    return program.declarations.flatMap(({ declaration }) =>
+      StatementNodes.in(declaration).flatMap((statement) => {
+        if (statement.kind === "while" || statement.kind === "doWhile") {
+          return [statement.condition];
+        }
+        if (statement.kind !== "for") return [];
+        return [
+          ...(statement.condition === null ? [] : [statement.condition]),
+          ...(statement.update === null
+            ? []
+            : [statement.update.target, statement.update.value]),
+        ];
+      }),
+    );
   }
 
   private planStructInitializers(

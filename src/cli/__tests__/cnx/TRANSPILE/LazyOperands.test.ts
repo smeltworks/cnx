@@ -52,6 +52,27 @@ describe("2.2 plans the operands built only when they run (#2332)", () => {
     expect(planned.lazyTernaries.size).toBe(0);
   });
 
+  it("leaves an operand in a loop condition alone: it is tested again without its statement", () => {
+    const planned = plan([
+      "  u32[2] arr <- [0, 1];",
+      "  mut u32 i <- 0;",
+      "  while ((i < 3) && (arr[w({ s: t, n: 1 })] = 1)) {",
+      "    i <- i + 1;",
+      "  }",
+    ]);
+
+    expect(planned.lazyOperands.size).toBe(0);
+  });
+
+  it("types a ternary of a u32 and a literal by its typed arm", () => {
+    const planned = plan([
+      "  u32 c <- 1;",
+      "  bool b <- (a = 1) && (((c = 1) ? w({ s: t, n: 1 }) : 0) = 1);",
+    ]);
+
+    expect([...planned.lazyTernaries.values()]).toEqual(["uint32_t"]);
+  });
+
   it("plans a ternary's value as its own C type", () => {
     const planned = plan([
       "  Named p <- (a = 1) ? { s: t, n: 1 } : { s: t, n: 2 };",

@@ -73,10 +73,22 @@ class TypeGenerationHelper {
    * of its own (a ternary's)
    */
   static generateByName(typeName: string, deps: ITypeGenerationDeps): string {
-    return (
-      TYPE_MAP[typeName] ??
-      userCType(typeName, deps.checkNeedsStructKeyword(typeName))
-    );
+    return typeName in TYPE_MAP
+      ? TypeGenerationHelper.primitiveCType(typeName)
+      : TypeGenerationHelper.userTypeCType(typeName, deps);
+  }
+
+  /** A primitive's C spelling: `generate`'s and `generateByName`'s one table read */
+  private static primitiveCType(primitiveName: string): string {
+    return TYPE_MAP[primitiveName] || primitiveName;
+  }
+
+  /** A bare user type's C spelling: `renderNamed`'s and `generateByName`'s */
+  private static userTypeCType(
+    typeName: string,
+    deps: ITypeGenerationDeps,
+  ): string {
+    return userCType(typeName, deps.checkNeedsStructKeyword(typeName));
   }
 
   static generateStringType(): string {
@@ -135,10 +147,7 @@ class TypeGenerationHelper {
     // for the cast path too. It used to be answered here as well, before the
     // provenance lines -- two spellings of one mapping, and removing this one
     // reddened nothing because the other one caught it.
-    return userCType(
-      named.written,
-      deps.checkNeedsStructKeyword(named.written),
-    );
+    return TypeGenerationHelper.userTypeCType(named.written, deps);
   }
 
   /**
@@ -163,7 +172,7 @@ class TypeGenerationHelper {
     }
 
     if (plan.primitiveName !== null) {
-      return TYPE_MAP[plan.primitiveName] || plan.primitiveName;
+      return TypeGenerationHelper.primitiveCType(plan.primitiveName);
     }
 
     return plan.text;
