@@ -512,6 +512,26 @@ describe("OperatorOperandAnalyzer -- operands outside the operator's set", () =>
     expect(run(body)).toEqual([]);
   });
 
+  it("leaves a whole-array compound target to E0857", () => {
+    expect(run("row +<- 1;")).toEqual([]);
+  });
+
+  it("takes an unsized string parameter under +, not under <", () => {
+    const codes = (body: string) =>
+      analyze(`void g(string p) { ${body} }`).map((e) => [e.code, e.message]);
+    expect(codes('string<8> r <- p + "a";')).toEqual([]);
+    expect(codes("bool r <- p < p;")).toEqual([
+      ["E0925", "Operator '<' is not valid on a string operand"],
+    ]);
+  });
+
+  it("leaves a cstring operand as it was (#2348)", () => {
+    const errors = analyze(
+      'mut string<8> h <- "ab"; void g() { cstring c <- h; cstring d <- c + 1; }',
+    );
+    expect(errors).toEqual([]);
+  });
+
   it("reads a member of the enum being declared as an i32 (ADR-017)", () => {
     const errors = analyze(
       "enum EPerm { READ <- 1, WRITE <- 2, RW <- EPerm.READ | EPerm.WRITE }",
