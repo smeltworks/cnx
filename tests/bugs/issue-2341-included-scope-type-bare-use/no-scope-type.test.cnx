@@ -1,0 +1,17 @@
+// test-error
+// Issue #2341 control: scope S has no T of its own, so bare `T` inside it binds
+// to the global `T` (ADR-057), and that is declared below the use -- E0426
+// (ADR-030: define before use). Pins the arm `global-below` does not reach.
+scope S {
+    public struct H {
+        T t;
+    }
+}
+
+struct T {
+    u32 y;
+}
+
+u32 main() {
+    return 0;
+}

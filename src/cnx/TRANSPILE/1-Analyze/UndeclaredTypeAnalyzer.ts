@@ -174,7 +174,7 @@ class UndeclaredTypeAnalyzer {
       return;
     }
     const definition = this.definitionAfter(
-      this.spellingsOf(typeName, scope),
+      this.boundName(typeName, scope),
       line,
       column,
     );
@@ -193,32 +193,21 @@ class UndeclaredTypeAnalyzer {
   }
 
   /**
-   * The `cnxScopedName`s a bare `T` written in `scope` may denote, nearest
-   * first. #2341: when the scope has its own `T` (ADR-057), that is what the
-   * name binds to, wherever it is declared -- so a global `T` is not a
-   * candidate, even when the scope's `T` comes from an include and so is not
-   * in `typesHere`.
+   * The `cnxScopedName` a bare `T` written in `scope` binds to. #2341: ADR-057
+   * binds it to the scope's own `T` wherever that is declared, an include
+   * included, and to the global `T` only when the scope has none -- asked of the
+   * predicate 1.4 binds the name with (`DeferredTypes.settleType`).
    */
-  private spellingsOf(typeName: string, scope: string): string[] {
-    if (!scope) {
-      return [typeName];
-    }
-    const scoped = ScopeUtils.getCnxScopedName({
-      name: typeName,
-      scopePath: scope,
-    });
-    if (
-      UndeclaredTypeAnalyzer._scopeSpelling(
-        typeName,
-        scope,
-        this.context.symbols,
-        this.context.symbolTable,
-        UndeclaredTypeAnalyzer._isTypeName,
-      )
-    ) {
-      return [scoped];
-    }
-    return [scoped, typeName];
+  private boundName(typeName: string, scope: string): string {
+    const bound = ScopeUtils.qualifyScopeType(typeName, scope, (qualified) =>
+      this.context.program.isScopeTypeVisibleFrom(
+        this.context.sourceFile,
+        qualified,
+      ),
+    );
+    return bound === typeName
+      ? typeName
+      : ScopeUtils.getCnxScopedName({ name: typeName, scopePath: scope });
   }
 
   /**
@@ -230,11 +219,7 @@ class UndeclaredTypeAnalyzer {
     scopedName: string,
     span: ISourceSpan,
   ): void {
-    const definition = this.definitionAfter(
-      [scopedName],
-      span.line,
-      span.column,
-    );
+    const definition = this.definitionAfter(scopedName, span.line, span.column);
     if (definition !== null) {
       this.addUsedBeforeDefinitionError(
         written,
@@ -246,15 +231,13 @@ class UndeclaredTypeAnalyzer {
   }
 
   /**
-   * The definition of the type this file declares under the first of
-   * `spellings` it declares, when that definition has not closed by
-   * `line:column` -- it comes later in the file, or the use sits inside it (a
-   * struct holding itself). Null when no spelling is this file's type, or it is
-   * defined above. A bare use passes its scope-qualified spelling first, as
-   * `isVisibleType` tries it.
+   * The definition of the type this file declares as `scopedName`, when that
+   * definition has not closed by `line:column` -- it comes later in the file, or
+   * the use sits inside it (a struct holding itself). Null when the name is not
+   * this file's type, or is defined above.
    */
   definitionAfter(
-    spellings: readonly string[],
+    scopedName: string,
     line: number,
     column: number,
   ): ISourceSpan | null {
@@ -269,8 +252,7 @@ class UndeclaredTypeAnalyzer {
             : [],
         ),
     );
-    const name = spellings.find((spelling) => this.typesHere!.has(spelling));
-    const span = name === undefined ? undefined : this.typesHere.get(name);
+    const span = this.typesHere.get(scopedName);
     if (span === undefined) {
       return null;
     }
@@ -290,16 +272,9 @@ class UndeclaredTypeAnalyzer {
       scope,
       this.context.symbols,
       this.context.symbolTable,
-      UndeclaredTypeAnalyzer._isTypeName,
+      (name, fileSymbols, table) =>
+        NameExistence.isTypeName(name, fileSymbols, table),
     );
-  }
-
-  private static _isTypeName(
-    name: string,
-    symbols: ICodeGenSymbols,
-    symbolTable: IResolvedSymbols,
-  ): boolean {
-    return NameExistence.isTypeName(name, symbols, symbolTable);
   }
 
   /**
@@ -350,33 +325,14 @@ class UndeclaredTypeAnalyzer {
       symbolTable: IResolvedSymbols,
     ) => boolean,
   ): boolean {
-    return (
-      UndeclaredTypeAnalyzer._scopeSpelling(
-        typeName,
-        scope,
-        symbols,
-        symbolTable,
-        test,
-      ) || test(typeName, symbols, symbolTable)
-    );
-  }
+    if (scope) {
+      const qualified = ScopeUtils.qualifyInScope(typeName, scope);
+      if (test(qualified, symbols, symbolTable)) {
+        return true;
+      }
+    }
 
-  /** The scope-qualified half of `_eitherSpelling`, also asked alone by `spellingsOf` */
-  private static _scopeSpelling(
-    typeName: string,
-    scope: string,
-    symbols: ICodeGenSymbols,
-    symbolTable: IResolvedSymbols,
-    test: (
-      name: string,
-      symbols: ICodeGenSymbols,
-      symbolTable: IResolvedSymbols,
-    ) => boolean,
-  ): boolean {
-    return (
-      scope !== "" &&
-      test(ScopeUtils.qualifyInScope(typeName, scope), symbols, symbolTable)
-    );
+    return test(typeName, symbols, symbolTable);
   }
 
   addError(typeName: string, line: number, column: number): void {
