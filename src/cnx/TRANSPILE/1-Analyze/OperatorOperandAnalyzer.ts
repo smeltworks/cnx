@@ -33,6 +33,7 @@
 
 import IOperatorOperandError from "./types/IOperatorOperandError";
 import OperandTyper from "../../utils/OperandTyper";
+import CompoundAssignmentAnalyzer from "./CompoundAssignmentAnalyzer";
 import CompoundOperator from "../../utils/CompoundOperator";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
@@ -191,6 +192,9 @@ class OperatorOperandCheck {
     }
     const admits = BINARY.get(operator);
     if (admits === undefined) return;
+    if (CompoundAssignmentAnalyzer.rejectsTarget(site.target, this.context)) {
+      return;
+    }
     const targetRejection = OperatorOperandAnalyzer.rejection(
       operator,
       admits,
@@ -293,9 +297,12 @@ class OperatorOperandAnalyzer {
       default:
         break;
     }
-    if (operand.stringCapacity !== null) {
+    if (OperandTyper.isString(operand)) {
       return operator === "+" ? null : "string";
     }
+    // A C char pointer: which operators take one is open (#2348), so this
+    // rule leaves it as it was until ADR-046 says
+    if (operand.typeName === "cstring") return null;
     // A whole bitmap is its backing integer (ADR-034, owner ruling #2245)
     if (operand.bitmapTypeName !== null) return null;
     if (operand.typeName === null) return null;

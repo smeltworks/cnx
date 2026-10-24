@@ -85,7 +85,7 @@ class CompoundAssignmentCheck {
    * and never rejects: a name this pass cannot resolve is another
    * diagnostic's to report, not this one's to guess at.
    */
-  private rejectionFor(target: TExpression): TRejection | null {
+  public rejectionFor(target: TExpression): TRejection | null {
     // A range or a slice is never one storage location, whatever it
     // indexes, so this needs no resolved shape.
     if (
@@ -128,6 +128,17 @@ class CompoundAssignmentCheck {
 class CompoundAssignmentAnalyzer {
   /** #1456: handed in rather than read off shared state. */
   constructor(private readonly context: IAnalysisContext) {}
+
+  /**
+   * Whether E0857 rejects this target's shape, so Rule 10.1 does not report
+   * the same compound assignment again (#1191)
+   */
+  static rejectsTarget(
+    target: TExpression,
+    context: IAnalysisContext,
+  ): boolean {
+    return new CompoundAssignmentCheck(context).rejectionFor(target) !== null;
+  }
 
   /** #1991: reads 1.2's syntax, not the parse tree */
   public analyze(program: IProgramSyntax): ICompoundAssignmentError[] {
