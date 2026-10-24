@@ -31,8 +31,10 @@ void main() {
     // ASSERTIONS
     u32 e1 <- a + 5i32;
     u32 e2 <- 5i32 + a;
-    u32 e3 <- a + c;
-    u32 e4 <- a * 'A';
+    // An enum under `+` and a char under `*` are Rule 10.1's (E0925), which
+    // runs first (#1191), so these mix them where the operator takes them
+    u32 e3 <- (b = true) ? a : c;
+    u32 e4 <- a - 'A';
     bool e5 <- ch = 'A';
     bool e6 <- a = b;
 }
