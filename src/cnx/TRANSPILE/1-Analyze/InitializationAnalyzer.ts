@@ -22,7 +22,6 @@ import ExpressionShape from "../../utils/ExpressionShape";
 import StatementChildren from "../../utils/StatementChildren";
 import StatementWrites from "../../utils/StatementWrites";
 import DeclarationParts from "../../utils/DeclarationParts";
-import ExpressionChildren from "../../utils/ExpressionChildren";
 import TypeParts from "../../utils/TypeParts";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type IFunctionDeclarationSyntax from "../../types/syntax/IFunctionDeclarationSyntax";
@@ -301,12 +300,7 @@ class InitializationWalk {
       this.ops(expr.ops);
       return;
     }
-    for (const child of ExpressionChildren.of(expr)) {
-      this.expression(child);
-    }
-    if (expr.kind === "cast") {
-      this.part({ kind: "type", type: expr.type });
-    }
+    for (const read of ProgramExpressions.readsIn(expr)) this.expression(read);
   }
 
   private ops(ops: readonly TPostfixOpSyntax[]): void {

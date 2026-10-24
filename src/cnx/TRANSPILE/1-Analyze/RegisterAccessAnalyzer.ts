@@ -179,9 +179,7 @@ class RegisterAccessAnalyzer {
   /** #1991: reads 1.2's syntax, not the parse tree */
   public analyze(program: IProgramSyntax): IRegisterAccessError[] {
     const check = new RegisterAccessCheck(this.context);
-    for (const expr of ProgramAccesses.reads(program))
-      check.checkExpression(expr);
-    for (const site of ProgramAccesses.writes(program)) check.checkSite(site);
+    ProgramAccesses.checkReadsAndWrites(program, check);
     return check.errors().sort(SourceOrder.bySpan);
   }
 }

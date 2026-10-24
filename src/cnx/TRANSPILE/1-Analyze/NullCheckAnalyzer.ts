@@ -16,7 +16,6 @@ import INullCheckError from "./types/INullCheckError";
 import ProgramExpressions from "../../utils/ProgramExpressions";
 import type ISourceSpan from "../../types/ISourceSpan";
 import DeclarationParts from "../../utils/DeclarationParts";
-import ExpressionChildren from "../../utils/ExpressionChildren";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import ExpressionShape from "../../utils/ExpressionShape";
 import StatementChildren from "../../utils/StatementChildren";
@@ -449,12 +448,7 @@ class NullCheckWalk {
     if (expr.kind === "literal" && expr.literalKind === "null") {
       this.nullLiteral(expr);
     }
-    for (const child of ExpressionChildren.of(expr)) {
-      this.expression(child);
-    }
-    if (expr.kind === "cast") {
-      this.part({ kind: "type", type: expr.type });
-    }
+    for (const read of ProgramExpressions.readsIn(expr)) this.expression(read);
     if (isComparison) {
       this.inEqualityComparison = false;
       this.equalityComparisonVarNames = [];

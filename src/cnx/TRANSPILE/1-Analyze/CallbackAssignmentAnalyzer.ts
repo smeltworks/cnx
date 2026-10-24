@@ -47,7 +47,6 @@ import ProgramAccesses from "../../utils/ProgramAccesses";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
-import VariableDeclarations from "../../utils/VariableDeclarations";
 import OperandTyper from "../../utils/OperandTyper";
 import type IVariableDeclarationSyntax from "../../types/syntax/IVariableDeclarationSyntax";
 import IFunctionSymbol from "../../types/symbols/IFunctionSymbol";
@@ -353,13 +352,7 @@ class CallbackAssignmentAnalyzer {
     positions: ReadonlyMap<TExpression, IValuePosition>,
   ): ICallbackAssignmentError[] {
     const check = new CallbackAssignmentCheck(this.context, positions);
-    for (const entry of VariableDeclarations.in(program)) {
-      check.checkDeclaration(entry.declaration);
-    }
-    for (const site of ProgramAccesses.writes(program)) check.checkSite(site);
-    for (const expr of ProgramAccesses.expressions(program)) {
-      check.checkExpression(expr);
-    }
+    ProgramAccesses.checkEverything(program, check);
     check.checkCTypedefCallbacks();
     return check.errors().sort(SourceOrder.bySpan);
   }

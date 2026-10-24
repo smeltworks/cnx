@@ -66,7 +66,6 @@ import ProgramAccesses from "../../utils/ProgramAccesses";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import StatementNodes from "../../utils/StatementNodes";
-import VariableDeclarations from "../../utils/VariableDeclarations";
 import OperandTyper from "../../utils/OperandTyper";
 import ExpressionShape from "../../utils/ExpressionShape";
 import type IVariableDeclarationSyntax from "../../types/syntax/IVariableDeclarationSyntax";
@@ -669,13 +668,7 @@ class IntegerConversionAnalyzer {
         }
       }
     }
-    for (const entry of VariableDeclarations.in(program)) {
-      check.checkDeclaration(entry.declaration);
-    }
-    for (const site of ProgramAccesses.writes(program)) check.checkSite(site);
-    for (const expr of ProgramAccesses.expressions(program)) {
-      check.checkExpression(expr);
-    }
+    ProgramAccesses.checkEverything(program, check);
     return check.errors().sort(SourceOrder.bySpan);
   }
 }
