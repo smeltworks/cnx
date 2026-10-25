@@ -9,8 +9,6 @@ interface IProgramMember {
   readonly declaration: TMemberDeclaration;
   /** The scope it is declared in, or null for a file-level declaration */
   readonly scope: string | null;
-  /** As written on a scope member; null at file level or when unwritten */
-  readonly visibility: "private" | "public" | null;
 }
 
 export default IProgramMember;

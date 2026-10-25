@@ -1,7 +1,9 @@
+import type IGateViolation from "./IGateViolation";
+
 /**
  * One `gh` invocation that reads a capped page and cannot tell it did (issue #1416).
  */
-interface IGhPaginationViolation {
+interface IGhPaginationViolation extends IGateViolation {
   /** Repo-relative path, e.g. `.claude/skills/issue-check/SKILL.md`. */
   file: string;
   /** 1-indexed line the command STARTS on, so the report points at something openable. */

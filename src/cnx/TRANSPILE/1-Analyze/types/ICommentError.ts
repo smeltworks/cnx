@@ -7,7 +7,7 @@ interface ICommentError {
   rule: "3.1" | "3.2";
   /** Error message */
   message: string;
-  /** Line number (1-based) */
+  /** Where it is reported; its column is 0-based, like every diagnostic's */
   span: ISourceSpan;
 }
 

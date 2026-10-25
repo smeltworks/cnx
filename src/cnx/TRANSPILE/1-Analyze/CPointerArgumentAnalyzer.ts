@@ -94,69 +94,59 @@ class CPointerArgumentCheck {
     parameter: ICCalleeSignature["parameters"][number] | undefined,
     pointee: string | null,
   ): boolean {
-    const arg = callee.arguments[index];
-    const name = callee.name;
+    const written =
+      WrittenBinding.ofExpression(callee.arguments[index], this.context)
+        ?.binding ?? null;
     if (
       !CArgumentWrite.mayWrite(callee, index, this.context) ||
-      BoundDeclaration.of(
-        WrittenBinding.ofExpression(arg, this.context)?.binding ?? null,
-      )?.isConst !== true
+      BoundDeclaration.of(written)?.isConst !== true
     ) {
       return false;
     }
+    this.found.push({
+      code: "E0900",
+      span: callee.arguments[index].span,
+      ...this.readOnlyWriteText(callee, index, parameter, pointee),
+      severity: "error",
+      declaredAt: MutSite.of(written, this.context),
+    });
+    return true;
+  }
+
+  /** What E0900 says about the write `rejectsReadOnlyWrite` found */
+  private readOnlyWriteText(
+    callee: ICCallee,
+    index: number,
+    parameter: ICCalleeSignature["parameters"][number] | undefined,
+    pointee: string | null,
+  ): { readonly message: string; readonly helpText: string } {
+    const arg = callee.arguments[index];
+    const name = callee.name;
     if (callee.signatures.length > 1) {
-      this.found.push({
-        code: "E0900",
-        span: arg.span,
+      return {
         message: `'${arg.written}' is read-only, and every overload of '${name}' this call can reach may write through argument ${index + 1}`,
         helpText: `Declare '${arg.written}' \`mut\`, or give '${name}' an overload that takes it const.`,
-        severity: "error",
-        declaredAt: MutSite.of(
-          WrittenBinding.ofExpression(arg, this.context)?.binding ?? null,
-          this.context,
-        ),
-      });
-    } else if (parameter === undefined) {
+      };
+    }
+    if (parameter === undefined) {
       const object = arg.kind === "unary" ? arg.operand : arg;
-      this.found.push({
-        code: "E0900",
-        span: arg.span,
+      return {
         message: `'${object.written}' is read-only, and argument ${index + 1} of '${name}' fills its '...', which '${name}' may write through`,
         helpText: `Declare '${object.written}' \`mut\`.`,
-        severity: "error",
-        declaredAt: MutSite.of(
-          WrittenBinding.ofExpression(arg, this.context)?.binding ?? null,
-          this.context,
-        ),
-      });
-    } else if (pointee !== null) {
+      };
+    }
+    if (pointee !== null) {
       const objectType = this.objectTypeOf(arg);
       const typeSuffix = objectType === null ? "" : ` ${objectType}`;
-      this.found.push({
-        code: "E0900",
-        span: arg.span,
+      return {
         message: `'${arg.written}' is read-only${typeSuffix}, and parameter ${index + 1} of '${name}' is a pointer '${name}' may write through`,
         helpText: `Declare '${arg.written}' \`mut\`, or declare the C parameter const ${pointee}*.`,
-        severity: "error",
-        declaredAt: MutSite.of(
-          WrittenBinding.ofExpression(arg, this.context)?.binding ?? null,
-          this.context,
-        ),
-      });
-    } else {
-      this.found.push({
-        code: "E0900",
-        span: arg.span,
-        message: `'${arg.written}' is read-only, and parameter ${index + 1} of '${name}' is ${parameter.isArray ? "an array" : "a reference"} '${name}' may write through`,
-        helpText: `Declare '${arg.written}' \`mut\`, or declare the C parameter const.`,
-        severity: "error",
-        declaredAt: MutSite.of(
-          WrittenBinding.ofExpression(arg, this.context)?.binding ?? null,
-          this.context,
-        ),
-      });
+      };
     }
-    return true;
+    return {
+      message: `'${arg.written}' is read-only, and parameter ${index + 1} of '${name}' is ${parameter.isArray ? "an array" : "a reference"} '${name}' may write through`,
+      helpText: `Declare '${arg.written}' \`mut\`, or declare the C parameter const.`,
+    };
   }
 
   /** The C type of what an argument hands over: `&x` hands over x */

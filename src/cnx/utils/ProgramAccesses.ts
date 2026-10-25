@@ -7,11 +7,6 @@ import DeclarationParts from "./DeclarationParts";
 import ExpressionNodes from "./ExpressionNodes";
 import StatementNodes from "./StatementNodes";
 
-/**
- * What a file writes and what it reads, decided once (#2115): an assignment's
- * target is a write, checked with its site, and not read again as an
- * expression.
- */
 /** A check that judges what a file reads and each write site */
 interface IAccessCheck {
   checkExpression(expr: TExpression): void;
@@ -23,6 +18,11 @@ interface IDeclarationAccessCheck extends IAccessCheck {
   checkDeclaration(declaration: IVariableDeclarationSyntax): void;
 }
 
+/**
+ * What a file writes and what it reads, decided once (#2115): an assignment's
+ * target is a write, checked with its site, and not read again as an
+ * expression.
+ */
 class ProgramAccesses {
   /** Each read to `checkExpression`, then each write site to `checkSite` */
   static checkReadsAndWrites(

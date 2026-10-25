@@ -60,12 +60,11 @@ class ProgramLowering {
     declaration: TDeclarationSyntax,
   ): readonly IProgramMember[] {
     if (declaration.kind !== "scope") {
-      return [{ declaration, scope: null, visibility: null }];
+      return [{ declaration, scope: null }];
     }
     return declaration.members.map((member) => ({
       declaration: member.declaration,
       scope: declaration.name,
-      visibility: member.visibility,
     }));
   }
 

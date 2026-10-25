@@ -36,6 +36,29 @@ describe("ProgramLowering", () => {
     ]);
   });
 
+  it("lists every declaration, a scope's members included, in source order with its scope (#2115)", () => {
+    const program = lower(`
+      u8 a;
+      scope Lib { u8 b; void c() { } }
+      u8 d;
+      scope Lib { u8 e; }
+      void main() { }
+    `);
+    expect(
+      program.members.map(({ declaration, scope }) => [
+        declaration.kind === "missing" ? null : declaration.name,
+        scope,
+      ]),
+    ).toEqual([
+      ["a", null],
+      ["b", "Lib"],
+      ["c", "Lib"],
+      ["d", null],
+      ["e", "Lib"],
+      ["main", null],
+    ]);
+  });
+
   it("is plain data: it survives a JSON round trip unchanged", () => {
     const program = lower(`
       #include <stdint.h>

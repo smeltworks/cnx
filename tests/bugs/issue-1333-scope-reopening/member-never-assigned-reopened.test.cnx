@@ -1,0 +1,21 @@
+// test-error
+// test-adr: 016
+// Issue #2115: the negative control for member-assigned-in-reopened-block.
+// Looking at every block of a reopened scope must not count a member as
+// initialized when no function in any block assigns it.
+
+scope Lib {
+    mut u32 counter;
+    public u32 read() {
+        return counter;
+    }
+}
+
+scope Lib {
+    public void reset() {}
+}
+
+u32 main() {
+    Lib.reset();
+    return Lib.read();
+}
