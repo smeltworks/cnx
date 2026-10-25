@@ -8,9 +8,8 @@
  * uses (#2073). A `for` header's string is E0917, not one of these.
  */
 import ExpressionShape from "../../utils/ExpressionShape";
-import CodedErrorText from "../../utils/CodedErrorText";
+import FormError from "./FormError";
 import VariableDeclarations from "../../utils/VariableDeclarations";
-import type ISourceSpan from "../../types/ISourceSpan";
 import type ITranspileError from "../../types/ITranspileError";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IVariableDeclarationSite from "../../types/syntax/IVariableDeclarationSite";
@@ -46,11 +45,13 @@ class StringFormCheck {
     if (isArray || initializer === null) return;
     if (entry.site === "statement") return; // inside a function
     if (ExpressionShape.isStringLiteral(initializer)) return;
-    this.report(
-      initializer.span,
-      "E0863",
-      `A string at file scope may only be initialized by a literal, not '${initializer.written}'`,
-      "Copying, concatenating and extracting a substring all need runtime calls, which C cannot make before `main`. Move the declaration into a function, or initialize it empty and assign later.",
+    this.found.push(
+      FormError.at(
+        initializer.span,
+        "E0863",
+        `A string at file scope may only be initialized by a literal, not '${initializer.written}'`,
+        "Copying, concatenating and extracting a substring all need runtime calls, which C cannot make before `main`. Move the declaration into a function, or initialize it empty and assign later.",
+      ),
     );
   }
 
@@ -63,64 +64,59 @@ class StringFormCheck {
     initializer: TExpression | null,
   ): void {
     if (isArray) {
-      this.report(
-        stringType.span,
-        "E0862",
-        "A string array requires an explicit capacity",
-        "Write the element capacity, e.g. string<64>[4].",
+      this.found.push(
+        FormError.at(
+          stringType.span,
+          "E0862",
+          "A string array requires an explicit capacity",
+          "Write the element capacity, e.g. string<64>[4].",
+        ),
       );
       return;
     }
     if (!isReadOnly && isAtomic) {
-      this.report(
-        stringType.span,
-        "E0862",
-        "An `atomic` string requires an explicit capacity",
-        "`atomic` makes a binding writable (ADR-071), and only a read-only string can have its capacity inferred. Give it a capacity: `atomic string<64>`.",
+      this.found.push(
+        FormError.at(
+          stringType.span,
+          "E0862",
+          "An `atomic` string requires an explicit capacity",
+          "`atomic` makes a binding writable (ADR-071), and only a read-only string can have its capacity inferred. Give it a capacity: `atomic string<64>`.",
+        ),
       );
       return;
     }
     if (!isReadOnly) {
-      this.report(
-        stringType.span,
-        "E0862",
-        "A `mut` string requires an explicit capacity",
-        "Write the capacity, e.g. string<64>. Only a read-only string can have one inferred.",
+      this.found.push(
+        FormError.at(
+          stringType.span,
+          "E0862",
+          "A `mut` string requires an explicit capacity",
+          "Write the capacity, e.g. string<64>. Only a read-only string can have one inferred.",
+        ),
       );
       return;
     }
     if (initializer === null) {
-      this.report(
-        stringType.span,
-        "E0862",
-        "A read-only string without a capacity requires an initializer to infer it from",
-        "Write the capacity, e.g. string<64>, or initialize it with a literal.",
+      this.found.push(
+        FormError.at(
+          stringType.span,
+          "E0862",
+          "A read-only string without a capacity requires an initializer to infer it from",
+          "Write the capacity, e.g. string<64>, or initialize it with a literal.",
+        ),
       );
       return;
     }
     if (!ExpressionShape.isStringLiteral(initializer)) {
-      this.report(
-        initializer.span,
-        "E0862",
-        "A read-only string without a capacity requires a string literal to infer it from",
-        "Write the capacity, e.g. string<64>. A capacity can only be inferred from a literal.",
+      this.found.push(
+        FormError.at(
+          initializer.span,
+          "E0862",
+          "A read-only string without a capacity requires a string literal to infer it from",
+          "Write the capacity, e.g. string<64>. A capacity can only be inferred from a literal.",
+        ),
       );
     }
-  }
-
-  private report(
-    at: ISourceSpan,
-    code: string,
-    message: string,
-    helpText: string,
-  ): void {
-    this.found.push({
-      line: at.line,
-      column: at.column,
-      message: CodedErrorText.of(code, message),
-      helpText,
-      severity: "error",
-    });
   }
 }
 

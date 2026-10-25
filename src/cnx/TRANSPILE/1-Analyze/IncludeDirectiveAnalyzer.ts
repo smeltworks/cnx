@@ -124,7 +124,12 @@ class IncludeDirectiveChecks {
       "rename the file and this include.",
     );
     invariant(rejection !== null, `${spec.path} is a rejected cnx path`);
-    this.report(ctx, rejection.code, rejection.message, rejection.helpText);
+    this.found.push({
+      code: rejection.code,
+      span: ctx.span,
+      message: rejection.message,
+      helpText: rejection.helpText,
+    });
     return true;
   }
 
@@ -135,12 +140,13 @@ class IncludeDirectiveChecks {
     kind: EFileType,
   ): boolean {
     if (!IMPLEMENTATION_KINDS.has(kind)) return false;
-    this.report(
-      ctx,
-      "E0503",
-      `Cannot #include implementation file '${spec.path}'. Only header files (.h, .hpp) are allowed.`,
-      "An implementation file defines its symbols, so including it defines them again in every includer (ADR-010); include the header instead.",
-    );
+    this.found.push({
+      code: "E0503",
+      span: ctx.span,
+      message: `Cannot #include implementation file '${spec.path}'. Only header files (.h, .hpp) are allowed.`,
+      helpText:
+        "An implementation file defines its symbols, so including it defines them again in every includer (ADR-010); include the header instead.",
+    });
     return true;
   }
 
@@ -165,12 +171,13 @@ class IncludeDirectiveChecks {
     // `.expected.error`. A quoted include resolves relative to the including
     // file, so the spelling IS the relative answer and the directory is the
     // one the reader already has open.
-    this.report(
-      ctx,
-      "E0506",
-      `Included cnx file not found: ${spec.path}`,
-      "A quoted include is resolved relative to the file it appears in (ADR-010); check the spelling and the path from this file's own directory.",
-    );
+    this.found.push({
+      code: "E0506",
+      span: ctx.span,
+      message: `Included cnx file not found: ${spec.path}`,
+      helpText:
+        "A quoted include is resolved relative to the file it appears in (ADR-010); check the spelling and the path from this file's own directory.",
+    });
     return true;
   }
 
@@ -191,26 +198,12 @@ class IncludeDirectiveChecks {
       path: cnxPath,
       isLocal: spec.isLocal,
     });
-    this.report(
-      ctx,
-      "E0504",
-      `Found ${IncludeDirectiveText.join(spec)} but '${cnxPath}' exists at the same location.\n       Use ${instead} instead to use the cnx version.`,
-      "The generated header describes the interface; the cnx source is what the transpiler can check calls against (ADR-010).",
-    );
-  }
-
-  private report(
-    at: ISyntaxNode,
-    code: string,
-    message: string,
-    helpText: string,
-  ): void {
     this.found.push({
-      code,
-      line: at.span.line,
-      column: at.span.column,
-      message,
-      helpText,
+      code: "E0504",
+      span: ctx.span,
+      message: `Found ${IncludeDirectiveText.join(spec)} but '${cnxPath}' exists at the same location.\n       Use ${instead} instead to use the cnx version.`,
+      helpText:
+        "The generated header describes the interface; the cnx source is what the transpiler can check calls against (ADR-010).",
     });
   }
 }

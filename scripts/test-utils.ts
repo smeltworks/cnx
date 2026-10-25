@@ -262,6 +262,16 @@ function transpileViaCli(
       file?: string;
     } | null = null;
 
+    const flush = (): void => {
+      if (currentError) {
+        errors.push({
+          line: currentError.line,
+          column: currentError.column,
+          message: currentError.messageParts.join("\n"),
+          file: currentError.file,
+        });
+      }
+    };
     for (const line of lines) {
       // Skip empty lines and "Compilation failed" message
       if (!line.trim() || line === "Compilation failed") continue;
@@ -272,14 +282,7 @@ function transpileViaCli(
       );
       if (fullMatch) {
         // Save previous error if any
-        if (currentError) {
-          errors.push({
-            line: currentError.line,
-            column: currentError.column,
-            message: currentError.messageParts.join("\n"),
-            file: currentError.file,
-          });
-        }
+        flush();
         currentError = {
           line: parseInt(fullMatch[2], 10),
           column: parseInt(fullMatch[3], 10),
@@ -299,14 +302,7 @@ function transpileViaCli(
       // source path in front of it.
       const simpleMatch = line.match(/^(?:Error:\s*)?(\d+):(\d+)\s+(.+)$/);
       if (simpleMatch) {
-        if (currentError) {
-          errors.push({
-            line: currentError.line,
-            column: currentError.column,
-            message: currentError.messageParts.join("\n"),
-            file: currentError.file,
-          });
-        }
+        flush();
         // #1319: become the current error rather than pushing immediately. This
         // branch used to push and null `currentError`, so the continuation
         // branch above could never fire for a pathless diagnostic and every
@@ -326,14 +322,7 @@ function transpileViaCli(
     }
 
     // Don't forget the last error
-    if (currentError) {
-      errors.push({
-        line: currentError.line,
-        column: currentError.column,
-        message: currentError.messageParts.join("\n"),
-        file: currentError.file,
-      });
-    }
+    flush();
   }
 
   // Read generated files if they exist
@@ -2255,6 +2244,26 @@ class TestUtils {
   private static readonly OUTPUT_BLOCK_START = /^Generated \d+ output files?:/;
 
   /**
+   * The paths of the CLI's "Generated N output files:" block, up to the first
+   * line that is not one whose extension `kinds` names
+   */
+  private static outputBlock(stdout: string, kinds: RegExp): string[] {
+    const paths: string[] = [];
+    let inBlock = false;
+    for (const line of stdout.split("\n")) {
+      if (TestUtils.OUTPUT_BLOCK_START.test(line)) {
+        inBlock = true;
+        continue;
+      }
+      if (!inBlock) continue;
+      const path = /^\s+(\S.*)$/.exec(line)?.[1];
+      if (path === undefined || !kinds.test(path)) break;
+      paths.push(path);
+    }
+    return paths;
+  }
+
+  /**
    * Implementation files (`.c` / `.cpp`) named in the CLI's "Generated N output
    * files:" block.
    *
@@ -2271,19 +2280,7 @@ class TestUtils {
    * defended only by input the CLI cannot produce.
    */
   static parseGeneratedImplPaths(stdout: string): string[] {
-    const paths: string[] = [];
-    let inBlock = false;
-    for (const line of stdout.split("\n")) {
-      if (TestUtils.OUTPUT_BLOCK_START.test(line)) {
-        inBlock = true;
-        continue;
-      }
-      if (!inBlock) continue;
-      const match = /^\s+(\S.*\.(?:c|cpp))$/.exec(line);
-      if (!match) break;
-      paths.push(match[1]);
-    }
-    return paths;
+    return TestUtils.outputBlock(stdout, /\.(?:c|cpp)$/);
   }
 
   /**
@@ -2301,21 +2298,9 @@ class TestUtils {
    * from being read as a path.
    */
   static parseGeneratedHeaderPaths(stdout: string): string[] {
-    const paths: string[] = [];
-    let inBlock = false;
-    for (const line of stdout.split("\n")) {
-      if (TestUtils.OUTPUT_BLOCK_START.test(line)) {
-        inBlock = true;
-        continue;
-      }
-      if (!inBlock) continue;
-      const match = /^\s+(\S.*\.(?:c|cpp|h|hpp))$/.exec(line);
-      if (!match) break;
-      if (/\.(?:h|hpp)$/.test(match[1])) {
-        paths.push(match[1]);
-      }
-    }
-    return paths;
+    return TestUtils.outputBlock(stdout, /\.(?:c|cpp|h|hpp)$/).filter((path) =>
+      /\.(?:h|hpp)$/.test(path),
+    );
   }
 
   /**

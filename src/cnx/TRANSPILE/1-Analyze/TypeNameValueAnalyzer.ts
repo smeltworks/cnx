@@ -26,7 +26,7 @@ class TypeNameValueAnalyzer {
 
   /** Every chain, read or written; a chain's head is asked as the chain */
   public analyze(program: IProgramSyntax): ITypeNameValueError[] {
-    return program.declarations.flatMap((member) =>
+    return program.members.flatMap((member) =>
       DeclarationParts.of(member.declaration).flatMap((part) =>
         this.checkPart(part),
       ),
@@ -54,8 +54,7 @@ class TypeNameValueAnalyzer {
     const span = at?.span ?? chain.span;
     return {
       code: "E0897",
-      line: span.line,
-      column: span.column,
+      span: span,
       message: TypeNameValueAnalyzer.message(chain, at),
       helpText: HELP,
     };

@@ -39,7 +39,7 @@ import EnumMemberValue from "./EnumMemberValue";
 import ExpressionShape from "../../utils/ExpressionShape";
 import ForeignTypeFacts from "../../utils/ForeignTypeFacts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
-import StatementNodes from "../../utils/StatementNodes";
+import ProgramAccesses from "../../utils/ProgramAccesses";
 import SourceOrder from "../../utils/SourceOrder";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import type IOperandType from "../../types/IOperandType";
@@ -399,13 +399,11 @@ class OperatorOperandAnalyzer {
         if (expr.kind === "binary") check.checkLevel(expr, enumBeingDeclared);
       }
     }
-    for (const member of program.declarations) {
-      for (const site of StatementNodes.assignments(member.declaration)) {
-        check.checkAssignment(site);
-      }
+    for (const site of ProgramAccesses.writes(program)) {
+      check.checkAssignment(site);
     }
 
-    return this.errors.sort(SourceOrder.compare);
+    return this.errors.sort(SourceOrder.bySpan);
   }
 
   public addError(
@@ -413,15 +411,14 @@ class OperatorOperandAnalyzer {
     operator: string,
     rejection: TRejection,
   ): void {
-    const { line, column } = at.span;
-    const position = `${line}:${column}`;
+    const span = at.span;
+    const position = `${span.line}:${span.column}`;
     if (this.reportedAt.has(position)) return;
     this.reportedAt.add(position);
     if (rejection === "bool") {
       this.errors.push({
         code: "E0807",
-        line,
-        column,
+        span,
         message: `Operator '${operator}' is not valid on a bool operand`,
         helpText:
           "MISRA C:2012 Rule 10.1: a bool is not a number. Use the logical operators " +
@@ -432,8 +429,7 @@ class OperatorOperandAnalyzer {
     if (rejection === "floatModulo") {
       this.errors.push({
         code: "E0804",
-        line,
-        column,
+        span,
         message: "Modulo operator not supported for floating-point types",
         helpText:
           "The % operator only works with integer types. Use fmod() from <math.h> for floating-point remainder.",
@@ -442,8 +438,7 @@ class OperatorOperandAnalyzer {
     }
     this.errors.push({
       code: "E0925",
-      line,
-      column,
+      span,
       message: `Operator '${operator}' is not valid on ${NOUNS[rejection]}`,
       helpText: `MISRA C:2012 Rule 10.1: ${HELP[rejection]}`,
     });
@@ -458,8 +453,7 @@ class OperatorOperandAnalyzer {
   public addCompoundAssignmentError(target: IAssignmentSyntax["target"]): void {
     this.errors.push({
       code: "E0806",
-      line: target.span.line,
-      column: target.span.column,
+      span: target.span,
       message: `Compound assignment is not valid on bool '${target.written}' - only '<-' is`,
       helpText: `MISRA C:2012 Rule 10.1: a bool is not a number. To flip it, use '${target.written} <- !${target.written}'.`,
     });

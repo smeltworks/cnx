@@ -1,7 +1,7 @@
 import type IAssignmentSyntax from "../../../types/syntax/IAssignmentSyntax";
 import type IProgramSyntax from "../../../types/syntax/IProgramSyntax";
 import type IVariableDeclarationSyntax from "../../../types/syntax/IVariableDeclarationSyntax";
-import type TDeclarationSyntax from "../../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../../types/syntax/TExpression";
 import type TStatement from "../../../types/syntax/TStatement";
 import OperandTyper from "../../../utils/OperandTyper";
@@ -48,13 +48,7 @@ class ValuePositionWalk {
     private readonly context: IAnalysisContext,
   ) {}
 
-  public declaration(declaration: TDeclarationSyntax): void {
-    if (declaration.kind === "scope") {
-      for (const member of declaration.members) {
-        this.declaration(member.declaration);
-      }
-      return;
-    }
+  public declaration(declaration: TMemberDeclaration): void {
     if (declaration.kind === "variableDeclaration") {
       this.variable(declaration);
       return;
@@ -341,7 +335,7 @@ class ValuePositions {
     const positions = new Map<TExpression, IValuePosition>();
     const sites = new Map<TExpression, IValueSite>();
     const walk = new ValuePositionWalk(positions, sites, context);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       walk.declaration(member.declaration);
     }
     return { positions, sites };

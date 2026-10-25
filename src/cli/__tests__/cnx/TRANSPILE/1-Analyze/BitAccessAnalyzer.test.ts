@@ -30,7 +30,7 @@ describe("BitAccessAnalyzer (E0856)", () => {
         "}",
       ].join("\n"),
     );
-    expect(found.map((e) => [e.code, e.line])).toEqual([
+    expect(found.map((e) => [e.code, e.span.line])).toEqual([
       ["E0856", 3],
       ["E0856", 4],
     ]);
@@ -121,7 +121,7 @@ describe("BitAccessAnalyzer (E0890)", () => {
       "    modes[idx()].fast <- true;",
       "    GPIO.DR[idx()] <- true;",
     ]);
-    expect(found.map((e) => e.line)).toEqual([19, 20, 21, 22, 23]);
+    expect(found.map((e) => e.span.line)).toEqual([19, 20, 21, 22, 23]);
     expect(found[0].message).toBe(
       "'idx()' would be evaluated twice: 'arr[idx()][3]' is read and then written back",
     );
@@ -146,7 +146,7 @@ describe("BitAccessAnalyzer (E0890)", () => {
 
   it("reports every subscript with a side effect", () => {
     const found = e0890(["    arr[idx()][volatileIndex] <- true;"]);
-    expect(found.map((e) => e.column)).toEqual([8, 15]);
+    expect(found.map((e) => e.span.column)).toEqual([8, 15]);
   });
 });
 
@@ -156,7 +156,7 @@ describe("BitAccessAnalyzer -- rooted chains and leading subscripts (E0856)", ()
   const e0856 = (source: string) =>
     errors(source)
       .filter((e) => e.code === "E0856")
-      .map((e) => [e.line, e.column]);
+      .map((e) => [e.span.line, e.span.column]);
 
   it("counts the subscripts after `this.x`, not the member", () => {
     expect(

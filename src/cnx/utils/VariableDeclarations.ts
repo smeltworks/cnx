@@ -1,6 +1,6 @@
 import type IProgramSyntax from "../types/syntax/IProgramSyntax";
 import type IVariableDeclarationSite from "../types/syntax/IVariableDeclarationSite";
-import type TDeclarationSyntax from "../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../types/syntax/TMemberDeclaration";
 import type TStatement from "../types/syntax/TStatement";
 import type TExpression from "../types/syntax/TExpression";
 import ExpressionNodes from "./ExpressionNodes";
@@ -20,8 +20,10 @@ import StatementChildren from "./StatementChildren";
 class VariableDeclarations {
   /** Every variable declaration, with its site */
   static in(program: IProgramSyntax): readonly IVariableDeclarationSite[] {
-    return program.declarations.flatMap((member) =>
-      VariableDeclarations.ofDeclaration(member.declaration),
+    return program.members.flatMap(({ declaration, scope }) =>
+      scope !== null && declaration.kind === "variableDeclaration"
+        ? [{ declaration, site: "scopeMember" as const }]
+        : VariableDeclarations.ofDeclaration(declaration),
     );
   }
 
@@ -63,15 +65,9 @@ class VariableDeclarations {
   }
 
   private static ofDeclaration(
-    declaration: TDeclarationSyntax,
+    declaration: TMemberDeclaration,
   ): readonly IVariableDeclarationSite[] {
     switch (declaration.kind) {
-      case "scope":
-        return declaration.members.flatMap((member) =>
-          member.declaration.kind === "variableDeclaration"
-            ? [{ declaration: member.declaration, site: "scopeMember" }]
-            : VariableDeclarations.ofDeclaration(member.declaration),
-        );
       case "variableDeclaration":
         return [{ declaration, site: "file" }];
       case "function":

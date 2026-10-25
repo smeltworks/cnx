@@ -1,5 +1,6 @@
 import type ISourceSpan from "../ISourceSpan";
 import type IComment from "../IComment";
+import type IProgramMember from "./IProgramMember";
 import type ISyntaxNode from "./ISyntaxNode";
 import type TDeclarationSyntax from "./TDeclarationSyntax";
 import type TDirectiveKind from "./TDirectiveKind";
@@ -22,6 +23,11 @@ interface IProgramSyntax {
   readonly declarations: ReadonlyArray<
     TCommented & { readonly declaration: TDeclarationSyntax }
   >;
+  /**
+   * Every declaration, a scope's members included, in source order (#2115).
+   * Each is the same object `declarations` holds, not a copy.
+   */
+  readonly members: readonly IProgramMember[];
 }
 
 export default IProgramSyntax;

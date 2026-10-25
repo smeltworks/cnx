@@ -22,19 +22,13 @@
  */
 
 import type IDepcruiseViolation from "../types/IDepcruiseViolation";
+import type ICheckOutcome from "../types/ICheckOutcome";
 
 /** One module outside the parser that holds a parse context, and what from. */
 interface ISite {
   readonly module: string;
   /** `grammar`, `antlr4ng`, or both -- sorted, so the row is stable. */
   readonly holds: readonly string[];
-}
-
-/** What `check` concluded. */
-interface ICheckOutcome {
-  readonly ok: boolean;
-  readonly errors: readonly string[];
-  readonly info: readonly string[];
 }
 
 class ParseTreeSites {

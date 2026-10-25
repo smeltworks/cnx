@@ -8,7 +8,7 @@ import ExpressionNodes from "../ExpressionNodes";
 const names = (source: string): string[] => {
   const parsed = CnxSourceParser.parse(source);
   expect(parsed.parseErrors).toEqual([]);
-  return DeclarationParts.of(parsed.program.declarations[0].declaration)
+  return DeclarationParts.of(parsed.program.members[0].declaration)
     .flatMap(ExpressionNodes.of)
     .flatMap((e) => (e.kind === "identifier" ? [e.name] : []));
 };

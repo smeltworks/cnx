@@ -43,7 +43,7 @@ class TypeDeclarationAnalyzer {
       }
     }
     // The table's order is registration order, not the source's.
-    return found.sort(SourceOrder.compare);
+    return found.sort(SourceOrder.bySpan);
   }
 
   private static bitmapWidth(bitmap: IBitmapSymbol): ITypeDeclarationError[] {
@@ -59,8 +59,7 @@ class TypeDeclarationAnalyzer {
     return [
       {
         code: "E0893",
-        line: bitmap.span.line,
-        column: bitmap.span.column,
+        span: bitmap.span,
         message: `Bitmap '${bitmap.cnxScopedName}' has ${totalBits} bits but bitmap${bitmap.bitWidth} requires exactly ${bitmap.bitWidth} bits`,
         helpText:
           "A bitmap's field widths must add up to its size (ADR-034). Resize a field, or declare the bitmap with the size its fields add up to",
@@ -93,14 +92,13 @@ class TypeDeclarationAnalyzer {
     settled: TEnumMemberValue | undefined,
   ): ITypeDeclarationError | null {
     const named = `${enumSymbol.cnxScopedName}.${member.name}`;
-    const at = { line: member.span.line, column: member.span.column };
     switch (settled?.kind) {
       case "value":
         return settled.value >= 0n
           ? null
           : {
               code: "E0894",
-              ...at,
+              span: member.span,
               message: `Negative values not allowed in enum (found ${settled.value} in ${named})`,
               helpText:
                 "An enum member's value is 0 or more (ADR-017). Use a non-negative value",
@@ -112,7 +110,7 @@ class TypeDeclarationAnalyzer {
           ? null
           : {
               code: "E0909",
-              ...at,
+              span: member.span,
               message: `Enum member value must be known at compile time (${named}): ${why}`,
               helpText:
                 "A member's value is built from literals, read-only bindings, length properties, casts and the members of its enum declared above it (ADR-017)",
@@ -121,14 +119,14 @@ class TypeDeclarationAnalyzer {
       case "overflow":
         return {
           code: "E0910",
-          ...at,
+          span: member.span,
           message: `Enum member value overflows ${settled.typeName} at compile time (${named}): the arithmetic would clamp or wrap (ADR-044)`,
           helpText: ConstantDiagnostics.OVERFLOW_HELP,
         };
       case "outOfRange":
         return {
           code: "E0911",
-          ...at,
+          span: member.span,
           message: `Enum member value does not fit i32 (found ${settled.value} in ${named})`,
           helpText:
             "A member's value is an i32 (ADR-017). Use a value of at most 2147483647",

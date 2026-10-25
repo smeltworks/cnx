@@ -1,3 +1,4 @@
+import type ISourceSpan from "../types/ISourceSpan";
 /**
  * An expression as a `TConstExpr` (#1175, #1669), so a value can be computed
  * from it by `ConstantEvaluator`.
@@ -17,7 +18,6 @@ import LiteralUtils from "./LiteralUtils";
 import LengthProperty from "./LengthProperty";
 import ELEMENT_STEP from "../types/ELEMENT_STEP";
 import type IConstantEnvironment from "./types/IConstantEnvironment";
-import type ISourcePosition from "./types/ISourcePosition";
 import type TConstExpr from "../types/TConstExpr";
 import type TExpression from "../types/syntax/TExpression";
 import type TExpressionOf from "../types/syntax/TExpressionOf";
@@ -242,8 +242,8 @@ class ConstExprLowering {
   }
 
   /** Where a node is written, which is where a name in it binds (ADR-057) */
-  private static at(expr: TExpression): ISourcePosition {
-    return { line: expr.span.line, column: expr.span.column };
+  private static at(expr: TExpression): ISourceSpan {
+    return expr.span;
   }
 }
 

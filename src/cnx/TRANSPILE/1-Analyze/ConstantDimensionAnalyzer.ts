@@ -1,3 +1,5 @@
+import SourceOrder from "../../utils/SourceOrder";
+import type ISourceSpan from "../../types/ISourceSpan";
 /**
  * An array dimension that is not a constant expression: E0909, E0910
  * (#1175; ADR-023 "no VLAs", ADR-044 "Values fixed at compile time").
@@ -31,11 +33,10 @@ import type TType from "../../types/TType";
 import type TConstExpr from "../../types/TConstExpr";
 import type ILexicalFrame from "../../types/ILexicalFrame";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
 import type TSyntaxPart from "../../types/syntax/TSyntaxPart";
 import type TTypeSyntax from "../../types/syntax/TTypeSyntax";
-import type ISourcePosition from "../../utils/types/ISourcePosition";
 import ConstantDiagnostics from "./helpers/ConstantDiagnostics";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import type IConstantDimensionError from "./types/IConstantDimensionError";
@@ -43,7 +44,7 @@ import type IConstantDimensionError from "./types/IConstantDimensionError";
 /** Every dimension 1.2 returned: the ones after a name and the ones in a type */
 class Dimensions {
   static in(
-    declaration: TDeclarationSyntax,
+    declaration: TMemberDeclaration,
   ): ReadonlyArray<TExpression | null> {
     return [
       ...Dimensions.afterNames(declaration),
@@ -53,13 +54,9 @@ class Dimensions {
 
   /** `u8 buf[4]`: a variable's, a parameter's, a field's, a `for` header's */
   private static afterNames(
-    declaration: TDeclarationSyntax,
+    declaration: TMemberDeclaration,
   ): ReadonlyArray<TExpression | null> {
     switch (declaration.kind) {
-      case "scope":
-        return declaration.members.flatMap((member) =>
-          Dimensions.afterNames(member.declaration),
-        );
       case "variableDeclaration":
         return declaration.dimensions;
       case "struct":
@@ -115,11 +112,10 @@ class ConstantDimensionCheck {
       lowered,
       ConstantFold.environment(program, sourceFile),
     );
-    const at = { line: expression.span.line, column: expression.span.column };
     if (result.kind === "overflow") {
       this.found.push({
         code: "E0910",
-        ...at,
+        span: expression.span,
         message: `Array dimension overflows ${result.typeName} at compile time: ${ConstantDiagnostics.OVERFLOW_CAUSE}`,
         helpText: ConstantDiagnostics.OVERFLOW_HELP,
       });
@@ -132,7 +128,7 @@ class ConstantDimensionCheck {
       if (count.kind === "notPositive") {
         this.found.push({
           code: "E0913",
-          ...at,
+          span: expression.span,
           message: `Array dimension must be at least 1: it is ${count.value}`,
           helpText: "An array holds one element or more (C99 6.7.5.2, ADR-036)",
         });
@@ -143,7 +139,7 @@ class ConstantDimensionCheck {
     if (why === null) return;
     this.found.push({
       code: "E0909",
-      ...at,
+      span: expression.span,
       message: `Array dimension must be known at compile time: ${why}`,
       helpText:
         "An array's size is built from literals, read-only bindings that are not `volatile` (ADR-064), length properties (.type_byte_length) and casts (ADR-058). cnx has no variable-length arrays",
@@ -156,14 +152,12 @@ class ConstantDimensionAnalyzer {
 
   public analyze(program: IProgramSyntax): IConstantDimensionError[] {
     const check = new ConstantDimensionCheck(this.context);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       for (const dimension of Dimensions.in(member.declaration)) {
         check.check(dimension);
       }
     }
-    const walked = check
-      .errors()
-      .sort((a, b) => a.line - b.line || a.column - b.column);
+    const walked = check.errors().sort(SourceOrder.bySpan);
     return [...walked, ...this.unreadableCounts()];
   }
 
@@ -181,7 +175,7 @@ class ConstantDimensionAnalyzer {
     const checkArray = (
       type: TType,
       dimensions: ReadonlyArray<TConstExpr | null> | undefined,
-      declaredAt: ISourcePosition,
+      declaredAt: ISourceSpan,
     ): void => {
       const element = StructDefault.spelledElement(type, facts);
       if (element === null) return;
@@ -221,7 +215,7 @@ class ConstantDimensionAnalyzer {
   private unreadable(
     dimension: TConstExpr,
     element: string,
-    declaredAt: ISourcePosition,
+    declaredAt: ISourceSpan,
   ): IConstantDimensionError | null {
     const { program, sourceFile } = this.context;
     const folded = ConstantEvaluator.evaluate(
@@ -243,8 +237,7 @@ class ConstantDimensionAnalyzer {
     const at = culprit?.at ?? declaredAt;
     return {
       code: "E0359",
-      line: at.line,
-      column: at.column,
+      span: at,
       message: `Array of '${element}' must have a size cnx can read: every element has a default (ADR-029, ADR-017), so cnx spells each one, and it cannot read the value of '${culprit ? culprit.path.join(".") : "its size"}'`,
       helpText:
         "Size it with a read-only cnx binding, e.g. `u32 N_HANDLERS <- 3;`",

@@ -184,8 +184,7 @@ class UndeclaredValueWalk {
 
     // The caret names the identifier, not the `this`/`global` keyword the
     // spelling may start with: the head's span is the name's own token.
-    const { line, column } = identifier.span;
-    this.analyzer.addError(name, line, column);
+    this.analyzer.addError(name, identifier.span);
   }
 }
 
@@ -203,7 +202,7 @@ class UndeclaredValueAnalyzer {
     this.errors.length = 0;
 
     const walk = new UndeclaredValueWalk(this);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       for (const part of DeclarationParts.of(member.declaration))
         walk.part(part);
       for (const label of StatementNodes.caseLabels(member.declaration)) {
@@ -404,12 +403,11 @@ class UndeclaredValueAnalyzer {
     );
   }
 
-  addError(identifier: string, line: number, column: number): void {
+  addError(identifier: string, span: ISourceSpan): void {
     this.errors.push({
       code: "E0427",
       identifier,
-      line,
-      column,
+      span,
       message: `'${identifier}' is not defined`,
     });
   }

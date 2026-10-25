@@ -45,7 +45,7 @@ class SafeDivisionAnalyzer {
   constructor(private readonly context: IAnalysisContext) {}
 
   public analyze(program: IProgramSyntax): ISafeDivisionError[] {
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       for (const part of DeclarationParts.of(member.declaration)) {
         for (const expr of ExpressionNodes.of(part)) this.check(expr);
       }
@@ -57,32 +57,35 @@ class SafeDivisionAnalyzer {
     const call = SafeDivision.callOf(expr);
     if (call === null) return;
     if (call.args.length !== REQUIRED_ARGUMENTS) {
-      this.report(
-        expr.span,
-        "E0884",
-        `${call.name} takes exactly ${REQUIRED_ARGUMENTS} arguments (output, numerator, divisor, defaultValue), not ${call.args.length}`,
-        "The result is written to the first argument and the fourth is used when the divisor is zero, so neither can be left out (ADR-051).",
-      );
+      this.found.push({
+        code: "E0884",
+        span: expr.span,
+        message: `${call.name} takes exactly ${REQUIRED_ARGUMENTS} arguments (output, numerator, divisor, defaultValue), not ${call.args.length}`,
+        helpText:
+          "The result is written to the first argument and the fourth is used when the divisor is zero, so neither can be left out (ADR-051).",
+      });
       return;
     }
     const output = SafeDivision.outputName(call.args);
     if (output === null) {
-      this.report(
-        call.args[0].span,
-        "E0885",
-        `${call.name} writes its result to the first argument, so it must be a variable`,
-        "The generated helper takes the output's address; an expression has none. Declare a variable and pass it (ADR-051).",
-      );
+      this.found.push({
+        code: "E0885",
+        span: call.args[0].span,
+        message: `${call.name} writes its result to the first argument, so it must be a variable`,
+        helpText:
+          "The generated helper takes the output's address; an expression has none. Declare a variable and pass it (ADR-051).",
+      });
       return;
     }
     if (!this.isDeclared(output, expr.span)) return;
     if (this.isVariable(output, expr.span)) return;
-    this.report(
-      call.args[0].span,
-      "E0885",
-      `${call.name} writes its result to the first argument, and '${output}' is not a variable`,
-      "The generated helper takes the output's address. Declare a variable of the result's type and pass that (ADR-051).",
-    );
+    this.found.push({
+      code: "E0885",
+      span: call.args[0].span,
+      message: `${call.name} writes its result to the first argument, and '${output}' is not a variable`,
+      helpText:
+        "The generated helper takes the output's address. Declare a variable of the result's type and pass that (ADR-051).",
+    });
   }
 
   private isDeclared(name: string, at: ISourceSpan): boolean {
@@ -101,21 +104,6 @@ class SafeDivisionAnalyzer {
       at,
     );
     return BoundDeclaration.of(binding) !== null;
-  }
-
-  private report(
-    at: ISourceSpan,
-    code: string,
-    message: string,
-    helpText: string,
-  ): void {
-    this.found.push({
-      code,
-      line: at.line,
-      column: at.column,
-      message,
-      helpText,
-    });
   }
 }
 

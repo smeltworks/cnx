@@ -1,11 +1,8 @@
+import type IBaseAnalysisError from "./IBaseAnalysisError";
 /**
  * Error reported by ReturnValueUseAnalyzer (ADR-070, E0708).
  */
-interface IReturnValueUseError {
-  line: number;
-  column: number;
-  code: string;
-  message: string;
+interface IReturnValueUseError extends IBaseAnalysisError {
   helpText: string;
 }
 

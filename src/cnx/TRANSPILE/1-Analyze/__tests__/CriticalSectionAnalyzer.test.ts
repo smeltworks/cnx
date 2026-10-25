@@ -38,7 +38,7 @@ describe("CriticalSectionAnalyzer", () => {
     const found = errors(inCritical("        return value;"));
     expect(found).toHaveLength(1);
     expect(found[0].code).toBe("E0853");
-    expect(found[0].line).toBe(4);
+    expect(found[0].span.line).toBe(4);
   });
 
   it("rejects a return inside a switch case -- the case the old walk missed", () => {
@@ -123,7 +123,7 @@ describe("CriticalSectionAnalyzer", () => {
     );
     expect(found).toHaveLength(1);
     expect(found[0].code).toBe("E0916");
-    expect(found[0].line).toBe(3);
+    expect(found[0].span.line).toBe(3);
     expect(found[0].message).toBe(
       "target 'host' has no critical section: disabling interrupts there does not shut out every other execution context",
     );

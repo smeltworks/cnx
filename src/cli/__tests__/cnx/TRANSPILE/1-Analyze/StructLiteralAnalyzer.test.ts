@@ -45,7 +45,7 @@ describe("StructLiteralAnalyzer (E0357)", () => {
   it("rejects an inferred initializer that no position types", () => {
     const [found] = errors(struct + "void f() {\n    { x: 1, y: 1 };\n}");
     expect(found.code).toBe("E0357");
-    expect(found.line).toBe(3);
+    expect(found.span.line).toBe(3);
   });
 
   it("accepts every position that supplies a type, including a return", () => {
@@ -89,7 +89,9 @@ describe("StructLiteralAnalyzer (E0358)", () => {
   const types =
     "bitmap8 Flags { A, B, C[6] }\nstruct Cfg { u32 word; Flags f; }\nenum Mode { OFF, ON }\n";
   const codes = (source: string, symbolTable?: SymbolTable) =>
-    errors(source, symbolTable).map((error) => `${error.code} ${error.line}`);
+    errors(source, symbolTable).map(
+      (error) => `${error.code} ${error.span.line}`,
+    );
 
   it.each([
     ["a primitive", "u32 x <- { a: 1 };"],

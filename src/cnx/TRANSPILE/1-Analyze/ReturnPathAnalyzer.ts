@@ -13,6 +13,7 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
+import type ISourceSpan from "../../types/ISourceSpan";
 import type IFunctionDeclarationSyntax from "../../types/syntax/IFunctionDeclarationSyntax";
 import type TStatement from "../../types/syntax/TStatement";
 import IReturnPathError from "./types/IReturnPathError";
@@ -94,16 +95,8 @@ function statementsDefinitelyReturn(
 /** Every function the file declares, top-level and scope members alike */
 function functionsOf(program: IProgramSyntax): IFunctionDeclarationSyntax[] {
   const functions: IFunctionDeclarationSyntax[] = [];
-  for (const { declaration } of program.declarations) {
-    if (declaration.kind === "function") {
-      functions.push(declaration);
-    } else if (declaration.kind === "scope") {
-      for (const member of declaration.members) {
-        if (member.declaration.kind === "function") {
-          functions.push(member.declaration);
-        }
-      }
-    }
+  for (const { declaration } of program.members) {
+    if (declaration.kind === "function") functions.push(declaration);
   }
   return functions;
 }
@@ -120,17 +113,16 @@ class ReturnPathAnalyzer {
       // Void functions are allowed to fall off the end.
       if (fn.returnType.kind === "void") continue;
       if (statementsDefinitelyReturn(fn.body.statements)) continue;
-      this.addError(fn.name, fn.nameSpan.line, fn.nameSpan.column);
+      this.addError(fn.name, fn.nameSpan);
     }
     return this.errors;
   }
 
-  public addError(functionName: string, line: number, column: number): void {
+  public addError(functionName: string, span: ISourceSpan): void {
     this.errors.push({
       code: "E0704",
       functionName,
-      line,
-      column,
+      span,
       message: `Non-void function '${functionName}' must return a value on all paths`,
       helpText:
         "Add an explicit 'return <value>;' so every control-flow path returns a value",

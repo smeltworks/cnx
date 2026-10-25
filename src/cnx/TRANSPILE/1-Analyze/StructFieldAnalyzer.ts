@@ -7,7 +7,7 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type ISourceSpan from "../../types/ISourceSpan";
 import IStructFieldError from "./types/IStructFieldError";
 import SymbolUtils from "../../PARSE/3-Declare/SymbolUtils";
@@ -30,18 +30,14 @@ class StructFieldAnalyzer {
   private readonly errors: IStructFieldError[] = [];
 
   public analyze(program: IProgramSyntax): IStructFieldError[] {
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       this.declaration(member.declaration);
     }
     return this.errors;
   }
 
-  private declaration(declaration: TDeclarationSyntax): void {
-    if (declaration.kind === "scope") {
-      for (const member of declaration.members) {
-        this.declaration(member.declaration);
-      }
-    } else if (declaration.kind === "struct") {
+  private declaration(declaration: TMemberDeclaration): void {
+    if (declaration.kind === "struct") {
       for (const field of declaration.fields) {
         if (SymbolUtils.isReservedFieldName(field.name)) {
           this.addError(declaration.name, field.name, field.nameSpan);
@@ -60,8 +56,7 @@ class StructFieldAnalyzer {
       code: "E0355",
       structName,
       fieldName,
-      line: at.line,
-      column: at.column,
+      span: at,
       message: formatStructFieldError(fieldName, structName),
       helpText: `Reserved field names: ${reservedNames}. Consider using 'len', 'size', or 'count' instead.`,
     });

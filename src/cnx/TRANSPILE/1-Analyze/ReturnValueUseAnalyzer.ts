@@ -27,12 +27,10 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import StatementNodes from "../../utils/StatementNodes";
 import StdlibFunctions from "./StdlibFunctions";
 import CalleeNameResolver from "./helpers/CalleeNameResolver";
-import EnclosingScope from "./helpers/EnclosingScope";
 import IReturnValueUseError from "./types/IReturnValueUseError";
 import type IResolvedSymbols from "../../types/IResolvedSymbols";
 import DeclaredTypeFacts from "../../utils/DeclaredTypeFacts";
@@ -174,32 +172,23 @@ class ReturnValueUseAnalyzer {
     context: IAnalysisContext,
   ): IReturnValueUseError[] {
     const errors: IReturnValueUseError[] = [];
-    const enclosing = new EnclosingScope();
-    const visit = (declaration: TDeclarationSyntax): void => {
-      if (declaration.kind === "scope") {
-        enclosing.enter(declaration.name);
-        for (const member of declaration.members) visit(member.declaration);
-        enclosing.exit();
-        return;
-      }
+    for (const { declaration, scope } of program.members) {
       for (const statement of StatementNodes.in(declaration)) {
         if (statement.kind !== "expression") continue;
         const funcName = ReturnValueUseAnalyzer.discardedCallee(
           statement.expression,
-          enclosing.current(),
+          scope ?? "",
           context,
         );
         if (funcName === null) continue;
         errors.push({
-          line: statement.span.line,
-          column: statement.span.column,
+          span: statement.span,
           code: "E0708",
           message: `Return value of non-void function '${funcName}' is discarded`,
           helpText: `Use the value, or discard it explicitly: (void) ${funcName}(...);`,
         });
       }
-    };
-    for (const member of program.declarations) visit(member.declaration);
+    }
     return errors;
   }
 }

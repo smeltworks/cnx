@@ -5,14 +5,13 @@
  * providing a consistent structure for error reporting.
  */
 import type IMutSite from "../../../types/IMutSite";
+import type ISourceSpan from "../../../types/ISourceSpan";
 
 interface IBaseAnalysisError {
   /** Error code (e.g., E0381, E0800) */
   code: string;
-  /** Line number where the error occurred */
-  line: number;
-  /** Column number where the error occurred */
-  column: number;
+  /** Where it is reported: the span 1.2 gave the node (#2115) */
+  span: ISourceSpan;
   /** Human-readable error message */
   message: string;
   /** Optional help text with suggested fix */

@@ -1,6 +1,6 @@
 import type TChainRoot from "./TChainRoot";
 import type TBinaryOperator from "./syntax/TBinaryOperator";
-import type ISourcePosition from "../utils/types/ISourcePosition";
+import type ISourceSpan from "./ISourceSpan";
 
 /**
  * An integer expression whose value may be needed while the program compiles
@@ -41,13 +41,13 @@ type TConstExpr =
       /** `N` is `["N"]`; `Scope.N` and `EColor.COUNT` are two segments */
       readonly path: readonly string[];
       /** Where the name is written, which is where it binds (ADR-057) */
-      readonly at: ISourcePosition;
+      readonly at: ISourceSpan;
     }
   | {
       readonly kind: "cast";
       readonly typeName: string;
       readonly operand: TConstExpr;
-      readonly at: ISourcePosition;
+      readonly at: ISourceSpan;
     }
   | {
       readonly kind: "unary";
@@ -82,7 +82,7 @@ type TConstExpr =
         | "sizeofExpression";
       /** The source spelling, for a diagnostic's message only -- never emitted */
       readonly spelling: string;
-      readonly at: ISourcePosition;
+      readonly at: ISourceSpan;
     };
 
 export default TConstExpr;

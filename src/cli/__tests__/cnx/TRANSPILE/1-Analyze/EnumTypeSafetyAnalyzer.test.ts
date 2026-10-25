@@ -26,8 +26,8 @@ describe("EnumTypeSafetyAnalyzer", () => {
       );
       expect(found).toHaveLength(1);
       expect(found[0].code).toBe("E0428");
-      expect(found[0].line).toBe(4);
-      expect(found[0].column).toBeGreaterThan(0);
+      expect(found[0].span.line).toBe(4);
+      expect(found[0].span.column).toBeGreaterThan(0);
       expect(found[0].message).toContain("integer");
     });
 
@@ -100,7 +100,7 @@ describe("EnumTypeSafetyAnalyzer", () => {
       );
       expect(found).toHaveLength(1);
       expect(found[0].code).toBe("E0434");
-      expect(found[0].line).toBe(4);
+      expect(found[0].span.line).toBe(4);
     });
 
     it("rejects two different enum types", () => {
@@ -179,7 +179,7 @@ describe("EnumTypeSafetyAnalyzer -- sites on 1.2's syntax", () => {
         ...body.map((line) => `    ${line}`),
         "}",
       ].join("\n"),
-    ).map((e) => `${e.code}@${e.line}:${e.column}`);
+    ).map((e) => `${e.code}@${e.span.line}:${e.span.column}`);
 
   it("reads a scope member, a for header and a comparison's right operand", () => {
     expect(

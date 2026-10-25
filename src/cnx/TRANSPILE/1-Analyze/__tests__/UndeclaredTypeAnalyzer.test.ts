@@ -84,8 +84,8 @@ describe("UndeclaredTypeAnalyzer", () => {
       const errors = analyze(
         `${REGISTER}\nu32 main() {\n    Control c;\n    return 0;\n}`,
       );
-      expect(errors[0].line).toBe(3);
-      expect(errors[0].column).toBe(4);
+      expect(errors[0].span.line).toBe(3);
+      expect(errors[0].span.column).toBe(4);
     });
 
     it("finds a scope-declared register through its qualified spelling", () => {
@@ -145,7 +145,9 @@ describe("UndeclaredTypeAnalyzer", () => {
           "}",
         ].join("\n"),
       );
-      expect(errors.map((e) => [e.typeName, e.line, e.column])).toEqual([
+      expect(
+        errors.map((e) => [e.typeName, e.span.line, e.span.column]),
+      ).toEqual([
         ["Field", 1, 11],
         ["Ret", 2, 0],
         ["Param", 2, 7],

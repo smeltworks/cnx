@@ -19,7 +19,7 @@ import type IValuePosition from "../../../types/IValuePosition";
 import type TConstExpr from "../../../types/TConstExpr";
 import type TSettledConst from "../../../types/TSettledConst";
 import type IProgramSyntax from "../../../types/syntax/IProgramSyntax";
-import type TDeclarationSyntax from "../../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../../types/syntax/TExpression";
 import ConstExprLowering from "../../../utils/ConstExprLowering";
 import ConstExprPrinter from "../../../utils/ConstExprPrinter";
@@ -50,7 +50,7 @@ class StaticInitializers {
     program: IProgramSyntax,
     positions: ReadonlyMap<TExpression, IValuePosition>,
   ): IStaticValue[] {
-    return program.declarations
+    return program.members
       .flatMap(({ declaration }) =>
         StaticInitializers.declarations(declaration),
       )
@@ -277,13 +277,8 @@ class StaticInitializers {
 
   /** The file's file-scope and scope variables that have an initializer */
   private static declarations(
-    declaration: TDeclarationSyntax,
+    declaration: TMemberDeclaration,
   ): IStaticValue["declaration"][] {
-    if (declaration.kind === "scope") {
-      return declaration.members.flatMap((member) =>
-        StaticInitializers.declarations(member.declaration),
-      );
-    }
     return declaration.kind === "variableDeclaration" && declaration.initializer
       ? [declaration]
       : [];

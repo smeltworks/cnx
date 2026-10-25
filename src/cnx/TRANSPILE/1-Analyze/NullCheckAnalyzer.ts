@@ -13,15 +13,15 @@
  */
 
 import INullCheckError from "./types/INullCheckError";
+import ProgramExpressions from "../../utils/ProgramExpressions";
+import type ISourceSpan from "../../types/ISourceSpan";
 import DeclarationParts from "../../utils/DeclarationParts";
-import ExpressionChildren from "../../utils/ExpressionChildren";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import ExpressionShape from "../../utils/ExpressionShape";
 import StatementChildren from "../../utils/StatementChildren";
-import TypeParts from "../../utils/TypeParts";
 import type IFunctionDeclarationSyntax from "../../types/syntax/IFunctionDeclarationSyntax";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
 import type TStatement from "../../types/syntax/TStatement";
 import type TSyntaxPart from "../../types/syntax/TSyntaxPart";
@@ -292,13 +292,8 @@ class NullCheckWalk {
   // Declarations and statements
   // ========================================================================
 
-  declaration(declaration: TDeclarationSyntax): void {
+  declaration(declaration: TMemberDeclaration): void {
     switch (declaration.kind) {
-      case "scope":
-        for (const member of declaration.members) {
-          this.declaration(member.declaration);
-        }
-        return;
       case "function":
         this.function(declaration);
         return;
@@ -315,13 +310,7 @@ class NullCheckWalk {
 
   private function(fn: IFunctionDeclarationSyntax): void {
     this.pushScope();
-    this.part({ kind: "type", type: fn.returnType });
-    for (const parameter of fn.parameters ?? []) {
-      this.part({ kind: "type", type: parameter.type });
-      for (const part of TypeParts.dimensions(parameter.dimensions)) {
-        this.part(part);
-      }
-    }
+    for (const part of DeclarationParts.signature(fn)) this.part(part);
     for (const statement of fn.body.statements) {
       this.statement(statement);
     }
@@ -440,13 +429,7 @@ class NullCheckWalk {
   // ========================================================================
 
   private part(part: TSyntaxPart): void {
-    if (part.kind === "type") {
-      for (const inner of TypeParts.of(part.type)) {
-        this.part(inner);
-      }
-      return;
-    }
-    this.expression(part.expression);
+    for (const expr of ProgramExpressions.inPart(part)) this.expression(expr);
   }
 
   private expression(expr: TExpression): void {
@@ -465,12 +448,7 @@ class NullCheckWalk {
     if (expr.kind === "literal" && expr.literalKind === "null") {
       this.nullLiteral(expr);
     }
-    for (const child of ExpressionChildren.of(expr)) {
-      this.expression(child);
-    }
-    if (expr.kind === "cast") {
-      this.part({ kind: "type", type: expr.type });
-    }
+    for (const read of ProgramExpressions.readsIn(expr)) this.expression(read);
     if (isComparison) {
       this.inEqualityComparison = false;
       this.equalityComparisonVarNames = [];
@@ -481,8 +459,7 @@ class NullCheckWalk {
     if (expr.primary.kind !== "identifier") return;
     const funcName = expr.primary.name;
     if (!expr.ops.some((op) => op.kind === "call")) return;
-    const line = expr.span.line;
-    const column = expr.span.column;
+    const span = expr.span;
 
     // ADR-003 is NOT decided here. This walk sees a callee's NAME and nothing
     // about what it resolved to, so it answered "you imported this from C/C++"
@@ -497,7 +474,7 @@ class NullCheckWalk {
     ) {
       // Inside a NULL comparison the call is checked; inside a declaration or
       // assignment that stores it, E0905 or the `c_` prefix already decided
-      this.analyzer.reportMissingNullCheck(funcName, line, column);
+      this.analyzer.reportMissingNullCheck(funcName, span);
     }
 
     this.checkFunctionArgumentsForUncheckedVariables(expr.ops);
@@ -517,21 +494,16 @@ class NullCheckWalk {
         }
         const varState = this.lookupVariable(arg.name);
         if (varState?.state === NullCheckState.Unchecked) {
-          this.analyzer.reportMissingNullCheckBeforeUse(
-            arg.name,
-            arg.span.line,
-            arg.span.column,
-          );
+          this.analyzer.reportMissingNullCheckBeforeUse(arg.name, arg.span);
         }
       }
     }
   }
 
   private nullLiteral(expr: TExpression): void {
-    const line = expr.span.line;
-    const column = expr.span.column;
+    const span = expr.span;
     if (!this.inEqualityComparison) {
-      this.analyzer.reportInvalidNullUsage(line, column);
+      this.analyzer.reportInvalidNullUsage(span);
       return;
     }
     // NULL in a comparison is for c_ prefixed variables or nullable functions
@@ -540,7 +512,7 @@ class NullCheckWalk {
         !NullCheckAnalyzer.hasNullablePrefix(varName) &&
         !NULLABLE_C_FUNCTIONS.has(varName)
       ) {
-        this.analyzer.reportNullComparisonOnNonNullable(varName, line, column);
+        this.analyzer.reportNullComparisonOnNonNullable(varName, span);
       }
     }
   }
@@ -554,12 +526,15 @@ class NullCheckWalk {
   ): void {
     const varName = statement.name;
     const typeName = statement.type.text;
-    const line = statement.nameSpan.line;
-    const column = statement.nameSpan.column + 1; // 1-indexed column
+    // 1-indexed column
+    const span = {
+      ...statement.nameSpan,
+      column: statement.nameSpan.column + 1,
+    };
 
     // E0908: Register c_ prefixed variables for flow tracking
     if (NullCheckAnalyzer.hasNullablePrefix(varName)) {
-      this.registerNullableVariable(varName, typeName, line);
+      this.registerNullableVariable(varName, typeName, span.line);
     }
     if (!statement.initializer) return;
 
@@ -567,13 +542,7 @@ class NullCheckWalk {
     if (funcName !== null) {
       this.inVariableDeclarationWithNullable = true;
       if (!NullCheckAnalyzer.hasNullablePrefix(varName)) {
-        this.analyzer.reportMissingCPrefix(
-          varName,
-          typeName,
-          funcName,
-          line,
-          column,
-        );
+        this.analyzer.reportMissingCPrefix(varName, typeName, funcName, span);
       }
       return;
     }
@@ -583,7 +552,7 @@ class NullCheckWalk {
       NullCheckAnalyzer.hasNullablePrefix(varName) &&
       !NullCheckAnalyzer.isNullableCType(typeName)
     ) {
-      this.analyzer.reportInvalidCPrefix(varName, typeName, line, column);
+      this.analyzer.reportInvalidCPrefix(varName, typeName, span);
     }
   }
 
@@ -600,12 +569,7 @@ class NullCheckWalk {
       this.updateVariableState(varName, NullCheckState.Unchecked);
       return;
     }
-    this.analyzer.reportInvalidStorage(
-      varName,
-      funcName,
-      statement.span.line,
-      statement.span.column,
-    );
+    this.analyzer.reportInvalidStorage(varName, funcName, statement.span);
   }
 
   /**
@@ -647,7 +611,7 @@ class NullCheckAnalyzer {
   public analyze(program: IProgramSyntax): INullCheckError[] {
     this.errors = [];
     const walk = new NullCheckWalk(this);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       walk.declaration(member.declaration);
     }
     return this.errors;
@@ -656,16 +620,11 @@ class NullCheckAnalyzer {
   /**
    * Report error: stream function used without NULL check
    */
-  public reportMissingNullCheck(
-    funcName: string,
-    line: number,
-    column: number,
-  ): void {
+  public reportMissingNullCheck(funcName: string, span: ISourceSpan): void {
     this.errors.push({
       code: "E0901",
       functionName: funcName,
-      line,
-      column,
+      span,
       message: `C library function '${funcName}' can return NULL - must check result`,
       helpText: `Use: if (${funcName}(...) != NULL) { ... }`,
     });
@@ -674,12 +633,11 @@ class NullCheckAnalyzer {
   /**
    * Report error: NULL used outside comparison context
    */
-  public reportInvalidNullUsage(line: number, column: number): void {
+  public reportInvalidNullUsage(span: ISourceSpan): void {
     this.errors.push({
       code: "E0903",
       functionName: "NULL",
-      line,
-      column,
+      span,
       message: "NULL can only be used in comparison context",
       helpText: "Use: if (func(...) != NULL) or if (func(...) = NULL)",
     });
@@ -691,14 +649,12 @@ class NullCheckAnalyzer {
   public reportInvalidStorage(
     varName: string,
     funcName: string,
-    line: number,
-    column: number,
+    span: ISourceSpan,
   ): void {
     this.errors.push({
       code: "E0904",
       functionName: funcName,
-      line,
-      column,
+      span,
       message: `Cannot store '${funcName}' return value in variable '${varName}'`,
       helpText: `C library pointer returns cannot be stored. Use direct comparison: if (${funcName}(...) != NULL)`,
     });
@@ -711,14 +667,12 @@ class NullCheckAnalyzer {
     varName: string,
     typeName: string,
     funcName: string,
-    line: number,
-    column: number,
+    span: ISourceSpan,
   ): void {
     this.errors.push({
       code: "E0905",
       functionName: funcName,
-      line,
-      column,
+      span,
       message: `Missing 'c_' prefix for nullable C type '${typeName}'`,
       helpText: `Variable '${varName}' stores nullable pointer from '${funcName}'. Use: ${typeName} c_${varName} <- ${funcName}(...)`,
     });
@@ -730,14 +684,12 @@ class NullCheckAnalyzer {
   public reportInvalidCPrefix(
     varName: string,
     typeName: string,
-    line: number,
-    column: number,
+    span: ISourceSpan,
   ): void {
     this.errors.push({
       code: "E0906",
       functionName: varName,
-      line,
-      column,
+      span,
       message: `Invalid 'c_' prefix on non-nullable type '${typeName}'`,
       helpText: `The 'c_' prefix is only for nullable C pointer types. Use: ${typeName} ${varName.substring(2)} <- ...`,
     });
@@ -748,14 +700,12 @@ class NullCheckAnalyzer {
    */
   public reportNullComparisonOnNonNullable(
     varName: string,
-    line: number,
-    column: number,
+    span: ISourceSpan,
   ): void {
     this.errors.push({
       code: "E0907",
       functionName: varName,
-      line,
-      column,
+      span,
       message: `NULL comparison on non-nullable variable '${varName}'`,
       helpText: `Only variables with 'c_' prefix can be compared to NULL. cnx variables are never null.`,
     });
@@ -766,14 +716,12 @@ class NullCheckAnalyzer {
    */
   public reportMissingNullCheckBeforeUse(
     varName: string,
-    line: number,
-    column: number,
+    span: ISourceSpan,
   ): void {
     this.errors.push({
       code: "E0908",
       functionName: varName,
-      line,
-      column,
+      span,
       message: `Nullable variable '${varName}' used without NULL check`,
       helpText: `Check for NULL before use: if (${varName} != NULL) { ... }`,
     });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import BitmapAccessAnalyzer from "../../../../../cnx/TRANSPILE/1-Analyze/BitmapAccessAnalyzer";
+import ValuePositions from "../../../../../cnx/TRANSPILE/1-Analyze/helpers/ValuePositions";
 import testAnalysisContextFor from "./testAnalysisContextFor";
 
 /**
@@ -20,7 +21,10 @@ const errors = (source: string) => {
   const { syntax, context } = testAnalysisContextFor(source, {
     cppMode: false,
   });
-  return new BitmapAccessAnalyzer(context).analyze(syntax);
+  return new BitmapAccessAnalyzer(context).analyze(
+    syntax,
+    ValuePositions.of(syntax, context),
+  );
 };
 
 describe("BitmapAccessAnalyzer (E0881)", () => {
@@ -36,7 +40,7 @@ describe("BitmapAccessAnalyzer (E0881)", () => {
         "}",
       ].join("\n"),
     );
-    expect(found.map((e) => [e.code, e.line])).toEqual([
+    expect(found.map((e) => [e.code, e.span.line])).toEqual([
       ["E0881", 4],
       ["E0881", 5],
       ["E0881", 6],
@@ -64,7 +68,7 @@ describe("BitmapAccessAnalyzer (E0881)", () => {
         "}",
       ].join("\n"),
     );
-    expect(found.map((e) => [e.code, e.line, e.message])).toEqual([
+    expect(found.map((e) => [e.code, e.span.line, e.message])).toEqual([
       ["E0881", 6, "Value 20 exceeds 3-bit field 'Mode' maximum of 7"],
       ["E0881", 7, "Value 8 exceeds 3-bit field 'Mode' maximum of 7"],
     ]);
@@ -131,7 +135,7 @@ describe("BitmapAccessAnalyzer (E0883)", () => {
         "}",
       ].join("\n"),
     );
-    expect(found.map((e) => [e.code, e.line])).toEqual([
+    expect(found.map((e) => [e.code, e.span.line])).toEqual([
       ["E0883", 4],
       ["E0883", 5],
     ]);
@@ -160,7 +164,7 @@ describe("BitmapAccessAnalyzer (E0883)", () => {
 // starts at `this.`, are asserted directly.
 describe("BitmapAccessAnalyzer -- positions and rooted chains", () => {
   const where = (source: string) =>
-    errors(source).map((e) => [e.code, e.line, e.column]);
+    errors(source).map((e) => [e.code, e.span.line, e.span.column]);
 
   it("reports a too-wide value at the value", () => {
     expect(
@@ -203,7 +207,7 @@ describe("BitmapAccessAnalyzer (E0921)", () => {
         "}",
       ].join("\n"),
     );
-    expect(found.map((e) => [e.code, e.line])).toEqual([
+    expect(found.map((e) => [e.code, e.span.line])).toEqual([
       ["E0921", 5],
       ["E0921", 6],
     ]);

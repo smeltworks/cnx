@@ -36,7 +36,7 @@ function constantAt(
     kind: "name",
     root: null,
     path: [name],
-    at,
+    at: { ...at, endLine: at.line, endColumn: at.column },
   });
   return result.kind === "value"
     ? { value: Number(result.value), typeName: result.typeName }
@@ -129,7 +129,7 @@ describe("Program", () => {
   // every shadowing decision with no error, while lexicalFrameAt asserted.
   describe("a file the program does not hold", () => {
     // After the one declaration, which a use inside it would not see (#1643)
-    const at = { line: 2, column: 0 };
+    const at = { line: 2, column: 0, endLine: 2, endColumn: 0 };
 
     it("is an internal error for every lexical accessor", () => {
       const program = Program.build([declare("u32 x <- 1;", "a.cnx")], {
@@ -569,7 +569,7 @@ describe("Program", () => {
     it("is null for a non-const and for an unknown name", () => {
       const lib = declare(`mut u32 mutable <- 4;\nu32 after <- 1;`, "lib.cnx");
       const program = Program.build([lib], { cppMode: false });
-      const at = { line: 2, column: 0 };
+      const at = { line: 2, column: 0, endLine: 2, endColumn: 0 };
 
       expect(constantAt(program, "lib.cnx", "mutable", at)).toBeNull();
       expect(

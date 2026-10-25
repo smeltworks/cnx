@@ -5,7 +5,7 @@ import type TConstExpr from "../../types/TConstExpr";
 import type TConstResult from "../../types/TConstResult";
 import type IConstantEnvironment from "../types/IConstantEnvironment";
 
-const AT = { line: 1, column: 0 };
+const AT = { line: 1, column: 0, endLine: 1, endColumn: 0 };
 
 function lit(digits: string, typeName: string | null = null): TConstExpr {
   return { kind: "literal", digits, text: digits, typeName };

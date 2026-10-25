@@ -30,27 +30,11 @@ class ScopeUtils {
    * walked the chain those references formed.
    */
   static createGlobalScope(): IScopeSymbol {
-    return {
-      kind: "scope",
-      name: "",
-      scopePath: "",
-      members: [],
-      functions: [],
-      variables: [],
-      memberVisibility: new Map(),
-      // #1334: filled by ScopeCollector, one entry per declaring block.
-      declarationSites: new Set<string>(),
-      sourceFile: "",
-      span: UNSET_SOURCE_SPAN,
-      sourceLanguage: ESourceLanguage.Cnx,
-      visibility: "public",
-      // #1285: computed through the same encoder as every other symbol rather
-      // than hardcoded, so the global scope cannot become the one symbol whose
-      // identity was derived a second way. Both resolve to "" -- it has no name
-      // and no enclosing scope -- which is what makes a global symbol keep its
-      // bare name.
-      ...ScopeUtils.identityOf({ name: "", scopePath: "" }),
-    };
+    // #1285: built by the same constructor as every other scope, so the global
+    // scope cannot become the one whose identity was derived a second way. It
+    // has no name and no enclosing scope, which is what makes a global symbol
+    // keep its bare name.
+    return ScopeUtils.createScope("", "");
   }
 
   /**

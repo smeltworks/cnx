@@ -46,12 +46,11 @@ class DefineDirectiveAnalyzer {
   public analyze(program: IProgramSyntax): IDefineDirectiveError[] {
     const found: IDefineDirectiveError[] = [];
     for (const directive of program.directives) {
-      const at = { line: directive.span.line, column: directive.span.column };
       if (directive.kind === "define-function") {
         const name = nameOf(directive.text);
         found.push({
           code: "E0501",
-          ...at,
+          span: directive.span,
           message: `Function-like macro '${name}' is not allowed. Use inline functions instead.`,
           helpText:
             "A macro is textual substitution, so its arguments are evaluated wherever they appear and its operators bind by text (ADR-037); write an `inline` function instead.",
@@ -60,7 +59,7 @@ class DefineDirectiveAnalyzer {
         const name = nameOf(directive.text);
         found.push({
           code: "E0502",
-          ...at,
+          span: directive.span,
           message: `#define with value '${name}' is not allowed. Use a read-only binding instead: u32 ${name} <- value;`,
           helpText:
             "A `#define` has no type and no scope, so the compiler cannot check its use (ADR-037); a read-only binding has both.",

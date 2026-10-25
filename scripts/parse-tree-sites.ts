@@ -18,6 +18,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import chalk from "chalk";
+import CheckOutcome from "./utils/CheckOutcome";
 
 import ParseTreeSites from "./parse-tree/ParseTreeSites";
 import Depcruise from "./utils/Depcruise";
@@ -60,13 +61,7 @@ async function main(): Promise<void> {
     document,
   );
 
-  for (const line of outcome.info) {
-    console.log(chalk.green(line));
-  }
-  if (!outcome.ok) {
-    console.error(chalk.red(outcome.errors.join("\n")));
-    process.exit(1);
-  }
+  process.exitCode = CheckOutcome.report(outcome);
 }
 
 void main();

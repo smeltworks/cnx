@@ -23,20 +23,21 @@ const errors = (source: string) => {
   return new ConstAssignmentAnalyzer(context).analyze(syntax);
 };
 
-const at = (source: string) => errors(source).map((e) => `${e.code}@${e.line}`);
+const at = (source: string) =>
+  errors(source).map((e) => `${e.code}@${e.span.line}`);
 
 describe("ConstAssignmentAnalyzer (E0900)", () => {
   it("rejects every assignment operator on a read-only variable, at the target", () => {
     const found = errors(
       "u32 K <- 1;\nvoid f() {\n    K <- 2;\n    K +<- 1;\n    K <<<- 1;\n}",
     );
-    expect(found.map((e) => [e.code, e.line])).toEqual([
+    expect(found.map((e) => [e.code, e.span.line])).toEqual([
       ["E0900", 3],
       ["E0900", 4],
       ["E0900", 5],
     ]);
     expect(found[0].message).toBe("cannot assign to read-only variable 'K'");
-    expect(found[0].column).toBeGreaterThan(0);
+    expect(found[0].span.column).toBeGreaterThan(0);
   });
 
   it("names a parameter as a parameter", () => {
@@ -71,7 +72,7 @@ describe("ConstAssignmentAnalyzer (E0900)", () => {
       "u8 K <- 1;\nvoid f() {\n    for (K <- 0; K < 3; K +<- 1) {\n    }\n}",
     );
     expect(found).toHaveLength(2);
-    expect(found.every((e) => e.line === 3)).toBe(true);
+    expect(found.every((e) => e.span.line === 3)).toBe(true);
   });
 
   it("resolves this. and global. against the right frame", () => {
@@ -88,7 +89,7 @@ describe("ConstAssignmentAnalyzer (E0900)", () => {
       "}",
     ].join("\n");
     // `K` bare inside S is the `mut` scope member; `global.K` is read-only.
-    expect(errors(source).map((e) => [e.line, e.message])).toEqual([
+    expect(errors(source).map((e) => [e.span.line, e.message])).toEqual([
       [6, "cannot assign to read-only variable 'STEP'"],
       [7, "cannot assign to read-only variable 'K'"],
     ]);
@@ -101,7 +102,7 @@ describe("ConstAssignmentAnalyzer (E0900)", () => {
     const found = errors(
       "scope S {\n    public u8[4] arr;\n    public u8 x;\n}\nvoid f() {\n    S.arr[0] <- 1;\n    global.S.x <- 2;\n}",
     );
-    expect(found.map((e) => [e.code, e.line, e.message])).toEqual([
+    expect(found.map((e) => [e.code, e.span.line, e.message])).toEqual([
       ["E0900", 6, "cannot assign to read-only variable 'arr' (array element)"],
       ["E0900", 7, "cannot assign to read-only variable 'x'"],
     ]);
@@ -143,15 +144,15 @@ describe("ConstAssignmentAnalyzer (E0900)", () => {
       `    ${decl} q <- { x: 0 };\n` +
       "    h.onPoke(q);\n" +
       "}";
-    expect(errors(source("P")).map((e) => [e.code, e.line, e.message])).toEqual(
+    expect(
+      errors(source("P")).map((e) => [e.code, e.span.line, e.message]),
+    ).toEqual([
       [
-        [
-          "E0900",
-          8,
-          "cannot pass read-only 'q' to `mut` parameter 'p' of function 'h.onPoke'",
-        ],
+        "E0900",
+        8,
+        "cannot pass read-only 'q' to `mut` parameter 'p' of function 'h.onPoke'",
       ],
-    );
+    ]);
     expect(errors(source("mut P"))).toEqual([]);
   });
 });
@@ -177,7 +178,7 @@ describe("ConstAssignmentAnalyzer on 1.2's syntax (#1991)", () => {
     expect(
       errors(source)
         .filter((e) => e.message.startsWith("cannot pass"))
-        .map((e) => [e.line, e.message]),
+        .map((e) => [e.span.line, e.message]),
     ).toEqual([
       [
         9,
@@ -214,7 +215,7 @@ describe("ConstAssignmentAnalyzer (E0899, ADR-071 Decision 6)", () => {
       "}",
     ].join("\n");
     const found = errors(source);
-    expect(found.map((e) => `${e.code}@${e.line}`).sort()).toEqual([
+    expect(found.map((e) => `${e.code}@${e.span.line}`).sort()).toEqual([
       "E0899@1",
       "E0899@2",
       "E0899@5",
@@ -294,7 +295,7 @@ describe("ConstAssignmentAnalyzer, a C callee's pointer (#2103)", () => {
     });
     return new ConstAssignmentAnalyzer(context)
       .analyze(syntax)
-      .map((e) => `${e.code}@${e.line} ${e.message}`);
+      .map((e) => `${e.code}@${e.span.line} ${e.message}`);
   };
 
   it("counts a non-const C pointer argument as a write, bare or `global.`", () => {
@@ -339,7 +340,7 @@ describe("ConstAssignmentAnalyzer, a C++ method's object (#2102 review)", () => 
     });
     return new ConstAssignmentAnalyzer(context)
       .analyze(syntax)
-      .map((e) => `${e.code}@${e.line} ${e.message}`);
+      .map((e) => `${e.code}@${e.span.line} ${e.message}`);
   };
 
   it("counts a method that is not `const` as a write of its object", () => {

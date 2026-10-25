@@ -39,7 +39,7 @@ const at = (body: string[]): string[] => {
   });
   return new CPointerArgumentAnalyzer(context)
     .analyze(syntax)
-    .map((e) => `${e.code}@${e.line}:${e.column} ${e.message}`);
+    .map((e) => `${e.code}@${e.span.line}:${e.span.column} ${e.message}`);
 };
 
 describe("CPointerArgumentAnalyzer on 1.2's syntax (#1991)", () => {

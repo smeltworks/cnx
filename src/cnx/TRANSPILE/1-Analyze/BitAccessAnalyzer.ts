@@ -39,7 +39,7 @@ import ExpressionShape from "../../utils/ExpressionShape";
 import FloatBits from "../../utils/FloatBits";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
 import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
 import DeclarationParts from "../../utils/DeclarationParts";
@@ -116,12 +116,13 @@ class BitAccessCheck {
     );
     for (const index of indices) {
       if (!OperandTyper.hasSideEffect(index, this.context)) continue;
-      this.report(
-        index,
-        "E0890",
-        `'${index.written}' would be evaluated twice: '${target.written}' is read and then written back`,
-        "A bit, bit-range or bitmap-field write keeps the other bits, so it reads its target and stores it back, and every subscript in the target runs twice. Store the index in a variable first (ADR-007).",
-      );
+      this.found.push({
+        code: "E0890",
+        span: index.span,
+        message: `'${index.written}' would be evaluated twice: '${target.written}' is read and then written back`,
+        helpText:
+          "A bit, bit-range or bitmap-field write keeps the other bits, so it reads its target and stores it back, and every subscript in the target runs twice. Store the index in a variable first (ADR-007).",
+      });
     }
   }
 
@@ -195,12 +196,13 @@ class BitAccessCheck {
       .join("");
     const bounds =
       range.kind === "subscript" ? range.indexes.map((e) => e.written) : [];
-    this.report(
-      at,
-      "E0888",
-      `Float bit range '${name}${reached}[${bounds.join(", ")}]' cannot be read at file scope`,
-      "Reading a float's bits copies it through a union (MISRA C:2012 Rule 21.15 forbids the pointer cast), and a copy is a statement -- there is none at file scope. Read it inside a function.",
-    );
+    this.found.push({
+      code: "E0888",
+      span: at.span,
+      message: `Float bit range '${name}${reached}[${bounds.join(", ")}]' cannot be read at file scope`,
+      helpText:
+        "Reading a float's bits copies it through a union (MISRA C:2012 Rule 21.15 forbids the pointer cast), and a copy is a statement -- there is none at file scope. Read it inside a function.",
+    });
   }
 
   /**
@@ -233,12 +235,13 @@ class BitAccessCheck {
         op.indexes.length === 2
           ? `bit range [${start}, ${count}] ends at bit ${start + count - 1}`
           : `bit ${start}`;
-      this.report(
-        expr,
-        "E0920",
-        `Bit index out of range in '${written}': ${what}, but the value has ${width} bits (0-${width - 1})`,
-        "A bit index counts within the indexed value's own bits: its declared type's, or a bitmap field's (ADR-007, ADR-034). Index a wider value, or a bit that exists.",
-      );
+      this.found.push({
+        code: "E0920",
+        span: expr.span,
+        message: `Bit index out of range in '${written}': ${what}, but the value has ${width} bits (0-${width - 1})`,
+        helpText:
+          "A bit index counts within the indexed value's own bits: its declared type's, or a bitmap field's (ADR-007, ADR-034). Index a wider value, or a bit that exists.",
+      });
     });
   }
 
@@ -267,26 +270,11 @@ class BitAccessCheck {
       dimensions === 0
         ? `a scalar '${baseType}'`
         : `a ${dimensions}-dimensional '${baseType}' array`;
-    this.report(
-      at,
-      "E0856",
-      `too many subscripts on '${name}': it is ${shape}, so it allows at most ${allowed}`,
-      `${dimensions} for the array ${dimensions === 1 ? "dimension" : "dimensions"} plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range '${name}[start, width]'?`,
-    );
-  }
-
-  private report(
-    at: TExpression,
-    code: string,
-    message: string,
-    helpText: string,
-  ): void {
     this.found.push({
-      code,
-      line: at.span.line,
-      column: at.span.column,
-      message,
-      helpText,
+      code: "E0856",
+      span: at.span,
+      message: `too many subscripts on '${name}': it is ${shape}, so it allows at most ${allowed}`,
+      helpText: `${dimensions} for the array ${dimensions === 1 ? "dimension" : "dimensions"} plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range '${name}[start, width]'?`,
     });
   }
 }
@@ -302,11 +290,7 @@ class BitAccessAnalyzer {
    */
   public analyze(program: IProgramSyntax): IBitAccessError[] {
     const check = new BitAccessCheck(this.context);
-    const visit = (declaration: TDeclarationSyntax): void => {
-      if (declaration.kind === "scope") {
-        for (const member of declaration.members) visit(member.declaration);
-        return;
-      }
+    const visit = (declaration: TMemberDeclaration): void => {
       const inFunction = declaration.kind === "function";
       const sites = StatementNodes.assignments(declaration);
       const targets = new Set<TExpression>(sites.map((site) => site.target));
@@ -317,8 +301,8 @@ class BitAccessAnalyzer {
       }
       for (const site of sites) check.checkSite(site);
     };
-    for (const member of program.declarations) visit(member.declaration);
-    return check.errors().sort(SourceOrder.compare);
+    for (const member of program.members) visit(member.declaration);
+    return check.errors().sort(SourceOrder.bySpan);
   }
 }
 

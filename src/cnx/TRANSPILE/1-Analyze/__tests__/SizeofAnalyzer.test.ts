@@ -16,7 +16,7 @@ describe("SizeofAnalyzer (E0603)", () => {
     const found = errors(
       "u32 a <- 3;\nvoid f() {\n    u32 n <- sizeof(u32);\n    u32 m <- sizeof(a);\n}",
     );
-    expect(found.map((e) => [e.code, e.line, e.column])).toEqual([
+    expect(found.map((e) => [e.code, e.span.line, e.span.column])).toEqual([
       ["E0603", 3, 13],
       ["E0603", 4, 13],
     ]);
@@ -27,7 +27,7 @@ describe("SizeofAnalyzer (E0603)", () => {
     const found = errors(
       "u8[sizeof(u32)] buf;\nscope S {\n    u32 n <- sizeof(buf);\n}",
     );
-    expect(found.map((e) => [e.code, e.line])).toEqual([
+    expect(found.map((e) => [e.code, e.span.line])).toEqual([
       ["E0603", 1],
       ["E0603", 3],
     ]);

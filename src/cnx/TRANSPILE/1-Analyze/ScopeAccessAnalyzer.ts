@@ -35,13 +35,14 @@
  */
 
 import ScopeUtils from "../../utils/ScopeUtils";
+import SourceOrder from "../../utils/SourceOrder";
 import OperandTyper from "../../utils/OperandTyper";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import StatementNodes from "../../utils/StatementNodes";
 import type ISourceSpan from "../../types/ISourceSpan";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
 import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
 import type TTypeSyntax from "../../types/syntax/TTypeSyntax";
@@ -73,13 +74,7 @@ class ScopeAccessCheck {
    * callback. Reproduced rather than closed; a variable's or parameter's
    * qualified type IS checked, as it was.
    */
-  public declaration(declaration: TDeclarationSyntax): void {
-    if (declaration.kind === "scope") {
-      for (const member of declaration.members) {
-        this.declaration(member.declaration);
-      }
-      return;
-    }
+  public declaration(declaration: TMemberDeclaration): void {
     const types = declaration.kind !== "struct";
     for (const part of DeclarationParts.of(declaration)) {
       if (types && part.kind === "type") this.type(part.type);
@@ -90,7 +85,7 @@ class ScopeAccessCheck {
 
   /** A `case Scope.member:` label names a scope member too */
   private caseLabels(
-    func: Extract<TDeclarationSyntax, { kind: "function" }>,
+    func: Extract<TMemberDeclaration, { kind: "function" }>,
   ): void {
     for (const label of StatementNodes.caseLabels(func)) {
       if (label.kind === "qualified") this.qualified(label.path, label.span);
@@ -165,12 +160,13 @@ class ScopeAccessCheck {
   /** E0435: `Counter.value` inside `Counter`. `global.Counter.value` is allowed. */
   private reportOwnScope(access: IAccess, here: string): boolean {
     if (access.viaGlobal || here === "" || access.scope !== here) return false;
-    this.report(
-      access.at,
-      "E0435",
-      `Cannot reference own scope '${access.scope}' by name; use 'this.${access.member}' instead of '${access.scope}.${access.member}'`,
-      "Inside a scope its members are reached through `this.`; the scope's name is for the outside. `global.` is allowed when the qualification is deliberate.",
-    );
+    this.found.push({
+      code: "E0435",
+      span: access.at,
+      message: `Cannot reference own scope '${access.scope}' by name; use 'this.${access.member}' instead of '${access.scope}.${access.member}'`,
+      helpText:
+        "Inside a scope its members are reached through `this.`; the scope's name is for the outside. `global.` is allowed when the qualification is deliberate.",
+    });
     return true;
   }
 
@@ -184,12 +180,13 @@ class ScopeAccessCheck {
     if (visibility !== "private") return false;
     const context =
       here === "" ? "from outside the scope" : `from scope '${here}'`;
-    this.report(
-      access.at,
-      "E0436",
-      `Cannot access private member '${access.member}' of scope '${access.scope}' ${context}`,
-      "Only public members are accessible outside their scope. Mark it `public`, or reach it through a public member.",
-    );
+    this.found.push({
+      code: "E0436",
+      span: access.at,
+      message: `Cannot access private member '${access.member}' of scope '${access.scope}' ${context}`,
+      helpText:
+        "Only public members are accessible outside their scope. Mark it `public`, or reach it through a public member.",
+    });
     return true;
   }
 
@@ -223,12 +220,13 @@ class ScopeAccessCheck {
     const why = shadowedByMember
       ? `scope member '${access.scope}' shadows the global ${kind}`
       : `a local variable named '${access.scope}' shadows the global ${kind}`;
-    this.report(
-      access.at,
-      "E0437",
-      `Use 'global.${access.scope}.${access.member}' to access ${kind} '${access.scope}' from inside scope '${here}' (${why})`,
-      "A bare name resolves to the nearest declaration, which here is the shadow. `global.` names the file-scope one unambiguously.",
-    );
+    this.found.push({
+      code: "E0437",
+      span: access.at,
+      message: `Use 'global.${access.scope}.${access.member}' to access ${kind} '${access.scope}' from inside scope '${here}' (${why})`,
+      helpText:
+        "A bare name resolves to the nearest declaration, which here is the shadow. `global.` names the file-scope one unambiguously.",
+    });
   }
 
   private isScopedRegister(access: IAccess): boolean {
@@ -237,21 +235,6 @@ class ScopeAccessCheck {
       name: access.member,
     });
     return this.context.symbols.scopedRegisters.has(cName);
-  }
-
-  private report(
-    at: ISourceSpan,
-    code: string,
-    message: string,
-    helpText: string,
-  ): void {
-    this.found.push({
-      code,
-      line: at.line,
-      column: at.column,
-      message,
-      helpText,
-    });
   }
 }
 
@@ -262,12 +245,10 @@ class ScopeAccessAnalyzer {
   /** 1.2's syntax: declarations, then each function's case labels (#1991) */
   public analyze(program: IProgramSyntax): IScopeAccessError[] {
     const check = new ScopeAccessCheck(this.context);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       check.declaration(member.declaration);
     }
-    return check
-      .errors()
-      .sort((a, b) => a.line - b.line || a.column - b.column);
+    return check.errors().sort(SourceOrder.bySpan);
   }
 }
 

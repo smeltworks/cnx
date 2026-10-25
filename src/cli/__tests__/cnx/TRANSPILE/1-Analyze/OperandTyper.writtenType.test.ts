@@ -14,7 +14,7 @@ const writtenBy = (source: string) => {
   const { syntax, context } = testAnalysisContextFor(source, {
     cppMode: false,
   });
-  return syntax.declarations
+  return syntax.members
     .flatMap((entry) => StatementNodes.assignments(entry.declaration))
     .map((site) => OperandTyper.writtenType(site.target, context));
 };

@@ -1,7 +1,9 @@
 import type IProgramSyntax from "../types/syntax/IProgramSyntax";
+import ExpressionChildren from "./ExpressionChildren";
 import type TExpression from "../types/syntax/TExpression";
 import type TSyntaxPart from "../types/syntax/TSyntaxPart";
 import DeclarationParts from "./DeclarationParts";
+import ExpressionNodes from "./ExpressionNodes";
 import TypeParts from "./TypeParts";
 
 /**
@@ -11,15 +13,27 @@ import TypeParts from "./TypeParts";
  */
 class ProgramExpressions {
   static of(program: IProgramSyntax): readonly TExpression[] {
-    return program.declarations.flatMap((member) =>
-      DeclarationParts.of(member.declaration).flatMap(ProgramExpressions.part),
+    return program.members.flatMap((member) =>
+      DeclarationParts.of(member.declaration).flatMap(
+        ProgramExpressions.inPart,
+      ),
     );
   }
 
-  private static part(part: TSyntaxPart): readonly TExpression[] {
+  /** What an expression reads: its children, then the dimensions of a type it names */
+  static readsIn(expr: TExpression): readonly TExpression[] {
+    const children = ExpressionChildren.of(expr);
+    const named = ExpressionNodes.namedTypes(expr);
+    return named.length === 0
+      ? children
+      : [...children, ...named.flatMap(ProgramExpressions.inPart)];
+  }
+
+  /** A part's outermost expressions: itself, or a written type's dimensions */
+  static inPart(part: TSyntaxPart): readonly TExpression[] {
     return part.kind === "expression"
       ? [part.expression]
-      : TypeParts.of(part.type).flatMap(ProgramExpressions.part);
+      : TypeParts.of(part.type).flatMap(ProgramExpressions.inPart);
   }
 }
 

@@ -38,8 +38,7 @@ class DeclarationModifierAnalyzer {
     if (declaration.modifiers.atomicMut) {
       this.found.push({
         code: "E0919",
-        line: declaration.span.line,
-        column: declaration.span.column,
+        span: declaration.span,
         message: "Cannot use both 'atomic' and 'mut' on one declaration",
         helpText:
           "`atomic` already makes the binding writable: only a value something writes needs a read or write that cannot be torn. Remove `mut` (ADR-049, ADR-071).",
@@ -50,8 +49,7 @@ class DeclarationModifierAnalyzer {
     }
     this.found.push({
       code: "E0889",
-      line: declaration.span.line,
-      column: declaration.span.column,
+      span: declaration.span,
       message: "Cannot use both 'atomic' and 'volatile' on one declaration",
       helpText:
         "`atomic` already implies `volatile`, and adds that a read or write cannot be torn. Use `atomic` for a variable an ISR shares, or `volatile` alone for a hardware register or a delay loop (ADR-049).",

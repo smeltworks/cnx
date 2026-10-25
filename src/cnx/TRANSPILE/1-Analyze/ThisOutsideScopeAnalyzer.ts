@@ -80,8 +80,8 @@ class ThisOutsideScopeAnalyzer {
   private readonly found: IThisOutsideScopeError[] = [];
 
   public analyze(program: IProgramSyntax): IThisOutsideScopeError[] {
-    for (const member of program.declarations) {
-      if (member.declaration.kind === "scope") continue;
+    for (const member of program.members) {
+      if (member.scope !== null) continue;
       // A function body is a scope for `global` (#2087), not for `this`
       const globalAllowed = member.declaration.kind === "function";
       for (const part of DeclarationParts.of(member.declaration)) {
@@ -145,8 +145,7 @@ class ThisOutsideScopeAnalyzer {
           };
     this.found.push({
       code: "E0431",
-      line: span.line,
-      column: span.column,
+      span: span,
       ...text,
     });
   }

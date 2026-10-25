@@ -33,7 +33,7 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TStatement from "../../types/syntax/TStatement";
 import type ITargetDescription from "../../types/ITargetDescription";
 import StatementChildren from "../../utils/StatementChildren";
@@ -51,18 +51,14 @@ class CriticalSectionAnalyzer {
   constructor(private readonly target: ITargetDescription | null) {}
 
   public analyze(program: IProgramSyntax): ICriticalSectionError[] {
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       this.declaration(member.declaration);
     }
     return this.found;
   }
 
-  private declaration(declaration: TDeclarationSyntax): void {
-    if (declaration.kind === "scope") {
-      for (const member of declaration.members) {
-        this.declaration(member.declaration);
-      }
-    } else if (declaration.kind === "function") {
+  private declaration(declaration: TMemberDeclaration): void {
+    if (declaration.kind === "function") {
       this.statements(declaration.body.statements, false);
     }
   }
@@ -83,8 +79,7 @@ class CriticalSectionAnalyzer {
     ) {
       this.found.push({
         code: "E0916",
-        line: statement.span.line,
-        column: statement.span.column,
+        span: statement.span,
         message: `target '${this.target.name}' has no critical section: disabling interrupts there does not shut out every other execution context`,
         helpText: CriticalSectionAnalyzer.NO_CRITICAL_SECTION_HELP,
       });
@@ -92,8 +87,7 @@ class CriticalSectionAnalyzer {
     if (statement.kind === "return" && inCritical) {
       this.found.push({
         code: "E0853",
-        line: statement.span.line,
-        column: statement.span.column,
+        span: statement.span,
         message:
           "Cannot use 'return' inside critical section - would leave interrupts disabled",
         helpText:

@@ -172,7 +172,7 @@ describe("CompoundAssignmentAnalyzer", () => {
 
   it("carries a real position", () => {
     const [found] = errors(inMain("    u32 flags <- 0;\n    flags[0] +<- 1;"));
-    expect(found.line).toBe(3);
-    expect(found.column).toBeGreaterThan(0);
+    expect(found.span.line).toBe(3);
+    expect(found.span.column).toBeGreaterThan(0);
   });
 });

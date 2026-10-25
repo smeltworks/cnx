@@ -46,7 +46,7 @@ describe("ArrayDeclarationAnalyzer", () => {
   describe("E0866 -- the initializer against the declaration", () => {
     it("rejects too few and too many elements", () => {
       const found = errors("u8[3] a <- [1, 2];\nu8[3] b <- [1, 2, 3, 4];");
-      expect(found.map((e) => [e.code, e.line])).toEqual([
+      expect(found.map((e) => [e.code, e.span.line])).toEqual([
         ["E0866", 1],
         ["E0866", 2],
       ]);
@@ -77,6 +77,6 @@ describe("ArrayDeclarationAnalyzer", () => {
 
   it("counts a function's local declaration", () => {
     const found = errors("void f() {\n    u8[3] a <- [1, 2];\n}");
-    expect(found.map((e) => [e.code, e.line])).toEqual([["E0866", 2]]);
+    expect(found.map((e) => [e.code, e.span.line])).toEqual([["E0866", 2]]);
   });
 });

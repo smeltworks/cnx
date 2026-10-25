@@ -24,14 +24,14 @@ describe("ArrayIndexBoundsAnalyzer (E0854)", () => {
     const found = errors(
       "void f() {\n    u8[5] arr;\n    arr[5] <- 1;\n    u8 x <- arr[5];\n}",
     );
-    expect(found.map((e) => [e.code, e.line])).toEqual([
+    expect(found.map((e) => [e.code, e.span.line])).toEqual([
       ["E0854", 3],
       ["E0854", 4],
     ]);
     expect(found[0].message).toBe(
       "Array index out of bounds: 5 >= 5 for 'arr' dimension 1",
     );
-    expect(found[0].column).toBeGreaterThan(4);
+    expect(found[0].span.column).toBeGreaterThan(4);
   });
 
   it("rejects a negative index", () => {
@@ -47,7 +47,7 @@ describe("ArrayIndexBoundsAnalyzer (E0854)", () => {
     const found = errors(
       "void f() {\n    u8[4][8] grid;\n    grid[3][7] <- 1;\n    grid[4][0] <- 1;\n    u8 x <- grid[0][8];\n}",
     );
-    expect(found.map((e) => [e.line, e.message])).toEqual([
+    expect(found.map((e) => [e.span.line, e.message])).toEqual([
       [4, "Array index out of bounds: 4 >= 4 for 'grid' dimension 1"],
       [5, "Array index out of bounds: 8 >= 8 for 'grid[0]' dimension 2"],
     ]);
@@ -66,7 +66,7 @@ describe("ArrayIndexBoundsAnalyzer (E0854)", () => {
       "    }",
       "}",
     ].join("\n");
-    expect(errors(source).map((e) => e.line)).toEqual([2, 7, 8]);
+    expect(errors(source).map((e) => e.span.line)).toEqual([2, 7, 8]);
   });
 
   it("bounds a struct field like a variable (the closed hole)", () => {
@@ -82,7 +82,7 @@ describe("ArrayIndexBoundsAnalyzer (E0854)", () => {
       "}",
     ].join("\n");
     const found = errors(source);
-    expect(found.map((e) => [e.line, e.message])).toEqual([
+    expect(found.map((e) => [e.span.line, e.message])).toEqual([
       [7, "Array index out of bounds: 4 >= 4 for 's.data' dimension 1"],
       [8, "Array index out of bounds: 3 >= 3 for 's.grid[1]' dimension 2"],
     ]);
@@ -137,7 +137,7 @@ describe("ArrayIndexBoundsAnalyzer on 1.2's syntax (#1991)", () => {
       "    }",
       "}",
     ].join("\n");
-    expect(withMacro(source).map((e) => [e.line, e.message])).toEqual([
+    expect(withMacro(source).map((e) => [e.span.line, e.message])).toEqual([
       [9, "Array index out of bounds: 5 >= 3 for 'buf' dimension 1"],
       [10, "Array index out of bounds: 5 >= 3 for 's.d' dimension 1"],
       [11, "Array index out of bounds: 5 >= 3 for 'this.slots' dimension 1"],

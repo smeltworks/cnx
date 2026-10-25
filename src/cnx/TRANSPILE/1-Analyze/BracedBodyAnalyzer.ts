@@ -17,7 +17,7 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TStatement from "../../types/syntax/TStatement";
 import StatementChildren from "../../utils/StatementChildren";
 import IBracedBodyError from "./types/IBracedBodyError";
@@ -28,18 +28,14 @@ class BracedBodyAnalyzer {
   private readonly found: IBracedBodyError[] = [];
 
   public analyze(program: IProgramSyntax): IBracedBodyError[] {
-    for (const { declaration } of program.declarations) {
+    for (const { declaration } of program.members) {
       this.declaration(declaration);
     }
     return this.found;
   }
 
-  private declaration(declaration: TDeclarationSyntax): void {
-    if (declaration.kind === "scope") {
-      for (const member of declaration.members) {
-        this.declaration(member.declaration);
-      }
-    } else if (declaration.kind === "function") {
+  private declaration(declaration: TMemberDeclaration): void {
+    if (declaration.kind === "function") {
       this.statements(declaration.body.statements);
     }
   }
@@ -89,12 +85,10 @@ class BracedBodyAnalyzer {
 
   private body(keyword: TBodyKeyword, body: TStatement): void {
     if (body.kind !== "block" && body.kind !== "missing") {
-      const { line, column } = body.span;
       const example = keyword === "else" ? "else" : `${keyword} (...)`;
       this.found.push({
         code: "E0716",
-        line,
-        column,
+        span: body.span,
         message: `'${keyword}' body must be a braced block`,
         helpText: `Wrap the body in braces: \`${example} { ... }\` (MISRA C:2012 Rule 15.6)`,
       });

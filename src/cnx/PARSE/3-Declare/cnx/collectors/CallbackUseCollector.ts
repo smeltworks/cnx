@@ -20,7 +20,7 @@
  */
 
 import type TCallbackUse from "../../../../types/TCallbackUse";
-import type TDeclarationSyntax from "../../../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../../../types/syntax/TMemberDeclaration";
 import type IFunctionDeclarationSyntax from "../../../../types/syntax/IFunctionDeclarationSyntax";
 import type IProgramSyntax from "../../../../types/syntax/IProgramSyntax";
 import type TExpression from "../../../../types/syntax/TExpression";
@@ -42,28 +42,21 @@ class CallbackUseCollector {
     scopePathOf: (scopeName: string) => string,
   ): TCallbackUse[] {
     const uses: TCallbackUse[] = [];
-    for (const { declaration } of program.declarations) {
-      // Issue #895: every member function of a scope, which may name its
-      // siblings as `this.member`.
-      if (declaration.kind === "scope") {
-        const scopePath = scopePathOf(declaration.name);
-        for (const member of declaration.members) {
-          CallbackUseCollector.scanDeclaration(
-            uses,
-            member.declaration,
-            scopePath,
-          );
-        }
-      } else {
-        CallbackUseCollector.scanDeclaration(uses, declaration, "");
-      }
+    // Issue #895: every member function of a scope, which may name its
+    // siblings as `this.member`.
+    for (const { declaration, scope } of program.members) {
+      CallbackUseCollector.scanDeclaration(
+        uses,
+        declaration,
+        scope === null ? "" : scopePathOf(scope),
+      );
     }
     return uses;
   }
 
   private static scanDeclaration(
     uses: TCallbackUse[],
-    declaration: Exclude<TDeclarationSyntax, { kind: "scope" }>,
+    declaration: TMemberDeclaration,
     scopePath: string,
   ): void {
     if (declaration.kind === "function") {
@@ -90,7 +83,7 @@ class CallbackUseCollector {
    */
   private static scanExpressions(
     uses: TCallbackUse[],
-    declaration: Exclude<TDeclarationSyntax, { kind: "scope" }>,
+    declaration: TMemberDeclaration,
     scopePath: string,
   ): void {
     for (const part of DeclarationParts.of(declaration)) {

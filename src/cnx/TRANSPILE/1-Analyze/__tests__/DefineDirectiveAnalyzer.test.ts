@@ -25,7 +25,7 @@ describe("DefineDirectiveAnalyzer", () => {
       "#define FLAG_A\n#define ADD(a, b) ((a) + (b))\n\nu8 main() {\n    return 0;\n}",
     );
     expect(found.code).toBe("E0501");
-    expect(found.line).toBe(2);
+    expect(found.span.line).toBe(2);
     expect(found.message).toBe(
       "Function-like macro 'ADD' is not allowed. Use inline functions instead.",
     );
@@ -36,7 +36,7 @@ describe("DefineDirectiveAnalyzer", () => {
       "#define FLAG_A\n#define FLAG_B\n#define BUFFER_SIZE 256\n\nu8 main() {\n    return 0;\n}",
     );
     expect(found.code).toBe("E0502");
-    expect(found.line).toBe(3);
+    expect(found.span.line).toBe(3);
     expect(found.message).toBe(
       "#define with value 'BUFFER_SIZE' is not allowed. Use a read-only binding instead: u32 BUFFER_SIZE <- value;",
     );
@@ -46,14 +46,14 @@ describe("DefineDirectiveAnalyzer", () => {
     // Every fixture in the corpus sits at column 0, which is indistinguishable
     // from a hard-coded 0 -- the defect being removed. This one is not.
     const [found] = errors("  #define SIZE 8\n\nu8 main() {\n    return 0;\n}");
-    expect([found.line, found.column]).toEqual([1, 2]);
+    expect([found.span.line, found.span.column]).toEqual([1, 2]);
   });
 
   it("reports every offending directive, where a throw stopped at the first", () => {
     expect(
       errors(
         "#define A 1\n#define B(x) (x)\n#define C 3\n\nu8 main() {\n    return 0;\n}",
-      ).map((e) => [e.code, e.line]),
+      ).map((e) => [e.code, e.span.line]),
     ).toEqual([
       ["E0502", 1],
       ["E0501", 2],
