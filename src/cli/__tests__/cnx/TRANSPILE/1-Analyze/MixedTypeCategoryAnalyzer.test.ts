@@ -600,7 +600,7 @@ describe("MixedTypeCategoryAnalyzer", () => {
         ...at,
       });
       const errors = analyze(
-        "void main() { u32 a <- 1; u32 r <- a + cColor; }",
+        "void main() { u32 a <- 1; bool r <- a < cColor; }",
         symbolTable,
       );
       expect(errors).toHaveLength(1);
@@ -634,7 +634,7 @@ describe("MixedTypeCategoryAnalyzer", () => {
         symbolTable.addCSymbol({ kind: "variable", name, type, ...at });
       }
       const errors = analyze(
-        "void main() { bool same <- cColor = cAlias; u32 a <- 1; u32 r <- a + cAlias; }",
+        "void main() { bool same <- cColor = cAlias; u32 a <- 1; bool r <- a < cAlias; }",
         symbolTable,
       );
       expect(errors).toHaveLength(1);
@@ -697,5 +697,30 @@ describe("MixedTypeCategoryAnalyzer -- an integer beside an unreadable header ma
     ],
   ])("names the site for %s", (_label, body, expected) => {
     expect(analyzeWithMacro(body)).toEqual([expected]);
+  });
+});
+
+describe("MixedTypeCategoryAnalyzer -- a member of the enum being declared", () => {
+  it("is an i32, so it does not mix with a u32 (E0810)", () => {
+    const errors = analyze(
+      "u32 BASE <- 0x10; enum Perm { READ <- 1, X <- Perm.READ + BASE }",
+    );
+    expect(errors.map((e) => `${e.code} ${e.message}`)).toEqual([
+      "E0810 Binary operator combines operands of different essential type categories (signed and unsigned)",
+    ]);
+  });
+
+  it("is an i32 inside a scope too", () => {
+    const errors = analyze(
+      "u32 BASE <- 0x10; scope Motor { public enum Perm { READ <- 1, X <- Perm.READ + BASE } }",
+    );
+    expect(errors.map((e) => e.code)).toEqual(["E0810"]);
+  });
+
+  it("combines with its own enum's members silently", () => {
+    const errors = analyze(
+      "scope Motor { public enum Perm { READ <- 1, WRITE <- 2, RW <- Perm.READ | Perm.WRITE } }",
+    );
+    expect(errors).toEqual([]);
   });
 });

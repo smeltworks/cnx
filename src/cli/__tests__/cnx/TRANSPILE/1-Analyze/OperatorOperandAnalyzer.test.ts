@@ -539,6 +539,19 @@ describe("OperatorOperandAnalyzer -- operands outside the operator's set", () =>
     expect(errors).toEqual([]);
   });
 
+  it.each([
+    ["by its name", "RW <- Perm.READ | Perm.WRITE"],
+    ["through this", "RW <- this.Perm.READ | this.Perm.WRITE"],
+  ])(
+    "reads a member of a scope's enum being declared as an i32, %s",
+    (_label, member) => {
+      const errors = analyze(
+        `scope Motor { public enum Perm { READ <- 1, WRITE <- 2, ${member} } }`,
+      );
+      expect(errors).toEqual([]);
+    },
+  );
+
   it("still rejects another enum's member in a member value", () => {
     const errors = analyze(
       "enum EMode { IDLE, RUN } enum EPerm { READ <- 1, RW <- EMode.RUN | 2 }",

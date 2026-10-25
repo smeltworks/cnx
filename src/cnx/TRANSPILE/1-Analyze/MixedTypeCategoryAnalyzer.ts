@@ -56,7 +56,7 @@ import type IOperandType from "../../types/IOperandType";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TBinaryExpression from "../../types/syntax/TBinaryExpression";
-import DeclarationParts from "../../utils/DeclarationParts";
+import EnumMemberValue from "./EnumMemberValue";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import StatementNodes from "../../utils/StatementNodes";
 import SourceOrder from "../../utils/SourceOrder";
@@ -96,6 +96,9 @@ class MixedCategoryCheck {
    * already reported there, once. Levels are checked innermost first.
    */
   private readonly levelCategories = new Map<string, Category>();
+
+  /** The enum whose member values are being read (`EnumMemberValue`) */
+  public enumBeingDeclared: string | null = null;
 
   constructor(
     private readonly analyzer: MixedTypeCategoryAnalyzer,
@@ -145,7 +148,9 @@ class MixedCategoryCheck {
     }
     let resolved: Category = null;
     for (const leaf of OperandTyper.valueLeaves(operand, this.context)) {
-      const category = MixedCategoryCheck.rule104Category(leaf);
+      const category = MixedCategoryCheck.rule104Category(
+        EnumMemberValue.operandType(leaf, this.enumBeingDeclared),
+      );
       if (category === null) continue;
       if (resolved === null) {
         resolved = category;
@@ -205,8 +210,14 @@ class MixedCategoryCheck {
     if (this.enumComparison(left, right, level)) return false;
     return !this.ownedElsewhere(
       operator,
-      OperandTyper.typeOf(left, this.context),
-      OperandTyper.typeOf(right, this.context),
+      EnumMemberValue.operandType(
+        OperandTyper.typeOf(left, this.context),
+        this.enumBeingDeclared,
+      ),
+      EnumMemberValue.operandType(
+        OperandTyper.typeOf(right, this.context),
+        this.enumBeingDeclared,
+      ),
     );
   }
 
@@ -319,7 +330,6 @@ class MixedCategoryCheck {
     const value = site.value;
     const target = OperandTyper.typeOfTarget(site.target, this.context);
     if (
-      OperandTyper.isBoolean(target) ||
       this.ownedElsewhere(
         operator,
         target,
@@ -351,30 +361,41 @@ class MixedTypeCategoryAnalyzer {
   public analyze(program: IProgramSyntax): IMixedTypeCategoryError[] {
     this.errors = [];
     const check = new MixedCategoryCheck(this, this.context);
-    const expressions = program.declarations.flatMap((member) =>
-      DeclarationParts.of(member.declaration).flatMap(ExpressionNodes.of),
+    const expressions = EnumMemberValue.parts(program).flatMap(
+      ([part, enumBeingDeclared]) =>
+        ExpressionNodes.of(part).map((expr): [TExpression, string | null] => [
+          expr,
+          enumBeingDeclared,
+        ]),
     );
 
     // Levels are met outermost first; checked innermost first, so a level
     // that is an operand of another has its category when that one asks
-    const levels: Array<[TBinaryExpression, TBinaryOperatorLevel]> = [];
-    for (const expr of expressions) {
+    const levels: Array<
+      [TBinaryExpression, TBinaryOperatorLevel, string | null]
+    > = [];
+    for (const [expr, enumBeingDeclared] of expressions) {
       if (expr.kind !== "binary") continue;
       const level = expr.level;
       if (level === "or" || level === "and" || level === "shift") continue;
-      levels.push([expr, level]);
+      levels.push([expr, level, enumBeingDeclared]);
     }
     levels.reverse();
-    for (const [expr, level] of levels) {
+    for (const [expr, level, enumBeingDeclared] of levels) {
+      check.enumBeingDeclared = enumBeingDeclared;
       check.checkLevel(expr, level);
     }
+    check.enumBeingDeclared = null;
 
     for (const member of program.declarations) {
       for (const site of StatementNodes.assignments(member.declaration)) {
         check.checkCompound(site);
       }
     }
-    for (const expr of expressions) check.checkTernary(expr);
+    for (const [expr, enumBeingDeclared] of expressions) {
+      check.enumBeingDeclared = enumBeingDeclared;
+      check.checkTernary(expr);
+    }
 
     // Read off 1.2's syntax (#1991); reported in source order
     return this.errors.sort(SourceOrder.compare);

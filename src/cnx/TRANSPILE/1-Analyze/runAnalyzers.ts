@@ -314,7 +314,11 @@ function runAnalyzers(
     {
       // Before the Rule 10.4 check, so an operand its operator does not take
       // is reported as "not a number" rather than as a category mismatch with
-      // whatever it was combined with.
+      // whatever it was combined with: E0925 needs one operand's type, E0810
+      // two. Owner ruling (#2347): "whichever one can be detected first in
+      // the earliest layer". After the array-index and shift checks, so a
+      // file with both a float `%` (E0804) and a signed index (E0850) now
+      // reports E0850 first (#1191).
       label:
         "operator operand types (MISRA C:2012 Rule 10.1, E0804/E0806/E0807/E0925)",
       run: () => new OperatorOperandAnalyzer(context).analyze(parsed.program),

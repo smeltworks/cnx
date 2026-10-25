@@ -12,4 +12,6 @@ void main() {
     EMode m <- EMode.RUN;
     u8 a <- m + 1;
     u8 b <- m & 1;
+    bool ok <- m < EMode.RUN;
+    u8 ok2 <- (u8)m + 1;
 }

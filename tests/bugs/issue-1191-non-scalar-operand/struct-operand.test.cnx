@@ -12,4 +12,5 @@ Point p;
 void main() {
     u8 a <- p + 1;
     bool b <- p < p;
+    u8 ok <- p.x + 1;
 }

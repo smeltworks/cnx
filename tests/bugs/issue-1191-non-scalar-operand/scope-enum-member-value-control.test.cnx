@@ -1,0 +1,23 @@
+// test-execution
+// Control for E0925: inside a scope, a member of the enum being declared is an i32 there too (ADR-017)
+
+#pragma target host
+
+scope Motor {
+    public enum Perm {
+        READ <- 1,
+        WRITE <- 2,
+        RW <- Perm.READ | Perm.WRITE,
+        ALL <- this.Perm.RW | 4
+    }
+}
+
+u32 main() {
+    if ((u8)Motor.Perm.RW != 3) {
+        return 1;
+    }
+    if ((u8)Motor.Perm.ALL != 7) {
+        return 2;
+    }
+    return 0;
+}

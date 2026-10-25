@@ -7,4 +7,6 @@ void main() {
     string<4> a <- "ab";
     string<4> b <- "cd";
     bool c <- a < b;
+    bool ok <- a = b;
+    string<8> ok2 <- a + b;
 }

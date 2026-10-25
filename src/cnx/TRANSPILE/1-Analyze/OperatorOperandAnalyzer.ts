@@ -35,7 +35,7 @@ import IOperatorOperandError from "./types/IOperatorOperandError";
 import OperandTyper from "../../utils/OperandTyper";
 import CompoundAssignmentAnalyzer from "./CompoundAssignmentAnalyzer";
 import CompoundOperator from "../../utils/CompoundOperator";
-import DeclarationParts from "../../utils/DeclarationParts";
+import EnumMemberValue from "./EnumMemberValue";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import StatementNodes from "../../utils/StatementNodes";
 import SourceOrder from "../../utils/SourceOrder";
@@ -51,7 +51,10 @@ type TCategories = ReadonlySet<TEssentialCategory>;
 
 const INTEGER: TCategories = new Set(["signed", "unsigned"]);
 const ARITHMETIC: TCategories = new Set(["signed", "unsigned", "floating"]);
-/** MISRA C:2012 Rule 10.2: a char may be added to or subtracted from */
+/**
+ * MISRA C:2012 Rule 10.1: a char is an operand of `+` and `-`. Which other
+ * operand it may meet there is Rule 10.2's, which this table does not check.
+ */
 const ADDITIVE: TCategories = new Set([...ARITHMETIC, "character"]);
 /** ADR-017: an enum compares with its own type's members */
 const RELATIONAL: TCategories = new Set([...ADDITIVE, "enum"]);
@@ -120,9 +123,7 @@ const HELP: Readonly<
 
 /**
  * Checks each operator against the sets above. `enumBeingDeclared` is the
- * enum whose member values are being read: there a member of that enum is
- * an `i32` (ADR-017 owner ruling, 2026-10-03), so `RW <- READ | WRITE`
- * needs no cast.
+ * enum whose member values are being read (`EnumMemberValue`).
  */
 class OperatorOperandCheck {
   public enumBeingDeclared: string | null = null;
@@ -140,9 +141,11 @@ class OperatorOperandCheck {
     return OperatorOperandAnalyzer.rejection(
       operator,
       admits,
-      OperandTyper.typeOf(expr, this.context),
+      EnumMemberValue.operandType(
+        OperandTyper.typeOf(expr, this.context),
+        this.enumBeingDeclared,
+      ),
       this.context,
-      this.enumBeingDeclared,
     );
   }
 
@@ -200,7 +203,6 @@ class OperatorOperandCheck {
       admits,
       target,
       this.context,
-      null,
     );
     if (targetRejection !== null) {
       this.analyzer.addError(site.target, site.operator, targetRejection);
@@ -232,13 +234,8 @@ class OperatorOperandAnalyzer {
     const admits = BINARY.get(operator);
     return (
       admits === undefined ||
-      OperatorOperandAnalyzer.rejection(
-        operator,
-        admits,
-        operand,
-        context,
-        null,
-      ) === null
+      OperatorOperandAnalyzer.rejection(operator, admits, operand, context) ===
+        null
     );
   }
 
@@ -248,7 +245,6 @@ class OperatorOperandAnalyzer {
     admits: TCategories,
     operand: IOperandType | null,
     context: IAnalysisContext,
-    enumBeingDeclared: string | null,
   ): TRejection | null {
     if (operand === null) return null;
     if (OperandTyper.isBoolean(operand)) return "bool";
@@ -258,10 +254,7 @@ class OperatorOperandAnalyzer {
     if (form.kind === "bitIndex" || form.kind === "bitRange") return null;
     if (form.kind === "unreadableMacro") return null;
     if (form.kind === "foreign" && form.indeterminate) return null;
-    const category =
-      operand.category === "enum" && operand.enumTypeName === enumBeingDeclared
-        ? "signed"
-        : operand.category;
+    const category = operand.category;
     if (category === "none") {
       return OperatorOperandAnalyzer.uncategorized(operator, operand, context);
     }
@@ -301,7 +294,7 @@ class OperatorOperandAnalyzer {
       return operator === "+" ? null : "string";
     }
     // A C char pointer: which operators take one is open (#2348), so this
-    // rule leaves it as it was until ADR-046 says
+    // rule admits it, as before, until ADR-046 decides
     if (operand.typeName === "cstring") return null;
     // A whole bitmap is its backing integer (ADR-034, owner ruling #2245)
     if (operand.bitmapTypeName !== null) return null;
@@ -315,18 +308,16 @@ class OperatorOperandAnalyzer {
     this.errors = [];
     const check = new OperatorOperandCheck(this, this.context);
 
-    for (const member of program.declarations) {
-      const declaration = member.declaration;
-      check.enumBeingDeclared =
-        declaration.kind === "enum" ? declaration.name : null;
-      for (const part of DeclarationParts.of(declaration)) {
-        for (const expr of ExpressionNodes.of(part)) {
-          check.checkUnary(expr);
-          if (expr.kind === "binary") check.checkLevel(expr);
-        }
+    for (const [part, enumBeingDeclared] of EnumMemberValue.parts(program)) {
+      check.enumBeingDeclared = enumBeingDeclared;
+      for (const expr of ExpressionNodes.of(part)) {
+        check.checkUnary(expr);
+        if (expr.kind === "binary") check.checkLevel(expr);
       }
-      check.enumBeingDeclared = null;
-      for (const site of StatementNodes.assignments(declaration)) {
+    }
+    check.enumBeingDeclared = null;
+    for (const member of program.declarations) {
+      for (const site of StatementNodes.assignments(member.declaration)) {
         check.checkAssignment(site);
       }
     }

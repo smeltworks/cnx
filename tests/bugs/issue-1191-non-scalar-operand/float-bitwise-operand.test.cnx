@@ -1,5 +1,6 @@
 // test-error
-// #1798: a float is not an integer -- shift and bitwise operators take integers only
+// #1798, #1772: a float is not an integer -- shift and bitwise operators take integers only,
+// and so do their compound assignments
 
 #pragma target host
 
@@ -12,4 +13,11 @@ u32 f(f32 k) {
     u32 g <- k | 1;
     u32 h <- k ^ 1;
     return a + b + c + d + e + g + h;
+}
+
+void compound() {
+    mut f32 k <- 1.0;
+    k <<<- 1;
+    mut u32 u <- 1;
+    u <<<- 1;
 }

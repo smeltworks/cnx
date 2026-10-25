@@ -1,0 +1,2 @@
+10:21 error[E0810]: Binary operator combines operands of different essential type categories (signed and unsigned)
+       help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Reinterpret one operand's bits to match the other with bit indexing, e.g. value[0, 32] (ADR-007/ADR-024).
