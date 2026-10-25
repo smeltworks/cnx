@@ -1,12 +1,12 @@
 /**
- * Unit tests for FloatModuloAnalyzer
+ * Unit tests for OperatorOperandAnalyzer: E0804, % on a float
  * Tests detection of modulo operator with floating-point types
  */
 import { describe, it, expect } from "vitest";
-import FloatModuloAnalyzer from "../../../../../cnx/TRANSPILE/1-Analyze/FloatModuloAnalyzer";
+import OperatorOperandAnalyzer from "../../../../../cnx/TRANSPILE/1-Analyze/OperatorOperandAnalyzer";
 import testAnalysisContextFor from "./testAnalysisContextFor";
 
-describe("FloatModuloAnalyzer", () => {
+describe("OperatorOperandAnalyzer -- % on a float (E0804)", () => {
   // ========================================================================
   // Float Variable Detection
   // ========================================================================
@@ -22,7 +22,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       expect(errors).toHaveLength(1);
@@ -40,7 +40,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       expect(errors).toHaveLength(1);
@@ -57,7 +57,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       expect(errors).toHaveLength(1);
@@ -75,7 +75,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       expect(errors).toHaveLength(1);
@@ -97,7 +97,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       expect(errors).toHaveLength(1);
@@ -113,7 +113,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       expect(errors).toHaveLength(1);
@@ -135,7 +135,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       expect(errors).toHaveLength(1);
@@ -151,7 +151,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       expect(errors).toHaveLength(1);
@@ -175,7 +175,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       expect(errors).toHaveLength(0);
@@ -190,7 +190,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       expect(errors).toHaveLength(0);
@@ -207,7 +207,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       expect(errors).toHaveLength(0);
@@ -229,7 +229,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       expect(errors).toHaveLength(0);
@@ -245,7 +245,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       expect(errors).toHaveLength(0);
@@ -261,7 +261,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       expect(errors).toHaveLength(0);
@@ -277,7 +277,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       expect(errors).toHaveLength(0);
@@ -299,7 +299,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       expect(errors[0].helpText).toContain("fmod()");
@@ -313,7 +313,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       expect(errors[0].span.line).toBe(3);
@@ -337,7 +337,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       expect(errors).toHaveLength(2);
@@ -354,7 +354,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       expect(errors).toHaveLength(0);
@@ -370,7 +370,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       expect(errors).toHaveLength(0);
@@ -387,7 +387,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       // Integer operands with parenthesized expression: isFloatOperand
@@ -410,7 +410,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       expect(errors).toHaveLength(0);
@@ -426,7 +426,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       expect(errors).toHaveLength(0);
@@ -442,7 +442,7 @@ describe("FloatModuloAnalyzer", () => {
       const { syntax, context } = testAnalysisContextFor(code, {
         cppMode: false,
       });
-      const analyzer = new FloatModuloAnalyzer(context);
+      const analyzer = new OperatorOperandAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
       expect(errors).toHaveLength(0);

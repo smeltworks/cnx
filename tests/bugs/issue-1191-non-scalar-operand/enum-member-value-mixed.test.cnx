@@ -1,0 +1,10 @@
+// test-error
+// E0810: a member of the enum being declared is an i32, and an i32 does not mix with a u32 (MISRA 10.4)
+
+u32 BASE <- 0x10;
+
+enum Perm {
+    READ <- 1,
+    X <- Perm.READ + BASE,
+    RW <- Perm.READ | 2
+}

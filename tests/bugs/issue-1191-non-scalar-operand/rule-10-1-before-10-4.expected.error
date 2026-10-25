@@ -1,0 +1,8 @@
+15:18 error[E0925]: Operator '+' is not valid on an enum
+       help: MISRA C:2012 Rule 10.1: an enum is not a number (ADR-017). Cast it to an unsigned type first, e.g. (u8)value.
+16:18 error[E0925]: Operator '*' is not valid on a char
+       help: MISRA C:2012 Rule 10.1: a char takes only binary '+' and '-' and the comparisons. Cast it to an integer type first, e.g. (u8)value.
+17:19 error[E0925]: Operator '*' is not valid on a char
+       help: MISRA C:2012 Rule 10.1: a char takes only binary '+' and '-' and the comparisons. Cast it to an integer type first, e.g. (u8)value.
+18:19 error[E0925]: Operator '+' is not valid on an enum
+       help: MISRA C:2012 Rule 10.1: an enum is not a number (ADR-017). Cast it to an unsigned type first, e.g. (u8)value.

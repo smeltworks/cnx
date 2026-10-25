@@ -1,0 +1,16 @@
+// test-execution
+// #2347 review: a combination of members of the enum being declared is an
+// i32 too, so it takes further arithmetic (ADR-017)
+
+enum Perm {
+    READ <- 1,
+    WRITE <- 2,
+    ALL <- (Perm.READ | Perm.WRITE) + 1
+}
+
+u32 main() {
+    if ((u32)Perm.ALL != 4) {
+        return 1;
+    }
+    return 0;
+}

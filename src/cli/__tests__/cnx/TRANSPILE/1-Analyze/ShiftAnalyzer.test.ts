@@ -884,4 +884,29 @@ describe("ShiftAnalyzer -- positions and for headers", () => {
     ]);
     expect(found[0].message).toContain("(expression: a <<<- 9)");
   });
+
+  describe("a member of the enum being declared (ADR-017)", () => {
+    function errorsFor(code: string) {
+      const { syntax, context } = testAnalysisContextFor(code, {
+        cppMode: false,
+      });
+      return new ShiftAnalyzer(context).analyze(syntax);
+    }
+
+    it("is an i32 in its own member values, so shifting it is E0805", () => {
+      const errors = errorsFor(`
+        enum Perm { READ <- 1, WRITE <- Perm.READ << 1 }
+      `);
+      expect(errors.map((e) => e.code)).toEqual(["E0805"]);
+    });
+
+    it("is not an i32 outside them", () => {
+      expect(
+        errorsFor(`
+        enum Perm { READ <- 1 }
+        void main() { u32 x <- (u32)Perm.READ << 1; }
+      `),
+      ).toEqual([]);
+    });
+  });
 });

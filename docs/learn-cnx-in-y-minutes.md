@@ -57,7 +57,7 @@ flag <- !flag;              // flip a flag this way
 bool both <- flag && x = 42;
 bool same <- (flag = true);
 // flag +<- true;           // ERROR E0806: only <- is valid on a bool
-// bool c <- flag + flag;   // ERROR E0807: '+' is not valid on a bool operand
+// bool c <- flag + flag;   // ERROR E0807: '+' is not valid on a bool
 // bool c <- flag / flag;   // ERROR E0807: and this one is a divide by zero
 
 // Comparison uses = (not ==)

@@ -1,0 +1,17 @@
+// test-error
+// E0925: an enum member is its enum's type, not a number, so arithmetic on it needs a cast in every position (ADR-017, #1864)
+
+enum EColor {
+    RED,
+    GREEN,
+    COUNT
+}
+
+u32 N <- EColor.COUNT + 1;
+u8[EColor.COUNT + 1] slots;
+
+void main() {
+    u32 x <- EColor.COUNT + 1;
+    u32 ok <- (u32)EColor.COUNT + 1;
+    u8[EColor.COUNT] ok2;
+}

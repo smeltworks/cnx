@@ -202,6 +202,20 @@ s <- 1;                        // ERROR: can't assign integer to enum
 s <- p;                        // ERROR: can't assign Power to State
 ```
 
+**An enum is not a number, so arithmetic on it needs the cast** (owner, #1864, 2026-10-25:
+"what is the type of EColor.COUNT?"). `EColor.COUNT` is of type `EColor`, and an enum is
+"not freely interchangeable with integers". The same holds in a local, a file-scope value
+and an array dimension. Only a member of the enum whose member values are being given is
+exempt (above).
+
+```cnx
+enum EColor { RED, GREEN, COUNT }
+
+u8[EColor.COUNT] lone;                // ALLOWED: no arithmetic
+u32 x <- EColor.COUNT + 1;            // ERROR E0925: '+' does not take an enum
+u32 y <- (u32)EColor.COUNT + 1;       // ALLOWED: the cast makes it a number
+```
+
 ### Casting to Integer (for hardware registers)
 
 When you need the integer value for hardware access, use C-style cast:
@@ -353,6 +367,7 @@ castExpression
 | E0909 | A member's value is not known at compile time: a variable, a call, a header's name, the member itself or one below it | `tests/bugs/issue-1669-enum-member-values/value-variable.test.cnx`, `value-call.test.cnx`, `value-header-macro.test.cnx`, `value-self-later.test.cnx`                                      |
 | E0910 | A member's value is arithmetic that would clamp or wrap (ADR-044)                                                     | `tests/bugs/issue-1669-enum-member-values/value-overflow.test.cnx`                                                                                                                         |
 | E0911 | A member's value does not fit `i32`                                                                                   | `tests/bugs/issue-1669-enum-member-values/value-i32-range.test.cnx`                                                                                                                        |
+| E0925 | An enum is an operand of an arithmetic, bitwise or shift operator, outside its own enum's member values               | `tests/bugs/issue-1191-non-scalar-operand/enum-member-arithmetic.test.cnx`, `enum-operand.test.cnx`                                                                                        |
 
 A bare member (`RED` for `Color.RED`) is accepted only where the position
 already names the enum: a declaration or assignment whose type is the enum, a
@@ -462,6 +477,28 @@ failing, which is the silence this matrix exists to make visible.
 | for header         | imported transitive | off      |
 
 off: E0894 fires at an enum member, and an enum is declared at file scope or in a scope, never inside a function, a variable or a `for` header (whose declaration cannot declare an enum: it is a parse error), so no context encloses it.
+
+<!-- MATRIX-SEVERITY code: E0925 -->
+
+| Context            | Relationship        | Severity |
+| ------------------ | ------------------- | -------- |
+| top-level function | same file           | error    |
+| scope method       | same file           | error    |
+| global variable    | same file           | error    |
+| scope member       | same file           | error    |
+| for header         | same file           | error    |
+| top-level function | imported direct     | error    |
+| scope method       | imported direct     | error    |
+| global variable    | imported direct     | error    |
+| scope member       | imported direct     | error    |
+| for header         | imported direct     | error    |
+| top-level function | imported transitive | error    |
+| scope method       | imported transitive | error    |
+| global variable    | imported transitive | error    |
+| scope member       | imported transitive | error    |
+| for header         | imported transitive | error    |
+
+Every cell is `error`: an enum member is an expression, so an arithmetic operator meets one in a function body, an initializer and a `for` header alike, and the enum's type crosses an include (`tests/adr-017/enum-arithmetic-*.test.cnx`, owner ruling #1864).
 
 <!-- MATRIX-SEVERITY code: E0909 -->
 
