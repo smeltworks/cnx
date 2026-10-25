@@ -1,2 +1,4 @@
 9:14 error[E0925]: Operator '<' is not valid on a string operand
        help: MISRA C:2012 Rule 10.1: a string is not a number. Join strings with '+' and compare them with '=' / '!='.
+10:19 error[E0925]: Operator '-' is not valid on a string operand
+       help: MISRA C:2012 Rule 10.1: a string is not a number. Join strings with '+' and compare them with '=' / '!='.
