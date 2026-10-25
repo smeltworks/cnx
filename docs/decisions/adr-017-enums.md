@@ -478,6 +478,28 @@ failing, which is the silence this matrix exists to make visible.
 
 off: E0894 fires at an enum member, and an enum is declared at file scope or in a scope, never inside a function, a variable or a `for` header (whose declaration cannot declare an enum: it is a parse error), so no context encloses it.
 
+<!-- MATRIX-SEVERITY code: E0925 -->
+
+| Context            | Relationship        | Severity |
+| ------------------ | ------------------- | -------- |
+| top-level function | same file           | error    |
+| scope method       | same file           | error    |
+| global variable    | same file           | error    |
+| scope member       | same file           | error    |
+| for header         | same file           | error    |
+| top-level function | imported direct     | error    |
+| scope method       | imported direct     | error    |
+| global variable    | imported direct     | error    |
+| scope member       | imported direct     | error    |
+| for header         | imported direct     | error    |
+| top-level function | imported transitive | error    |
+| scope method       | imported transitive | error    |
+| global variable    | imported transitive | error    |
+| scope member       | imported transitive | error    |
+| for header         | imported transitive | error    |
+
+Every cell is `error`: an enum member is an expression, so an arithmetic operator meets one in a function body, an initializer and a `for` header alike, and the enum's type crosses an include (`tests/adr-017/enum-arithmetic-*.test.cnx`, owner ruling #1864).
+
 <!-- MATRIX-SEVERITY code: E0909 -->
 
 | Context            | Relationship        | Severity |

@@ -1,0 +1,50 @@
+// test-error
+// test-adr: 017
+// E0925 across TWO include hops -- matrix cells: imported transitive, in all five contexts.
+// An enum is its own type, not a number, so an arithmetic operator does not
+// take one without a cast (owner, #1864). A check that found no enum in this
+// file must not read "no enum" as "rule does not apply".
+
+#include "enum-relay.cnx"
+
+// NEGATIVE CONTROL -- the cast form, in the same five contexts.
+u32 okGlobal <- (u32)Shared.B + 1;
+
+u32 okFunction() {
+    u32 v <- (u32)Shared.B + 1;
+    return v;
+}
+
+scope Ok {
+    u32 okMember <- (u32)Shared.B + 1;
+
+    public u32 okMethod() {
+        u32 v <- (u32)Shared.B + 1;
+        return v;
+    }
+}
+
+void okFor(u32 limit) {
+    for (mut u32 i <- (u32)Shared.B + 1; i < limit; i +<- 1) {}
+}
+
+// THE ASSERTIONS -- one per context.
+u32 badGlobal <- Shared.B + 1;
+
+u32 badFunction() {
+    u32 v <- Shared.B + 1;
+    return v;
+}
+
+scope Bad {
+    u32 badMember <- Shared.B + 1;
+
+    public u32 badMethod() {
+        u32 v <- Shared.B + 1;
+        return v;
+    }
+}
+
+void badFor(u32 limit) {
+    for (mut u32 i <- Shared.B + 1; i < limit; i +<- 1) {}
+}

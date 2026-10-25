@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-919 fixture(s) assert a diagnostic; 905 carry a code.
+922 fixture(s) assert a diagnostic; 908 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -134,6 +134,9 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-017/bare-enum-field-slice-target-error.test.cnx                                                 | E0424                             |
 | tests/adr-017/bare-enum-slice-target-error.test.cnx                                                       | E0424                             |
 | tests/adr-017/bare-enum-uncovered-arms-error.test.cnx                                                     | E0424                             |
+| tests/adr-017/enum-arithmetic-contexts.test.cnx                                                           | E0925                             |
+| tests/adr-017/enum-arithmetic-imported-direct.test.cnx                                                    | E0925                             |
+| tests/adr-017/enum-arithmetic-imported-transitive.test.cnx                                                | E0925                             |
 | tests/adr-017/enum-bare-in-array-dim.test.cnx                                                             | E0424                             |
 | tests/adr-017/enum-bare-in-comparison.test.cnx                                                            | E0424                             |
 | tests/adr-017/enum-bare-in-for-header-imported-direct.test.cnx                                            | E0424                             |
