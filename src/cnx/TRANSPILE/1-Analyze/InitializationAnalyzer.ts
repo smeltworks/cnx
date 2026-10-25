@@ -450,18 +450,16 @@ class InitializationAnalyzer {
 
   /**
    * Globals count as initialized (C zero-initializes them). A scope member
-   * does when it has an initializer or one of the scope's functions assigns it.
+   * does when it has an initializer or a function in its own scope block
+   * assigns it (#2353: that rule ignores call order and reopened blocks).
    */
   private createGlobalScope(program: IProgramSyntax): void {
-    const assignedIn = new Map<string, Set<TInitKey>>();
+    const assignedInBlock = this._assignedMembersByBlock(program);
     for (const { declaration, scope } of program.members) {
       if (declaration.kind !== "variableDeclaration") continue;
       const scopePath =
         scope === null ? "" : this.context.program.scopePathOf(scope);
       const fullName = ScopeUtils.qualifyInScope(declaration.name, scopePath); // Transpiled C name
-      if (scope !== null && !assignedIn.has(scope)) {
-        assignedIn.set(scope, this._findAssignedScopeMembers(program, scope));
-      }
       this.declareVariable(
         fullName,
         {
@@ -471,30 +469,36 @@ class InitializationAnalyzer {
         },
         scope === null ||
           declaration.initializer !== null ||
-          assignedIn.get(scope)!.has(fullName),
+          assignedInBlock.get(declaration)!.has(fullName),
         InitializationAnalyzer.userTypeName(declaration.type),
       );
     }
   }
 
   /**
-   * Scan all functions in a scope to find which members are assigned.
+   * The members each scope block's functions assign, keyed by every
+   * declaration in that block.
    * Issue #1019: A member assigned in ANY function is considered initialized
-   * for reads in other functions within the same scope.
+   * for reads in other functions within the same block.
    */
-  private _findAssignedScopeMembers(
+  private _assignedMembersByBlock(
     program: IProgramSyntax,
-    scope: string,
-  ): Set<TInitKey> {
-    const assigned = new Set<TInitKey>();
-    for (const member of program.members) {
-      if (member.scope !== scope || member.declaration.kind !== "function") {
-        continue;
+  ): Map<TMemberDeclaration, Set<TInitKey>> {
+    const byBlock = new Map<TMemberDeclaration, Set<TInitKey>>();
+    for (const { declaration } of program.declarations) {
+      if (declaration.kind !== "scope") continue;
+      const assigned = new Set<TInitKey>();
+      for (const member of declaration.members) {
+        if (member.declaration.kind === "function") {
+          this._collectAssignments(
+            member.declaration.body.statements,
+            assigned,
+          );
+        }
+        byBlock.set(member.declaration, assigned);
       }
-      // Scan the function body for assignments to scope members
-      this._collectAssignments(member.declaration.body.statements, assigned);
     }
-    return assigned;
+    return byBlock;
   }
 
   /**
