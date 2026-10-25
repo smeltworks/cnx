@@ -218,12 +218,13 @@ class OperatorOperandCheck {
     }
     const admits = BINARY.get(operator);
     if (admits === undefined) return;
+    // A whole-array or string target is E0857's whatever its value (#2193)
+    if (CompoundAssignmentAnalyzer.rejectsTarget(site.target, this.context)) {
+      return;
+    }
     const rejection = this.rejection(operator, admits, site.value, null);
     if (rejection !== null) {
       this.analyzer.addError(site.value, site.operator, rejection);
-      return;
-    }
-    if (CompoundAssignmentAnalyzer.rejectsTarget(site.target, this.context)) {
       return;
     }
     // An enum target, `m +<- 1`, is #2264's open question, so it is left as
