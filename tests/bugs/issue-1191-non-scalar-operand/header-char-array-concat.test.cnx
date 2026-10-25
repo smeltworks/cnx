@@ -1,7 +1,7 @@
 // #2347 review: a header's char[N] is a string under '+' (ADR-045), as on
 // main, in either operand order and as a struct field
 
-#include "bugs/issue-1191-non-scalar-operand/header-aggregates.h"
+#include "header-aggregates.h"
 
 void main() {
     string<32> r <- cbuf + "x";

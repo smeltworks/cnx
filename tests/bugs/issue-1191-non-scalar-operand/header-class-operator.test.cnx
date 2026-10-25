@@ -3,7 +3,7 @@
 // #2347 review: a C++ header class may declare the operator, so Rule 10.1
 // leaves its operands to the C++ compiler, as on main
 
-#include "bugs/issue-1191-non-scalar-operand/header-class-operator.hpp"
+#include "header-class-operator.hpp"
 
 mut Vec2 a;
 mut Vec2 b;

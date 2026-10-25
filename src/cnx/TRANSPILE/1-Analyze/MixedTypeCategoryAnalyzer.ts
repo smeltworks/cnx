@@ -197,6 +197,7 @@ class MixedCategoryCheck {
             right!,
             "binary",
             operator,
+            this.hasOwnEnumMember(operands, enumBeingDeclared),
           );
           mixed = true;
         }
@@ -210,6 +211,24 @@ class MixedCategoryCheck {
     this.levelCategories.set(
       MixedCategoryCheck.writtenAt(expr),
       mixed ? null : running,
+    );
+  }
+
+  /**
+   * Whether a member of the enum being declared is among these operands: it
+   * is an i32 there (ADR-017), but it has no bits to index, so the help is a
+   * cast, not a bit-range reinterpretation
+   */
+  private hasOwnEnumMember(
+    operands: readonly TExpression[],
+    enumBeingDeclared: string | null,
+  ): boolean {
+    if (enumBeingDeclared === null) return false;
+    return operands.some((operand) =>
+      OperandTyper.valueLeaves(operand, this.context).some(
+        (leaf) =>
+          leaf?.category === "enum" && leaf.enumTypeName === enumBeingDeclared,
+      ),
     );
   }
 
@@ -450,6 +469,7 @@ class MixedTypeCategoryAnalyzer {
     right: string,
     what: TOperatorSite = "binary",
     operator?: string,
+    castOnly = false,
   ): void {
     if (left === UNREADABLE_MACRO || right === UNREADABLE_MACRO) {
       this.addUnreadableMacroError(line, column, what, operator);
@@ -474,7 +494,7 @@ class MixedTypeCategoryAnalyzer {
           ? `${rule}The target cannot be converted: write the assignment out with explicit conversions, e.g. x <- (u32)((f32)x * k) (ADR-024).`
           : `${rule}Convert the integer operand with an explicit cast, e.g. (f32)value (ADR-024).`;
     }
-    if (signedness) {
+    if (signedness && !castOnly) {
       helpText = `${rule}Reinterpret one operand's bits to match the other with bit indexing, e.g. value[0, 32] (ADR-007/ADR-024).`;
     }
     this.errors.push({

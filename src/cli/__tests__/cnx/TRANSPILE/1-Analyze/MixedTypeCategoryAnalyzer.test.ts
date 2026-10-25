@@ -332,6 +332,16 @@ describe("MixedTypeCategoryAnalyzer", () => {
       expect(errors).toHaveLength(1);
     });
 
+    it("helps with a cast, not a bit range, for a member of the enum being declared", () => {
+      const errors = analyze(`
+        u32 BASE <- 0x10;
+        enum Perm { READ <- 1, X <- Perm.READ + BASE }
+      `);
+      expect(errors).toHaveLength(1);
+      expect(errors[0].helpText).toContain("with a cast");
+      expect(errors[0].helpText).not.toContain("bit indexing");
+    });
+
     it("does not report a pair Rule 10.1 owns again at the outer operator", () => {
       const errors = analyze(`
         enum EMode { IDLE }

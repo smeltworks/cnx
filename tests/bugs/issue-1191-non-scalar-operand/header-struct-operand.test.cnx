@@ -2,7 +2,7 @@
 // #2347 review: a C header struct is a struct operand, as a cnx one is;
 // its field is a number. An opaque handle is a pointer, which C judges.
 
-#include "bugs/issue-1191-non-scalar-operand/header-aggregates.h"
+#include "header-aggregates.h"
 
 Dev d;
 Dev e;
