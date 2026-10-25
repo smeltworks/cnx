@@ -48,7 +48,7 @@ import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import FunctionReference from "./helpers/FunctionReference";
 import ValuePositions from "./helpers/ValuePositions";
 import type IValuePosition from "../../types/IValuePosition";
@@ -79,12 +79,9 @@ class CppClassInitializerCheck {
     );
     if (cppClass === null) return;
 
-    const line = init.span.line;
-    const column = init.span.column;
     this.found.push({
       code: "E0508",
-      line,
-      column,
+      span: init.span,
       message: `C++ class '${cppClass}' has a constructor, so struct initializer syntax cannot be used outside a function body`,
       helpText:
         "A class with a constructor is not an aggregate, so the fields are assigned one at a time -- and a declaration outside a function body has no statement to assign them in. Initialize it inside a function, or use constructor syntax.",
@@ -129,11 +126,7 @@ class CppClassInitializerAnalyzer {
   ): ICppClassInitializerError[] {
     if (!this.context.program.cppMode()) return [];
     const check = new CppClassInitializerCheck(this.context, positions);
-    const visit = (declaration: TDeclarationSyntax): void => {
-      if (declaration.kind === "scope") {
-        for (const member of declaration.members) visit(member.declaration);
-        return;
-      }
+    const visit = (declaration: TMemberDeclaration): void => {
       if (declaration.kind === "function") return;
       for (const expr of DeclarationParts.of(declaration).flatMap(
         ExpressionNodes.of,
@@ -141,7 +134,7 @@ class CppClassInitializerAnalyzer {
         check.checkExpression(expr);
       }
     };
-    for (const member of program.declarations) visit(member.declaration);
+    for (const member of program.members) visit(member.declaration);
     return check.errors();
   }
 }

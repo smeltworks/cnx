@@ -24,7 +24,7 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TStatement from "../../types/syntax/TStatement";
 import StatementNodes from "../../utils/StatementNodes";
 import BoundDeclaration from "./helpers/BoundDeclaration";
@@ -46,8 +46,6 @@ class ConstructorArgumentCheck {
   }
 
   public check(declaration: TConstructorDeclaration): void {
-    const line = declaration.span.line;
-    const column = declaration.span.column;
     for (const argument of declaration.arguments) {
       const name = argument.name;
       // What the name binds to before this declaration, through Program's
@@ -65,8 +63,7 @@ class ConstructorArgumentCheck {
       if (!declared) {
         this.found.push({
           code: "E0433",
-          line,
-          column,
+          span: declaration.span,
           message: `Constructor argument '${name}' is not declared`,
           helpText: `Declare '${name}' before the constructor, or pass a literal.`,
         });
@@ -75,8 +72,7 @@ class ConstructorArgumentCheck {
       if (!declared.isConst) {
         this.found.push({
           code: "E0432",
-          line,
-          column,
+          span: declaration.span,
           message: `Constructor argument '${name}' must be read-only`,
           helpText:
             "A C++ constructor runs during static initialization, before main, so it may only read a value fixed at compile time. Remove `mut` from the argument's declaration.",
@@ -93,18 +89,14 @@ class ConstructorArgumentAnalyzer {
   /** #1991: reads 1.2's syntax, not the parse tree */
   public analyze(program: IProgramSyntax): IConstructorArgumentError[] {
     const check = new ConstructorArgumentCheck(this.context);
-    const visit = (declaration: TDeclarationSyntax): void => {
-      if (declaration.kind === "scope") {
-        for (const member of declaration.members) visit(member.declaration);
-        return;
-      }
+    const visit = (declaration: TMemberDeclaration): void => {
       if (declaration.kind === "constructorDeclaration")
         check.check(declaration);
       for (const statement of StatementNodes.in(declaration)) {
         if (statement.kind === "constructorDeclaration") check.check(statement);
       }
     };
-    for (const member of program.declarations) visit(member.declaration);
+    for (const member of program.members) visit(member.declaration);
     return check.errors();
   }
 }

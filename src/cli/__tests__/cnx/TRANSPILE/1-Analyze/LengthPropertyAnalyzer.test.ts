@@ -31,8 +31,8 @@ describe("LengthPropertyAnalyzer", () => {
     const found = errors(inMain("u32 v <- 5;", "v.type_element_count"));
     expect(found).toHaveLength(1);
     expect(found[0].code).toBe("E0867");
-    expect(found[0].line).toBe(3);
-    expect(found[0].column).toBeGreaterThan(0);
+    expect(found[0].span.line).toBe(3);
+    expect(found[0].span.column).toBeGreaterThan(0);
   });
 
   it("rejects .value_char_count on a float, and answers it on an integer and an array", () => {

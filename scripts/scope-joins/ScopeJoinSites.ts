@@ -22,6 +22,7 @@
  */
 
 import RegExpUtils from "../../src/cnx/utils/RegExpUtils";
+import type ICheckOutcome from "../types/ICheckOutcome";
 
 /** One distinct call shape in one file, and how many times it occurs there. */
 interface ISite {
@@ -102,13 +103,6 @@ interface IAdjudication {
   /** The card that must move this site, or null when nothing needs to. */
   readonly movesWith: string | null;
   readonly why: string;
-}
-
-/** What `check` concluded. */
-interface ICheckOutcome {
-  readonly ok: boolean;
-  readonly errors: readonly string[];
-  readonly info: readonly string[];
 }
 
 class ScopeJoinSites {

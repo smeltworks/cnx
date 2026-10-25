@@ -45,7 +45,11 @@ describe("IncludeDirectiveAnalyzer (E0503)", () => {
     const [found] = analyze(
       '#include <stdint.h>\n#include "helper.c"\n\nu8 main() {\n    return 0;\n}',
     );
-    expect([found.code, found.line, found.column]).toEqual(["E0503", 2, 0]);
+    expect([found.code, found.span.line, found.span.column]).toEqual([
+      "E0503",
+      2,
+      0,
+    ]);
     expect(found.message).toBe(
       "Cannot #include implementation file 'helper.c'. Only header files (.h, .hpp) are allowed.",
     );
@@ -86,7 +90,7 @@ describe("IncludeDirectiveAnalyzer (E0506)", () => {
     const [found] = analyze(
       '#include "missing.cnx"\n\nu8 main() {\n    return 0;\n}',
     );
-    expect([found.code, found.line]).toEqual(["E0506", 1]);
+    expect([found.code, found.span.line]).toEqual(["E0506", 1]);
     expect(found.message).toBe("Included cnx file not found: missing.cnx");
     // No absolute path in the help: it would differ on every checkout, and the
     // first fixture written for this rule embedded one in an `.expected.error`.
@@ -114,7 +118,7 @@ describe("IncludeDirectiveAnalyzer (E0504)", () => {
       '#include <stdint.h>\n#include "helper.h"\n\nu8 main() {\n    return 0;\n}',
       ["/project/src/helper.cnx"],
     );
-    expect([found.code, found.line]).toEqual(["E0504", 2]);
+    expect([found.code, found.span.line]).toEqual(["E0504", 2]);
     expect(found.message).toContain(
       "Found #include \"helper.h\" but 'helper.cnx' exists at the same location.",
     );

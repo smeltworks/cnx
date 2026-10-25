@@ -29,7 +29,7 @@ describe("DeclarationModifierAnalyzer (E0889)", () => {
         "}",
       ].join("\n"),
     );
-    expect(found.map((e) => [e.code, e.line])).toEqual([
+    expect(found.map((e) => [e.code, e.span.line])).toEqual([
       ["E0889", 1],
       ["E0889", 3],
       ["E0889", 6],
@@ -54,7 +54,7 @@ describe("DeclarationModifierAnalyzer (E0889)", () => {
         "}",
       ].join("\n"),
     );
-    expect(found.map((e) => e.line)).toEqual([3, 6, 9]);
+    expect(found.map((e) => e.span.line)).toEqual([3, 6, 9]);
   });
 
   it("accepts either modifier alone", () => {
@@ -90,7 +90,7 @@ describe("DeclarationModifierAnalyzer (E0919)", () => {
         "}",
       ].join("\n"),
     );
-    expect(found.map((e) => [e.code, e.line])).toEqual([
+    expect(found.map((e) => [e.code, e.span.line])).toEqual([
       ["E0919", 1],
       ["E0919", 3],
       ["E0919", 4],

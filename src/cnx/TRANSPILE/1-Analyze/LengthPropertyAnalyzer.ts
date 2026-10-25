@@ -51,7 +51,7 @@ import ILengthPropertyError from "./types/ILengthPropertyError";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import type TExpression from "../../types/syntax/TExpression";
 import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IOperandType from "../../types/IOperandType";
 
@@ -84,11 +84,13 @@ class LengthPropertyCheck {
       if (name === "length") {
         this.reportDeprecatedLength(last);
       } else {
-        this.report(
-          last,
-          `.${name} is not available on a literal`,
-          "A length property measures a declared value; declare one and ask it (ADR-058).",
-        );
+        this.found.push({
+          code: "E0867",
+          span: last.span,
+          message: `.${name} is not available on a literal`,
+          helpText:
+            "A length property measures a declared value; declare one and ask it (ADR-058).",
+        });
       }
       return;
     }
@@ -102,17 +104,23 @@ class LengthPropertyCheck {
     // named one kind of length without saying which
     const replacement = LengthProperty.removedHelp(property);
     if (replacement !== null) {
-      this.report(last, `'.${property}' is removed`, replacement, "E0886");
+      this.found.push({
+        code: "E0886",
+        span: last.span,
+        message: `'.${property}' is removed`,
+        helpText: replacement,
+      });
       return;
     }
 
     if (LengthPropertyCheck.subjectIsArgs(chain)) {
       if (LengthProperty.parse(property)?.unit !== "element_count") {
-        this.report(
-          last,
-          `.${property} is not available on 'args'`,
-          "Use .type_element_count for the argument count.",
-        );
+        this.found.push({
+          code: "E0867",
+          span: last.span,
+          message: `.${property} is not available on 'args'`,
+          helpText: "Use .type_element_count for the argument count.",
+        });
       }
       return;
     }
@@ -152,12 +160,13 @@ class LengthPropertyCheck {
     // has a buffer.
     if (property === "capacity" || property === "size") {
       if (!isString) {
-        this.report(
-          at,
-          `.${property} is only available on strings, not on '${subject}'`,
-          "Use .type_element_count for an array's length, or .type_byte_length for a value's size in bytes (ADR-045).",
-          "E0887",
-        );
+        this.found.push({
+          code: "E0887",
+          span: at.span,
+          message: `.${property} is only available on strings, not on '${subject}'`,
+          helpText:
+            "Use .type_element_count for an array's length, or .type_byte_length for a value's size in bytes (ADR-045).",
+        });
       }
       return;
     }
@@ -173,18 +182,25 @@ class LengthPropertyCheck {
       )!,
     );
     if (rule.kind === "error") {
-      this.report(at, rule.message, rule.helpText);
+      this.found.push({
+        code: "E0867",
+        span: at.span,
+        message: rule.message,
+        helpText: rule.helpText,
+      });
       return;
     }
     // C initializes a file-scope object with a constant, and a value's
     // length now is not one: the C was `uint32_t n = strlen(s);`, which gcc
     // rejects
     if (!inFunction && LengthProperty.readsAtRuntime(rule)) {
-      this.report(
-        at,
-        `.${property} is read at runtime, and a file-scope initializer must be constant`,
-        "Read it inside a function, or use the .type_ length, which is constant (ADR-058).",
-      );
+      this.found.push({
+        code: "E0867",
+        span: at.span,
+        message: `.${property} is read at runtime, and a file-scope initializer must be constant`,
+        helpText:
+          "Read it inside a function, or use the .type_ length, which is constant (ADR-058).",
+      });
       return;
     }
     // A logical bit or byte length needs a width: a string, a struct whose
@@ -224,11 +240,13 @@ class LengthPropertyCheck {
           ? headerBits(element)
           : LengthProperty.structBits(struct, lookup, headerBits);
       if (bits === null) {
-        this.report(
-          at,
-          `Cannot determine .${property} for type '${subject}'`,
-          "A struct's length is its fields' sizes together; a pointer field, a field of a type cnx does not read, a union's shared fields, a bit-field, an unnamed member, and a C++ base or vtable have no size cnx fixes.",
-        );
+        this.found.push({
+          code: "E0867",
+          span: at.span,
+          message: `Cannot determine .${property} for type '${subject}'`,
+          helpText:
+            "A struct's length is its fields' sizes together; a pointer field, a field of a type cnx does not read, a union's shared fields, a bit-field, an unnamed member, and a C++ base or vtable have no size cnx fixes.",
+        });
       }
       return;
     }
@@ -239,23 +257,26 @@ class LengthPropertyCheck {
       typed.enumTypeName === null &&
       typed.bitmapTypeName === null
     ) {
-      this.report(
-        at,
-        `Cannot determine .${property} for type '${subject}'`,
-        typed.typeName === null && typed.cType !== null
-          ? "cnx has no pointers, so a header's pointer, or a type cnx does not read, has no size."
-          : "A length in bits is only defined for a primitive, a string, or an array of them.",
-      );
+      this.found.push({
+        code: "E0867",
+        span: at.span,
+        message: `Cannot determine .${property} for type '${subject}'`,
+        helpText:
+          typed.typeName === null && typed.cType !== null
+            ? "cnx has no pointers, so a header's pointer, or a type cnx does not read, has no size."
+            : "A length in bits is only defined for a primitive, a string, or an array of them.",
+      });
     }
   }
 
   private reportDeprecatedLength(at: TPostfixOpSyntax): void {
-    this.report(
-      at,
-      `'.length' is deprecated`,
-      "Use .value_char_count for a string's length, .type_element_count for an array's, or .type_bit_length / .type_byte_length for a width (ADR-058).",
-      "E0886",
-    );
+    this.found.push({
+      code: "E0886",
+      span: at.span,
+      message: `'.length' is deprecated`,
+      helpText:
+        "Use .value_char_count for a string's length, .type_element_count for an array's, or .type_bit_length / .type_byte_length for a width (ADR-058).",
+    });
   }
 
   /** `"Hello"`, `(true)`, `"Hello"[0]`: a chain whose root is a literal */
@@ -283,15 +304,8 @@ class LengthPropertyCheck {
    * read, and a written chain was never one of their subjects.
    */
   public static targetsIn(
-    declaration: TDeclarationSyntax,
+    declaration: TMemberDeclaration,
   ): ReadonlySet<TExpression> {
-    if (declaration.kind === "scope") {
-      return new Set(
-        declaration.members.flatMap((member) => [
-          ...LengthPropertyCheck.targetsIn(member.declaration),
-        ]),
-      );
-    }
     if (declaration.kind !== "function") return new Set();
     return new Set(
       StatementNodes.of(declaration.body.statements).flatMap((statement) => {
@@ -302,28 +316,6 @@ class LengthPropertyCheck {
         return [];
       }),
     );
-  }
-
-  /**
-   * #1322: the code is a parameter now. This file owns three rules -- a shape
-   * property used where the subject has none (E0867), the deprecated `.length`
-   * (E0886), and a storage property off a string (E0887) -- because all three
-   * need the same subject, resolved by the same walk. Defaulting keeps the
-   * E0867 call sites reading as they did.
-   */
-  private report(
-    at: TPostfixOpSyntax,
-    message: string,
-    helpText: string,
-    code = "E0867",
-  ): void {
-    this.found.push({
-      code,
-      line: at.span.line,
-      column: at.span.column,
-      message,
-      helpText,
-    });
   }
 }
 
@@ -336,11 +328,7 @@ class LengthPropertyAnalyzer {
     const check = new LengthPropertyCheck(this.context);
     // only a function body is inside a function -- a scope's members are at
     // file scope
-    const visit = (declaration: TDeclarationSyntax): void => {
-      if (declaration.kind === "scope") {
-        for (const member of declaration.members) visit(member.declaration);
-        return;
-      }
+    const visit = (declaration: TMemberDeclaration): void => {
       const targets = LengthPropertyCheck.targetsIn(declaration);
       const inFunction = declaration.kind === "function";
       for (const part of DeclarationParts.of(declaration)) {
@@ -349,7 +337,7 @@ class LengthPropertyAnalyzer {
         }
       }
     };
-    for (const member of program.declarations) visit(member.declaration);
+    for (const member of program.members) visit(member.declaration);
     return check.errors();
   }
 }

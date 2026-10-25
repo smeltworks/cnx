@@ -20,12 +20,6 @@
  * carrier. They hold no nodes now, and the two modules that did name types are
  * out of the population for real rather than by spelling.
  */
-import type TRenderedStringPart from "../../types/TRenderedStringPart";
-import type IPlannedFloatBits from "./types/IPlannedFloatBits";
-import type IPlannedSliceSource from "./types/IPlannedSliceSource";
-import type IPlannedAtomic from "../types/IPlannedAtomic";
-import type IBitmapFieldTarget from "../../types/IBitmapFieldTarget";
-import type IPlannedWholeArrayWrite from "./types/IPlannedWholeArrayWrite";
 import AssignmentTarget from "../../utils/AssignmentTarget";
 import type TExpression from "../../types/syntax/TExpression";
 import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
@@ -42,28 +36,21 @@ import BitUtils from "../../utils/BitUtils";
 /**
  * Dependencies for building context.
  */
-interface IContextBuilderDeps {
+interface IContextBuilderDeps extends Pick<
+  IAssignmentContext,
+  | "floatBits"
+  | "bitmapField"
+  | "atomic"
+  | "plannedClamp"
+  | "plannedSliceSource"
+  | "plannedStringCapacity"
+  | "plannedStringParts"
+  | "plannedWholeArray"
+  | "plannedCompoundCast"
+  | "plannedRegisterAccess"
+> {
   /** #1668: what the target writes, bound where it was typed */
   readonly target: IChainBase;
-
-  /** 2.2's decision: how the target writes a float's bits (ADR-007), or null */
-  readonly floatBits: IPlannedFloatBits | null;
-  /** 2.2's decision: the bitmap field the target writes (ADR-034), or null */
-  readonly bitmapField: IBitmapFieldTarget | null;
-  /** 2.2's decision: how this write is atomic (ADR-049), or null if it is not */
-  readonly atomic: IPlannedAtomic | null;
-  /** 2.2's decision: the ADR-044 helper this compound write calls, or null */
-  readonly plannedClamp: { operation: string; cnxType: string } | null;
-  /** 2.2's decision: how a slice write reads its source (#1081), or null */
-  readonly plannedSliceSource: IPlannedSliceSource | null;
-  /** 2.2's decision: the capacity of the one `string<N>` this write copies, or null (#1731) */
-  readonly plannedStringCapacity: number | null;
-  /** 2.2's decision: a concatenation's or a substring's parts, or null (#1257) */
-  readonly plannedStringParts: (() => readonly TRenderedStringPart[]) | null;
-  /** 2.2's decision: the shape a whole array is copied in (#1782), or null */
-  readonly plannedWholeArray: IPlannedWholeArrayWrite | null;
-  readonly plannedCompoundCast: string | null;
-  readonly plannedRegisterAccess: string | null;
 
   /**
    * 2.3 Render's per-file working state (#1452 box 4), carried onto the built

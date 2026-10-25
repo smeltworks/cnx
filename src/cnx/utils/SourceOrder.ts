@@ -11,6 +11,14 @@ class SourceOrder {
   ): number {
     return a.line - b.line || a.column - b.column;
   }
+
+  /** Two diagnostics, by the span each is reported at */
+  static bySpan(
+    a: { readonly span: ISourceSpan },
+    b: { readonly span: ISourceSpan },
+  ): number {
+    return SourceOrder.compare(a.span, b.span);
+  }
 }
 
 export default SourceOrder;

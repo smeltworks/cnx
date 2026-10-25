@@ -1,0 +1,31 @@
+// test-error
+// test-adr: 016
+// A scope member is initialized when a function in its own scope block
+// assigns it (#1019); a reopened block's functions are not looked at (#2353
+// tracks the flow-sensitive rule). `counter` is assigned in no block, so its
+// read is E0381. `limit` is assigned in its own block, by a function written
+// after the read, so only that pre-scan keeps its read from being E0381.
+
+scope Lib {
+    mut u32 counter;
+    mut u32 limit;
+    public u32 readLimit() {
+        return limit;
+    }
+    public void setLimit() {
+        limit <- 10;
+    }
+    public u32 read() {
+        return counter;
+    }
+}
+
+scope Lib {
+    public void reset() {}
+}
+
+u32 main() {
+    Lib.reset();
+    Lib.setLimit();
+    return Lib.readLimit() + Lib.read();
+}

@@ -23,11 +23,10 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
+import ProgramAccesses from "../../utils/ProgramAccesses";
+import type IValuePositions from "../../types/IValuePositions";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TExpression from "../../types/syntax/TExpression";
-import DeclarationParts from "../../utils/DeclarationParts";
-import ExpressionNodes from "../../utils/ExpressionNodes";
-import StatementNodes from "../../utils/StatementNodes";
 import OperandTyper from "../../utils/OperandTyper";
 import BitmapFieldStep from "../../utils/BitmapFieldStep";
 import type IBitmapFieldTarget from "../../types/IBitmapFieldTarget";
@@ -62,12 +61,12 @@ class BitmapAccessCheck {
     const value = ConstantExpression.valueAt(site.value, this.context);
     const maximum = 2 ** field.layout.width - 1;
     if (value === null || value <= maximum) return;
-    this.report(
-      site.value,
-      "E0881",
-      `Value ${value} exceeds ${field.layout.width}-bit field '${field.fieldName}' maximum of ${maximum}`,
-      `A ${field.layout.width}-bit field holds 0 through ${maximum}; widen the field in the bitmap declaration, or write a value that fits (ADR-034).`,
-    );
+    this.found.push({
+      code: "E0881",
+      span: site.value.span,
+      message: `Value ${value} exceeds ${field.layout.width}-bit field '${field.fieldName}' maximum of ${maximum}`,
+      helpText: `A ${field.layout.width}-bit field holds 0 through ${maximum}; widen the field in the bitmap declaration, or write a value that fits (ADR-034).`,
+    });
   }
 
   /**
@@ -88,22 +87,22 @@ class BitmapAccessCheck {
       if (!bitmap || fields === undefined) continue;
       if (step.before!.dimensions.length > 0) {
         if (step.member === null || step.property !== null) continue;
-        this.report(
-          node,
-          "E0921",
-          `Field '${step.member}' of an array of '${bitmap}' names no element`,
-          `A field belongs to one '${bitmap}' value; index every dimension first, e.g. NAME[i].${step.member} (ADR-034).`,
-        );
+        this.found.push({
+          code: "E0921",
+          span: node.span,
+          message: `Field '${step.member}' of an array of '${bitmap}' names no element`,
+          helpText: `A field belongs to one '${bitmap}' value; index every dimension first, e.g. NAME[i].${step.member} (ADR-034).`,
+        });
         return null;
       }
       // ADR-034 addresses a bitmap by named field, never by bit index
       if (step.subscript !== null) {
-        this.report(
-          node,
-          "E0883",
-          `Cannot use bracket indexing on bitmap type '${bitmap}'`,
-          `A bitmap is addressed by named field, not by bit index -- write ${BitmapAccessCheck.spellingBefore(node, steps.length, i)}.FIELD_NAME (ADR-034).`,
-        );
+        this.found.push({
+          code: "E0883",
+          span: node.span,
+          message: `Cannot use bracket indexing on bitmap type '${bitmap}'`,
+          helpText: `A bitmap is addressed by named field, not by bit index -- write ${BitmapAccessCheck.spellingBefore(node, steps.length, i)}.FIELD_NAME (ADR-034).`,
+        });
         return null;
       }
       // ADR-058's properties describe the type's shape rather than name a
@@ -115,14 +114,15 @@ class BitmapAccessCheck {
       if (!fields.has(field)) {
         const known = [...fields.keys()];
         const quoted = known.map((k) => `'${k}'`).join(", ");
-        this.report(
-          node,
-          "E0882",
-          `Unknown bitmap field '${field}' on '${bitmap}'`,
-          known.length === 0
-            ? "The bitmap declares no fields (ADR-034)."
-            : `'${bitmap}' declares ${quoted} (ADR-034).`,
-        );
+        this.found.push({
+          code: "E0882",
+          span: node.span,
+          message: `Unknown bitmap field '${field}' on '${bitmap}'`,
+          helpText:
+            known.length === 0
+              ? "The bitmap declares no fields (ADR-034)."
+              : `'${bitmap}' declares ${quoted} (ADR-034).`,
+        });
         return null;
       }
     }
@@ -144,21 +144,6 @@ class BitmapAccessCheck {
     }
     return op.kind === "member" ? op.name : "NAME";
   }
-
-  private report(
-    at: TExpression,
-    code: string,
-    message: string,
-    helpText: string,
-  ): void {
-    this.found.push({
-      code,
-      line: at.span.line,
-      column: at.span.column,
-      message,
-      helpText,
-    });
-  }
 }
 
 class BitmapAccessAnalyzer {
@@ -169,19 +154,13 @@ class BitmapAccessAnalyzer {
    * #1991: reads 1.2's syntax, not the parse tree. A target is checked as a
    * site, with its value, and not again as an expression.
    */
-  public analyze(program: IProgramSyntax): IBitmapAccessError[] {
+  public analyze(
+    program: IProgramSyntax,
+    valuePositions: IValuePositions,
+  ): IBitmapAccessError[] {
     const check = new BitmapAccessCheck(this.context);
-    for (const member of program.declarations) {
-      const sites = StatementNodes.assignments(member.declaration);
-      const targets = new Set<TExpression>(sites.map((site) => site.target));
-      for (const expr of DeclarationParts.of(member.declaration).flatMap(
-        ExpressionNodes.of,
-      )) {
-        if (!targets.has(expr)) check.checkExpression(expr);
-      }
-      for (const site of sites) check.checkSite(site);
-    }
-    return check.errors().sort(SourceOrder.compare);
+    ProgramAccesses.checkReadsAndWrites(program, valuePositions, check);
+    return check.errors().sort(SourceOrder.bySpan);
   }
 }
 

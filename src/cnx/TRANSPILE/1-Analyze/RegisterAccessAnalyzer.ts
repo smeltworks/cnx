@@ -44,11 +44,10 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
+import ProgramAccesses from "../../utils/ProgramAccesses";
+import type IValuePositions from "../../types/IValuePositions";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TExpression from "../../types/syntax/TExpression";
-import DeclarationParts from "../../utils/DeclarationParts";
-import ExpressionNodes from "../../utils/ExpressionNodes";
-import StatementNodes from "../../utils/StatementNodes";
 import IRegisterMember from "./types/IRegisterMember";
 import IRegisterAccessError from "./types/IRegisterAccessError";
 import ZeroValue from "./helpers/ZeroValue";
@@ -83,12 +82,13 @@ class RegisterAccessCheck {
     const found = this.memberOf(target);
     if (found === null) return;
     if (found.access === "ro") {
-      this.report(
-        target,
-        "E0871",
-        `cannot assign to read-only register member '${found.member}' (${found.spelling} has 'ro' access modifier)`,
-        "An `ro` register member is hardware that cannot be written (ADR-004); the generated C declares it `const`. Write the register's own writable member, or change the declaration if the hardware allows writes.",
-      );
+      this.found.push({
+        code: "E0871",
+        span: target.span,
+        message: `cannot assign to read-only register member '${found.member}' (${found.spelling} has 'ro' access modifier)`,
+        helpText:
+          "An `ro` register member is hardware that cannot be written (ADR-004); the generated C declares it `const`. Write the register's own writable member, or change the declaration if the hardware allows writes.",
+      });
       return;
     }
     if (site.operator !== "<-") {
@@ -115,12 +115,13 @@ class RegisterAccessCheck {
     if (!RegisterAccessMode.isWriteOne(access)) return;
     if (!ZeroValue.of(site.value, this.context)) return;
     const single = BitmapFieldStep.writesOneBit(step, field);
-    this.report(
-      site.target,
-      "E0872",
-      `Cannot assign ${single ? "false" : "0"} to write-only register ${single ? "bit" : "bits"} ${site.target.written}`,
-      "Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.",
-    );
+    this.found.push({
+      code: "E0872",
+      span: site.target.span,
+      message: `Cannot assign ${single ? "false" : "0"} to write-only register ${single ? "bit" : "bits"} ${site.target.written}`,
+      helpText:
+        "Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.",
+    });
   }
 
   // --- Resolution ---------------------------------------------------------
@@ -162,23 +163,13 @@ class RegisterAccessCheck {
 
   private reportRead(found: IRegisterMember, at: TExpression): void {
     if (found.access !== "wo") return;
-    this.report(
-      at,
-      "E0870",
-      `cannot read from write-only register member '${found.member}' (${found.spelling} has 'wo' access modifier)`,
-      "A `wo` register member is hardware that returns nothing meaningful when read (ADR-004). Read the register's own readable member, or keep a shadow copy of what was written.",
-    );
-  }
-
-  private report(
-    at: TExpression,
-    code: string,
-    message: string,
-    helpText: string,
-  ): void {
-    const line = at.span.line;
-    const column = at.span.column;
-    this.found.push({ code, line, column, message, helpText });
+    this.found.push({
+      code: "E0870",
+      span: at.span,
+      message: `cannot read from write-only register member '${found.member}' (${found.spelling} has 'wo' access modifier)`,
+      helpText:
+        "A `wo` register member is hardware that returns nothing meaningful when read (ADR-004). Read the register's own readable member, or keep a shadow copy of what was written.",
+    });
   }
 }
 
@@ -187,19 +178,13 @@ class RegisterAccessAnalyzer {
   constructor(private readonly context: IAnalysisContext) {}
 
   /** #1991: reads 1.2's syntax, not the parse tree */
-  public analyze(program: IProgramSyntax): IRegisterAccessError[] {
+  public analyze(
+    program: IProgramSyntax,
+    valuePositions: IValuePositions,
+  ): IRegisterAccessError[] {
     const check = new RegisterAccessCheck(this.context);
-    for (const member of program.declarations) {
-      const sites = StatementNodes.assignments(member.declaration);
-      const targets = new Set<TExpression>(sites.map((site) => site.target));
-      for (const expr of DeclarationParts.of(member.declaration).flatMap(
-        ExpressionNodes.of,
-      )) {
-        if (!targets.has(expr)) check.checkExpression(expr);
-      }
-      for (const site of sites) check.checkSite(site);
-    }
-    return check.errors().sort(SourceOrder.compare);
+    ProgramAccesses.checkReadsAndWrites(program, valuePositions, check);
+    return check.errors().sort(SourceOrder.bySpan);
   }
 }
 

@@ -90,7 +90,7 @@ describe("NestedTernaryAnalyzer", () => {
     const [found] = errors(
       inMain("    u32 v <- (n = 1) ? ((n = 2) ? 3 : 4) : 5;"),
     );
-    expect(found.line).toBe(3);
-    expect(found.column).toBeGreaterThan(0);
+    expect(found.span.line).toBe(3);
+    expect(found.span.column).toBeGreaterThan(0);
   });
 });

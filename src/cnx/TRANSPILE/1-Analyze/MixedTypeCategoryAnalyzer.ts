@@ -44,6 +44,7 @@
  */
 
 import type TExpression from "../../types/syntax/TExpression";
+import type ISourceSpan from "../../types/ISourceSpan";
 import IMixedTypeCategoryError from "./types/IMixedTypeCategoryError";
 import BooleanOperandAnalyzer from "./BooleanOperandAnalyzer";
 import EnumValueResolver from "./EnumValueResolver";
@@ -56,9 +57,7 @@ import type IOperandType from "../../types/IOperandType";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TBinaryExpression from "../../types/syntax/TBinaryExpression";
-import DeclarationParts from "../../utils/DeclarationParts";
-import ExpressionNodes from "../../utils/ExpressionNodes";
-import StatementNodes from "../../utils/StatementNodes";
+import ProgramAccesses from "../../utils/ProgramAccesses";
 import SourceOrder from "../../utils/SourceOrder";
 
 /**
@@ -177,8 +176,7 @@ class MixedCategoryCheck {
       if (this.reportsPair(operands[i - 1], operands[i], level)) {
         if (MixedCategoryCheck.differ(running, right, operator)) {
           this.analyzer.addError(
-            operands[i].span.line,
-            operands[i].span.column,
+            operands[i].span,
             running!,
             right!,
             "binary",
@@ -282,13 +280,7 @@ class MixedCategoryCheck {
     ) {
       return;
     }
-    this.analyzer.addError(
-      expr.whenFalse.span.line,
-      expr.whenFalse.span.column,
-      left,
-      right,
-      "conditional",
-    );
+    this.analyzer.addError(expr.whenFalse.span, left, right, "conditional");
   }
 
   /** Whether two categories may not be combined by `operator` */
@@ -322,14 +314,7 @@ class MixedCategoryCheck {
     const right = this.operandCategory(value);
     if (MixedCategoryCheck.ownedElsewhere(left, right, "compound")) return;
     if (MixedCategoryCheck.differ(left, right, operator)) {
-      this.analyzer.addError(
-        value.span.line,
-        value.span.column,
-        left!,
-        right!,
-        "compound",
-        operator,
-      );
+      this.analyzer.addError(value.span, left!, right!, "compound", operator);
     }
   }
 }
@@ -342,9 +327,7 @@ class MixedTypeCategoryAnalyzer {
   public analyze(program: IProgramSyntax): IMixedTypeCategoryError[] {
     this.errors = [];
     const check = new MixedCategoryCheck(this, this.context);
-    const expressions = program.declarations.flatMap((member) =>
-      DeclarationParts.of(member.declaration).flatMap(ExpressionNodes.of),
-    );
+    const expressions = ProgramAccesses.expressions(program);
 
     // Levels are met outermost first; checked innermost first, so a level
     // that is an operand of another has its category when that one asks
@@ -360,15 +343,13 @@ class MixedTypeCategoryAnalyzer {
       check.checkLevel(expr, level);
     }
 
-    for (const member of program.declarations) {
-      for (const site of StatementNodes.assignments(member.declaration)) {
-        check.checkCompound(site);
-      }
+    for (const site of ProgramAccesses.writes(program)) {
+      check.checkCompound(site);
     }
     for (const expr of expressions) check.checkTernary(expr);
 
     // Read off 1.2's syntax (#1991); reported in source order
-    return this.errors.sort(SourceOrder.compare);
+    return this.errors.sort(SourceOrder.bySpan);
   }
 
   /** The diagnostic's text for each place two categories meet */
@@ -400,15 +381,14 @@ class MixedTypeCategoryAnalyzer {
   }
 
   public addError(
-    line: number,
-    column: number,
+    span: ISourceSpan,
     left: string,
     right: string,
     what: TOperatorSite = "binary",
     operator?: string,
   ): void {
     if (left === UNREADABLE_MACRO || right === UNREADABLE_MACRO) {
-      this.addUnreadableMacroError(line, column, what, operator);
+      this.addUnreadableMacroError(span, what, operator);
       return;
     }
     const integer = (c: string) => c === "signed" || c === "unsigned";
@@ -435,8 +415,7 @@ class MixedTypeCategoryAnalyzer {
     }
     this.errors.push({
       code: "E0810",
-      line,
-      column,
+      span,
       message: MixedTypeCategoryAnalyzer.message(what, pair),
       helpText,
     });
@@ -444,8 +423,7 @@ class MixedTypeCategoryAnalyzer {
 
   /** E0811 or E0812: an integer beside a header macro cnx cannot type (#1688, ADR-024) */
   private addUnreadableMacroError(
-    line: number,
-    column: number,
+    span: ISourceSpan,
     what: TOperatorSite,
     operator: string | undefined,
   ): void {
@@ -459,8 +437,7 @@ class MixedTypeCategoryAnalyzer {
       : "C's usual arithmetic conversions decide this result from the type it really has, which can change a comparison, a bit operation or a quotient (an unsigned 3 < -1 is true)";
     this.errors.push({
       code: clamped ? "E0811" : "E0812",
-      line,
-      column,
+      span,
       message: MixedTypeCategoryAnalyzer.unreadableMacroMessage(what),
       helpText: `ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; ${why}. Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.`,
     });

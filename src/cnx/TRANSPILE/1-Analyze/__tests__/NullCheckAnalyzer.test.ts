@@ -34,7 +34,7 @@ describe("NullCheckAnalyzer", () => {
     function found(code: string) {
       return new NullCheckAnalyzer()
         .analyze(lowered(parse(code)))
-        .map((e) => [e.code, e.functionName, e.line]);
+        .map((e) => [e.code, e.functionName, e.span.line]);
     }
 
     it("reports a nullable call after a c_ reassignment of one", () => {
@@ -91,7 +91,7 @@ describe("NullCheckAnalyzer", () => {
         `void main() {\n  cstring line <- global.fgets(buf, 10, c_f);\n}`,
       );
       const errors = new NullCheckAnalyzer().analyze(lowered(tree));
-      expect(errors.map((e) => [e.code, e.functionName, e.line])).toEqual([
+      expect(errors.map((e) => [e.code, e.functionName, e.span.line])).toEqual([
         ["E0905", "fgets", 2],
       ]);
     });
@@ -638,7 +638,7 @@ describe("NullCheckAnalyzer", () => {
       const errors = analyzer.analyze(lowered(tree));
 
       expect(errors).toHaveLength(1);
-      expect(errors[0].line).toBe(2);
+      expect(errors[0].span.line).toBe(2);
     });
   });
 

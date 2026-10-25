@@ -29,6 +29,7 @@
  */
 
 import OperandTyper from "../../utils/OperandTyper";
+import SourceOrder from "../../utils/SourceOrder";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import StatementNodes from "../../utils/StatementNodes";
@@ -40,7 +41,6 @@ import BoundDeclaration from "./helpers/BoundDeclaration";
 import WrittenBinding from "./helpers/WrittenBinding";
 import MutArgument from "./helpers/MutArgument";
 import MutSite from "./helpers/MutSite";
-import type IMutSite from "../../types/IMutSite";
 import type IVariableSymbol from "../../types/symbols/IVariableSymbol";
 import type IWrittenBinding from "./types/IWrittenBinding";
 import type TValueBinding from "../../types/TValueBinding";
@@ -59,8 +59,6 @@ import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
 
 /** What kind of const binding a name is, or null when it is not const. */
 type TConstKind = "parameter" | "variable" | null;
-
-type TPosition = Pick<ISourceSpan, "line" | "column">;
 
 class ConstAssignmentCheck {
   private readonly found: IConstAssignmentError[] = [];
@@ -86,15 +84,16 @@ class ConstAssignmentCheck {
     }
 
     const suffix = ConstAssignmentCheck.targetSuffix(target.ops);
-    this.report(
-      site.target.span,
-      "E0900",
-      `cannot assign to read-only ${kind} '${target.name}'${suffix}`,
-      kind === "parameter"
-        ? "A parameter is read-only unless declared `mut` (ADR-071); declare it `mut` if the function must change it."
-        : "A binding is read-only unless declared `mut` (ADR-071); declare it `mut` if the value must change.",
-      MutSite.of(target.binding, this.context),
-    );
+    this.found.push({
+      code: "E0900",
+      span: site.target.span,
+      message: `cannot assign to read-only ${kind} '${target.name}'${suffix}`,
+      helpText:
+        kind === "parameter"
+          ? "A parameter is read-only unless declared `mut` (ADR-071); declare it `mut` if the function must change it."
+          : "A binding is read-only unless declared `mut` (ADR-071); declare it `mut` if the value must change.",
+      declaredAt: MutSite.of(target.binding, this.context),
+    });
   }
 
   /**
@@ -135,13 +134,14 @@ class ConstAssignmentCheck {
     this.noteWrite(source.binding);
     const kind = ConstAssignmentCheck.constKind(source.binding);
     if (kind === null) return;
-    this.report(
-      value.span,
-      "E0900",
-      `cannot store read-only ${kind} '${value.written}' in \`mut\` '${into}': a ${typeName} handle refers to its object`,
-      "Through the copy, the object may be written (ADR-030); declare the source `mut` (ADR-071).",
-      MutSite.of(source.binding, this.context),
-    );
+    this.found.push({
+      code: "E0900",
+      span: value.span,
+      message: `cannot store read-only ${kind} '${value.written}' in \`mut\` '${into}': a ${typeName} handle refers to its object`,
+      helpText:
+        "Through the copy, the object may be written (ADR-030); declare the source `mut` (ADR-071).",
+      declaredAt: MutSite.of(source.binding, this.context),
+    });
   }
 
   /** How the target's shape is named in E0900's message. */
@@ -180,13 +180,13 @@ class ConstAssignmentCheck {
     // `this.`-rooted first argument returns null above and is E0885's to report.
     const kind = ConstAssignmentCheck.constKind(written.binding);
     if (kind === null) return;
-    this.report(
-      call.args[0].span,
-      "E0900",
-      `cannot assign to read-only ${kind} '${output}' (${call.name} output)`,
-      `${call.name} writes its result through its first argument, so it must be declared \`mut\` (ADR-071).`,
-      MutSite.of(written.binding, this.context),
-    );
+    this.found.push({
+      code: "E0900",
+      span: call.args[0].span,
+      message: `cannot assign to read-only ${kind} '${output}' (${call.name} output)`,
+      helpText: `${call.name} writes its result through its first argument, so it must be declared \`mut\` (ADR-071).`,
+      declaredAt: MutSite.of(written.binding, this.context),
+    });
   }
 
   /**
@@ -234,13 +234,14 @@ class ConstAssignmentCheck {
       this.noteWrite(target?.binding ?? null);
       const argName = ConstAssignmentCheck.constArgumentName(arg, target);
       if (argName === null) return;
-      this.report(
-        arg.span,
-        "E0900",
-        `cannot pass read-only '${argName}' to \`mut\` parameter '${param.name}' of function '${calledAs}'`,
-        "The callee writes through that parameter, so the argument must be declared `mut` (ADR-071).",
-        MutSite.of(target?.binding ?? null, this.context),
-      );
+      this.found.push({
+        code: "E0900",
+        span: arg.span,
+        message: `cannot pass read-only '${argName}' to \`mut\` parameter '${param.name}' of function '${calledAs}'`,
+        helpText:
+          "The callee writes through that parameter, so the argument must be declared `mut` (ADR-071).",
+        declaredAt: MutSite.of(target?.binding ?? null, this.context),
+      });
     });
   }
 
@@ -252,20 +253,22 @@ class ConstAssignmentCheck {
   ): void {
     const passing = `cannot pass '${arg.written}' to \`mut\` parameter '${parameter}' of function '${calledAs}'`;
     if (MutArgument.headerMacro(arg, this.context) === null) {
-      this.report(
-        arg.span,
-        "E0915",
-        `${passing}: it is not a variable, so the write would be lost`,
-        "A `mut` parameter writes its argument (ADR-006); assign the value to a `mut` variable and pass that.",
-      );
+      this.found.push({
+        code: "E0915",
+        span: arg.span,
+        message: `${passing}: it is not a variable, so the write would be lost`,
+        helpText:
+          "A `mut` parameter writes its argument (ADR-006); assign the value to a `mut` variable and pass that.",
+      });
       return;
     }
-    this.report(
-      arg.span,
-      "E0915",
-      `${passing}: it is a \`#define\`, not a variable`,
-      "A `#define` is text replacement, not a value (ADR-006), so a `mut` parameter cannot take one; pass the variable it names, or a `mut` variable.",
-    );
+    this.found.push({
+      code: "E0915",
+      span: arg.span,
+      message: `${passing}: it is a \`#define\`, not a variable`,
+      helpText:
+        "A `#define` is text replacement, not a value (ADR-006), so a `mut` parameter cannot take one; pass the variable it names, or a `mut` variable.",
+    });
   }
 
   /** A call through a value, as written: `h.cb`, not the callback's type */
@@ -332,22 +335,28 @@ class ConstAssignmentCheck {
   }
 
   /** An `atomic` is writable without `mut` (#2233), so it is `atomic` that goes */
-  private reportUnusedMut(at: TPosition, name: string, atomic: boolean): void {
+  private reportUnusedMut(
+    at: ISourceSpan,
+    name: string,
+    atomic: boolean,
+  ): void {
     if (atomic) {
-      this.report(
-        at,
-        "E0899",
-        `'${name}' is never written; remove \`atomic\``,
-        "`atomic` makes a binding writable, and only a value something writes needs a read or write that cannot be torn (ADR-049, ADR-071).",
-      );
+      this.found.push({
+        code: "E0899",
+        span: at,
+        message: `'${name}' is never written; remove \`atomic\``,
+        helpText:
+          "`atomic` makes a binding writable, and only a value something writes needs a read or write that cannot be torn (ADR-049, ADR-071).",
+      });
       return;
     }
-    this.report(
-      at,
-      "E0899",
-      `'${name}' is never written; remove \`mut\``,
-      "A binding is declared `mut` only when something writes it (ADR-071).",
-    );
+    this.found.push({
+      code: "E0899",
+      span: at,
+      message: `'${name}' is never written; remove \`mut\``,
+      helpText:
+        "A binding is declared `mut` only when something writes it (ADR-071).",
+    });
   }
 
   /**
@@ -376,13 +385,14 @@ class ConstAssignmentCheck {
     this.noteWrite(target?.binding ?? null);
     const kind = ConstAssignmentCheck.constKind(target?.binding ?? null);
     if (kind === null || target === null) return;
-    this.report(
-      expr.span,
-      "E0900",
-      `cannot call non-\`const\` method '${method.name}' on read-only ${kind} '${target.name}'`,
-      "A C++ method not declared `const` may write its object, so the object must be declared `mut` (ADR-071).",
-      MutSite.of(target.binding, this.context),
-    );
+    this.found.push({
+      code: "E0900",
+      span: expr.span,
+      message: `cannot call non-\`const\` method '${method.name}' on read-only ${kind} '${target.name}'`,
+      helpText:
+        "A C++ method not declared `const` may write its object, so the object must be declared `mut` (ADR-071).",
+      declaredAt: MutSite.of(target.binding, this.context),
+    });
   }
 
   /** What a C callee may write through, it may write (CArgumentWrite) */
@@ -435,23 +445,6 @@ class ConstAssignmentCheck {
     if (!declared?.isConst) return null;
     return declared.isParameter ? "parameter" : "variable";
   }
-
-  private report(
-    at: TPosition,
-    code: string,
-    message: string,
-    helpText: string,
-    declaredAt?: IMutSite,
-  ): void {
-    this.found.push({
-      code,
-      line: at.line,
-      column: at.column,
-      message,
-      helpText,
-      ...(declaredAt && { declaredAt }),
-    });
-  }
 }
 
 class ConstAssignmentAnalyzer {
@@ -460,7 +453,7 @@ class ConstAssignmentAnalyzer {
 
   public analyze(program: IProgramSyntax): IConstAssignmentError[] {
     const check = new ConstAssignmentCheck(this.context);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       for (const site of StatementNodes.assignments(member.declaration)) {
         check.checkSite(site);
       }
@@ -480,9 +473,7 @@ class ConstAssignmentAnalyzer {
     }
     check.checkUnusedMut();
     // Read off 1.2's syntax (#1991); reported in source order
-    return check
-      .errors()
-      .sort((a, b) => a.line - b.line || a.column - b.column);
+    return check.errors().sort(SourceOrder.bySpan);
   }
 }
 

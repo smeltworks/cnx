@@ -30,13 +30,13 @@ describe("LoopAnalyzer", () => {
           "    while (state < 3) {\n        break;\n    }\n    while (state < 3) {\n        continue;\n    }",
         ),
       );
-      expect(found.map((e) => [e.code, e.line])).toEqual([
+      expect(found.map((e) => [e.code, e.span.line])).toEqual([
         ["E0703", 4],
         ["E0703", 7],
       ]);
       expect(found[0].message).toContain("'break'");
       expect(found[1].message).toContain("'continue'");
-      expect(found[0].column).toBeGreaterThan(0);
+      expect(found[0].span.column).toBeGreaterThan(0);
     });
 
     it("says nothing about a variable that merely contains the word", () => {
@@ -60,7 +60,7 @@ describe("LoopAnalyzer", () => {
         "    }",
         "}",
       ].join("\n");
-      expect(errors(source).map((e) => [e.code, e.line])).toEqual([
+      expect(errors(source).map((e) => [e.code, e.span.line])).toEqual([
         ["E0705", 2],
         ["E0705", 7],
       ]);
@@ -89,7 +89,7 @@ describe("LoopAnalyzer", () => {
       // The condition as written (#1991: 1.2 owns the spelling).
       expect(found[0].message).toContain("'1 = 1' is always true");
       // The condition's own position, not the statement's.
-      expect(found[1].line).toBe(6);
+      expect(found[1].span.line).toBe(6);
     });
 
     it("reads every literal spelling the rule covers", () => {
@@ -157,7 +157,12 @@ describe("LoopAnalyzer", () => {
   });
   describe("E0715 -- a for header assignment that is more than one statement", () => {
     const codes = (source: string) =>
-      errors(source).map((e) => [e.code, e.line, e.column, e.message]);
+      errors(source).map((e) => [
+        e.code,
+        e.span.line,
+        e.span.column,
+        e.message,
+      ]);
 
     it("reads a string copy from the type the target writes", () => {
       // #1731 review: E0715 asks the question 2.2's copy asks -- a field and
@@ -244,7 +249,7 @@ describe("LoopAnalyzer", () => {
 
     it("reports in source order across statements and expressions", () => {
       const found = errors(inRun("    continue;\n    for (;;) {\n    }"));
-      expect(found.map((e) => `${e.code}@${e.line}`)).toEqual([
+      expect(found.map((e) => `${e.code}@${e.span.line}`)).toEqual([
         "E0703@3",
         "E0707@4",
       ]);

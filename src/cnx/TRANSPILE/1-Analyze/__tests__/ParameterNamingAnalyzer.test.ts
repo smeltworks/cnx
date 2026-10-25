@@ -197,9 +197,9 @@ describe("ParameterNamingAnalyzer", () => {
       const analyzer = new ParameterNamingAnalyzer();
       const errors = analyzer.analyze(tree);
 
-      expect(errors[0].line).toBe(1);
+      expect(errors[0].span.line).toBe(1);
       // Column should point to parameter name
-      expect(errors[0].column).toBeGreaterThan(0);
+      expect(errors[0].span.column).toBeGreaterThan(0);
     });
   });
 

@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-911 fixture(s) assert a diagnostic; 897 carry a code.
+912 fixture(s) assert a diagnostic; 898 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -632,6 +632,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1322-shadowed-rooted-spellings/this-shadowed-bit-access.test.cnx                         | E0856                             |
 | tests/bugs/issue-1322-shadowed-rooted-spellings/this-shadowed-const.test.cnx                              | E0900                             |
 | tests/bugs/issue-1333-scope-reopening/duplicate-member-reopened.test.cnx                                  | E0425                             |
+| tests/bugs/issue-1333-scope-reopening/member-never-assigned-reopened.test.cnx                             | E0381                             |
 | tests/bugs/issue-1334-scope-declaration-sites/conflict-across-files.test.cnx                              | E0425                             |
 | tests/bugs/issue-1334-scope-declaration-sites/cross-language-conflict.test.cnx                            | E0425                             |
 | tests/bugs/issue-1336-register-in-type-position/register-in-type-position.test.cnx                        | E0429                             |

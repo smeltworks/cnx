@@ -29,7 +29,7 @@ class FloatModuloAnalyzer {
 
   public analyze(program: IProgramSyntax): IFloatModuloError[] {
     const errors: IFloatModuloError[] = [];
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       for (const part of DeclarationParts.of(member.declaration)) {
         for (const expr of ExpressionNodes.of(part)) {
           if (expr.kind !== "binary") continue;
@@ -39,8 +39,7 @@ class FloatModuloAnalyzer {
             if (this.isFloat(left) || this.isFloat(expr.operands[i + 1])) {
               errors.push({
                 code: "E0804",
-                line: left.span.line,
-                column: left.span.column,
+                span: left.span,
                 message:
                   "Modulo operator not supported for floating-point types",
                 helpText:

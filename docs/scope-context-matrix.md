@@ -398,6 +398,16 @@ cell is declared by the ADR that owns it.
 - `bugs/issue-1334-scope-declaration-sites/conflict-across-files.test.cnx`
 - `scope/nested-scope-error.test.cnx`
 
+## ADR-016 E0381
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | n/a         | n/a        |
+| top-level function | -         | -      | -          | n/a         | n/a        |
+| scope member       | -         | -      | -          | n/a         | n/a        |
+| scope method       | ok        | -      | -          | n/a         | n/a        |
+| for header         | -         | -      | -          | n/a         | n/a        |
+
 ## ADR-016 E0425
 
 | Context            | same file | direct | transitive | from 1 away | thru chain |

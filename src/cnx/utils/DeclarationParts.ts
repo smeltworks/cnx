@@ -1,5 +1,6 @@
+import type IFunctionDeclarationSyntax from "../types/syntax/IFunctionDeclarationSyntax";
 import type IVariableDeclarationSyntax from "../types/syntax/IVariableDeclarationSyntax";
-import type TDeclarationSyntax from "../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../types/syntax/TMemberDeclaration";
 import type TExpression from "../types/syntax/TExpression";
 import type TStatement from "../types/syntax/TStatement";
 import type TSyntaxPart from "../types/syntax/TSyntaxPart";
@@ -17,22 +18,14 @@ import TypeParts from "./TypeParts";
  * until it is placed (#1991).
  */
 class DeclarationParts {
-  static of(declaration: TDeclarationSyntax): readonly TSyntaxPart[] {
+  static of(declaration: TMemberDeclaration): readonly TSyntaxPart[] {
     switch (declaration.kind) {
-      case "scope":
-        return declaration.members.flatMap((member) =>
-          DeclarationParts.of(member.declaration),
-        );
       case "variableDeclaration":
       case "constructorDeclaration":
         return DeclarationParts.statement(declaration);
       case "function":
         return [
-          DeclarationParts.type(declaration.returnType),
-          ...(declaration.parameters ?? []).flatMap((parameter) => [
-            DeclarationParts.type(parameter.type),
-            ...TypeParts.dimensions(parameter.dimensions),
-          ]),
+          ...DeclarationParts.signature(declaration),
           ...DeclarationParts.statements(declaration.body.statements),
         ];
       case "register":
@@ -62,6 +55,17 @@ class DeclarationParts {
         return unplaced;
       }
     }
+  }
+
+  /** A function's return type, then each parameter's type and dimensions */
+  static signature(fn: IFunctionDeclarationSyntax): readonly TSyntaxPart[] {
+    return [
+      DeclarationParts.type(fn.returnType),
+      ...(fn.parameters ?? []).flatMap((parameter) => [
+        DeclarationParts.type(parameter.type),
+        ...TypeParts.dimensions(parameter.dimensions),
+      ]),
+    ];
   }
 
   static statements(statements: readonly TStatement[]): readonly TSyntaxPart[] {

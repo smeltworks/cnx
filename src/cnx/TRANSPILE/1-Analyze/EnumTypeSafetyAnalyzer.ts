@@ -49,10 +49,7 @@
  */
 
 import OperandTyper from "../../utils/OperandTyper";
-import DeclarationParts from "../../utils/DeclarationParts";
-import ExpressionNodes from "../../utils/ExpressionNodes";
-import StatementNodes from "../../utils/StatementNodes";
-import VariableDeclarations from "../../utils/VariableDeclarations";
+import ProgramAccesses from "../../utils/ProgramAccesses";
 import EnumValueResolver from "./EnumValueResolver";
 import IEnumTypeSafetyError from "./types/IEnumTypeSafetyError";
 import type IAnalysisContext from "./types/IAnalysisContext";
@@ -140,15 +137,14 @@ class EnumTypeSafetyCheck {
 
     this.found.push({
       code: "E0428",
-      line: value.span.line,
-      column: value.span.column,
+      span: value.span,
       message: `Cannot assign ${EnumTypeSafetyCheck.describe(verdict)} to ${targetType} enum`,
       helpText: ASSIGN_HELP,
     });
   }
 
   /** `a = b`, `a != b` and the relational operators */
-  public checkComparison(expr: TExpression): void {
+  public checkExpression(expr: TExpression): void {
     if (expr.kind !== "binary") return;
     if (expr.level !== "equality" && expr.level !== "relational") return;
 
@@ -166,8 +162,7 @@ class EnumTypeSafetyCheck {
 
     this.found.push({
       code: "E0434",
-      line: expr.operands[1].span.line,
-      column: expr.operands[1].span.column,
+      span: expr.operands[1].span,
       message: `Cannot compare ${EnumTypeSafetyCheck.describe(left)} to ${EnumTypeSafetyCheck.describe(right)}`,
       helpText: COMPARE_HELP,
     });
@@ -183,20 +178,8 @@ class EnumTypeSafetyAnalyzer {
       new EnumValueResolver(this.context),
       this.context,
     );
-    for (const entry of VariableDeclarations.in(program)) {
-      check.checkDeclaration(entry.declaration);
-    }
-    for (const member of program.declarations) {
-      for (const part of DeclarationParts.of(member.declaration)) {
-        for (const expr of ExpressionNodes.of(part)) {
-          check.checkComparison(expr);
-        }
-      }
-      for (const site of StatementNodes.assignments(member.declaration)) {
-        check.checkSite(site);
-      }
-    }
-    return check.errors().sort(SourceOrder.compare);
+    ProgramAccesses.checkEverything(program, check);
+    return check.errors().sort(SourceOrder.bySpan);
   }
 }
 

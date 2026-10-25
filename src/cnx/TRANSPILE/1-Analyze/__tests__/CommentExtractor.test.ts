@@ -389,8 +389,8 @@ describe("CommentExtractor", () => {
           createToken({
             type: CnxLexer.LINE_COMMENT,
             text: "// continued \\",
-            line: 1,
-            column: 0,
+            line: 4,
+            column: 12,
             tokenIndex: 0,
           }),
         ];
@@ -404,6 +404,13 @@ describe("CommentExtractor", () => {
         expect(errors).toHaveLength(1);
         expect(errors[0].rule).toBe("3.2");
         expect(errors[0].message).toContain("line-splice");
+        // The error points at the comment, not at its trailing backslash
+        expect(errors[0].span).toEqual({
+          line: 4,
+          column: 12,
+          endLine: 4,
+          endColumn: 26,
+        });
       });
 
       it("should detect line ending with backslash in doc comment", () => {

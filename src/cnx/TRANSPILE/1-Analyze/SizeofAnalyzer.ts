@@ -14,26 +14,20 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
-import DeclarationParts from "../../utils/DeclarationParts";
-import ExpressionNodes from "../../utils/ExpressionNodes";
+import ProgramAccesses from "../../utils/ProgramAccesses";
 import ISizeofError from "./types/ISizeofError";
 
 class SizeofAnalyzer {
   public analyze(program: IProgramSyntax): ISizeofError[] {
-    return program.declarations.flatMap(({ declaration }) =>
-      DeclarationParts.of(declaration).flatMap((part) =>
-        ExpressionNodes.of(part)
-          .filter((expr) => expr.kind === "sizeof")
-          .map((expr) => ({
-            code: "E0603",
-            line: expr.span.line,
-            column: expr.span.column,
-            message: "cnx has no 'sizeof'",
-            helpText:
-              "Name the length you mean (ADR-058): .memory_byte_length is C's layout, padding included (Point.memory_byte_length); .type_byte_length is the logical size, fields summed (Point.type_byte_length).",
-          })),
-      ),
-    );
+    return ProgramAccesses.expressions(program)
+      .filter((expr) => expr.kind === "sizeof")
+      .map((expr) => ({
+        code: "E0603",
+        span: expr.span,
+        message: "cnx has no 'sizeof'",
+        helpText:
+          "Name the length you mean (ADR-058): .memory_byte_length is C's layout, padding included (Point.memory_byte_length); .type_byte_length is the logical size, fields summed (Point.type_byte_length).",
+      }));
   }
 }
 

@@ -41,11 +41,11 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
+import SourceOrder from "../../utils/SourceOrder";
 import type TExpression from "../../types/syntax/TExpression";
 import type TTypeSyntax from "../../types/syntax/TTypeSyntax";
 import type ISourcePosition from "../../utils/types/ISourcePosition";
-import DeclarationParts from "../../utils/DeclarationParts";
-import ExpressionNodes from "../../utils/ExpressionNodes";
+import ProgramAccesses from "../../utils/ProgramAccesses";
 import StatementNodes from "../../utils/StatementNodes";
 import OperandTyper from "../../utils/OperandTyper";
 import EnumMemberSuggestion from "./helpers/EnumMemberSuggestion";
@@ -75,7 +75,7 @@ class ExpectedEnums {
     valuePositions: IValuePositions,
   ): ExpectedEnums {
     const forClauses = new Set<object>();
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       for (const statement of StatementNodes.in(member.declaration)) {
         if (statement.kind !== "for") continue;
         if (statement.init) forClauses.add(statement.init);
@@ -148,26 +148,19 @@ class BareEnumMemberAnalyzer {
     valuePositions: IValuePositions,
   ): IBareEnumMemberError[] {
     const expected = ExpectedEnums.of(program, this.context, valuePositions);
-    const expressions = program.declarations
-      .flatMap((member) => DeclarationParts.of(member.declaration))
-      .flatMap(ExpressionNodes.of);
-    // A chain's head and an assignment's target name a value; they are not one.
-    const notValues = new Set<TExpression>();
-    for (const expr of expressions) {
-      if (expr.kind === "postfix") notValues.add(expr.primary);
-    }
-    for (const member of program.declarations) {
-      for (const site of StatementNodes.assignments(member.declaration)) {
-        notValues.add(site.target);
-      }
+    const reads = ProgramAccesses.reads(program, valuePositions);
+    // A chain's head names a value; it is not one.
+    const heads = new Set<TExpression>();
+    for (const expr of reads) {
+      if (expr.kind === "postfix") heads.add(expr.primary);
     }
     const found: IBareEnumMemberError[] = [];
-    for (const expr of expressions) {
-      if (expr.kind !== "identifier" || notValues.has(expr)) continue;
+    for (const expr of reads) {
+      if (expr.kind !== "identifier" || heads.has(expr)) continue;
       const error = this.check(expr, expected.at(expr));
       if (error !== null) found.push(error);
     }
-    return found.sort((a, b) => a.line - b.line || a.column - b.column);
+    return found.sort(SourceOrder.bySpan);
   }
 
   private check(
@@ -194,8 +187,7 @@ class BareEnumMemberAnalyzer {
     }
     return {
       code: "E0424",
-      line: identifier.span.line,
-      column: identifier.span.column,
+      span: identifier.span,
       message: EnumMemberSuggestion.message(name, declaring),
       helpText:
         "A bare enum member is accepted only where its enum is already named -- a declaration or assignment of that type, a return from a function of that type, a field of that type. Elsewhere, qualify it (ADR-017).",

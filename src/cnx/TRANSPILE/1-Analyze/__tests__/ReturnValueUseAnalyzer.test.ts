@@ -70,8 +70,8 @@ describe("ReturnValueUseAnalyzer", () => {
         "u32 next() { return 7; }\nvoid run() {\n    next();\n}",
       );
       expect(errors).toHaveLength(1);
-      expect(errors[0].line).toBe(3);
-      expect(errors[0].column).toBe(4);
+      expect(errors[0].span.line).toBe(3);
+      expect(errors[0].span.column).toBe(4);
     });
 
     it("offers the explicit-discard form in its help text", () => {

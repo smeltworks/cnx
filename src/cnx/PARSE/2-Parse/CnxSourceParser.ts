@@ -6,6 +6,7 @@
  */
 
 import TargetDirectives from "./TargetDirectives";
+import SourceOrder from "../../utils/SourceOrder";
 import { CharStream, CommonTokenStream, Parser, Token } from "antlr4ng";
 
 import { CnxLexer } from "./grammar/CnxLexer";
@@ -245,7 +246,7 @@ class CnxSourceParser {
             ...ArrayForm.errorsIn(tree, program),
             ...StringForm.errorsIn(program),
             ...MutabilityForm.errorsIn(tree),
-          ].sort((a, b) => a.line - b.line || a.column - b.column);
+          ].sort(SourceOrder.compare);
     const declarationCount = tree.declaration().length;
 
     return {

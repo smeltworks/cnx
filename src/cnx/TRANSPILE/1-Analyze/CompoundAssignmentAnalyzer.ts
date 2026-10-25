@@ -66,8 +66,7 @@ class CompoundAssignmentCheck {
 
     this.found.push({
       code: "E0857",
-      line: site.span.line,
-      column: site.span.column,
+      span: site.span,
       message: `Compound assignment operators are not supported on a ${reason}`,
       helpText:
         "A compound operator reads, modifies and writes back one storage location. Write the read and the write out separately.",
@@ -132,7 +131,7 @@ class CompoundAssignmentAnalyzer {
   /** #1991: reads 1.2's syntax, not the parse tree */
   public analyze(program: IProgramSyntax): ICompoundAssignmentError[] {
     const check = new CompoundAssignmentCheck(this.context);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       for (const site of StatementNodes.assignments(member.declaration)) {
         check.checkSite(site);
       }

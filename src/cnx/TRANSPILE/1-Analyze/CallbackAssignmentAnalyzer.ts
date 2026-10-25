@@ -43,16 +43,12 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
+import ProgramAccesses from "../../utils/ProgramAccesses";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
-import DeclarationParts from "../../utils/DeclarationParts";
-import ExpressionNodes from "../../utils/ExpressionNodes";
-import StatementNodes from "../../utils/StatementNodes";
-import VariableDeclarations from "../../utils/VariableDeclarations";
 import OperandTyper from "../../utils/OperandTyper";
 import type IVariableDeclarationSyntax from "../../types/syntax/IVariableDeclarationSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
 import IFunctionSymbol from "../../types/symbols/IFunctionSymbol";
 import TypeResolver from "../../utils/TypeResolver";
 import CCallbackSignature from "./helpers/CCallbackSignature";
@@ -189,12 +185,13 @@ class CallbackAssignmentCheck {
         slot.verb === "assign"
           ? `Cannot assign '${valueText}' to`
           : `Cannot pass '${valueText}' as`;
-      this.report(
-        value,
-        "E0880",
-        `${verb} ${slot.description} (expected ${slotTypeText} type, got ${valueText} type - nominal typing)`,
-        "A function used as a struct field's type is its own callback type; only a function that is not itself a type may stand in for another (ADR-029).",
-      );
+      this.found.push({
+        code: "E0880",
+        span: value.span,
+        message: `${verb} ${slot.description} (expected ${slotTypeText} type, got ${valueText} type - nominal typing)`,
+        helpText:
+          "A function used as a struct field's type is its own callback type; only a function that is not itself a type may stand in for another (ADR-029).",
+      });
     }
   }
 
@@ -223,12 +220,13 @@ class CallbackAssignmentCheck {
     value: TExpression,
     slotTypeText: string,
   ): void {
-    this.report(
-      value,
-      "E0879",
-      `Function '${value.written}' signature does not match callback type '${slotTypeText}'`,
-      "A callback must match its type's signature exactly: return type, parameter count, and each parameter's type, const-ness and array-ness (ADR-029).",
-    );
+    this.found.push({
+      code: "E0879",
+      span: value.span,
+      message: `Function '${value.written}' signature does not match callback type '${slotTypeText}'`,
+      helpText:
+        "A callback must match its type's signature exactly: return type, parameter count, and each parameter's type, const-ness and array-ness (ADR-029).",
+    });
   }
 
   private isFieldType(cName: string): boolean {
@@ -329,8 +327,7 @@ class CallbackAssignmentCheck {
       if (parameter.isConst === typedefConst) return;
       this.found.push({
         code: "E0879",
-        line: parameter.span.line,
-        column: parameter.span.column,
+        span: parameter.span,
         message: `Function '${frame.functionCName}' signature does not match callback type '${typedefName}': parameter '${parameter.name}' is ${parameter.isConst ? "read-only" : "`mut`"}, and the type's pointer is ${typedefConst ? "const" : "not const"}`,
         helpText:
           "A callback's parameter is `mut` exactly where its C type's pointer is not const (ADR-071).",
@@ -344,21 +341,6 @@ class CallbackAssignmentCheck {
       });
     });
   }
-
-  private report(
-    at: TExpression,
-    code: string,
-    message: string,
-    helpText: string,
-  ): void {
-    this.found.push({
-      code,
-      line: at.span.line,
-      column: at.span.column,
-      message,
-      helpText,
-    });
-  }
 }
 
 class CallbackAssignmentAnalyzer {
@@ -370,28 +352,9 @@ class CallbackAssignmentAnalyzer {
     positions: ReadonlyMap<TExpression, IValuePosition>,
   ): ICallbackAssignmentError[] {
     const check = new CallbackAssignmentCheck(this.context, positions);
-    const visit = (declaration: TDeclarationSyntax): void => {
-      if (declaration.kind === "scope") {
-        for (const member of declaration.members) visit(member.declaration);
-        return;
-      }
-      for (const site of StatementNodes.assignments(declaration)) {
-        check.checkSite(site);
-      }
-    };
-    for (const entry of VariableDeclarations.in(program)) {
-      check.checkDeclaration(entry.declaration);
-    }
-    for (const member of program.declarations) {
-      visit(member.declaration);
-      for (const expr of DeclarationParts.of(member.declaration).flatMap(
-        ExpressionNodes.of,
-      )) {
-        check.checkExpression(expr);
-      }
-    }
+    ProgramAccesses.checkEverything(program, check);
     check.checkCTypedefCallbacks();
-    return check.errors().sort(SourceOrder.compare);
+    return check.errors().sort(SourceOrder.bySpan);
   }
 }
 

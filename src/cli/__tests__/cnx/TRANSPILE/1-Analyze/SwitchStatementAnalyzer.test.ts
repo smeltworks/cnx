@@ -36,8 +36,8 @@ describe("SwitchStatementAnalyzer", () => {
     );
     expect(found).toHaveLength(1);
     expect(found[0].code).toBe("E0711");
-    expect(found[0].line).toBe(3);
-    expect(found[0].column).toBeGreaterThan(0);
+    expect(found[0].span.line).toBe(3);
+    expect(found[0].span.column).toBeGreaterThan(0);
   });
 
   it("rejects a switch with fewer than two clauses", () => {
@@ -218,7 +218,7 @@ describe("SwitchStatementAnalyzer", () => {
           "}",
         ].join("\n"),
       );
-      expect(found.map((e) => [e.code, e.line])).toEqual([["E0713", 6]]);
+      expect(found.map((e) => [e.code, e.span.line])).toEqual([["E0713", 6]]);
     });
 
     it("rejects a const beside the literal it folds to (#2046)", () => {
@@ -384,11 +384,11 @@ describe("SwitchStatementAnalyzer", () => {
       const binary = errors(
         sw("        case 0b11 {\n        }\n        case 3 {\n        }"),
       );
-      expect(binary.map((e) => [e.code, e.line])).toEqual([["E0713", 5]]);
+      expect(binary.map((e) => [e.code, e.span.line])).toEqual([["E0713", 5]]);
       const chars = errors(
         sw("        case 'a' {\n        }\n        case 'a' {\n        }"),
       );
-      expect(chars.map((e) => [e.code, e.line])).toEqual([["E0713", 5]]);
+      expect(chars.map((e) => [e.code, e.span.line])).toEqual([["E0713", 5]]);
     });
 
     it("tells two char labels apart", () => {
@@ -403,7 +403,7 @@ describe("SwitchStatementAnalyzer", () => {
       const found = errors(
         `enum Color { RED, GREEN }\n${sw("        case 1 {\n        }\n        case RED {\n        }")}`,
       );
-      expect(found.map((e) => [e.code, e.line, e.column])).toEqual([
+      expect(found.map((e) => [e.code, e.span.line, e.span.column])).toEqual([
         ["E0424", 6, 13],
       ]);
     });

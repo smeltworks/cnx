@@ -52,8 +52,8 @@ describe("CppClassInitializerAnalyzer (E0508)", () => {
       "void main() {}",
     ].join("\n");
     const [found] = analyze(source, withCppClass("CppTestClass"), true);
-    expect([found.code, found.line]).toEqual(["E0508", 1]);
-    expect(found.column).toBeGreaterThan(20);
+    expect([found.code, found.span.line]).toEqual(["E0508", 1]);
+    expect(found.span.column).toBeGreaterThan(20);
     expect(found.message).toContain("CppTestClass");
   });
 
@@ -69,7 +69,9 @@ describe("CppClassInitializerAnalyzer (E0508)", () => {
       "void main() {}",
     ].join("\n");
     expect(
-      analyze(source, withCppClass("CppTestClass"), true).map((e) => e.line),
+      analyze(source, withCppClass("CppTestClass"), true).map(
+        (e) => e.span.line,
+      ),
     ).toEqual([2]);
   });
 

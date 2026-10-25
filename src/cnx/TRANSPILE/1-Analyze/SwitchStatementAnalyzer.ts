@@ -41,7 +41,7 @@ import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type ISourceSpan from "../../types/ISourceSpan";
 import type TCaseLabelSyntax from "../../types/syntax/TCaseLabelSyntax";
 import type TSwitchStatement from "../../types/syntax/TSwitchStatement";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 
 type TSwitchCase = TSwitchStatement["cases"][number];
 type TDefaultCase = NonNullable<TSwitchStatement["defaultCase"]>;
@@ -70,7 +70,7 @@ class SwitchStatementCheck {
   }
 
   /** Every switch in a function, a scope's included (#1991) */
-  public declaration(declaration: TDeclarationSyntax): void {
+  public declaration(declaration: TMemberDeclaration): void {
     for (const statement of StatementNodes.switches(declaration)) {
       this.statement(statement);
     }
@@ -82,22 +82,24 @@ class SwitchStatementCheck {
     const defaultCase = statement.defaultCase;
 
     if (OperandTyper.isBoolean(OperandTyper.typeOf(switchExpr, this.context))) {
-      this.report(
-        switchExpr.span,
-        "E0711",
-        "Cannot switch on a boolean",
-        "MISRA C:2012 Rule 16.7: a bool has two states and a switch implies more. Use if/else.",
-      );
+      this.found.push({
+        code: "E0711",
+        span: switchExpr.span,
+        message: "Cannot switch on a boolean",
+        helpText:
+          "MISRA C:2012 Rule 16.7: a bool has two states and a switch implies more. Use if/else.",
+      });
       return;
     }
 
     if (cases.length + (defaultCase ? 1 : 0) < MINIMUM_CLAUSES) {
-      this.report(
-        switchExpr.span,
-        "E0712",
-        "Switch requires at least 2 clauses",
-        "MISRA C:2012 Rule 16.6: a one-clause switch is an if statement written the long way.",
-      );
+      this.found.push({
+        code: "E0712",
+        span: switchExpr.span,
+        message: "Switch requires at least 2 clauses",
+        helpText:
+          "MISRA C:2012 Rule 16.6: a one-clause switch is an if statement written the long way.",
+      });
       return;
     }
 
@@ -140,8 +142,7 @@ class SwitchStatementCheck {
 
     this.found.push({
       code: "E0424",
-      line: label.span.line,
-      column: label.span.column,
+      span: label.span,
       message: EnumMemberSuggestion.message(name, declaring),
       helpText:
         switchEnum === null
@@ -180,11 +181,9 @@ class SwitchStatementCheck {
     for (const caseCtx of cases) {
       for (const label of caseCtx.labels) {
         if (this.isConstantLabel(label)) continue;
-        const { line, column } = label.span;
         this.found.push({
           code: "E0717",
-          line,
-          column,
+          span: label.span,
           message: `Case label '${SwitchStatementCheck.caseLabelValue(label)}' is not a constant`,
           helpText:
             "A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.",
@@ -425,8 +424,7 @@ class SwitchStatementCheck {
         if (seen.has(key)) {
           this.found.push({
             code: "E0713",
-            line: label.span.line,
-            column: label.span.column,
+            span: label.span,
             message: `Duplicate case value '${value}' in switch statement`,
             helpText:
               "Two clauses cannot claim the same value; one of them is unreachable.",
@@ -468,23 +466,24 @@ class SwitchStatementCheck {
       const absorbed = Number.parseInt(declared, 10);
       const covered = explicit + absorbed;
       if (covered !== total) {
-        this.report(
-          at,
-          "E0714",
-          `Switch covers ${covered} of ${total} ${enumTypeName} variants (${explicit} explicit + default(${absorbed}))`,
-          `Every variant has to be accounted for exactly once. Expected ${total}.`,
-        );
+        this.found.push({
+          code: "E0714",
+          span: at,
+          message: `Switch covers ${covered} of ${total} ${enumTypeName} variants (${explicit} explicit + default(${absorbed}))`,
+          helpText: `Every variant has to be accounted for exactly once. Expected ${total}.`,
+        });
       }
       return;
     }
 
     if (explicit !== total) {
-      this.report(
-        at,
-        "E0714",
-        `Non-exhaustive switch on ${enumTypeName}: covers ${explicit} of ${total} variants, missing ${total - explicit}`,
-        "Add the missing cases, or a `default(N)` stating how many variants it absorbs.",
-      );
+      this.found.push({
+        code: "E0714",
+        span: at,
+        message: `Non-exhaustive switch on ${enumTypeName}: covers ${explicit} of ${total} variants, missing ${total - explicit}`,
+        helpText:
+          "Add the missing cases, or a `default(N)` stating how many variants it absorbs.",
+      });
     }
   }
 
@@ -516,21 +515,6 @@ class SwitchStatementCheck {
         return "";
     }
   }
-
-  private report(
-    at: ISourceSpan,
-    code: string,
-    message: string,
-    helpText: string,
-  ): void {
-    this.found.push({
-      code,
-      line: at.line,
-      column: at.column,
-      message,
-      helpText,
-    });
-  }
 }
 
 class SwitchStatementAnalyzer {
@@ -539,7 +523,7 @@ class SwitchStatementAnalyzer {
 
   public analyze(program: IProgramSyntax): ISwitchStatementError[] {
     const check = new SwitchStatementCheck(this.context);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       check.declaration(member.declaration);
     }
     return check.errors();

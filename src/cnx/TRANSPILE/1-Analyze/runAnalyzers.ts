@@ -64,6 +64,7 @@ import StructLiteralAnalyzer from "./StructLiteralAnalyzer";
 import WholeArrayValueAnalyzer from "./WholeArrayValueAnalyzer";
 import ConstAssignmentAnalyzer from "./ConstAssignmentAnalyzer";
 import type IMutSite from "../../types/IMutSite";
+import type ISourceSpan from "../../types/ISourceSpan";
 import LoopAnalyzer from "./LoopAnalyzer";
 import SliceAssignmentAnalyzer from "./SliceAssignmentAnalyzer";
 import ControllingExpressionAnalyzer from "./ControllingExpressionAnalyzer";
@@ -92,8 +93,7 @@ import type IAnalyzerOptions from "./types/IAnalyzerOptions";
  * (#1306). A field missing from an accepting type drops data without failing.
  */
 interface IAnalyzerError {
-  line: number;
-  column: number;
+  span: ISourceSpan;
   message: string;
   code?: string;
   rule?: string;
@@ -119,8 +119,8 @@ function collectErrors<E extends IAnalyzerError>(
     // which is the evidence the advice now reaches a user rather than a cost to
     // route around.
     target.push({
-      line: err.line,
-      column: err.column,
+      line: err.span.line,
+      column: err.span.column,
       message: formatMessage(err),
       severity: err.severity ?? "error",
       helpText: err.helpText,
@@ -439,7 +439,11 @@ function runAnalyzers(
     },
     {
       label: "register access modifiers (ADR-004, E0870-E0872)",
-      run: () => new RegisterAccessAnalyzer(context).analyze(parsed.program),
+      run: () =>
+        new RegisterAccessAnalyzer(context).analyze(
+          parsed.program,
+          positions(),
+        ),
     },
     {
       // After controlling expressions: the always-true check assumes E0701
@@ -489,7 +493,8 @@ function runAnalyzers(
     },
     {
       label: "bitmap access (ADR-034, E0881-E0883)",
-      run: () => new BitmapAccessAnalyzer(context).analyze(parsed.program),
+      run: () =>
+        new BitmapAccessAnalyzer(context).analyze(parsed.program, positions()),
     },
     {
       label: "safe_div/safe_mod call shape (ADR-051, E0884/E0885)",

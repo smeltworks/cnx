@@ -12,15 +12,16 @@
  */
 
 import LengthProperty from "../../utils/LengthProperty";
+import ProgramExpressions from "../../utils/ProgramExpressions";
+import type ISourceSpan from "../../types/ISourceSpan";
 import IInitializationError from "./types/IInitializationError";
 import IDeclarationInfo from "./types/IDeclarationInfo";
 import ESourceLanguage from "../../utils/types/ESourceLanguage";
 import ScopeUtils from "../../utils/ScopeUtils";
 import ExpressionShape from "../../utils/ExpressionShape";
 import StatementChildren from "../../utils/StatementChildren";
-import StatementWrites from "../../utils/StatementWrites";
+import StatementNodes from "../../utils/StatementNodes";
 import DeclarationParts from "../../utils/DeclarationParts";
-import ExpressionChildren from "../../utils/ExpressionChildren";
 import TypeParts from "../../utils/TypeParts";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type IFunctionDeclarationSyntax from "../../types/syntax/IFunctionDeclarationSyntax";
@@ -35,6 +36,7 @@ import type ILocalDeclaration from "../../types/ILocalDeclaration";
 import type TChainRoot from "../../types/TChainRoot";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TStatement from "../../types/syntax/TStatement";
 import type IAnalysisContext from "./types/IAnalysisContext";
 
@@ -79,13 +81,8 @@ class InitializationWalk {
     this.analyzer = analyzer;
   }
 
-  declaration(declaration: TDeclarationSyntax): void {
+  declaration(declaration: TMemberDeclaration): void {
     switch (declaration.kind) {
-      case "scope":
-        for (const member of declaration.members) {
-          this.declaration(member.declaration);
-        }
-        return;
       case "function":
         this.function(declaration);
         return;
@@ -97,13 +94,7 @@ class InitializationWalk {
   }
 
   private function(fn: IFunctionDeclarationSyntax): void {
-    this.part({ kind: "type", type: fn.returnType });
-    for (const parameter of fn.parameters ?? []) {
-      this.part({ kind: "type", type: parameter.type });
-      for (const part of TypeParts.dimensions(parameter.dimensions)) {
-        this.part(part);
-      }
-    }
+    for (const part of DeclarationParts.signature(fn)) this.part(part);
     this.statements(fn.body.statements);
   }
 
@@ -269,13 +260,7 @@ class InitializationWalk {
     );
     // A compound assignment (`+<-`) reads the target first
     if (assignment.operator !== "<-") {
-      this.analyzer.checkRead(
-        key,
-        name,
-        assignment.span.line,
-        assignment.span.column,
-        fieldName,
-      );
+      this.analyzer.checkRead(key, name, assignment.span, fieldName);
     }
     this.analyzer.recordAssignment(key, fieldName);
   }
@@ -299,13 +284,7 @@ class InitializationWalk {
   // ========================================================================
 
   private part(part: TSyntaxPart): void {
-    if (part.kind === "type") {
-      for (const inner of TypeParts.of(part.type)) {
-        this.part(inner);
-      }
-      return;
-    }
-    this.expression(part.expression);
+    for (const expr of ProgramExpressions.inPart(part)) this.expression(expr);
   }
 
   private expression(expr: TExpression): void {
@@ -322,12 +301,7 @@ class InitializationWalk {
       this.ops(expr.ops);
       return;
     }
-    for (const child of ExpressionChildren.of(expr)) {
-      this.expression(child);
-    }
-    if (expr.kind === "cast") {
-      this.part({ kind: "type", type: expr.type });
-    }
+    for (const read of ProgramExpressions.readsIn(expr)) this.expression(read);
   }
 
   private ops(ops: readonly TPostfixOpSyntax[]): void {
@@ -361,7 +335,7 @@ class InitializationWalk {
   /** A read of `name`, followed by `ops`: the whole variable, or its first field */
   private read(
     name: string,
-    at: ISourcePosition,
+    at: ISourceSpan,
     ops: readonly TPostfixOpSyntax[],
   ): void {
     if (this.inFunctionCallArgs > 0) return;
@@ -371,11 +345,11 @@ class InitializationWalk {
       if (this.isCompileTimeLength(key, ops)) return;
       const first = ops[0];
       if (first.kind === "member") {
-        this.analyzer.checkRead(key, name, at.line, at.column, first.name);
+        this.analyzer.checkRead(key, name, at, first.name);
         return;
       }
     }
-    this.analyzer.checkRead(key, name, at.line, at.column);
+    this.analyzer.checkRead(key, name, at);
   }
 
   /**
@@ -464,7 +438,7 @@ class InitializationAnalyzer {
     this.collectStructDefinitions(program);
     this.createGlobalScope(program);
     const walk = new InitializationWalk(this);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       walk.declaration(member.declaration);
     }
     return this.errors;
@@ -477,105 +451,81 @@ class InitializationAnalyzer {
 
   /**
    * Globals count as initialized (C zero-initializes them). A scope member
-   * does when it has an initializer or one of the scope's functions assigns it.
+   * does when it has an initializer or a function in its own scope block
+   * assigns it (#2353: that rule ignores call order and reopened blocks).
    */
   private createGlobalScope(program: IProgramSyntax): void {
-    for (const member of program.declarations) {
-      const declaration = member.declaration;
-      if (declaration.kind === "variableDeclaration") {
-        this.declareVariable(
-          ScopeUtils.getTranspiledCName({
-            name: declaration.name,
-            scopePath: "",
-          }),
-          {
-            name: declaration.name,
-            line: declaration.span.line,
-            column: declaration.span.column,
-          },
+    for (const { declaration } of program.declarations) {
+      if (declaration.kind === "scope") {
+        this._declareScopeBlock(declaration);
+      } else if (declaration.kind === "variableDeclaration") {
+        this._declareMember(
+          declaration,
+          ScopeUtils.qualifyInScope(declaration.name, ""),
           true,
-          InitializationAnalyzer.userTypeName(declaration.type),
         );
-      } else if (declaration.kind === "scope") {
-        this._processScopeMembers(declaration);
       }
     }
   }
 
-  private _processScopeMembers(
-    scopeDecl: Extract<TDeclarationSyntax, { kind: "scope" }>,
+  /** One scope block's variables, initialized when the block assigns them */
+  private _declareScopeBlock(
+    block: Extract<TDeclarationSyntax, { kind: "scope" }>,
   ): void {
-    const scopePath = this.context.program.scopePathOf(scopeDecl.name);
-    const assignedMembers = this._findAssignedScopeMembers(scopeDecl);
-    for (const member of scopeDecl.members) {
-      const variable = member.declaration;
-      if (variable.kind !== "variableDeclaration") continue;
-      const fullName = ScopeUtils.qualifyInScope(variable.name, scopePath); // Transpiled C name
-      this.declareVariable(
+    const scopePath = this.context.program.scopePathOf(block.name);
+    const assigned = this._assignedMembers(block);
+    for (const { declaration } of block.members) {
+      if (declaration.kind !== "variableDeclaration") continue;
+      const fullName = ScopeUtils.qualifyInScope(declaration.name, scopePath); // Transpiled C name
+      this._declareMember(
+        declaration,
         fullName,
-        {
-          name: variable.name,
-          line: variable.span.line,
-          column: variable.span.column,
-        },
-        variable.initializer !== null || assignedMembers.has(fullName),
-        InitializationAnalyzer.userTypeName(variable.type),
+        declaration.initializer !== null || assigned.has(fullName),
       );
     }
   }
 
+  private _declareMember(
+    declaration: IVariableDeclarationSyntax,
+    fullName: string,
+    initialized: boolean,
+  ): void {
+    this.declareVariable(
+      fullName,
+      {
+        name: declaration.name,
+        line: declaration.span.line,
+        column: declaration.span.column,
+      },
+      initialized,
+      InitializationAnalyzer.userTypeName(declaration.type),
+    );
+  }
+
   /**
-   * Scan all functions in a scope to find which members are assigned.
+   * The members a scope block's functions assign.
    * Issue #1019: A member assigned in ANY function is considered initialized
-   * for reads in other functions within the same scope.
+   * for reads in other functions within the same block.
    */
-  private _findAssignedScopeMembers(
-    scopeDecl: Extract<TDeclarationSyntax, { kind: "scope" }>,
+  private _assignedMembers(
+    block: Extract<TDeclarationSyntax, { kind: "scope" }>,
   ): Set<TInitKey> {
     const assigned = new Set<TInitKey>();
-
-    for (const member of scopeDecl.members) {
-      if (member.declaration.kind !== "function") continue;
-      // Scan the function body for assignments to scope members
-      this._collectAssignments(member.declaration.body.statements, assigned);
-    }
-
-    return assigned;
-  }
-
-  /**
-   * Recursively collect the members assigned in statements, and in every
-   * statement nested inside them (#2003: `critical` and `forever` included).
-   */
-  private _collectAssignments(
-    statements: readonly TStatement[],
-    assigned: Set<TInitKey>,
-  ): void {
-    for (const statement of statements) {
-      this._collectDirectAssignment(statement, assigned);
-      this._collectAssignments(StatementChildren.of(statement), assigned);
-    }
-  }
-
-  /**
-   * Collect the assignments the statement itself performs: an assignment
-   * statement, or a `for` header's init and update (#2010).
-   */
-  private _collectDirectAssignment(
-    statement: TStatement,
-    assigned: Set<TInitKey>,
-  ): void {
-    for (const { target } of StatementWrites.of(statement)) {
-      const head = ExpressionShape.headOf(target);
-      if (!head.identifier) continue;
-
-      // #2004: what 1.4 binds the target to -- a local, parameter or `for`
-      // variable of the name, or `global.x`, is not this scope's member
-      const key = this.bindingKey(head.root, head.identifier.name, target.span);
-      if (key !== null) {
-        assigned.add(key);
+    for (const { declaration } of block.members) {
+      for (const { target } of StatementNodes.assignments(declaration)) {
+        const head = ExpressionShape.headOf(target);
+        if (!head.identifier) continue;
+        // #2004: what 1.4 binds the target to -- a local, parameter or `for`
+        // variable of the name, or `global.x`, is not this scope's member
+        const key = this.bindingKey(
+          head.root,
+          head.identifier.name,
+          target.span,
+        );
+        if (key !== null) assigned.add(key);
       }
     }
+    return assigned;
   }
 
   /** The fields of each struct the file declares at file level */
@@ -717,8 +667,7 @@ class InitializationAnalyzer {
   public checkRead(
     key: TInitKey,
     name: string,
-    line: number,
-    column: number,
+    span: ISourceSpan,
     field?: string,
   ): void {
     const state = this.states.get(key);
@@ -729,9 +678,9 @@ class InitializationAnalyzer {
     }
 
     if (field) {
-      this.checkFieldRead(name, line, column, field, state);
+      this.checkFieldRead(name, span, field, state);
     } else if (!state.initialized) {
-      this.addError(name, line, column, state.declaration, false);
+      this.addError(name, span, state.declaration, false);
     }
   }
 
@@ -741,18 +690,17 @@ class InitializationAnalyzer {
    */
   private checkFieldRead(
     name: string,
-    line: number,
-    column: number,
+    span: ISourceSpan,
     field: string,
     state: IVariableState,
   ): void {
     if (state.isStruct && state.typeName) {
-      this.checkStructFieldRead(name, line, column, field, state);
+      this.checkStructFieldRead(name, span, field, state);
       return;
     }
 
     if (state.isStringType) {
-      this.checkStringPropertyRead(name, line, column, field, state);
+      this.checkStringPropertyRead(name, span, field, state);
     }
     // Other types: .field is a compile-time property, no check needed
   }
@@ -762,8 +710,7 @@ class InitializationAnalyzer {
    */
   private checkStructFieldRead(
     name: string,
-    line: number,
-    column: number,
+    span: ISourceSpan,
     field: string,
     state: IVariableState,
   ): void {
@@ -771,7 +718,7 @@ class InitializationAnalyzer {
     if (!structFieldSet?.has(field)) return;
 
     if (!state.initializedFields.has(field)) {
-      this.addError(`${name}.${field}`, line, column, state.declaration, false);
+      this.addError(`${name}.${field}`, span, state.declaration, false);
     }
   }
 
@@ -780,14 +727,13 @@ class InitializationAnalyzer {
    */
   private checkStringPropertyRead(
     name: string,
-    line: number,
-    column: number,
+    span: ISourceSpan,
     field: string,
     state: IVariableState,
   ): void {
     const runtimeProperties = ["length", "capacity", "size"];
     if (runtimeProperties.includes(field) && !state.initialized) {
-      this.addError(name, line, column, state.declaration, false);
+      this.addError(name, span, state.declaration, false);
     }
   }
 
@@ -851,8 +797,7 @@ class InitializationAnalyzer {
 
   private addError(
     variable: string,
-    line: number,
-    column: number,
+    span: ISourceSpan,
     declaration: IDeclarationInfo,
     mayBeUninitialized: boolean,
   ): void {
@@ -860,8 +805,7 @@ class InitializationAnalyzer {
     this.errors.push({
       code: "E0381",
       variable,
-      line,
-      column,
+      span,
       declaration,
       mayBeUninitialized,
       message: `use of ${certainty}uninitialized variable '${variable}'`,

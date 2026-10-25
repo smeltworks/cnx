@@ -29,8 +29,8 @@ describe("ScopeAccessAnalyzer", () => {
       );
       expect(found).toHaveLength(1);
       expect(found[0].code).toBe("E0435");
-      expect(found[0].line).toBe(4);
-      expect(found[0].column).toBeGreaterThan(0);
+      expect(found[0].span.line).toBe(4);
+      expect(found[0].span.column).toBeGreaterThan(0);
     });
 
     it("rejects it as a TYPE too -- `M.T t;` inside M", () => {
@@ -153,7 +153,7 @@ describe("ScopeAccessAnalyzer on 1.2's syntax (#1991)", () => {
       "    }",
       "}",
     ].join("\n");
-    expect(errors(source).map((e) => [e.line, e.code])).toEqual([
+    expect(errors(source).map((e) => [e.span.line, e.code])).toEqual([
       [9, "E0436"],
       [10, "E0436"],
       [11, "E0436"],

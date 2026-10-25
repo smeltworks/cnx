@@ -732,7 +732,7 @@ describe("ArrayIndexTypeAnalyzer -- later subscripts", () => {
       { cppMode: false },
     );
     const found = new ArrayIndexTypeAnalyzer(context).analyze(syntax);
-    expect(found.map((e) => [e.code, e.line, e.column])).toEqual([
+    expect(found.map((e) => [e.code, e.span.line, e.span.column])).toEqual([
       ["E0850", 4, 20],
     ]);
   });

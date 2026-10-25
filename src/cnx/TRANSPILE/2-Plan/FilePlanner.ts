@@ -758,7 +758,7 @@ class FilePlanner {
 
   /** Every `for` update's expressions: run again each pass, after nothing written before them */
   private static forUpdates(program: IProgramSyntax): TExpression[] {
-    return program.declarations.flatMap(({ declaration }) =>
+    return program.members.flatMap(({ declaration }) =>
       StatementNodes.in(declaration).flatMap((statement) =>
         statement.kind === "for" && statement.update !== null
           ? [statement.update.target, statement.update.value]
@@ -825,19 +825,13 @@ class FilePlanner {
   } {
     const declarationInits = new Set<TExpression>();
     const inFunctions = new Set<TExpression>();
-    for (const { declaration } of program.declarations) {
-      const members =
-        declaration.kind === "scope"
-          ? declaration.members.map((member) => member.declaration)
-          : [declaration];
-      for (const member of members) {
-        FilePlanner.memberInitializers(member).forEach((init) =>
-          declarationInits.add(init),
-        );
-        FilePlanner.functionExpressions(member).forEach((expr) =>
-          inFunctions.add(expr),
-        );
-      }
+    for (const { declaration } of program.members) {
+      FilePlanner.memberInitializers(declaration).forEach((init) =>
+        declarationInits.add(init),
+      );
+      FilePlanner.functionExpressions(declaration).forEach((expr) =>
+        inFunctions.add(expr),
+      );
     }
     return { declarationInits, inFunctions };
   }
@@ -1660,9 +1654,15 @@ class FilePlanner {
     const typeScopes = new Map(
       TypeSites.of(program, unwritten).map((site) => [site.type, site.scope]),
     );
-    const scopeMembers = FilePlanner.scopeVariables(program.declarations);
+    const scopeMembers = new Set<IVariableDeclarationSyntax>(
+      program.members.flatMap(({ declaration, scope }) =>
+        scope !== null && declaration.kind === "variableDeclaration"
+          ? [declaration]
+          : [],
+      ),
+    );
     const forInits = new Set<IVariableDeclarationSyntax>(
-      program.declarations.flatMap((entry) =>
+      program.members.flatMap((entry) =>
         StatementNodes.in(entry.declaration).flatMap((statement) =>
           statement.kind === "for" &&
           statement.init?.kind === "variableDeclaration"
@@ -1884,7 +1884,7 @@ class FilePlanner {
   private static variableDeclarations(
     program: IProgramSyntax,
   ): IVariableDeclarationSyntax[] {
-    return program.declarations.flatMap((entry) => {
+    return program.members.flatMap((entry) => {
       const statements = StatementNodes.in(entry.declaration);
       const forHeaders = new Set<TStatement>(
         statements.flatMap((statement) =>
@@ -1897,7 +1897,6 @@ class FilePlanner {
         ...(entry.declaration.kind === "variableDeclaration"
           ? [entry.declaration]
           : []),
-        ...FilePlanner.scopeVariables([entry]),
         ...statements.flatMap((statement) =>
           statement.kind === "variableDeclaration" && !forHeaders.has(statement)
             ? [statement]
@@ -1933,25 +1932,6 @@ class FilePlanner {
    */
   static isArrayDeclaration(decl: IVariableDeclarationSyntax): boolean {
     return decl.dimensions.length > 0 || decl.type.kind === "array";
-  }
-
-  /** Every variable a scope declares, at any depth */
-  private static scopeVariables(
-    declarations: readonly { readonly declaration: TDeclarationSyntax }[],
-  ): ReadonlySet<IVariableDeclarationSyntax> {
-    const found = new Set<IVariableDeclarationSyntax>();
-    for (const entry of declarations) {
-      if (entry.declaration.kind !== "scope") continue;
-      for (const member of entry.declaration.members) {
-        if (member.declaration.kind === "variableDeclaration") {
-          found.add(member.declaration);
-        }
-        for (const nested of FilePlanner.scopeVariables([member])) {
-          found.add(nested);
-        }
-      }
-    }
-    return found;
   }
 
   /**
@@ -2125,7 +2105,7 @@ class FilePlanner {
 
   /** Every assignment in the file, in source order */
   private static assignmentSites(program: IProgramSyntax): IAssignmentSyntax[] {
-    return program.declarations.flatMap((entry) =>
+    return program.members.flatMap((entry) =>
       StatementNodes.assignments(entry.declaration),
     );
   }
@@ -2695,7 +2675,7 @@ class FilePlanner {
   ): ReadonlyMap<IAssignmentSyntax, IBitmapFieldTarget | null> {
     const bitmapFields = this.state.symbols!.bitmapFields;
     const writes = new Map<IAssignmentSyntax, IBitmapFieldTarget | null>();
-    for (const entry of program.declarations) {
+    for (const entry of program.members) {
       for (const site of StatementNodes.assignments(entry.declaration)) {
         writes.set(
           site,
@@ -2740,7 +2720,7 @@ class FilePlanner {
         }
       }
     };
-    for (const entry of program.declarations) {
+    for (const entry of program.members) {
       visit(StatementNodes.roots(entry.declaration));
       for (const site of StatementNodes.assignments(entry.declaration)) {
         const atomic = this.atomicFormOf(
@@ -3166,27 +3146,21 @@ class FilePlanner {
         );
       });
     };
-    for (const entry of program.declarations) {
-      const declaration = entry.declaration;
-      if (declaration.kind === "function") {
+    for (const { declaration, scope } of program.members) {
+      if (declaration.kind !== "function") continue;
+      if (scope === null) {
         planParameters(declaration.name, declaration, "");
-      } else if (declaration.kind === "scope") {
-        const scopePath =
-          this.state.program?.scopePathOf(declaration.name) ?? declaration.name;
-        const typeScopePath = this.state.scopePathOf(declaration.name);
-        for (const member of declaration.members) {
-          if (member.declaration.kind !== "function") continue;
-          planParameters(
-            QualifiedNameGenerator.forFunctionInScope(
-              scopePath,
-              member.declaration.name,
-              this.state.program,
-            ),
-            member.declaration,
-            typeScopePath,
-          );
-        }
+        continue;
       }
+      planParameters(
+        QualifiedNameGenerator.forFunctionInScope(
+          this.state.program?.scopePathOf(scope) ?? scope,
+          declaration.name,
+          this.state.program,
+        ),
+        declaration,
+        this.state.scopePathOf(scope),
+      );
     }
     return { infos, planned };
   }

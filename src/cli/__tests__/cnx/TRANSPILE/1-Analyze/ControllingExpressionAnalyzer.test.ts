@@ -29,8 +29,8 @@ describe("ControllingExpressionAnalyzer", () => {
       const found = errors(inIf("n"));
       expect(found).toHaveLength(1);
       expect(found[0].code).toBe("E0701");
-      expect(found[0].line).toBe(4);
-      expect(found[0].column).toBeGreaterThan(0);
+      expect(found[0].span.line).toBe(4);
+      expect(found[0].span.column).toBeGreaterThan(0);
     });
 
     it("rejects a bare bool and suggests the explicit form", () => {
@@ -159,7 +159,7 @@ describe("ControllingExpressionAnalyzer", () => {
       const found = errors(withCall("isValid() = true"));
       expect(found).toHaveLength(1);
       expect(found[0].code).toBe("E0702");
-      expect(found[0].line).toBe(5);
+      expect(found[0].span.line).toBe(5);
     });
 
     it("rejects a call inside a bracketed comparison as a call", () => {

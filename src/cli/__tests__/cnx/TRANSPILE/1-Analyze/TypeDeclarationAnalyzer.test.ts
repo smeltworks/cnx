@@ -19,7 +19,7 @@ describe("TypeDeclarationAnalyzer", () => {
         "bitmap8 Few {\n    a,\n    b[3]\n}\n\nbitmap16 Many {\n    v[17]\n}\n",
       );
 
-      expect(found.map((e) => [e.code, e.line, e.column])).toEqual([
+      expect(found.map((e) => [e.code, e.span.line, e.span.column])).toEqual([
         ["E0893", 1, 0],
         ["E0893", 6, 0],
       ]);
@@ -42,7 +42,7 @@ describe("TypeDeclarationAnalyzer", () => {
 
       expect(found).toHaveLength(1);
       expect(found[0].message).toContain("'Motor.Flags'");
-      expect([found[0].line, found[0].column]).toEqual([2, 4]);
+      expect([found[0].span.line, found[0].span.column]).toEqual([2, 4]);
     });
   });
 
@@ -50,7 +50,7 @@ describe("TypeDeclarationAnalyzer", () => {
     it("reports a negative member at the member, and stays silent on zero", () => {
       const found = errors("enum E {\n    ZERO <- 0,\n    NEG <- -1\n}\n");
 
-      expect(found.map((e) => [e.code, e.line, e.column])).toEqual([
+      expect(found.map((e) => [e.code, e.span.line, e.span.column])).toEqual([
         ["E0894", 3, 4],
       ]);
       expect(found[0].message).toBe(
@@ -80,7 +80,12 @@ describe("TypeDeclarationAnalyzer", () => {
 
   describe('E0909-E0911 -- an enum member\'s value (ADR-017 "Member Values", #1669)', () => {
     const codes = (source: string, helpers?: Record<string, string>) =>
-      errors(source, helpers).map((e) => [e.code, e.line, e.column, e.message]);
+      errors(source, helpers).map((e) => [
+        e.code,
+        e.span.line,
+        e.span.column,
+        e.message,
+      ]);
 
     it("reports a value with no value at the member, saying why", () => {
       expect(
@@ -167,6 +172,6 @@ describe("TypeDeclarationAnalyzer", () => {
       "enum E {\n    N <- -1\n}\n\nbitmap8 B {\n    a\n}\n\nenum F {\n    M <- -1\n}\n",
     );
 
-    expect(found.map((e) => e.line)).toEqual([2, 5, 10]);
+    expect(found.map((e) => e.span.line)).toEqual([2, 5, 10]);
   });
 });

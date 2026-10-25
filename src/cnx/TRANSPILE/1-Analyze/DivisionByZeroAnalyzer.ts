@@ -12,7 +12,8 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type ISourceSpan from "../../types/ISourceSpan";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
 import type TStatement from "../../types/syntax/TStatement";
 import type TBinaryExpression from "../../types/syntax/TBinaryExpression";
@@ -35,20 +36,14 @@ class DivisionByZeroAnalyzer {
 
   public analyze(program: IProgramSyntax): IDivisionByZeroError[] {
     this.errors = [];
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       this.declaration(member.declaration);
     }
     // Binary levels, then compound writes; report in source order
-    return this.errors.sort(SourceOrder.compare);
+    return this.errors.sort(SourceOrder.bySpan);
   }
 
-  private declaration(declaration: TDeclarationSyntax): void {
-    if (declaration.kind === "scope") {
-      for (const member of declaration.members) {
-        this.declaration(member.declaration);
-      }
-      return;
-    }
+  private declaration(declaration: TMemberDeclaration): void {
     const atRunTime = new Set(
       declaration.kind === "function"
         ? DivisionByZeroAnalyzer.runTimeRoots(
@@ -68,17 +63,12 @@ class DivisionByZeroAnalyzer {
    * `x /<- d` and `x %<- d` divide `x` by `d`, in a statement or a `for`
    * header (#1770)
    */
-  private compoundDivisions(declaration: TDeclarationSyntax): void {
+  private compoundDivisions(declaration: TMemberDeclaration): void {
     for (const site of StatementNodes.assignments(declaration)) {
       const operator = CompoundOperator.binaryOf(site.operator);
       if (operator !== "/" && operator !== "%") continue;
       if (site.value.kind === "missing" || !this.isZero(site.value)) continue;
-      this.addError(
-        operator,
-        site.value.span.line,
-        site.value.span.column,
-        true,
-      );
+      this.addError(operator, site.value.span, true);
     }
   }
 
@@ -87,12 +77,7 @@ class DivisionByZeroAnalyzer {
       if (operator !== "/" && operator !== "%") return;
       const divisor = expr.operands[i + 1];
       if (this.isZero(divisor)) {
-        this.addError(
-          operator,
-          divisor.span.line,
-          divisor.span.column,
-          atRunTime,
-        );
+        this.addError(operator, divisor.span, atRunTime);
       }
     });
   }
@@ -148,8 +133,7 @@ class DivisionByZeroAnalyzer {
 
   private addError(
     operator: string,
-    line: number,
-    column: number,
+    span: ISourceSpan,
     atRunTime: boolean,
   ): void {
     const isDivision = operator === "/";
@@ -160,8 +144,7 @@ class DivisionByZeroAnalyzer {
     this.errors.push({
       code,
       operator,
-      line,
-      column,
+      span,
       message: `${opName} by zero`,
       helpText: atRunTime
         ? `Consider using ${builtin}(output, numerator, divisor, defaultValue) for runtime safety`

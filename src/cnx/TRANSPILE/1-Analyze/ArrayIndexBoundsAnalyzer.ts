@@ -158,13 +158,10 @@ class ArrayIndexBoundsCheck {
       this.context,
     );
     if (index === null) return;
-    const line = subscript.at.line;
-    const column = subscript.at.column;
     if (index < 0) {
       this.found.push({
         code: "E0854",
-        line,
-        column,
+        span: subscript.at,
         message: `Array index out of bounds: ${index} is negative for '${name}' dimension ${subscript.dimension}`,
         helpText: "An index counts from zero (ADR-036).",
       });
@@ -173,8 +170,7 @@ class ArrayIndexBoundsCheck {
     if (bound > 0 && index >= bound) {
       this.found.push({
         code: "E0854",
-        line,
-        column,
+        span: subscript.at,
         message: `Array index out of bounds: ${index} >= ${bound} for '${name}' dimension ${subscript.dimension}`,
         helpText: `The last valid index is ${bound - 1} (ADR-036).`,
       });
@@ -225,7 +221,7 @@ class ArrayIndexBoundsAnalyzer {
   /** Every chain 1.2 returned, values and assignment targets alike (#1991) */
   public analyze(program: IProgramSyntax): IArrayIndexBoundsError[] {
     const check = new ArrayIndexBoundsCheck(this.context);
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       for (const part of DeclarationParts.of(member.declaration)) {
         for (const expr of ExpressionNodes.of(part)) check.checkChain(expr);
       }

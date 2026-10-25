@@ -8,7 +8,11 @@ import SymbolTable from "../../../../../cnx/PARSE/3-Declare/SymbolTable";
 function errors(
   source: string,
   helpers?: Record<string, string>,
-): { code: string; line: number; column: number; message: string }[] {
+): {
+  code: string;
+  span: { line: number; column: number };
+  message: string;
+}[] {
   const { syntax, context } = testAnalysisContextFor(source, {
     cppMode: false,
     helpers,
@@ -56,7 +60,10 @@ describe("ConstantDimensionAnalyzer (#1175: E0909, E0910)", () => {
 
   it("rejects one whose arithmetic overflows its operands' type (ADR-044)", () => {
     const [found] = errors("u8 A <- 200;\nu8[A + A] buf;");
-    expect(found).toMatchObject({ code: "E0910", line: 2, column: 3 });
+    expect(found).toMatchObject({
+      code: "E0910",
+      span: { line: 2, column: 3 },
+    });
     expect(found.message).toContain("overflows u8");
   });
 
@@ -122,7 +129,7 @@ describe("ConstantDimensionAnalyzer (#1175: E0909, E0910)", () => {
         "u8[Odd.i.type_byte_length] ok;\nu8[Odd.type_byte_length] a;",
       );
       expect(found).toHaveLength(1);
-      expect(found[0]).toMatchObject({ code: "E0909", line: 2 });
+      expect(found[0]).toMatchObject({ code: "E0909", span: { line: 2 } });
       expect(found[0].message).toContain("'Odd.type_byte_length'");
     });
   });
@@ -155,7 +162,7 @@ describe("ConstantDimensionAnalyzer on 1.2's syntax (#1991)", () => {
 
   it("reports a declaration's dimensions in source order", () => {
     const found = errors("mut u8 n <- 3;\nu8[n] g[n];");
-    expect(found.map((e) => [e.line, e.column])).toEqual([
+    expect(found.map((e) => [e.span.line, e.span.column])).toEqual([
       [2, 3],
       [2, 8],
     ]);

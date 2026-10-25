@@ -8,7 +8,7 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
-import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type ISourceSpan from "../../types/ISourceSpan";
 import IParameterNamingError from "./types/IParameterNamingError";
 
@@ -56,18 +56,14 @@ class ParameterNamingAnalyzer {
   private readonly errors: IParameterNamingError[] = [];
 
   public analyze(program: IProgramSyntax): IParameterNamingError[] {
-    for (const member of program.declarations) {
+    for (const member of program.members) {
       this.declaration(member.declaration);
     }
     return this.errors;
   }
 
-  private declaration(declaration: TDeclarationSyntax): void {
-    if (declaration.kind === "scope") {
-      for (const member of declaration.members) {
-        this.declaration(member.declaration);
-      }
-    } else if (declaration.kind === "function") {
+  private declaration(declaration: TMemberDeclaration): void {
+    if (declaration.kind === "function") {
       for (const parameter of declaration.parameters ?? []) {
         if (isReservedParameterName(parameter.name, declaration.name)) {
           this.addError(parameter.name, declaration.name, parameter.nameSpan);
@@ -85,8 +81,7 @@ class ParameterNamingAnalyzer {
       code: "E0227",
       parameterName,
       functionName,
-      line: at.line,
-      column: at.column,
+      span: at,
       message: formatParameterNamingError(parameterName, functionName),
       helpText: `Consider renaming to a name that doesn't start with '${functionName}_'`,
     });

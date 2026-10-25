@@ -183,7 +183,7 @@ describe("SliceAssignmentAnalyzer -- sites and positions", () => {
     });
     return new SliceAssignmentAnalyzer(context)
       .analyze(syntax)
-      .map((e) => [e.code, e.line, e.column]);
+      .map((e) => [e.code, e.span.line, e.span.column]);
   };
 
   it("reports at the offset", () => {

@@ -4,7 +4,7 @@ import testAnalysisContextFor from "../TRANSPILE/1-Analyze/testAnalysisContextFo
 import type TConstExpr from "../../../../cnx/types/TConstExpr";
 
 /** After each source's one declaration, where a use sees it (#1643) */
-const AT = { line: 2, column: 0 };
+const AT = { line: 2, column: 0, endLine: 2, endColumn: 0 };
 const lit = (digits: string): TConstExpr => ({
   kind: "literal",
   digits,

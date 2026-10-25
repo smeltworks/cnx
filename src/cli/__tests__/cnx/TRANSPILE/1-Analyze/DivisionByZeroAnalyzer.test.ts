@@ -364,9 +364,9 @@ describe("DivisionByZeroAnalyzer", () => {
       const analyzer = new DivisionByZeroAnalyzer(context);
       const errors = analyzer.analyze(syntax);
 
-      expect(errors[0].line).toBe(2);
+      expect(errors[0].span.line).toBe(2);
       // Column should point to the zero operand
-      expect(errors[0].column).toBeGreaterThan(0);
+      expect(errors[0].span.column).toBeGreaterThan(0);
     });
   });
 
@@ -616,7 +616,7 @@ describe("DivisionByZeroAnalyzer", () => {
       const indent = 10;
       const errors = analyze(body);
 
-      expect(errors.map((e) => [e.code, e.column])).toEqual([
+      expect(errors.map((e) => [e.code, e.span.column])).toEqual([
         ["E0800", indent + body.indexOf("0;")],
         ["E0802", indent + body.indexOf("ZERO")],
         ["E0800", indent + body.lastIndexOf("0;")],

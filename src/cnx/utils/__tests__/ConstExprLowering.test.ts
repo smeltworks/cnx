@@ -68,7 +68,7 @@ describe("ConstExprLowering", () => {
       kind: "name",
       root: null,
       path: ["LIMIT"],
-      at: { line: 1, column: 19 },
+      at: { line: 1, column: 19, endLine: 1, endColumn: 24 },
     });
   });
 

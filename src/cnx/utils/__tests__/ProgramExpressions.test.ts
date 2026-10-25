@@ -48,4 +48,21 @@ describe("ProgramExpressions", () => {
       "8",
     ]);
   });
+
+  it("reads an expression's children, and a cast's written dimensions after them", () => {
+    const [cast] = ProgramExpressions.of(
+      CnxSourceParser.parse("void f(u8 x) { u8 y <- (u8[2 + 2])x; }").program,
+    );
+    expect(cast.kind).toBe("cast");
+    expect(
+      ProgramExpressions.readsIn(cast).map((expression) => expression.written),
+    ).toEqual(["x", "2 + 2"]);
+  });
+
+  it("reads nothing from a leaf", () => {
+    const [literal] = ProgramExpressions.of(
+      CnxSourceParser.parse("u8 g <- 4;").program,
+    );
+    expect(ProgramExpressions.readsIn(literal)).toEqual([]);
+  });
 });

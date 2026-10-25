@@ -34,7 +34,7 @@ describe("ConstructorArgumentAnalyzer", () => {
     );
     expect(found).toHaveLength(1);
     expect(found[0].code).toBe("E0432");
-    expect(found[0].line).toBe(2);
+    expect(found[0].span.line).toBe(2);
     expect(found[0].message).toContain("mutablePin");
   });
 
@@ -98,7 +98,7 @@ describe("ConstructorArgumentAnalyzer -- local constructors", () => {
     const found = errors(
       ["void f() {", "    Widget w(missing);", "}"].join("\n"),
     );
-    expect(found.map((e) => [e.code, e.line, e.column])).toEqual([
+    expect(found.map((e) => [e.code, e.span.line, e.span.column])).toEqual([
       ["E0433", 2, 4],
     ]);
   });

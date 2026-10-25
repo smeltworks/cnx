@@ -12,9 +12,9 @@
  */
 
 import type { CommonTokenStream } from "antlr4ng";
+import FormError from "./FormError";
 import { CnxLexer } from "./grammar/CnxLexer";
 import type ITranspileError from "../../types/ITranspileError";
-import CodedErrorText from "../../utils/CodedErrorText";
 import LiteralUtils from "../../utils/LiteralUtils";
 
 /** The decimal literal tokens, suffixed or not; hex and binary have a prefix */
@@ -33,17 +33,14 @@ class LiteralForm {
           DECIMAL_TOKENS.has(token.type) &&
           LiteralUtils.hasLeadingZero(token.text ?? ""),
       )
-      .map((token) => ({
-        line: token.line,
-        column: token.column,
-        message: CodedErrorText.of(
+      .map((token) =>
+        FormError.at(
+          token,
           "E0912",
           `Integer literal '${token.text}' has a leading zero: cnx has no octal literal (ADR-044)`,
-        ),
-        helpText:
           "Write the value in decimal without the leading zero, or as 0x... or 0b...",
-        severity: "error" as const,
-      }));
+        ),
+      );
   }
 }
 

@@ -170,7 +170,7 @@ describe("UndeclaredValueAnalyzer", () => {
       const lines = source.split("\n");
       return analyze(source).map((e) => [
         e.identifier,
-        e.column === lines[e.line - 1].indexOf(e.identifier),
+        e.span.column === lines[e.span.line - 1].indexOf(e.identifier),
       ]);
     }
 
@@ -272,9 +272,9 @@ describe("UndeclaredValueAnalyzer", () => {
         // DISCRIMINATE, which `toBeGreaterThan(0)` never did: it holds for the
         // keyword's column too, and the caret regression it is named for would
         // leave it green.
-        const line = source.split("\n")[errors[0].line - 1];
-        expect(errors[0].column).toBe(line.indexOf("nope"));
-        expect(line.indexOf("this.")).toBe(errors[0].column - 5);
+        const line = source.split("\n")[errors[0].span.line - 1];
+        expect(errors[0].span.column).toBe(line.indexOf("nope"));
+        expect(line.indexOf("this.")).toBe(errors[0].span.column - 5);
       },
     );
   });
@@ -310,8 +310,10 @@ describe("UndeclaredValueAnalyzer", () => {
       expect(errors).toHaveLength(1);
       expect(errors[0].code).toBe("E0427");
       expect(errors[0].identifier).toBe(name);
-      const line = source.split("\n")[errors[0].line - 1];
-      expect(errors[0].column).toBe(line.indexOf(name, line.indexOf("case")));
+      const line = source.split("\n")[errors[0].span.line - 1];
+      expect(errors[0].span.column).toBe(
+        line.indexOf(name, line.indexOf("case")),
+      );
     });
 
     it.each([
