@@ -1,0 +1,15 @@
+// test-error
+// #2347 review: the enum being declared does not carry past its own member
+// values -- with an enum declared last, a compound value outside it is still
+// an enum operand (ADR-017)
+
+void main() {
+    mut u8 n <- 0;
+    n +<- 1;
+    n +<- Perm.READ;
+}
+
+enum Perm {
+    READ <- 1,
+    WRITE <- Perm.READ | 2
+}

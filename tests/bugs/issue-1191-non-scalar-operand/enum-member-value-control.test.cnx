@@ -1,0 +1,22 @@
+// test-execution
+// Control for E0925: a member of the enum being declared is an i32 there (ADR-017)
+
+enum EPerm {
+    READ <- 1,
+    WRITE <- 2,
+    RW <- EPerm.READ | EPerm.WRITE,
+    NEXT <- EPerm.RW + 1
+}
+
+u32 main() {
+    if ((u8)EPerm.RW != 3) {
+        return 1;
+    }
+    if ((u8)EPerm.NEXT != 4) {
+        return 2;
+    }
+    if ((EPerm.READ < EPerm.WRITE) = false) {
+        return 3;
+    }
+    return 0;
+}

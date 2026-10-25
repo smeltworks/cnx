@@ -1,0 +1,21 @@
+// test-error
+// Tests: #1191 - an operand the operator does not take is Rule 10.1's (E0925),
+// reported before Rule 10.4's category mix (E0810), because it needs only
+// that one operand's type
+enum Color {
+    RED,
+    GREEN
+}
+
+u32 a <- 1;
+u32 m <- 4;
+Color c <- Color.RED;
+
+void f() {
+    u32 e1 <- a + c;
+    u32 e2 <- a * 'A';
+    u32 e3 <- (a * 'A') * m;
+    u32 e4 <- (a + c) + a;
+    u32 ok <- a + m;
+    u32 ok2 <- a - 'A';
+}

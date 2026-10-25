@@ -15,8 +15,8 @@ void f() {
     u32 r2 <- a + 5 + n;
     f32 r3 <- (a + 'A') * k;
     y +<- 'A' + m;
-    // Reported once, at the inner pair: the product has no category after it
-    u32 r4 <- (a * 'A') * m;
+    // Reported once, at the inner pair: the inner pair has no category after it
+    u32 r4 <- (a - 'A') * m;
     // Negative controls: a literal between operands of ONE category, and
     // MISRA's character + integer exemption, stay silent
     u32 c1 <- a * 2 * m;

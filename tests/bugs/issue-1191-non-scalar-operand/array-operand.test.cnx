@@ -1,0 +1,23 @@
+// test-error
+// E0925: an array is not a number -- partially indexed, whole, every operator level
+
+u8[2][3] grid;
+u8[3] row;
+
+void main() {
+    u8 a <- grid[0] + grid[1];
+    u8 b <- row + 1;
+    u8 c <- row * 2;
+    u8 d <- row & 1;
+    u8 e <- row << 1;
+    bool f <- grid[0] < grid[1];
+    u8 g <- -row;
+    u8 h <- ~row;
+    mut u8 i <- 0;
+    i +<- row;
+    u8 j <- -row + 1;
+    u8 n <- 1;
+    u8 k <- ((n = 1) ? row : row) + 1;
+    u8 ok <- grid[0][1] + row[2];
+    bool ok2 <- grid[1][0] < row[0];
+}

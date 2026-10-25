@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from "vitest";
 import IBaseAnalysisError from "../IBaseAnalysisError";
-import IFloatModuloError from "../IFloatModuloError";
+import IOperatorOperandError from "../IOperatorOperandError";
 import IDivisionByZeroError from "../IDivisionByZeroError";
 import IFunctionCallError from "../IFunctionCallError";
 import INullCheckError from "../INullCheckError";
@@ -15,8 +15,8 @@ import IStructFieldError from "../IStructFieldError";
 
 describe("IBaseAnalysisError", () => {
   describe("interface extension", () => {
-    it("allows IFloatModuloError to be used as base error", () => {
-      const error: IFloatModuloError = {
+    it("allows IOperatorOperandError to be used as base error", () => {
+      const error: IOperatorOperandError = {
         code: "E0804",
         span: { line: 10, column: 5, endLine: 10, endColumn: 5 },
         message: "Modulo operator not supported for floating-point types",
@@ -143,7 +143,7 @@ describe("IBaseAnalysisError", () => {
           code: "E0804",
           span: { line: 1, column: 1, endLine: 1, endColumn: 1 },
           message: "Float modulo error",
-        } as IFloatModuloError,
+        } as IOperatorOperandError,
         {
           code: "E0800",
           operator: "/",

@@ -46,7 +46,7 @@
 import type TExpression from "../../types/syntax/TExpression";
 import type ISourceSpan from "../../types/ISourceSpan";
 import IMixedTypeCategoryError from "./types/IMixedTypeCategoryError";
-import BooleanOperandAnalyzer from "./BooleanOperandAnalyzer";
+import OperatorOperandAnalyzer from "./OperatorOperandAnalyzer";
 import EnumValueResolver from "./EnumValueResolver";
 import OperandTyper from "../../utils/OperandTyper";
 import CompoundOperator from "../../utils/CompoundOperator";
@@ -57,6 +57,7 @@ import type IOperandType from "../../types/IOperandType";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TBinaryExpression from "../../types/syntax/TBinaryExpression";
+import EnumMemberValue from "./EnumMemberValue";
 import ProgramAccesses from "../../utils/ProgramAccesses";
 import SourceOrder from "../../utils/SourceOrder";
 
@@ -136,7 +137,10 @@ class MixedCategoryCheck {
    * value leaves share, or null when they have none -- or disagree, which is
    * reported at the inner operator, once.
    */
-  private operandCategory(operand: TExpression): Category {
+  private operandCategory(
+    operand: TExpression,
+    enumBeingDeclared: string | null,
+  ): Category {
     const level = OperandTyper.compositeLevelOf(operand);
     const key = level === null ? null : MixedCategoryCheck.writtenAt(level);
     if (key !== null && this.levelCategories.has(key)) {
@@ -144,7 +148,9 @@ class MixedCategoryCheck {
     }
     let resolved: Category = null;
     for (const leaf of OperandTyper.valueLeaves(operand, this.context)) {
-      const category = MixedCategoryCheck.rule104Category(leaf);
+      const category = MixedCategoryCheck.rule104Category(
+        EnumMemberValue.operandType(leaf, enumBeingDeclared),
+      );
       if (category === null) continue;
       if (resolved === null) {
         resolved = category;
@@ -166,14 +172,23 @@ class MixedCategoryCheck {
   public checkLevel(
     expr: TBinaryExpression,
     level: TBinaryOperatorLevel,
+    enumBeingDeclared: string | null,
   ): void {
     const operands = expr.operands;
-    let running = this.operandCategory(operands[0]);
+    let running = this.operandCategory(operands[0], enumBeingDeclared);
     let mixed = false;
     for (let i = 1; i < operands.length; i += 1) {
-      const right = this.operandCategory(operands[i]);
+      const right = this.operandCategory(operands[i], enumBeingDeclared);
       const operator = expr.operators[i - 1];
-      if (this.reportsPair(operands[i - 1], operands[i], level)) {
+      if (
+        this.reportsPair(
+          operands[i - 1],
+          operands[i],
+          level,
+          operator,
+          enumBeingDeclared,
+        )
+      ) {
         if (MixedCategoryCheck.differ(running, right, operator)) {
           this.analyzer.addError(
             operands[i].span,
@@ -181,9 +196,14 @@ class MixedCategoryCheck {
             right!,
             "binary",
             operator,
+            this.hasOwnEnumMember(operands, enumBeingDeclared),
           );
           mixed = true;
         }
+      } else if (!this.enumComparison(operands[i - 1], operands[i], level)) {
+        // Rule 10.1 rejected an operand of this pair, so the level has no
+        // category an enclosing level could report again
+        mixed = true;
       }
       running = MixedCategoryCheck.fold(running, right, operator);
     }
@@ -193,17 +213,43 @@ class MixedCategoryCheck {
     );
   }
 
+  /**
+   * Whether a member of the enum being declared is among these operands: it
+   * is an i32 there (ADR-017), but it has no bits to index, so the help is a
+   * cast, not a bit-range reinterpretation
+   */
+  private hasOwnEnumMember(
+    operands: readonly TExpression[],
+    enumBeingDeclared: string | null,
+  ): boolean {
+    if (enumBeingDeclared === null) return false;
+    return operands.some((operand) =>
+      OperandTyper.valueLeaves(operand, this.context).some(
+        (leaf) =>
+          leaf?.category === "enum" && leaf.enumTypeName === enumBeingDeclared,
+      ),
+    );
+  }
+
   /** Whether this rule, not another, reports a mix between two operands */
   private reportsPair(
     left: TExpression,
     right: TExpression,
     level: TBinaryOperatorLevel,
+    operator: string,
+    enumBeingDeclared: string | null,
   ): boolean {
     if (this.enumComparison(left, right, level)) return false;
-    return !MixedCategoryCheck.ownedElsewhere(
-      this.operandCategory(left),
-      this.operandCategory(right),
-      level,
+    return !this.ownedElsewhere(
+      operator,
+      EnumMemberValue.operandType(
+        OperandTyper.typeOf(left, this.context),
+        enumBeingDeclared,
+      ),
+      EnumMemberValue.operandType(
+        OperandTyper.typeOf(right, this.context),
+        enumBeingDeclared,
+      ),
     );
   }
 
@@ -249,17 +295,17 @@ class MixedCategoryCheck {
   }
 
   /**
-   * Whether Rule 10.1 reports this pair: a Boolean operand anywhere it admits
-   * none (E0806/E0807), so that one defect has one code.
+   * Whether Rule 10.1 reports this pair: an operand its operator does not
+   * take (E0804/E0806/E0807/E0925), so that one defect has one code.
    */
-  private static ownedElsewhere(
-    left: Category,
-    right: Category,
-    level: TBinaryOperatorLevel | "compound",
+  private ownedElsewhere(
+    operator: string,
+    left: IOperandType | null,
+    right: IOperandType | null,
   ): boolean {
     return (
-      !BooleanOperandAnalyzer.admitsBoolean(level) &&
-      (left === "boolean" || right === "boolean")
+      !OperatorOperandAnalyzer.admits(operator, left, this.context) ||
+      !OperatorOperandAnalyzer.admits(operator, right, this.context)
     );
   }
 
@@ -269,10 +315,13 @@ class MixedCategoryCheck {
    * are mixed has no category, so that defect is reported once, at its own
    * operator, and never again here.
    */
-  public checkTernary(expr: TExpression): void {
+  public checkTernary(
+    expr: TExpression,
+    enumBeingDeclared: string | null,
+  ): void {
     if (expr.kind !== "ternary") return;
-    const left = this.operandCategory(expr.whenTrue);
-    const right = this.operandCategory(expr.whenFalse);
+    const left = this.operandCategory(expr.whenTrue, enumBeingDeclared);
+    const right = this.operandCategory(expr.whenFalse, enumBeingDeclared);
     if (left === null || right === null || left === right) return;
     if (
       (left === UNREADABLE_MACRO || right === UNREADABLE_MACRO) &&
@@ -308,11 +357,18 @@ class MixedCategoryCheck {
     if (operator === null || NOT_RULE_10_4_OPERATORS.has(operator)) return;
 
     const value = site.value;
-    const left = MixedCategoryCheck.rule104Category(
-      OperandTyper.typeOfTarget(site.target, this.context),
-    );
-    const right = this.operandCategory(value);
-    if (MixedCategoryCheck.ownedElsewhere(left, right, "compound")) return;
+    const target = OperandTyper.typeOfTarget(site.target, this.context);
+    if (
+      this.ownedElsewhere(
+        operator,
+        target,
+        OperandTyper.typeOf(value, this.context),
+      )
+    ) {
+      return;
+    }
+    const left = MixedCategoryCheck.rule104Category(target);
+    const right = this.operandCategory(value, null);
     if (MixedCategoryCheck.differ(left, right, operator)) {
       this.analyzer.addError(value.span, left!, right!, "compound", operator);
     }
@@ -327,26 +383,30 @@ class MixedTypeCategoryAnalyzer {
   public analyze(program: IProgramSyntax): IMixedTypeCategoryError[] {
     this.errors = [];
     const check = new MixedCategoryCheck(this, this.context);
-    const expressions = ProgramAccesses.expressions(program);
+    const expressions = EnumMemberValue.expressions(program);
 
     // Levels are met outermost first; checked innermost first, so a level
     // that is an operand of another has its category when that one asks
-    const levels: Array<[TBinaryExpression, TBinaryOperatorLevel]> = [];
-    for (const expr of expressions) {
+    const levels: Array<
+      [TBinaryExpression, TBinaryOperatorLevel, string | null]
+    > = [];
+    for (const [expr, enumBeingDeclared] of expressions) {
       if (expr.kind !== "binary") continue;
       const level = expr.level;
       if (level === "or" || level === "and" || level === "shift") continue;
-      levels.push([expr, level]);
+      levels.push([expr, level, enumBeingDeclared]);
     }
     levels.reverse();
-    for (const [expr, level] of levels) {
-      check.checkLevel(expr, level);
+    for (const [expr, level, enumBeingDeclared] of levels) {
+      check.checkLevel(expr, level, enumBeingDeclared);
     }
 
     for (const site of ProgramAccesses.writes(program)) {
       check.checkCompound(site);
     }
-    for (const expr of expressions) check.checkTernary(expr);
+    for (const [expr, enumBeingDeclared] of expressions) {
+      check.checkTernary(expr, enumBeingDeclared);
+    }
 
     // Read off 1.2's syntax (#1991); reported in source order
     return this.errors.sort(SourceOrder.bySpan);
@@ -386,6 +446,7 @@ class MixedTypeCategoryAnalyzer {
     right: string,
     what: TOperatorSite = "binary",
     operator?: string,
+    castOnly = false,
   ): void {
     if (left === UNREADABLE_MACRO || right === UNREADABLE_MACRO) {
       this.addUnreadableMacroError(span, what, operator);
@@ -410,7 +471,7 @@ class MixedTypeCategoryAnalyzer {
           ? `${rule}The target cannot be converted: write the assignment out with explicit conversions, e.g. x <- (u32)((f32)x * k) (ADR-024).`
           : `${rule}Convert the integer operand with an explicit cast, e.g. (f32)value (ADR-024).`;
     }
-    if (signedness) {
+    if (signedness && !castOnly) {
       helpText = `${rule}Reinterpret one operand's bits to match the other with bit indexing, e.g. value[0, 32] (ADR-007/ADR-024).`;
     }
     this.errors.push({

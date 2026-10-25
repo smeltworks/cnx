@@ -1,0 +1,13 @@
+// test-error
+// E0925: a string compares with '=' / '!=' only; '<' compared addresses
+
+void main() {
+    string<4> a <- "ab";
+    string<4> b <- "cd";
+    bool c <- a < b;
+    string<4> d <- a - b;
+    bool e <- "ab" < "cd";
+    bool g <- (a + b) < (b + a);
+    bool ok <- a = b;
+    string<8> ok2 <- a + b;
+}

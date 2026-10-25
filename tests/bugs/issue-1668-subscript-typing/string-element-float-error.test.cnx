@@ -1,6 +1,6 @@
 // test-error
 // Negative control for the subscript-typing fixtures beside this one: a
-// string's element IS a character, so combining it with a float stays E0810.
+// string's element IS a character, which `*` does not take (E0925, #1191).
 f32 k <- 2.0;
 string<4> s <- "ab";
 

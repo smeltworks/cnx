@@ -1,0 +1,29 @@
+// test-execution
+// Control for E0925: the cast form of an enum member in arithmetic compiles in every position (ADR-017, #1864)
+
+enum EColor {
+    RED,
+    GREEN,
+    COUNT
+}
+
+u32 N <- (u32)EColor.COUNT + 1;
+u8[(u32)EColor.COUNT + 1] slots;
+u8[EColor.COUNT] lone;
+
+u32 main() {
+    u32 x <- (u32)EColor.COUNT + 1;
+    if (x != 3) {
+        return 1;
+    }
+    if (N != 3) {
+        return 2;
+    }
+    if (slots.type_element_count != 3) {
+        return 3;
+    }
+    if (lone.type_element_count != 2) {
+        return 4;
+    }
+    return 0;
+}

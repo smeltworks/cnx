@@ -1,0 +1,2 @@
+7:13 error[E0805]: Shift operator '<<' not allowed on signed integer types
+       help: Shift operations on signed integers have undefined (<<) or implementation-defined (>>) behavior. Use unsigned types (u8, u16, u32, u64) for bit manipulation.

@@ -1,0 +1,22 @@
+8:12 error[E0925]: Operator '+' is not valid on an array
+       help: MISRA C:2012 Rule 10.1: an array is not a number. Subscript it down to one element first.
+9:12 error[E0925]: Operator '+' is not valid on an array
+       help: MISRA C:2012 Rule 10.1: an array is not a number. Subscript it down to one element first.
+10:12 error[E0925]: Operator '*' is not valid on an array
+       help: MISRA C:2012 Rule 10.1: an array is not a number. Subscript it down to one element first.
+11:12 error[E0925]: Operator '&' is not valid on an array
+       help: MISRA C:2012 Rule 10.1: an array is not a number. Subscript it down to one element first.
+12:12 error[E0925]: Operator '<<' is not valid on an array
+       help: MISRA C:2012 Rule 10.1: an array is not a number. Subscript it down to one element first.
+13:14 error[E0925]: Operator '<' is not valid on an array
+       help: MISRA C:2012 Rule 10.1: an array is not a number. Subscript it down to one element first.
+14:12 error[E0925]: Operator '-' is not valid on an array
+       help: MISRA C:2012 Rule 10.1: an array is not a number. Subscript it down to one element first.
+15:12 error[E0925]: Operator '~' is not valid on an array
+       help: MISRA C:2012 Rule 10.1: an array is not a number. Subscript it down to one element first.
+17:10 error[E0925]: Operator '+<-' is not valid on an array
+       help: MISRA C:2012 Rule 10.1: an array is not a number. Subscript it down to one element first.
+18:12 error[E0925]: Operator '+' is not valid on an array
+       help: MISRA C:2012 Rule 10.1: an array is not a number. Subscript it down to one element first.
+20:12 error[E0925]: Operator '+' is not valid on an array
+       help: MISRA C:2012 Rule 10.1: an array is not a number. Subscript it down to one element first.

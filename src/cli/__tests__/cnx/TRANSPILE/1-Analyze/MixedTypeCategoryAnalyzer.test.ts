@@ -332,6 +332,28 @@ describe("MixedTypeCategoryAnalyzer", () => {
       expect(errors).toHaveLength(1);
     });
 
+    it("helps with a cast, not a bit range, for a member of the enum being declared", () => {
+      const errors = analyze(`
+        u32 BASE <- 0x10;
+        enum Perm { READ <- 1, X <- Perm.READ + BASE }
+      `);
+      expect(errors).toHaveLength(1);
+      expect(errors[0].helpText).toContain("with a cast");
+      expect(errors[0].helpText).not.toContain("bit indexing");
+    });
+
+    it("does not report a pair Rule 10.1 owns again at the outer operator", () => {
+      const errors = analyze(`
+        enum EMode { IDLE }
+        void main() {
+          u32 a <- 1;
+          EMode c <- EMode.IDLE;
+          u32 r <- (a + c) + a;
+        }
+      `);
+      expect(errors).toEqual([]);
+    });
+
     it("still flags a uniform compound operand mixed against an outer operand", () => {
       // (a + b) is u32 + u32 (uniform unsigned); combining it with the signed `c`
       // is a real Rule 10.4 violation that must still be caught at the outer `+`.
@@ -523,17 +545,6 @@ describe("MixedTypeCategoryAnalyzer", () => {
 
     it.each([
       [
-        "an unsigned plus an enum",
-        "u32 r <- a + c;",
-        "unsigned and enum Color",
-      ],
-      ["two different enums", "u32 r <- c + sh;", "enum Color and enum Shape"],
-      [
-        "a character literal times an unsigned",
-        "u32 r <- a * 'A';",
-        "unsigned and character",
-      ],
-      [
         "an unsigned compared with a character literal",
         "bool r <- ch = 'A';",
         "unsigned and character",
@@ -557,6 +568,17 @@ describe("MixedTypeCategoryAnalyzer", () => {
       const errors = analyze(`${ENUMS} void main() { ${LOCALS} ${body} }`);
       expect(errors).toHaveLength(1);
       expect(errors[0].message).toContain(`(${pair})`);
+    });
+
+    // #1191: an operand its operator does not take is Rule 10.1's (E0925),
+    // so the mix it is part of is not reported a second time here
+    it.each([
+      ["an unsigned plus an enum", "u32 r <- a + c;"],
+      ["two different enums", "u32 r <- c + sh;"],
+      ["a character literal times an unsigned", "u32 r <- a * 'A';"],
+    ])("leaves %s to Rule 10.1", (_label, body) => {
+      const errors = analyze(`${ENUMS} void main() { ${LOCALS} ${body} }`);
+      expect(errors).toHaveLength(0);
     });
 
     it.each([
@@ -701,5 +723,30 @@ describe("MixedTypeCategoryAnalyzer -- an integer beside an unreadable header ma
     ],
   ])("names the site for %s", (_label, body, expected) => {
     expect(analyzeWithMacro(body)).toEqual([expected]);
+  });
+});
+
+describe("MixedTypeCategoryAnalyzer -- a member of the enum being declared", () => {
+  it("is an i32, so it does not mix with a u32 (E0810)", () => {
+    const errors = analyze(
+      "u32 BASE <- 0x10; enum Perm { READ <- 1, X <- Perm.READ + BASE }",
+    );
+    expect(errors.map((e) => `${e.code} ${e.message}`)).toEqual([
+      "E0810 Binary operator combines operands of different essential type categories (signed and unsigned)",
+    ]);
+  });
+
+  it("is an i32 inside a scope too", () => {
+    const errors = analyze(
+      "u32 BASE <- 0x10; scope Motor { public enum Perm { READ <- 1, X <- Perm.READ + BASE } }",
+    );
+    expect(errors.map((e) => e.code)).toEqual(["E0810"]);
+  });
+
+  it("combines with its own enum's members silently", () => {
+    const errors = analyze(
+      "scope Motor { public enum Perm { READ <- 1, WRITE <- 2, RW <- Perm.READ | Perm.WRITE } }",
+    );
+    expect(errors).toEqual([]);
   });
 });

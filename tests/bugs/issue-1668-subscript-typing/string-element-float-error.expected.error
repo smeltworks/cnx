@@ -1,2 +1,2 @@
-8:20 error[E0810]: Binary operator combines operands of different essential type categories (character and floating)
-       help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Convert one operand explicitly, e.g. with a cast (ADR-024).
+8:13 error[E0925]: Operator '*' is not valid on a char
+       help: MISRA C:2012 Rule 10.1: a char takes only binary '+' and '-' and the comparisons. Cast it to an integer type first, e.g. (u8)value.

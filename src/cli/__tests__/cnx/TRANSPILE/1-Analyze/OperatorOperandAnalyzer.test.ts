@@ -1,18 +1,21 @@
 /**
- * Unit tests for BooleanOperandAnalyzer
+ * Unit tests for OperatorOperandAnalyzer
  * Tests detection of arithmetic, bitwise, shift and relational operators
  * applied to an essentially Boolean operand
  * (MISRA C:2012 Rule 10.1, Issue #1183).
  */
 import { describe, it, expect } from "vitest";
-import BooleanOperandAnalyzer from "../../../../../cnx/TRANSPILE/1-Analyze/BooleanOperandAnalyzer";
+import OperatorOperandAnalyzer from "../../../../../cnx/TRANSPILE/1-Analyze/OperatorOperandAnalyzer";
 import testAnalysisContextFor from "./testAnalysisContextFor";
+import SymbolTable from "../../../../../cnx/PARSE/3-Declare/SymbolTable";
+import TestSourceSpan from "../../../../../cnx/types/__testUtils__/testSourceSpan";
+import ESourceLanguage from "../../../../../cnx/utils/types/ESourceLanguage";
 
 function analyze(source: string) {
   const { syntax, context } = testAnalysisContextFor(source, {
     cppMode: false,
   });
-  return new BooleanOperandAnalyzer(context).analyze(syntax);
+  return new OperatorOperandAnalyzer(context).analyze(syntax);
 }
 
 /** Wrap a statement in a function with two bool locals and an integer local. */
@@ -27,7 +30,7 @@ function inMain(statement: string) {
   `;
 }
 
-describe("BooleanOperandAnalyzer", () => {
+describe("OperatorOperandAnalyzer", () => {
   describe("bool operands of guarded operators (rejected)", () => {
     it.each([
       ["+", "bool c <- a + b;"],
@@ -40,7 +43,7 @@ describe("BooleanOperandAnalyzer", () => {
       expect(errors).toHaveLength(1);
       expect(errors[0].code).toBe("E0807");
       expect(errors[0].message).toBe(
-        `Operator '${operator}' is not valid on a bool operand`,
+        `Operator '${operator}' is not valid on a bool`,
       );
     });
 
@@ -301,14 +304,15 @@ describe("BooleanOperandAnalyzer", () => {
       expect(errors[0].message).toContain("'flags[0][1]'");
     });
 
-    it("does not treat a partially indexed bool array as a bool", () => {
-      // flags[0] on a bool[2][3] is bool[3] -- an array, not a bool. Arithmetic
-      // on it is a separate defect, tracked as #1191.
+    it("reports a partially indexed bool array as an array, not a bool", () => {
+      // flags[0] on a bool[2][3] is bool[3] -- an array, not a bool (#1191)
       const errors = analyze(`
         bool[2][3] flags;
         void main() { u8 c <- flags[0] / flags[1]; }
       `);
-      expect(errors).toHaveLength(0);
+      expect(errors.map((e) => [e.code, e.message])).toEqual([
+        ["E0925", "Operator '/' is not valid on an array"],
+      ]);
     });
 
     it("does not flag an integer array element", () => {
@@ -437,13 +441,13 @@ describe("BooleanOperandAnalyzer", () => {
 
 // #1991: read off 1.2's syntax, so which operand a report names is asserted
 // by where it lands.
-describe("BooleanOperandAnalyzer -- reports the bool operand", () => {
+describe("OperatorOperandAnalyzer -- reports the bool operand", () => {
   const where = (line: string) => {
     const { syntax, context } = testAnalysisContextFor(
       `void main() {\n    bool f <- true;\n    u8 n <- 1;\n${line}\n}`,
       { cppMode: false },
     );
-    return new BooleanOperandAnalyzer(context)
+    return new OperatorOperandAnalyzer(context)
       .analyze(syntax)
       .map((e) => [e.code, e.span.line, e.span.column]);
   };
@@ -453,5 +457,191 @@ describe("BooleanOperandAnalyzer -- reports the bool operand", () => {
     ["on the right", "    u8 r <- n + f;", 16],
   ])("names the bool %s", (_side, line, column) => {
     expect(where(line)).toEqual([["E0807", 4, column]]);
+  });
+});
+
+// #1191: each operator takes a set of operand types; anything else is E0925
+describe("OperatorOperandAnalyzer -- operands outside the operator's set", () => {
+  const PRELUDE = `
+    enum EMode { IDLE, RUN }
+    struct Point { u8 x; }
+    bitmap8 Flags { a, b, c, d, e, f, g, h }
+    Flags fl;
+    u8[3] row;
+    u8[2][3] grid;
+    Point p;
+    string<4> s <- "ab";
+  `;
+  const run = (body: string) =>
+    analyze(
+      `${PRELUDE} void main() { f32 k <- 1.5; EMode m <- EMode.RUN; u8 n <- 1; mut u8 t <- 0; ${body} }`,
+    ).map((e) => [e.code, e.message]);
+
+  it.each([
+    ["a whole array", "u8 r <- row + 1;", "+", "an array"],
+    ["a partly indexed array", "u8 r <- grid[0] + grid[1];", "+", "an array"],
+    ["a struct", "u8 r <- p + 1;", "+", "a struct"],
+    ["a string under <", "bool r <- s < s;", "<", "a string"],
+    ["a float under <<", "u32 r <- k << 1;", "<<", "a float"],
+    ["a float under &", "u32 r <- k & 1;", "&", "a float"],
+    ["a float under unary ~", "u32 r <- ~k;", "~", "a float"],
+    ["a float as a shift amount", "u32 r <- 1 << k;", "<<", "a float"],
+    ["an enum under +", "u8 r <- m + 1;", "+", "an enum"],
+    ["a char literal under *", "u8 r <- n * 'A';", "*", "a char"],
+    ["an array in a compound value", "t +<- row;", "+<-", "an array"],
+  ])("rejects %s", (_label, body, operator, noun) => {
+    expect(run(body)).toEqual([
+      ["E0925", `Operator '${operator}' is not valid on ${noun}`],
+    ]);
+  });
+
+  it.each([
+    ["an element", "u8 r <- grid[0][1] + row[2];"],
+    ["a field", "u8 r <- p.x + 1;"],
+    ["a whole bitmap (ADR-034)", "u8 r <- fl + 1;"],
+    ["string concatenation", "string<8> r <- s + s;"],
+    ["float arithmetic", "f32 r <- k * 2.0;"],
+    ["float comparison", "bool r <- k < 2.0;"],
+    ["enum comparison", "bool r <- m < EMode.RUN;"],
+    ["char plus an integer", "u8 r <- 'A' + n;"],
+    ["a bit range", "u8 r <- n[0, 4] + 1;"],
+    ["unsuffixed literals", "u8 r <- ~5 + (3 << 1);"],
+  ])("takes %s", (_label, body) => {
+    expect(run(body)).toEqual([]);
+  });
+
+  it("leaves a whole-array compound target to E0857", () => {
+    expect(run("row +<- 1;")).toEqual([]);
+  });
+
+  it("takes an unsized string parameter under +, not under <", () => {
+    const codes = (body: string) =>
+      analyze(`void g(string p) { ${body} }`).map((e) => [e.code, e.message]);
+    expect(codes('string<8> r <- p + "a";')).toEqual([]);
+    expect(codes("bool r <- p < p;")).toEqual([
+      ["E0925", "Operator '<' is not valid on a string"],
+    ]);
+  });
+
+  it("leaves a cstring operand as it was (#2348)", () => {
+    const errors = analyze(
+      'mut string<8> h <- "ab"; void g() { cstring c <- h; cstring d <- c + 1; }',
+    );
+    expect(errors).toEqual([]);
+  });
+
+  it("reads a member of the enum being declared as an i32 (ADR-017)", () => {
+    const errors = analyze(
+      "enum EPerm { READ <- 1, WRITE <- 2, RW <- EPerm.READ | EPerm.WRITE }",
+    );
+    expect(errors).toEqual([]);
+  });
+
+  it.each([
+    ["by its name", "RW <- Perm.READ | Perm.WRITE"],
+    ["through this", "RW <- this.Perm.READ | this.Perm.WRITE"],
+  ])(
+    "reads a member of a scope's enum being declared as an i32, %s",
+    (_label, member) => {
+      const errors = analyze(
+        `scope Motor { public enum Perm { READ <- 1, WRITE <- 2, ${member} } }`,
+      );
+      expect(errors).toEqual([]);
+    },
+  );
+
+  it("leaves a C header enum as it was (#2352)", () => {
+    const symbolTable = new SymbolTable();
+    const at = {
+      sourceFile: "api.h",
+      span: TestSourceSpan.at(1),
+      sourceLanguage: ESourceLanguage.C,
+      visibility: "public",
+    } as const;
+    symbolTable.addCSymbol({
+      kind: "type",
+      name: "perm_t",
+      type: "enum {P_READ,P_WRITE}",
+      ...at,
+    });
+    symbolTable.addCSymbol({
+      kind: "variable",
+      name: "p",
+      type: "perm_t",
+      ...at,
+    });
+    const { syntax, context } = testAnalysisContextFor(
+      "void main() { u32 a <- 1; u32 r <- a + p; u32 m <- p | 1; }",
+      { cppMode: false, symbolTable },
+    );
+    expect(new OperatorOperandAnalyzer(context).analyze(syntax)).toEqual([]);
+  });
+
+  it.each([
+    [
+      "a ternary's array arm",
+      "u8 r <- ((n = 1) ? row : row) + 1;",
+      "+",
+      "an array",
+    ],
+    ["a string literal under <", 'bool r <- "ab" < "cd";', "<", "a string"],
+    ["a concatenation under <", "bool r <- (s + s) < s;", "<", "a string"],
+    ["an enum composite under +", "u8 r <- (m | m) + 1;", "|", "an enum"],
+  ])("rejects %s once (#2347 review)", (_label, body, operator, noun) => {
+    expect(run(body)).toEqual([
+      ["E0925", `Operator '${operator}' is not valid on ${noun}`],
+    ]);
+  });
+
+  it.each([
+    ["-row + 1", "u8 r <- -row + 1;"],
+    ["~k & 1", "u32 r <- ~k & 1;"],
+    ["n + row + n", "u8 r <- n + row + n;"],
+  ])("reports %s once: one mistake, one place", (_label, body) => {
+    expect(run(body)).toHaveLength(1);
+  });
+
+  it.each([
+    ["a ternary's number arms", "u8 r <- ((n = 1) ? n : 2) + 1;"],
+    ["a number composite", "u8 r <- (n + 1) * 2;"],
+    ["concatenated literals", 'string<8> r <- "ab" + "cd";'],
+    ["an enum compound target (#2264)", "mut EMode e <- EMode.IDLE; e +<- 1;"],
+  ])("takes %s", (_label, body) => {
+    expect(run(body)).toEqual([]);
+  });
+
+  it("reports a bool inside a composite once, as E0807", () => {
+    const errors = analyze(
+      inMain("u8 r <- (a + 1) * 2; mut u8 t <- 0; t +<- (a + 1);"),
+    );
+    expect(errors.map((e) => e.code)).toEqual(["E0807", "E0807"]);
+  });
+
+  it("judges a compound value before its target, as main does", () => {
+    const errors = analyze(
+      "enum EMode { IDLE } void main() { bool f <- true; mut EMode m <- EMode.IDLE; m +<- f; }",
+    );
+    expect(errors.map((e) => e.code)).toEqual(["E0807"]);
+  });
+
+  it("takes a combination of the enum being declared's members (ADR-017)", () => {
+    const errors = analyze(
+      "enum EPerm { READ <- 1, WRITE <- 2, ALL <- (EPerm.READ | EPerm.WRITE) + 1 }",
+    );
+    expect(errors).toEqual([]);
+  });
+
+  it("does not carry the enum being declared past it, with it declared last", () => {
+    const errors = analyze(
+      "void main() { mut u8 n <- 0; n +<- Perm.READ; } enum Perm { READ <- 1 }",
+    );
+    expect(errors.map((e) => e.code)).toEqual(["E0925"]);
+  });
+
+  it("still rejects another enum's member in a member value", () => {
+    const errors = analyze(
+      "enum EMode { IDLE, RUN } enum EPerm { READ <- 1, RW <- EMode.RUN | 2 }",
+    );
+    expect(errors.map((e) => e.code)).toEqual(["E0925"]);
   });
 });

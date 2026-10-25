@@ -3,7 +3,7 @@ import IFloatLiteralParts from "../types/IFloatLiteralParts";
 /**
  * Utility class for analyzing literal values from their written text.
  *
- * Extracted from DivisionByZeroAnalyzer and FloatModuloAnalyzer
+ * Extracted from DivisionByZeroAnalyzer and the former FloatModuloAnalyzer
  * to eliminate duplicate literal checking code.
  */
 

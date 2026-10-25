@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-912 fixture(s) assert a diagnostic; 898 carry a code.
+927 fixture(s) assert a diagnostic; 913 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -134,6 +134,9 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-017/bare-enum-field-slice-target-error.test.cnx                                                 | E0424                             |
 | tests/adr-017/bare-enum-slice-target-error.test.cnx                                                       | E0424                             |
 | tests/adr-017/bare-enum-uncovered-arms-error.test.cnx                                                     | E0424                             |
+| tests/adr-017/enum-arithmetic-contexts.test.cnx                                                           | E0925                             |
+| tests/adr-017/enum-arithmetic-imported-direct.test.cnx                                                    | E0925                             |
+| tests/adr-017/enum-arithmetic-imported-transitive.test.cnx                                                | E0925                             |
 | tests/adr-017/enum-bare-in-array-dim.test.cnx                                                             | E0424                             |
 | tests/adr-017/enum-bare-in-comparison.test.cnx                                                            | E0424                             |
 | tests/adr-017/enum-bare-in-for-header-imported-direct.test.cnx                                            | E0424                             |
@@ -570,6 +573,18 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1183-bool-operand/bool-valued-expression-operand.test.cnx                                | E0807                             |
 | tests/bugs/issue-1190-cross-file-private-member/cross-file-private-const.test.cnx                         | E0436                             |
 | tests/bugs/issue-1190-cross-file-private-member/transitive-private-const.test.cnx                         | E0436                             |
+| tests/bugs/issue-1191-non-scalar-operand/array-operand.test.cnx                                           | E0925                             |
+| tests/bugs/issue-1191-non-scalar-operand/char-operand.test.cnx                                            | E0925                             |
+| tests/bugs/issue-1191-non-scalar-operand/enum-declared-last.test.cnx                                      | E0925                             |
+| tests/bugs/issue-1191-non-scalar-operand/enum-member-arithmetic.test.cnx                                  | E0925                             |
+| tests/bugs/issue-1191-non-scalar-operand/enum-member-shift.test.cnx                                       | E0805                             |
+| tests/bugs/issue-1191-non-scalar-operand/enum-member-value-mixed.test.cnx                                 | E0810                             |
+| tests/bugs/issue-1191-non-scalar-operand/enum-operand.test.cnx                                            | E0925                             |
+| tests/bugs/issue-1191-non-scalar-operand/float-bitwise-operand.test.cnx                                   | E0925                             |
+| tests/bugs/issue-1191-non-scalar-operand/header-struct-operand.test.cnx                                   | E0925                             |
+| tests/bugs/issue-1191-non-scalar-operand/rule-10-1-before-10-4.test.cnx                                   | E0925                             |
+| tests/bugs/issue-1191-non-scalar-operand/string-relational.test.cnx                                       | E0925                             |
+| tests/bugs/issue-1191-non-scalar-operand/struct-operand.test.cnx                                          | E0925                             |
 | tests/bugs/issue-1195-parenthesized-comparison/bracketed-call-operand-error.test.cnx                      | E0702                             |
 | tests/bugs/issue-1195-parenthesized-comparison/parenthesized-bare-bool-error.test.cnx                     | E0701                             |
 | tests/bugs/issue-1195-parenthesized-comparison/parenthesized-call-error.test.cnx                          | E0702                             |
@@ -715,7 +730,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1668-operand-typing/shift-operand-shapes.test.cnx                                        | E0805, E0873                      |
 | tests/bugs/issue-1668-operand-typing/slice-assign-sites.test.cnx                                          | E0860, E0861                      |
 | tests/bugs/issue-1668-param-dimension/hex-param-bounds.test.cnx                                           | E0854                             |
-| tests/bugs/issue-1668-subscript-typing/string-element-float-error.test.cnx                                | E0810                             |
+| tests/bugs/issue-1668-subscript-typing/string-element-float-error.test.cnx                                | E0925                             |
 | tests/bugs/issue-1668-targets/conflicting-pragmas.test.cnx                                                | E0511                             |
 | tests/bugs/issue-1668-targets/inline-bad-values.test.cnx                                                  | E0513                             |
 | tests/bugs/issue-1668-targets/inline-incomplete.test.cnx                                                  | E0514                             |

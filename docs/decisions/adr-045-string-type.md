@@ -270,6 +270,17 @@ string<1> ch <- source[0];    // Sugar for source[0, 1] -> "H"
 
 **`s[0]` is equivalent to `s[0, 1]`** - both return a `string<1>` containing the character at that position.
 
+### Character Operands (MISRA C:2012 Rule 10.1)
+
+A character -- a string element, a char literal, a C `char` -- takes only binary `+` and `-` and the comparisons. Under `*`, `/`, `%`, `&`, `|`, `^`, `<<`, `>>`, a prefix `-` or `~`, or the compound form of one of these, it is E0925; a cast to an integer type is the fix (#2347 review, owner ruling 2026-10-25: "MISRA always wins, so cast required as per 10.1").
+
+```cnx
+string<8> s <- "A1";
+u8 hi <- s[0] >> 4;        // E0925
+u8 ok <- (u8)s[0] >> 4;    // OK
+u8 d <- s[0] - '0';        // OK: binary - takes a char
+```
+
 ### Bounds Checking (Capacity-Based)
 
 Substring bounds are checked against the **source capacity**, not the current content length. This ensures:

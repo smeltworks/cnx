@@ -1,0 +1,14 @@
+// test-error
+// E0925: a struct is not a number
+
+struct Point {
+    u8 x;
+}
+
+Point p;
+
+void main() {
+    u8 a <- p + 1;
+    bool b <- p < p;
+    u8 ok <- p.x + 1;
+}
