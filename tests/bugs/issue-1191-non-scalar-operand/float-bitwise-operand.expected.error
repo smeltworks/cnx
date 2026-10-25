@@ -1,16 +1,16 @@
-6:13 error[E0925]: Operator '<<' is not valid on a float operand
+6:13 error[E0925]: Operator '<<' is not valid on a float
        help: MISRA C:2012 Rule 10.1: shift and bitwise operators take integers only.
-7:13 error[E0925]: Operator '>>' is not valid on a float operand
+7:13 error[E0925]: Operator '>>' is not valid on a float
        help: MISRA C:2012 Rule 10.1: shift and bitwise operators take integers only.
-8:13 error[E0925]: Operator '&' is not valid on a float operand
+8:13 error[E0925]: Operator '&' is not valid on a float
        help: MISRA C:2012 Rule 10.1: shift and bitwise operators take integers only.
-9:13 error[E0925]: Operator '~' is not valid on a float operand
+9:13 error[E0925]: Operator '~' is not valid on a float
        help: MISRA C:2012 Rule 10.1: shift and bitwise operators take integers only.
-10:18 error[E0925]: Operator '<<' is not valid on a float operand
+10:18 error[E0925]: Operator '<<' is not valid on a float
        help: MISRA C:2012 Rule 10.1: shift and bitwise operators take integers only.
-11:13 error[E0925]: Operator '|' is not valid on a float operand
+11:13 error[E0925]: Operator '|' is not valid on a float
        help: MISRA C:2012 Rule 10.1: shift and bitwise operators take integers only.
-12:13 error[E0925]: Operator '^' is not valid on a float operand
+12:13 error[E0925]: Operator '^' is not valid on a float
        help: MISRA C:2012 Rule 10.1: shift and bitwise operators take integers only.
-18:4 error[E0925]: Operator '<<<-' is not valid on a float operand
+18:4 error[E0925]: Operator '<<<-' is not valid on a float
        help: MISRA C:2012 Rule 10.1: a compound target cannot be cast. Write the read and the write out separately, casting the read, e.g. x <- (u8)x * 2.

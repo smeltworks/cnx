@@ -10,5 +10,5 @@ bool a <- true;
 bool b <- false;
 
 void main() {
-    bool c <- a / b; // E0807: '/' is not valid on a bool operand
+    bool c <- a / b; // E0807: '/' is not valid on a bool
 }

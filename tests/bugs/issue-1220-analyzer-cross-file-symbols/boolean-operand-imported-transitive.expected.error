@@ -1,8 +1,8 @@
-6:17 error[E0807]: Operator '+' is not valid on a bool operand
+6:17 error[E0807]: Operator '+' is not valid on a bool
        help: MISRA C:2012 Rule 10.1: a bool is not a number. Use the logical operators (&&, ||, !) to combine flags, or '=' / '!=' to compare them.
-9:15 error[E0807]: Operator '+' is not valid on a bool operand
+9:15 error[E0807]: Operator '+' is not valid on a bool
        help: MISRA C:2012 Rule 10.1: a bool is not a number. Use the logical operators (&&, ||, !) to combine flags, or '=' / '!=' to compare them.
-14:21 error[E0807]: Operator '+' is not valid on a bool operand
+14:21 error[E0807]: Operator '+' is not valid on a bool
        help: MISRA C:2012 Rule 10.1: a bool is not a number. Use the logical operators (&&, ||, !) to combine flags, or '=' / '!=' to compare them.
-17:19 error[E0807]: Operator '+' is not valid on a bool operand
+17:19 error[E0807]: Operator '+' is not valid on a bool
        help: MISRA C:2012 Rule 10.1: a bool is not a number. Use the logical operators (&&, ||, !) to combine flags, or '=' / '!=' to compare them.

@@ -99,13 +99,13 @@ type TRejection =
 const NOUNS: Readonly<
   Record<Exclude<TRejection, "bool" | "floatModulo">, string>
 > = {
-  array: "an array operand",
-  floating: "a float operand",
-  character: "a char operand",
-  enum: "an enum operand",
-  string: "a string operand",
-  struct: "a struct operand",
-  other: "this operand",
+  array: "an array",
+  floating: "a float",
+  character: "a char",
+  enum: "an enum",
+  string: "a string",
+  struct: "a struct",
+  other: "this value",
 };
 
 const HELP: Readonly<
@@ -428,7 +428,7 @@ class OperatorOperandAnalyzer {
       this.errors.push({
         code: "E0807",
         span,
-        message: `Operator '${operator}' is not valid on a bool operand`,
+        message: `Operator '${operator}' is not valid on a bool`,
         helpText:
           "MISRA C:2012 Rule 10.1: a bool is not a number. Use the logical operators " +
           "(&&, ||, !) to combine flags, or '=' / '!=' to compare them.",

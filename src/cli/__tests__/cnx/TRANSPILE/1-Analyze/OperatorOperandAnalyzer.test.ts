@@ -43,7 +43,7 @@ describe("OperatorOperandAnalyzer", () => {
       expect(errors).toHaveLength(1);
       expect(errors[0].code).toBe("E0807");
       expect(errors[0].message).toBe(
-        `Operator '${operator}' is not valid on a bool operand`,
+        `Operator '${operator}' is not valid on a bool`,
       );
     });
 
@@ -311,7 +311,7 @@ describe("OperatorOperandAnalyzer", () => {
         void main() { u8 c <- flags[0] / flags[1]; }
       `);
       expect(errors.map((e) => [e.code, e.message])).toEqual([
-        ["E0925", "Operator '/' is not valid on an array operand"],
+        ["E0925", "Operator '/' is not valid on an array"],
       ]);
     });
 
@@ -478,22 +478,17 @@ describe("OperatorOperandAnalyzer -- operands outside the operator's set", () =>
     ).map((e) => [e.code, e.message]);
 
   it.each([
-    ["a whole array", "u8 r <- row + 1;", "+", "an array operand"],
-    [
-      "a partly indexed array",
-      "u8 r <- grid[0] + grid[1];",
-      "+",
-      "an array operand",
-    ],
-    ["a struct", "u8 r <- p + 1;", "+", "a struct operand"],
-    ["a string under <", "bool r <- s < s;", "<", "a string operand"],
-    ["a float under <<", "u32 r <- k << 1;", "<<", "a float operand"],
-    ["a float under &", "u32 r <- k & 1;", "&", "a float operand"],
-    ["a float under unary ~", "u32 r <- ~k;", "~", "a float operand"],
-    ["a float as a shift amount", "u32 r <- 1 << k;", "<<", "a float operand"],
-    ["an enum under +", "u8 r <- m + 1;", "+", "an enum operand"],
-    ["a char literal under *", "u8 r <- n * 'A';", "*", "a char operand"],
-    ["an array in a compound value", "t +<- row;", "+<-", "an array operand"],
+    ["a whole array", "u8 r <- row + 1;", "+", "an array"],
+    ["a partly indexed array", "u8 r <- grid[0] + grid[1];", "+", "an array"],
+    ["a struct", "u8 r <- p + 1;", "+", "a struct"],
+    ["a string under <", "bool r <- s < s;", "<", "a string"],
+    ["a float under <<", "u32 r <- k << 1;", "<<", "a float"],
+    ["a float under &", "u32 r <- k & 1;", "&", "a float"],
+    ["a float under unary ~", "u32 r <- ~k;", "~", "a float"],
+    ["a float as a shift amount", "u32 r <- 1 << k;", "<<", "a float"],
+    ["an enum under +", "u8 r <- m + 1;", "+", "an enum"],
+    ["a char literal under *", "u8 r <- n * 'A';", "*", "a char"],
+    ["an array in a compound value", "t +<- row;", "+<-", "an array"],
   ])("rejects %s", (_label, body, operator, noun) => {
     expect(run(body)).toEqual([
       ["E0925", `Operator '${operator}' is not valid on ${noun}`],
@@ -524,7 +519,7 @@ describe("OperatorOperandAnalyzer -- operands outside the operator's set", () =>
       analyze(`void g(string p) { ${body} }`).map((e) => [e.code, e.message]);
     expect(codes('string<8> r <- p + "a";')).toEqual([]);
     expect(codes("bool r <- p < p;")).toEqual([
-      ["E0925", "Operator '<' is not valid on a string operand"],
+      ["E0925", "Operator '<' is not valid on a string"],
     ]);
   });
 
@@ -587,26 +582,11 @@ describe("OperatorOperandAnalyzer -- operands outside the operator's set", () =>
       "a ternary's array arm",
       "u8 r <- ((n = 1) ? row : row) + 1;",
       "+",
-      "an array operand",
+      "an array",
     ],
-    [
-      "a string literal under <",
-      'bool r <- "ab" < "cd";',
-      "<",
-      "a string operand",
-    ],
-    [
-      "a concatenation under <",
-      "bool r <- (s + s) < s;",
-      "<",
-      "a string operand",
-    ],
-    [
-      "an enum composite under +",
-      "u8 r <- (m | m) + 1;",
-      "|",
-      "an enum operand",
-    ],
+    ["a string literal under <", 'bool r <- "ab" < "cd";', "<", "a string"],
+    ["a concatenation under <", "bool r <- (s + s) < s;", "<", "a string"],
+    ["an enum composite under +", "u8 r <- (m | m) + 1;", "|", "an enum"],
   ])("rejects %s once (#2347 review)", (_label, body, operator, noun) => {
     expect(run(body)).toEqual([
       ["E0925", `Operator '${operator}' is not valid on ${noun}`],
