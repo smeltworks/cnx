@@ -600,7 +600,7 @@ describe("MixedTypeCategoryAnalyzer", () => {
         ...at,
       });
       const errors = analyze(
-        "void main() { u32 a <- 1; bool r <- a < cColor; }",
+        "void main() { u32 a <- 1; u32 r <- a + cColor; }",
         symbolTable,
       );
       expect(errors).toHaveLength(1);
@@ -634,7 +634,7 @@ describe("MixedTypeCategoryAnalyzer", () => {
         symbolTable.addCSymbol({ kind: "variable", name, type, ...at });
       }
       const errors = analyze(
-        "void main() { bool same <- cColor = cAlias; u32 a <- 1; bool r <- a < cAlias; }",
+        "void main() { bool same <- cColor = cAlias; u32 a <- 1; u32 r <- a + cAlias; }",
         symbolTable,
       );
       expect(errors).toHaveLength(1);

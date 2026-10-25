@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-917 fixture(s) assert a diagnostic; 903 carry a code.
+918 fixture(s) assert a diagnostic; 904 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -571,6 +571,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1190-cross-file-private-member/cross-file-private-const.test.cnx                         | E0436                             |
 | tests/bugs/issue-1190-cross-file-private-member/transitive-private-const.test.cnx                         | E0436                             |
 | tests/bugs/issue-1191-non-scalar-operand/array-operand.test.cnx                                           | E0925                             |
+| tests/bugs/issue-1191-non-scalar-operand/enum-member-value-mixed.test.cnx                                 | E0810                             |
 | tests/bugs/issue-1191-non-scalar-operand/enum-operand.test.cnx                                            | E0925                             |
 | tests/bugs/issue-1191-non-scalar-operand/float-bitwise-operand.test.cnx                                   | E0925                             |
 | tests/bugs/issue-1191-non-scalar-operand/rule-10-1-before-10-4.test.cnx                                   | E0925                             |

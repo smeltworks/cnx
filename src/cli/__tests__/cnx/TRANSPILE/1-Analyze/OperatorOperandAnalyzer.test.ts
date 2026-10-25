@@ -7,6 +7,9 @@
 import { describe, it, expect } from "vitest";
 import OperatorOperandAnalyzer from "../../../../../cnx/TRANSPILE/1-Analyze/OperatorOperandAnalyzer";
 import testAnalysisContextFor from "./testAnalysisContextFor";
+import SymbolTable from "../../../../../cnx/PARSE/3-Declare/SymbolTable";
+import TestSourceSpan from "../../../../../cnx/types/__testUtils__/testSourceSpan";
+import ESourceLanguage from "../../../../../cnx/utils/types/ESourceLanguage";
 
 function analyze(source: string) {
   const { syntax, context } = testAnalysisContextFor(source, {
@@ -551,6 +554,33 @@ describe("OperatorOperandAnalyzer -- operands outside the operator's set", () =>
       expect(errors).toEqual([]);
     },
   );
+
+  it("leaves a C header enum as it was (#2352)", () => {
+    const symbolTable = new SymbolTable();
+    const at = {
+      sourceFile: "api.h",
+      span: TestSourceSpan.at(1),
+      sourceLanguage: ESourceLanguage.C,
+      visibility: "public",
+    } as const;
+    symbolTable.addCSymbol({
+      kind: "type",
+      name: "perm_t",
+      type: "enum {P_READ,P_WRITE}",
+      ...at,
+    });
+    symbolTable.addCSymbol({
+      kind: "variable",
+      name: "p",
+      type: "perm_t",
+      ...at,
+    });
+    const { syntax, context } = testAnalysisContextFor(
+      "void main() { u32 a <- 1; u32 r <- a + p; u32 m <- p | 1; }",
+      { cppMode: false, symbolTable },
+    );
+    expect(new OperatorOperandAnalyzer(context).analyze(syntax)).toEqual([]);
+  });
 
   it("still rejects another enum's member in a member value", () => {
     const errors = analyze(

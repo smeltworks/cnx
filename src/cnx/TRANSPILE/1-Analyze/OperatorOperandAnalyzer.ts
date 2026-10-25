@@ -259,6 +259,9 @@ class OperatorOperandAnalyzer {
       return OperatorOperandAnalyzer.uncategorized(operator, operand, context);
     }
     if (admits.has(category)) return null;
+    // A C header's enum is not ADR-017's: which operators take one is open
+    // (#2352), so this rule admits it, as before, until that is decided
+    if (category === "enum" && operand.enumTypeName === null) return null;
     switch (category) {
       case "floating":
         return operator === "%" ? "floatModulo" : "floating";
