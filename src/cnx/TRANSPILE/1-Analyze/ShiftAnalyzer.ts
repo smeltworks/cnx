@@ -34,7 +34,6 @@ import TypeCheckUtils from "../../utils/TypeCheckUtils";
 import ProgramAccesses from "../../utils/ProgramAccesses";
 import CompoundOperator from "../../utils/CompoundOperator";
 import EnumMemberValue from "./EnumMemberValue";
-import ExpressionNodes from "../../utils/ExpressionNodes";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
@@ -190,10 +189,10 @@ class ShiftAnalyzer {
     this.errors = [];
     const check = new ShiftCheck(this, this.context);
 
-    for (const [part, enumBeingDeclared] of EnumMemberValue.parts(program)) {
-      for (const expr of ExpressionNodes.of(part)) {
-        if (expr.kind === "binary") check.checkLevel(expr, enumBeingDeclared);
-      }
+    for (const [expr, enumBeingDeclared] of EnumMemberValue.expressions(
+      program,
+    )) {
+      if (expr.kind === "binary") check.checkLevel(expr, enumBeingDeclared);
     }
     for (const site of ProgramAccesses.writes(program)) {
       check.checkAssignment(site);

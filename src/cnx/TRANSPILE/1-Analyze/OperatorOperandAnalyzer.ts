@@ -38,7 +38,6 @@ import CompoundOperator from "../../utils/CompoundOperator";
 import EnumMemberValue from "./EnumMemberValue";
 import ExpressionShape from "../../utils/ExpressionShape";
 import ForeignTypeFacts from "../../utils/ForeignTypeFacts";
-import ExpressionNodes from "../../utils/ExpressionNodes";
 import ProgramAccesses from "../../utils/ProgramAccesses";
 import SourceOrder from "../../utils/SourceOrder";
 import type IAnalysisContext from "./types/IAnalysisContext";
@@ -160,7 +159,15 @@ class OperatorOperandCheck {
    * reported at the offending operand -- `flag / other` is one mistake.
    * `operators[i]` joins operand `i` to `i + 1`.
    */
-  public checkLevel(
+  public checkExpression(
+    expr: TExpression,
+    enumBeingDeclared: string | null,
+  ): void {
+    if (expr.kind === "unary") this.checkUnary(expr, enumBeingDeclared);
+    if (expr.kind === "binary") this.checkLevel(expr, enumBeingDeclared);
+  }
+
+  private checkLevel(
     level: TBinaryExpression,
     enumBeingDeclared: string | null,
   ): void {
@@ -186,8 +193,10 @@ class OperatorOperandCheck {
     });
   }
 
-  public checkUnary(expr: TExpression, enumBeingDeclared: string | null): void {
-    if (expr.kind !== "unary") return;
+  private checkUnary(
+    expr: Extract<TExpression, { readonly kind: "unary" }>,
+    enumBeingDeclared: string | null,
+  ): void {
     const admits = UNARY.get(expr.operator);
     if (admits === undefined) return;
     const rejection = this.rejection(
@@ -393,11 +402,10 @@ class OperatorOperandAnalyzer {
     this.reportedAt.clear();
     const check = new OperatorOperandCheck(this, this.context);
 
-    for (const [part, enumBeingDeclared] of EnumMemberValue.parts(program)) {
-      for (const expr of ExpressionNodes.of(part)) {
-        check.checkUnary(expr, enumBeingDeclared);
-        if (expr.kind === "binary") check.checkLevel(expr, enumBeingDeclared);
-      }
+    for (const [expr, enumBeingDeclared] of EnumMemberValue.expressions(
+      program,
+    )) {
+      check.checkExpression(expr, enumBeingDeclared);
     }
     for (const site of ProgramAccesses.writes(program)) {
       check.checkAssignment(site);

@@ -6,6 +6,7 @@ enum Perm {
     READ <- 1,
     WRITE <- Perm.READ << 1,
 
+
     // Negative control: an unsuffixed literal has no category (ADR-052)
     EXEC <- 1 << 2
 }

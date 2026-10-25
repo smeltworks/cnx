@@ -9,12 +9,18 @@
 
 import DeclarationParts from "../../utils/DeclarationParts";
 import ScopeUtils from "../../utils/ScopeUtils";
+import ExpressionNodes from "../../utils/ExpressionNodes";
+import type TExpression from "../../types/syntax/TExpression";
 import type IOperandType from "../../types/IOperandType";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
 import type TSyntaxPart from "../../types/syntax/TSyntaxPart";
 
 type TEnumPart = readonly [part: TSyntaxPart, enumBeingDeclared: string | null];
+type TEnumExpression = readonly [
+  expr: TExpression,
+  enumBeingDeclared: string | null,
+];
 
 class EnumMemberValue {
   /**
@@ -22,9 +28,18 @@ class EnumMemberValue {
    * values it is part of, or null -- through scopes, where `Perm` in
    * `scope Motor` is `Motor__Perm`.
    */
-  static parts(program: IProgramSyntax): readonly TEnumPart[] {
+  private static parts(program: IProgramSyntax): readonly TEnumPart[] {
     return program.declarations.flatMap((member) =>
       EnumMemberValue.partsOf(member.declaration, ""),
+    );
+  }
+
+  /** Every expression node, outermost first, with its part's enum (see parts) */
+  static expressions(program: IProgramSyntax): readonly TEnumExpression[] {
+    return EnumMemberValue.parts(program).flatMap(([part, enumBeingDeclared]) =>
+      ExpressionNodes.of(part).map(
+        (expr): TEnumExpression => [expr, enumBeingDeclared],
+      ),
     );
   }
 

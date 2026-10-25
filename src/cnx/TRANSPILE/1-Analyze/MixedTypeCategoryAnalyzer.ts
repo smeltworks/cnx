@@ -59,7 +59,6 @@ import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TBinaryExpression from "../../types/syntax/TBinaryExpression";
 import EnumMemberValue from "./EnumMemberValue";
 import ProgramAccesses from "../../utils/ProgramAccesses";
-import ExpressionNodes from "../../utils/ExpressionNodes";
 import SourceOrder from "../../utils/SourceOrder";
 
 /**
@@ -384,13 +383,7 @@ class MixedTypeCategoryAnalyzer {
   public analyze(program: IProgramSyntax): IMixedTypeCategoryError[] {
     this.errors = [];
     const check = new MixedCategoryCheck(this, this.context);
-    const expressions = EnumMemberValue.parts(program).flatMap(
-      ([part, enumBeingDeclared]) =>
-        ExpressionNodes.of(part).map((expr): [TExpression, string | null] => [
-          expr,
-          enumBeingDeclared,
-        ]),
-    );
+    const expressions = EnumMemberValue.expressions(program);
 
     // Levels are met outermost first; checked innermost first, so a level
     // that is an operand of another has its category when that one asks
