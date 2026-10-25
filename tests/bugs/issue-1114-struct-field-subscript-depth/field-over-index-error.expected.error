@@ -1,0 +1,16 @@
+23:4 error[E0856]: too many subscripts on 'p.header': it is a scalar 'u8', so it allows at most 1
+       help: 0 for the array dimensions plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range 'p.header[start, width]'?
+24:4 error[E0856]: too many subscripts on 'p.bytes': it is a 1-dimensional 'u8' array, so it allows at most 2
+       help: 1 for the array dimension plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range 'p.bytes[start, width]'?
+25:4 error[E0856]: too many subscripts on 'p.inner.header': it is a scalar 'u8', so it allows at most 1
+       help: 0 for the array dimensions plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range 'p.inner.header[start, width]'?
+26:4 error[E0856]: too many subscripts on 'packets[1].header': it is a scalar 'u8', so it allows at most 1
+       help: 0 for the array dimensions plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range 'packets[1].header[start, width]'?
+30:12 error[E0856]: too many subscripts on 'p.header': it is a scalar 'u8', so it allows at most 1
+       help: 0 for the array dimensions plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range 'p.header[start, width]'?
+31:12 error[E0856]: too many subscripts on 'p.bytes': it is a 1-dimensional 'u8' array, so it allows at most 2
+       help: 1 for the array dimension plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range 'p.bytes[start, width]'?
+32:12 error[E0856]: too many subscripts on 'p.inner.header': it is a scalar 'u8', so it allows at most 1
+       help: 0 for the array dimensions plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range 'p.inner.header[start, width]'?
+33:12 error[E0856]: too many subscripts on 'packets[1].header': it is a scalar 'u8', so it allows at most 1
+       help: 0 for the array dimensions plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range 'packets[1].header[start, width]'?

@@ -13,8 +13,11 @@
  * not an array.
  *
  * Only integer and float bases are checked, as codegen did: a string is a char
- * array with its own rules, a bitmap rejects bracket indexing under E0883, and
- * a struct is reached through member access instead.
+ * array with its own rules and a bitmap rejects bracket indexing under E0883.
+ * A struct field is measured by the field's own declared shape, at whatever
+ * depth of the chain it is reached (#1114): checking only the root measured
+ * nothing past a `.name`, so `p.header[4][3]` was accepted and emitted C that
+ * subscripts a scalar.
  *
  * ## E0888: a float bit range needs somewhere to put the union
  *
@@ -41,14 +44,15 @@ import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
-import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
+import type TExpressionOf from "../../types/syntax/TExpressionOf";
+import type IChainStep from "../../types/IChainStep";
+import type IOperandType from "../../types/IOperandType";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import StatementNodes from "../../utils/StatementNodes";
 import TYPE_WIDTH from "../../types/TYPE_WIDTH";
 import OperandTyper from "../../utils/OperandTyper";
 import IBitAccessError from "./types/IBitAccessError";
-import TChainRoot from "../../types/TChainRoot";
 import RegisterAccessMode from "../../utils/RegisterAccessMode";
 import BitmapFieldStep from "../../utils/BitmapFieldStep";
 import type IAnalysisContext from "./types/IAnalysisContext";
@@ -64,42 +68,14 @@ class BitAccessCheck {
     return this.found;
   }
 
-  /**
-   * The chain's declared name, its root, and the subscripts after that name:
-   * `this.x[3]` is `x` under `this`, with `[3]` after it.
-   */
-  private static partsOf(expr: TExpression): {
-    name: string;
-    root: TChainRoot;
-    subscripts: readonly TPostfixOpSyntax[];
-  } | null {
-    if (expr.kind !== "postfix") return null;
-    const primary = expr.primary;
-    if (primary.kind === "identifier") {
-      return { name: primary.name, root: null, subscripts: expr.ops };
-    }
-    if (primary.kind !== "root") return null;
-    const first = expr.ops[0];
-    if (first?.kind !== "member") return null;
-    return {
-      name: first.name,
-      root: primary.root,
-      subscripts: expr.ops.slice(1),
-    };
-  }
-
   public checkExpression(expr: TExpression, inFunction: boolean): void {
     this.checkBitBounds(expr);
-    const parts = BitAccessCheck.partsOf(expr);
-    if (parts === null) return;
-    this.checkChain(parts, expr, inFunction);
+    this.checkChain(expr, inFunction);
   }
 
   public checkSite(site: IAssignmentSyntax): void {
     this.checkBitBounds(site.target);
-    const parts = BitAccessCheck.partsOf(site.target);
-    if (parts === null) return;
-    this.checkChain(parts, site.target, true);
+    this.checkChain(site.target, true);
     this.checkSingleEvaluation(site);
   }
 
@@ -144,62 +120,34 @@ class BitAccessCheck {
     );
   }
 
-  private checkChain(
-    parts: {
-      name: string;
-      root: TChainRoot;
-      subscripts: readonly TPostfixOpSyntax[];
-    },
-    at: TExpression,
-    inFunction: boolean,
-  ): void {
-    const declared =
-      OperandTyper.chainOf(at, this.context).steps[0]?.before ?? null;
-    if (declared === null) return; // not a declaration this pass can measure
-    const spelling =
-      parts.root === null ? parts.name : `${parts.root}.${parts.name}`;
-    const baseType = declared.typeName ?? "";
-    if (!inFunction) this.checkFloatRangeScope(spelling, at);
-    this.checkDepth(
-      parts.subscripts,
-      declared.dimensions.length,
-      baseType,
-      spelling,
-      at,
-    );
+  /**
+   * The typer types a chain's last `steps.length` operations; the ones before
+   * them name its head (`this.` and `global.` consume their first `.name`).
+   */
+  private checkChain(at: TExpression, inFunction: boolean): void {
+    if (at.kind !== "postfix") return;
+    const steps = OperandTyper.chainOf(at, this.context).steps;
+    if (!inFunction) this.checkFloatRangeScope(at, steps);
+    this.checkDepth(at, steps);
   }
 
   /**
    * E0888: a float bit RANGE read outside a function body. A single bit index
    * is not lowered through a union, so it is not restricted.
    */
-  private checkFloatRangeScope(name: string, at: TExpression): void {
-    const head = ExpressionShape.headOf(at);
-    const steps = OperandTyper.chainOf(at, this.context).steps;
-    const index = head.ops.findIndex(
-      (op, i) =>
-        op.kind === "subscript" &&
-        FloatBits.rangeTypeOf(steps[i - head.opsConsumed]) !== null,
-    );
-    const range = head.ops[index];
-    if (range === undefined) return;
+  private checkFloatRangeScope(
+    chain: TExpressionOf<"postfix">,
+    steps: readonly IChainStep[],
+  ): void {
+    const first = chain.ops.length - steps.length;
+    const at = steps.findIndex((step) => FloatBits.rangeTypeOf(step) !== null);
+    if (at === -1) return;
     // The float ranged, not the chain's root (#1099): `r.field`, not `r`
-    const reached = head.ops
-      .slice(head.opsConsumed, index)
-      .map((op) => {
-        if (op.kind === "member") return `.${op.name}`;
-        if (op.kind === "subscript") {
-          return `[${op.indexes.map((e) => e.written).join(", ")}]`;
-        }
-        return "(...)";
-      })
-      .join("");
-    const bounds =
-      range.kind === "subscript" ? range.indexes.map((e) => e.written) : [];
+    const range = ExpressionShape.writtenThrough(chain, first + at + 1);
     this.found.push({
       code: "E0888",
-      span: at.span,
-      message: `Float bit range '${name}${reached}[${bounds.join(", ")}]' cannot be read at file scope`,
+      span: chain.span,
+      message: `Float bit range '${range}' cannot be read at file scope`,
       helpText:
         "Reading a float's bits copies it through a union (MISRA C:2012 Rule 21.15 forbids the pointer cast), and a copy is a statement -- there is none at file scope. Read it inside a function.",
     });
@@ -246,23 +194,48 @@ class BitAccessCheck {
   }
 
   /**
-   * E0856: ADR-036 allows one subscript per array dimension and ADR-007 one
-   * more for a bit index. Only a bit-indexable scalar element has that extra
-   * one, which is why the base type decides.
+   * E0856, for each run of subscripts in the chain. A run is measured against
+   * the value it applies to -- the typer's `before` for its first subscript --
+   * so a field's own shape decides `p.header[4][3]`, not the root `p`'s
+   * (#1114). A member access or a call ends a run: what follows indexes a
+   * different value.
    */
   private checkDepth(
-    subscripts: readonly TPostfixOpSyntax[],
-    dimensions: number,
-    baseType: string,
+    chain: TExpressionOf<"postfix">,
+    steps: readonly IChainStep[],
+  ): void {
+    const first = chain.ops.length - steps.length;
+    let index = first;
+    while (index < chain.ops.length) {
+      const start = index;
+      while (chain.ops[index]?.kind === "subscript") index += 1;
+      if (index === start) {
+        index += 1;
+        continue;
+      }
+      this.checkRun(
+        steps[start - first].before,
+        index - start,
+        ExpressionShape.writtenThrough(chain, start),
+        chain,
+      );
+    }
+  }
+
+  /**
+   * ADR-036 allows one subscript per array dimension and ADR-007 one more for
+   * a bit index. Only a bit-indexable scalar element has that extra one, which
+   * is why the base type decides.
+   */
+  private checkRun(
+    indexed: IOperandType | null,
+    leading: number,
     name: string,
     at: TExpression,
   ): void {
-    if (TYPE_WIDTH[baseType] === undefined) return; // not a bit-indexable scalar
-    let leading = 0;
-    for (const op of subscripts) {
-      if (op.kind !== "subscript") break;
-      leading += 1;
-    }
+    const baseType = indexed?.typeName ?? "";
+    if (indexed === null || TYPE_WIDTH[baseType] === undefined) return; // not a bit-indexable scalar
+    const dimensions = indexed.dimensions.length;
     const allowed = dimensions + 1;
     if (leading <= allowed) return;
 

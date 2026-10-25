@@ -183,3 +183,66 @@ describe("BitAccessAnalyzer -- rooted chains and leading subscripts (E0856)", ()
     ).toEqual([]);
   });
 });
+
+describe("BitAccessAnalyzer -- struct fields (E0856, #1114)", () => {
+  const e0856 = (source: string) =>
+    errors(source)
+      .filter((e) => e.code === "E0856")
+      .map((e) => [e.span.line, e.message]);
+  const types = [
+    "struct Inner { u8 header; }",
+    "struct Packet { u8 header; u8[4] bytes; u8[2][3] cells; Inner inner; }",
+    "Packet p;",
+    "Packet[2] packets;",
+  ];
+
+  it("measures a field by its own shape, not the root struct's", () => {
+    expect(
+      e0856(
+        [
+          ...types,
+          "void f() {",
+          "    p.header[4][3] <- 5;",
+          "    u8 a <- p.bytes[1][2][3];",
+          "    u8 b <- p.inner.header[4][3];",
+          "    u8 c <- packets[1].header[4][3];",
+          "}",
+        ].join("\n"),
+      ),
+    ).toEqual([
+      [
+        6,
+        "too many subscripts on 'p.header': it is a scalar 'u8', so it allows at most 1",
+      ],
+      [
+        7,
+        "too many subscripts on 'p.bytes': it is a 1-dimensional 'u8' array, so it allows at most 2",
+      ],
+      [
+        8,
+        "too many subscripts on 'p.inner.header': it is a scalar 'u8', so it allows at most 1",
+      ],
+      [
+        9,
+        "too many subscripts on 'packets[1].header': it is a scalar 'u8', so it allows at most 1",
+      ],
+    ]);
+  });
+
+  it("allows a field one subscript per dimension plus one bit index", () => {
+    expect(
+      e0856(
+        [
+          ...types,
+          "void f() {",
+          "    bool a <- p.header[4];",
+          "    u8 b <- p.header[0, 4];",
+          "    bool c <- p.bytes[1][2];",
+          "    bool d <- p.cells[1][2][3];",
+          "    bool e <- packets[1].inner.header[7];",
+          "}",
+        ].join("\n"),
+      ),
+    ).toEqual([]);
+  });
+});

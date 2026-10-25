@@ -108,6 +108,21 @@ describe("ExpressionShape", () => {
     });
   });
 
+  describe("writtenThrough", () => {
+    it.each([
+      ["p.header[4][3]", 0, "p"],
+      ["p.header[4][3]", 1, "p.header"],
+      ["packets[1].header[4]", 2, "packets[1].header"],
+      ["this.flags[4]", 1, "this.flags"],
+      ["a[i + 1].b", 2, "a[i + 1].b"],
+    ])("%s through %i op(s) is %s", (source, count, written) => {
+      const chain = lowered(source);
+      if (chain.kind !== "postfix") throw new Error("not a postfix chain");
+
+      expect(ExpressionShape.writtenThrough(chain, count)).toBe(written);
+    });
+  });
+
   describe("headOf", () => {
     it.each([
       ["myVar", null, "myVar", 0],

@@ -302,6 +302,23 @@ single shared classifier (Issue #1115). Before that unification the prefixed for
 silently miscompiled: the write dropped the second subscript and coerced the value to a
 bool, and the read chained bit-indexes into always-zero code.
 
+The limit belongs to the value being indexed, so a struct field is measured by the
+field's own declared shape, at any depth of the chain (Issue #1114). Checking only the
+root measured nothing past a `.name`, so the struct-field forms were accepted: the write
+emitted C that subscripts a scalar, and the read chained bit-indexes.
+
+```cnx
+struct Packet { u8 header; u8[4] bytes; }
+mut Packet p;
+
+void setBits() {
+    p.header[4] <- true;   // OK: one bit index on a scalar field
+    p.bytes[1][2] <- true; // OK: one element, then one bit
+    p.header[4][3] <- 5;   // ERROR E0856: p.header[4] is a single bit, not an array
+    p.bytes[1][2][3] <- 5; // ERROR E0856: p.bytes allows at most 2
+}
+```
+
 ---
 
 ## Trade-offs
