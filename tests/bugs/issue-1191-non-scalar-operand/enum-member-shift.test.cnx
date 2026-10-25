@@ -1,0 +1,11 @@
+// test-error
+// #2347 review: inside its own member values an enum member is an i32
+// (ADR-017), so shifting it is a signed shift, E0805 (MISRA C:2012 Rule
+// 10.1), as `i32 x <- 1; x << 1` is.
+enum Perm {
+    READ <- 1,
+    WRITE <- Perm.READ << 1,
+
+    // Negative control: an unsuffixed literal has no category (ADR-052)
+    EXEC <- 1 << 2
+}

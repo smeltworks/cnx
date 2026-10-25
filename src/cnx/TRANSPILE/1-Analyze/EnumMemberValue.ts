@@ -3,8 +3,8 @@
  *
  * Inside an enum's own member values, a member of that enum is an `i32`
  * (ADR-017 owner rulings, 2026-10-03), so `RW <- Perm.READ | Perm.WRITE`
- * needs no cast. Rule 10.1 (E0925) and Rule 10.4 (E0810) both read their
- * operands through here, so the two cannot disagree about such a member.
+ * needs no cast. Rule 10.1 (E0925 and E0805) and Rule 10.4 (E0810) read
+ * their operands through here, so they cannot disagree about such a member.
  */
 
 import DeclarationParts from "../../utils/DeclarationParts";

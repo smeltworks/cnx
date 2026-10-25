@@ -115,7 +115,7 @@ const HELP: Readonly<
   array: "an array is not a number. Subscript it down to one element first.",
   floating: "shift and bitwise operators take integers only.",
   character:
-    "a char takes only '+', '-' and the comparisons. Cast it to an integer type first.",
+    "a char takes only binary '+' and '-' and the comparisons. Cast it to an integer type first, e.g. (u8)value.",
   enum: "an enum is not a number (ADR-017). Cast it to an unsigned type first, e.g. (u8)value.",
   string:
     "a string is not a number. Join strings with '+' and compare them with '=' / '!='.",
@@ -237,7 +237,7 @@ class OperatorOperandCheck {
       this.context,
     );
     if (targetRejection !== null) {
-      this.analyzer.addError(site.target, site.operator, targetRejection);
+      this.analyzer.addError(site.target, site.operator, targetRejection, true);
     }
   }
 }
@@ -410,6 +410,7 @@ class OperatorOperandAnalyzer {
     at: TExpression,
     operator: string,
     rejection: TRejection,
+    isTarget = false,
   ): void {
     const span = at.span;
     const position = `${span.line}:${span.column}`;
@@ -440,7 +441,10 @@ class OperatorOperandAnalyzer {
       code: "E0925",
       span,
       message: `Operator '${operator}' is not valid on ${NOUNS[rejection]}`,
-      helpText: `MISRA C:2012 Rule 10.1: ${HELP[rejection]}`,
+      // A target cannot be cast, so its help is the written-out form
+      helpText: isTarget
+        ? "MISRA C:2012 Rule 10.1: a compound target cannot be cast. Write the read and the write out separately, casting the read, e.g. x <- (u8)x * 2."
+        : `MISRA C:2012 Rule 10.1: ${HELP[rejection]}`,
     });
   }
 

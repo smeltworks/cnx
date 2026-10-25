@@ -1,0 +1,20 @@
+// test-error
+// #2347 review: MISRA C:2012 Rule 10.1 lets a char take only binary `+`
+// and `-` and the comparisons (owner ruling: "MISRA always wins, so cast
+// required as per 10.1"). A cast to an integer type is the fix.
+string<8> s <- "A1";
+
+void main() {
+    u8 hi <- s[0] >> 4;
+    u8 lo <- s[0] & 0x0F;
+    u8 n <- 'A' * 2;
+    u8 q <- s[0] % 2;
+    u8 inv <- ~s[0];
+    i16 neg <- -'A';
+    mut string<4> t <- "ab";
+    t[0] *<- 2;
+    // Negative controls: a cast, binary `-` and a comparison stand
+    u8 ok <- (u8)s[0] >> 4;
+    u8 d <- s[0] - '0';
+    bool lt <- s[0] < 'Z';
+}

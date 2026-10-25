@@ -33,6 +33,8 @@ import OperandTyper from "../../utils/OperandTyper";
 import TypeCheckUtils from "../../utils/TypeCheckUtils";
 import ProgramAccesses from "../../utils/ProgramAccesses";
 import CompoundOperator from "../../utils/CompoundOperator";
+import EnumMemberValue from "./EnumMemberValue";
+import ExpressionNodes from "../../utils/ExpressionNodes";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
@@ -48,13 +50,16 @@ class ShiftCheck {
   ) {}
 
   /** Each `<<` / `>>` of one shift level, between adjacent operands */
-  public checkLevel(level: TBinaryExpression): void {
+  public checkLevel(
+    level: TBinaryExpression,
+    enumBeingDeclared: string | null,
+  ): void {
     for (let i = 0; i < level.operators.length; i += 1) {
       const operator = level.operators[i];
       if (operator !== "<<" && operator !== ">>") continue;
 
       const left = level.operands[i];
-      if (this.isSigned(left)) {
+      if (this.isSigned(left, enumBeingDeclared)) {
         this.analyzer.addError(left.span, operator);
         continue;
       }
@@ -65,7 +70,7 @@ class ShiftCheck {
       // u8 `a` and a u32 `b` was E0873 against 8 bits, while the C shifts
       // `cnx_clamp_add_u32(a, b)`)
       this.checkAmount(
-        ShiftCheck.shiftedType(left, this.context),
+        ShiftCheck.shiftedType(left, this.context, enumBeingDeclared),
         level.operands[i + 1],
         level.written,
       );
@@ -96,8 +101,12 @@ class ShiftCheck {
   private static shiftedType(
     left: TExpression,
     context: IAnalysisContext,
+    enumBeingDeclared: string | null,
   ): IOperandType | null {
-    const t = OperandTyper.typeOf(left, context);
+    const t = EnumMemberValue.operandType(
+      OperandTyper.typeOf(left, context),
+      enumBeingDeclared,
+    );
     if (t?.form.kind !== "composite") return t;
     if (t.typeName === null || t.bitWidth === null) return null;
     return {
@@ -106,14 +115,22 @@ class ShiftCheck {
     };
   }
 
-  /** Any value leaf signed, or a negated literal */
-  private isSigned(operand: TExpression): boolean {
-    return OperandTyper.valueLeaves(operand, this.context).some(
-      (leaf) =>
+  /**
+   * Any value leaf signed, or a negated literal. A member of the enum being
+   * declared is an i32 there (ADR-017), so `B <- E.A << 1` is a signed shift.
+   */
+  private isSigned(
+    operand: TExpression,
+    enumBeingDeclared: string | null,
+  ): boolean {
+    return OperandTyper.valueLeaves(operand, this.context).some((raw) => {
+      const leaf = EnumMemberValue.operandType(raw, enumBeingDeclared);
+      return (
         leaf !== null &&
         (leaf.category === "signed" ||
-          (leaf.form.kind === "literal" && leaf.form.negated)),
-    );
+          (leaf.form.kind === "literal" && leaf.form.negated))
+      );
+    });
   }
 
   /**
@@ -173,8 +190,10 @@ class ShiftAnalyzer {
     this.errors = [];
     const check = new ShiftCheck(this, this.context);
 
-    for (const expr of ProgramAccesses.expressions(program)) {
-      if (expr.kind === "binary") check.checkLevel(expr);
+    for (const [part, enumBeingDeclared] of EnumMemberValue.parts(program)) {
+      for (const expr of ExpressionNodes.of(part)) {
+        if (expr.kind === "binary") check.checkLevel(expr, enumBeingDeclared);
+      }
     }
     for (const site of ProgramAccesses.writes(program)) {
       check.checkAssignment(site);
