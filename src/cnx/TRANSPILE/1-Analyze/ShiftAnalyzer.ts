@@ -31,9 +31,7 @@ import IShiftError from "./types/IShiftError";
 import type ISourceSpan from "../../types/ISourceSpan";
 import OperandTyper from "../../utils/OperandTyper";
 import TypeCheckUtils from "../../utils/TypeCheckUtils";
-import DeclarationParts from "../../utils/DeclarationParts";
-import ExpressionNodes from "../../utils/ExpressionNodes";
-import StatementNodes from "../../utils/StatementNodes";
+import ProgramAccesses from "../../utils/ProgramAccesses";
 import CompoundOperator from "../../utils/CompoundOperator";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
@@ -175,15 +173,11 @@ class ShiftAnalyzer {
     this.errors = [];
     const check = new ShiftCheck(this, this.context);
 
-    for (const member of program.members) {
-      for (const part of DeclarationParts.of(member.declaration)) {
-        for (const expr of ExpressionNodes.of(part)) {
-          if (expr.kind === "binary") check.checkLevel(expr);
-        }
-      }
-      for (const site of StatementNodes.assignments(member.declaration)) {
-        check.checkAssignment(site);
-      }
+    for (const expr of ProgramAccesses.expressions(program)) {
+      if (expr.kind === "binary") check.checkLevel(expr);
+    }
+    for (const site of ProgramAccesses.writes(program)) {
+      check.checkAssignment(site);
     }
 
     // Levels, then assignments; report in source order

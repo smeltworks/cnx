@@ -59,6 +59,22 @@ describe("ProgramLowering", () => {
     ]);
   });
 
+  it("lists the same declaration objects `declarations` holds, not copies (#2115)", () => {
+    const program = lower(`
+      u8 a;
+      scope Lib { u8 b; void c() { } }
+    `);
+    const nested = program.declarations.flatMap(({ declaration }) =>
+      declaration.kind === "scope"
+        ? declaration.members.map((member) => member.declaration)
+        : [declaration],
+    );
+    expect(program.members).toHaveLength(nested.length);
+    program.members.forEach(({ declaration }, index) => {
+      expect(declaration).toBe(nested[index]);
+    });
+  });
+
   it("is plain data: it survives a JSON round trip unchanged", () => {
     const program = lower(`
       #include <stdint.h>

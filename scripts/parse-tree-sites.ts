@@ -61,7 +61,7 @@ async function main(): Promise<void> {
     document,
   );
 
-  CheckOutcome.report(outcome);
+  process.exitCode = CheckOutcome.report(outcome);
 }
 
 void main();

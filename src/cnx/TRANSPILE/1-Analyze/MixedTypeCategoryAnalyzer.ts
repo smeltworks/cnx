@@ -57,9 +57,7 @@ import type IOperandType from "../../types/IOperandType";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TBinaryExpression from "../../types/syntax/TBinaryExpression";
-import DeclarationParts from "../../utils/DeclarationParts";
-import ExpressionNodes from "../../utils/ExpressionNodes";
-import StatementNodes from "../../utils/StatementNodes";
+import ProgramAccesses from "../../utils/ProgramAccesses";
 import SourceOrder from "../../utils/SourceOrder";
 
 /**
@@ -329,9 +327,7 @@ class MixedTypeCategoryAnalyzer {
   public analyze(program: IProgramSyntax): IMixedTypeCategoryError[] {
     this.errors = [];
     const check = new MixedCategoryCheck(this, this.context);
-    const expressions = program.members.flatMap((member) =>
-      DeclarationParts.of(member.declaration).flatMap(ExpressionNodes.of),
-    );
+    const expressions = ProgramAccesses.expressions(program);
 
     // Levels are met outermost first; checked innermost first, so a level
     // that is an operand of another has its category when that one asks
@@ -347,10 +343,8 @@ class MixedTypeCategoryAnalyzer {
       check.checkLevel(expr, level);
     }
 
-    for (const member of program.members) {
-      for (const site of StatementNodes.assignments(member.declaration)) {
-        check.checkCompound(site);
-      }
+    for (const site of ProgramAccesses.writes(program)) {
+      check.checkCompound(site);
     }
     for (const expr of expressions) check.checkTernary(expr);
 

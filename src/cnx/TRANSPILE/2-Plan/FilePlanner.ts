@@ -1654,7 +1654,13 @@ class FilePlanner {
     const typeScopes = new Map(
       TypeSites.of(program, unwritten).map((site) => [site.type, site.scope]),
     );
-    const scopeMembers = FilePlanner.scopeVariables(program.declarations);
+    const scopeMembers = new Set<IVariableDeclarationSyntax>(
+      program.members.flatMap(({ declaration, scope }) =>
+        scope !== null && declaration.kind === "variableDeclaration"
+          ? [declaration]
+          : [],
+      ),
+    );
     const forInits = new Set<IVariableDeclarationSyntax>(
       program.members.flatMap((entry) =>
         StatementNodes.in(entry.declaration).flatMap((statement) =>
@@ -1891,7 +1897,6 @@ class FilePlanner {
         ...(entry.declaration.kind === "variableDeclaration"
           ? [entry.declaration]
           : []),
-        ...FilePlanner.scopeVariables([entry]),
         ...statements.flatMap((statement) =>
           statement.kind === "variableDeclaration" && !forHeaders.has(statement)
             ? [statement]
@@ -1927,25 +1932,6 @@ class FilePlanner {
    */
   static isArrayDeclaration(decl: IVariableDeclarationSyntax): boolean {
     return decl.dimensions.length > 0 || decl.type.kind === "array";
-  }
-
-  /** Every variable a scope declares, at any depth */
-  private static scopeVariables(
-    declarations: readonly { readonly declaration: TDeclarationSyntax }[],
-  ): ReadonlySet<IVariableDeclarationSyntax> {
-    const found = new Set<IVariableDeclarationSyntax>();
-    for (const entry of declarations) {
-      if (entry.declaration.kind !== "scope") continue;
-      for (const member of entry.declaration.members) {
-        if (member.declaration.kind === "variableDeclaration") {
-          found.add(member.declaration);
-        }
-        for (const nested of FilePlanner.scopeVariables([member])) {
-          found.add(nested);
-        }
-      }
-    }
-    return found;
   }
 
   /**

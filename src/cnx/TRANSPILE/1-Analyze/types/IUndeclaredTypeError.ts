@@ -1,4 +1,4 @@
-import type ISourceSpan from "../../../types/ISourceSpan";
+import type IBaseAnalysisError from "./IBaseAnalysisError";
 /**
  * A name in a type position that does not name a type.
  *
@@ -6,11 +6,8 @@ import type ISourceSpan from "../../../types/ISourceSpan";
  * E0429: it denotes a register, which is not a type (ADR-004, #1336) --
  * retired when ADR-111 is implemented.
  */
-interface IUndeclaredTypeError {
-  readonly code: string;
+interface IUndeclaredTypeError extends IBaseAnalysisError {
   readonly typeName: string;
-  readonly span: ISourceSpan;
-  readonly message: string;
 }
 
 export default IUndeclaredTypeError;

@@ -31,7 +31,8 @@ class ExpressionNodes {
     ]);
   }
 
-  private static namedTypes(expr: TExpression): readonly TSyntaxPart[] {
+  /** The types an expression names: a cast's */
+  static namedTypes(expr: TExpression): readonly TSyntaxPart[] {
     if (expr.kind === "cast") return [{ kind: "type", type: expr.type }];
     return [];
   }

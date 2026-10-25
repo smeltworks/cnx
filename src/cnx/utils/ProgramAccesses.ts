@@ -3,6 +3,7 @@ import type IVariableDeclarationSyntax from "../types/syntax/IVariableDeclaratio
 import VariableDeclarations from "./VariableDeclarations";
 import type IProgramSyntax from "../types/syntax/IProgramSyntax";
 import type TExpression from "../types/syntax/TExpression";
+import type IValuePositions from "../types/IValuePositions";
 import DeclarationParts from "./DeclarationParts";
 import ExpressionNodes from "./ExpressionNodes";
 import StatementNodes from "./StatementNodes";
@@ -27,10 +28,12 @@ class ProgramAccesses {
   /** Each read to `checkExpression`, then each write site to `checkSite` */
   static checkReadsAndWrites(
     program: IProgramSyntax,
+    valuePositions: IValuePositions,
     check: IAccessCheck,
   ): void {
-    for (const expr of ProgramAccesses.reads(program))
+    for (const expr of ProgramAccesses.reads(program, valuePositions)) {
       check.checkExpression(expr);
+    }
     for (const site of ProgramAccesses.writes(program)) check.checkSite(site);
   }
 
@@ -65,13 +68,13 @@ class ProgramAccesses {
     );
   }
 
-  /** Every expression node but a write's target */
-  static reads(program: IProgramSyntax): readonly TExpression[] {
-    const targets = new Set<TExpression>(
-      ProgramAccesses.writes(program).map((site) => site.target),
-    );
+  /** Every expression node but a write's target, which 2.1 placed as one */
+  static reads(
+    program: IProgramSyntax,
+    valuePositions: IValuePositions,
+  ): readonly TExpression[] {
     return ProgramAccesses.expressions(program).filter(
-      (expr) => !targets.has(expr),
+      (expr) => valuePositions.sites.get(expr)?.site.kind !== "target",
     );
   }
 }

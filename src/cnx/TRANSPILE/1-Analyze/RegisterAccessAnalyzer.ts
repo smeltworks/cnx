@@ -45,6 +45,7 @@
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import ProgramAccesses from "../../utils/ProgramAccesses";
+import type IValuePositions from "../../types/IValuePositions";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import IRegisterMember from "./types/IRegisterMember";
@@ -177,9 +178,12 @@ class RegisterAccessAnalyzer {
   constructor(private readonly context: IAnalysisContext) {}
 
   /** #1991: reads 1.2's syntax, not the parse tree */
-  public analyze(program: IProgramSyntax): IRegisterAccessError[] {
+  public analyze(
+    program: IProgramSyntax,
+    valuePositions: IValuePositions,
+  ): IRegisterAccessError[] {
     const check = new RegisterAccessCheck(this.context);
-    ProgramAccesses.checkReadsAndWrites(program, check);
+    ProgramAccesses.checkReadsAndWrites(program, valuePositions, check);
     return check.errors().sort(SourceOrder.bySpan);
   }
 }

@@ -1,11 +1,8 @@
-import type ISourceSpan from "../../../types/ISourceSpan";
+import type IBaseAnalysisError from "./IBaseAnalysisError";
 /**
  * Error reported by ReturnValueUseAnalyzer (ADR-070, E0708).
  */
-interface IReturnValueUseError {
-  span: ISourceSpan;
-  code: string;
-  message: string;
+interface IReturnValueUseError extends IBaseAnalysisError {
   helpText: string;
 }
 

@@ -56,6 +56,7 @@
 
 import LineMap from "./LineMap";
 import type IRevision from "./IRevision";
+import type ICheckOutcome from "../types/ICheckOutcome";
 
 /**
  * Below this an anchor stops telling sites apart -- `Error` or `'` would
@@ -99,12 +100,6 @@ interface IRemapOutcome {
   readonly rewritten: number;
   /** Files this refused to touch, and why. Non-empty means do not write. */
   readonly refusals: readonly string[];
-}
-
-interface IThrowCitationOutcome {
-  readonly ok: boolean;
-  readonly errors: readonly string[];
-  readonly info: readonly string[];
 }
 
 class ThrowCitations {
@@ -482,7 +477,7 @@ class ThrowCitations {
   static check(
     markdown: string,
     sources: ReadonlyMap<string, string>,
-  ): IThrowCitationOutcome {
+  ): ICheckOutcome {
     // Citations are parsed here rather than passed in: they are derived from
     // this same markdown, and two parameters that must agree is one more thing
     // a caller can get wrong.

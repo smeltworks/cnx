@@ -57,7 +57,7 @@ async function main(): Promise<void> {
     );
   }
 
-  CheckOutcome.report(outcome);
+  process.exitCode = CheckOutcome.report(outcome);
 }
 
 main().catch((err) => {

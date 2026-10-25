@@ -31,9 +31,8 @@
 import IBooleanOperandError from "./types/IBooleanOperandError";
 import type ISourceSpan from "../../types/ISourceSpan";
 import OperandTyper from "../../utils/OperandTyper";
-import DeclarationParts from "../../utils/DeclarationParts";
-import ExpressionNodes from "../../utils/ExpressionNodes";
-import StatementNodes from "../../utils/StatementNodes";
+import ProgramAccesses from "../../utils/ProgramAccesses";
+import SourceOrder from "../../utils/SourceOrder";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
@@ -152,18 +151,15 @@ class BooleanOperandAnalyzer {
     this.errors = [];
     const check = new BooleanOperandCheck(this, this.context);
 
-    for (const member of program.members) {
-      for (const part of DeclarationParts.of(member.declaration)) {
-        for (const expr of ExpressionNodes.of(part)) {
-          BooleanOperandAnalyzer.checkExpression(check, expr);
-        }
-      }
-      for (const site of StatementNodes.assignments(member.declaration)) {
-        check.checkAssignment(site);
-      }
+    for (const expr of ProgramAccesses.expressions(program)) {
+      BooleanOperandAnalyzer.checkExpression(check, expr);
+    }
+    for (const site of ProgramAccesses.writes(program)) {
+      check.checkAssignment(site);
     }
 
-    return this.errors;
+    // Expressions, then assignments; report in source order
+    return this.errors.sort(SourceOrder.bySpan);
   }
 
   /** `!` on a number, or a bool at a level that takes numbers */

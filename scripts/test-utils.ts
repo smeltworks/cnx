@@ -322,14 +322,7 @@ function transpileViaCli(
     }
 
     // Don't forget the last error
-    if (currentError) {
-      errors.push({
-        line: currentError.line,
-        column: currentError.column,
-        message: currentError.messageParts.join("\n"),
-        file: currentError.file,
-      });
-    }
+    flush();
   }
 
   // Read generated files if they exist

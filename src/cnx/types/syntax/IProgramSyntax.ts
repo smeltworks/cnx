@@ -23,7 +23,10 @@ interface IProgramSyntax {
   readonly declarations: ReadonlyArray<
     TCommented & { readonly declaration: TDeclarationSyntax }
   >;
-  /** Every declaration, a scope's members included, in source order (#2115) */
+  /**
+   * Every declaration, a scope's members included, in source order (#2115).
+   * Each is the same object `declarations` holds, not a copy.
+   */
   readonly members: readonly IProgramMember[];
 }
 

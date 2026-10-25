@@ -22,6 +22,7 @@ import type ISourceSite from "../../types/ISourceSite";
 import TargetDescriptions from "./TargetDescriptions";
 import DeclarationSite from "../../utils/DeclarationSite";
 import CodedErrorText from "../../utils/CodedErrorText";
+import FormError from "./FormError";
 import TARGET_DESCRIPTION_FIELDS from "./TARGET_DESCRIPTION_FIELDS";
 import type ITranspileError from "../../types/ITranspileError";
 import type IRunTargetInputs from "./types/IRunTargetInputs";
@@ -285,13 +286,7 @@ class RunTarget {
     message: string,
     helpText: string,
   ): ITranspileError {
-    return {
-      line: 1,
-      column: 0,
-      message: CodedErrorText.of(code, message),
-      helpText,
-      severity: "error",
-    };
+    return FormError.at({ line: 1, column: 0 }, code, message, helpText);
   }
 
   /** One file's pragmas: its named targets, and its inline description */

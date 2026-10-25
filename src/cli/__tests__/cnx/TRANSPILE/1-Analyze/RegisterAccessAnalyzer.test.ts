@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import RegisterAccessAnalyzer from "../../../../../cnx/TRANSPILE/1-Analyze/RegisterAccessAnalyzer";
+import ValuePositions from "../../../../../cnx/TRANSPILE/1-Analyze/helpers/ValuePositions";
 import testAnalysisContextFor from "./testAnalysisContextFor";
 
 /**
@@ -27,7 +28,10 @@ const errors = (source: string) => {
   const { syntax, context } = testAnalysisContextFor(source, {
     cppMode: false,
   });
-  return new RegisterAccessAnalyzer(context).analyze(syntax);
+  return new RegisterAccessAnalyzer(context).analyze(
+    syntax,
+    ValuePositions.of(syntax, context),
+  );
 };
 
 const inMain = (body: string): string => `void main() {\n${body}\n}`;

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import BitmapAccessAnalyzer from "../../../../../cnx/TRANSPILE/1-Analyze/BitmapAccessAnalyzer";
+import ValuePositions from "../../../../../cnx/TRANSPILE/1-Analyze/helpers/ValuePositions";
 import testAnalysisContextFor from "./testAnalysisContextFor";
 
 /**
@@ -20,7 +21,10 @@ const errors = (source: string) => {
   const { syntax, context } = testAnalysisContextFor(source, {
     cppMode: false,
   });
-  return new BitmapAccessAnalyzer(context).analyze(syntax);
+  return new BitmapAccessAnalyzer(context).analyze(
+    syntax,
+    ValuePositions.of(syntax, context),
+  );
 };
 
 describe("BitmapAccessAnalyzer (E0881)", () => {

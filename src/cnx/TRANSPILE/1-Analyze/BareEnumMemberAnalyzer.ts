@@ -45,8 +45,7 @@ import SourceOrder from "../../utils/SourceOrder";
 import type TExpression from "../../types/syntax/TExpression";
 import type TTypeSyntax from "../../types/syntax/TTypeSyntax";
 import type ISourcePosition from "../../utils/types/ISourcePosition";
-import DeclarationParts from "../../utils/DeclarationParts";
-import ExpressionNodes from "../../utils/ExpressionNodes";
+import ProgramAccesses from "../../utils/ProgramAccesses";
 import StatementNodes from "../../utils/StatementNodes";
 import OperandTyper from "../../utils/OperandTyper";
 import EnumMemberSuggestion from "./helpers/EnumMemberSuggestion";
@@ -149,22 +148,15 @@ class BareEnumMemberAnalyzer {
     valuePositions: IValuePositions,
   ): IBareEnumMemberError[] {
     const expected = ExpectedEnums.of(program, this.context, valuePositions);
-    const expressions = program.members
-      .flatMap((member) => DeclarationParts.of(member.declaration))
-      .flatMap(ExpressionNodes.of);
-    // A chain's head and an assignment's target name a value; they are not one.
-    const notValues = new Set<TExpression>();
-    for (const expr of expressions) {
-      if (expr.kind === "postfix") notValues.add(expr.primary);
-    }
-    for (const member of program.members) {
-      for (const site of StatementNodes.assignments(member.declaration)) {
-        notValues.add(site.target);
-      }
+    const reads = ProgramAccesses.reads(program, valuePositions);
+    // A chain's head names a value; it is not one.
+    const heads = new Set<TExpression>();
+    for (const expr of reads) {
+      if (expr.kind === "postfix") heads.add(expr.primary);
     }
     const found: IBareEnumMemberError[] = [];
-    for (const expr of expressions) {
-      if (expr.kind !== "identifier" || notValues.has(expr)) continue;
+    for (const expr of reads) {
+      if (expr.kind !== "identifier" || heads.has(expr)) continue;
       const error = this.check(expr, expected.at(expr));
       if (error !== null) found.push(error);
     }

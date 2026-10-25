@@ -439,7 +439,11 @@ function runAnalyzers(
     },
     {
       label: "register access modifiers (ADR-004, E0870-E0872)",
-      run: () => new RegisterAccessAnalyzer(context).analyze(parsed.program),
+      run: () =>
+        new RegisterAccessAnalyzer(context).analyze(
+          parsed.program,
+          positions(),
+        ),
     },
     {
       // After controlling expressions: the always-true check assumes E0701
@@ -489,7 +493,8 @@ function runAnalyzers(
     },
     {
       label: "bitmap access (ADR-034, E0881-E0883)",
-      run: () => new BitmapAccessAnalyzer(context).analyze(parsed.program),
+      run: () =>
+        new BitmapAccessAnalyzer(context).analyze(parsed.program, positions()),
     },
     {
       label: "safe_div/safe_mod call shape (ADR-051, E0884/E0885)",

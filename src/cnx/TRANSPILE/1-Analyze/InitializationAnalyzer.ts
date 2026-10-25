@@ -20,7 +20,7 @@ import ESourceLanguage from "../../utils/types/ESourceLanguage";
 import ScopeUtils from "../../utils/ScopeUtils";
 import ExpressionShape from "../../utils/ExpressionShape";
 import StatementChildren from "../../utils/StatementChildren";
-import StatementWrites from "../../utils/StatementWrites";
+import StatementNodes from "../../utils/StatementNodes";
 import DeclarationParts from "../../utils/DeclarationParts";
 import TypeParts from "../../utils/TypeParts";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
@@ -35,6 +35,7 @@ import type ISourcePosition from "../../utils/types/ISourcePosition";
 import type ILocalDeclaration from "../../types/ILocalDeclaration";
 import type TChainRoot from "../../types/TChainRoot";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
+import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
 import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TStatement from "../../types/syntax/TStatement";
 import type IAnalysisContext from "./types/IAnalysisContext";
@@ -454,86 +455,77 @@ class InitializationAnalyzer {
    * assigns it (#2353: that rule ignores call order and reopened blocks).
    */
   private createGlobalScope(program: IProgramSyntax): void {
-    const assignedInBlock = this._assignedMembersByBlock(program);
-    for (const { declaration, scope } of program.members) {
+    for (const { declaration } of program.declarations) {
+      if (declaration.kind === "scope") {
+        this._declareScopeBlock(declaration);
+      } else if (declaration.kind === "variableDeclaration") {
+        this._declareMember(
+          declaration,
+          ScopeUtils.qualifyInScope(declaration.name, ""),
+          true,
+        );
+      }
+    }
+  }
+
+  /** One scope block's variables, initialized when the block assigns them */
+  private _declareScopeBlock(
+    block: Extract<TDeclarationSyntax, { kind: "scope" }>,
+  ): void {
+    const scopePath = this.context.program.scopePathOf(block.name);
+    const assigned = this._assignedMembers(block);
+    for (const { declaration } of block.members) {
       if (declaration.kind !== "variableDeclaration") continue;
-      const scopePath =
-        scope === null ? "" : this.context.program.scopePathOf(scope);
       const fullName = ScopeUtils.qualifyInScope(declaration.name, scopePath); // Transpiled C name
-      this.declareVariable(
+      this._declareMember(
+        declaration,
         fullName,
-        {
-          name: declaration.name,
-          line: declaration.span.line,
-          column: declaration.span.column,
-        },
-        scope === null ||
-          declaration.initializer !== null ||
-          assignedInBlock.get(declaration)!.has(fullName),
-        InitializationAnalyzer.userTypeName(declaration.type),
+        declaration.initializer !== null || assigned.has(fullName),
       );
     }
   }
 
+  private _declareMember(
+    declaration: IVariableDeclarationSyntax,
+    fullName: string,
+    initialized: boolean,
+  ): void {
+    this.declareVariable(
+      fullName,
+      {
+        name: declaration.name,
+        line: declaration.span.line,
+        column: declaration.span.column,
+      },
+      initialized,
+      InitializationAnalyzer.userTypeName(declaration.type),
+    );
+  }
+
   /**
-   * The members each scope block's functions assign, keyed by every
-   * declaration in that block.
+   * The members a scope block's functions assign.
    * Issue #1019: A member assigned in ANY function is considered initialized
    * for reads in other functions within the same block.
    */
-  private _assignedMembersByBlock(
-    program: IProgramSyntax,
-  ): Map<TMemberDeclaration, Set<TInitKey>> {
-    const byBlock = new Map<TMemberDeclaration, Set<TInitKey>>();
-    for (const { declaration } of program.declarations) {
-      if (declaration.kind !== "scope") continue;
-      const assigned = new Set<TInitKey>();
-      for (const member of declaration.members) {
-        if (member.declaration.kind === "function") {
-          this._collectAssignments(
-            member.declaration.body.statements,
-            assigned,
-          );
-        }
-        byBlock.set(member.declaration, assigned);
+  private _assignedMembers(
+    block: Extract<TDeclarationSyntax, { kind: "scope" }>,
+  ): Set<TInitKey> {
+    const assigned = new Set<TInitKey>();
+    for (const { declaration } of block.members) {
+      for (const { target } of StatementNodes.assignments(declaration)) {
+        const head = ExpressionShape.headOf(target);
+        if (!head.identifier) continue;
+        // #2004: what 1.4 binds the target to -- a local, parameter or `for`
+        // variable of the name, or `global.x`, is not this scope's member
+        const key = this.bindingKey(
+          head.root,
+          head.identifier.name,
+          target.span,
+        );
+        if (key !== null) assigned.add(key);
       }
     }
-    return byBlock;
-  }
-
-  /**
-   * Recursively collect the members assigned in statements, and in every
-   * statement nested inside them (#2003: `critical` and `forever` included).
-   */
-  private _collectAssignments(
-    statements: readonly TStatement[],
-    assigned: Set<TInitKey>,
-  ): void {
-    for (const statement of statements) {
-      this._collectDirectAssignment(statement, assigned);
-      this._collectAssignments(StatementChildren.of(statement), assigned);
-    }
-  }
-
-  /**
-   * Collect the assignments the statement itself performs: an assignment
-   * statement, or a `for` header's init and update (#2010).
-   */
-  private _collectDirectAssignment(
-    statement: TStatement,
-    assigned: Set<TInitKey>,
-  ): void {
-    for (const { target } of StatementWrites.of(statement)) {
-      const head = ExpressionShape.headOf(target);
-      if (!head.identifier) continue;
-
-      // #2004: what 1.4 binds the target to -- a local, parameter or `for`
-      // variable of the name, or `global.x`, is not this scope's member
-      const key = this.bindingKey(head.root, head.identifier.name, target.span);
-      if (key !== null) {
-        assigned.add(key);
-      }
-    }
+    return assigned;
   }
 
   /** The fields of each struct the file declares at file level */

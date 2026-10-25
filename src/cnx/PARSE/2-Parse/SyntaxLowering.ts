@@ -147,11 +147,11 @@ class SyntaxLowering {
   private static memberOrSubscript(
     ctx: Parser.PostfixTargetOpContext | Parser.PostfixOpContext,
   ): TPostfixOpSyntax | null {
-    const node = SyntaxLowering.node(ctx);
     const identifier = ctx.IDENTIFIER();
     if (identifier) {
       // a name the parser conjured to recover was never written
-      if (identifier.symbol.tokenIndex < 0) return { kind: "missing", ...node };
+      if (identifier.symbol.tokenIndex < 0)
+        return { kind: "missing", ...SyntaxLowering.node(ctx) };
       return {
         kind: "member",
         name: identifier.getText(),
@@ -159,15 +159,23 @@ class SyntaxLowering {
           start: identifier.symbol,
           stop: identifier.symbol,
         }),
-        ...node,
+        ...SyntaxLowering.node(ctx),
       };
     }
     const indexes = ctx.expression().map((e) => SyntaxLowering.expression(e));
     if (indexes.length === 1) {
-      return { kind: "subscript", indexes: [indexes[0]], ...node };
+      return {
+        kind: "subscript",
+        indexes: [indexes[0]],
+        ...SyntaxLowering.node(ctx),
+      };
     }
     if (indexes.length === 2) {
-      return { kind: "subscript", indexes: [indexes[0], indexes[1]], ...node };
+      return {
+        kind: "subscript",
+        indexes: [indexes[0], indexes[1]],
+        ...SyntaxLowering.node(ctx),
+      };
     }
     return null;
   }

@@ -24,6 +24,7 @@
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import ProgramAccesses from "../../utils/ProgramAccesses";
+import type IValuePositions from "../../types/IValuePositions";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import OperandTyper from "../../utils/OperandTyper";
@@ -153,9 +154,12 @@ class BitmapAccessAnalyzer {
    * #1991: reads 1.2's syntax, not the parse tree. A target is checked as a
    * site, with its value, and not again as an expression.
    */
-  public analyze(program: IProgramSyntax): IBitmapAccessError[] {
+  public analyze(
+    program: IProgramSyntax,
+    valuePositions: IValuePositions,
+  ): IBitmapAccessError[] {
     const check = new BitmapAccessCheck(this.context);
-    ProgramAccesses.checkReadsAndWrites(program, check);
+    ProgramAccesses.checkReadsAndWrites(program, valuePositions, check);
     return check.errors().sort(SourceOrder.bySpan);
   }
 }

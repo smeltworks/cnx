@@ -3,6 +3,7 @@ import ExpressionChildren from "./ExpressionChildren";
 import type TExpression from "../types/syntax/TExpression";
 import type TSyntaxPart from "../types/syntax/TSyntaxPart";
 import DeclarationParts from "./DeclarationParts";
+import ExpressionNodes from "./ExpressionNodes";
 import TypeParts from "./TypeParts";
 
 /**
@@ -19,14 +20,13 @@ class ProgramExpressions {
     );
   }
 
-  /** What an expression reads: its children, then a cast's written dimensions */
+  /** What an expression reads: its children, then the dimensions of a type it names */
   static readsIn(expr: TExpression): readonly TExpression[] {
-    return [
-      ...ExpressionChildren.of(expr),
-      ...(expr.kind === "cast"
-        ? ProgramExpressions.inPart({ kind: "type", type: expr.type })
-        : []),
-    ];
+    const children = ExpressionChildren.of(expr);
+    const named = ExpressionNodes.namedTypes(expr);
+    return named.length === 0
+      ? children
+      : [...children, ...named.flatMap(ProgramExpressions.inPart)];
   }
 
   /** A part's outermost expressions: itself, or a written type's dimensions */

@@ -1,13 +1,10 @@
-import type ISourceSpan from "../../../types/ISourceSpan";
+import type IBaseAnalysisError from "./IBaseAnalysisError";
 /**
  * E0427: a bare identifier in a value position that denotes nothing visible in
  * the file that used it.
  */
-interface IUndeclaredValueError {
-  readonly code: string;
+interface IUndeclaredValueError extends IBaseAnalysisError {
   readonly identifier: string;
-  readonly span: ISourceSpan;
-  readonly message: string;
 }
 
 export default IUndeclaredValueError;

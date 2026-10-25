@@ -49,10 +49,7 @@
  */
 
 import OperandTyper from "../../utils/OperandTyper";
-import DeclarationParts from "../../utils/DeclarationParts";
-import ExpressionNodes from "../../utils/ExpressionNodes";
-import StatementNodes from "../../utils/StatementNodes";
-import VariableDeclarations from "../../utils/VariableDeclarations";
+import ProgramAccesses from "../../utils/ProgramAccesses";
 import EnumValueResolver from "./EnumValueResolver";
 import IEnumTypeSafetyError from "./types/IEnumTypeSafetyError";
 import type IAnalysisContext from "./types/IAnalysisContext";
@@ -147,7 +144,7 @@ class EnumTypeSafetyCheck {
   }
 
   /** `a = b`, `a != b` and the relational operators */
-  public checkComparison(expr: TExpression): void {
+  public checkExpression(expr: TExpression): void {
     if (expr.kind !== "binary") return;
     if (expr.level !== "equality" && expr.level !== "relational") return;
 
@@ -181,19 +178,7 @@ class EnumTypeSafetyAnalyzer {
       new EnumValueResolver(this.context),
       this.context,
     );
-    for (const entry of VariableDeclarations.in(program)) {
-      check.checkDeclaration(entry.declaration);
-    }
-    for (const member of program.members) {
-      for (const part of DeclarationParts.of(member.declaration)) {
-        for (const expr of ExpressionNodes.of(part)) {
-          check.checkComparison(expr);
-        }
-      }
-      for (const site of StatementNodes.assignments(member.declaration)) {
-        check.checkSite(site);
-      }
-    }
+    ProgramAccesses.checkEverything(program, check);
     return check.errors().sort(SourceOrder.bySpan);
   }
 }

@@ -31,6 +31,7 @@ import chalk from "chalk";
 import ThrowCitations from "./diagnostics/ThrowCitations";
 import ThrowSources from "./diagnostics/ThrowSources";
 import type IRevision from "./diagnostics/IRevision";
+import CheckOutcome from "./utils/CheckOutcome";
 
 const rootDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 const docPath = ThrowSources.docPath;
@@ -179,18 +180,13 @@ function main(): void {
     ThrowSources.read(),
   );
 
-  for (const line of outcome.info) {
-    console.log(chalk.green(line));
-  }
-  if (!outcome.ok) {
-    console.error(
-      chalk.red(
-        `docs/architecture/throw-classification.md is out of date:\n` +
-          outcome.errors.map((error) => `  ${error}`).join("\n"),
-      ),
-    );
-    process.exit(1);
-  }
+  process.exitCode = CheckOutcome.report({
+    ...outcome,
+    errors: [
+      "docs/architecture/throw-classification.md is out of date:",
+      ...outcome.errors.map((error) => `  ${error}`),
+    ],
+  });
 }
 
 main();

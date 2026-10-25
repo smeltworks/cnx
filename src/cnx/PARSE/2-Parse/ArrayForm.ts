@@ -32,7 +32,6 @@ import ProgramLowering from "./ProgramLowering";
 import MainSignature from "../../utils/MainSignature";
 import ExpressionShape from "../../utils/ExpressionShape";
 import ParserUtils from "../../utils/ParserUtils";
-import CodedErrorText from "../../utils/CodedErrorText";
 import ForHeaderVariable from "../../utils/ForHeaderVariable";
 import VariableDeclarations from "../../utils/VariableDeclarations";
 import type ISourceSpan from "../../types/ISourceSpan";
@@ -303,17 +302,12 @@ class ArrayForm {
     name: string,
     index: number,
   ): ITranspileError {
-    return {
-      line,
-      column,
-      message: CodedErrorText.of(
-        "E0892",
-        `Array '${name}' leaves dimension ${index + 1} without a size`,
-      ),
-      helpText:
-        "Write the size. Only a one-dimensional array initialized by a list (or, for u8, a string literal) may leave it out, and its size is the number of elements (ADR-035).",
-      severity: "error",
-    };
+    return FormError.at(
+      { line, column },
+      "E0892",
+      `Array '${name}' leaves dimension ${index + 1} without a size`,
+      "Write the size. Only a one-dimensional array initialized by a list (or, for u8, a string literal) may leave it out, and its size is the number of elements (ADR-035).",
+    );
   }
 }
 
