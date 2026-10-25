@@ -15,4 +15,7 @@ void f() {
     u32 e1 <- a + c;
     u32 e2 <- a * 'A';
     u32 e3 <- (a * 'A') * m;
+    u32 e4 <- (a + c) + a;
+    u32 ok <- a + m;
+    u32 ok2 <- a - 'A';
 }

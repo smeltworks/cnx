@@ -332,6 +332,18 @@ describe("MixedTypeCategoryAnalyzer", () => {
       expect(errors).toHaveLength(1);
     });
 
+    it("does not report a pair Rule 10.1 owns again at the outer operator", () => {
+      const errors = analyze(`
+        enum EMode { IDLE }
+        void main() {
+          u32 a <- 1;
+          EMode c <- EMode.IDLE;
+          u32 r <- (a + c) + a;
+        }
+      `);
+      expect(errors).toEqual([]);
+    });
+
     it("still flags a uniform compound operand mixed against an outer operand", () => {
       // (a + b) is u32 + u32 (uniform unsigned); combining it with the signed `c`
       // is a real Rule 10.4 violation that must still be caught at the outer `+`.

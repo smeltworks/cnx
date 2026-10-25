@@ -1,8 +1,6 @@
 // test-execution
 // Control for E0925: fully indexed elements and struct fields are numbers
 
-#pragma target host
-
 u32 main() {
     mut u8[2][3] grid;
     grid[0][1] <- 4;

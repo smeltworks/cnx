@@ -1,0 +1,23 @@
+// test-cpp-only
+// test-execution
+// #2347 review: a C++ header class may declare the operator, so Rule 10.1
+// leaves its operands to the C++ compiler, as on main
+
+#include "bugs/issue-1191-non-scalar-operand/header-class-operator.hpp"
+
+mut Vec2 a;
+mut Vec2 b;
+
+u32 main() {
+    a.x <- 1.0;
+    b.x <- 2.0;
+    Vec2 c <- a + b;
+    bool less <- a < b;
+    if (less != true) {
+        return 1;
+    }
+    if (c.x != 3.0) {
+        return 2;
+    }
+    return 0;
+}

@@ -1,0 +1,2 @@
+12:20 error[E0925]: Operator '<' is not valid on this operand
+       help: MISRA C:2012 Rule 10.1: this operator takes numbers only.

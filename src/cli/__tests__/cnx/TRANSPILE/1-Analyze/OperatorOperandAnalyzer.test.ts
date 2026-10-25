@@ -582,6 +582,82 @@ describe("OperatorOperandAnalyzer -- operands outside the operator's set", () =>
     expect(new OperatorOperandAnalyzer(context).analyze(syntax)).toEqual([]);
   });
 
+  it.each([
+    [
+      "a ternary's array arm",
+      "u8 r <- ((n = 1) ? row : row) + 1;",
+      "+",
+      "an array operand",
+    ],
+    [
+      "a string literal under <",
+      'bool r <- "ab" < "cd";',
+      "<",
+      "a string operand",
+    ],
+    [
+      "a concatenation under <",
+      "bool r <- (s + s) < s;",
+      "<",
+      "a string operand",
+    ],
+    [
+      "an enum composite under +",
+      "u8 r <- (m | m) + 1;",
+      "|",
+      "an enum operand",
+    ],
+  ])("rejects %s once (#2347 review)", (_label, body, operator, noun) => {
+    expect(run(body)).toEqual([
+      ["E0925", `Operator '${operator}' is not valid on ${noun}`],
+    ]);
+  });
+
+  it.each([
+    ["-row + 1", "u8 r <- -row + 1;"],
+    ["~k & 1", "u32 r <- ~k & 1;"],
+    ["n + row + n", "u8 r <- n + row + n;"],
+  ])("reports %s once: one mistake, one place", (_label, body) => {
+    expect(run(body)).toHaveLength(1);
+  });
+
+  it.each([
+    ["a ternary's number arms", "u8 r <- ((n = 1) ? n : 2) + 1;"],
+    ["a number composite", "u8 r <- (n + 1) * 2;"],
+    ["concatenated literals", 'string<8> r <- "ab" + "cd";'],
+    ["an enum compound target (#2264)", "mut EMode e <- EMode.IDLE; e +<- 1;"],
+  ])("takes %s", (_label, body) => {
+    expect(run(body)).toEqual([]);
+  });
+
+  it("reports a bool inside a composite once, as E0807", () => {
+    const errors = analyze(
+      inMain("u8 r <- (a + 1) * 2; mut u8 t <- 0; t +<- (a + 1);"),
+    );
+    expect(errors.map((e) => e.code)).toEqual(["E0807", "E0807"]);
+  });
+
+  it("judges a compound value before its target, as main does", () => {
+    const errors = analyze(
+      "enum EMode { IDLE } void main() { bool f <- true; mut EMode m <- EMode.IDLE; m +<- f; }",
+    );
+    expect(errors.map((e) => e.code)).toEqual(["E0807"]);
+  });
+
+  it("takes a combination of the enum being declared's members (ADR-017)", () => {
+    const errors = analyze(
+      "enum EPerm { READ <- 1, WRITE <- 2, ALL <- (EPerm.READ | EPerm.WRITE) + 1 }",
+    );
+    expect(errors).toEqual([]);
+  });
+
+  it("does not carry the enum being declared past it, with it declared last", () => {
+    const errors = analyze(
+      "void main() { mut u8 n <- 0; n +<- Perm.READ; } enum Perm { READ <- 1 }",
+    );
+    expect(errors.map((e) => e.code)).toEqual(["E0925"]);
+  });
+
   it("still rejects another enum's member in a member value", () => {
     const errors = analyze(
       "enum EMode { IDLE, RUN } enum EPerm { READ <- 1, RW <- EMode.RUN | 2 }",

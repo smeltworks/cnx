@@ -5,12 +5,11 @@
 
 #include "enum-member-value-control.test.h"
 
-// test-execution
-// Control for E0925: a member of the enum being declared is an i32 there (ADR-017)
-
 #include <stdint.h>
 #include <stdbool.h>
 
+// test-execution
+// Control for E0925: a member of the enum being declared is an i32 there (ADR-017)
 int main(void) {
     if ((uint8_t)EPerm__RW != 3) {
         return 1U;

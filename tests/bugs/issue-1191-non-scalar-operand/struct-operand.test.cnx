@@ -1,8 +1,6 @@
 // test-error
 // E0925: a struct is not a number
 
-#pragma target host
-
 struct Point {
     u8 x;
 }

@@ -36,6 +36,8 @@ import OperandTyper from "../../utils/OperandTyper";
 import CompoundAssignmentAnalyzer from "./CompoundAssignmentAnalyzer";
 import CompoundOperator from "../../utils/CompoundOperator";
 import EnumMemberValue from "./EnumMemberValue";
+import ExpressionShape from "../../utils/ExpressionShape";
+import ForeignTypeFacts from "../../utils/ForeignTypeFacts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import StatementNodes from "../../utils/StatementNodes";
 import SourceOrder from "../../utils/SourceOrder";
@@ -123,11 +125,10 @@ const HELP: Readonly<
 
 /**
  * Checks each operator against the sets above. `enumBeingDeclared` is the
- * enum whose member values are being read (`EnumMemberValue`).
+ * enum whose member values are being read (`EnumMemberValue`), handed to each
+ * check rather than held, so it cannot outlive the member values it is for.
  */
 class OperatorOperandCheck {
-  public enumBeingDeclared: string | null = null;
-
   constructor(
     private readonly analyzer: OperatorOperandAnalyzer,
     private readonly context: IAnalysisContext,
@@ -137,13 +138,18 @@ class OperatorOperandCheck {
     operator: string,
     admits: TCategories,
     expr: TExpression,
+    enumBeingDeclared: string | null,
   ): TRejection | null {
+    // A string literal has no operand type, but it is a string (ADR-045)
+    if (ExpressionShape.isStringLiteral(expr)) {
+      return operator === "+" ? null : "string";
+    }
     return OperatorOperandAnalyzer.rejection(
       operator,
       admits,
       EnumMemberValue.operandType(
         OperandTyper.typeOf(expr, this.context),
-        this.enumBeingDeclared,
+        enumBeingDeclared,
       ),
       this.context,
     );
@@ -154,15 +160,24 @@ class OperatorOperandCheck {
    * reported at the offending operand -- `flag / other` is one mistake.
    * `operators[i]` joins operand `i` to `i + 1`.
    */
-  public checkLevel(level: TBinaryExpression): void {
+  public checkLevel(
+    level: TBinaryExpression,
+    enumBeingDeclared: string | null,
+  ): void {
     level.operators.forEach((operator, i) => {
       const admits = BINARY.get(operator);
       if (admits === undefined) return;
       const left = level.operands[i];
       const right = level.operands[i + 1];
-      const leftRejection = this.rejection(operator, admits, left);
+      const leftRejection = this.rejection(
+        operator,
+        admits,
+        left,
+        enumBeingDeclared,
+      );
       const rejection =
-        leftRejection ?? this.rejection(operator, admits, right);
+        leftRejection ??
+        this.rejection(operator, admits, right, enumBeingDeclared);
       if (rejection === null) return;
       // E0804 has always been reported at the left operand
       const at =
@@ -171,11 +186,16 @@ class OperatorOperandCheck {
     });
   }
 
-  public checkUnary(expr: TExpression): void {
+  public checkUnary(expr: TExpression, enumBeingDeclared: string | null): void {
     if (expr.kind !== "unary") return;
     const admits = UNARY.get(expr.operator);
     if (admits === undefined) return;
-    const rejection = this.rejection(expr.operator, admits, expr.operand);
+    const rejection = this.rejection(
+      expr.operator,
+      admits,
+      expr.operand,
+      enumBeingDeclared,
+    );
     if (rejection !== null)
       this.analyzer.addError(expr, expr.operator, rejection);
   }
@@ -184,6 +204,9 @@ class OperatorOperandCheck {
    * A compound assignment applies a binary operator that the expression
    * grammar never expresses as a level, so both halves are checked here:
    * `n +<- flag` must fail as `n <- n + flag` does. A bool target is E0806.
+   * The value is judged before the target's shape, as on main, so `m +<- f`
+   * with a bool `f` stays E0807 whatever `m` is; a whole array or string
+   * target is then E0857's (`CompoundAssignmentAnalyzer`).
    */
   public checkAssignment(site: IAssignmentSyntax): void {
     const operator = CompoundOperator.binaryOf(site.operator);
@@ -195,9 +218,17 @@ class OperatorOperandCheck {
     }
     const admits = BINARY.get(operator);
     if (admits === undefined) return;
+    const rejection = this.rejection(operator, admits, site.value, null);
+    if (rejection !== null) {
+      this.analyzer.addError(site.value, site.operator, rejection);
+      return;
+    }
     if (CompoundAssignmentAnalyzer.rejectsTarget(site.target, this.context)) {
       return;
     }
+    // An enum target, `m +<- 1`, is #2264's open question, so it is left as
+    // on main until that is decided
+    if (target?.category === "enum") return;
     const targetRejection = OperatorOperandAnalyzer.rejection(
       operator,
       admits,
@@ -206,17 +237,14 @@ class OperatorOperandCheck {
     );
     if (targetRejection !== null) {
       this.analyzer.addError(site.target, site.operator, targetRejection);
-      return;
-    }
-    const rejection = this.rejection(operator, admits, site.value);
-    if (rejection !== null) {
-      this.analyzer.addError(site.value, site.operator, rejection);
     }
   }
 }
 
 class OperatorOperandAnalyzer {
   private errors: IOperatorOperandError[] = [];
+  /** One error per source position: `-row + 1` is one mistake, at `row` */
+  private readonly reportedAt = new Set<string>();
 
   /** #1456: handed in rather than read off shared state. */
   // eslint-disable-next-line @typescript-eslint/lines-between-class-members
@@ -248,19 +276,47 @@ class OperatorOperandAnalyzer {
   ): TRejection | null {
     if (operand === null) return null;
     if (OperandTyper.isBoolean(operand)) return "bool";
-    if (operand.dimensions.length > 0) return "array";
     const form = operand.form;
+    // A ternary is each of its arms: `(c ? row : n) + 1` is an array operand
+    if (form.kind === "ternary") {
+      for (const arm of form.arms) {
+        const rejection = OperatorOperandAnalyzer.rejection(
+          operator,
+          admits,
+          arm,
+          context,
+        );
+        if (rejection !== null) return rejection;
+      }
+      return null;
+    }
+    // A string -- a C `char[N]` among them -- before its dimensions: under
+    // `+` it is concatenation, not an array (ADR-045)
+    if (OperatorOperandAnalyzer.isString(operand)) {
+      return operator === "+" ? null : "string";
+    }
+    if (operand.dimensions.length > 0) return "array";
     // One bit or a bit range of a scalar is an unsigned value (ADR-007)
     if (form.kind === "bitIndex" || form.kind === "bitRange") return null;
     if (form.kind === "unreadableMacro") return null;
     if (form.kind === "foreign" && form.indeterminate) return null;
     const category = operand.category;
+    // A composite whose leaves are not one number category was judged at
+    // those leaves -- `(flag + 1) * 2` is one E0807, at `flag` -- and so was
+    // an enum composite, `(Perm.READ | Perm.WRITE) + 1`
+    if (
+      form.kind === "composite" &&
+      (category === "none" || category === "boolean" || category === "enum")
+    ) {
+      return null;
+    }
     if (category === "none") {
-      return OperatorOperandAnalyzer.uncategorized(operator, operand, context);
+      return OperatorOperandAnalyzer.uncategorized(operand, context);
     }
     if (admits.has(category)) return null;
     // A C header's enum is not ADR-017's: which operators take one is open
-    // (#2352), so this rule admits it, as before, until that is decided
+    // (#2352), so this rule admits it, as before, until that is decided. A
+    // composite never reaches here, so this is one header value.
     if (category === "enum" && operand.enumTypeName === null) return null;
     switch (category) {
       case "floating":
@@ -274,51 +330,74 @@ class OperatorOperandAnalyzer {
   }
 
   /**
+   * ADR-045's string: a `string<N>` or `string`, a C `char` array, or a
+   * concatenation whose every leaf is one
+   */
+  private static isString(operand: IOperandType): boolean {
+    if (
+      OperandTyper.isString(operand) ||
+      (operand.typeName === "char" && operand.dimensions.length === 1)
+    ) {
+      return true;
+    }
+    const form = operand.form;
+    return (
+      form.kind === "composite" &&
+      form.leaves.length > 0 &&
+      form.leaves.every(
+        (leaf) => leaf !== null && OperatorOperandAnalyzer.isString(leaf),
+      )
+    );
+  }
+
+  /**
    * An operand with no essential category: an unsuffixed literal takes the
-   * category of what it is combined with (ADR-052), and an arithmetic or
-   * conditional composite is judged at its own leaves. Anything else with no
-   * category is not a number -- except a string under `+`, which is
-   * concatenation (ADR-045).
+   * category of what it is combined with (ADR-052). Anything else with no
+   * category is not a number, except what the compiler judges: a C++ header
+   * class, which may declare the operator, and an opaque handle, a pointer.
    */
   private static uncategorized(
-    operator: string,
     operand: IOperandType,
     context: IAnalysisContext,
   ): TRejection | null {
-    switch (operand.form.kind) {
-      case "literal":
-      case "composite":
-      case "ternary":
-        return null;
-      default:
-        break;
-    }
-    if (OperandTyper.isString(operand)) {
-      return operator === "+" ? null : "string";
-    }
+    if (operand.form.kind === "literal") return null;
     // A C char pointer: which operators take one is open (#2348), so this
     // rule admits it, as before, until ADR-046 decides
     if (operand.typeName === "cstring") return null;
     // A whole bitmap is its backing integer (ADR-034, owner ruling #2245)
     if (operand.bitmapTypeName !== null) return null;
-    if (operand.typeName === null) return null;
-    if (context.symbols.knownStructs.has(operand.typeName)) return "struct";
+    const typeName = operand.typeName;
+    if (typeName === null) return null;
+    if (context.symbols.knownStructs.has(typeName)) return "struct";
+    // Neither is Rule 10.1's, so the compiler judges them, as on main
+    // (#2347 review)
+    const cpp = context.symbolTable.getCppSymbol(typeName);
+    if (cpp?.kind === "class" || cpp?.kind === "struct") return null;
+    if (context.program.isOpaqueType(typeName)) return null;
+    if (
+      ForeignTypeFacts.isStructType(
+        typeName,
+        context.symbolTable,
+        OperandTyper.target(context),
+      )
+    ) {
+      return "struct";
+    }
     return "other";
   }
 
   /** #1991: reads 1.2's syntax, not the parse tree */
   public analyze(program: IProgramSyntax): IOperatorOperandError[] {
     this.errors = [];
+    this.reportedAt.clear();
     const check = new OperatorOperandCheck(this, this.context);
 
     for (const [part, enumBeingDeclared] of EnumMemberValue.parts(program)) {
-      check.enumBeingDeclared = enumBeingDeclared;
       for (const expr of ExpressionNodes.of(part)) {
-        check.checkUnary(expr);
-        if (expr.kind === "binary") check.checkLevel(expr);
+        check.checkUnary(expr, enumBeingDeclared);
+        if (expr.kind === "binary") check.checkLevel(expr, enumBeingDeclared);
       }
     }
-    check.enumBeingDeclared = null;
     for (const member of program.declarations) {
       for (const site of StatementNodes.assignments(member.declaration)) {
         check.checkAssignment(site);
@@ -334,6 +413,9 @@ class OperatorOperandAnalyzer {
     rejection: TRejection,
   ): void {
     const { line, column } = at.span;
+    const position = `${line}:${column}`;
+    if (this.reportedAt.has(position)) return;
+    this.reportedAt.add(position);
     if (rejection === "bool") {
       this.errors.push({
         code: "E0807",

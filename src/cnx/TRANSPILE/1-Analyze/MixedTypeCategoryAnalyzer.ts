@@ -97,9 +97,6 @@ class MixedCategoryCheck {
    */
   private readonly levelCategories = new Map<string, Category>();
 
-  /** The enum whose member values are being read (`EnumMemberValue`) */
-  public enumBeingDeclared: string | null = null;
-
   constructor(
     private readonly analyzer: MixedTypeCategoryAnalyzer,
     private readonly context: IAnalysisContext,
@@ -140,7 +137,10 @@ class MixedCategoryCheck {
    * value leaves share, or null when they have none -- or disagree, which is
    * reported at the inner operator, once.
    */
-  private operandCategory(operand: TExpression): Category {
+  private operandCategory(
+    operand: TExpression,
+    enumBeingDeclared: string | null,
+  ): Category {
     const level = OperandTyper.compositeLevelOf(operand);
     const key = level === null ? null : MixedCategoryCheck.writtenAt(level);
     if (key !== null && this.levelCategories.has(key)) {
@@ -149,7 +149,7 @@ class MixedCategoryCheck {
     let resolved: Category = null;
     for (const leaf of OperandTyper.valueLeaves(operand, this.context)) {
       const category = MixedCategoryCheck.rule104Category(
-        EnumMemberValue.operandType(leaf, this.enumBeingDeclared),
+        EnumMemberValue.operandType(leaf, enumBeingDeclared),
       );
       if (category === null) continue;
       if (resolved === null) {
@@ -172,14 +172,23 @@ class MixedCategoryCheck {
   public checkLevel(
     expr: TBinaryExpression,
     level: TBinaryOperatorLevel,
+    enumBeingDeclared: string | null,
   ): void {
     const operands = expr.operands;
-    let running = this.operandCategory(operands[0]);
+    let running = this.operandCategory(operands[0], enumBeingDeclared);
     let mixed = false;
     for (let i = 1; i < operands.length; i += 1) {
-      const right = this.operandCategory(operands[i]);
+      const right = this.operandCategory(operands[i], enumBeingDeclared);
       const operator = expr.operators[i - 1];
-      if (this.reportsPair(operands[i - 1], operands[i], level, operator)) {
+      if (
+        this.reportsPair(
+          operands[i - 1],
+          operands[i],
+          level,
+          operator,
+          enumBeingDeclared,
+        )
+      ) {
         if (MixedCategoryCheck.differ(running, right, operator)) {
           this.analyzer.addError(
             operands[i].span.line,
@@ -191,6 +200,10 @@ class MixedCategoryCheck {
           );
           mixed = true;
         }
+      } else if (!this.enumComparison(operands[i - 1], operands[i], level)) {
+        // Rule 10.1 rejected an operand of this pair, so the level has no
+        // category an enclosing level could report again
+        mixed = true;
       }
       running = MixedCategoryCheck.fold(running, right, operator);
     }
@@ -206,17 +219,18 @@ class MixedCategoryCheck {
     right: TExpression,
     level: TBinaryOperatorLevel,
     operator: string,
+    enumBeingDeclared: string | null,
   ): boolean {
     if (this.enumComparison(left, right, level)) return false;
     return !this.ownedElsewhere(
       operator,
       EnumMemberValue.operandType(
         OperandTyper.typeOf(left, this.context),
-        this.enumBeingDeclared,
+        enumBeingDeclared,
       ),
       EnumMemberValue.operandType(
         OperandTyper.typeOf(right, this.context),
-        this.enumBeingDeclared,
+        enumBeingDeclared,
       ),
     );
   }
@@ -283,10 +297,13 @@ class MixedCategoryCheck {
    * are mixed has no category, so that defect is reported once, at its own
    * operator, and never again here.
    */
-  public checkTernary(expr: TExpression): void {
+  public checkTernary(
+    expr: TExpression,
+    enumBeingDeclared: string | null,
+  ): void {
     if (expr.kind !== "ternary") return;
-    const left = this.operandCategory(expr.whenTrue);
-    const right = this.operandCategory(expr.whenFalse);
+    const left = this.operandCategory(expr.whenTrue, enumBeingDeclared);
+    const right = this.operandCategory(expr.whenFalse, enumBeingDeclared);
     if (left === null || right === null || left === right) return;
     if (
       (left === UNREADABLE_MACRO || right === UNREADABLE_MACRO) &&
@@ -339,7 +356,7 @@ class MixedCategoryCheck {
       return;
     }
     const left = MixedCategoryCheck.rule104Category(target);
-    const right = this.operandCategory(value);
+    const right = this.operandCategory(value, null);
     if (MixedCategoryCheck.differ(left, right, operator)) {
       this.analyzer.addError(
         value.span.line,
@@ -382,10 +399,8 @@ class MixedTypeCategoryAnalyzer {
     }
     levels.reverse();
     for (const [expr, level, enumBeingDeclared] of levels) {
-      check.enumBeingDeclared = enumBeingDeclared;
-      check.checkLevel(expr, level);
+      check.checkLevel(expr, level, enumBeingDeclared);
     }
-    check.enumBeingDeclared = null;
 
     for (const member of program.declarations) {
       for (const site of StatementNodes.assignments(member.declaration)) {
@@ -393,8 +408,7 @@ class MixedTypeCategoryAnalyzer {
       }
     }
     for (const [expr, enumBeingDeclared] of expressions) {
-      check.enumBeingDeclared = enumBeingDeclared;
-      check.checkTernary(expr);
+      check.checkTernary(expr, enumBeingDeclared);
     }
 
     // Read off 1.2's syntax (#1991); reported in source order

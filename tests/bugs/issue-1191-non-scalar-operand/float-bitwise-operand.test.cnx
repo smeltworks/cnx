@@ -2,8 +2,6 @@
 // #1798, #1772: a float is not an integer -- shift and bitwise operators take integers only,
 // and so do their compound assignments
 
-#pragma target host
-
 u32 f(f32 k) {
     u32 a <- k << 1;
     u32 b <- k >> 2;

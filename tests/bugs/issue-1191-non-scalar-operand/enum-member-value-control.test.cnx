@@ -1,8 +1,6 @@
 // test-execution
 // Control for E0925: a member of the enum being declared is an i32 there (ADR-017)
 
-#pragma target host
-
 enum EPerm {
     READ <- 1,
     WRITE <- 2,

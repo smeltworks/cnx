@@ -3,9 +3,6 @@
  * A safer C for embedded systems
  */
 
-// test-execution
-// Control for E0925: fully indexed elements and struct fields are numbers
-
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -22,6 +19,8 @@ static inline uint8_t cnx_clamp_add_u8(uint8_t a, uint32_t b) {
     return (uint8_t)(a + (uint8_t)b);
 }
 
+// test-execution
+// Control for E0925: fully indexed elements and struct fields are numbers
 int main(void) {
     uint8_t grid[2][3] = {};
     grid[0][1] = 4U;

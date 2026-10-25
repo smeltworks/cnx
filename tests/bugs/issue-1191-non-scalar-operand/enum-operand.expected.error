@@ -1,4 +1,4 @@
-13:12 error[E0925]: Operator '+' is not valid on an enum operand
+11:12 error[E0925]: Operator '+' is not valid on an enum operand
        help: MISRA C:2012 Rule 10.1: an enum is not a number (ADR-017). Cast it to an unsigned type first, e.g. (u8)value.
-14:12 error[E0925]: Operator '&' is not valid on an enum operand
+12:12 error[E0925]: Operator '&' is not valid on an enum operand
        help: MISRA C:2012 Rule 10.1: an enum is not a number (ADR-017). Cast it to an unsigned type first, e.g. (u8)value.

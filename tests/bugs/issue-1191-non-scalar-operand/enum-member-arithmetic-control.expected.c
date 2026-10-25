@@ -5,11 +5,10 @@
 
 #include "enum-member-arithmetic-control.test.h"
 
-// test-execution
-// Control for E0925: the cast form of an enum member in arithmetic compiles in every position (ADR-017, #1864)
-
 #include <stdint.h>
 
+// test-execution
+// Control for E0925: the cast form of an enum member in arithmetic compiles in every position (ADR-017, #1864)
 const uint32_t N = 3U;
 
 const uint8_t slots[3] = {0};

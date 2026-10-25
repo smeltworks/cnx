@@ -1,4 +1,4 @@
-13:12 error[E0925]: Operator '+' is not valid on a struct operand
+11:12 error[E0925]: Operator '+' is not valid on a struct operand
        help: MISRA C:2012 Rule 10.1: a struct is not a number. Use one of its fields.
-14:14 error[E0925]: Operator '<' is not valid on a struct operand
+12:14 error[E0925]: Operator '<' is not valid on a struct operand
        help: MISRA C:2012 Rule 10.1: a struct is not a number. Use one of its fields.

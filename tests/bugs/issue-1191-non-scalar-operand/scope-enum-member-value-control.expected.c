@@ -5,11 +5,10 @@
 
 #include "scope-enum-member-value-control.test.h"
 
-// test-execution
-// Control for E0925: inside a scope, a member of the enum being declared is an i32 there too (ADR-017)
-
 #include <stdint.h>
 
+// test-execution
+// Control for E0925: inside a scope, a member of the enum being declared is an i32 there too (ADR-017)
 /* Scope: Motor */
 
 int main(void) {
