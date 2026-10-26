@@ -154,7 +154,9 @@ interface IAssignmentContext {
   // counted from offset 0, so the two disagree on every scope-qualified chain
   // (`global.Other.buf[3][1]`): a reader who trusted the comment and removed
   // the "duplicate" would have got a wrong depth, silently. Deleted rather
-  // than fixed, because the classifier's count is the live one.
+  // than fixed, because the classifier's count is the live one. (#1114
+  // review: that count went too -- the depth invariant now reads every run
+  // off the target's typed chain, in `FilePlanner.targetDeclaration`.)
 
   // === Target classification flags ===
 
