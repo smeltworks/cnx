@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import prettier from "prettier";
+import { format } from "prettier";
 
 import ScopeJoinSites from "../scope-joins/ScopeJoinSites";
 
@@ -423,7 +423,7 @@ describe("ScopeJoinSites", () => {
       // table cells to a common width. A parser requiring single spaces failed
       // against the very file the generator had just written, so the gate was
       // red on its own output and would have been "fixed" by deleting it.
-      const formatted = await prettier.format(doc, { parser: "markdown" });
+      const formatted = await format(doc, { parser: "markdown" });
 
       expect(formatted).not.toBe(doc);
       expect(
