@@ -345,7 +345,13 @@ and `cs.three[1]` reads one bit.
 
 A `char` takes no bit index either. A bit index shifts and masks, and ADR-045 forbids
 both on a character (MISRA C:2012 Rule 10.1), so `name[1][2]` on a `char[4]` is E0856.
-Cast the character to an integer type to read its bits.
+Cast the character to an integer type to read its bits, which makes the intent explicit
+(owner ruling, Issue #1114 review):
+
+```cnx
+bool high <- ((u8)name[1])[7]; // OK: the u8 takes a bit index
+bool bad <- name[1][7];        // ERROR E0856: a char takes no bit index
+```
 
 ```cnx
 mut bool done;

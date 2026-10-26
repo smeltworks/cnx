@@ -21,5 +21,6 @@ bool read() {
     bool okArr <- cs.arr[1][2];
     bool okName <- cs.name[1] = 'a';
     bool okThree <- cs.three[1];
+    bool okCast <- ((u8)cs.c)[1];
     return okF;
 }

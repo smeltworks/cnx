@@ -5,9 +5,9 @@
 14:14 error[E0856]: too many subscripts on 'cs.flag': it is a scalar 'bool', so it allows at most 0
        help: 0 for the array dimensions and no bit index: 'cs.flag' is already a single bit (ADR-036/ADR-007).
 15:14 error[E0856]: too many subscripts on 'cs.c': it is a scalar 'char', so it allows at most 0
-       help: 0 for the array dimensions and no bit index: a bit index shifts and masks, which MISRA C:2012 Rule 10.1 forbids on a character. Cast 'cs.c' to an integer type first (ADR-045).
+       help: 0 for the array dimensions and no bit index: a bit index shifts and masks, which MISRA C:2012 Rule 10.1 forbids on a character. Cast it to an integer type first, as in '((u8)cs.c)[bit]' (ADR-045).
 16:14 error[E0856]: too many subscripts on 'cs.name': it is a 1-dimensional 'char' array, so it allows at most 1
-       help: 1 for the array dimension and no bit index: a bit index shifts and masks, which MISRA C:2012 Rule 10.1 forbids on a character. Cast 'cs.name[1]' to an integer type first (ADR-045).
+       help: 1 for the array dimension and no bit index: a bit index shifts and masks, which MISRA C:2012 Rule 10.1 forbids on a character. Cast it to an integer type first, as in '((u8)cs.name[1])[bit]' (ADR-045).
 17:14 error[E0856]: too many subscripts on 'cs.one': it is a 1-bit field, so it allows at most 0
        help: 0 for the array dimensions and no bit index: 'cs.one' is already a single bit (ADR-036/ADR-007).
 18:14 error[E0856]: too many subscripts on 'cs.three': it is a 3-bit field, so it allows at most 1

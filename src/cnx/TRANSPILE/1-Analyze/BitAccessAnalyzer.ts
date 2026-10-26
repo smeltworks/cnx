@@ -244,7 +244,7 @@ class BitAccessCheck {
       return `${per} plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range '${element}[start, width]'?`;
     }
     if (run.fieldWidth === null && run.indexed.category === "character") {
-      return `${per} and no bit index: a bit index shifts and masks, which MISRA C:2012 Rule 10.1 forbids on a character. Cast '${element}' to an integer type first (ADR-045).`;
+      return `${per} and no bit index: a bit index shifts and masks, which MISRA C:2012 Rule 10.1 forbids on a character. Cast it to an integer type first, as in '((u8)${element})[bit]' (ADR-045).`;
     }
     return `${per} and no bit index: '${element}' is already a single bit (ADR-036/ADR-007).`;
   }
