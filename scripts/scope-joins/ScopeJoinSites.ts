@@ -4,7 +4,7 @@
  *
  * A qualified C name has exactly two sources. A symbol's own name comes from
  * its declaring scope's whole PATH, through the encoders in `ScopeUtils`, and
- * is materialised on the symbol (`fullyQualifiedCName`). A name the author
+ * is materialized on the symbol (`fullyQualifiedCName`). A name the author
  * wrote in full -- `Motor.State.IDLE` -- is spelled for C by
  * `QualifiedCName.fromSourceName`. Joining a scope's NAME to a member is
  * neither: it claims a complete path while supplying a leaf, and drops every
@@ -12,7 +12,7 @@
  *
  * #1357's version of this gate counted only `fromParts` calls whose first
  * element READ as a scope, by a name pattern, and let the other 32 through
- * unjudged. It also could not see a join spelled as a template string, which is
+ * never judged. It also could not see a join spelled as a template string, which is
  * how three render sites built names (#2116). So nothing here filters by name:
  * every builder call, every use of the separator and every `${...}__` template
  * is a site, and every site needs a reviewed judgement in `ADJUDICATIONS`.
@@ -70,7 +70,7 @@ const KIND_SECTIONS = [
     kind: "owner-c-name",
     lines: [
       "- **owner-c-name** -- a member of an entity whose C name is already",
-      "  materialised from its path: an enum or register member, or a local",
+      "  materialized from its path: an enum or register member, or a local",
       "  renamed under its function's C name. The owner is complete, so a",
       "  nested scope changes the owner's name, not this join.",
     ],
@@ -152,13 +152,13 @@ class ScopeJoinSites {
       element:
         "fromSourceName([functionCName, name, suffix === 1 ? null : String(suffix)])",
       kind: "owner-c-name",
-      why: "a local renamed under its function's materialised C name when it hides a file-scope name, with a uniqueness suffix",
+      why: "a local renamed under its function's materialized C name when it hides a file-scope name, with a uniqueness suffix",
     },
     {
       file: "src/cnx/PARSE/4-Resolve/LexicalFrames.ts",
       element: "fromSourceName([functionCName, name])",
       kind: "owner-c-name",
-      why: "a local renamed under its function's materialised C name when it hides a file-scope name",
+      why: "a local renamed under its function's materialized C name when it hides a file-scope name",
     },
     {
       file: "src/cnx/TRANSPILE/1-Analyze/SwitchStatementAnalyzer.ts",
@@ -194,13 +194,13 @@ class ScopeJoinSites {
       file: "src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts",
       element: "fromSourceName([ctx.result, ctx.memberName])",
       kind: "owner-c-name",
-      why: "member of a register (`knownRegisters`) or an enum (`knownEnums`), each keyed by its materialised C name; a scope member goes through `QualifiedNameGenerator.forMember` instead",
+      why: "member of a register (`knownRegisters`) or an enum (`knownEnums`), each keyed by its materialized C name; a scope member goes through `QualifiedNameGenerator.forMember` instead",
     },
     {
       file: "src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts",
       element: "fromSourceName([switchEnumType, id])",
       kind: "owner-c-name",
-      why: "a bare case label that is a member of the subject's enum, whose C name `enumTypeOf` materialised",
+      why: "a bare case label that is a member of the subject's enum, whose C name `enumTypeOf` materialized",
     },
     {
       file: "src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts",
@@ -224,7 +224,7 @@ class ScopeJoinSites {
       file: "src/cnx/TRANSPILE/3-Render/headers/generators/generateEnumHeader.ts",
       element: "fromSourceName([name, memberName])",
       kind: "owner-c-name",
-      why: "ADR-017 member of the header symbol's enum, whose `name` is its materialised C name",
+      why: "ADR-017 member of the header symbol's enum, whose `name` is its materialized C name",
     },
     {
       file: "src/cnx/TRANSPILE/CodeGenWalker.ts",
@@ -236,7 +236,7 @@ class ScopeJoinSites {
       file: "src/cnx/TRANSPILE/CodeGenWalker.ts",
       element: "QualifiedCName.SEPARATOR",
       kind: "owner-c-name",
-      why: "an enum's zero member (ADR-017) and a planned type's member, each joined to a materialised C name; `::` when that name is a C++ namespace",
+      why: "an enum's zero member (ADR-017) and a planned type's member, each joined to a materialized C name; `::` when that name is a C++ namespace",
     },
     {
       file: "src/cnx/TRANSPILE/2-Plan/TypeValidator.ts",
@@ -248,7 +248,7 @@ class ScopeJoinSites {
       file: "src/cnx/utils/EnumZeroValue.ts",
       element: "QualifiedCName.SEPARATOR",
       kind: "owner-c-name",
-      why: "ADR-017 zero member of an enum, joined to the enum's materialised C name",
+      why: "ADR-017 zero member of an enum, joined to the enum's materialized C name",
     },
     {
       file: "src/cnx/utils/LengthProperty.ts",
@@ -457,7 +457,7 @@ class ScopeJoinSites {
       "`QualifiedCName.SEPARATOR`, or the separator spelled as text.",
       "",
       "A qualified name comes from a symbol's declaring scope's whole PATH",
-      "(`ScopeUtils`, materialised as `fullyQualifiedCName`), or from a name the",
+      "(`ScopeUtils`, materialized as `fullyQualifiedCName`), or from a name the",
       "author wrote in full. Joining a scope's NAME to a member is neither, and",
       "drops every outer scope. Every row below carries the judgement that it is",
       "not that join:",

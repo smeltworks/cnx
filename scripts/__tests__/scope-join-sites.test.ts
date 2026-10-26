@@ -45,7 +45,7 @@ describe("ScopeJoinSites", () => {
 
     it("counts a call whatever its argument is called", () => {
       // #2116 box 2: #1357's gate skipped a call whose first element did not
-      // READ as a scope, so `parts[0]` holding one went unjudged. No spelling
+      // READ as a scope, so `parts[0]` holding one went never judged. No spelling
       // exempts a call now.
       expect(
         ScopeJoinSites.elements("QualifiedCName.fromSourceName([cName, x]);"),

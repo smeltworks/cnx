@@ -193,9 +193,7 @@ class ConstLiteral {
         (member) =>
           member.kind === "value" && member.value.toString() === settled.digits,
       );
-    return index < 0
-      ? null
-      : members[index].fullyQualifiedCName;
+    return index < 0 ? null : members[index].fullyQualifiedCName;
   }
 }
 

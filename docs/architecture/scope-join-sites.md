@@ -7,7 +7,7 @@ a qualified C name: a `QualifiedCName.fromSourceName` call, a use of
 `QualifiedCName.SEPARATOR`, or the separator spelled as text.
 
 A qualified name comes from a symbol's declaring scope's whole PATH
-(`ScopeUtils`, materialised as `fullyQualifiedCName`), or from a name the
+(`ScopeUtils`, materialized as `fullyQualifiedCName`), or from a name the
 author wrote in full. Joining a scope's NAME to a member is neither, and
 drops every outer scope. Every row below carries the judgement that it is
 not that join:
@@ -22,7 +22,7 @@ not that join:
   (`currentScopePath`), never its leaf, so `Outer.Inner` yields the
   prefix `Outer__Inner__`.
 - **owner-c-name** -- a member of an entity whose C name is already
-  materialised from its path: an enum or register member, or a local
+  materialized from its path: an enum or register member, or a local
   renamed under its function's C name. The owner is complete, so a
   nested scope changes the owner's name, not this join.
 
@@ -76,23 +76,23 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/PARSE/4-Resolve/ConstantNames.ts` `fromSourceName(parts.slice(1))`: `global.A.B`: everything after `global.` is the path as the author wrote it
 - `src/cnx/PARSE/4-Resolve/ConstantNames.ts` `fromSourceName(qualified)`: a dotted type name as written; a bare one is first qualified from the enclosing PATH by `ScopeUtils.qualifyScopeType`
 - `src/cnx/PARSE/4-Resolve/ConstantNames.ts` `fromSourceName(type.name)`: a resolved type's dotted name as its C lookup key
-- `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `fromSourceName([functionCName, name, suffix === 1 ? null : String(suffix)])`: a local renamed under its function's materialised C name when it hides a file-scope name, with a uniqueness suffix
-- `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `fromSourceName([functionCName, name])`: a local renamed under its function's materialised C name when it hides a file-scope name
+- `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `fromSourceName([functionCName, name, suffix === 1 ? null : String(suffix)])`: a local renamed under its function's materialized C name when it hides a file-scope name, with a uniqueness suffix
+- `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `fromSourceName([functionCName, name])`: a local renamed under its function's materialized C name when it hides a file-scope name
 - `src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts` `fromSourceName(text)`: a dotted callback type name as written; `this.` goes through `ScopeUtils.qualifyInScope` instead
 - `src/cnx/TRANSPILE/1-Analyze/SwitchStatementAnalyzer.ts` `fromSourceName([head, ...label.path.slice(1)])`: `head` is the label's first component resolved by `ScopeUtils.typeHeadCName`; the rest is what the author wrote
 - `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts` `fromSourceName(identifiers)`: a qualified type's identifier chain as written
 - `src/cnx/TRANSPILE/2-Plan/TypeValidator.ts` `isInScope(identifier, currentScopePath)`: is a known function declared in the current scope? Handed the whole PATH (#1295), not `leafOf` it
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/declarationGenerators/EnumGenerator.ts` `fromSourceName([fullName, memberName])`: ADR-017 member of the enum whose C name `QualifiedNameGenerator.forMember` built from the enclosing PATH
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/declarationGenerators/RegisterMacroGenerator.ts` `fromSourceName([prefix, member.name])`: register member macro; `prefix` is the register's C name, built from its declaring PATH by `RegisterGenerator`
-- `src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts` `fromSourceName([ctx.result, ctx.memberName])`: member of a register (`knownRegisters`) or an enum (`knownEnums`), each keyed by its materialised C name; a scope member goes through `QualifiedNameGenerator.forMember` instead
-- `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts` `fromSourceName([switchEnumType, id])`: a bare case label that is a member of the subject's enum, whose C name `enumTypeOf` materialised
+- `src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts` `fromSourceName([ctx.result, ctx.memberName])`: member of a register (`knownRegisters`) or an enum (`knownEnums`), each keyed by its materialized C name; a scope member goes through `QualifiedNameGenerator.forMember` instead
+- `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts` `fromSourceName([switchEnumType, id])`: a bare case label that is a member of the subject's enum, whose C name `enumTypeOf` materialized
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts` `fromSourceName(label.parts)`: a qualified case label as written (`Motor.State.IDLE`)
 - `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts` `fromSourceName(identifierChain.slice(0, -1))`: the access chain as written, as a register lookup key
 - `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts` `QualifiedCName.SEPARATOR`: picks `__` over `.` for a chain the author wrote from its head (`global.Scope.member`, `GPIO7.DR_SET`); every component is written, so nesting adds components rather than dropping them
-- `src/cnx/TRANSPILE/3-Render/headers/generators/generateEnumHeader.ts` `fromSourceName([name, memberName])`: ADR-017 member of the header symbol's enum, whose `name` is its materialised C name
+- `src/cnx/TRANSPILE/3-Render/headers/generators/generateEnumHeader.ts` `fromSourceName([name, memberName])`: ADR-017 member of the header symbol's enum, whose `name` is its materialized C name
 - `src/cnx/TRANSPILE/CodeGenWalker.ts` `fromSourceName([this.host.state.expectedType, id])`: a bare member of the expected enum, whose C name keys `knownEnums`
-- `src/cnx/TRANSPILE/CodeGenWalker.ts` `QualifiedCName.SEPARATOR`: an enum's zero member (ADR-017) and a planned type's member, each joined to a materialised C name; `::` when that name is a C++ namespace
-- `src/cnx/utils/EnumZeroValue.ts` `QualifiedCName.SEPARATOR`: ADR-017 zero member of an enum, joined to the enum's materialised C name
+- `src/cnx/TRANSPILE/CodeGenWalker.ts` `QualifiedCName.SEPARATOR`: an enum's zero member (ADR-017) and a planned type's member, each joined to a materialized C name; `::` when that name is a C++ namespace
+- `src/cnx/utils/EnumZeroValue.ts` `QualifiedCName.SEPARATOR`: ADR-017 zero member of an enum, joined to the enum's materialized C name
 - `src/cnx/utils/LengthProperty.ts` `fromSourceName(type.name)`: a resolved type's dotted name as its C lookup key
 - `src/cnx/utils/OperandTyper.ts` `fromSourceName(sourceName)`: a dotted source name as written, as its C lookup key
 - `src/cnx/utils/QualifiedCName.ts` `prefixFor(scopePath)`: `isInScope` asking the prefix builder for the path it was handed

@@ -164,7 +164,8 @@ class ConstantNames {
         scopePath,
       });
     }
-    if (parts[0] === "global") return QualifiedCName.fromSourceName(parts.slice(1));
+    if (parts[0] === "global")
+      return QualifiedCName.fromSourceName(parts.slice(1));
     const qualified =
       parts.length === 1
         ? ScopeUtils.qualifyScopeType(typeName, scopePath, (name) =>
@@ -470,9 +471,8 @@ class ConstantNames {
     if (type.kind === "external") return type.name;
     if (type.kind !== "struct") return null;
     const isCnx =
-      walk.facts.visibleSymbol(
-        QualifiedCName.fromSourceName(type.name),
-      ) !== undefined;
+      walk.facts.visibleSymbol(QualifiedCName.fromSourceName(type.name)) !==
+      undefined;
     return !isCnx && walk.facts.headerStructFields(type.name) !== undefined
       ? type.name
       : null;

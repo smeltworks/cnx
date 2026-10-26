@@ -60,4 +60,3 @@ describe("FormatUtils.INDENT", () => {
     expect(FormatUtils.INDENT).toHaveLength(4);
   });
 });
-

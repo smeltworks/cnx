@@ -8,7 +8,9 @@ import QualifiedCName from "../QualifiedCName";
 describe("QualifiedCName", () => {
   describe("join", () => {
     it("joins scope and member", () => {
-      expect(QualifiedCName.fromSourceName(["Motor", "init"])).toBe("Motor__init");
+      expect(QualifiedCName.fromSourceName(["Motor", "init"])).toBe(
+        "Motor__init",
+      );
     });
 
     it("joins three components (scoped enum member)", () => {
