@@ -1,0 +1,26 @@
+// test-error
+// test-adr: 007
+// Issue #1114: a struct declared in a C header, read through a variable the
+// header declares: each field is measured by its own type. A char takes no bit
+// index (ADR-045: MISRA forbids a shift on one), and a bit-field is measured
+// by its declared width, as a bitmap field is: a 1-bit one takes none.
+//
+// NEGATIVE CONTROLS: the deepest legal form of each field stays silent.
+#include "fields.h"
+
+bool read() {
+    bool a <- cs.f[4][3];
+    bool b <- cs.arr[1][2][3];
+    bool c <- cs.flag[0];
+    bool d <- cs.c[1];
+    bool e <- cs.name[1][2];
+    bool g <- cs.one[0];
+    bool h <- cs.three[1][0];
+
+    bool okF <- cs.f[4];
+    bool okArr <- cs.arr[1][2];
+    bool okName <- cs.name[1] = 'a';
+    bool okThree <- cs.three[1];
+    bool okCast <- ((u8)cs.c)[1];
+    return okF;
+}

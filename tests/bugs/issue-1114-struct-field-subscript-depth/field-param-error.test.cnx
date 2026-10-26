@@ -1,0 +1,11 @@
+// test-error
+// test-adr: 007
+// Issue #1114: a struct parameter's field is measured by the field's own type.
+struct Config {
+    u8 header;
+}
+
+u8 read(Config pk) {
+    u8 a <- pk.header[4][3];
+    return a;
+}

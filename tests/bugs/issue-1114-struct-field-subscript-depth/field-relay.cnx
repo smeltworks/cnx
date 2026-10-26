@@ -1,0 +1,2 @@
+// The middle hop for field-imported-transitive-error (#1114).
+#include "field-decls.cnx"

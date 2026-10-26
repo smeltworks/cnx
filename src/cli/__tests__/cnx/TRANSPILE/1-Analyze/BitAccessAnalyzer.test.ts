@@ -183,3 +183,184 @@ describe("BitAccessAnalyzer -- rooted chains and leading subscripts (E0856)", ()
     ).toEqual([]);
   });
 });
+
+describe("BitAccessAnalyzer -- struct fields (E0856, #1114)", () => {
+  const e0856 = (source: string) =>
+    errors(source)
+      .filter((e) => e.code === "E0856")
+      .map((e) => [e.span.line, e.message]);
+  const types = [
+    "struct Inner { u8 header; }",
+    "struct Packet { u8 header; u8[4] bytes; u8[2][3] cells; Inner inner; }",
+    "Packet p;",
+    "Packet[2] packets;",
+  ];
+
+  it("measures a field by its own shape, not the root struct's", () => {
+    expect(
+      e0856(
+        [
+          ...types,
+          "void f() {",
+          "    p.header[4][3] <- 5;",
+          "    u8 a <- p.bytes[1][2][3];",
+          "    u8 b <- p.inner.header[4][3];",
+          "    u8 c <- packets[1].header[4][3];",
+          "}",
+        ].join("\n"),
+      ),
+    ).toEqual([
+      [
+        6,
+        "too many subscripts on 'p.header': it is a scalar 'u8', so it allows at most 1",
+      ],
+      [
+        7,
+        "too many subscripts on 'p.bytes': it is a 1-dimensional 'u8' array, so it allows at most 2",
+      ],
+      [
+        8,
+        "too many subscripts on 'p.inner.header': it is a scalar 'u8', so it allows at most 1",
+      ],
+      [
+        9,
+        "too many subscripts on 'packets[1].header': it is a scalar 'u8', so it allows at most 1",
+      ],
+    ]);
+  });
+
+  it("allows a field one subscript per dimension plus one bit index", () => {
+    expect(
+      e0856(
+        [
+          ...types,
+          "void f() {",
+          "    bool a <- p.header[4];",
+          "    u8 b <- p.header[0, 4];",
+          "    bool c <- p.bytes[1][2];",
+          "    bool d <- p.cells[1][2][3];",
+          "    bool e <- packets[1].inner.header[7];",
+          "}",
+        ].join("\n"),
+      ),
+    ).toEqual([]);
+  });
+});
+
+describe("BitAccessAnalyzer -- bool takes no bit index (E0856, #2354)", () => {
+  const e0856 = (source: string) =>
+    errors(source)
+      .filter((e) => e.code === "E0856")
+      .map((e) => [e.span.line, e.message, e.helpText]);
+
+  it("rejects a bit index on a bool, on read and write", () => {
+    expect(
+      e0856(
+        [
+          "bool done;",
+          "bool[4] ready;",
+          "struct Flags { bool on; }",
+          "Flags f;",
+          "void g() {",
+          "    bool a <- done[0];",
+          "    done[1] <- true;",
+          "    bool b <- ready[1][0];",
+          "    f.on[0] <- true;",
+          "}",
+        ].join("\n"),
+      ),
+    ).toEqual([
+      [
+        6,
+        "too many subscripts on 'done': it is a scalar 'bool', so it allows at most 0",
+        "0 for the array dimensions and no bit index: 'done' is already a single bit (ADR-036/ADR-007).",
+      ],
+      [
+        7,
+        "too many subscripts on 'done': it is a scalar 'bool', so it allows at most 0",
+        "0 for the array dimensions and no bit index: 'done' is already a single bit (ADR-036/ADR-007).",
+      ],
+      [
+        8,
+        "too many subscripts on 'ready': it is a 1-dimensional 'bool' array, so it allows at most 1",
+        "1 for the array dimension and no bit index: 'ready[1]' is already a single bit (ADR-036/ADR-007).",
+      ],
+      [
+        9,
+        "too many subscripts on 'f.on': it is a scalar 'bool', so it allows at most 0",
+        "0 for the array dimensions and no bit index: 'f.on' is already a single bit (ADR-036/ADR-007).",
+      ],
+    ]);
+  });
+
+  it("allows a bool array its element subscripts", () => {
+    expect(
+      e0856(
+        [
+          "bool[2][3] grid;",
+          "void g() {",
+          "    bool a <- grid[1][2];",
+          "}",
+        ].join("\n"),
+      ),
+    ).toEqual([]);
+  });
+});
+
+describe("BitAccessAnalyzer -- E0856 help and bitmap fields (#1114 review)", () => {
+  const e0856 = (source: string) =>
+    errors(source)
+      .filter((e) => e.code === "E0856")
+      .map((e) => [e.span.line, e.message, e.helpText]);
+
+  it("suggests the bit range on the element, keeping every dimension indexed", () => {
+    expect(
+      e0856(
+        [
+          "struct Packet { u8[4] bytes; u8[2][3] cells; }",
+          "Packet p;",
+          "void f() {",
+          "    u8 a <- p.bytes[1][2][3];",
+          "    u8 b <- p.cells[1][2][3][4];",
+          "}",
+        ].join("\n"),
+      ).map(([line, , help]) => [line, help]),
+    ).toEqual([
+      [
+        4,
+        "1 for the array dimension plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range 'p.bytes[1][start, width]'?",
+      ],
+      [
+        5,
+        "2 for the array dimensions plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range 'p.cells[1][2][start, width]'?",
+      ],
+    ]);
+  });
+
+  it("measures a bitmap field by its declared width: a 1-bit field takes no bit index", () => {
+    expect(
+      e0856(
+        [
+          "bitmap8 Status { Ready, Mode[3], Rest[4] }",
+          "Status s;",
+          "void f() {",
+          "    bool a <- s.Ready[0];",
+          "    bool b <- s.Mode[1][0];",
+          "    bool c <- s.Mode[1];",
+          "}",
+        ].join("\n"),
+      ),
+    ).toEqual([
+      [
+        4,
+        "too many subscripts on 's.Ready': it is a 1-bit field, so it allows at most 0",
+        "0 for the array dimensions and no bit index: 's.Ready' is already a single bit (ADR-036/ADR-007).",
+      ],
+      [
+        5,
+        "too many subscripts on 's.Mode': it is a 3-bit field, so it allows at most 1",
+        "0 for the array dimensions plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range 's.Mode[start, width]'?",
+      ],
+    ]);
+  });
+});

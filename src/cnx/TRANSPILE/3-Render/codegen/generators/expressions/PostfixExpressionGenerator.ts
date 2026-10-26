@@ -34,7 +34,6 @@ import FloatBitHelper from "../../helpers/FloatBitHelper";
 import NarrowingCastHelper from "../../../../2-Plan/NarrowingCastHelper";
 import BitUtils from "../../../../../utils/BitUtils";
 import AdrProvenance from "../../../../../instrumentation/AdrProvenance";
-import SubscriptDepthValidator from "../../../../2-Plan/SubscriptDepthValidator";
 import C_TYPE_WIDTH from "../../../../2-Plan/types/C_TYPE_WIDTH";
 import ForeignTypeFacts from "../../../../../utils/ForeignTypeFacts";
 import ResolvedTarget from "../../../../../utils/ResolvedTarget";
@@ -194,22 +193,6 @@ const generatePostfixExpression = (
   // modified elsewhere in the function, so bit access (`v[4]`) reads
   // through the pointer instead of pointer-indexing past it.
   const result: string = plan.renderPrimary();
-
-  // Issue #1106: reject over-indexing the base variable (e.g. flags[4][3] on a
-  // scalar u8, which would otherwise chain bit-indexes into always-zero code:
-  // `((flags >> 4) & 1) >> 3) & 1` extracts bit 3 of a single bit).
-  //
-  // `this.flags[4][3]` / `global.flags[4][3]` reach the same variable, but as
-  // `primaryExpression postfixOp*` the prefix keyword is the primary and the
-  // member access is ops[0] — so the base name and the subscript start offset
-  // are resolved first, then the shared validator does the counting.
-  if (plan.subscriptBase) {
-    SubscriptDepthValidator.validate(
-      plan.base.typeInfo,
-      plan.leadingSubscriptCount,
-      plan.subscriptBase.displayName,
-    );
-  }
 
   const tracking = initializeTrackingState(
     plan.base,

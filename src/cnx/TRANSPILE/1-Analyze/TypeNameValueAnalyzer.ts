@@ -10,6 +10,7 @@
  * - E0897: a chain that names a type does not end reading a length of it
  */
 import DeclarationParts from "../../utils/DeclarationParts";
+import ExpressionShape from "../../utils/ExpressionShape";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import OperandTyper from "../../utils/OperandTyper";
 import type ITypeNameValueError from "./types/ITypeNameValueError";
@@ -68,11 +69,7 @@ class TypeNameValueAnalyzer {
     const ops = chain.kind === "postfix" ? chain.ops : [];
     const before = (end: number): string =>
       chain.kind === "postfix"
-        ? chain.primary.written +
-          ops
-            .slice(0, end)
-            .map((op) => op.written)
-            .join("")
+        ? ExpressionShape.writtenThrough(chain, end)
         : chain.written;
     if (at?.kind === "member") {
       return `Type '${before(ops.indexOf(at))}' has no field or length property '${at.name}'`;

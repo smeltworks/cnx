@@ -31,6 +31,7 @@
  */
 
 import OperandTyper from "../../utils/OperandTyper";
+import ExpressionShape from "../../utils/ExpressionShape";
 import ElementCount from "../../utils/ElementCount";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
@@ -84,7 +85,10 @@ class ArrayIndexBoundsCheck {
         indexed === null
           ? null
           : this.boundOf(indexed, subscript, typing, chain),
-        ArrayIndexBoundsCheck.spelling(chain, subscript.opsAfter),
+        ExpressionShape.writtenThrough(
+          chain,
+          chain.ops.length - subscript.opsAfter - 1,
+        ),
       );
     }
   }
@@ -199,18 +203,6 @@ class ArrayIndexBoundsCheck {
       });
     });
     return found;
-  }
-
-  /** The chain as written up to (not including) the op `opsAfter` from the end. */
-  private static spelling(chain: TChain, opsAfter: number): string {
-    const keep = chain.ops.length - opsAfter - 1;
-    return (
-      chain.primary.written +
-      chain.ops
-        .slice(0, keep)
-        .map((op) => op.written)
-        .join("")
-    );
   }
 }
 

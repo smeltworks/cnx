@@ -33,6 +33,7 @@
  */
 import TSubscriptKind from "../types/TSubscriptKind";
 import TTypeInfo from "../types/TTypeInfo";
+import TypeCheckUtils from "./TypeCheckUtils";
 
 /**
  * Context needed for subscript classification
@@ -56,6 +57,10 @@ interface ISubscriptContext {
 class SubscriptClassifier {
   /**
    * Classify a subscript operation.
+   *
+   * A subscript on a scalar `bool` or `char` classifies as a bit here, though
+   * `depthLimit` gives neither a bit index: E0856 rejects it before codegen
+   * asks.
    *
    * @param ctx - Classification context with type info and subscript count
    * @returns The kind of subscript operation (array or bit access)
@@ -112,6 +117,36 @@ class SubscriptClassifier {
 
     // Otherwise it's a scalar - use bit access
     return false;
+  }
+
+  /**
+   * How many subscripts a value of primitive type `baseType` with
+   * `dimensions` array dimensions takes, or null when the base is not a
+   * primitive this limit covers (a string, a struct, an enum, a bitmap).
+   *
+   * ADR-036 gives one subscript per dimension; ADR-007 gives an integer or a
+   * float one more, for a bit index. A `bool` gets none: it is already a
+   * single bit, so indexing it makes no sense (owner ruling, #2354). A `char`
+   * gets none either: a bit index is a shift and a mask, which MISRA C:2012
+   * Rule 10.1 forbids on a character (ADR-045).
+   */
+  static depthLimit(baseType: string, dimensions: number): number | null {
+    if (
+      TypeCheckUtils.isInteger(baseType) ||
+      TypeCheckUtils.isFloat(baseType)
+    ) {
+      return dimensions + 1;
+    }
+    return baseType === "bool" || baseType === "char" ? dimensions : null;
+  }
+
+  /**
+   * How many subscripts a bit-field of `width` bits takes, a bitmap's or a C
+   * struct's: a 1-bit field is a single bit, so none; a wider one takes one
+   * bit index, as a scalar does (ADR-007, ADR-034).
+   */
+  static fieldDepthLimit(width: number): number {
+    return width === 1 ? 0 : 1;
   }
 }
 

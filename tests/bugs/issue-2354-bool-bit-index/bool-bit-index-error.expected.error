@@ -1,0 +1,12 @@
+17:4 error[E0856]: too many subscripts on 'done': it is a scalar 'bool', so it allows at most 0
+       help: 0 for the array dimensions and no bit index: 'done' is already a single bit (ADR-036/ADR-007).
+18:4 error[E0856]: too many subscripts on 'ready': it is a 1-dimensional 'bool' array, so it allows at most 1
+       help: 1 for the array dimension and no bit index: 'ready[1]' is already a single bit (ADR-036/ADR-007).
+19:4 error[E0856]: too many subscripts on 'f.on': it is a scalar 'bool', so it allows at most 0
+       help: 0 for the array dimensions and no bit index: 'f.on' is already a single bit (ADR-036/ADR-007).
+24:14 error[E0856]: too many subscripts on 'done': it is a scalar 'bool', so it allows at most 0
+       help: 0 for the array dimensions and no bit index: 'done' is already a single bit (ADR-036/ADR-007).
+25:14 error[E0856]: too many subscripts on 'ready': it is a 1-dimensional 'bool' array, so it allows at most 1
+       help: 1 for the array dimension and no bit index: 'ready[1]' is already a single bit (ADR-036/ADR-007).
+26:14 error[E0856]: too many subscripts on 'f.on': it is a scalar 'bool', so it allows at most 0
+       help: 0 for the array dimensions and no bit index: 'f.on' is already a single bit (ADR-036/ADR-007).

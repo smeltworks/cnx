@@ -12,9 +12,13 @@
  * form for a one-dimensional array and `arr[i][b][x]` indexes a value that is
  * not an array.
  *
- * Only integer and float bases are checked, as codegen did: a string is a char
- * array with its own rules, a bitmap rejects bracket indexing under E0883, and
- * a struct is reached through member access instead.
+ * The limit is `SubscriptDepth`'s, the one codegen's invariant reads too. It
+ * covers integer, float, `bool` and `char` bases and bit-fields: a string is a
+ * char array with its own rules and a bitmap rejects bracket indexing under
+ * E0883. A `bool` and a 1-bit field take no bit index, since each already is
+ * one bit (#2354); a `char` takes none, since MISRA forbids a shift on one
+ * (ADR-045). A struct field is measured by the field's own declared shape, at
+ * whatever depth of the chain it is reached (#1114).
  *
  * ## E0888: a float bit range needs somewhere to put the union
  *
@@ -41,14 +45,15 @@ import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
-import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
+import type TExpressionOf from "../../types/syntax/TExpressionOf";
+import type IChainStep from "../../types/IChainStep";
+import SubscriptDepth from "../../utils/SubscriptDepth";
+import type IOverIndexedRun from "../../utils/types/IOverIndexedRun";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import StatementNodes from "../../utils/StatementNodes";
-import TYPE_WIDTH from "../../types/TYPE_WIDTH";
 import OperandTyper from "../../utils/OperandTyper";
 import IBitAccessError from "./types/IBitAccessError";
-import TChainRoot from "../../types/TChainRoot";
 import RegisterAccessMode from "../../utils/RegisterAccessMode";
 import BitmapFieldStep from "../../utils/BitmapFieldStep";
 import type IAnalysisContext from "./types/IAnalysisContext";
@@ -64,53 +69,33 @@ class BitAccessCheck {
     return this.found;
   }
 
-  /**
-   * The chain's declared name, its root, and the subscripts after that name:
-   * `this.x[3]` is `x` under `this`, with `[3]` after it.
-   */
-  private static partsOf(expr: TExpression): {
-    name: string;
-    root: TChainRoot;
-    subscripts: readonly TPostfixOpSyntax[];
-  } | null {
-    if (expr.kind !== "postfix") return null;
-    const primary = expr.primary;
-    if (primary.kind === "identifier") {
-      return { name: primary.name, root: null, subscripts: expr.ops };
-    }
-    if (primary.kind !== "root") return null;
-    const first = expr.ops[0];
-    if (first?.kind !== "member") return null;
-    return {
-      name: first.name,
-      root: primary.root,
-      subscripts: expr.ops.slice(1),
-    };
-  }
-
+  /** Each chain is typed once, here, and every check reads those steps */
   public checkExpression(expr: TExpression, inFunction: boolean): void {
-    this.checkBitBounds(expr);
-    const parts = BitAccessCheck.partsOf(expr);
-    if (parts === null) return;
-    this.checkChain(parts, expr, inFunction);
+    if (expr.kind !== "postfix") return;
+    const steps = OperandTyper.chainOf(expr, this.context).steps;
+    this.checkBitBounds(expr, steps);
+    this.checkChain(expr, steps, inFunction);
   }
 
   public checkSite(site: IAssignmentSyntax): void {
-    this.checkBitBounds(site.target);
-    const parts = BitAccessCheck.partsOf(site.target);
-    if (parts === null) return;
-    this.checkChain(parts, site.target, true);
-    this.checkSingleEvaluation(site);
+    const target = site.target;
+    if (target.kind !== "postfix") return;
+    const steps = OperandTyper.chainOf(target, this.context).steps;
+    this.checkBitBounds(target, steps);
+    this.checkChain(target, steps, true);
+    this.checkSingleEvaluation(site, target, steps);
   }
 
   /**
    * ADR-007: a bit, bit-range or bitmap-field write reads its target and
    * stores it back, so a subscript with a side effect would run twice.
    */
-  private checkSingleEvaluation(site: IAssignmentSyntax): void {
-    if (site.operator !== "<-") return;
-    const target = site.target;
-    if (target.kind !== "postfix" || !this.isReadModifyWrite(target)) return;
+  private checkSingleEvaluation(
+    site: IAssignmentSyntax,
+    target: TExpressionOf<"postfix">,
+    steps: readonly IChainStep[],
+  ): void {
+    if (site.operator !== "<-" || !this.isReadModifyWrite(steps)) return;
     const indices = target.ops.flatMap((op) =>
       op.kind === "subscript" ? op.indexes : [],
     );
@@ -131,8 +116,8 @@ class BitAccessCheck {
    * bit, a bit range or a bitmap field, on anything but a
    * write-1 register member.
    */
-  private isReadModifyWrite(target: TExpression): boolean {
-    const last = OperandTyper.chainOf(target, this.context).steps.at(-1);
+  private isReadModifyWrite(steps: readonly IChainStep[]): boolean {
+    const last = steps.at(-1);
     if (last === undefined) return false;
     const symbols = this.context.symbols;
     const field = BitmapFieldStep.fieldOf(last, symbols.bitmapFields);
@@ -144,62 +129,36 @@ class BitAccessCheck {
     );
   }
 
+  /**
+   * The typer types a chain's last `steps.length` operations; the ones before
+   * them name its head (`this.` and `global.` consume their first `.name`).
+   */
   private checkChain(
-    parts: {
-      name: string;
-      root: TChainRoot;
-      subscripts: readonly TPostfixOpSyntax[];
-    },
-    at: TExpression,
+    at: TExpressionOf<"postfix">,
+    steps: readonly IChainStep[],
     inFunction: boolean,
   ): void {
-    const declared =
-      OperandTyper.chainOf(at, this.context).steps[0]?.before ?? null;
-    if (declared === null) return; // not a declaration this pass can measure
-    const spelling =
-      parts.root === null ? parts.name : `${parts.root}.${parts.name}`;
-    const baseType = declared.typeName ?? "";
-    if (!inFunction) this.checkFloatRangeScope(spelling, at);
-    this.checkDepth(
-      parts.subscripts,
-      declared.dimensions.length,
-      baseType,
-      spelling,
-      at,
-    );
+    if (!inFunction) this.checkFloatRangeScope(at, steps);
+    this.checkDepth(at, steps);
   }
 
   /**
    * E0888: a float bit RANGE read outside a function body. A single bit index
    * is not lowered through a union, so it is not restricted.
    */
-  private checkFloatRangeScope(name: string, at: TExpression): void {
-    const head = ExpressionShape.headOf(at);
-    const steps = OperandTyper.chainOf(at, this.context).steps;
-    const index = head.ops.findIndex(
-      (op, i) =>
-        op.kind === "subscript" &&
-        FloatBits.rangeTypeOf(steps[i - head.opsConsumed]) !== null,
-    );
-    const range = head.ops[index];
-    if (range === undefined) return;
+  private checkFloatRangeScope(
+    chain: TExpressionOf<"postfix">,
+    steps: readonly IChainStep[],
+  ): void {
+    const first = chain.ops.length - steps.length;
+    const at = steps.findIndex((step) => FloatBits.rangeTypeOf(step) !== null);
+    if (at === -1) return;
     // The float ranged, not the chain's root (#1099): `r.field`, not `r`
-    const reached = head.ops
-      .slice(head.opsConsumed, index)
-      .map((op) => {
-        if (op.kind === "member") return `.${op.name}`;
-        if (op.kind === "subscript") {
-          return `[${op.indexes.map((e) => e.written).join(", ")}]`;
-        }
-        return "(...)";
-      })
-      .join("");
-    const bounds =
-      range.kind === "subscript" ? range.indexes.map((e) => e.written) : [];
+    const range = ExpressionShape.writtenThrough(chain, first + at + 1);
     this.found.push({
       code: "E0888",
-      span: at.span,
-      message: `Float bit range '${name}${reached}[${bounds.join(", ")}]' cannot be read at file scope`,
+      span: chain.span,
+      message: `Float bit range '${range}' cannot be read at file scope`,
       helpText:
         "Reading a float's bits copies it through a union (MISRA C:2012 Rule 21.15 forbids the pointer cast), and a copy is a statement -- there is none at file scope. Read it inside a function.",
     });
@@ -211,9 +170,10 @@ class BitAccessCheck {
    * declared type's, or a bitmap field's (#2251: `p.Mode[3]` on a 3-bit field
    * would write the next field). A runtime index is not checked here.
    */
-  private checkBitBounds(expr: TExpression): void {
-    if (expr.kind !== "postfix") return;
-    const steps = OperandTyper.chainOf(expr, this.context).steps;
+  private checkBitBounds(
+    expr: TExpressionOf<"postfix">,
+    steps: readonly IChainStep[],
+  ): void {
     const ops = expr.ops.slice(expr.ops.length - steps.length);
     steps.forEach((step, at) => {
       const op = ops[at];
@@ -245,37 +205,48 @@ class BitAccessCheck {
     });
   }
 
-  /**
-   * E0856: ADR-036 allows one subscript per array dimension and ADR-007 one
-   * more for a bit index. Only a bit-indexable scalar element has that extra
-   * one, which is why the base type decides.
-   */
+  /** E0856, for each run of subscripts that indexes deeper than its value allows */
   private checkDepth(
-    subscripts: readonly TPostfixOpSyntax[],
-    dimensions: number,
-    baseType: string,
-    name: string,
-    at: TExpression,
+    chain: TExpressionOf<"postfix">,
+    steps: readonly IChainStep[],
   ): void {
-    if (TYPE_WIDTH[baseType] === undefined) return; // not a bit-indexable scalar
-    let leading = 0;
-    for (const op of subscripts) {
-      if (op.kind !== "subscript") break;
-      leading += 1;
+    for (const run of SubscriptDepth.overIndexed(chain.ops, steps)) {
+      this.found.push({
+        code: "E0856",
+        span: chain.span,
+        message: `too many subscripts on '${ExpressionShape.writtenThrough(chain, run.start)}': it is ${BitAccessCheck.shapeOf(run)}, so it allows at most ${run.allowed}`,
+        helpText: BitAccessCheck.depthHelp(chain, run),
+      });
     }
-    const allowed = dimensions + 1;
-    if (leading <= allowed) return;
+  }
 
-    const shape =
-      dimensions === 0
-        ? `a scalar '${baseType}'`
-        : `a ${dimensions}-dimensional '${baseType}' array`;
-    this.found.push({
-      code: "E0856",
-      span: at.span,
-      message: `too many subscripts on '${name}': it is ${shape}, so it allows at most ${allowed}`,
-      helpText: `${dimensions} for the array ${dimensions === 1 ? "dimension" : "dimensions"} plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range '${name}[start, width]'?`,
-    });
+  /** A bit-field is described by its declared width, not the type carrying its bits */
+  private static shapeOf(run: IOverIndexedRun): string {
+    const dimensions = run.indexed.dimensions.length;
+    const baseType = run.indexed.typeName ?? "";
+    if (run.fieldWidth !== null) return `a ${run.fieldWidth}-bit field`;
+    if (dimensions === 0) return `a scalar '${baseType}'`;
+    return `a ${dimensions}-dimensional '${baseType}' array`;
+  }
+
+  private static depthHelp(
+    chain: TExpressionOf<"postfix">,
+    run: IOverIndexedRun,
+  ): string {
+    const dimensions = run.indexed.dimensions.length;
+    // A bit range applies to an element, so every dimension stays indexed
+    const element = ExpressionShape.writtenThrough(
+      chain,
+      run.start + dimensions,
+    );
+    const per = `${dimensions} for the array ${dimensions === 1 ? "dimension" : "dimensions"}`;
+    if (run.allowed > dimensions) {
+      return `${per} plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range '${element}[start, width]'?`;
+    }
+    if (run.fieldWidth === null && run.indexed.category === "character") {
+      return `${per} and no bit index: a bit index shifts and masks, which MISRA C:2012 Rule 10.1 forbids on a character. Cast it to an integer type first, as in '((u8)${element})[bit]' (ADR-045).`;
+    }
+    return `${per} and no bit index: '${element}' is already a single bit (ADR-036/ADR-007).`;
   }
 }
 

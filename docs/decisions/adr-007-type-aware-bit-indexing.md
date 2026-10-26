@@ -286,8 +286,9 @@ rather than a write into the next field. A runtime index is not checked.
 
 A neighboring check does exist. Bit-index _bounds_ (above) remain future work, but
 subscript _depth_ is validated today: since a scalar may be bit-indexed **once**, and
-ADR-036 peels one array dimension per subscript, a base accepts at most
-`arrayDimensions + 1` subscripts. A deeper chain indexes a value that is not an array
+ADR-036 peels one array dimension per subscript, an integer or float base accepts at
+most `arrayDimensions + 1` subscripts (a `bool`, a `char` and a 1-bit field take none
+for a bit, below). A deeper chain indexes a value that is not an array
 and is rejected with **E0856**.
 
 ```cnx
@@ -301,6 +302,67 @@ Enforced for every ADR-016 spelling of the base — bare, `this.` and `global.` 
 single shared classifier (Issue #1115). Before that unification the prefixed forms
 silently miscompiled: the write dropped the second subscript and coerced the value to a
 bool, and the read chained bit-indexes into always-zero code.
+
+The limit belongs to the value being indexed, so a struct field is measured by the
+field's own declared shape, at any depth of the chain (Issue #1114). Before this, the
+struct-field forms were accepted: the write emitted C that subscripts a scalar, and the
+read chained bit-indexes.
+
+```cnx
+struct Packet { u8 header; u8[4] bytes; }
+mut Packet p;
+
+void setBits() {
+    p.header[4] <- true;   // OK: one bit index on a scalar field
+    p.bytes[1][2] <- true; // OK: one element, then one bit
+    p.header[4][3] <- 5;   // ERROR E0856: p.header[4] is a single bit, not an array
+    p.bytes[1][2][3] <- 5; // ERROR E0856: p.bytes allows at most 2
+}
+```
+
+A `bool` takes no bit index: it is already a single bit, so indexing it makes no sense
+(owner ruling, Issue #2354). It takes one subscript per array dimension and nothing more.
+Before this, `done[1] <- true` was accepted and set the whole bool, and `done[1]` always
+read 0.
+
+A bitmap field follows the same rule by its declared width. A 1-bit field is a single
+bit, so it takes no bit index; a wider field takes one, like a scalar:
+
+```cnx
+bitmap8 Status { Ready, Mode[3], Rest[4] }
+mut Status s;
+
+void setStatus() {
+    s.Mode[1] <- true;      // OK: one bit of a 3-bit field
+    s.Ready[0] <- true;     // ERROR E0856: s.Ready is already a single bit
+    s.Mode[1][0] <- true;   // ERROR E0856: s.Mode[1] is a single bit, not an array
+}
+```
+
+A C struct's bit-field is measured the same way, by its declared width: in
+`struct { unsigned int one : 1; unsigned int three : 3; } cs`, `cs.one[0]` is E0856
+and `cs.three[1]` reads one bit.
+
+A `char` takes no bit index either. A bit index shifts and masks, and ADR-045 forbids
+both on a character (MISRA C:2012 Rule 10.1), so `name[1][2]` on a `char[4]` is E0856.
+Cast the character to an integer type to read its bits, which makes the intent explicit
+(owner ruling, Issue #1114 review):
+
+```cnx
+bool high <- ((u8)name[1])[7]; // OK: the u8 takes a bit index
+bool bad <- name[1][7];        // ERROR E0856: a char takes no bit index
+```
+
+```cnx
+mut bool done;
+mut bool[4] ready;
+
+void flags() {
+    ready[1] <- true;    // OK: one element
+    done[1] <- true;     // ERROR E0856: a scalar bool allows at most 0
+    ready[1][0] <- true; // ERROR E0856: ready allows at most 1
+}
+```
 
 ---
 

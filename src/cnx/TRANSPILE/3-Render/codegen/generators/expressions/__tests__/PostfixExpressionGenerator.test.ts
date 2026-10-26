@@ -356,26 +356,10 @@ function createMockPostfixExpressionContext(
 ): IMockPostfixPlan {
   const primaryText = rootIdentifier ?? "expr";
 
-  // Issue #1106, as `CodeGenerator.resolveSubscriptBase` resolves it. Every
-  // case here names its primary, so this is always the bare-identifier arm --
-  // the `this`/`global` arm needs a primary that is NOT an IDENTIFIER, which
-  // these stand-ins cannot express and which the integration corpus covers.
-  const subscriptBase = rootIdentifier
-    ? { name: rootIdentifier, displayName: rootIdentifier }
-    : null;
-
-  let leadingSubscriptCount = 0;
-  for (const op of ops) {
-    if (op.kind !== "subscript") break;
-    leadingSubscriptCount++;
-  }
-
   return {
     primaryText,
     rootIdentifier,
     renderPrimary: () => primaryText,
-    subscriptBase,
-    leadingSubscriptCount: subscriptBase ? leadingSubscriptCount : 0,
     ops,
   };
 }

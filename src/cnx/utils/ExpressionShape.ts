@@ -1,6 +1,7 @@
 import type TExpression from "../types/syntax/TExpression";
 import type TPostfixOpSyntax from "../types/syntax/TPostfixOpSyntax";
 import type IChainHead from "../types/IChainHead";
+import type TExpressionOf from "../types/syntax/TExpressionOf";
 
 /**
  * Shape questions over a lowered expression, asked by 2.1 Analyze (which lowers
@@ -97,6 +98,25 @@ class ExpressionShape {
   ): boolean {
     if (value.kind === "arrayInitializer") return true;
     return ExpressionShape.isStringLiteral(value) && elementType === "u8";
+  }
+
+  /**
+   * A postfix chain as written through its first `count` operations: the
+   * value an operation applies to, as a message quotes it (`packets[1].header`
+   * for the `[4]` of `packets[1].header[4]`). The source's spelling, not the
+   * resolved symbol's, so a suggested fix is the text the developer wrote.
+   */
+  static writtenThrough(
+    chain: TExpressionOf<"postfix">,
+    count: number,
+  ): string {
+    return (
+      chain.primary.written +
+      chain.ops
+        .slice(0, count)
+        .map((op) => op.written)
+        .join("")
+    );
   }
 
   /**

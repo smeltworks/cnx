@@ -1,0 +1,9 @@
+// test-error
+// test-adr: 007
+// Issue #1114: a struct and variable from an included file, one hop away.
+#include "field-decls.cnx"
+
+u8 read() {
+    u8 a <- shared.header[4][3];
+    return a;
+}

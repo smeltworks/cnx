@@ -17,7 +17,7 @@
 25:25 error[E0890]: 'global.sharedIndex()' would be evaluated twice: 'global.sharedArr[global.sharedIndex()][3]' is read and then written back
        help: A bit, bit-range or bitmap-field write keeps the other bits, so it reads its target and stores it back, and every subscript in the target runs twice. Store the index in a variable first (ADR-007).
 31:4 error[E0856]: too many subscripts on 'sharedArr': it is a 1-dimensional 'u8' array, so it allows at most 2
-       help: 1 for the array dimension plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range 'sharedArr[start, width]'?
+       help: 1 for the array dimension plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range 'sharedArr[1][start, width]'?
 32:14 error[E0920]: Bit index out of range in 'sharedFlags[8]': bit 8, but the value has 8 bits (0-7)
        help: A bit index counts within the indexed value's own bits: its declared type's, or a bitmap field's (ADR-007, ADR-034). Index a wider value, or a bit that exists.
 33:14 error[E0890]: 'sharedIndex()' would be evaluated twice: 'sharedArr[sharedIndex()][0, 2]' is read and then written back

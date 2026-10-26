@@ -119,7 +119,6 @@ import scopeGenerator from "./3-Render/codegen/generators/declarationGenerators/
 import FormatUtils from "../utils/FormatUtils";
 import ExpressionShape from "../utils/ExpressionShape";
 import SafeDivision from "../utils/SafeDivision";
-import type IChainHead from "../types/IChainHead";
 import helperGenerators from "./3-Render/codegen/generators/support/HelperGenerator";
 import includeGenerators from "./2-Plan/IncludeGenerator";
 import DeclaredTypeInfo from "../PARSE/3-Declare/DeclaredTypeInfo";
@@ -575,49 +574,6 @@ class CodeGenWalker {
   }
 
   /**
-   * Resolve the variable that a leading subscript chain indexes (Issue #1106).
-   *
-   * ADR-016 lets the same variable be reached three ways, and
-   * `postfixExpression` parses each differently:
-   *
-   * - `flags[4][3]`        -- primary is the IDENTIFIER; subscripts start at op 0
-   * - `this.flags[4][3]`   -- primary is `this`; `.flags` is op 0, subscripts at 1
-   * - `global.flags[4][3]` -- primary is `global`; likewise
-   *
-   * Returning the resolved name and offset for all three keeps depth
-   * validation from having a hole that the bare-identifier form does not.
-   *
-   * `displayName` is how the DEVELOPER spelled it, because a diagnostic quotes
-   * that rather than the resolved name -- `Sensor_flags` does resolve as a
-   * bare name, but nobody writes it, and echoing it back reads as a different
-   * variable.
-   */
-  private resolveSubscriptBase(
-    head: IChainHead,
-  ): { name: string; displayName: string; opOffset: number } | undefined {
-    if (head.identifier === null) {
-      return undefined;
-    }
-    const written = head.identifier.name;
-    if (head.root === null) {
-      return { name: written, displayName: written, opOffset: 0 };
-    }
-    // `this.x` is the scope-qualified variable `Scope_x`; `global.x` is plain `x`.
-    const name =
-      head.root === "this"
-        ? QualifiedNameGenerator.forMember(
-            this.host.state.currentScopePath,
-            written,
-          )
-        : written;
-    return {
-      name,
-      displayName: `${head.root}.${written}`,
-      opOffset: head.opsConsumed,
-    };
-  }
-
-  /**
    * A postfix expression: its primary, and the operations applied to it.
    *
    * What the generator read off the tree was the op KINDS -- an IDENTIFIER is
@@ -634,7 +590,6 @@ class CodeGenWalker {
     const ops = head.ops;
     const rootIdentifier =
       head.root === null ? (head.identifier?.name ?? undefined) : undefined;
-    const subscriptBase = this.resolveSubscriptBase(head);
 
     // #1445 review: planned FIRST, then counted off the planned ops.
     //
@@ -651,6 +606,8 @@ class CodeGenWalker {
     const typing = this.host.state.typingContext();
     const chain = OperandTyper.chainOf(expr, typing);
     const steps = chain.steps;
+    // Issue #1106/#1114: every run of subscripts within its value's limit
+    SubscriptDepthValidator.validate(expr, steps);
     const offset = head.opsConsumed;
     const plannedOps = ops.map((op, i) =>
       this.planPostfixOp(
@@ -672,17 +629,6 @@ class CodeGenWalker {
             })
           : undefined,
       renderPrimary: () => this.renderPrimary(primary),
-      subscriptBase: subscriptBase
-        ? { name: subscriptBase.name, displayName: subscriptBase.displayName }
-        : null,
-      // Counted through `SubscriptDepthValidator`, the same function AND the
-      // same representation the WRITE path uses.
-      leadingSubscriptCount: subscriptBase
-        ? SubscriptDepthValidator.countLeadingSubscripts(
-            plannedOps,
-            subscriptBase.opOffset,
-          )
-        : 0,
       ops: plannedOps,
       // #1668 (C7): the chain's bound base, from the same typed chain
       base: DeclaredTypeInfo.ofChain(

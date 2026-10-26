@@ -6,7 +6,9 @@
 #include "multidim-struct-field.test.hpp"
 
 #include <stdint.h>
+#include <stdbool.h>
 
+// test-execution
 // Issue #1158: a multi-dimensional struct field must keep every dimension.
 //
 // StructCollector.processArrayTypeSyntax() read only dims[0], so `u8[2][3]`
@@ -18,13 +20,10 @@
 //
 // Top-level `u8[2][3] grid;` was always correct; only struct fields truncated.
 //
-// This is a snapshot test rather than an execution test because READING a
-// multi-dimensional struct field is separately broken: `g.cells[1][2]` on the
-// right-hand side generates `(g.cells[1] >> 2) & 1`, treating the second
-// subscript as a bit index. That is the root-vs-member type resolution gap
-// tracked on #1114, is unrelated to dimension collection, and reproduces
-// identically before and after this fix. Once it is fixed this should gain
-// read-back assertions and become an execution test.
+// Reading the field back is checked too. That read used to generate
+// `(g.cells[1] >> 2) & 1`, treating the second subscript as a bit index; it
+// reads the element now, and #1114 made this fixture execute so a
+// regression in either direction fails here rather than only in a snapshot.
 uint8_t topLevel[2][3] = {};
 
 int main(void) {
@@ -32,5 +31,22 @@ int main(void) {
     g.cells[1][2] = 42U;
     g.cells[0][0] = 7U;
     topLevel[1][2] = 42U;
+    if (g.cells[1U][2U] != 42) {
+        return 1;
+    }
+    if (g.cells[0U][0U] != 7) {
+        return 2;
+    }
+    if (topLevel[1U][2U] != 42) {
+        return 3;
+    }
+    const uint8_t element = g.cells[1U][2U];
+    if (element != 42) {
+        return 4;
+    }
+    const bool bit = ((((g.cells[1U][2U] >> 3U) & 1)) != 0U);
+    if (bit != true) {
+        return 5;
+    }
     return 0;
 }

@@ -1,0 +1,35 @@
+// test-error
+// test-adr: 007
+// Issue #1114: the subscript depth limit (E0856) applies to a struct field by
+// the FIELD's declared type, not the root variable's. `p` is a struct, so
+// checking the root measured nothing and `p.header[4][3]` was accepted: the
+// write emitted `p.header[4][3] = 5`, which does not compile, and the read
+// chained bit-indexes into always-zero code. A scalar field allows one bit
+// index, a 1-D array field two subscripts, at every depth of the chain.
+struct Inner {
+    u8 header;
+}
+
+struct Packet {
+    u8 header;
+    u8[4] bytes;
+    Inner inner;
+}
+
+mut Packet p;
+mut Packet[2] packets;
+
+void writes() {
+    p.header[4][3] <- 5;
+    p.bytes[1][2][3] <- 5;
+    p.inner.header[4][3] <- 5;
+    packets[1].header[4][3] <- 5;
+}
+
+u8 reads() {
+    u8 a <- p.header[4][3];
+    u8 b <- p.bytes[1][2][3];
+    u8 c <- p.inner.header[4][3];
+    u8 d <- packets[1].header[4][3];
+    return a + b + c + d;
+}

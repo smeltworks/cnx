@@ -1,0 +1,9 @@
+// Included by field-imported-direct-error and, through field-relay.cnx,
+// field-imported-transitive-error (#1114): a struct and a variable of it
+// declared in another file.
+struct Frame {
+    u8 header;
+    u8[4] bytes;
+}
+
+mut Frame shared;

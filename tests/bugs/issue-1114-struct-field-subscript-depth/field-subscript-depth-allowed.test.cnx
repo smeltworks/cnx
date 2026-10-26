@@ -1,0 +1,49 @@
+// test-execution
+// Issue #1114: the depth limit E0856 enforces on a struct field is the
+// field's own shape plus one bit index -- no tighter. Each form below is the
+// deepest legal chain for its field and must keep compiling and running.
+struct Grid {
+    u8 header;
+    u8[4] bytes;
+    u8[2][3] cells;
+}
+
+u32 main() {
+    mut Grid g;
+
+    g.header <- 0;
+    g.header[4] <- true;
+    if (g.header != 16) {
+        return 1;
+    }
+    g.header[0, 4] <- 5;
+    if (g.header != 21) {
+        return 2;
+    }
+    bool headerBit <- g.header[4];
+    if (headerBit != true) {
+        return 3;
+    }
+
+    g.bytes[1] <- 0;
+    g.bytes[1][2] <- true;
+    if (g.bytes[1] != 4) {
+        return 4;
+    }
+    bool byteBit <- g.bytes[1][2];
+    if (byteBit != true) {
+        return 5;
+    }
+
+    g.cells[1][2] <- 0;
+    g.cells[1][2][3] <- true;
+    if (g.cells[1][2] != 8) {
+        return 6;
+    }
+    bool cellBit <- g.cells[1][2][3];
+    if (cellBit != true) {
+        return 7;
+    }
+
+    return 0;
+}
