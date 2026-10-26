@@ -1,0 +1,6 @@
+8:12 error[E0856]: too many subscripts on 'cs.f': it is a scalar 'u8', so it allows at most 1
+       help: 0 for the array dimensions plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range 'cs.f[start, width]'?
+9:12 error[E0856]: too many subscripts on 'cs.arr': it is a 1-dimensional 'u8' array, so it allows at most 2
+       help: 1 for the array dimension plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range 'cs.arr[1][start, width]'?
+10:14 error[E0856]: too many subscripts on 'cs.flag': it is a scalar 'bool', so it allows at most 0
+       help: 0 for the array dimensions and no bit index: 'cs.flag' is already a single bit (ADR-036/ADR-007).

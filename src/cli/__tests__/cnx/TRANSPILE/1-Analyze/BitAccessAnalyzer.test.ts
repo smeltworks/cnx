@@ -273,22 +273,22 @@ describe("BitAccessAnalyzer -- bool takes no bit index (E0856, #2354)", () => {
       [
         6,
         "too many subscripts on 'done': it is a scalar 'bool', so it allows at most 0",
-        "0 for the array dimensions and no bit index: a bool is already a single bit (ADR-036/ADR-007).",
+        "0 for the array dimensions and no bit index: 'done' is already a single bit (ADR-036/ADR-007).",
       ],
       [
         7,
         "too many subscripts on 'done': it is a scalar 'bool', so it allows at most 0",
-        "0 for the array dimensions and no bit index: a bool is already a single bit (ADR-036/ADR-007).",
+        "0 for the array dimensions and no bit index: 'done' is already a single bit (ADR-036/ADR-007).",
       ],
       [
         8,
         "too many subscripts on 'ready': it is a 1-dimensional 'bool' array, so it allows at most 1",
-        "1 for the array dimension and no bit index: a bool is already a single bit (ADR-036/ADR-007).",
+        "1 for the array dimension and no bit index: 'ready[1]' is already a single bit (ADR-036/ADR-007).",
       ],
       [
         9,
         "too many subscripts on 'f.on': it is a scalar 'bool', so it allows at most 0",
-        "0 for the array dimensions and no bit index: a bool is already a single bit (ADR-036/ADR-007).",
+        "0 for the array dimensions and no bit index: 'f.on' is already a single bit (ADR-036/ADR-007).",
       ],
     ]);
   });
@@ -304,5 +304,63 @@ describe("BitAccessAnalyzer -- bool takes no bit index (E0856, #2354)", () => {
         ].join("\n"),
       ),
     ).toEqual([]);
+  });
+});
+
+describe("BitAccessAnalyzer -- E0856 help and bitmap fields (#1114 review)", () => {
+  const e0856 = (source: string) =>
+    errors(source)
+      .filter((e) => e.code === "E0856")
+      .map((e) => [e.span.line, e.message, e.helpText]);
+
+  it("suggests the bit range on the element, keeping every dimension indexed", () => {
+    expect(
+      e0856(
+        [
+          "struct Packet { u8[4] bytes; u8[2][3] cells; }",
+          "Packet p;",
+          "void f() {",
+          "    u8 a <- p.bytes[1][2][3];",
+          "    u8 b <- p.cells[1][2][3][4];",
+          "}",
+        ].join("\n"),
+      ).map(([line, , help]) => [line, help]),
+    ).toEqual([
+      [
+        4,
+        "1 for the array dimension plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range 'p.bytes[1][start, width]'?",
+      ],
+      [
+        5,
+        "2 for the array dimensions plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range 'p.cells[1][2][start, width]'?",
+      ],
+    ]);
+  });
+
+  it("measures a bitmap field by its declared width: a 1-bit field takes no bit index", () => {
+    expect(
+      e0856(
+        [
+          "bitmap8 Status { Ready, Mode[3], Rest[4] }",
+          "Status s;",
+          "void f() {",
+          "    bool a <- s.Ready[0];",
+          "    bool b <- s.Mode[1][0];",
+          "    bool c <- s.Mode[1];",
+          "}",
+        ].join("\n"),
+      ),
+    ).toEqual([
+      [
+        4,
+        "too many subscripts on 's.Ready': it is a 1-bit bitmap field, so it allows at most 0",
+        "0 for the array dimensions and no bit index: 's.Ready' is already a single bit (ADR-036/ADR-007).",
+      ],
+      [
+        5,
+        "too many subscripts on 's.Mode': it is a 3-bit bitmap field, so it allows at most 1",
+        "0 for the array dimensions plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range 's.Mode[start, width]'?",
+      ],
+    ]);
   });
 });

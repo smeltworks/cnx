@@ -1,0 +1,2 @@
+9:4 error[E0856]: too many subscripts on 'GPIO.DR': it is a scalar 'u32', so it allows at most 1
+       help: 0 for the array dimensions plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range 'GPIO.DR[start, width]'?

@@ -303,9 +303,9 @@ silently miscompiled: the write dropped the second subscript and coerced the val
 bool, and the read chained bit-indexes into always-zero code.
 
 The limit belongs to the value being indexed, so a struct field is measured by the
-field's own declared shape, at any depth of the chain (Issue #1114). Checking only the
-root measured nothing past a `.name`, so the struct-field forms were accepted: the write
-emitted C that subscripts a scalar, and the read chained bit-indexes.
+field's own declared shape, at any depth of the chain (Issue #1114). Before this, the
+struct-field forms were accepted: the write emitted C that subscripts a scalar, and the
+read chained bit-indexes.
 
 ```cnx
 struct Packet { u8 header; u8[4] bytes; }
@@ -321,9 +321,22 @@ void setBits() {
 
 A `bool` takes no bit index: it is already a single bit, so indexing it makes no sense
 (owner ruling, Issue #2354). It takes one subscript per array dimension and nothing more.
-Before this, pass 2.1 counted `bool` as bit-indexable while codegen's depth check did
-not, so `done[1] <- true` set the whole bool and `done[1]` always read 0. Both now read
-one limit.
+Before this, `done[1] <- true` was accepted and set the whole bool, and `done[1]` always
+read 0.
+
+A bitmap field follows the same rule by its declared width. A 1-bit field is a single
+bit, so it takes no bit index; a wider field takes one, like a scalar:
+
+```cnx
+bitmap8 Status { Ready, Mode[3], Rest[4] }
+mut Status s;
+
+void setStatus() {
+    s.Mode[1] <- true;      // OK: one bit of a 3-bit field
+    s.Ready[0] <- true;     // ERROR E0856: s.Ready is already a single bit
+    s.Mode[1][0] <- true;   // ERROR E0856: s.Mode[1] is a single bit, not an array
+}
+```
 
 ```cnx
 mut bool done;

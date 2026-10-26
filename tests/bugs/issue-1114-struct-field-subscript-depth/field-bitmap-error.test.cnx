@@ -1,0 +1,16 @@
+// test-error
+// test-adr: 007
+// Issue #1114: a bitmap field is measured by its declared width. A 1-bit field
+// is already a single bit, so it takes no bit index; a multi-bit field takes one.
+bitmap8 Status {
+    Ready,
+    Mode[3],
+    Rest[4]
+}
+
+mut Status s;
+
+void writes() {
+    s.Ready[0] <- true;
+    s.Mode[1][0] <- true;
+}

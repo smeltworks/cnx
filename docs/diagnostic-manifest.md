@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-929 fixture(s) assert a diagnostic; 915 carry a code.
+938 fixture(s) assert a diagnostic; 924 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -541,7 +541,16 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1090-braced-bodies/nested-bodies.test.cnx                                                | E0716                             |
 | tests/bugs/issue-1090-braced-bodies/unbraced-bodies.test.cnx                                              | E0716                             |
 | tests/bugs/issue-1090-braced-bodies/unbraced-declaration.test.cnx                                         | E0716                             |
+| tests/bugs/issue-1114-struct-field-subscript-depth/field-bitmap-error.test.cnx                            | E0856                             |
+| tests/bugs/issue-1114-struct-field-subscript-depth/field-c-header-error.test.cnx                          | E0856                             |
+| tests/bugs/issue-1114-struct-field-subscript-depth/field-global-error.test.cnx                            | E0856                             |
+| tests/bugs/issue-1114-struct-field-subscript-depth/field-imported-direct-error.test.cnx                   | E0856                             |
+| tests/bugs/issue-1114-struct-field-subscript-depth/field-imported-transitive-error.test.cnx               | E0856                             |
 | tests/bugs/issue-1114-struct-field-subscript-depth/field-over-index-error.test.cnx                        | E0856                             |
+| tests/bugs/issue-1114-struct-field-subscript-depth/field-param-error.test.cnx                             | E0856                             |
+| tests/bugs/issue-1114-struct-field-subscript-depth/field-scope-qualified-error.test.cnx                   | E0856                             |
+| tests/bugs/issue-1114-struct-field-subscript-depth/field-this-error.test.cnx                              | E0856                             |
+| tests/bugs/issue-1114-struct-field-subscript-depth/register-member-error.test.cnx                         | E0856                             |
 | tests/bugs/issue-1133-guard-collision-diagnostic/guard-collision.test.cnx                                 | E0203                             |
 | tests/bugs/issue-1145-atomic-bool-clamp-helper/atomic-bool-compound.test.cnx                              | E0806                             |
 | tests/bugs/issue-1147-irq-fallback/critical-esp32.test.cnx                                                | E0916                             |

@@ -1,0 +1,9 @@
+// test-error
+// test-adr: 007
+// Issue #1114: a struct and variable from an included file, two hops away.
+#include "field-relay.cnx"
+
+u8 read() {
+    u8 a <- shared.bytes[1][2][3];
+    return a;
+}

@@ -7,8 +7,7 @@
  * A deeper chain indexes a value that is not an array — e.g. `flags[4][3]` on
  * a scalar `u8`, where `flags[4]` is already a single bit.
  *
- * This is the single source of truth for the "how many subscripts may this
- * base take?" decision. Both the assignment (write) path
+ * This is codegen's single place to assert that limit. Both the assignment (write) path
  * (AssignmentClassifier) and the expression (read) path
  * (PostfixExpressionGenerator) consult it, so the two paths cannot diverge.
  * It owns the *counting* as well as the check (`countLeadingSubscripts`):

@@ -1,0 +1,12 @@
+// test-error
+// test-adr: 007
+// Issue #1114: a struct declared in a C header, read through a variable the header
+// declares: each field is measured by its own type (a scalar, an array, a bool).
+#include "fields.h"
+
+u8 read() {
+    u8 a <- cs.f[4][3];
+    u8 b <- cs.arr[1][2][3];
+    bool c <- cs.flag[0];
+    return a + b;
+}

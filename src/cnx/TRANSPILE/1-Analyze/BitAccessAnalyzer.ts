@@ -48,7 +48,7 @@ import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
 import type TExpressionOf from "../../types/syntax/TExpressionOf";
 import type IChainStep from "../../types/IChainStep";
-import type IOperandType from "../../types/IOperandType";
+import type IBitmapFieldLayout from "../../types/IBitmapFieldLayout";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import StatementNodes from "../../utils/StatementNodes";
@@ -216,10 +216,11 @@ class BitAccessCheck {
         continue;
       }
       this.checkRun(
-        steps[start - first].before,
+        steps[start - first],
+        steps[start - first - 1],
         index - start,
-        ExpressionShape.writtenThrough(chain, start),
         chain,
+        start,
       );
     }
   }
@@ -227,34 +228,52 @@ class BitAccessCheck {
   /**
    * ADR-036 allows one subscript per array dimension and ADR-007 one more for
    * a bit index on an integer or float element, which is why the base type
-   * decides.
+   * decides. A bitmap field is described by its declared width rather than
+   * the type that carries its bits.
    */
   private checkRun(
-    indexed: IOperandType | null,
+    step: IChainStep,
+    fieldStep: IChainStep | undefined,
     leading: number,
-    name: string,
-    at: TExpression,
+    chain: TExpressionOf<"postfix">,
+    start: number,
   ): void {
+    const indexed = step.before;
     if (indexed?.typeName == null) return;
     const baseType = indexed.typeName;
     const dimensions = indexed.dimensions.length;
     const allowed = SubscriptClassifier.depthLimit(baseType, dimensions);
     if (allowed === null || leading <= allowed) return;
 
-    const shape =
-      dimensions === 0
-        ? `a scalar '${baseType}'`
-        : `a ${dimensions}-dimensional '${baseType}' array`;
+    const name = ExpressionShape.writtenThrough(chain, start);
+    // A bit range applies to an element, so every dimension stays indexed
+    const element = ExpressionShape.writtenThrough(chain, start + dimensions);
+    const field = step.beforeIsBitField
+      ? this.bitmapField(fieldStep)
+      : undefined;
+    let shape = `a ${dimensions}-dimensional '${baseType}' array`;
+    if (field !== undefined) shape = `a ${field.width}-bit bitmap field`;
+    else if (dimensions === 0) shape = `a scalar '${baseType}'`;
     const per = `${dimensions} for the array ${dimensions === 1 ? "dimension" : "dimensions"}`;
     this.found.push({
       code: "E0856",
-      span: at.span,
+      span: chain.span,
       message: `too many subscripts on '${name}': it is ${shape}, so it allows at most ${allowed}`,
       helpText:
         allowed > dimensions
-          ? `${per} plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range '${name}[start, width]'?`
-          : `${per} and no bit index: a bool is already a single bit (ADR-036/ADR-007).`,
+          ? `${per} plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range '${element}[start, width]'?`
+          : `${per} and no bit index: '${element}' is already a single bit (ADR-036/ADR-007).`,
     });
+  }
+
+  /** The layout of the bitmap field `fieldStep` reads, if it reads one */
+  private bitmapField(
+    fieldStep: IChainStep | undefined,
+  ): IBitmapFieldLayout | undefined {
+    const bitmap = fieldStep?.before?.bitmapTypeName ?? null;
+    const member = fieldStep?.member ?? null;
+    if (bitmap === null || member === null) return undefined;
+    return this.context.symbols.bitmapFields.get(bitmap)?.get(member);
   }
 }
 
