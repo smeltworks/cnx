@@ -11,8 +11,8 @@ const AT = { line: 1, column: 0, endLine: 1, endColumn: 0 };
 const ENUM = {
   kind: "enum",
   members: new Map([
-    ["IDLE", {}],
-    ["RUN", {}],
+    ["IDLE", { fullyQualifiedCName: "EMode__IDLE" }],
+    ["RUN", { fullyQualifiedCName: "EMode__RUN" }],
   ]),
 };
 
