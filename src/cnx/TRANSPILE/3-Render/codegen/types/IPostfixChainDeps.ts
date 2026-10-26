@@ -1,3 +1,4 @@
+import type TMemberStep from "./TMemberStep";
 /**
  * Dependencies needed for postfix chain building
  */
@@ -8,7 +9,8 @@ interface IPostfixChainDeps {
   // so the builder never sees an expression at all and this dep has no reader.
 
   /** Get separator for member access */
-  getSeparator(isFirstOp: boolean, identifierChain: string[]): string;
+  /** How the member at the end of `identifierChain` joins (#2116) */
+  memberStep(isFirstOp: boolean, identifierChain: string[]): TMemberStep;
 }
 
 export default IPostfixChainDeps;

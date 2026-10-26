@@ -1208,7 +1208,7 @@ class CodeGenWalker {
     if (resolved) {
       // Check if enum
       if (this.host.state.symbols!.knownEnums.has(resolved.name)) {
-        return this._getEnumZeroValue(resolved.name, resolved.separator);
+        return this._getEnumZeroValue(resolved.name, resolved.isCppNamespace);
       }
       // Issue #1004: struct/class zero-init. C++ value-initialization ({})
       // works for every aggregate (including ones whose first field is an
@@ -3098,26 +3098,23 @@ class CodeGenWalker {
    * Returns member with value 0, or first member, or casted 0.
    * ADR-017: Enums initialize to first member
    */
-  private _getEnumZeroValue(
-    enumName: string,
-    separator: string = QualifiedCName.SEPARATOR,
-  ): string {
+  private _getEnumZeroValue(enumName: string, isCppNamespace = false): string {
     return EnumZeroValue.of(
       this.host.state.symbols!.enumMembers,
       enumName,
-      separator,
+      isCppNamespace,
     );
   }
 
   /**
    * Resolve full type name from any TypeContext variant.
-   * Returns { name, separator } or null if not a named type.
+   * Returns { name, isCppNamespace } or null if not a named type.
    * ADR-016: Handles scoped, global, qualified, and user types
    */
   private namedTypeOf(
     type: TTypeSyntax,
     ofElement = false,
-  ): { name: string; separator: string } | null {
+  ): { name: string; isCppNamespace: boolean } | null {
     // #1285: ask for named types by name. Everything else -- string, array,
     // template, primitive, `void` -- returns null and is handled by the
     // caller's own chain, which is where it was always handled. An enumerated
@@ -3134,8 +3131,7 @@ class CodeGenWalker {
     }
 
     // Issue #388: a C++ namespace type comes back `::`-joined.
-    const separator = name.includes("::") ? "::" : QualifiedCName.SEPARATOR;
-    return { name, separator };
+    return { name, isCppNamespace: name.includes("::") };
   }
 
   /**
@@ -3375,8 +3371,8 @@ class CodeGenWalker {
       );
 
     return {
-      getSeparator: (isFirstOp: boolean, identifierChain: string[]) =>
-        MemberSeparatorResolver.getSeparator(
+      memberStep: (isFirstOp: boolean, identifierChain: string[]) =>
+        MemberSeparatorResolver.step(
           isFirstOp,
           identifierChain,
           separatorCtx,

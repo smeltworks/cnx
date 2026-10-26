@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import PostfixChainBuilder from "../PostfixChainBuilder";
+import type TMemberStep from "../../types/TMemberStep";
 import IPostfixOperation from "../../types/IPostfixOperation";
 import IPostfixChainDeps from "../../types/IPostfixChainDeps";
 
@@ -30,7 +31,7 @@ describe("PostfixChainBuilder", () => {
   const createMockDeps = (
     overrides: Partial<IPostfixChainDeps> = {},
   ): IPostfixChainDeps => ({
-    getSeparator: vi.fn(() => "."),
+    memberStep: vi.fn((): TMemberStep => ({ kind: "access", separator: "." })),
     ...overrides,
   });
 
@@ -48,7 +49,7 @@ describe("PostfixChainBuilder", () => {
       const result = PostfixChainBuilder.build("foo", "foo", ops, deps);
 
       expect(result).toBe("foo.bar");
-      expect(deps.getSeparator).toHaveBeenCalledWith(true, ["foo", "bar"]);
+      expect(deps.memberStep).toHaveBeenCalledWith(true, ["foo", "bar"]);
     });
 
     it("reads the root from the op, not from its position (#1994)", () => {
@@ -57,11 +58,8 @@ describe("PostfixChainBuilder", () => {
 
       PostfixChainBuilder.build("foo", "foo", ops, deps);
 
-      expect(deps.getSeparator).toHaveBeenNthCalledWith(1, false, [
-        "foo",
-        "bar",
-      ]);
-      expect(deps.getSeparator).toHaveBeenNthCalledWith(2, true, [
+      expect(deps.memberStep).toHaveBeenNthCalledWith(1, false, ["foo", "bar"]);
+      expect(deps.memberStep).toHaveBeenNthCalledWith(2, true, [
         "foo",
         "bar",
         "baz",
@@ -75,14 +73,11 @@ describe("PostfixChainBuilder", () => {
       const result = PostfixChainBuilder.build("foo", "foo", ops, deps);
 
       expect(result).toBe("foo.bar.baz");
-      expect(deps.getSeparator).toHaveBeenCalledTimes(2);
+      expect(deps.memberStep).toHaveBeenCalledTimes(2);
       // First call is first op
-      expect(deps.getSeparator).toHaveBeenNthCalledWith(1, true, [
-        "foo",
-        "bar",
-      ]);
+      expect(deps.memberStep).toHaveBeenNthCalledWith(1, true, ["foo", "bar"]);
       // Second call is not first op
-      expect(deps.getSeparator).toHaveBeenNthCalledWith(2, false, [
+      expect(deps.memberStep).toHaveBeenNthCalledWith(2, false, [
         "foo",
         "bar",
         "baz",
@@ -139,7 +134,12 @@ describe("PostfixChainBuilder", () => {
 
     it("should use arrow separator for struct params", () => {
       const deps = createMockDeps({
-        getSeparator: vi.fn((isFirst) => (isFirst ? "->" : ".")),
+        memberStep: vi.fn(
+          (isFirst: boolean): TMemberStep => ({
+            kind: "access",
+            separator: isFirst ? "->" : ".",
+          }),
+        ),
       });
       const ops: IPostfixOperation[] = [memberOp("x", true), memberOp("y")];
 
@@ -148,15 +148,15 @@ describe("PostfixChainBuilder", () => {
       expect(result).toBe("point->x.y");
     });
 
-    it("should use underscore separator for scope access", () => {
+    it("joins a scope member through the encoder", () => {
       const deps = createMockDeps({
-        getSeparator: vi.fn(() => "_"),
+        memberStep: vi.fn((): TMemberStep => ({ kind: "scope-member" })),
       });
       const ops: IPostfixOperation[] = [memberOp("speed", true)];
 
       const result = PostfixChainBuilder.build("Motor", "Motor", ops, deps);
 
-      expect(result).toBe("Motor_speed");
+      expect(result).toBe("Motor__speed");
     });
 
     it("should handle empty expressions array gracefully", () => {

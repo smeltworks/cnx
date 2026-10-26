@@ -6,9 +6,10 @@
  * its declaring scope's whole PATH, through the encoders in `ScopeUtils`, and
  * is materialized on the symbol (`fullyQualifiedCName`). A name the author
  * wrote in full -- `Motor.State.IDLE` -- is spelled for C by
- * `QualifiedCName.fromSourceName`. Joining a scope's NAME to a member is
- * neither: it claims a complete path while supplying a leaf, and drops every
- * outer scope (#1285, #1357).
+ * `QualifiedCName.fromSourceName`. ADR-016 makes scopes flat -- they never nest
+ * -- so a scope's name IS its path, and what a hand join gets wrong is not the
+ * name but where it is decided: `Scope__member` spelled outside the encoders is
+ * a second decider of the same spelling (#1285, #1357, #2116).
  *
  * #1357's version of this gate counted only `fromParts` calls whose first
  * element READ as a scope, by a name pattern, and let the other 32 through
@@ -54,16 +55,16 @@ const KIND_SECTIONS = [
     kind: "written-name",
     lines: [
       "- **written-name** -- a name the author wrote in full, such as",
-      "  `Motor.State.IDLE`, spelled for C. Under nesting the author writes more",
-      "  components; nothing is joined to a scope.",
+      "  `Motor.State.IDLE`, spelled for C component by component. Nothing is",
+      "  resolved against an enclosing scope, so no scope spelling is decided here.",
     ],
   },
   {
     kind: "scope-path",
     lines: [
-      "- **scope-path** -- handed the enclosing scope's whole PATH",
-      "  (`currentScopePath`), never its leaf, so `Outer.Inner` yields the",
-      "  prefix `Outer__Inner__`.",
+      "- **scope-path** -- handed the enclosing scope's PATH",
+      "  (`currentScopePath`) and asks `QualifiedCName` for its prefix, so the",
+      "  prefix is spelled by the separator's owner.",
     ],
   },
   {
@@ -71,8 +72,8 @@ const KIND_SECTIONS = [
     lines: [
       "- **owner-c-name** -- a member of an entity whose C name is already",
       "  materialized from its path: an enum or register member, or a local",
-      "  renamed under its function's C name. The owner is complete, so a",
-      "  nested scope changes the owner's name, not this join.",
+      "  renamed under its function's C name. The encoders already spelled the",
+      "  owner; this only appends the member, as ADR-016 and ADR-017 define.",
     ],
   },
 ] as const;
@@ -90,14 +91,17 @@ interface IAdjudication {
 class ScopeJoinSites {
   /**
    * The public `QualifiedCName` operations that build a qualified name, or a
-   * scope's prefix, from text. `isInScope` builds `prefixFor` internally, so a
-   * scope LEAF passed to it is the same one-level join as one passed to
-   * `fromSourceName` -- and was invisible to #1357's scan (#2116).
+   * scope's prefix, from text. `isInScope` builds `prefixFor` internally, so it
+   * spells a scope prefix just as `fromSourceName` spells a name -- and was
+   * invisible to #1357's scan (#2116). `MemberSeparatorResolver.join` is the
+   * member access chain's one join, and a caller handing it a scope's name with
+   * a register step would spell `Scope__member` outside the encoder.
    */
   private static readonly BUILDERS: readonly string[] = [
-    "fromSourceName",
-    "isInScope",
-    "prefixFor",
+    "QualifiedCName.fromSourceName",
+    "QualifiedCName.isInScope",
+    "QualifiedCName.prefixFor",
+    "MemberSeparatorResolver.join",
   ];
 
   /** The separator, wherever it is spelled by name. */
@@ -209,6 +213,12 @@ class ScopeJoinSites {
       why: "a qualified case label as written (`Motor.State.IDLE`)",
     },
     {
+      file: "src/cnx/TRANSPILE/3-Render/codegen/helpers/PostfixChainBuilder.ts",
+      element: "join(result, step, memberName)",
+      kind: "owner-c-name",
+      why: "an assignment target's member step; `MemberSeparatorResolver.step` decided it, so a scope member goes through `QualifiedNameGenerator.forMember` and a register member joins its owner's C name",
+    },
+    {
       file: "src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts",
       element: "fromSourceName(identifierChain.slice(0, -1))",
       kind: "written-name",
@@ -217,8 +227,8 @@ class ScopeJoinSites {
     {
       file: "src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts",
       element: "QualifiedCName.SEPARATOR",
-      kind: "written-name",
-      why: "picks `__` over `.` for a chain the author wrote from its head (`global.Scope.member`, `GPIO7.DR_SET`); every component is written, so nesting adds components rather than dropping them",
+      kind: "owner-c-name",
+      why: "`join`'s register step: a register member joined to its owner's C name. A scope member goes through `QualifiedNameGenerator.forMember` instead, and no method hands `__` out as a value (#2116)",
     },
     {
       file: "src/cnx/TRANSPILE/3-Render/headers/generators/generateEnumHeader.ts",
@@ -233,22 +243,16 @@ class ScopeJoinSites {
       why: "a bare member of the expected enum, whose C name keys `knownEnums`",
     },
     {
-      file: "src/cnx/TRANSPILE/CodeGenWalker.ts",
-      element: "QualifiedCName.SEPARATOR",
-      kind: "owner-c-name",
-      why: "an enum's zero member (ADR-017) and a planned type's member, each joined to a materialized C name; `::` when that name is a C++ namespace",
-    },
-    {
       file: "src/cnx/TRANSPILE/2-Plan/TypeValidator.ts",
       element: "isInScope(identifier, currentScopePath)",
       kind: "scope-path",
-      why: "is a known function declared in the current scope? Handed the whole PATH (#1295), not `leafOf` it",
+      why: "is a known function declared in the current scope? Handed `currentScopePath`, so the prefix is spelled by `QualifiedCName.prefixFor`",
     },
     {
       file: "src/cnx/utils/EnumZeroValue.ts",
-      element: "QualifiedCName.SEPARATOR",
+      element: "fromSourceName([enumName, member])",
       kind: "owner-c-name",
-      why: "ADR-017 zero member of an enum, joined to the enum's materialized C name",
+      why: "ADR-017 zero member of the enum whose C name `enumName` is (`knownEnums` is keyed by C name); a C++ namespace enum joins with `::` instead",
     },
     {
       file: "src/cnx/utils/LengthProperty.ts",
@@ -330,7 +334,7 @@ class ScopeJoinSites {
   }
 
   /**
-   * Each `QualifiedCName.<builder>(...)` call in `source`, with its argument.
+   * Each `<builder>(...)` call in `source`, as `<method>(<argument>)`.
    *
    * Scans for the matching delimiter rather than matching a regex: these calls
    * span lines and contain nested calls and arrays with their own commas.
@@ -339,7 +343,8 @@ class ScopeJoinSites {
     source: string,
     builder: string,
   ): readonly string[] {
-    const marker = `QualifiedCName.${builder}(`;
+    const marker = `${builder}(`;
+    const method = builder.slice(builder.lastIndexOf(".") + 1);
     const found: string[] = [];
     let from = 0;
     for (;;) {
@@ -369,7 +374,7 @@ class ScopeJoinSites {
         .replace(/,$/, "")
         .replace(/\[ /g, "[")
         .replace(/ \]/g, "]");
-      found.push(`${builder}(${argument})`);
+      found.push(`${method}(${argument})`);
       from = i + 1;
     }
   }
@@ -458,9 +463,10 @@ class ScopeJoinSites {
       "",
       "A qualified name comes from a symbol's declaring scope's whole PATH",
       "(`ScopeUtils`, materialized as `fullyQualifiedCName`), or from a name the",
-      "author wrote in full. Joining a scope's NAME to a member is neither, and",
-      "drops every outer scope. Every row below carries the judgement that it is",
-      "not that join:",
+      "author wrote in full. Scopes are flat (ADR-016), so a scope's name is its",
+      "path; a hand join of one to a member is wrong because it decides the",
+      "`Scope__member` spelling a second time. Every row below carries the",
+      "judgement that it is not that join:",
       "",
       ...KIND_SECTIONS.flatMap((section) => section.lines),
       "",

@@ -27,7 +27,7 @@ describe("MemberSeparatorResolver", () => {
     return {
       isKnownScope: vi.fn(() => false),
       isKnownRegister: vi.fn(() => false),
-      rootMemberSeparator: vi.fn(() => "->"),
+      rootMemberSeparator: vi.fn((): "." | "->" => "->"),
       ...overrides,
     };
   }
@@ -164,48 +164,36 @@ describe("MemberSeparatorResolver", () => {
     });
   });
 
-  describe("getFirstSeparator", () => {
+  describe("firstStep", () => {
     it("should return :: for C++ namespace access", () => {
       const deps = createMockDeps();
       const ctx = createContext({ isCppAccess: true });
 
-      const sep = MemberSeparatorResolver.getFirstSeparator(
-        ["SeaDash"],
-        ctx,
-        deps,
-      );
+      const sep = MemberSeparatorResolver.firstStep(["SeaDash"], ctx, deps);
 
-      expect(sep).toBe("::");
+      expect(sep).toEqual({ kind: "access", separator: "::" });
     });
 
     it("should return -> for struct param in C mode", () => {
       const deps = createMockDeps({
-        rootMemberSeparator: vi.fn(() => "->"),
+        rootMemberSeparator: vi.fn((): "." | "->" => "->"),
       });
       const ctx = createContext({ holding: STRUCT_PARAM });
 
-      const sep = MemberSeparatorResolver.getFirstSeparator(
-        ["point"],
-        ctx,
-        deps,
-      );
+      const sep = MemberSeparatorResolver.firstStep(["point"], ctx, deps);
 
-      expect(sep).toBe("->");
+      expect(sep).toEqual({ kind: "access", separator: "->" });
     });
 
     it("should return . for struct param in C++ mode", () => {
       const deps = createMockDeps({
-        rootMemberSeparator: vi.fn(() => "."),
+        rootMemberSeparator: vi.fn((): "." | "->" => "."),
       });
       const ctx = createContext({ holding: STRUCT_PARAM });
 
-      const sep = MemberSeparatorResolver.getFirstSeparator(
-        ["point"],
-        ctx,
-        deps,
-      );
+      const sep = MemberSeparatorResolver.firstStep(["point"], ctx, deps);
 
-      expect(sep).toBe(".");
+      expect(sep).toEqual({ kind: "access", separator: "." });
     });
 
     // Issue #895: whether a callback-promoted parameter is a pointer in C++ is
@@ -223,14 +211,14 @@ describe("MemberSeparatorResolver", () => {
       const deps = createMockDeps();
       const ctx = createContext({ holding });
 
-      MemberSeparatorResolver.getFirstSeparator(["f"], ctx, deps);
+      MemberSeparatorResolver.firstStep(["f"], ctx, deps);
 
       expect(deps.rootMemberSeparator).toHaveBeenCalledWith(holding);
     });
 
     it("asks no helper for a root that is not held", () => {
       const deps = createMockDeps();
-      MemberSeparatorResolver.getFirstSeparator(["p"], createContext(), deps);
+      MemberSeparatorResolver.firstStep(["p"], createContext(), deps);
       expect(deps.rootMemberSeparator).not.toHaveBeenCalled();
     });
 
@@ -238,13 +226,9 @@ describe("MemberSeparatorResolver", () => {
       const deps = createMockDeps();
       const ctx = createContext({ isCrossScope: true });
 
-      const sep = MemberSeparatorResolver.getFirstSeparator(
-        ["Motor"],
-        ctx,
-        deps,
-      );
+      const sep = MemberSeparatorResolver.firstStep(["Motor"], ctx, deps);
 
-      expect(sep).toBe("__");
+      expect(sep).toEqual({ kind: "scope-member" });
     });
 
     it("should return _ for global register member access", () => {
@@ -253,13 +237,9 @@ describe("MemberSeparatorResolver", () => {
       });
       const ctx = createContext({ isCrossScope: true });
 
-      const sep = MemberSeparatorResolver.getFirstSeparator(
-        ["GPIO7"],
-        ctx,
-        deps,
-      );
+      const sep = MemberSeparatorResolver.firstStep(["GPIO7"], ctx, deps);
 
-      expect(sep).toBe("__");
+      expect(sep).toEqual({ kind: "register-member" });
     });
 
     it("should return _ for a known scope, with or without global.", () => {
@@ -270,56 +250,44 @@ describe("MemberSeparatorResolver", () => {
       });
       const ctx = createContext({ isCrossScope: true });
 
-      const sep = MemberSeparatorResolver.getFirstSeparator(
-        ["Motor"],
-        ctx,
-        deps,
-      );
+      const sep = MemberSeparatorResolver.firstStep(["Motor"], ctx, deps);
 
-      expect(sep).toBe("__");
+      expect(sep).toEqual({ kind: "scope-member" });
     });
 
     it("should return _ for scoped register access", () => {
       const deps = createMockDeps();
       const ctx = createContext({ isScopedRegister: true });
 
-      const sep = MemberSeparatorResolver.getFirstSeparator(
-        ["CONTROL_REG"],
-        ctx,
-        deps,
-      );
+      const sep = MemberSeparatorResolver.firstStep(["CONTROL_REG"], ctx, deps);
 
-      expect(sep).toBe("__");
+      expect(sep).toEqual({ kind: "register-member" });
     });
 
     it("should return . for normal struct field access", () => {
       const deps = createMockDeps();
       const ctx = createContext();
 
-      const sep = MemberSeparatorResolver.getFirstSeparator(
-        ["point"],
-        ctx,
-        deps,
-      );
+      const sep = MemberSeparatorResolver.firstStep(["point"], ctx, deps);
 
-      expect(sep).toBe(".");
+      expect(sep).toEqual({ kind: "access", separator: "." });
     });
   });
 
-  describe("getSubsequentSeparator", () => {
+  describe("subsequentStep", () => {
     it("should return _ when first identifier is a register", () => {
       const deps = createMockDeps({
         isKnownRegister: vi.fn((name) => name === "GPIO7"),
       });
       const ctx = createContext();
 
-      const sep = MemberSeparatorResolver.getSubsequentSeparator(
+      const sep = MemberSeparatorResolver.subsequentStep(
         ["GPIO7", "DR", "SET"],
         ctx,
         deps,
       );
 
-      expect(sep).toBe("__");
+      expect(sep).toEqual({ kind: "register-member" });
     });
 
     it("should return _ when chain so far is a register", () => {
@@ -328,13 +296,13 @@ describe("MemberSeparatorResolver", () => {
       });
       const ctx = createContext();
 
-      const sep = MemberSeparatorResolver.getSubsequentSeparator(
+      const sep = MemberSeparatorResolver.subsequentStep(
         ["GPIO7", "DR", "SET"],
         ctx,
         deps,
       );
 
-      expect(sep).toBe("__");
+      expect(sep).toEqual({ kind: "register-member" });
     });
 
     it("should return _ when scoped register name is a register", () => {
@@ -343,93 +311,129 @@ describe("MemberSeparatorResolver", () => {
       });
       const ctx = createContext({ scopedRegName: "Motor__CONTROL_REG" });
 
-      const sep = MemberSeparatorResolver.getSubsequentSeparator(
+      const sep = MemberSeparatorResolver.subsequentStep(
         ["CONTROL_REG", "SPEED"],
         ctx,
         deps,
       );
 
-      expect(sep).toBe("__");
+      expect(sep).toEqual({ kind: "register-member" });
     });
 
     it("should return . for non-register subsequent access", () => {
       const deps = createMockDeps();
       const ctx = createContext();
 
-      const sep = MemberSeparatorResolver.getSubsequentSeparator(
+      const sep = MemberSeparatorResolver.subsequentStep(
         ["config", "network", "port"],
         ctx,
         deps,
       );
 
-      expect(sep).toBe(".");
+      expect(sep).toEqual({ kind: "access", separator: "." });
     });
   });
 
-  describe("getSeparator (dispatch)", () => {
-    it("should dispatch to getFirstSeparator when isFirstOp is true", () => {
+  describe("step (dispatch)", () => {
+    it("should dispatch to firstStep when isFirstOp is true", () => {
       const deps = createMockDeps();
       const ctx = createContext({ isCppAccess: true });
 
-      const sep = MemberSeparatorResolver.getSeparator(
+      const sep = MemberSeparatorResolver.step(
         true, // isFirstOp
         ["SeaDash"],
         ctx,
         deps,
       );
 
-      expect(sep).toBe("::");
+      expect(sep).toEqual({ kind: "access", separator: "::" });
     });
 
-    it("should dispatch to getSubsequentSeparator when isFirstOp is false", () => {
+    it("should dispatch to subsequentStep when isFirstOp is false", () => {
       const deps = createMockDeps({
         isKnownRegister: vi.fn(() => true),
       });
       const ctx = createContext();
 
-      const sep = MemberSeparatorResolver.getSeparator(
+      const sep = MemberSeparatorResolver.step(
         false, // not first op
         ["GPIO7", "DR"],
         ctx,
         deps,
       );
 
-      expect(sep).toBe("__");
+      expect(sep).toEqual({ kind: "register-member" });
     });
   });
 
   describe("priority ordering", () => {
     it("should prioritize C++ access over struct param", () => {
       const deps = createMockDeps({
-        rootMemberSeparator: vi.fn(() => "->"),
+        rootMemberSeparator: vi.fn((): "." | "->" => "->"),
       });
       const ctx = createContext({
         isCppAccess: true,
         holding: STRUCT_PARAM,
       });
 
-      const sep = MemberSeparatorResolver.getFirstSeparator(["obj"], ctx, deps);
+      const sep = MemberSeparatorResolver.firstStep(["obj"], ctx, deps);
 
-      expect(sep).toBe("::");
+      expect(sep).toEqual({ kind: "access", separator: "::" });
       expect(deps.rootMemberSeparator).not.toHaveBeenCalled();
     });
 
     it("should prioritize struct param over cross-scope", () => {
       const deps = createMockDeps({
-        rootMemberSeparator: vi.fn(() => "->"),
+        rootMemberSeparator: vi.fn((): "." | "->" => "->"),
       });
       const ctx = createContext({
         holding: STRUCT_PARAM,
         isCrossScope: true,
       });
 
-      const sep = MemberSeparatorResolver.getFirstSeparator(
-        ["point"],
-        ctx,
-        deps,
-      );
+      const sep = MemberSeparatorResolver.firstStep(["point"], ctx, deps);
 
-      expect(sep).toBe("->");
+      expect(sep).toEqual({ kind: "access", separator: "->" });
+    });
+  });
+  describe("join (#2116)", () => {
+    it("joins a scope member through the encoder", () => {
+      expect(
+        MemberSeparatorResolver.join(
+          "Motor",
+          { kind: "scope-member" },
+          "speed",
+        ),
+      ).toBe("Motor__speed");
+    });
+
+    it("joins a register member to its owner's C name", () => {
+      expect(
+        MemberSeparatorResolver.join(
+          "Motor__CTRL",
+          { kind: "register-member" },
+          "EN",
+        ),
+      ).toBe("Motor__CTRL__EN");
+    });
+
+    it("keeps a C operator between the two for any other step", () => {
+      expect(
+        MemberSeparatorResolver.join(
+          "p",
+          { kind: "access", separator: "->" },
+          "x",
+        ),
+      ).toBe("p->x");
+    });
+  });
+
+  it("calls a cross-scope register access a register member", () => {
+    const deps = createMockDeps({ isKnownRegister: vi.fn(() => true) });
+    const ctx = createContext({ isCrossScope: true });
+
+    expect(MemberSeparatorResolver.firstStep(["GPIO7"], ctx, deps)).toEqual({
+      kind: "register-member",
     });
   });
 });

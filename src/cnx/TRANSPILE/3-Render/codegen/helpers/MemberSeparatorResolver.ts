@@ -1,13 +1,17 @@
 /**
  * Member Separator Resolver
  *
- * Determines the appropriate separator for member access chains in cnx.
- * Different separators are used based on context:
- * - `_` for scope member access (Motor.speed -> Motor_speed)
- * - `_` for register field access (GPIO7.DR_SET -> GPIO7_DR_SET)
+ * Decides how each member step of an access chain joins, and spells it:
+ * - scope member access joins into one identifier through the encoder
+ *   (Motor.speed -> Motor__speed, ADR-016)
+ * - register field access joins into one identifier
+ *   (GPIO7.DR_SET -> GPIO7__DR_SET)
  * - `.` for struct member access (point.x -> point.x)
  * - `->` for struct parameter member access in C mode
  * - `::` for C++ namespace/class access
+ *
+ * The decision is a `TMemberStep`, not a separator string, so `__` is spelled
+ * only in `join` (#2116).
  *
  * Issue #387, #409, ADR-016
  */
@@ -17,6 +21,7 @@ import IMemberSeparatorDeps from "../types/IMemberSeparatorDeps";
 import QualifiedCName from "../../../../utils/QualifiedCName";
 import QualifiedNameGenerator from "../../../../utils/QualifiedNameGenerator";
 import type IRootHolding from "../types/IRootHolding";
+import type TMemberStep from "../types/TMemberStep";
 
 /**
  * Input parameters for building a separator context
@@ -35,6 +40,19 @@ interface IBuildContextInput {
  * Static utility for resolving member access separators
  */
 class MemberSeparatorResolver {
+  private static readonly SCOPE_MEMBER: TMemberStep = { kind: "scope-member" };
+  private static readonly REGISTER_MEMBER: TMemberStep = {
+    kind: "register-member",
+  };
+  private static readonly ACCESS_DOT: TMemberStep = {
+    kind: "access",
+    separator: ".",
+  };
+  private static readonly ACCESS_CPP: TMemberStep = {
+    kind: "access",
+    separator: "::",
+  };
+
   /**
    * Build the separator context for a member access chain
    */
@@ -72,35 +90,40 @@ class MemberSeparatorResolver {
   }
 
   /**
-   * Get the separator for the first member access operation
+   * How the first member access operation joins
    */
-  static getFirstSeparator(
+  static firstStep(
     identifierChain: string[],
     ctx: ISeparatorContext,
     deps: IMemberSeparatorDeps,
-  ): string {
+  ): TMemberStep {
     // C++ namespace/class access
     if (ctx.isCppAccess) {
-      return "::";
+      return MemberSeparatorResolver.ACCESS_CPP;
     }
 
     // A struct parameter uses -> in C mode, . in C++ mode, and a callback-
     // promoted parameter or a local #895 made a pointer takes -> in both --
     // decided by the one helper the read path asks too (#1760 review)
     if (ctx.holding.isStructParam || ctx.holding.isPointerLocal) {
-      return deps.rootMemberSeparator(ctx.holding);
+      return {
+        kind: "access",
+        separator: deps.rootMemberSeparator(ctx.holding),
+      };
     }
 
     // Cross-scope access (global.Scope.member or global.Register.member)
     if (ctx.isCrossScope) {
-      return QualifiedCName.SEPARATOR;
+      return deps.isKnownRegister(identifierChain[0])
+        ? MemberSeparatorResolver.REGISTER_MEMBER
+        : MemberSeparatorResolver.SCOPE_MEMBER;
     }
 
     // Register member access: GPIO7.DR_SET -> GPIO7_DR_SET
     if (deps.isKnownRegister(identifierChain[0])) {
       // #1322: the shadowed-register check that stood here is E0437 in pass
       // 2.1 (ADR-016); codegen only spells the C name.
-      return QualifiedCName.SEPARATOR;
+      return MemberSeparatorResolver.REGISTER_MEMBER;
     }
 
     // Scope member access: Sensor.buffer -> Sensor_buffer
@@ -109,26 +132,26 @@ class MemberSeparatorResolver {
       // #1322: the cross-scope visibility check that stood here -- with its
       // #779 exemption for a scoped register -- is E0435/E0436 in pass 2.1,
       // where the same exemption is stated once for all three positions.
-      return QualifiedCName.SEPARATOR;
+      return MemberSeparatorResolver.SCOPE_MEMBER;
     }
 
     // Scoped register: this.MOTOR_REG.SPEED -> Scope_MOTOR_REG_SPEED
     if (ctx.isScopedRegister) {
-      return QualifiedCName.SEPARATOR;
+      return MemberSeparatorResolver.REGISTER_MEMBER;
     }
 
     // Default: struct field access
-    return ".";
+    return MemberSeparatorResolver.ACCESS_DOT;
   }
 
   /**
-   * Get the separator for subsequent member access operations (after the first)
+   * How each member access operation after the first joins
    */
-  static getSubsequentSeparator(
+  static subsequentStep(
     identifierChain: string[],
     ctx: ISeparatorContext,
     deps: IMemberSeparatorDeps,
-  ): string {
+  ): TMemberStep {
     // Check for register chains
     const chainSoFar = QualifiedCName.fromSourceName(
       identifierChain.slice(0, -1),
@@ -138,30 +161,40 @@ class MemberSeparatorResolver {
       deps.isKnownRegister(chainSoFar) ||
       (ctx.scopedRegName !== null && deps.isKnownRegister(ctx.scopedRegName));
 
-    return isRegisterChain ? QualifiedCName.SEPARATOR : ".";
+    return isRegisterChain
+      ? MemberSeparatorResolver.REGISTER_MEMBER
+      : MemberSeparatorResolver.ACCESS_DOT;
   }
 
   /**
-   * Get separator, dispatching to first or subsequent based on position
+   * How a member access operation joins, by its position in the chain
    */
-  static getSeparator(
+  static step(
     isFirstOp: boolean,
     identifierChain: string[],
     ctx: ISeparatorContext,
     deps: IMemberSeparatorDeps,
-  ): string {
+  ): TMemberStep {
     if (isFirstOp) {
-      return MemberSeparatorResolver.getFirstSeparator(
-        identifierChain,
-        ctx,
-        deps,
-      );
+      return MemberSeparatorResolver.firstStep(identifierChain, ctx, deps);
     }
-    return MemberSeparatorResolver.getSubsequentSeparator(
-      identifierChain,
-      ctx,
-      deps,
-    );
+    return MemberSeparatorResolver.subsequentStep(identifierChain, ctx, deps);
+  }
+
+  /**
+   * `result` with `member` joined by `step`: the one place a member access
+   * chain spells a qualified C name. A scope member goes through the encoder;
+   * a register member joins its owner's C name (ADR-016).
+   */
+  static join(result: string, step: TMemberStep, member: string): string {
+    switch (step.kind) {
+      case "scope-member":
+        return QualifiedNameGenerator.forMember(result, member);
+      case "register-member":
+        return `${result}${QualifiedCName.SEPARATOR}${member}`;
+      case "access":
+        return `${result}${step.separator}${member}`;
+    }
   }
 }
 

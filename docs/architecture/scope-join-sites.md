@@ -8,23 +8,24 @@ a qualified C name: a `QualifiedCName.fromSourceName` call, a use of
 
 A qualified name comes from a symbol's declaring scope's whole PATH
 (`ScopeUtils`, materialized as `fullyQualifiedCName`), or from a name the
-author wrote in full. Joining a scope's NAME to a member is neither, and
-drops every outer scope. Every row below carries the judgement that it is
-not that join:
+author wrote in full. Scopes are flat (ADR-016), so a scope's name is its
+path; a hand join of one to a member is wrong because it decides the
+`Scope__member` spelling a second time. Every row below carries the
+judgement that it is not that join:
 
 - **encoder** -- the definition of the operation every other row is
   judged against: `QualifiedCName`'s own separator, and the `ScopeUtils`
   encoders that take a symbol's whole enclosing PATH.
 - **written-name** -- a name the author wrote in full, such as
-  `Motor.State.IDLE`, spelled for C. Under nesting the author writes more
-  components; nothing is joined to a scope.
-- **scope-path** -- handed the enclosing scope's whole PATH
-  (`currentScopePath`), never its leaf, so `Outer.Inner` yields the
-  prefix `Outer__Inner__`.
+  `Motor.State.IDLE`, spelled for C component by component. Nothing is
+  resolved against an enclosing scope, so no scope spelling is decided here.
+- **scope-path** -- handed the enclosing scope's PATH
+  (`currentScopePath`) and asks `QualifiedCName` for its prefix, so the
+  prefix is spelled by the separator's owner.
 - **owner-c-name** -- a member of an entity whose C name is already
   materialized from its path: an enum or register member, or a local
-  renamed under its function's C name. The owner is complete, so a
-  nested scope changes the owner's name, not this join.
+  renamed under its function's C name. The encoders already spelled the
+  owner; this only appends the member, as ADR-016 and ADR-017 define.
 
 A site takes the FIRST kind above that applies. **Nothing computes this.**
 The order is an instruction to whoever writes the row.
@@ -53,11 +54,11 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts`                   | `fromSourceName([switchEnumType, id])`                                        | 1      | owner-c-name |
 | `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts`                   | `fromSourceName(label.parts)`                                                 | 1      | written-name |
 | `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts`                         | `fromSourceName(identifierChain.slice(0, -1))`                                | 1      | written-name |
-| `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts`                         | `QualifiedCName.SEPARATOR`                                                    | 5      | written-name |
+| `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts`                         | `QualifiedCName.SEPARATOR`                                                    | 1      | owner-c-name |
+| `src/cnx/TRANSPILE/3-Render/codegen/helpers/PostfixChainBuilder.ts`                             | `join(result, step, memberName)`                                              | 1      | owner-c-name |
 | `src/cnx/TRANSPILE/3-Render/headers/generators/generateEnumHeader.ts`                           | `fromSourceName([name, memberName])`                                          | 1      | owner-c-name |
 | `src/cnx/TRANSPILE/CodeGenWalker.ts`                                                            | `fromSourceName([this.host.state.expectedType, id])`                          | 1      | owner-c-name |
-| `src/cnx/TRANSPILE/CodeGenWalker.ts`                                                            | `QualifiedCName.SEPARATOR`                                                    | 2      | owner-c-name |
-| `src/cnx/utils/EnumZeroValue.ts`                                                                | `QualifiedCName.SEPARATOR`                                                    | 1      | owner-c-name |
+| `src/cnx/utils/EnumZeroValue.ts`                                                                | `fromSourceName([enumName, member])`                                          | 1      | owner-c-name |
 | `src/cnx/utils/LengthProperty.ts`                                                               | `fromSourceName(type.name)`                                                   | 2      | written-name |
 | `src/cnx/utils/OperandTyper.ts`                                                                 | `fromSourceName(sourceName)`                                                  | 1      | written-name |
 | `src/cnx/utils/QualifiedCName.ts`                                                               | `prefixFor(scopePath)`                                                        | 1      | encoder      |
@@ -66,9 +67,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                                                   | `fromSourceName([symbol.scopePath, symbol.name])`                             | 1      | encoder      |
 | `src/cnx/utils/ScopeUtils.ts`                                                                   | `fromSourceName(qualified)`                                                   | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `fromSourceName(type.path)`                                                   | 1      | written-name |
-| **total**                                                                                       |                                                                               | **42** |              |
+| **total**                                                                                       |                                                                               | **37** |              |
 
-42 site(s) across 19 file(s).
+37 site(s) across 20 file(s).
 
 ## Why each site is not a scope join
 
@@ -81,18 +82,18 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts` `fromSourceName(text)`: a dotted callback type name as written; `this.` goes through `ScopeUtils.qualifyInScope` instead
 - `src/cnx/TRANSPILE/1-Analyze/SwitchStatementAnalyzer.ts` `fromSourceName([head, ...label.path.slice(1)])`: `head` is the label's first component resolved by `ScopeUtils.typeHeadCName`; the rest is what the author wrote
 - `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts` `fromSourceName(identifiers)`: a qualified type's identifier chain as written
-- `src/cnx/TRANSPILE/2-Plan/TypeValidator.ts` `isInScope(identifier, currentScopePath)`: is a known function declared in the current scope? Handed the whole PATH (#1295), not `leafOf` it
+- `src/cnx/TRANSPILE/2-Plan/TypeValidator.ts` `isInScope(identifier, currentScopePath)`: is a known function declared in the current scope? Handed `currentScopePath`, so the prefix is spelled by `QualifiedCName.prefixFor`
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/declarationGenerators/EnumGenerator.ts` `fromSourceName([fullName, memberName])`: ADR-017 member of the enum whose C name `QualifiedNameGenerator.forMember` built from the enclosing PATH
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/declarationGenerators/RegisterMacroGenerator.ts` `fromSourceName([prefix, member.name])`: register member macro; `prefix` is the register's C name, built from its declaring PATH by `RegisterGenerator`
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts` `fromSourceName([ctx.result, ctx.memberName])`: member of a register (`knownRegisters`) or an enum (`knownEnums`), each keyed by its materialized C name; a scope member goes through `QualifiedNameGenerator.forMember` instead
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts` `fromSourceName([switchEnumType, id])`: a bare case label that is a member of the subject's enum, whose C name `enumTypeOf` materialized
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts` `fromSourceName(label.parts)`: a qualified case label as written (`Motor.State.IDLE`)
 - `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts` `fromSourceName(identifierChain.slice(0, -1))`: the access chain as written, as a register lookup key
-- `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts` `QualifiedCName.SEPARATOR`: picks `__` over `.` for a chain the author wrote from its head (`global.Scope.member`, `GPIO7.DR_SET`); every component is written, so nesting adds components rather than dropping them
+- `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts` `QualifiedCName.SEPARATOR`: `join`'s register step: a register member joined to its owner's C name. A scope member goes through `QualifiedNameGenerator.forMember` instead, and no method hands `__` out as a value (#2116)
+- `src/cnx/TRANSPILE/3-Render/codegen/helpers/PostfixChainBuilder.ts` `join(result, step, memberName)`: an assignment target's member step; `MemberSeparatorResolver.step` decided it, so a scope member goes through `QualifiedNameGenerator.forMember` and a register member joins its owner's C name
 - `src/cnx/TRANSPILE/3-Render/headers/generators/generateEnumHeader.ts` `fromSourceName([name, memberName])`: ADR-017 member of the header symbol's enum, whose `name` is its materialized C name
 - `src/cnx/TRANSPILE/CodeGenWalker.ts` `fromSourceName([this.host.state.expectedType, id])`: a bare member of the expected enum, whose C name keys `knownEnums`
-- `src/cnx/TRANSPILE/CodeGenWalker.ts` `QualifiedCName.SEPARATOR`: an enum's zero member (ADR-017) and a planned type's member, each joined to a materialized C name; `::` when that name is a C++ namespace
-- `src/cnx/utils/EnumZeroValue.ts` `QualifiedCName.SEPARATOR`: ADR-017 zero member of an enum, joined to the enum's materialized C name
+- `src/cnx/utils/EnumZeroValue.ts` `fromSourceName([enumName, member])`: ADR-017 zero member of the enum whose C name `enumName` is (`knownEnums` is keyed by C name); a C++ namespace enum joins with `::` instead
 - `src/cnx/utils/LengthProperty.ts` `fromSourceName(type.name)`: a resolved type's dotted name as its C lookup key
 - `src/cnx/utils/OperandTyper.ts` `fromSourceName(sourceName)`: a dotted source name as written, as its C lookup key
 - `src/cnx/utils/QualifiedCName.ts` `prefixFor(scopePath)`: `isInScope` asking the prefix builder for the path it was handed

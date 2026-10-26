@@ -41,9 +41,10 @@ class QualifiedCName {
    * This translates a complete written name into its C spelling; it does not
    * qualify a member by its scope. A caller that holds a scope has a REFERENCE,
    * and the encoders in `ScopeUtils` take that reference's whole enclosing PATH.
-   * Joining a scope's NAME to a member here would drop every outer scope -- the
-   * divergence #1357 removed -- which is why every call is adjudicated by
-   * `npm run scope-joins:check` (#2116).
+   * Joining a scope's name to a member here would decide the `Scope__member`
+   * spelling a second time, outside the encoders (ADR-016 scopes are flat, so the
+   * name is right; the decision is in the wrong place) -- which is why every call
+   * is adjudicated by `npm run scope-joins:check` (#2116).
    *
    * @param written The name as written, e.g. "Motor.State.IDLE"
    * @returns The generated C identifier, e.g. "Motor__State__IDLE"
@@ -66,8 +67,8 @@ class QualifiedCName {
    * without knowing which one it already holds. A diagnostic wants this one; a
    * lookup key wants fromSourceName().
    *
-   * Takes a complete path for the same reason fromSourceName() does -- the source
-   * spelling is just as capable of dropping an outer scope as the C spelling.
+   * Takes a complete path for the same reason fromSourceName() does: the parts
+   * are the name, and nothing here resolves them against an enclosing scope.
    *
    * @param parts Ordered name parts, e.g. ["Motor", "State", "IDLE"]
    * @returns The source spelling, e.g. "Motor.State.IDLE"
