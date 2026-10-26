@@ -323,7 +323,7 @@ A `bool` takes no bit index: it is already a single bit, so indexing it makes no
 (owner ruling, Issue #2354). It takes one subscript per array dimension and nothing more.
 Before this, pass 2.1 counted `bool` as bit-indexable while codegen's depth check did
 not, so `done[1] <- true` set the whole bool and `done[1]` always read 0. Both now read
-one limit, `SubscriptClassifier.depthLimit`.
+one limit.
 
 ```cnx
 mut bool done;
