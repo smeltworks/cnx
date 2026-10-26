@@ -209,9 +209,6 @@ interface IOrchestrator extends IPlanQueries {
   /** Check if a symbol is a C++ scope symbol (namespace, class, enum) */
   isCppScopeSymbol(name: string): boolean;
 
-  /** Get the separator for scope access (:: for C++, _ for cnx) */
-  getScopeSeparator(isCppAccess: boolean): string;
-
   /** Add a pending temp variable declaration (for float bit indexing) */
   addPendingTempDeclaration(declaration: string): void;
 

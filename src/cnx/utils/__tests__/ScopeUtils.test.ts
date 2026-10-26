@@ -235,7 +235,7 @@ describe("IScopeSymbol", () => {
     });
 
     it("qualifyInScope keeps every outer component at depth 2", () => {
-      // The drop-in for `QualifiedCName.fromParts([currentScopeName, name])`. The
+      // The drop-in for `QualifiedCName.fromSourceName([currentScopeName, name])`. The
       // string version produced "Inner__tick" here, dropping `Outer`.
 
       expect(ScopeUtils.qualifyInScope("tick", "Outer.Inner")).toBe(

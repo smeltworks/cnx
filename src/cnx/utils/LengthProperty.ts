@@ -314,7 +314,7 @@ class LengthProperty {
     switch (type.kind) {
       case "struct": {
         const struct = LengthProperty.struct(
-          QualifiedCName.fromParts(type.name.split(".")),
+          QualifiedCName.fromSourceName(type.name),
           lookup,
         );
         if (struct)
@@ -330,7 +330,7 @@ class LengthProperty {
           ? BOOL_BITS
           : (TYPE_WIDTH[type.primitive] ?? null);
       case "enum": {
-        const symbol = lookup(QualifiedCName.fromParts(type.name.split(".")));
+        const symbol = lookup(QualifiedCName.fromSourceName(type.name));
         return symbol?.kind === "enum"
           ? LengthProperty.enumBits(
               [...symbol.members.values()].map((member) => member.value),

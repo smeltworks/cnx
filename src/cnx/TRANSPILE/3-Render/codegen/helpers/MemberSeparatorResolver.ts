@@ -130,7 +130,7 @@ class MemberSeparatorResolver {
     deps: IMemberSeparatorDeps,
   ): string {
     // Check for register chains
-    const chainSoFar = QualifiedCName.fromParts(identifierChain.slice(0, -1));
+    const chainSoFar = QualifiedCName.fromSourceName(identifierChain.slice(0, -1));
     const isRegisterChain =
       deps.isKnownRegister(identifierChain[0]) ||
       deps.isKnownRegister(chainSoFar) ||

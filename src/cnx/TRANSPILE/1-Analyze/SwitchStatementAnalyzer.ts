@@ -363,7 +363,7 @@ class SwitchStatementCheck {
     }
     if (label.kind === "qualified") {
       const head = this.headCName(label.root, label.path[0], label.span);
-      return `member:${QualifiedCName.fromParts([head, ...label.path.slice(1)])}`;
+      return `member:${QualifiedCName.fromSourceName([head, ...label.path.slice(1)])}`;
     }
     return `value:${SwitchStatementCheck.caseLabelValue(label)}`;
   }

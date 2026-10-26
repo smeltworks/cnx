@@ -59,7 +59,7 @@ const generateEnum: TGeneratorFn<string> = (
   for (let i = 0; i < memberEntries.length; i++) {
     const [memberName, value] = memberEntries[i];
     // Prefix member names to avoid C namespace collisions
-    const fullMemberName = QualifiedCName.fromParts([fullName, memberName]);
+    const fullMemberName = QualifiedCName.fromSourceName([fullName, memberName]);
     const comma = i < memberEntries.length - 1 ? "," : "";
     lines.push(`    ${fullMemberName} = ${value}${comma}`);
   }

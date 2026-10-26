@@ -207,7 +207,7 @@ class ScopeUtils {
     name: string;
     scopePath: string;
   }): string {
-    return QualifiedCName.fromParts([symbol.scopePath, symbol.name]);
+    return QualifiedCName.fromSourceName([symbol.scopePath, symbol.name]);
   }
 
   /**
@@ -228,7 +228,7 @@ class ScopeUtils {
    * The C name a bare member of `scope` is emitted under, or the bare name at
    * file scope.
    *
-   * The drop-in for `QualifiedCName.fromParts([currentScopeName, name])`, which is the
+   * The drop-in for `QualifiedCName.fromSourceName([currentScopeName, name])`, which is the
    * leaf-only encoder #1285 exists to remove. Identical at depth one -- a
    * top-level scope's leaf name IS its whole chain -- and correct beyond it,
    * where the string version dropped every outer component.
@@ -268,7 +268,7 @@ class ScopeUtils {
       scopePath,
       isScopeTypeVisible,
     );
-    return QualifiedCName.fromParts(qualified.split("."));
+    return QualifiedCName.fromSourceName(qualified);
   }
 
   /**
@@ -327,7 +327,7 @@ class ScopeUtils {
     path: readonly string[],
     scopePath: string,
   ): string {
-    return QualifiedCName.fromParts([scopePath, ...path]);
+    return QualifiedCName.fromSourceName([scopePath, ...path]);
   }
 
   /**

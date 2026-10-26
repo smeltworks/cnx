@@ -1590,7 +1590,7 @@ class OperandTyper {
         // access rules apply to it
         const registerMember = {
           register: current.name,
-          cName: QualifiedCName.fromParts([current.name, member]),
+          cName: info.fullyQualifiedCName,
         };
         // #1514: whether it names a bitmap is asked of the names this file
         // SEES, so an included bitmap counts
@@ -2088,7 +2088,7 @@ class OperandTyper {
 
   private static cNameOf(sourceName: string): string {
     return sourceName.includes(".")
-      ? QualifiedCName.fromParts(sourceName.split("."))
+      ? QualifiedCName.fromSourceName(sourceName)
       : sourceName;
   }
 

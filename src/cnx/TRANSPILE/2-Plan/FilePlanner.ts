@@ -451,7 +451,7 @@ class FilePlanner {
     }
 
     // cnx scope type: join all parts with _
-    return QualifiedCName.fromParts(identifiers);
+    return QualifiedCName.fromSourceName(identifiers);
   }
 
   /**

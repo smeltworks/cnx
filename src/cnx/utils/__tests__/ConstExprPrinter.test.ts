@@ -43,7 +43,7 @@ const ENV: IConstantEnvironment = {
   // is the rule (ConstantNames.test.ts)
   isTypeName: () => true,
   cTypeName: (t) =>
-    CNX_TO_C_TYPE_MAP[t] ?? QualifiedCName.fromParts(t.split(".")),
+    CNX_TO_C_TYPE_MAP[t] ?? QualifiedCName.fromSourceName(t),
 };
 
 describe("ConstExprPrinter (#1175)", () => {

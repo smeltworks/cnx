@@ -210,7 +210,7 @@ class TypeValidator {
       // NO GATE COVERS THIS CALL SITE -- review is what catches it. An earlier
       // revision of this comment claimed the scope-join inventory did, which is
       // the guard-that-cannot-fail shape CLAUDE.md flags: that scan matches the
-      // single literal `QualifiedCName.fromParts([` and inspects only the first
+      // single literal `QualifiedCName.fromSourceName([` and inspects only the first
       // ARRAY ELEMENT, so `isInScope(...)`, `prefixFor(...)`, and a
       // `ScopeUtils.leafOf(...)` passed as an argument here are all invisible to
       // it. Verified: re-inlining the leaf reddens nothing in that check.

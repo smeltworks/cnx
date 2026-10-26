@@ -21,7 +21,6 @@ import IScopeSymbol from "../../../../types/symbols/IScopeSymbol";
 import IVariableSymbol from "../../../../types/symbols/IVariableSymbol";
 import TypeResolver from "../../../../utils/TypeResolver";
 import ScopeUtils from "../../../../utils/ScopeUtils";
-import QualifiedCName from "../../../../utils/QualifiedCName";
 import type TExpression from "../../../../types/syntax/TExpression";
 
 /**
@@ -332,8 +331,8 @@ class TSymbolInfoAdapter {
       maps.scopedRegisters.set(cName, register.baseAddress);
     }
 
-    for (const [memberName, memberInfo] of register.members) {
-      const fullName = QualifiedCName.fromParts([cName, memberName]);
+    for (const memberInfo of register.members.values()) {
+      const fullName = memberInfo.fullyQualifiedCName;
 
       maps.registerMemberAccess.set(fullName, memberInfo.access);
       maps.registerMemberOffsets.set(fullName, memberInfo.offset);

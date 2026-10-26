@@ -121,7 +121,6 @@ function createMockOrchestrator(overrides?: {
   isKnownStruct?: (name: string) => boolean;
   isKnownScope?: (name: string) => boolean;
   isCppScopeSymbol?: (name: string) => boolean;
-  getScopeSeparator?: (isCpp: boolean) => string;
   tryEvaluateConstant?: (ctx: unknown) => number | undefined;
   hasFloatBitShadow?: (name: string) => boolean;
   registerFloatBitShadow?: (name: string) => void;
@@ -200,7 +199,6 @@ function createMockOrchestrator(overrides?: {
       overrides?.generatePrimaryExpr ?? vi.fn((ctx) => ctx.getText()),
     isKnownScope: overrides?.isKnownScope ?? vi.fn(() => false),
     isCppScopeSymbol: overrides?.isCppScopeSymbol ?? vi.fn(() => false),
-    getScopeSeparator: overrides?.getScopeSeparator ?? vi.fn(() => "__"),
     addPendingTempDeclaration: overrides?.addPendingTempDeclaration ?? vi.fn(),
     registerFloatBitShadow: overrides?.registerFloatBitShadow ?? vi.fn(),
     markFloatShadowCurrent: overrides?.markFloatShadowCurrent ?? vi.fn(),
@@ -1123,7 +1121,6 @@ describe("PostfixExpressionGenerator", () => {
       const orchestrator = createMockOrchestrator({
         generatePrimaryExpr: () => "LED",
         isKnownScope: (name) => name === "LED",
-        getScopeSeparator: () => "__",
       });
 
       const result = runPostfix(ctx, input, state, orchestrator);
@@ -1140,7 +1137,6 @@ describe("PostfixExpressionGenerator", () => {
         generatePrimaryExpr: () => "LED",
         isKnownScope: (name) => name === "LED",
         isCppScopeSymbol: () => true,
-        getScopeSeparator: (isCpp) => (isCpp ? "::" : "__"),
       });
 
       const result = runPostfix(ctx, input, state, orchestrator);
@@ -1160,7 +1156,6 @@ describe("PostfixExpressionGenerator", () => {
       const state = createMockState();
       const orchestrator = createMockOrchestrator({
         generatePrimaryExpr: () => "Color",
-        getScopeSeparator: () => "__",
       });
 
       const result = runPostfix(ctx, input, state, orchestrator);
@@ -1182,7 +1177,6 @@ describe("PostfixExpressionGenerator", () => {
       });
       const orchestrator = createMockOrchestrator({
         generatePrimaryExpr: () => "Color",
-        getScopeSeparator: () => "__",
       });
 
       const result = runPostfix(ctx, input, state, orchestrator);
@@ -1841,7 +1835,6 @@ describe("PostfixExpressionGenerator", () => {
       const orchestrator = createMockOrchestrator({
         generatePrimaryExpr: () => "std",
         isCppScopeSymbol: (name) => name === "std",
-        getScopeSeparator: (isCpp) => (isCpp ? "::" : "."),
       });
 
       const result = runPostfix(ctx, input, state, orchestrator);
@@ -1860,7 +1853,6 @@ describe("PostfixExpressionGenerator", () => {
       const orchestrator = createMockOrchestrator({
         generatePrimaryExpr: () => "__GLOBAL_PREFIX__",
         isCppScopeSymbol: (name) => name === "std",
-        getScopeSeparator: (isCpp) => (isCpp ? "::" : "__"),
       });
 
       const result = runPostfix(ctx, input, state, orchestrator);

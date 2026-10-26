@@ -39,7 +39,7 @@ function tryResolveEnumMember(
   if (!symbols) return null;
   const members = symbols.enumMembers.get(switchEnumType);
   return members?.has(id)
-    ? QualifiedCName.fromParts([switchEnumType, id])
+    ? QualifiedCName.fromSourceName([switchEnumType, id])
     : null;
 }
 
@@ -68,7 +68,7 @@ function renderCaseLabel(
 ): string {
   switch (label.kind) {
     case "qualified":
-      return QualifiedCName.fromParts(label.parts);
+      return QualifiedCName.fromSourceName(label.parts);
     case "identifier":
       // Issue #471: an unqualified member of the switch's enum takes its
       // type prefix. #1322: a bare member the enum does NOT declare is E0424

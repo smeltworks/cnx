@@ -61,15 +61,3 @@ describe("FormatUtils.INDENT", () => {
   });
 });
 
-// ========================================================================
-// getScopeSeparator
-// ========================================================================
-describe("FormatUtils.getScopeSeparator", () => {
-  it("returns :: for C++ context", () => {
-    expect(FormatUtils.getScopeSeparator(true)).toBe("::");
-  });
-
-  it("returns _ for C/cnx context", () => {
-    expect(FormatUtils.getScopeSeparator(false)).toBe("__");
-  });
-});

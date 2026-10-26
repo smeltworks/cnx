@@ -695,20 +695,6 @@ describe("CodeGenWalker", () => {
       });
     });
 
-    describe("getScopeSeparator()", () => {
-      it("should return :: for C++ access", () => {
-        const { host } = createMinimalGenerator(`void foo() { }`, false);
-
-        expect(host.getScopeSeparator(true)).toBe("::");
-      });
-
-      it("should return _ for cnx access", () => {
-        const { host } = createMinimalGenerator(`void foo() { }`, false);
-
-        expect(host.getScopeSeparator(false)).toBe("__");
-      });
-    });
-
     describe("getStringLiteralLength()", () => {
       it("should return correct length for simple string", () => {
         const { host } = createMinimalGenerator(`void foo() { }`, false);

@@ -164,14 +164,14 @@ class ConstantNames {
         scopePath,
       });
     }
-    if (parts[0] === "global") return QualifiedCName.fromParts(parts.slice(1));
+    if (parts[0] === "global") return QualifiedCName.fromSourceName(parts.slice(1));
     const qualified =
       parts.length === 1
         ? ScopeUtils.qualifyScopeType(typeName, scopePath, (name) =>
             facts.isScopeTypeVisible(name),
           )
         : typeName;
-    return QualifiedCName.fromParts(qualified.split("."));
+    return QualifiedCName.fromSourceName(qualified);
   }
 
   /**
@@ -337,7 +337,7 @@ class ConstantNames {
     const struct =
       current.type.kind === "struct"
         ? LengthProperty.struct(
-            QualifiedCName.fromParts(current.type.name.split(".")),
+            QualifiedCName.fromSourceName(current.type.name),
             lookup,
           )
         : undefined;
@@ -410,7 +410,7 @@ class ConstantNames {
       case "struct":
       case "enum":
       case "bitmap": {
-        const cName = QualifiedCName.fromParts(type.name.split("."));
+        const cName = QualifiedCName.fromSourceName(type.name);
         const tag = walk.facts.headerNeedsStructKeyword(cName) ? "struct " : "";
         return `sizeof(${tag}${cName})`;
       }
@@ -471,7 +471,7 @@ class ConstantNames {
     if (type.kind !== "struct") return null;
     const isCnx =
       walk.facts.visibleSymbol(
-        QualifiedCName.fromParts(type.name.split(".")),
+        QualifiedCName.fromSourceName(type.name),
       ) !== undefined;
     return !isCnx && walk.facts.headerStructFields(type.name) !== undefined
       ? type.name
@@ -511,7 +511,7 @@ class ConstantNames {
     }
     if (current.type.kind !== "struct") return null;
     const struct = walk.facts.visibleSymbol(
-      QualifiedCName.fromParts(current.type.name.split(".")),
+      QualifiedCName.fromSourceName(current.type.name),
     );
     const info =
       struct?.kind === "struct" ? struct.fields.get(field) : undefined;

@@ -44,6 +44,8 @@ import type IChainStep from "../../../../../types/IChainStep";
 import TYPE_MAP from "../../../../2-Plan/types/TYPE_MAP";
 import type IStructSymbol from "../../../../../types/symbols/IStructSymbol";
 import QualifiedCName from "../../../../../utils/QualifiedCName";
+import ScopeUtils from "../../../../../utils/ScopeUtils";
+import CppNamespaceUtils from "../../../../../utils/CppNamespaceUtils";
 import OperandTyper from "../../../../../utils/OperandTyper";
 import invariant from "../../../../../utils/invariant";
 import QualifiedNameGenerator from "../../../../../utils/QualifiedNameGenerator";
@@ -863,7 +865,7 @@ const generateMemberAccess = (
     tryBitmapFieldAccess(ctx, input, effects, orchestrator) ??
     tryScopeMemberAccess(ctx, state, orchestrator, effects) ??
     tryKnownScopeAccess(ctx, orchestrator) ??
-    tryEnumMemberAccess(ctx, input, orchestrator) ??
+    tryEnumMemberAccess(ctx, input) ??
     tryRegisterMemberAccess(ctx, input) ??
     tryStructParamAccess(ctx, orchestrator) ??
     tryRegisterBitmapAccess(ctx, input, effects, orchestrator) ??
@@ -962,7 +964,9 @@ const tryKnownScopeAccess = (
   }
 
   const output = initializeMemberOutput(ctx);
-  output.result = `${ctx.result}${orchestrator.getScopeSeparator(ctx.isCppAccessChain)}${ctx.memberName}`;
+  output.result = ctx.isCppAccessChain
+    ? CppNamespaceUtils.fromParts([ctx.result, ctx.memberName])
+    : ScopeUtils.qualifyInScope(ctx.memberName, ctx.result);
   output.resolvedIdentifier = output.result;
   return output;
 };
@@ -973,14 +977,15 @@ const tryKnownScopeAccess = (
 const tryEnumMemberAccess = (
   ctx: IMemberAccessContext,
   input: IGeneratorInput,
-  orchestrator: IOrchestrator,
 ): MemberAccessResult | null => {
   if (!input.symbols!.knownEnums.has(ctx.result)) {
     return null;
   }
 
   const output = initializeMemberOutput(ctx);
-  output.result = `${ctx.result}${orchestrator.getScopeSeparator(ctx.isCppAccessChain)}${ctx.memberName}`;
+  output.result = ctx.isCppAccessChain
+    ? CppNamespaceUtils.fromParts([ctx.result, ctx.memberName])
+    : QualifiedCName.fromSourceName([ctx.result, ctx.memberName]);
   return output;
 };
 
@@ -997,7 +1002,7 @@ const tryRegisterMemberAccess = (
 
   // #1322: a read of a `wo` member is E0870 in pass 2.1 (ADR-004).
   const output = initializeMemberOutput(ctx);
-  output.result = QualifiedCName.fromParts([ctx.result, ctx.memberName]);
+  output.result = QualifiedCName.fromSourceName([ctx.result, ctx.memberName]);
   output.isRegisterChain = true;
   return output;
 };

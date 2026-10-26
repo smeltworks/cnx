@@ -37,18 +37,6 @@ class FormatUtils {
       .join("\n");
   }
 
-  /**
-   * Get the appropriate scope separator for C++ vs C/cnx.
-   *
-   * C++ namespace qualification uses `::`; C output uses the cnx
-   * qualified-name separator, which QualifiedCName owns (ADR-063).
-   *
-   * @param isCppContext - Whether generating C++ code
-   * @returns "::" for C++ or the qualified-name separator for C/cnx
-   */
-  static getScopeSeparator(isCppContext: boolean): string {
-    return isCppContext ? "::" : QualifiedCName.SEPARATOR;
-  }
 }
 
 export default FormatUtils;

@@ -316,14 +316,14 @@ class LexicalFrames {
     }
     let emitted =
       nameMoves.length > 0
-        ? QualifiedCName.fromParts([functionCName, name])
+        ? QualifiedCName.fromSourceName([functionCName, name])
         : name;
     if (emitted === readsEmitted) {
       nameMoves.push("readsEnclosing");
     }
     let suffix = 1;
     while (emitted === readsEmitted) {
-      emitted = QualifiedCName.fromParts([
+      emitted = QualifiedCName.fromSourceName([
         functionCName,
         name,
         suffix === 1 ? null : String(suffix),

@@ -58,7 +58,7 @@ class CalleeNameResolver {
     }
 
     if (isScope(resolvedName)) {
-      return QualifiedCName.fromParts([resolvedName, memberName]);
+      return ScopeUtils.qualifyInScope(memberName, resolvedName);
     }
 
     // Object.method or a chained access -- not a cnx function call

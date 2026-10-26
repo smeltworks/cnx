@@ -560,14 +560,6 @@ export default class CodeGenerator implements IOrchestrator {
   }
 
   /**
-   * Get the separator for scope access (:: for C++, _ for cnx).
-   * Part of IOrchestrator interface - delegates to FormatUtils.
-   */
-  getScopeSeparator(isCppAccess: boolean): string {
-    return FormatUtils.getScopeSeparator(isCppAccess);
-  }
-
-  /**
    * Add a pending temp variable declaration (for float bit indexing).
    * Part of IOrchestrator interface.
    */

@@ -41,7 +41,7 @@ function generateEnumHeader(name: string, input: IHeaderTypeInput): string {
 
   memberEntries.forEach(([memberName, value], index) => {
     // Prefix member names with enum name to avoid C namespace collisions
-    const prefixedName = QualifiedCName.fromParts([name, memberName]);
+    const prefixedName = QualifiedCName.fromSourceName([name, memberName]);
     const comma = index < memberEntries.length - 1 ? "," : "";
     lines.push(`    ${prefixedName} = ${value}${comma}`);
   });

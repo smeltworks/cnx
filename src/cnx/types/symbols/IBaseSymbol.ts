@@ -75,7 +75,7 @@ interface IBaseSymbol {
    * scopes under, so the object is one lookup away wherever the mutable member
    * lists are genuinely needed.
    *
-   * Feeds `QualifiedCName.fromParts([scopePath, name])` directly: that encoder
+   * Feeds `QualifiedCName.fromSourceName([scopePath, name])` directly: that encoder
    * expands a dotted component and drops empties, which is why replacing the
    * chain walk needed no adapter.
    */

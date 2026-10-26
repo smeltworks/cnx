@@ -84,7 +84,7 @@ class TypeNameLadder {
           written: type.path.join("."),
           name: deps?.resolveQualifiedType
             ? deps.resolveQualifiedType([...type.path])
-            : QualifiedCName.fromParts([...type.path]),
+            : QualifiedCName.fromSourceName(type.path),
         };
       // Bare T -- the ONLY branch that resolves local -> scope -> global
       case "user":

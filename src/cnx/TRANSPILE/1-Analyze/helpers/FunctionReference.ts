@@ -73,7 +73,7 @@ class FunctionReference {
       return [text.slice("global.".length)];
     }
     if (text.includes(".")) {
-      return [QualifiedCName.fromParts(text.split("."))];
+      return [QualifiedCName.fromSourceName(text)];
     }
     return FunctionReference.candidates(text, scopePath, false);
   }

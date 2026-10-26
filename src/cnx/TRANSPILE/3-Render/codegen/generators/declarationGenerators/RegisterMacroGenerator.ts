@@ -30,7 +30,7 @@ function generateRegisterMacros(
         : `volatile ${member.cType}*`;
 
     // Generate: #define PREFIX_REGNAME (*(volatile type*)(base + offset))
-    return `#define ${QualifiedCName.fromParts([prefix, member.name])} (*(${cast})(${baseAddress} + ${member.offset}))`;
+    return `#define ${QualifiedCName.fromSourceName([prefix, member.name])} (*(${cast})(${baseAddress} + ${member.offset}))`;
   });
 }
 

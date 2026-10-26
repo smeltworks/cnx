@@ -32,40 +32,41 @@ class QualifiedCName {
   static readonly SOURCE_SEPARATOR = ".";
 
   /**
-   * Build a qualified C name from a COMPLETE path, outermost first.
+   * The C name of a name the author wrote IN FULL -- `Motor.State.IDLE`, or its
+   * identifier chain `["Motor", "State", "IDLE"]` -- outermost first.
    *
-   * Empty and undefined parts are dropped, so a global symbol (no scope) keeps its
-   * bare name. Any part may itself be a dotted source path (`"Outer.Inner"`), which
-   * is expanded before joining.
+   * Empty and undefined parts are dropped, so a global symbol keeps its bare
+   * name, and any part may itself be dotted (`"Outer.Inner"`).
    *
-   * Takes an array rather than a variadic list, and is named for the whole path
-   * for the act of joining, because the variadic spelling it replaces made
-   * `join(scopeName, member)` the obvious call -- a scope LEAF joined to a leaf,
-   * which drops every outer scope and is the divergence #1357 exists to remove. A
-   * caller that holds a scope cannot build a correct path from its name, so it has
-   * no business here: `ScopeUtils.qualifyInScope` takes the whole enclosing
-   * PATH, which carries every outer component. What is left for this method is the case where the caller
-   * genuinely already holds every component -- a parse-tree identifier chain, or an
-   * already-qualified type name plus its member.
+   * This translates a complete written name into its C spelling; it does not
+   * qualify a member by its scope. A caller that holds a scope has a REFERENCE,
+   * and the encoders in `ScopeUtils` take that reference's whole enclosing PATH.
+   * Joining a scope's NAME to a member here would drop every outer scope -- the
+   * divergence #1357 removed -- which is why every call is adjudicated by
+   * `npm run scope-joins:check` (#2116).
    *
-   * @param parts Ordered name parts, e.g. ["Motor", "State", "IDLE"]
+   * @param written The name as written, e.g. "Motor.State.IDLE"
    * @returns The generated C identifier, e.g. "Motor__State__IDLE"
    */
-  static fromParts(parts: readonly (string | undefined | null)[]): string {
-    return QualifiedCName.toParts(parts).join(QualifiedCName.SEPARATOR);
+  static fromSourceName(
+    written: string | readonly (string | undefined | null)[],
+  ): string {
+    return QualifiedCName.toParts(
+      typeof written === "string" ? [written] : written,
+    ).join(QualifiedCName.SEPARATOR);
   }
 
   /**
    * Build the SOURCE-language qualified name from its components, outermost
    * first — `Outer.Inner.tick`, the way a cnx author would write it.
    *
-   * The counterpart to fromParts(). The two namespaces are separate on purpose:
+   * The counterpart to fromSourceName(). The two namespaces are separate on purpose:
    * `Outer__Inner__tick` is what the C compiler sees, `Outer.Inner.tick` is what
    * the author typed, and neither is derivable from the other at a call site
    * without knowing which one it already holds. A diagnostic wants this one; a
-   * lookup key wants fromParts().
+   * lookup key wants fromSourceName().
    *
-   * Takes a complete path for the same reason fromParts() does -- the source
+   * Takes a complete path for the same reason fromSourceName() does -- the source
    * spelling is just as capable of dropping an outer scope as the C spelling.
    *
    * @param parts Ordered name parts, e.g. ["Motor", "State", "IDLE"]
@@ -80,7 +81,7 @@ class QualifiedCName {
   /**
    * Split a qualified C name back into its components.
    *
-   * Exact inverse of join() for names built from ADR-063-conformant identifiers.
+   * Exact inverse of fromSourceName() for names built from ADR-063-conformant identifiers.
    *
    * @param qualifiedName A generated C identifier, e.g. "Motor__State__IDLE"
    * @returns The components, e.g. ["Motor", "State", "IDLE"]

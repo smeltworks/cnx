@@ -203,7 +203,7 @@ function targetOf(
   else rootTypeInfo = member ?? declared.get(ids[0]);
   const typeInfo =
     rootTypeInfo ??
-    declared.get(QualifiedCName.fromParts(ids.slice(0, 2))) ??
+    declared.get(QualifiedCName.fromSourceName(ids.slice(0, 2))) ??
     declared.get(ctx.resolvedBaseIdentifier);
   // #1668 (C12): no typer ran, so no step; a case that classifies a
   // subscript passes the typer's answer as `target.last` itself
