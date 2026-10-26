@@ -3,6 +3,8 @@
 // `done[1] <- true` used to emit `done = (done & ~(1U << 1)) | (1U << 1)`,
 // which sets the whole bool, and `done[1]` read back as `(done >> 1) & 1`,
 // which is always 0. A bool takes one subscript per array dimension only.
+//
+// NEGATIVE CONTROL: `ready[1]`, one element of the bool array, stays silent.
 struct Flags {
     bool on;
 }
@@ -15,11 +17,13 @@ void writes() {
     done[1] <- true;
     ready[1][0] <- true;
     f.on[0] <- true;
+    ready[1] <- true;
 }
 
 bool reads() {
     bool a <- done[0];
     bool b <- ready[1][0];
     bool c <- f.on[0];
-    return a;
+    bool d <- ready[1];
+    return d;
 }

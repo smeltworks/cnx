@@ -245,12 +245,24 @@ describe("SubscriptClassifier", () => {
       ["f64", 1, 2],
       ["bool", 0, 0],
       ["bool", 2, 2],
+      ["char", 0, 0],
+      ["char", 1, 1],
     ])("%s with %i dimension(s) takes %i subscript(s)", (type, dims, limit) => {
       expect(SubscriptClassifier.depthLimit(type, dims)).toBe(limit);
     });
 
     it.each(["string", "Point", "EColor"])("does not measure %s", (type) => {
       expect(SubscriptClassifier.depthLimit(type, 1)).toBeNull();
+    });
+  });
+
+  describe("fieldDepthLimit", () => {
+    it.each([
+      [1, 0],
+      [3, 1],
+      [8, 1],
+    ])("a %i-bit field takes %i subscript(s)", (width, limit) => {
+      expect(SubscriptClassifier.fieldDepthLimit(width)).toBe(limit);
     });
   });
 });

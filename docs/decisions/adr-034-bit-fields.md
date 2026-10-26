@@ -309,7 +309,7 @@ Available sizes:
 
 ### Field Width
 
-- Fields without `[N]` are 1 bit (suitable for booleans)
+- Fields without `[N]` are 1 bit (suitable for booleans). A 1-bit field is already a single bit, so it takes no bit index: on a `MotorFlags flags`, `flags.Running[0]` is E0856 (ADR-007). A wider field takes one, as a scalar does.
 - Fields with `[N]` are N bits wide
 - Compiler validates total bits equals the bitmap size
 

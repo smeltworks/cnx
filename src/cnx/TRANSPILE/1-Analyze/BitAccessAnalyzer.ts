@@ -12,14 +12,13 @@
  * form for a one-dimensional array and `arr[i][b][x]` indexes a value that is
  * not an array.
  *
- * The limit is `SubscriptClassifier.depthLimit`'s, the one codegen's invariant
- * reads too. It covers integer, float and `bool` bases: a string is a char
- * array with its own rules and a bitmap rejects bracket indexing under E0883.
- * A `bool` takes no bit index, since it already is one bit (#2354).
- * A struct field is measured by the field's own declared shape, at whatever
- * depth of the chain it is reached (#1114): checking only the root measured
- * nothing past a `.name`, so `p.header[4][3]` was accepted and emitted C that
- * subscripts a scalar.
+ * The limit is `SubscriptDepth`'s, the one codegen's invariant reads too. It
+ * covers integer, float, `bool` and `char` bases and bit-fields: a string is a
+ * char array with its own rules and a bitmap rejects bracket indexing under
+ * E0883. A `bool` and a 1-bit field take no bit index, since each already is
+ * one bit (#2354); a `char` takes none, since MISRA forbids a shift on one
+ * (ADR-045). A struct field is measured by the field's own declared shape, at
+ * whatever depth of the chain it is reached (#1114).
  *
  * ## E0888: a float bit range needs somewhere to put the union
  *
@@ -48,11 +47,11 @@ import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
 import type TExpressionOf from "../../types/syntax/TExpressionOf";
 import type IChainStep from "../../types/IChainStep";
-import type IBitmapFieldLayout from "../../types/IBitmapFieldLayout";
+import SubscriptDepth from "../../utils/SubscriptDepth";
+import type IOverIndexedRun from "../../utils/types/IOverIndexedRun";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import StatementNodes from "../../utils/StatementNodes";
-import SubscriptClassifier from "../../utils/SubscriptClassifier";
 import OperandTyper from "../../utils/OperandTyper";
 import IBitAccessError from "./types/IBitAccessError";
 import RegisterAccessMode from "../../utils/RegisterAccessMode";
@@ -70,25 +69,33 @@ class BitAccessCheck {
     return this.found;
   }
 
+  /** Each chain is typed once, here, and every check reads those steps */
   public checkExpression(expr: TExpression, inFunction: boolean): void {
-    this.checkBitBounds(expr);
-    this.checkChain(expr, inFunction);
+    if (expr.kind !== "postfix") return;
+    const steps = OperandTyper.chainOf(expr, this.context).steps;
+    this.checkBitBounds(expr, steps);
+    this.checkChain(expr, steps, inFunction);
   }
 
   public checkSite(site: IAssignmentSyntax): void {
-    this.checkBitBounds(site.target);
-    this.checkChain(site.target, true);
-    this.checkSingleEvaluation(site);
+    const target = site.target;
+    if (target.kind !== "postfix") return;
+    const steps = OperandTyper.chainOf(target, this.context).steps;
+    this.checkBitBounds(target, steps);
+    this.checkChain(target, steps, true);
+    this.checkSingleEvaluation(site, target, steps);
   }
 
   /**
    * ADR-007: a bit, bit-range or bitmap-field write reads its target and
    * stores it back, so a subscript with a side effect would run twice.
    */
-  private checkSingleEvaluation(site: IAssignmentSyntax): void {
-    if (site.operator !== "<-") return;
-    const target = site.target;
-    if (target.kind !== "postfix" || !this.isReadModifyWrite(target)) return;
+  private checkSingleEvaluation(
+    site: IAssignmentSyntax,
+    target: TExpressionOf<"postfix">,
+    steps: readonly IChainStep[],
+  ): void {
+    if (site.operator !== "<-" || !this.isReadModifyWrite(steps)) return;
     const indices = target.ops.flatMap((op) =>
       op.kind === "subscript" ? op.indexes : [],
     );
@@ -109,8 +116,8 @@ class BitAccessCheck {
    * bit, a bit range or a bitmap field, on anything but a
    * write-1 register member.
    */
-  private isReadModifyWrite(target: TExpression): boolean {
-    const last = OperandTyper.chainOf(target, this.context).steps.at(-1);
+  private isReadModifyWrite(steps: readonly IChainStep[]): boolean {
+    const last = steps.at(-1);
     if (last === undefined) return false;
     const symbols = this.context.symbols;
     const field = BitmapFieldStep.fieldOf(last, symbols.bitmapFields);
@@ -126,9 +133,11 @@ class BitAccessCheck {
    * The typer types a chain's last `steps.length` operations; the ones before
    * them name its head (`this.` and `global.` consume their first `.name`).
    */
-  private checkChain(at: TExpression, inFunction: boolean): void {
-    if (at.kind !== "postfix") return;
-    const steps = OperandTyper.chainOf(at, this.context).steps;
+  private checkChain(
+    at: TExpressionOf<"postfix">,
+    steps: readonly IChainStep[],
+    inFunction: boolean,
+  ): void {
     if (!inFunction) this.checkFloatRangeScope(at, steps);
     this.checkDepth(at, steps);
   }
@@ -161,9 +170,10 @@ class BitAccessCheck {
    * declared type's, or a bitmap field's (#2251: `p.Mode[3]` on a 3-bit field
    * would write the next field). A runtime index is not checked here.
    */
-  private checkBitBounds(expr: TExpression): void {
-    if (expr.kind !== "postfix") return;
-    const steps = OperandTyper.chainOf(expr, this.context).steps;
+  private checkBitBounds(
+    expr: TExpressionOf<"postfix">,
+    steps: readonly IChainStep[],
+  ): void {
     const ops = expr.ops.slice(expr.ops.length - steps.length);
     steps.forEach((step, at) => {
       const op = ops[at];
@@ -195,85 +205,48 @@ class BitAccessCheck {
     });
   }
 
-  /**
-   * E0856, for each run of subscripts in the chain. A run is measured against
-   * the value it applies to -- the typer's `before` for its first subscript --
-   * so a field's own shape decides `p.header[4][3]`, not the root `p`'s
-   * (#1114). A member access or a call ends a run: what follows indexes a
-   * different value.
-   */
+  /** E0856, for each run of subscripts that indexes deeper than its value allows */
   private checkDepth(
     chain: TExpressionOf<"postfix">,
     steps: readonly IChainStep[],
   ): void {
-    const first = chain.ops.length - steps.length;
-    let index = first;
-    while (index < chain.ops.length) {
-      const start = index;
-      while (chain.ops[index]?.kind === "subscript") index += 1;
-      if (index === start) {
-        index += 1;
-        continue;
-      }
-      this.checkRun(
-        steps[start - first],
-        steps[start - first - 1],
-        index - start,
-        chain,
-        start,
-      );
+    for (const run of SubscriptDepth.overIndexed(chain.ops, steps)) {
+      this.found.push({
+        code: "E0856",
+        span: chain.span,
+        message: `too many subscripts on '${ExpressionShape.writtenThrough(chain, run.start)}': it is ${BitAccessCheck.shapeOf(run)}, so it allows at most ${run.allowed}`,
+        helpText: BitAccessCheck.depthHelp(chain, run),
+      });
     }
   }
 
-  /**
-   * ADR-036 allows one subscript per array dimension and ADR-007 one more for
-   * a bit index on an integer or float element, which is why the base type
-   * decides. A bitmap field is described by its declared width rather than
-   * the type that carries its bits.
-   */
-  private checkRun(
-    step: IChainStep,
-    fieldStep: IChainStep | undefined,
-    leading: number,
-    chain: TExpressionOf<"postfix">,
-    start: number,
-  ): void {
-    const indexed = step.before;
-    if (indexed?.typeName == null) return;
-    const baseType = indexed.typeName;
-    const dimensions = indexed.dimensions.length;
-    const allowed = SubscriptClassifier.depthLimit(baseType, dimensions);
-    if (allowed === null || leading <= allowed) return;
-
-    const name = ExpressionShape.writtenThrough(chain, start);
-    // A bit range applies to an element, so every dimension stays indexed
-    const element = ExpressionShape.writtenThrough(chain, start + dimensions);
-    const field = step.beforeIsBitField
-      ? this.bitmapField(fieldStep)
-      : undefined;
-    let shape = `a ${dimensions}-dimensional '${baseType}' array`;
-    if (field !== undefined) shape = `a ${field.width}-bit bitmap field`;
-    else if (dimensions === 0) shape = `a scalar '${baseType}'`;
-    const per = `${dimensions} for the array ${dimensions === 1 ? "dimension" : "dimensions"}`;
-    this.found.push({
-      code: "E0856",
-      span: chain.span,
-      message: `too many subscripts on '${name}': it is ${shape}, so it allows at most ${allowed}`,
-      helpText:
-        allowed > dimensions
-          ? `${per} plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range '${element}[start, width]'?`
-          : `${per} and no bit index: '${element}' is already a single bit (ADR-036/ADR-007).`,
-    });
+  /** A bit-field is described by its declared width, not the type carrying its bits */
+  private static shapeOf(run: IOverIndexedRun): string {
+    const dimensions = run.indexed.dimensions.length;
+    const baseType = run.indexed.typeName ?? "";
+    if (run.fieldWidth !== null) return `a ${run.fieldWidth}-bit field`;
+    if (dimensions === 0) return `a scalar '${baseType}'`;
+    return `a ${dimensions}-dimensional '${baseType}' array`;
   }
 
-  /** The layout of the bitmap field `fieldStep` reads, if it reads one */
-  private bitmapField(
-    fieldStep: IChainStep | undefined,
-  ): IBitmapFieldLayout | undefined {
-    const bitmap = fieldStep?.before?.bitmapTypeName ?? null;
-    const member = fieldStep?.member ?? null;
-    if (bitmap === null || member === null) return undefined;
-    return this.context.symbols.bitmapFields.get(bitmap)?.get(member);
+  private static depthHelp(
+    chain: TExpressionOf<"postfix">,
+    run: IOverIndexedRun,
+  ): string {
+    const dimensions = run.indexed.dimensions.length;
+    // A bit range applies to an element, so every dimension stays indexed
+    const element = ExpressionShape.writtenThrough(
+      chain,
+      run.start + dimensions,
+    );
+    const per = `${dimensions} for the array ${dimensions === 1 ? "dimension" : "dimensions"}`;
+    if (run.allowed > dimensions) {
+      return `${per} plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range '${element}[start, width]'?`;
+    }
+    if (run.fieldWidth === null && run.indexed.category === "character") {
+      return `${per} and no bit index: a bit index shifts and masks, which MISRA C:2012 Rule 10.1 forbids on a character. Cast '${element}' to an integer type first (ADR-045).`;
+    }
+    return `${per} and no bit index: '${element}' is already a single bit (ADR-036/ADR-007).`;
   }
 }
 

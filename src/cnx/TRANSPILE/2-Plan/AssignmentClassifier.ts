@@ -6,7 +6,6 @@
 import AssignmentKind from "../../types/AssignmentKind";
 import IAssignmentContext from "./types/IAssignmentContext";
 import invariant from "../../utils/invariant";
-import SubscriptDepthValidator from "./SubscriptDepthValidator";
 import TTypeInfo from "../../types/TTypeInfo";
 import type TOverflowBehavior from "../../types/TOverflowBehavior";
 import type IOperandType from "../../types/IOperandType";
@@ -131,7 +130,7 @@ class AssignmentClassifier {
     // Bare `Scope.member[...]`: the fourth ADR-016 spelling (#1116). A bare
     // name resolves through ADR-057's tiers, so `resolvesBareName` is true.
     const scopeQualifiedKind =
-      AssignmentClassifier.classifyScopeQualifiedSubscript(ctx, "", true);
+      AssignmentClassifier.classifyScopeQualifiedSubscript(ctx, true);
     if (scopeQualifiedKind !== null) {
       return scopeQualifiedKind;
     }
@@ -227,8 +226,6 @@ class AssignmentClassifier {
    * Classify global.* patterns: global.reg[bit], global.arr[i], global.member
    */
   private static classifyGlobalPrefix(ctx: IAssignmentContext): AssignmentKind {
-    const firstId = ctx.identifiers[0];
-
     if (ctx.hasArrayAccess) {
       // A register's bits (`global.REG.MEMBER[bit]`) were classified before
       // this, by the one rule every spelling takes (#1244, #2185).
@@ -236,11 +233,7 @@ class AssignmentClassifier {
       // Scope-qualified variable: global.Scope.member[...]. Shared with the
       // bare spelling — see classifyScopeQualifiedSubscript.
       const scopeQualifiedKind =
-        AssignmentClassifier.classifyScopeQualifiedSubscript(
-          ctx,
-          "global.",
-          false,
-        );
+        AssignmentClassifier.classifyScopeQualifiedSubscript(ctx, false);
       if (scopeQualifiedKind !== null) {
         return scopeQualifiedKind;
       }
@@ -257,10 +250,7 @@ class AssignmentClassifier {
       // `generateAssignmentTarget` (MemberSeparatorResolver), not in the
       // GLOBAL_ARRAY handler, so it applies to the delegated kinds too.
       if (ctx.identifiers.length === 1) {
-        return AssignmentClassifier.classifySubscriptAccess(
-          ctx,
-          `global.${firstId}`,
-        );
+        return AssignmentClassifier.classifySubscriptAccess(ctx);
       }
 
       // Member chain (`global.config.items[0].assigned`): the subscript applies
@@ -295,7 +285,6 @@ class AssignmentClassifier {
    * spellings shared the mechanism while each derived its own entry condition,
    * which is the divergence this method exists to remove.
    *
-   * @param displayPrefix Diagnostic prefix matching the spelling written
    * @param resolvesBareName Whether the base name goes through ADR-057's
    *        local -> scope -> global order. False for `global.`, which names the
    *        global tier outright and must not be shadowed by a nearer variable.
@@ -304,7 +293,6 @@ class AssignmentClassifier {
    */
   private static classifyScopeQualifiedSubscript(
     ctx: IAssignmentContext,
-    displayPrefix: string,
     resolvesBareName: boolean,
   ): AssignmentKind | null {
     const ids = ctx.identifiers;
@@ -325,10 +313,7 @@ class AssignmentClassifier {
     // Once `Scope.member` resolves, this is exactly the decision the bare
     // `member[...]` spelling makes, so it delegates rather than re-deriving it.
     if (ids.length === 2) {
-      return AssignmentClassifier.classifySubscriptAccess(
-        ctx,
-        `${displayPrefix}${ids.join(".")}`,
-      );
+      return AssignmentClassifier.classifySubscriptAccess(ctx);
     }
 
     return null;
@@ -358,14 +343,7 @@ class AssignmentClassifier {
   private static classifyThisWithArrayAccess(
     ctx: IAssignmentContext,
   ): AssignmentKind {
-    // Diagnostics quote the source spelling (`this.flags`) rather than the
-    // scope-qualified C name, so the suggested fix is the text the developer
-    // actually wrote. (`Sensor_flags` does resolve as a bare name, but nobody
-    // writes it — echoing it back would read as a different variable.)
-    return AssignmentClassifier.classifySubscriptAccess(
-      ctx,
-      `this.${ctx.identifiers[0]}`,
-    );
+    return AssignmentClassifier.classifySubscriptAccess(ctx);
   }
 
   /**
@@ -387,8 +365,7 @@ class AssignmentClassifier {
       return null;
     }
 
-    const name = ctx.identifiers[0];
-    return AssignmentClassifier.classifySubscriptAccess(ctx, name);
+    return AssignmentClassifier.classifySubscriptAccess(ctx);
   }
 
   /**
@@ -404,12 +381,9 @@ class AssignmentClassifier {
    *
    * #1668 (C7): the variable is the target's binding, so its spelling no
    * longer matters here -- only the diagnostic's.
-   *
-   * @param displayName  Name for diagnostics: what the developer actually wrote
    */
   private static classifySubscriptAccess(
     ctx: IAssignmentContext,
-    displayName: string,
   ): AssignmentKind {
     // A chain that ends in a member (`this.buffer[i].value`) writes that
     // member, and its subscripts index on the way there -- a member chain, as
@@ -421,29 +395,6 @@ class AssignmentClassifier {
     if (last?.subscript === null) {
       return AssignmentKind.MEMBER_CHAIN;
     }
-
-    const typeInfo = ctx.target.typeInfo ?? null;
-
-    // `assignmentTarget` consumes the leading `IDENTIFIER` (and any `this .` /
-    // `global .` prefix) in the grammar rule itself, so op 0 is a subscript for
-    // `flags[4][3]`, `this.flags[4][3]` and `global.flags[4][3]` alike. Only a
-    // scope-qualified chain such as `global.Other.buf[3][1]` carries extra
-    // member ops first — exactly one per identifier past the base, hence
-    // `identifiers.length - 1` for every spelling.
-    const memberOpCount = ctx.identifiers.length - 1;
-
-    // Issue #1106: reject over-indexing a scalar/array base (e.g. flags[4][3]
-    // on a scalar u8). Counting is delegated to SubscriptDepthValidator so
-    // this path and the read path share the decision, not just the check.
-    SubscriptDepthValidator.validate(
-      typeInfo ?? undefined,
-      // #1445: counted off the PLANNED ops, which carry `kind` -- the node's
-      // `expression().length` said the same thing and is no longer here.
-      SubscriptDepthValidator.countLeadingSubscripts(
-        ctx.postfixOps.slice(memberOpCount),
-      ),
-      displayName,
-    );
 
     // #1668 (C12): what the final subscript reads, and so whether it is an
     // element, a slice, a bit or a bit range, is the one operand typer's

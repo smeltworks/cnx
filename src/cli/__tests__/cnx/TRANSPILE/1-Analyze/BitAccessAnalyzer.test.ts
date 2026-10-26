@@ -353,12 +353,12 @@ describe("BitAccessAnalyzer -- E0856 help and bitmap fields (#1114 review)", () 
     ).toEqual([
       [
         4,
-        "too many subscripts on 's.Ready': it is a 1-bit bitmap field, so it allows at most 0",
+        "too many subscripts on 's.Ready': it is a 1-bit field, so it allows at most 0",
         "0 for the array dimensions and no bit index: 's.Ready' is already a single bit (ADR-036/ADR-007).",
       ],
       [
         5,
-        "too many subscripts on 's.Mode': it is a 3-bit bitmap field, so it allows at most 1",
+        "too many subscripts on 's.Mode': it is a 3-bit field, so it allows at most 1",
         "0 for the array dimensions plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range 's.Mode[start, width]'?",
       ],
     ]);

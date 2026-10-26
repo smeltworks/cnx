@@ -286,8 +286,9 @@ rather than a write into the next field. A runtime index is not checked.
 
 A neighboring check does exist. Bit-index _bounds_ (above) remain future work, but
 subscript _depth_ is validated today: since a scalar may be bit-indexed **once**, and
-ADR-036 peels one array dimension per subscript, a base accepts at most
-`arrayDimensions + 1` subscripts. A deeper chain indexes a value that is not an array
+ADR-036 peels one array dimension per subscript, an integer or float base accepts at
+most `arrayDimensions + 1` subscripts (a `bool`, a `char` and a 1-bit field take none
+for a bit, below). A deeper chain indexes a value that is not an array
 and is rejected with **E0856**.
 
 ```cnx
@@ -337,6 +338,14 @@ void setStatus() {
     s.Mode[1][0] <- true;   // ERROR E0856: s.Mode[1] is a single bit, not an array
 }
 ```
+
+A C struct's bit-field is measured the same way, by its declared width: in
+`struct { unsigned int one : 1; unsigned int three : 3; } cs`, `cs.one[0]` is E0856
+and `cs.three[1]` reads one bit.
+
+A `char` takes no bit index either. A bit index shifts and masks, and ADR-045 forbids
+both on a character (MISRA C:2012 Rule 10.1), so `name[1][2]` on a `char[4]` is E0856.
+Cast the character to an integer type to read its bits.
 
 ```cnx
 mut bool done;

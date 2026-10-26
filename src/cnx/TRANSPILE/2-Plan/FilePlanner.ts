@@ -1,4 +1,5 @@
 import ForeignTypeFacts from "../../utils/ForeignTypeFacts";
+import SubscriptDepthValidator from "./SubscriptDepthValidator";
 import UnwrittenIncludes from "./UnwrittenIncludes";
 import type TTypeInfo from "../../types/TTypeInfo";
 import type TCArgumentForm from "./types/TCArgumentForm";
@@ -3615,8 +3616,11 @@ class FilePlanner {
   /** #1668 (C7): what an assignment target writes, by the one binder */
   targetDeclaration(target: TExpression): IChainBase {
     const typing = this.state.typingContext();
+    const chain = OperandTyper.chainOf(target, typing);
+    // Issue #1106/#1114: every run of subscripts within its value's limit
+    SubscriptDepthValidator.validate(target, chain.steps);
     return DeclaredTypeInfo.ofChain(
-      OperandTyper.chainOf(target, typing),
+      chain,
       typing.symbols,
       this.state.symbolTable,
       this.state.targetDescription,
