@@ -2,10 +2,10 @@
  * Issue #1106: shared validation for subscript-chain depth.
  *
  * Per ADR-036 each subscript peels one array dimension; per ADR-007 a scalar
- * integer/float may be bit-indexed once. So a base variable allows at most
- * `arrayDimensions + 1` subscript operations. A deeper chain indexes a value
- * that is not an array — e.g. `flags[4][3]` on a scalar `u8`, where `flags[4]`
- * is already a single bit.
+ * integer/float may be bit-indexed once, and a `bool` not at all (#2354). The
+ * limit is `SubscriptClassifier.depthLimit`, the one pass 2.1's E0856 reads.
+ * A deeper chain indexes a value that is not an array — e.g. `flags[4][3]` on
+ * a scalar `u8`, where `flags[4]` is already a single bit.
  *
  * This is the single source of truth for the "how many subscripts may this
  * base take?" decision. Both the assignment (write) path
@@ -16,7 +16,7 @@
  * two agreeing by coincidence rather than by construction.
  */
 import TTypeInfo from "../../types/TTypeInfo";
-import TypeCheckUtils from "../../utils/TypeCheckUtils";
+import SubscriptClassifier from "../../utils/SubscriptClassifier";
 import invariant from "../../utils/invariant";
 
 /**
@@ -77,8 +77,8 @@ class SubscriptDepthValidator {
    * Validate that a leading run of `subscriptOpCount` subscript operations
    * applied directly to `varName` (declared type `typeInfo`) is within range.
    *
-   * Only integer/float bases are checked: those are the bit-indexable scalar
-   * element types (ADR-007). Strings are char arrays with their own semantics,
+   * Only integer, float and bool bases are checked (`depthLimit` covers
+   * those). Strings are char arrays with their own semantics,
    * bitmaps reject bracket indexing elsewhere, and struct/other bases are
    * handled by the member-access paths — none are validated here.
    *
@@ -94,20 +94,20 @@ class SubscriptDepthValidator {
       return;
     }
 
-    const isBitIndexable =
-      TypeCheckUtils.isInteger(typeInfo.baseType) ||
-      TypeCheckUtils.isFloat(typeInfo.baseType);
-    if (!isBitIndexable) {
+    const allowed = SubscriptClassifier.depthLimit(
+      typeInfo.baseType,
+      typeInfo.arrayDimensions?.length ?? 0,
+    );
+    if (allowed === null) {
       return;
     }
 
-    const arrayDimensions = typeInfo.arrayDimensions?.length ?? 0;
     // #1322: ADR-036/ADR-007's depth limit is E0856 in pass 2.1, decided from
     // the declaration's own dimensions. The throw here built `Error at line N:`
     // into its message -- a position carried as prose, which is what the
     // relocation removes.
     invariant(
-      subscriptOpCount <= arrayDimensions + 1,
+      subscriptOpCount <= allowed,
       `'${varName}' is subscripted no deeper than its shape allows -- E0856 rejects this in pass 2.1, before this runs`,
     );
   }

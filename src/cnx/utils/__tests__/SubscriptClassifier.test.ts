@@ -236,4 +236,21 @@ describe("SubscriptClassifier", () => {
       expect(SubscriptClassifier.isArrayAccess(typeInfo)).toBe(false);
     });
   });
+
+  describe("depthLimit", () => {
+    it.each([
+      ["u8", 0, 1],
+      ["i64", 2, 3],
+      ["f32", 0, 1],
+      ["f64", 1, 2],
+      ["bool", 0, 0],
+      ["bool", 2, 2],
+    ])("%s with %i dimension(s) takes %i subscript(s)", (type, dims, limit) => {
+      expect(SubscriptClassifier.depthLimit(type, dims)).toBe(limit);
+    });
+
+    it.each(["string", "Point", "EColor"])("does not measure %s", (type) => {
+      expect(SubscriptClassifier.depthLimit(type, 1)).toBeNull();
+    });
+  });
 });

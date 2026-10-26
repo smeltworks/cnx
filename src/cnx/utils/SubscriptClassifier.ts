@@ -33,6 +33,7 @@
  */
 import TSubscriptKind from "../types/TSubscriptKind";
 import TTypeInfo from "../types/TTypeInfo";
+import TypeCheckUtils from "./TypeCheckUtils";
 
 /**
  * Context needed for subscript classification
@@ -112,6 +113,25 @@ class SubscriptClassifier {
 
     // Otherwise it's a scalar - use bit access
     return false;
+  }
+
+  /**
+   * How many subscripts a value of primitive type `baseType` with
+   * `dimensions` array dimensions takes, or null when the base is not a
+   * primitive this limit covers (a string, a struct, an enum, a bitmap).
+   *
+   * ADR-036 gives one subscript per dimension; ADR-007 gives an integer or a
+   * float one more, for a bit index. A `bool` gets none: it is already a
+   * single bit, so indexing it makes no sense (owner ruling, #2354).
+   */
+  static depthLimit(baseType: string, dimensions: number): number | null {
+    if (
+      TypeCheckUtils.isInteger(baseType) ||
+      TypeCheckUtils.isFloat(baseType)
+    ) {
+      return dimensions + 1;
+    }
+    return baseType === "bool" ? dimensions : null;
   }
 }
 

@@ -1,0 +1,25 @@
+// test-error
+// Issue #2354: a bool is already a single bit, so it takes no bit index.
+// `done[1] <- true` used to emit `done = (done & ~(1U << 1)) | (1U << 1)`,
+// which sets the whole bool, and `done[1]` read back as `(done >> 1) & 1`,
+// which is always 0. A bool takes one subscript per array dimension only.
+struct Flags {
+    bool on;
+}
+
+mut bool done;
+mut bool[4] ready;
+mut Flags f;
+
+void writes() {
+    done[1] <- true;
+    ready[1][0] <- true;
+    f.on[0] <- true;
+}
+
+bool reads() {
+    bool a <- done[0];
+    bool b <- ready[1][0];
+    bool c <- f.on[0];
+    return a;
+}

@@ -12,8 +12,10 @@
  * form for a one-dimensional array and `arr[i][b][x]` indexes a value that is
  * not an array.
  *
- * Only integer and float bases are checked, as codegen did: a string is a char
+ * The limit is `SubscriptClassifier.depthLimit`'s, the one codegen's invariant
+ * reads too. It covers integer, float and `bool` bases: a string is a char
  * array with its own rules and a bitmap rejects bracket indexing under E0883.
+ * A `bool` takes no bit index, since it already is one bit (#2354).
  * A struct field is measured by the field's own declared shape, at whatever
  * depth of the chain it is reached (#1114): checking only the root measured
  * nothing past a `.name`, so `p.header[4][3]` was accepted and emitted C that
@@ -50,7 +52,7 @@ import type IOperandType from "../../types/IOperandType";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import StatementNodes from "../../utils/StatementNodes";
-import TYPE_WIDTH from "../../types/TYPE_WIDTH";
+import SubscriptClassifier from "../../utils/SubscriptClassifier";
 import OperandTyper from "../../utils/OperandTyper";
 import IBitAccessError from "./types/IBitAccessError";
 import RegisterAccessMode from "../../utils/RegisterAccessMode";
@@ -224,8 +226,8 @@ class BitAccessCheck {
 
   /**
    * ADR-036 allows one subscript per array dimension and ADR-007 one more for
-   * a bit index. Only a bit-indexable scalar element has that extra one, which
-   * is why the base type decides.
+   * a bit index on an integer or float element, which is why the base type
+   * decides.
    */
   private checkRun(
     indexed: IOperandType | null,
@@ -233,21 +235,25 @@ class BitAccessCheck {
     name: string,
     at: TExpression,
   ): void {
-    const baseType = indexed?.typeName ?? "";
-    if (indexed === null || TYPE_WIDTH[baseType] === undefined) return; // not a bit-indexable scalar
+    if (indexed?.typeName == null) return;
+    const baseType = indexed.typeName;
     const dimensions = indexed.dimensions.length;
-    const allowed = dimensions + 1;
-    if (leading <= allowed) return;
+    const allowed = SubscriptClassifier.depthLimit(baseType, dimensions);
+    if (allowed === null || leading <= allowed) return;
 
     const shape =
       dimensions === 0
         ? `a scalar '${baseType}'`
         : `a ${dimensions}-dimensional '${baseType}' array`;
+    const per = `${dimensions} for the array ${dimensions === 1 ? "dimension" : "dimensions"}`;
     this.found.push({
       code: "E0856",
       span: at.span,
       message: `too many subscripts on '${name}': it is ${shape}, so it allows at most ${allowed}`,
-      helpText: `${dimensions} for the array ${dimensions === 1 ? "dimension" : "dimensions"} plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range '${name}[start, width]'?`,
+      helpText:
+        allowed > dimensions
+          ? `${per} plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range '${name}[start, width]'?`
+          : `${per} and no bit index: a bool is already a single bit (ADR-036/ADR-007).`,
     });
   }
 }

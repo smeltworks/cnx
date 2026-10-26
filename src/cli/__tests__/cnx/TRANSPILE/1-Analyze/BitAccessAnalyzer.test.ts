@@ -246,3 +246,63 @@ describe("BitAccessAnalyzer -- struct fields (E0856, #1114)", () => {
     ).toEqual([]);
   });
 });
+
+describe("BitAccessAnalyzer -- bool takes no bit index (E0856, #2354)", () => {
+  const e0856 = (source: string) =>
+    errors(source)
+      .filter((e) => e.code === "E0856")
+      .map((e) => [e.span.line, e.message, e.helpText]);
+
+  it("rejects a bit index on a bool, on read and write", () => {
+    expect(
+      e0856(
+        [
+          "bool done;",
+          "bool[4] ready;",
+          "struct Flags { bool on; }",
+          "Flags f;",
+          "void g() {",
+          "    bool a <- done[0];",
+          "    done[1] <- true;",
+          "    bool b <- ready[1][0];",
+          "    f.on[0] <- true;",
+          "}",
+        ].join("\n"),
+      ),
+    ).toEqual([
+      [
+        6,
+        "too many subscripts on 'done': it is a scalar 'bool', so it allows at most 0",
+        "0 for the array dimensions and no bit index: a bool is already a single bit (ADR-036/ADR-007).",
+      ],
+      [
+        7,
+        "too many subscripts on 'done': it is a scalar 'bool', so it allows at most 0",
+        "0 for the array dimensions and no bit index: a bool is already a single bit (ADR-036/ADR-007).",
+      ],
+      [
+        8,
+        "too many subscripts on 'ready': it is a 1-dimensional 'bool' array, so it allows at most 1",
+        "1 for the array dimension and no bit index: a bool is already a single bit (ADR-036/ADR-007).",
+      ],
+      [
+        9,
+        "too many subscripts on 'f.on': it is a scalar 'bool', so it allows at most 0",
+        "0 for the array dimensions and no bit index: a bool is already a single bit (ADR-036/ADR-007).",
+      ],
+    ]);
+  });
+
+  it("allows a bool array its element subscripts", () => {
+    expect(
+      e0856(
+        [
+          "bool[2][3] grid;",
+          "void g() {",
+          "    bool a <- grid[1][2];",
+          "}",
+        ].join("\n"),
+      ),
+    ).toEqual([]);
+  });
+});

@@ -319,6 +319,23 @@ void setBits() {
 }
 ```
 
+A `bool` takes no bit index: it is already a single bit, so indexing it makes no sense
+(owner ruling, Issue #2354). It takes one subscript per array dimension and nothing more.
+Before this, pass 2.1 counted `bool` as bit-indexable while codegen's depth check did
+not, so `done[1] <- true` set the whole bool and `done[1]` always read 0. Both now read
+one limit, `SubscriptClassifier.depthLimit`.
+
+```cnx
+mut bool done;
+mut bool[4] ready;
+
+void flags() {
+    ready[1] <- true;    // OK: one element
+    done[1] <- true;     // ERROR E0856: a scalar bool allows at most 0
+    ready[1][0] <- true; // ERROR E0856: ready allows at most 1
+}
+```
+
 ---
 
 ## Trade-offs

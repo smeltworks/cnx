@@ -117,6 +117,18 @@ describe("SubscriptDepthValidator", () => {
     ).not.toThrow();
   });
 
+  it("allows a bool array one subscript per dimension and no bit index (#2354)", () => {
+    expect(() =>
+      SubscriptDepthValidator.validate(array("bool", [4]), 1, "ready"),
+    ).not.toThrow();
+    expect(() =>
+      SubscriptDepthValidator.validate(array("bool", [4]), 2, "ready"),
+    ).toThrow("E0856 rejects this in pass 2.1");
+    expect(() =>
+      SubscriptDepthValidator.validate(scalar("bool"), 1, "done"),
+    ).toThrow("E0856 rejects this in pass 2.1");
+  });
+
   it("rejects more than arrayDimensions + 1 subscripts", () => {
     expect(() =>
       SubscriptDepthValidator.validate(array("u8", [16]), 3, "buffer"),
