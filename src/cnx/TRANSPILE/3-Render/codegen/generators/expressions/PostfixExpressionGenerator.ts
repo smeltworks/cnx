@@ -44,7 +44,6 @@ import type IChainStep from "../../../../../types/IChainStep";
 import TYPE_MAP from "../../../../2-Plan/types/TYPE_MAP";
 import type IStructSymbol from "../../../../../types/symbols/IStructSymbol";
 import QualifiedCName from "../../../../../utils/QualifiedCName";
-import ScopeUtils from "../../../../../utils/ScopeUtils";
 import CppNamespaceUtils from "../../../../../utils/CppNamespaceUtils";
 import OperandTyper from "../../../../../utils/OperandTyper";
 import invariant from "../../../../../utils/invariant";
@@ -966,7 +965,7 @@ const tryKnownScopeAccess = (
   const output = initializeMemberOutput(ctx);
   output.result = ctx.isCppAccessChain
     ? CppNamespaceUtils.fromParts([ctx.result, ctx.memberName])
-    : ScopeUtils.qualifyInScope(ctx.memberName, ctx.result);
+    : QualifiedNameGenerator.forMember(ctx.result, ctx.memberName);
   output.resolvedIdentifier = output.result;
   return output;
 };

@@ -5,8 +5,6 @@
  * Extracted from CodeGenerator.ts as part of ADR-065 decomposition.
  */
 
-import QualifiedCName from "./QualifiedCName";
-
 class FormatUtils {
   /** Default indentation string (4 spaces) */
   static readonly INDENT = "    ";
@@ -36,7 +34,6 @@ class FormatUtils {
       .map((line) => prefix + line)
       .join("\n");
   }
-
 }
 
 export default FormatUtils;

@@ -18,7 +18,7 @@ import type TConstExpr from "../TConstExpr";
  * `scopePath` is the enum's `cnxScopedName` -- `EColor`, or `Motor.EMode` for a
  * scope-declared enum. `ScopeUtils.identityOf` then yields exactly the
  * identifier codegen already emits (`EColor__RED`, `Motor__EMode__HIGH`),
- * because `QualifiedCName.fromParts` expands the dotted component. Nothing here
+ * because `QualifiedCName.fromSourceName` expands the dotted component. Nothing here
  * invents an encoding; the member is spelled by the same encoder as everything
  * else, which is the whole point of ADR-063 being injective.
  *

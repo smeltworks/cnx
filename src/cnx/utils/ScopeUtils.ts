@@ -196,7 +196,7 @@ class ScopeUtils {
    * builds the chain, so correctness here cannot be argued from what the grammar
    * admits.
    *
-   * `fromParts` expands a dotted component and drops empties, so the path goes in
+   * `fromSourceName` expands a dotted component and drops empties, so the path goes in
    * as one element and needs no splitting: `["Outer.Inner", "process"]` joins to
    * `Outer__Inner__process`, and `["", "init"]` to `init`.
    *
@@ -309,12 +309,12 @@ class ScopeUtils {
    * single-component spelling of it.
    *
    * #1385 review: the two used to branch on the same guard and then both build
-   * `fromParts([scopePath, ...])`, which is one decision written twice -- in the
+   * the C name from `[scopePath, ...]`, which is one decision written twice -- in the
    * file whose entire purpose is being the one encoder.
    *
    * Collapsing them settles a divergence rather than introducing one. The old
    * `qualifyInScope` returned a DOTTED name verbatim at file scope but expanded
-   * it inside a scope, because only the second path reached `fromParts`:
+   * it inside a scope, because only the second path reached the encoder:
    *
    *     qualifyInScope("a.b", null)   -> "a.b"      <- did not expand
    *     qualifyInScope("a.b", Motor)  -> "Motor__a__b"

@@ -363,7 +363,7 @@ type TValueBinding =
 
 **`global.x`** is `symbolByCName(x)` only, never lexical, so a local cannot capture it (fixes #1701; `AssignmentClassifier.ts:100-102`). `global.Scope.x` binds the scope, then the member.
 
-**`Scope.x`** binds the root as `{kind: "scope"}`, then takes the member step `symbolByCName(getTranspiledCName({scopePath, name}))` (fixes C07 and C13). Every spelling goes through the `ScopeUtils` encoders, so `scope-joins:check` gains no `fromParts` site. `OperandTypeResolver.ts:232` goes away.
+**`Scope.x`** binds the root as `{kind: "scope"}`, then takes the member step `symbolByCName(getTranspiledCName({scopePath, name}))` (fixes C07 and C13). Every spelling goes through the `ScopeUtils` encoders, so `scope-joins:check` gains no site. `OperandTypeResolver.ts:232` goes away.
 
 **Emission shares the decision** (graft from incremental; needed for #1700 box 3). `TypeValidator.resolveBareIdentifier` (then `3-Render/codegen/TypeValidator.ts:77-127`, now `2-Plan/TypeValidator.ts`) takes the `TValueBinding` instead of `isLocalVariable` plus `_resolveScopeMember`:
 

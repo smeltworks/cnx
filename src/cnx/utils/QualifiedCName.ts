@@ -108,20 +108,20 @@ class QualifiedCName {
    */
   static isInScope(
     name: string,
-    scopeName: string | undefined | null,
+    scopePath: string | undefined | null,
   ): boolean {
-    if (!scopeName) {
+    if (!scopePath) {
       return false;
     }
-    return name.startsWith(QualifiedCName.prefixFor(scopeName));
+    return name.startsWith(QualifiedCName.prefixFor(scopePath));
   }
 
   /**
    * The prefix a member of the given scope carries, separator included.
    */
-  static prefixFor(scopeName: string): string {
+  static prefixFor(scopePath: string): string {
     return (
-      QualifiedCName.toParts([scopeName]).join(QualifiedCName.SEPARATOR) +
+      QualifiedCName.toParts([scopePath]).join(QualifiedCName.SEPARATOR) +
       QualifiedCName.SEPARATOR
     );
   }

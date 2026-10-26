@@ -1,5 +1,6 @@
 /**
- * Issue #1357: the gate on scope-denoting `fromParts` sites must be able to fail.
+ * Issues #1357 and #2116: the gate on qualified C name construction must be
+ * able to fail.
  */
 
 import { describe, it, expect } from "vitest";
@@ -8,210 +9,139 @@ import prettier from "prettier";
 import ScopeJoinSites from "../scope-joins/ScopeJoinSites";
 
 describe("ScopeJoinSites", () => {
-  describe("firstElements", () => {
-    it("reads the first element of a single-line call", () => {
+  describe("elements", () => {
+    it("reads the argument of a single-line call", () => {
       expect(
-        ScopeJoinSites.firstElements(
-          "const x = QualifiedCName.fromParts([scopeName, name]);",
+        ScopeJoinSites.elements(
+          "const x = QualifiedCName.fromSourceName(type.name);",
         ),
-      ).toEqual(["scopeName"]);
+      ).toEqual(["fromSourceName(type.name)"]);
     });
 
     it("reads a call that spans lines", () => {
-      // The shape Prettier produces for anything past ~80 columns, which is
-      // most of these. A line-oriented regex sees only `fromParts([`.
+      // The shape Prettier produces for anything past ~80 columns.
       expect(
-        ScopeJoinSites.firstElements(
-          "QualifiedCName.fromParts([\n  frame.scopeName,\n  memberName,\n]);",
+        ScopeJoinSites.elements(
+          "QualifiedCName.fromSourceName([\n  frame.scopeName,\n  memberName,\n]);",
         ),
-      ).toEqual(["frame.scopeName"]);
+      ).toEqual(["fromSourceName([frame.scopeName, memberName])"]);
     });
 
-    it("does not stop at a comma inside a nested call", () => {
+    it("does not stop at a closing bracket inside a nested call", () => {
       expect(
-        ScopeJoinSites.firstElements(
-          "QualifiedCName.fromParts([ScopeUtils.qualifyInScope(parts[0], scope), leaf]);",
+        ScopeJoinSites.elements(
+          "QualifiedCName.fromSourceName([f(a, b), leaf]);",
         ),
-      ).toEqual(["ScopeUtils.qualifyInScope(parts[0], scope)"]);
-    });
-
-    it("ends the element at the closing bracket of a single-element call", () => {
-      // `fromParts([...parts.slice(1)])` is a real shape in the codebase: one
-      // element, no trailing comma, so the `]` is what terminates it. Every
-      // other case here is comma-terminated, which left this path unexercised.
-      expect(
-        ScopeJoinSites.firstElements(
-          "QualifiedCName.fromParts([...parts.slice(1)]);",
-        ),
-      ).toEqual(["...parts.slice(1)"]);
+      ).toEqual(["fromSourceName([f(a, b), leaf])"]);
     });
 
     it("finds every call in a file", () => {
       expect(
-        ScopeJoinSites.firstElements(
-          "QualifiedCName.fromParts([a, b]); QualifiedCName.fromParts([scopeName, c]);",
+        ScopeJoinSites.elements(
+          "QualifiedCName.fromSourceName(a); QualifiedCName.fromSourceName([scopeName, c]);",
         ),
-      ).toEqual(["a", "scopeName"]);
+      ).toEqual(["fromSourceName(a)", "fromSourceName([scopeName, c])"]);
+    });
+
+    it("counts a call whatever its argument is called", () => {
+      // #2116 box 2: #1357's gate skipped a call whose first element did not
+      // READ as a scope, so `parts[0]` holding one went unjudged. No spelling
+      // exempts a call now.
+      expect(
+        ScopeJoinSites.elements("QualifiedCName.fromSourceName([cName, x]);"),
+      ).toEqual(["fromSourceName([cName, x])"]);
+    });
+
+    it("counts a scope prefix test by its whole argument", () => {
+      // TypeValidator's `isInScope` call was invisible to #1357's scan, so a
+      // leaf re-inlined there reddened nothing.
+      expect(
+        ScopeJoinSites.elements(
+          "QualifiedCName.isInScope(id, ScopeUtils.leafOf(currentScopePath));",
+        ),
+      ).toEqual(["isInScope(id, ScopeUtils.leafOf(currentScopePath))"]);
+    });
+
+    it("counts the separator used by name", () => {
+      expect(
+        ScopeJoinSites.elements(
+          "const n = `${scope}${QualifiedCName.SEPARATOR}${member}`;",
+        ),
+      ).toEqual(["QualifiedCName.SEPARATOR"]);
+    });
+
+    it("counts the separator spelled as text in a template", () => {
+      // How three render sites built names that #1357's gate never saw.
+      expect(
+        ScopeJoinSites.elements("const n = `${scope.name}__${member}`;"),
+      ).toEqual(["${scope.name}__"]);
+    });
+
+    it("counts the separator spelled as a joined or concatenated literal", () => {
+      expect(
+        ScopeJoinSites.elements(
+          'a.join("__"); const n = scope + "__" + member;',
+        ),
+      ).toEqual(['.join("__")', '+ "__"']);
+    });
+
+    it("does not count text that merely contains two underscores", () => {
+      // Negative control: a float bit shadow and a reserved-prefix test are not
+      // joins, and counting them would make every row a false positive.
+      expect(
+        ScopeJoinSites.elements(
+          'const s = `__bits_${name}`; if (id.startsWith("__")) {}',
+        ),
+      ).toEqual([]);
+    });
+
+    it("keeps a template argument out of the document's code span", () => {
+      expect(
+        ScopeJoinSites.elements(
+          "QualifiedCName.fromSourceName(`${scope}.${member}`);",
+        ),
+      ).toEqual(["fromSourceName('${scope}.${member}')"]);
     });
   });
 
   describe("comment blindness (#1385 review)", () => {
     it("does not count a call that appears in a block comment", () => {
-      // These calls are what the JSDoc in this repo is ABOUT, so the text the
-      // scan looks for appears in prose constantly. Counting a sentence creates
-      // a baseline row for a file with no such site, and the only way to green
-      // that is to record the phantom permanently.
+      // These builders are what the JSDoc in this repo is ABOUT, so the text the
+      // scan looks for appears in prose constantly.
       expect(
-        ScopeJoinSites.firstElements(
-          "/** The drop-in for `QualifiedCName.fromParts([scopeName, name])`. */",
+        ScopeJoinSites.elements(
+          "/** Prefer `QualifiedCName.fromSourceName(written)`. */",
         ),
       ).toEqual([]);
     });
 
     it("does not count a call that appears in a line comment", () => {
       expect(
-        ScopeJoinSites.firstElements(
-          "// was QualifiedCName.fromParts([scopeName, x]);",
-        ),
+        ScopeJoinSites.elements("// was QualifiedCName.SEPARATOR"),
       ).toEqual([]);
     });
 
     it("still counts the real call on a line that also has a comment", () => {
       // Negative control: stripping comments must not swallow code beside them.
       expect(
-        ScopeJoinSites.firstElements(
-          "const n = QualifiedCName.fromParts([scopeName, x]); // trailing note",
+        ScopeJoinSites.elements(
+          "const n = QualifiedCName.fromSourceName(x); // trailing note",
         ),
-      ).toEqual(["scopeName"]);
-    });
-  });
-
-  describe("guard-proven elements (#1385 review)", () => {
-    // The document's criterion is "passes a scope's NAME as the first element".
-    // A name heuristic cannot see `parts[0]`; the predicate above it can.
-    const guarded = `
-      function f() {
-        if (CodeGenState.isKnownScope(parts[0])) {
-          return QualifiedCName.fromParts([parts[0], parts[1]]);
-        }
-      }`;
-
-    it("counts an element the enclosing block proves is a scope", () => {
-      expect(ScopeJoinSites.sites(new Map([["src/a.ts", guarded]]))).toEqual([
-        { file: "src/a.ts", element: "parts[0]", count: 1 },
-      ]);
-    });
-
-    it("does not count the same element with no guard", () => {
-      expect(
-        ScopeJoinSites.sites(
-          new Map([
-            ["src/a.ts", "QualifiedCName.fromParts([parts[0], parts[1]]);"],
-          ]),
-        ),
-      ).toEqual([]);
-    });
-
-    it("counts a guarded call that follows a complete nested block", () => {
-      // The backward scan has to step over a closed sibling block to find the
-      // guard's own brace. If it stopped at the inner `{` the window would miss
-      // `isKnownScope` and the site would go UNCOUNTED -- the false negative
-      // that left six sites out of the baseline before #1385.
-      const nested = `
-        function f() {
-          if (CodeGenState.isKnownScope(parts[0])) {
-            if (other) { helper(); }
-            return QualifiedCName.fromParts([parts[0], parts[1]]);
-          }
-        }`;
-
-      expect(ScopeJoinSites.sites(new Map([["src/a.ts", nested]]))).toEqual([
-        { file: "src/a.ts", element: "parts[0]", count: 1 },
-      ]);
-    });
-
-    it("does not count a guard that sits in a different block", () => {
-      // The false positive a file-wide search produces: three of nine on a naive
-      // pass, including two `ctx.result` calls guarded by `knownRegisters.has`
-      // while an unrelated function in the same file calls isKnownScope on it.
-      const elsewhere = `
-        function other() {
-          if (CodeGenState.isKnownScope(ctx.result)) { return 1; }
-        }
-        function f() {
-          if (knownRegisters.has(ctx.result)) {
-            return QualifiedCName.fromParts([ctx.result, memberName]);
-          }
-        }`;
-
-      expect(ScopeJoinSites.sites(new Map([["src/a.ts", elsewhere]]))).toEqual(
-        [],
-      );
-    });
-  });
-
-  describe("isScopeDenoting", () => {
-    it.each([
-      ["scopeName", true],
-      ["currentScope", true],
-      ["frame.scopeName", true],
-      ["scope.name", true],
-      ["callerScope", true],
-    ])("flags %s", (element, expected) => {
-      expect(ScopeJoinSites.isScopeDenoting(element)).toBe(expected);
-    });
-
-    it.each([
-      ["cName", false],
-      ["regName", false],
-      ["...identifiers", false],
-      ["parts[0]", false],
-      ["switchEnumType", false],
-    ])("does not flag %s", (element, expected) => {
-      expect(ScopeJoinSites.isScopeDenoting(element)).toBe(expected);
-    });
-
-    it("does not flag a scope routed through ScopeUtils", () => {
-      // Negative control. Threading the reference is the FIX, so a call that
-      // does it must not be counted as residue -- otherwise the gate would
-      // punish the very change it exists to encourage, and the baseline could
-      // never reach zero.
-      expect(
-        ScopeJoinSites.isScopeDenoting(
-          "ScopeUtils.qualifyInScope(parts[0], declaringScope)",
-        ),
-      ).toBe(false);
+      ).toEqual(["fromSourceName(x)"]);
     });
   });
 
   describe("sites", () => {
-    it("counts only the scope-denoting sites in each file", () => {
-      const rows = ScopeJoinSites.sites(
-        new Map([
-          [
-            "src/b.ts",
-            "fromParts is not the call; QualifiedCName.fromParts([scopeName, x]); QualifiedCName.fromParts([cName, y]);",
-          ],
-        ]),
-      );
-
-      expect(rows).toEqual([
-        { file: "src/b.ts", element: "scopeName", count: 1 },
-      ]);
-    });
-
-    it("omits files with no scope-denoting site", () => {
+    it("omits files with no site", () => {
       expect(
-        ScopeJoinSites.sites(
-          new Map([["src/clean.ts", "QualifiedCName.fromParts([cName, x]);"]]),
-        ),
+        ScopeJoinSites.sites(new Map([["src/clean.ts", "const x = 1;"]])),
       ).toEqual([]);
     });
 
     it("sorts by path so the committed document has a stable order", () => {
       // Without this the generated table would reorder on a filesystem whose
       // walk order differs, and every run would produce a spurious diff.
-      const call = "QualifiedCName.fromParts([scopeName, x]);";
+      const call = "QualifiedCName.fromSourceName(x);";
       const rows = ScopeJoinSites.sites(
         new Map([
           ["src/z.ts", call],
@@ -227,28 +157,28 @@ describe("ScopeJoinSites", () => {
       ]);
     });
 
-    it("collapses identical call shapes in one file and counts them", () => {
-      const call = "QualifiedCName.fromParts([scopeName, x]);";
+    it("collapses identical expressions in one file and counts them", () => {
+      const call = "QualifiedCName.fromSourceName(x);";
       const sites = ScopeJoinSites.sites(new Map([["src/a.ts", call + call]]));
 
       expect(sites).toEqual([
-        { file: "src/a.ts", element: "scopeName", count: 2 },
+        { file: "src/a.ts", element: "fromSourceName(x)", count: 2 },
       ]);
     });
 
-    it("keeps distinct shapes in one file apart", () => {
+    it("keeps distinct expressions in one file apart", () => {
       const sites = ScopeJoinSites.sites(
         new Map([
           [
             "src/a.ts",
-            "QualifiedCName.fromParts([scopeName, x]); QualifiedCName.fromParts([scopePath, y]);",
+            "QualifiedCName.fromSourceName(x); QualifiedCName.fromSourceName(y);",
           ],
         ]),
       );
 
       expect(sites.map((row) => row.element)).toEqual([
-        "scopeName",
-        "scopePath",
+        "fromSourceName(x)",
+        "fromSourceName(y)",
       ]);
     });
   });
@@ -259,24 +189,20 @@ describe("ScopeJoinSites", () => {
     const verdicts = [
       {
         file: "src/a.ts",
-        element: "scopeName",
-        kind: "path" as const,
-        pairedWith: null,
-        movesWith: null,
+        element: "fromSourceName(x)",
+        kind: "written-name" as const,
         why: "test fixture",
       },
       {
         file: "src/b.ts",
-        element: "scopeName",
-        kind: "leaf-keyed" as const,
-        pairedWith: "someMap",
-        movesWith: "#9999",
+        element: "fromSourceName(x)",
+        kind: "owner-c-name" as const,
         why: "test fixture",
       },
     ];
     const population = [
-      { file: "src/a.ts", element: "scopeName", count: 2 },
-      { file: "src/b.ts", element: "scopeName", count: 1 },
+      { file: "src/a.ts", element: "fromSourceName(x)", count: 2 },
+      { file: "src/b.ts", element: "fromSourceName(x)", count: 1 },
     ];
     const doc = ScopeJoinSites.render(population, verdicts);
 
@@ -298,7 +224,10 @@ describe("ScopeJoinSites", () => {
       // THE ordering decision. It lived in `main()` as `stale && outcome.ok`,
       // and the script that copied this one spelled it `!ok` then `stale` --
       // both exiting 1, so nothing could fail on the difference.
-      const handEdited = doc.replace("Issue #1357.", "Issue #1357. Edited.");
+      const handEdited = doc.replace(
+        "Issues #1357 and #2116.",
+        "Issues #1357 and #2116. Edited.",
+      );
       const outcome = ScopeJoinSites.checkOutcome(
         handEdited,
         population,
@@ -314,8 +243,8 @@ describe("ScopeJoinSites", () => {
       // The other half: a moved population makes the document stale as a
       // CONSEQUENCE, so naming a hand edit there points at the wrong cause.
       const moved = [
-        { file: "src/a.ts", element: "scopeName", count: 3 },
-        { file: "src/b.ts", element: "scopeName", count: 1 },
+        { file: "src/a.ts", element: "fromSourceName(x)", count: 3 },
+        { file: "src/b.ts", element: "fromSourceName(x)", count: 1 },
       ];
       const outcome = ScopeJoinSites.checkOutcome(
         doc,
@@ -339,8 +268,8 @@ describe("ScopeJoinSites", () => {
       const outcome = ScopeJoinSites.checkOutcome(
         doc,
         [
-          { file: "src/a.ts", element: "scopeName", count: 3 },
-          { file: "src/b.ts", element: "scopeName", count: 1 },
+          { file: "src/a.ts", element: "fromSourceName(x)", count: 3 },
+          { file: "src/b.ts", element: "fromSourceName(x)", count: 1 },
         ],
         doc,
         verdicts,
@@ -353,16 +282,17 @@ describe("ScopeJoinSites", () => {
     it("fails when a file that had none gains one", () => {
       const outcome = ScopeJoinSites.checkOutcome(
         doc,
-        [...population, { file: "src/c.ts", element: "scopeName", count: 1 }],
+        [
+          ...population,
+          { file: "src/c.ts", element: "fromSourceName(x)", count: 1 },
+        ],
         doc,
         [
           ...verdicts,
           {
             file: "src/c.ts",
-            element: "scopeName",
-            kind: "path" as const,
-            pairedWith: null,
-            movesWith: null,
+            element: "fromSourceName(x)",
+            kind: "written-name" as const,
             why: "test fixture",
           },
         ],
@@ -429,10 +359,8 @@ describe("ScopeJoinSites", () => {
         ...verdicts,
         {
           file: "src/gone.ts",
-          element: "scopeName",
-          kind: "path" as const,
-          pairedWith: null,
-          movesWith: null,
+          element: "fromSourceName(x)",
+          kind: "written-name" as const,
           why: "test fixture",
         },
       ]);
@@ -441,12 +369,29 @@ describe("ScopeJoinSites", () => {
       expect(outcome.errors.join("\n")).toContain("matches no site");
     });
 
-    it("renders the kind and the owning card for every row", () => {
-      expect(doc).toContain("| `src/a.ts` | `scopeName` | 2 | path | -- |");
+    it("renders the kind and the reason for every row", () => {
       expect(doc).toContain(
-        "| `src/b.ts` | `scopeName` | 1 | leaf-keyed | #9999 |",
+        "| `src/a.ts` | `fromSourceName(x)` | 2 | written-name |",
       );
-      expect(doc).toContain("`someMap`");
+      expect(doc).toContain(
+        "| `src/b.ts` | `fromSourceName(x)` | 1 | owner-c-name |",
+      );
+      expect(doc).toContain("- `src/a.ts` `fromSourceName(x)`: test fixture");
+    });
+
+    it("reads back an expression holding a table pipe", () => {
+      // `a || b` must be escaped in the table and unescaped by the parser, or a
+      // committed document could never match its own population.
+      const piped = [
+        { file: "src/a.ts", element: "fromSourceName(a || b)", count: 1 },
+      ];
+      const pipedVerdicts = [{ ...verdicts[0], element: piped[0].element }];
+      const pipedDoc = ScopeJoinSites.render(piped, pipedVerdicts);
+
+      expect(
+        ScopeJoinSites.checkOutcome(pipedDoc, piped, pipedDoc, pipedVerdicts)
+          .ok,
+      ).toBe(true);
     });
 
     it("renders the kind bullets in the declared precedence order", () => {
@@ -456,18 +401,11 @@ describe("ScopeJoinSites", () => {
       // derive from `KIND_SECTIONS`; this pins that they still travel together,
       // since making them agree once is not the same as making them unable to
       // disagree.
-      const order = ["via-scope-utils", "leaf-keyed", "path"];
+      const order = ["encoder", "written-name", "scope-path", "owner-c-name"];
       const positions = order.map((kind) => doc.indexOf(`- **${kind}**`));
 
       expect(positions.every((at) => at >= 0)).toBe(true);
       expect(positions).toEqual([...positions].sort((a, b) => a - b));
-    });
-
-    it("says so when nothing is waiting on another card", () => {
-      const clean = ScopeJoinSites.render([population[0]], [verdicts[0]]);
-
-      expect(clean).toContain("Nothing. Every remaining site is adjudicated");
-      expect(clean).not.toContain("| Site | Paired with |");
     });
 
     it("reads a Prettier-formatted document", async () => {
