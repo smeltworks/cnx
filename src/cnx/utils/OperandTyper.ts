@@ -1325,7 +1325,7 @@ class OperandTyper {
           binding: null,
           value: {
             k: "function",
-            cName: ScopeUtils.getTranspiledCName(fn),
+            cName: fn.fullyQualifiedCName,
             returnType: fn.returnType,
           },
           ops,

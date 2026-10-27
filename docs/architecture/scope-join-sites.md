@@ -117,7 +117,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/LengthProperty.ts`                                                               | `fromSourceName(type.name)`                                                   | 2       | written-name |
 | `src/cnx/utils/OperandTyper.ts`                                                                 | `fromSourceName(sourceName)`                                                  | 1       | written-name |
 | `src/cnx/utils/OperandTyper.ts`                                                                 | `getTranspiledCName({ name, scopePath })`                                     | 3       | recompute    |
-| `src/cnx/utils/OperandTyper.ts`                                                                 | `getTranspiledCName(fn)`                                                      | 1       | recompute    |
 | `src/cnx/utils/PositionFreeScopeMember.ts`                                                      | `getTranspiledCName({ name, scopePath })`                                     | 1       | recompute    |
 | `src/cnx/utils/QualifiedCName.ts`                                                               | `prefixFor(scopePath)`                                                        | 1       | encoder      |
 | `src/cnx/utils/QualifiedCName.ts`                                                               | `QualifiedCName.SEPARATOR`                                                    | 5       | encoder      |
@@ -141,9 +140,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/lib/parseWithSymbols.ts`                                                                   | `getTranspiledCName(register)`                                                | 1       | recompute    |
 | `src/lib/parseWithSymbols.ts`                                                                   | `getTranspiledCName(struct)`                                                  | 1       | recompute    |
 | `src/lib/parseWithSymbols.ts`                                                                   | `getTranspiledCName(variable)`                                                | 1       | recompute    |
-| **total**                                                                                       |                                                                               | **111** |              |
+| **total**                                                                                       |                                                                               | **110** |              |
 
-111 site(s) across 46 file(s).
+110 site(s) across 46 file(s).
 
 ## Why each site is not a scope join
 
@@ -221,7 +220,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/utils/LengthProperty.ts` `fromSourceName(type.name)`: a resolved type's dotted name as its C lookup key
 - `src/cnx/utils/OperandTyper.ts` `fromSourceName(sourceName)`: a dotted source name as written, as its C lookup key
 - `src/cnx/utils/OperandTyper.ts` `getTranspiledCName({ name, scopePath })`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
-- `src/cnx/utils/OperandTyper.ts` `getTranspiledCName(fn)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/utils/PositionFreeScopeMember.ts` `getTranspiledCName({ name, scopePath })`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/utils/QualifiedCName.ts` `prefixFor(scopePath)`: `isInScope` asking the prefix builder for the path it was handed
 - `src/cnx/utils/QualifiedCName.ts` `QualifiedCName.SEPARATOR`: the ADR-063 separator's owner: its declaration, the one join, the split and the prefix test
