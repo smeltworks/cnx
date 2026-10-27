@@ -17,6 +17,7 @@ import { CnxParser } from "../../../PARSE/2-Parse/grammar/CnxParser";
 import CnxResolver from "../../../PARSE/3-Declare/cnx/index";
 import TSymbolInfoAdapter from "../../../PARSE/3-Declare/cnx/adapters/TSymbolInfoAdapter";
 import SymbolRegistry from "../../../PARSE/3-Declare/SymbolRegistry";
+import Program from "../../../PARSE/4-Resolve/Program";
 import TranspileState from "../../TranspileState";
 import UndeclaredTypeAnalyzer from "../UndeclaredTypeAnalyzer";
 import testAnalysisContext from "./testAnalysisContext";
@@ -36,13 +37,16 @@ function parse(source: string) {
  */
 function analyze(source: string) {
   const tree = parse(source);
-  state.symbols = TSymbolInfoAdapter.convert(
-    CnxResolver.resolve(
-      ProgramLowering.program(tree, null),
-      "test.cnx",
-      registry,
-    ).symbols,
+  const declared = CnxResolver.resolve(
+    ProgramLowering.program(tree, null),
+    "test.cnx",
+    registry,
   );
+  state.symbols = TSymbolInfoAdapter.convert(declared.symbols);
+  state.program = Program.build([declared], {
+    registry,
+    cppMode: state.cppMode,
+  });
   // `true` is the declining default -- the analyzer stays silent unless the
   // transpiler knows the file's whole name universe. These sources include
   // nothing, so the diagnostic is in scope.
