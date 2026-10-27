@@ -60,7 +60,7 @@ function convertBitmap(
   bitmap: import("../cnx/types/symbols/IBitmapSymbol").default,
 ): ISymbolInfo[] {
   const result: ISymbolInfo[] = [];
-  const cName = ScopeUtils.getTranspiledCName(bitmap);
+  const cName = bitmap.fullyQualifiedCName;
   const parent = ScopeUtils.leafOf(bitmap.scopePath) || undefined;
   const bitmapId = bitmap.cnxScopedName;
   const bitmapParentId = getParentId(bitmap.scopePath);
