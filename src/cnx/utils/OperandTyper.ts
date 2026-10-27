@@ -30,7 +30,6 @@ import LengthProperty from "./LengthProperty";
 import TypeHead from "./TypeHead";
 import ResolvedTarget from "./ResolvedTarget";
 import PROPERTY_NAMES from "./constants/PROPERTY_NAMES";
-import ScopeUtils from "./ScopeUtils";
 import SubscriptClassifier from "./SubscriptClassifier";
 import TypeResolver from "./TypeResolver";
 import TypeNameLadder from "./TypeNameLadder";
@@ -482,11 +481,7 @@ class OperandTyper {
   ): IOperandType | null {
     const primitive = TypeHead.primitive(name);
     if (primitive !== null) return OperandTyper.fromType(primitive, [], ctx);
-    const cName = ScopeUtils.qualifyScopeType(
-      name,
-      scopePath,
-      OperandTyper.scopeTypesSeenBy(ctx),
-    );
+    const cName = OperandTyper.scopeTypeCName(name, scopePath, ctx);
     const named = OperandTyper.namedTypeOf(cName, ctx);
     if (named !== null) return named;
     const target = OperandTyper.target(ctx);
@@ -717,6 +712,21 @@ class OperandTyper {
    * settled the file's symbols with and codegen qualifies with, so the typer
    * cannot see a sibling's scope type the file never includes.
    */
+  /**
+   * ADR-057's binding of a bare `name` written in `scopePath`: the scope's
+   * own type's stored C name when this file sees one, else `name` (#2116).
+   */
+  private static scopeTypeCName(
+    name: string,
+    scopePath: string,
+    ctx: ITypingContext,
+  ): string {
+    return (
+      ctx.program.scopeTypeOf(ctx.sourceFile, scopePath, name)
+        ?.fullyQualifiedCName ?? name
+    );
+  }
+
   private static scopeTypesSeenBy(
     ctx: ITypingContext,
   ): (qualifiedName: string) => boolean {
@@ -1336,11 +1346,7 @@ class OperandTyper {
     // ADR-057's qualification, the program's one answer: a scope's own type
     // shadows a global one of the name, whatever kind each is (#1668 review:
     // an enums-only predicate let a global enum through a scope's struct)
-    const enumCName = ScopeUtils.qualifyScopeType(
-      name,
-      scopePath,
-      OperandTyper.scopeTypesSeenBy(ctx),
-    );
+    const enumCName = OperandTyper.scopeTypeCName(name, scopePath, ctx);
     if (symbols.knownEnums.has(enumCName)) {
       return { binding: null, value: { k: "enumType", name: enumCName }, ops };
     }
