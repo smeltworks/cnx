@@ -81,11 +81,7 @@ class UndeclaredTypeWalk {
         this.analyzer.checkUse(type.name, scope, type.span);
         return;
       case "scoped":
-        this.analyzer.checkQualifiedUse(
-          type.text,
-          ScopeUtils.getCnxScopedName({ name: type.name, scopePath: scope }),
-          type.span,
-        );
+        this.analyzer.checkScopedUse(type.text, type.name, scope, type.span);
         return;
       case "global":
         this.analyzer.checkQualifiedUse(type.text, type.name, type.span);
@@ -192,6 +188,22 @@ class UndeclaredTypeAnalyzer {
     return bound === typeName
       ? typeName
       : ScopeUtils.getCnxScopedName({ name: typeName, scopePath: scope });
+  }
+
+  /**
+   * A `this.T` use: the scope's own `T`, by the `cnxScopedName` 3-Declare gave
+   * it. A `T` the scope does not declare has no definition to come after.
+   */
+  checkScopedUse(
+    written: string,
+    name: string,
+    scope: string,
+    span: ISourceSpan,
+  ): void {
+    const member = this.context.program.memberOf(scope, name);
+    if (member !== undefined) {
+      this.checkQualifiedUse(written, member.cnxScopedName, span);
+    }
   }
 
   /**
