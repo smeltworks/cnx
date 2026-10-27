@@ -80,6 +80,7 @@ describe("StructDefault", () => {
         functionReturnTypes: new Map([["onTick", "u32"]]),
         knownEnums: new Set(["Mode"]),
         enumMembers: new Map([["Mode", new Map([["IDLE", 0]])]]),
+        memberCNames: new Map([["Mode", new Map([["IDLE", "Mode__IDLE"]])]]),
       });
 
       expect(f.structFields).toBe(structFields);

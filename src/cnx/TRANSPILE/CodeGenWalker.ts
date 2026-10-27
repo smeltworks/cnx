@@ -3127,11 +3127,7 @@ class CodeGenWalker {
    * ADR-017: Enums initialize to first member
    */
   private _getEnumZeroValue(enumName: string, isCppNamespace = false): string {
-    return EnumZeroValue.of(
-      this.host.state.symbols!.enumMembers,
-      enumName,
-      isCppNamespace,
-    );
+    return EnumZeroValue.of(this.host.state.symbols!, enumName, isCppNamespace);
   }
 
   /**

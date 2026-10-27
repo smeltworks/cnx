@@ -381,12 +381,6 @@ class ScopeJoinSites {
       why: "is a known function declared in the current scope? Handed `currentScopePath`, so the prefix is spelled by `QualifiedCName.prefixFor`",
     },
     {
-      file: "src/cnx/utils/EnumZeroValue.ts",
-      element: "fromSourceName([enumName, member])",
-      kind: "owner-c-name",
-      why: "ADR-017 zero member of the enum whose C name `enumName` is (`knownEnums` is keyed by C name); a C++ namespace enum joins with `::` instead",
-    },
-    {
       file: "src/cnx/utils/LengthProperty.ts",
       element: "fromSourceName(type.name)",
       kind: "written-name",
