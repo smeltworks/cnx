@@ -9,6 +9,8 @@ interface IMemberSeparatorDeps {
 
   /** Check if an identifier is a known register */
   isKnownRegister(name: string): boolean;
+  /** The C name 3-Declare gave `name` in `scopePath`, when it declared one (#2116). */
+  memberCName(scopePath: string, name: string): string | undefined;
 
   /**
    * The separator a held root's first member takes, from the C/C++ mode and

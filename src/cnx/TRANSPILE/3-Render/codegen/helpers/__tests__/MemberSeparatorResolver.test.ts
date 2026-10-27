@@ -27,6 +27,9 @@ describe("MemberSeparatorResolver", () => {
     return {
       isKnownScope: vi.fn(() => false),
       isKnownRegister: vi.fn(() => false),
+      memberCName: vi.fn(
+        (scopePath: string, name: string) => `${scopePath}__${name}`,
+      ),
       rootMemberSeparator: vi.fn((): "." | "->" => "->"),
       ...overrides,
     };

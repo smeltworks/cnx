@@ -74,7 +74,7 @@ class MemberSeparatorResolver {
 
     const scopedRegName =
       hasThis && currentScopePath
-        ? QualifiedNameGenerator.forMember(currentScopePath, firstId)
+        ? (deps.memberCName(currentScopePath, firstId) ?? null)
         : null;
 
     const isScopedRegister =

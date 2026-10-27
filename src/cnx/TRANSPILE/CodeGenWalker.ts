@@ -1410,6 +1410,8 @@ class CodeGenWalker {
       isKnownScope: (name: string) => this.host.isKnownScope(name),
       isKnownRegister: (name: string) =>
         this.host.state.symbols!.knownRegisters.has(name),
+      memberCName: (scopePath: string, name: string) =>
+        this.host.state.program?.memberOf(scopePath, name)?.fullyQualifiedCName,
       rootMemberSeparator: (holding: IRootHolding) =>
         memberAccessChain.rootMemberSeparator(holding, this.host.state.cppMode),
     };
