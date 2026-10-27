@@ -240,12 +240,6 @@ class ScopeJoinSites {
     },
     {
       file: "src/cnx/PARSE/4-Resolve/ConstantNames.ts",
-      element: "getTranspiledCName({ name: member, scopePath })",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
-      file: "src/cnx/PARSE/4-Resolve/ConstantNames.ts",
       element:
         'getTranspiledCName({ name: parts.slice(1).join("."), scopePath, })',
       kind: "recompute",

@@ -530,17 +530,24 @@ class ConstantNames {
     const member = rest[0];
     const more = rest.slice(1);
     if (member === undefined) return ConstantNames.without("scope", walk);
-    const cName = ScopeUtils.getTranspiledCName({ name: member, scopePath });
-    const symbol = walk.facts.visibleSymbol(cName);
+    const symbol = walk.facts.visibleMember(scopePath, member);
     // A member variable is `target`'s, which reads it as its own binding
     if (symbol?.kind === "enum" && ConstantNames.namesMember(symbol, more)) {
-      return walk.facts.enumMember(cName, more[0], walk.spelling, walk.at);
+      return walk.facts.enumMember(
+        symbol.fullyQualifiedCName,
+        more[0],
+        walk.spelling,
+        walk.at,
+      );
     }
     if (symbol === undefined) {
       return ConstantNames.without("undeclaredMember", walk);
     }
     // #1975 review: `Geo.Box.type_byte_length`, as a bare `Point.type_byte_length`
-    const type = more.length === 0 ? null : TypeHead.ofSymbol(symbol, cName);
+    const type =
+      more.length === 0
+        ? null
+        : TypeHead.ofSymbol(symbol, symbol.fullyQualifiedCName);
     if (type !== null) {
       return ConstantNames.ofMember({ type, dimensions: [] }, more, walk);
     }
