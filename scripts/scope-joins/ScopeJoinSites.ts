@@ -225,6 +225,12 @@ class ScopeJoinSites {
     },
     {
       file: "src/cnx/utils/ScopeUtils.ts",
+      element: "qualifyPathInScope([symbol.name], symbol.scopePath)",
+      kind: "encoder",
+      why: "the owning code: getTranspiledCName's definition, the C name 3-Declare stores as fullyQualifiedCName",
+    },
+    {
+      file: "src/cnx/utils/ScopeUtils.ts",
       element: "getCnxScopedName(symbol)",
       kind: "encoder",
       why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
