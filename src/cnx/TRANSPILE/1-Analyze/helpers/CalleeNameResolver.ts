@@ -77,6 +77,7 @@ class CalleeNameResolver {
     isScope: (name: string) => boolean,
   ): ICalleeResolution {
     let resolvedName = baseName;
+    let writtenName = baseName;
     let isGlobalCall = baseName === "global";
 
     for (const op of ops) {
@@ -88,7 +89,7 @@ class CalleeNameResolver {
           isScope,
         );
         if (resolved === null) {
-          return { resolvedName, foundCall: false, isGlobalCall };
+          return { resolvedName, writtenName, foundCall: false, isGlobalCall };
         }
         // Resolution through a known scope makes this a scope method call,
         // not a global function lookup.
@@ -96,15 +97,16 @@ class CalleeNameResolver {
           isGlobalCall = false;
         }
         resolvedName = resolved;
+        writtenName = `${writtenName}.${op.name}`;
         continue;
       }
 
       if (op.kind === "call") {
-        return { resolvedName, foundCall: true, isGlobalCall };
+        return { resolvedName, writtenName, foundCall: true, isGlobalCall };
       }
     }
 
-    return { resolvedName, foundCall: false, isGlobalCall };
+    return { resolvedName, writtenName, foundCall: false, isGlobalCall };
   }
 
   /**

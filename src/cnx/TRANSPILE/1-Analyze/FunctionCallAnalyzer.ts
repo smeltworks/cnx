@@ -124,6 +124,7 @@ class FunctionCallWalk {
     if (!target.foundCall) return;
     this.analyzer.checkFunctionCall(
       target.resolvedName,
+      target.writtenName,
       expr.span,
       scope,
       target.isGlobalCall,
@@ -427,12 +428,14 @@ class FunctionCallAnalyzer {
   /**
    * Check if a function call is valid (function is defined or external)
    * @param name The function name being called
+   * @param writtenName The callee as the author wrote it, for the diagnostic
    * @param span Where the call is written
    * @param currentScopePath Path of the scope enclosing the call; `""` at file scope
    * @param isGlobalCall Whether the call used global. prefix
    */
   public checkFunctionCall(
     name: string,
+    writtenName: string,
     span: ISourceSpan,
     currentScopePath: string,
     isGlobalCall: boolean = false,
@@ -500,6 +503,7 @@ class FunctionCallAnalyzer {
     const header = this.findStdlibHeader(name);
     const message = this.buildUndefinedFunctionMessage(
       name,
+      writtenName,
       header,
       isGlobalCall && !isLocalFunction,
     );
@@ -515,9 +519,11 @@ class FunctionCallAnalyzer {
   /**
    * Issue #985: Build error message for undefined function calls.
    * Adjusts hint based on whether the call used global. prefix.
+   * A cnx error names the call as the author wrote it, never its C name (#2116).
    */
   private buildUndefinedFunctionMessage(
     name: string,
+    writtenName: string,
     header: string | null,
     isGlobalCall: boolean,
   ): string {
@@ -527,7 +533,7 @@ class FunctionCallAnalyzer {
     if (isGlobalCall) {
       return `'${name}' is not declared in any included header`;
     }
-    let message = `function '${name}' called before definition`;
+    let message = `function '${writtenName}' called before definition`;
     if (header) {
       message += `; hint: '${name}' is available from ${header} — try global.${name}()`;
     }
