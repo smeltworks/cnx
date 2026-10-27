@@ -459,12 +459,6 @@ class ScopeJoinSites {
       why: ScopeJoinSites.RECOMPUTE,
     },
     {
-      file: "src/cnx/utils/PositionFreeScopeMember.ts",
-      element: "getTranspiledCName({ name, scopePath })",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
       file: "src/cnx/utils/QualifiedNameGenerator.ts",
       element: "getTranspiledCName(func)",
       kind: "encoder",

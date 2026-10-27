@@ -1,5 +1,4 @@
 import type IProgram from "../types/IProgram";
-import ScopeUtils from "./ScopeUtils";
 
 /**
  * The member kinds `bindValue` does not bind, so no position decides them: a
@@ -32,9 +31,7 @@ class PositionFreeScopeMember {
     if (!(members?.has(name) ?? false)) {
       return false;
     }
-    const kind = program.symbolByCName(
-      ScopeUtils.getTranspiledCName({ name, scopePath }),
-    )?.kind;
+    const kind = program.memberOf(scopePath, name)?.kind;
     return kind !== undefined && POSITION_FREE_KINDS.has(kind);
   }
 }
