@@ -200,54 +200,13 @@ describe("QualifiedNameGenerator", () => {
     });
   });
 
-  describe("forMember", () => {
-    it("returns bare name for a null scope", () => {
-      expect(QualifiedNameGenerator.forMember("", "value")).toBe("value");
-    });
-
-    it("returns transpiled C name for a simple scope", () => {
-      registry.getOrCreateScope("Test");
-      expect(QualifiedNameGenerator.forMember("Test", "counter")).toBe(
-        "Test__counter",
-      );
-    });
-
-    it("keeps every outer component for a nested scope", () => {
-      // The member counterpart of the guard above.
-      registry.getOrCreateScope("OuterData");
-      expect(
-        QualifiedNameGenerator.forMember("OuterData.InnerData", "data"),
-      ).toBe("OuterData__InnerData__data");
-    });
-  });
-
   /**
-   * Issue #1450: the canonical spelling is asserted, not just documented.
-   *
-   * `forMember(scopePath, name)` and `ScopeUtils.qualifyInScope(name, scopePath)`
-   * are one operation with two public names and OPPOSITE argument orders.
-   * `QualifiedNameGenerator`'s own doc calls this one "the canonical spelling for
-   * `output/`" and names the hazard: "two spellings of one decision sixty lines
-   * apart in a file is how a silently inverted call gets written by the next
-   * person editing nearby (#1357 review)".
-   *
-   * That was stated and not enforced -- 14 call sites in `output/` still used the
-   * other spelling, against 18 that used this one, so the rule was being followed
-   * about half the time. A rule nothing checks is the shape
-   * `docs/architecture/README.md` principle 5 forbids: "an invariant without a
-   * gate does not count."
-   *
-   * `logic/` and the analysis passes cannot import from `output/`, so
-   * `qualifyInScope` stays their door and is deliberately not banned outright --
-   * only inside `output/`, and only outside the one module that delegates to it.
+   * #2116: `QualifiedNameGenerator.forMember`, the render pass's door to
+   * `ScopeUtils.qualifyInScope`, is gone. 3-Declare stores every member's C name
+   * on its symbol, and the render pass reads `fullyQualifiedCName`, so no render
+   * file calls the encoder at all.
    */
-  describe("is the only scope-qualification door in the render pass", () => {
-    // #1445 box 3: the owner moved to the shared `utils/` root, so it is no longer INSIDE
-    // the population this scans. The exclusion is kept anyway rather than
-    // deleted -- it costs nothing and the scan is over a directory the module
-    // could be moved back into.
-    const OWNER = join("src", "cnx", "utils", "QualifiedNameGenerator.ts");
-
+  describe("ScopeUtils.qualifyInScope is never called from the render pass", () => {
     /** `qualifyInScope` CALLED -- not merely named in prose. */
     const CALLS = /ScopeUtils\s*\.\s*qualifyInScope\s*\(/;
 
@@ -270,12 +229,12 @@ describe("QualifiedNameGenerator", () => {
       expect(anywhere.length).toBeGreaterThan(0);
     });
 
-    it("has no other caller inside the render pass", () => {
+    it("has no caller inside the render pass", () => {
       const offenders = walk(
         join(repoRoot, "src", "cnx", "TRANSPILE", "3-Render"),
       )
         .map((file) => relative(repoRoot, file))
-        .filter((file) => file !== OWNER && !file.includes("__tests__"))
+        .filter((file) => !file.includes("__tests__"))
         .filter((file) =>
           CALLS.test(readFileSync(join(repoRoot, file), "utf-8")),
         );

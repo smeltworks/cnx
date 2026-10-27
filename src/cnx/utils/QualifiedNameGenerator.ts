@@ -67,28 +67,6 @@ class QualifiedNameGenerator {
     }
     return ScopeUtils.qualifyInScope(funcName, scopePath);
   }
-
-  /**
-   * The C name a bare member of `scope` is emitted under. **The canonical
-   * spelling for `output/`.**
-   *
-   * A one-line delegate to `ScopeUtils.qualifyInScope`, so there is one
-   * implementation and no divergence to fix. What it settles is which of the two
-   * public NAMES a codegen call site uses, because the two take their arguments in
-   * opposite orders -- `forMember(scopePath, name)` against `qualifyInScope(name,
-   * scopePath)`. Two spellings of one decision sixty lines apart in a file is how a
-   * silently inverted call gets written by the next person editing nearby (#1357
-   * review).
-   *
-   * `ScopeUtils.qualifyInScope` was the door for `logic/`, which could not import
-   * `output/`, where this class lived (depcruise `logic-cannot-import-output`).
-   * #1445 moved this class to `utils/` and #1444 dissolved `logic/` into 1.1
-   * Discover, so the rule is retired. Both doors remain because both have
-   * callers. This one delegates and decides nothing, so they cannot disagree.
-   */
-  static forMember(scopePath: string, memberName: string): string {
-    return ScopeUtils.qualifyInScope(memberName, scopePath);
-  }
 }
 
 export default QualifiedNameGenerator;

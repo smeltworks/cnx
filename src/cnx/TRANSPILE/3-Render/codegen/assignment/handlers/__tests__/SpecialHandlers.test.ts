@@ -168,7 +168,7 @@ describe("SpecialHandlers", () => {
     // #1357: qualify through the whole scope chain, not the leaf.
     // `setCurrentScopeByPath("Outer.Inner")` resolves a scope whose parent is
     // `Outer`, and the type registry is populated through the chain-walking
-    // encoder (TypeRegistrationEngine -> QualifiedNameGenerator.forMember). A
+    // encoder (`ScopeUtils`). A
     // handler that joins `currentScopePath.name` asks for `Inner__count` and misses.
     //
     // Not reachable from .cnx: `scopeMember` admits no `scopeDeclaration`

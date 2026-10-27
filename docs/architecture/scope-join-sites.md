@@ -87,7 +87,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/QualifiedCName.ts`                                                               | `QualifiedCName.SEPARATOR`                                                    | 5      | encoder      |
 | `src/cnx/utils/QualifiedNameGenerator.ts`                                                       | `getTranspiledCName(func)`                                                    | 1      | encoder      |
 | `src/cnx/utils/QualifiedNameGenerator.ts`                                                       | `qualifyInScope(funcName, scopePath)`                                         | 2      | encoder      |
-| `src/cnx/utils/QualifiedNameGenerator.ts`                                                       | `qualifyInScope(memberName, scopePath)`                                       | 1      | encoder      |
 | `src/cnx/utils/ScopeUtils.ts`                                                                   | `fromSourceName([scopePath, ...path])`                                        | 1      | encoder      |
 | `src/cnx/utils/ScopeUtils.ts`                                                                   | `fromSourceName([symbol.scopePath, symbol.name])`                             | 1      | encoder      |
 | `src/cnx/utils/ScopeUtils.ts`                                                                   | `fromSourceName(qualified)`                                                   | 1      | encoder      |
@@ -99,9 +98,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                                                   | `qualifyPathInScope([name], scopePath)`                                       | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `fromSourceName(type.path)`                                                   | 1      | written-name |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `qualifyInScope(type.name, scopePath)`                                        | 1      | encoder      |
-| **total**                                                                                       |                                                                               | **66** |              |
+| **total**                                                                                       |                                                                               | **65** |              |
 
-66 site(s) across 33 file(s).
+65 site(s) across 33 file(s).
 
 ## Why each site is not a scope join
 
@@ -132,14 +131,14 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/TRANSPILE/1-Analyze/SwitchStatementAnalyzer.ts` `fromSourceName([head, ...label.path.slice(1)])`: `head` is the label's first component resolved by `ScopeUtils.typeHeadCName`; the rest is what the author wrote
 - `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts` `fromSourceName(identifiers)`: a qualified type's identifier chain as written
 - `src/cnx/TRANSPILE/2-Plan/TypeValidator.ts` `isInScope(identifier, currentScopePath)`: is a known function declared in the current scope? Handed `currentScopePath`, so the prefix is spelled by `QualifiedCName.prefixFor`
-- `src/cnx/TRANSPILE/3-Render/codegen/generators/declarationGenerators/EnumGenerator.ts` `fromSourceName([fullName, memberName])`: ADR-017 member of the enum whose C name `QualifiedNameGenerator.forMember` built from the enclosing PATH
+- `src/cnx/TRANSPILE/3-Render/codegen/generators/declarationGenerators/EnumGenerator.ts` `fromSourceName([fullName, memberName])`: ADR-017 member of the enum whose `fullyQualifiedCName` 3-Declare stored
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/declarationGenerators/RegisterMacroGenerator.ts` `fromSourceName([prefix, member.name])`: register member macro; `prefix` is the register's C name, built from its declaring PATH by `RegisterGenerator`
-- `src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts` `fromSourceName([ctx.result, ctx.memberName])`: member of a register (`knownRegisters`) or an enum (`knownEnums`), each keyed by its materialized C name; a scope member goes through `QualifiedNameGenerator.forMember` instead
+- `src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts` `fromSourceName([ctx.result, ctx.memberName])`: member of a register (`knownRegisters`) or an enum (`knownEnums`), each keyed by its materialized C name; a scope member reads its symbol's `fullyQualifiedCName` instead
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts` `fromSourceName([switchEnumType, id])`: a bare case label that is a member of the subject's enum, whose C name `enumTypeOf` materialized
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts` `fromSourceName(label.parts)`: a qualified case label as written (`Motor.State.IDLE`)
 - `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts` `fromSourceName(identifierChain.slice(0, -1))`: the access chain as written, as a register lookup key
-- `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts` `QualifiedCName.SEPARATOR`: `join`'s register step: a register member joined to its owner's C name. A scope member goes through `QualifiedNameGenerator.forMember` instead, and no method hands `__` out as a value (#2116)
-- `src/cnx/TRANSPILE/3-Render/codegen/helpers/PostfixChainBuilder.ts` `join(result, step, memberName)`: an assignment target's member step; `MemberSeparatorResolver.step` decided it, so a scope member goes through `QualifiedNameGenerator.forMember` and a register member joins its owner's C name
+- `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts` `QualifiedCName.SEPARATOR`: `join`'s register step: a register member joined to its owner's C name. A scope member's step carries its `fullyQualifiedCName` instead, and no method hands `__` out as a value (#2116)
+- `src/cnx/TRANSPILE/3-Render/codegen/helpers/PostfixChainBuilder.ts` `join(result, step, memberName)`: an assignment target's member step; `MemberSeparatorResolver.step` decided it, so a scope member's step carries its `fullyQualifiedCName` and a register member joins its owner's C name
 - `src/cnx/TRANSPILE/3-Render/headers/generators/generateEnumHeader.ts` `fromSourceName([name, memberName])`: ADR-017 member of the header symbol's enum, whose `name` is its materialized C name
 - `src/cnx/TRANSPILE/CodeGenWalker.ts` `fromSourceName([this.host.state.expectedType, id])`: a bare member of the expected enum, whose C name keys `knownEnums`
 - `src/cnx/utils/EnumZeroValue.ts` `fromSourceName([enumName, member])`: ADR-017 zero member of the enum whose C name `enumName` is (`knownEnums` is keyed by C name); a C++ namespace enum joins with `::` instead
@@ -149,7 +148,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/utils/QualifiedCName.ts` `QualifiedCName.SEPARATOR`: the ADR-063 separator's owner: its declaration, the one join, the split and the prefix test
 - `src/cnx/utils/QualifiedNameGenerator.ts` `getTranspiledCName(func)`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
 - `src/cnx/utils/QualifiedNameGenerator.ts` `qualifyInScope(funcName, scopePath)`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
-- `src/cnx/utils/QualifiedNameGenerator.ts` `qualifyInScope(memberName, scopePath)`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
 - `src/cnx/utils/ScopeUtils.ts` `fromSourceName([scopePath, ...path])`: `qualifyPathInScope` -- the one implementation the scope-qualifying callers route to; its parameter IS the enclosing path
 - `src/cnx/utils/ScopeUtils.ts` `fromSourceName([symbol.scopePath, symbol.name])`: `getTranspiledCName` -- the single encoder. The symbol carries its whole enclosing path (#1298)
 - `src/cnx/utils/ScopeUtils.ts` `fromSourceName(qualified)`: `typeHeadCName` -- `qualifyScopeType` has already qualified the head from the enclosing PATH

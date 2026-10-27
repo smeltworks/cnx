@@ -117,7 +117,6 @@ class ScopeJoinSites {
     "ScopeUtils.identityOf",
     "ScopeUtils.qualifyInScope",
     "ScopeUtils.qualifyPathInScope",
-    "QualifiedNameGenerator.forMember",
   ];
 
   /** The separator, wherever it is spelled by name. */
@@ -263,12 +262,6 @@ class ScopeJoinSites {
       why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
     },
     {
-      file: "src/cnx/utils/QualifiedNameGenerator.ts",
-      element: "qualifyInScope(memberName, scopePath)",
-      kind: "encoder",
-      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
-    },
-    {
       file: "src/cnx/utils/ScopeUtils.ts",
       element: "getCnxScopedName(symbol)",
       kind: "encoder",
@@ -369,7 +362,7 @@ class ScopeJoinSites {
       file: "src/cnx/TRANSPILE/3-Render/codegen/generators/declarationGenerators/EnumGenerator.ts",
       element: "fromSourceName([fullName, memberName])",
       kind: "owner-c-name",
-      why: "ADR-017 member of the enum whose C name `QualifiedNameGenerator.forMember` built from the enclosing PATH",
+      why: "ADR-017 member of the enum whose `fullyQualifiedCName` 3-Declare stored",
     },
     {
       file: "src/cnx/TRANSPILE/3-Render/codegen/generators/declarationGenerators/RegisterMacroGenerator.ts",
@@ -381,7 +374,7 @@ class ScopeJoinSites {
       file: "src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts",
       element: "fromSourceName([ctx.result, ctx.memberName])",
       kind: "owner-c-name",
-      why: "member of a register (`knownRegisters`) or an enum (`knownEnums`), each keyed by its materialized C name; a scope member goes through `QualifiedNameGenerator.forMember` instead",
+      why: "member of a register (`knownRegisters`) or an enum (`knownEnums`), each keyed by its materialized C name; a scope member reads its symbol's `fullyQualifiedCName` instead",
     },
     {
       file: "src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts",
@@ -399,7 +392,7 @@ class ScopeJoinSites {
       file: "src/cnx/TRANSPILE/3-Render/codegen/helpers/PostfixChainBuilder.ts",
       element: "join(result, step, memberName)",
       kind: "owner-c-name",
-      why: "an assignment target's member step; `MemberSeparatorResolver.step` decided it, so a scope member goes through `QualifiedNameGenerator.forMember` and a register member joins its owner's C name",
+      why: "an assignment target's member step; `MemberSeparatorResolver.step` decided it, so a scope member's step carries its `fullyQualifiedCName` and a register member joins its owner's C name",
     },
     {
       file: "src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts",
@@ -411,7 +404,7 @@ class ScopeJoinSites {
       file: "src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts",
       element: "QualifiedCName.SEPARATOR",
       kind: "owner-c-name",
-      why: "`join`'s register step: a register member joined to its owner's C name. A scope member goes through `QualifiedNameGenerator.forMember` instead, and no method hands `__` out as a value (#2116)",
+      why: "`join`'s register step: a register member joined to its owner's C name. A scope member's step carries its `fullyQualifiedCName` instead, and no method hands `__` out as a value (#2116)",
     },
     {
       file: "src/cnx/TRANSPILE/3-Render/headers/generators/generateEnumHeader.ts",
