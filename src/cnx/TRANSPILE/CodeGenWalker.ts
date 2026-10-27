@@ -182,7 +182,6 @@ import ParameterSignatureBuilder from "./3-Render/codegen/helpers/ParameterSigna
 import QualifiedNameGenerator from "../utils/QualifiedNameGenerator";
 import MisraSuppressionUtils from "./3-Render/MisraSuppressionUtils";
 import EnumZeroValue from "../utils/EnumZeroValue";
-import QualifiedCName from "../utils/QualifiedCName";
 import ToolchainRequirementUtils from "../utils/ToolchainRequirementUtils";
 import MainSignature from "../utils/MainSignature";
 import ScopeUtils from "../utils/ScopeUtils";
@@ -1412,6 +1411,8 @@ class CodeGenWalker {
         this.host.state.symbols!.knownRegisters.has(name),
       memberCName: (scopePath: string, name: string) =>
         this.host.state.program?.memberOf(scopePath, name)?.fullyQualifiedCName,
+      registerMemberCName: (registerCName: string, member: string) =>
+        this.host.state.symbols!.memberCNames.get(registerCName)?.get(member),
       rootMemberSeparator: (holding: IRootHolding) =>
         memberAccessChain.rootMemberSeparator(holding, this.host.state.cppMode),
     };
@@ -3395,10 +3396,15 @@ class CodeGenWalker {
       );
 
     return {
-      memberStep: (isFirstOp: boolean, identifierChain: string[]) =>
+      memberStep: (
+        isFirstOp: boolean,
+        identifierChain: string[],
+        owner: string,
+      ) =>
         MemberSeparatorResolver.step(
           isFirstOp,
           identifierChain,
+          owner,
           separatorCtx,
           separatorDeps,
         ),

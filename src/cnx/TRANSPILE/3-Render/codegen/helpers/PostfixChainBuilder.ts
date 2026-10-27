@@ -63,7 +63,7 @@ class PostfixChainBuilder {
     deps: IPostfixChainDeps,
   ): string {
     const chainWithMember = [...identifierChain, memberName];
-    const step = deps.memberStep(isFirstOp, chainWithMember);
+    const step = deps.memberStep(isFirstOp, chainWithMember, result);
     return MemberSeparatorResolver.join(result, step, memberName);
   }
 

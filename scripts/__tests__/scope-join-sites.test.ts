@@ -62,16 +62,6 @@ describe("ScopeJoinSites", () => {
       ).toEqual(["isInScope(id, ScopeUtils.leafOf(currentScopePath))"]);
     });
 
-    it("counts a member access chain's join", () => {
-      // A scope's name handed to `join` with a register step would spell
-      // `Scope__member` outside the encoder.
-      expect(
-        ScopeJoinSites.elements(
-          'MemberSeparatorResolver.join(scope.name, { kind: "register-member" }, m);',
-        ),
-      ).toEqual(['join(scope.name, { kind: "register-member" }, m)']);
-    });
-
     it("counts the separator used by name", () => {
       expect(
         ScopeJoinSites.elements(

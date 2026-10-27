@@ -10,15 +10,15 @@
  * - `->` for struct parameter member access in C mode
  * - `::` for C++ namespace/class access
  *
- * The decision is a `TMemberStep`, not a separator string, so `__` is spelled
- * only in `join` (#2116).
+ * The decision is a `TMemberStep`, not a separator string. A scope or register
+ * member's step carries the C name 3-Declare gave it, so nothing here spells
+ * `__` (#2116).
  *
  * Issue #387, #409, ADR-016
  */
 
 import ISeparatorContext from "../types/ISeparatorContext";
 import IMemberSeparatorDeps from "../types/IMemberSeparatorDeps";
-import QualifiedCName from "../../../../utils/QualifiedCName";
 import invariant from "../../../../utils/invariant";
 import type IRootHolding from "../types/IRootHolding";
 import type TMemberStep from "../types/TMemberStep";
@@ -40,9 +40,6 @@ interface IBuildContextInput {
  * Static utility for resolving member access separators
  */
 class MemberSeparatorResolver {
-  private static readonly REGISTER_MEMBER: TMemberStep = {
-    kind: "register-member",
-  };
   private static readonly ACCESS_DOT: TMemberStep = {
     kind: "access",
     separator: ".",
@@ -93,6 +90,7 @@ class MemberSeparatorResolver {
    */
   static firstStep(
     identifierChain: string[],
+    owner: string,
     ctx: ISeparatorContext,
     deps: IMemberSeparatorDeps,
   ): TMemberStep {
@@ -114,7 +112,7 @@ class MemberSeparatorResolver {
     // Cross-scope access (global.Scope.member or global.Register.member)
     if (ctx.isCrossScope) {
       return deps.isKnownRegister(identifierChain[0])
-        ? MemberSeparatorResolver.REGISTER_MEMBER
+        ? MemberSeparatorResolver.registerMember(owner, identifierChain, deps)
         : MemberSeparatorResolver.scopeMember(identifierChain, deps);
     }
 
@@ -122,7 +120,11 @@ class MemberSeparatorResolver {
     if (deps.isKnownRegister(identifierChain[0])) {
       // #1322: the shadowed-register check that stood here is E0437 in pass
       // 2.1 (ADR-016); codegen only spells the C name.
-      return MemberSeparatorResolver.REGISTER_MEMBER;
+      return MemberSeparatorResolver.registerMember(
+        owner,
+        identifierChain,
+        deps,
+      );
     }
 
     // Scope member access: Sensor.buffer -> Sensor_buffer
@@ -136,7 +138,11 @@ class MemberSeparatorResolver {
 
     // Scoped register: this.MOTOR_REG.SPEED -> Scope_MOTOR_REG_SPEED
     if (ctx.isScopedRegister) {
-      return MemberSeparatorResolver.REGISTER_MEMBER;
+      return MemberSeparatorResolver.registerMember(
+        owner,
+        identifierChain,
+        deps,
+      );
     }
 
     // Default: struct field access
@@ -153,25 +159,35 @@ class MemberSeparatorResolver {
     return { kind: "scope-member", cName };
   }
 
+  /** `owner.member` as the C name 3-Declare gave the register member (#2116) */
+  private static registerMember(
+    owner: string,
+    identifierChain: string[],
+    deps: IMemberSeparatorDeps,
+  ): TMemberStep {
+    const member = identifierChain.at(-1)!;
+    const cName = deps.registerMemberCName(owner, member);
+    invariant(
+      cName !== undefined,
+      `2.1 rejects a member register '${owner}' lacks (missing '${member}')`,
+    );
+    return { kind: "register-member", cName };
+  }
+
   /**
-   * How each member access operation after the first joins
+   * How each member access operation after the first joins. Only a member of
+   * a register joins into one identifier; `owner` is already the register's C
+   * name (`Motor__CTRL`), so nothing rebuilds it from the chain. A field of a
+   * register member (`UART.CTRL.Enable`) is a bitmap field, not a register
+   * member.
    */
   static subsequentStep(
     identifierChain: string[],
-    ctx: ISeparatorContext,
+    owner: string,
     deps: IMemberSeparatorDeps,
   ): TMemberStep {
-    // Check for register chains
-    const chainSoFar = QualifiedCName.fromSourceName(
-      identifierChain.slice(0, -1),
-    );
-    const isRegisterChain =
-      deps.isKnownRegister(identifierChain[0]) ||
-      deps.isKnownRegister(chainSoFar) ||
-      (ctx.scopedRegName !== null && deps.isKnownRegister(ctx.scopedRegName));
-
-    return isRegisterChain
-      ? MemberSeparatorResolver.REGISTER_MEMBER
+    return deps.isKnownRegister(owner)
+      ? MemberSeparatorResolver.registerMember(owner, identifierChain, deps)
       : MemberSeparatorResolver.ACCESS_DOT;
   }
 
@@ -181,26 +197,31 @@ class MemberSeparatorResolver {
   static step(
     isFirstOp: boolean,
     identifierChain: string[],
+    owner: string,
     ctx: ISeparatorContext,
     deps: IMemberSeparatorDeps,
   ): TMemberStep {
     if (isFirstOp) {
-      return MemberSeparatorResolver.firstStep(identifierChain, ctx, deps);
+      return MemberSeparatorResolver.firstStep(
+        identifierChain,
+        owner,
+        ctx,
+        deps,
+      );
     }
-    return MemberSeparatorResolver.subsequentStep(identifierChain, ctx, deps);
+    return MemberSeparatorResolver.subsequentStep(identifierChain, owner, deps);
   }
 
   /**
-   * `result` with `member` joined by `step`: the one place a member access
-   * chain spells a qualified C name. A scope member is the C name its step
-   * carries; a register member joins its owner's C name (ADR-016).
+   * `result` with `member` joined by `step`. A scope or register member is
+   * the C name its step carries (ADR-016); any other step keeps its C
+   * operator between the two.
    */
   static join(result: string, step: TMemberStep, member: string): string {
     switch (step.kind) {
       case "scope-member":
-        return step.cName;
       case "register-member":
-        return `${result}${QualifiedCName.SEPARATOR}${member}`;
+        return step.cName;
       case "access":
         return `${result}${step.separator}${member}`;
     }

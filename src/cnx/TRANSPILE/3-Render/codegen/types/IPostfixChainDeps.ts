@@ -9,8 +9,15 @@ interface IPostfixChainDeps {
   // so the builder never sees an expression at all and this dep has no reader.
 
   /** Get separator for member access */
-  /** How the member at the end of `identifierChain` joins (#2116) */
-  memberStep(isFirstOp: boolean, identifierChain: string[]): TMemberStep;
+  /**
+   * How the member at the end of `identifierChain` joins `owner`, the C the
+   * chain has rendered so far (#2116)
+   */
+  memberStep(
+    isFirstOp: boolean,
+    identifierChain: string[],
+    owner: string,
+  ): TMemberStep;
 }
 
 export default IPostfixChainDeps;

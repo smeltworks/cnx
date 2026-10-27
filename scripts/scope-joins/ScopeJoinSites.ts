@@ -93,15 +93,12 @@ class ScopeJoinSites {
    * The public `QualifiedCName` operations that build a qualified name, or a
    * scope's prefix, from text. `isInScope` builds `prefixFor` internally, so it
    * spells a scope prefix just as `fromSourceName` spells a name -- and was
-   * invisible to #1357's scan (#2116). `MemberSeparatorResolver.join` is the
-   * member access chain's one join, and a caller handing it a scope's name with
-   * a register step would spell `Scope__member` outside the encoder.
+   * invisible to #1357's scan (#2116).
    */
   private static readonly BUILDERS: readonly string[] = [
     "QualifiedCName.fromSourceName",
     "QualifiedCName.isInScope",
     "QualifiedCName.prefixFor",
-    "MemberSeparatorResolver.join",
     "ScopeUtils.getTranspiledCName",
     "ScopeUtils.getCnxScopedName",
     "ScopeUtils.identityOf",
@@ -337,24 +334,6 @@ class ScopeJoinSites {
       element: "fromSourceName(label.parts)",
       kind: "written-name",
       why: "a qualified case label as written (`Motor.State.IDLE`)",
-    },
-    {
-      file: "src/cnx/TRANSPILE/3-Render/codegen/helpers/PostfixChainBuilder.ts",
-      element: "join(result, step, memberName)",
-      kind: "owner-c-name",
-      why: "an assignment target's member step; `MemberSeparatorResolver.step` decided it, so a scope member's step carries its `fullyQualifiedCName` and a register member joins its owner's C name",
-    },
-    {
-      file: "src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts",
-      element: "fromSourceName(identifierChain.slice(0, -1))",
-      kind: "written-name",
-      why: "the access chain as written, as a register lookup key",
-    },
-    {
-      file: "src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts",
-      element: "QualifiedCName.SEPARATOR",
-      kind: "owner-c-name",
-      why: "`join`'s register step: a register member joined to its owner's C name. A scope member's step carries its `fullyQualifiedCName` instead, and no method hands `__` out as a value (#2116)",
     },
     {
       file: "src/cnx/TRANSPILE/2-Plan/TypeValidator.ts",

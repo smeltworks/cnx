@@ -49,7 +49,7 @@ describe("PostfixChainBuilder", () => {
       const result = PostfixChainBuilder.build("foo", "foo", ops, deps);
 
       expect(result).toBe("foo.bar");
-      expect(deps.memberStep).toHaveBeenCalledWith(true, ["foo", "bar"]);
+      expect(deps.memberStep).toHaveBeenCalledWith(true, ["foo", "bar"], "foo");
     });
 
     it("reads the root from the op, not from its position (#1994)", () => {
@@ -58,12 +58,18 @@ describe("PostfixChainBuilder", () => {
 
       PostfixChainBuilder.build("foo", "foo", ops, deps);
 
-      expect(deps.memberStep).toHaveBeenNthCalledWith(1, false, ["foo", "bar"]);
-      expect(deps.memberStep).toHaveBeenNthCalledWith(2, true, [
+      expect(deps.memberStep).toHaveBeenNthCalledWith(
+        1,
+        false,
+        ["foo", "bar"],
         "foo",
-        "bar",
-        "baz",
-      ]);
+      );
+      expect(deps.memberStep).toHaveBeenNthCalledWith(
+        2,
+        true,
+        ["foo", "bar", "baz"],
+        "foo.bar",
+      );
     });
 
     it("should handle multiple member accesses", () => {
@@ -75,13 +81,19 @@ describe("PostfixChainBuilder", () => {
       expect(result).toBe("foo.bar.baz");
       expect(deps.memberStep).toHaveBeenCalledTimes(2);
       // First call is first op
-      expect(deps.memberStep).toHaveBeenNthCalledWith(1, true, ["foo", "bar"]);
-      // Second call is not first op
-      expect(deps.memberStep).toHaveBeenNthCalledWith(2, false, [
+      expect(deps.memberStep).toHaveBeenNthCalledWith(
+        1,
+        true,
+        ["foo", "bar"],
         "foo",
-        "bar",
-        "baz",
-      ]);
+      );
+      // Second call is not first op
+      expect(deps.memberStep).toHaveBeenNthCalledWith(
+        2,
+        false,
+        ["foo", "bar", "baz"],
+        "foo.bar",
+      );
     });
 
     it("never renders an index for a member access (#1652)", () => {
