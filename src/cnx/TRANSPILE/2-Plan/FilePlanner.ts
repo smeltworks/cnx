@@ -3037,10 +3037,9 @@ class FilePlanner {
     funcDecl: IFunctionDeclarationSyntax,
     typeScopePath: string,
   ): void {
-    const fullName = QualifiedNameGenerator.forFunctionInScope(
+    const fullName = this.state.declaredCName(
       declaringScopePath,
       funcDecl.name,
-      this.state.program,
     );
     catalog.addFunction(
       fullName,
