@@ -76,6 +76,16 @@ const KIND_SECTIONS = [
       "  owner; this only appends the member, as ADR-016 and ADR-017 define.",
     ],
   },
+  {
+    kind: "recompute",
+    lines: [
+      "- **recompute** -- calls an encoder after the pass that owns the name",
+      "  stored it. 3-Declare materializes every symbol's `fullyQualifiedCName`",
+      "  and `cnxScopedName` (`ScopeUtils.identityOf`), so this decides again what",
+      "  is already decided (cnx-way: compute once, then read). Each row is",
+      "  converted to read the field, one commit per site, until none remain.",
+    ],
+  },
 ] as const;
 
 type TKind = (typeof KIND_SECTIONS)[number]["kind"];
@@ -102,6 +112,12 @@ class ScopeJoinSites {
     "QualifiedCName.isInScope",
     "QualifiedCName.prefixFor",
     "MemberSeparatorResolver.join",
+    "ScopeUtils.getTranspiledCName",
+    "ScopeUtils.getCnxScopedName",
+    "ScopeUtils.identityOf",
+    "ScopeUtils.qualifyInScope",
+    "ScopeUtils.qualifyPathInScope",
+    "QualifiedNameGenerator.forMember",
   ];
 
   /** The separator, wherever it is spelled by name. */
@@ -126,7 +142,484 @@ class ScopeJoinSites {
    * `check` fails on a site with no entry here and on an entry matching no
    * site, so this list can neither miss a site nor keep a stale judgement.
    */
+  /** The one reason every `recompute` row shares, until the row is converted. */
+  private static readonly RECOMPUTE =
+    "calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)";
+
   private static readonly ADJUDICATIONS: readonly IAdjudication[] = [
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/BitmapCollector.ts",
+      element: "identityOf({ name, scopePath })",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/CallbackUseCollector.ts",
+      element: "qualifyInScope(members[0], scopePath)",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/CallbackUseCollector.ts",
+      element: "qualifyInScope(named, scopePath)",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/CallbackUseCollector.ts",
+      element: 'qualifyPathInScope([primary.name, ...members], "")',
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/CallbackUseCollector.ts",
+      element: 'qualifyPathInScope(members, "")',
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/CallbackUseCollector.ts",
+      element: 'qualifyPathInScope(path, "")',
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/EnumCollector.ts",
+      element: "identityOf({ name, scopePath })",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/FunctionCollector.ts",
+      element: "identityOf({ name, scopePath })",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/LexicalScopeCollector.ts",
+      element: "getTranspiledCName({ name: fn.name, scopePath })",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/ParameterListCollector.ts",
+      element: "qualifyInScope(inner.declaration.name, scopePath)",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/RegisterCollector.ts",
+      element: "identityOf({ name, scopePath })",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/StructCollector.ts",
+      element: "identityOf({ name, scopePath })",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/VariableCollector.ts",
+      element: "identityOf({ name, scopePath })",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/index.ts",
+      element: "qualifyInScope(typeName, scopePath)",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/utils/MemberSymbolBase.ts",
+      element:
+        "identityOf({ name: input.name, scopePath: input.parentScopedName, })",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/4-Resolve/ConstantNames.ts",
+      element: "getTranspiledCName({ name: member, scopePath })",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/PARSE/4-Resolve/ConstantNames.ts",
+      element:
+        "getTranspiledCName({ name: member, scopePath: binding.scopePath, })",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/PARSE/4-Resolve/ConstantNames.ts",
+      element:
+        'getTranspiledCName({ name: parts.slice(1).join("."), scopePath, })',
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/PARSE/4-Resolve/Program.ts",
+      element: "getTranspiledCName({ name, scopePath })",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/1-Analyze/EnumMemberValue.ts",
+      element: "qualifyInScope(declaration.name, scopePath)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/1-Analyze/FunctionCallAnalyzer.ts",
+      element: "qualifyInScope(declaration.name, this.scopePathOf(scope))",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/1-Analyze/FunctionCallAnalyzer.ts",
+      element: "qualifyInScope(fn.name, scope)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/1-Analyze/FunctionCallAnalyzer.ts",
+      element: "qualifyInScope(typeName, scope)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/1-Analyze/helpers/CalleeNameResolver.ts",
+      element: "qualifyInScope(memberName, currentScopePath)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/1-Analyze/helpers/CalleeNameResolver.ts",
+      element: "qualifyInScope(memberName, resolvedName)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/1-Analyze/helpers/CalleeNameResolver.ts",
+      element: "qualifyInScope(name, currentScopePath)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/1-Analyze/helpers/CCallbackSignature.ts",
+      element: "getTranspiledCName(actual)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/1-Analyze/helpers/CCallbackSignature.ts",
+      element: "getTranspiledCName(expected)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts",
+      element: "getTranspiledCName(symbol)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts",
+      element: 'qualifyInScope(text.slice("this.".length), scopePath)',
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/1-Analyze/helpers/WrittenBinding.ts",
+      element:
+        "getTranspiledCName({ name: memberName, scopePath: binding.scopePath, })",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/1-Analyze/InitializationAnalyzer.ts",
+      element: 'qualifyInScope(declaration.name, "")',
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/1-Analyze/InitializationAnalyzer.ts",
+      element: "qualifyInScope(declaration.name, scopePath)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/1-Analyze/ScopeAccessAnalyzer.ts",
+      element:
+        "getTranspiledCName({ scopePath: access.scope, name: access.member, })",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/1-Analyze/SwitchStatementAnalyzer.ts",
+      element: "qualifyPathInScope(label.path.slice(1, 2), binding.scopePath)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/1-Analyze/SwitchStatementAnalyzer.ts",
+      element: "qualifyPathInScope(label.path.slice(1), scopePath)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/1-Analyze/UndeclaredTypeAnalyzer.ts",
+      element: "getCnxScopedName({ name: type.name, scopePath: scope })",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/1-Analyze/UndeclaredTypeAnalyzer.ts",
+      element: "getCnxScopedName({ name: typeName, scopePath: scope })",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/1-Analyze/UndeclaredTypeAnalyzer.ts",
+      element: "qualifyInScope(typeName, scope)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/1-Analyze/UndeclaredValueAnalyzer.ts",
+      element: "qualifyInScope(name, scopePath)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/2-Plan/FilePlanner.ts",
+      element: "forMember(declaringScopePath, declaration.name)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/2-Plan/TypeValidator.ts",
+      element: "forMember(currentScopePath, identifier)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/3-Render/codegen/generators/declarationGenerators/BitmapGenerator.ts",
+      element: "forMember(state.currentScopePath, name)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/3-Render/codegen/generators/declarationGenerators/EnumGenerator.ts",
+      element: "forMember(state.currentScopePath, name)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/3-Render/codegen/generators/declarationGenerators/RegisterGenerator.ts",
+      element: "forMember(declaringScopePath, planned.name)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts",
+      element: "forMember(ctx.result, ctx.memberName)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts",
+      element: "forMember(state.currentScopePath, ctx.memberName)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/3-Render/codegen/helpers/BaseIdentifierBuilder.ts",
+      element: "forMember(currentScopePath, firstId)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts",
+      element: "forMember(currentScopePath, firstId)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts",
+      element: "forMember(result, member)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/3-Render/headers/adapters/HeaderSymbolAdapter.ts",
+      element: "getTranspiledCName(bitmap)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/3-Render/headers/adapters/HeaderSymbolAdapter.ts",
+      element: "getTranspiledCName(enumSym)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/3-Render/headers/adapters/HeaderSymbolAdapter.ts",
+      element: "getTranspiledCName(func)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/3-Render/headers/adapters/HeaderSymbolAdapter.ts",
+      element: "getTranspiledCName(register)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/3-Render/headers/adapters/HeaderSymbolAdapter.ts",
+      element: "getTranspiledCName(struct)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/3-Render/headers/adapters/HeaderSymbolAdapter.ts",
+      element: "getTranspiledCName(variable)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/CodeGenWalker.ts",
+      element: "forMember(declaringScopePath, arg.name)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/CodeGenWalker.ts",
+      element: "forMember(declaringScopePath, decl.name)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/CodeGenWalker.ts",
+      element: "forMember(declaringScopePath, name)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/utils/OperandTyper.ts",
+      element: "getTranspiledCName({ name, scopePath })",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/utils/OperandTyper.ts",
+      element: "getTranspiledCName(fn)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/utils/PositionFreeScopeMember.ts",
+      element: "getTranspiledCName({ name, scopePath })",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/utils/QualifiedNameGenerator.ts",
+      element: "getTranspiledCName(func)",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/utils/QualifiedNameGenerator.ts",
+      element: "qualifyInScope(funcName, scopePath)",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/utils/QualifiedNameGenerator.ts",
+      element: "qualifyInScope(memberName, scopePath)",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/utils/ScopeUtils.ts",
+      element: "getCnxScopedName(symbol)",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/utils/ScopeUtils.ts",
+      element: "getTranspiledCName({ name: head, scopePath })",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/utils/ScopeUtils.ts",
+      element: "getTranspiledCName({ name: typeName, scopePath, })",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/utils/ScopeUtils.ts",
+      element: "getTranspiledCName(symbol)",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/utils/ScopeUtils.ts",
+      element: "identityOf({ name, scopePath: parentPath })",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/utils/ScopeUtils.ts",
+      element: "qualifyPathInScope([name], scopePath)",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/utils/TypeNameLadder.ts",
+      element: "qualifyInScope(type.name, scopePath)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/lib/parseWithSymbols.ts",
+      element: "getTranspiledCName(bitmap)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/lib/parseWithSymbols.ts",
+      element: "getTranspiledCName(enumSym)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/lib/parseWithSymbols.ts",
+      element: "getTranspiledCName(func)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/lib/parseWithSymbols.ts",
+      element: "getTranspiledCName(register)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/lib/parseWithSymbols.ts",
+      element: "getTranspiledCName(struct)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/lib/parseWithSymbols.ts",
+      element: "getTranspiledCName(variable)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
     {
       file: "src/cnx/PARSE/4-Resolve/ConstantNames.ts",
       element: "fromSourceName(current.type.name)",
