@@ -124,6 +124,27 @@ describe("Program", () => {
     });
   });
 
+  describe("memberOf() (#2116)", () => {
+    it("finds a symbol by its scope path and name, not by an encoded C name", () => {
+      const program = Program.build(
+        [
+          declare(
+            "u32 x <- 1;\nscope Motor { public u32 speed <- 2; }",
+            "a.cnx",
+          ),
+        ],
+        { cppMode: false, symbolTable: new SymbolTable() },
+      );
+
+      expect(program.memberOf("", "x")).toBe(program.symbolByCName("x"));
+      expect(program.memberOf("Motor", "speed")?.fullyQualifiedCName).toBe(
+        "Motor__speed",
+      );
+      // Negative control: a name declared elsewhere is not a member here.
+      expect(program.memberOf("", "speed")).toBeUndefined();
+    });
+  });
+
   // #1760 review: a file the program does not hold is a caller's bug. The
   // binding accessors used to fall back to "no locals" for one, which loses
   // every shadowing decision with no error, while lexicalFrameAt asserted.
@@ -1252,6 +1273,7 @@ scope Gauge {
         "lexicalDeclarationAt",
         "lexicalFrameAt",
         "mayBeHeaderName",
+        "memberOf",
         "opaqueTypes",
         "passByValueParams",
         "resolveFunction",

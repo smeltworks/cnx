@@ -203,6 +203,7 @@ class Program {
     const framesByFile = settled.framesByFile;
     const symbolsByFile = settled.symbolsByFile;
     const symbolsByCName = Program.indexByCName(symbolsByFile);
+    const symbolsByIdentity = Program.indexByIdentity(symbolsByFile);
     const bound: IBindingFacts = {
       framesByFile,
       symbolsByCName,
@@ -252,6 +253,8 @@ class Program {
       symbolTable: (): IResolvedSymbols => symbolTable,
       symbolByCName: (cName: string): TSymbol | undefined =>
         symbolsByCName.get(cName),
+      memberOf: (scopePath: string, name: string): TSymbol | undefined =>
+        symbolsByIdentity.get(Program.identityKey(scopePath, name)),
       symbolsInFile: (sourceFile: string): ReadonlyArray<TSymbol> =>
         symbolsByFile.get(sourceFile) ?? [],
       sourceFiles: (): ReadonlyArray<string> => sourceFiles,
@@ -1663,6 +1666,30 @@ class Program {
    * precedence. A genuine clash is a diagnostic 2.1 owns, not a silent
    * overwrite here.
    */
+  /** The key `memberOf` finds a symbol by: its own scope path and name (#2116). */
+  private static identityKey(scopePath: string, name: string): string {
+    return `${scopePath}\u0000${name}`;
+  }
+
+  /**
+   * Every symbol by the identity 3-Declare gave it, so a site that holds a
+   * scope path and a written name finds the symbol without encoding a C name
+   * to search by (#2116: compute once, then read). First symbol wins, as in
+   * `indexByCName`.
+   */
+  private static indexByIdentity(
+    symbolsByFile: ReadonlyMap<string, ReadonlyArray<TSymbol>>,
+  ): Map<string, TSymbol> {
+    const index = new Map<string, TSymbol>();
+    for (const symbols of symbolsByFile.values()) {
+      for (const symbol of symbols) {
+        const key = Program.identityKey(symbol.scopePath, symbol.name);
+        if (!index.has(key)) index.set(key, symbol);
+      }
+    }
+    return index;
+  }
+
   private static indexByCName(
     symbolsByFile: ReadonlyMap<string, ReadonlyArray<TSymbol>>,
   ): Map<string, TSymbol> {

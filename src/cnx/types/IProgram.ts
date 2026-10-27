@@ -66,6 +66,13 @@ interface IProgram {
    */
   symbolByCName(cName: string): TSymbol | undefined;
 
+  /**
+   * The symbol declared as `name` directly in `scopePath` ("" for file
+   * scope), found by the identity 3-Declare gave it rather than by an encoded
+   * C name (#2116). Read `.fullyQualifiedCName` from the result.
+   */
+  memberOf(scopePath: string, name: string): TSymbol | undefined;
+
   /** The settled symbols a file declares. */
   symbolsInFile(sourceFile: string): ReadonlyArray<TSymbol>;
   /** The run's symbol table, complete: 1.3's header symbols plus the cnx ones 1.4 resolved (#1991). */
