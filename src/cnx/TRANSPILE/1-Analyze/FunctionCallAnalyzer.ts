@@ -139,9 +139,7 @@ class FunctionCallWalk {
   ): void {
     if (
       typeName === "ISR" ||
-      this.analyzer.isCallbackType(
-        ScopeUtils.qualifyInScope(typeName, scope),
-      ) ||
+      this.analyzer.isCallbackMember(scope, typeName) ||
       this.analyzer.isCallbackType(typeName) ||
       this.analyzer.isCFunctionPointerTypedef(typeName)
     ) {

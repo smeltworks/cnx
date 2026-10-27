@@ -258,12 +258,6 @@ class ScopeJoinSites {
       why: ScopeJoinSites.RECOMPUTE,
     },
     {
-      file: "src/cnx/TRANSPILE/1-Analyze/FunctionCallAnalyzer.ts",
-      element: "qualifyInScope(typeName, scope)",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
       file: "src/cnx/TRANSPILE/1-Analyze/helpers/CalleeNameResolver.ts",
       element: "qualifyInScope(memberName, currentScopePath)",
       kind: "recompute",
