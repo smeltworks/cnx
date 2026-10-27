@@ -1875,7 +1875,10 @@ class CodeGenWalker {
       case "bitmap":
         return this.invokeSuppressibleDeclaration(
           bitmapGenerator,
-          declaration.name,
+          this.declaredCName(
+            this.host.state.currentScopePath,
+            declaration.name,
+          ),
         );
       case "function":
         return this.generateFunction(declaration);

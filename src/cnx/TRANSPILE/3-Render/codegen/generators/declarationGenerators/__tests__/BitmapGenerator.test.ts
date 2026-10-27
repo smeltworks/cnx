@@ -137,7 +137,7 @@ describe("BitmapGenerator", () => {
   });
 
   describe("scoped bitmap generation (ADR-016)", () => {
-    it("applies scope prefix when inside a scope", () => {
+    it("renders a scope's bitmap by the C name 3-Declare gave it", () => {
       const fields = new Map<string, IBitmapFieldLayout>([
         ["Active", { offset: 0, width: 1 }],
       ]);
@@ -146,7 +146,12 @@ describe("BitmapGenerator", () => {
       const state = createMockState("Driver");
       const orchestrator = createMockOrchestrator();
 
-      const result = generateBitmap("Status", input, state, orchestrator);
+      const result = generateBitmap(
+        "Driver__Status",
+        input,
+        state,
+        orchestrator,
+      );
 
       expect(result.code).toContain("/* Bitmap: Driver__Status */");
       expect(result.code).toContain("typedef uint8_t Driver__Status;");

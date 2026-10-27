@@ -276,12 +276,6 @@ class ScopeJoinSites {
       why: ScopeJoinSites.RECOMPUTE,
     },
     {
-      file: "src/cnx/TRANSPILE/3-Render/codegen/generators/declarationGenerators/BitmapGenerator.ts",
-      element: "forMember(state.currentScopePath, name)",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
       file: "src/cnx/TRANSPILE/3-Render/codegen/generators/declarationGenerators/RegisterGenerator.ts",
       element: "forMember(declaringScopePath, planned.name)",
       kind: "recompute",

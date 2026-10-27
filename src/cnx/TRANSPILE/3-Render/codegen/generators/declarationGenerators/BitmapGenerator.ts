@@ -23,7 +23,6 @@ import IOrchestrator from "../IOrchestrator";
 import TGeneratorFn from "../TGeneratorFn";
 import TGeneratorEffect from "../TGeneratorEffect";
 import BitmapCommentUtils from "./BitmapCommentUtils";
-import QualifiedNameGenerator from "../../../../../utils/QualifiedNameGenerator";
 
 /**
  * Generate a C typedef from a cnx bitmap declaration.
@@ -31,23 +30,18 @@ import QualifiedNameGenerator from "../../../../../utils/QualifiedNameGenerator"
  * ADR-034: Bitmaps provide type-safe bit field access.
  * The backing type (uint8_t, uint16_t, uint32_t) depends on the bitmap size.
  *
- * #1445 box 3: takes the declared NAME, not the declaration node. The backing
+ * #1445 box 3: takes the declared NAME, not the declaration node -- since
+ * #2116 the C name 3-Declare gave it, so render reads that decision. The backing
  * type and the field layout both come from `input.symbols`, filled by 1.3
  * Declare; the node was read once, for `.IDENTIFIER().getText()`.
  */
 const generateBitmap: TGeneratorFn<string> = (
-  name: string,
+  fullName: string,
   input: IGeneratorInput,
-  state: IGeneratorState,
+  _state: IGeneratorState,
   _orchestrator: IOrchestrator,
 ): IGeneratorOutput => {
   const effects: TGeneratorEffect[] = [];
-
-  // ADR-016: Apply scope prefix if inside a scope
-  const fullName = QualifiedNameGenerator.forMember(
-    state.currentScopePath,
-    name,
-  );
 
   // Look up backing type from symbols (collected by SymbolCollector)
   const backingType = input.symbols?.bitmapBackingType.get(fullName);
