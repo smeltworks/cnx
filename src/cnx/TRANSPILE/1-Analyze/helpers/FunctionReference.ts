@@ -99,6 +99,7 @@ class FunctionReference {
       chain,
       scopePath,
       (name) => context.symbols.knownScopes.has(name),
+      context.program,
     );
     if (resolved === null) return null;
     return FunctionReference.lookup(
@@ -162,9 +163,10 @@ class FunctionReference {
         op.kind === "member" ? op.name : "",
         scopePath,
         (name) => context.symbols.knownScopes.has(name),
+        context.program,
       );
-      if (next === null) return null;
-      name = next;
+      if (next === null || next.resolvedName === null) return null;
+      name = next.resolvedName;
     }
     if (name === "this" || name === "global") return null;
     return FunctionReference.lookup(

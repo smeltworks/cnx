@@ -37,29 +37,37 @@ class CalleeNameResolver {
   }
 
   /**
-   * Resolve one member-access step. Returns the new qualified name, or null
-   * when the base is not something a cnx call can be named against.
+   * Resolve one member-access step. Returns the new name, or null when the base
+   * is not something a cnx call can be named against. The new name is null for
+   * a scope member 3-Declare never declared, which has no C name (#2116).
    */
   static resolveMemberAccess(
     resolvedName: string,
     memberName: string,
     currentScopePath: string,
     isScope: (name: string) => boolean,
-  ): string | null {
-    // this.member -> CurrentScope__member (only meaningful inside a scope)
+    program: Pick<IProgram, "memberOf">,
+  ): { resolvedName: string | null } | null {
+    // this.member -> the current scope's member (only meaningful inside a scope)
     if (resolvedName === "this") {
       return currentScopePath
-        ? ScopeUtils.qualifyInScope(memberName, currentScopePath)
+        ? {
+            resolvedName:
+              program.memberOf(currentScopePath, memberName)
+                ?.fullyQualifiedCName ?? null,
+          }
         : null;
     }
 
     // Issue #985: global.member -> member (strip the qualifier)
     if (resolvedName === "global") {
-      return memberName;
+      return { resolvedName: memberName };
     }
 
     if (isScope(resolvedName)) {
-      return ScopeUtils.qualifyInScope(memberName, resolvedName);
+      return {
+        resolvedName: ScopeUtils.qualifyInScope(memberName, resolvedName),
+      };
     }
 
     // Object.method or a chained access -- not a cnx function call
@@ -75,28 +83,33 @@ class CalleeNameResolver {
     baseName: string,
     currentScopePath: string,
     isScope: (name: string) => boolean,
+    program: Pick<IProgram, "memberOf">,
   ): ICalleeResolution {
-    let resolvedName = baseName;
+    let resolvedName: string | null = baseName;
     let writtenName = baseName;
     let isGlobalCall = baseName === "global";
 
     for (const op of ops) {
       if (op.kind === "member") {
-        const resolved = CalleeNameResolver.resolveMemberAccess(
-          resolvedName,
-          op.name,
-          currentScopePath,
-          isScope,
-        );
+        const resolved: { resolvedName: string | null } | null =
+          resolvedName === null
+            ? null
+            : CalleeNameResolver.resolveMemberAccess(
+                resolvedName,
+                op.name,
+                currentScopePath,
+                isScope,
+                program,
+              );
         if (resolved === null) {
           return { resolvedName, writtenName, foundCall: false, isGlobalCall };
         }
         // Resolution through a known scope makes this a scope method call,
         // not a global function lookup.
-        if (isGlobalCall && isScope(resolvedName)) {
+        if (isGlobalCall && resolvedName !== null && isScope(resolvedName)) {
           isGlobalCall = false;
         }
-        resolvedName = resolved;
+        resolvedName = resolved.resolvedName;
         writtenName = `${writtenName}.${op.name}`;
         continue;
       }
@@ -121,6 +134,7 @@ class CalleeNameResolver {
     postfix: TExpression,
     currentScopePath: string,
     isScope: (name: string) => boolean,
+    program: Pick<IProgram, "memberOf">,
   ): { name: string; isGlobalCall: boolean } | null {
     if (postfix.kind !== "postfix") return null;
     const base = CalleeNameResolver.baseName(postfix.primary);
@@ -131,8 +145,9 @@ class CalleeNameResolver {
       base,
       currentScopePath,
       isScope,
+      program,
     );
-    if (!result.foundCall) return null;
+    if (!result.foundCall || result.resolvedName === null) return null;
     if (result.resolvedName === "this" || result.resolvedName === "global") {
       return null;
     }

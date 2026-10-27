@@ -162,6 +162,7 @@ class ReturnValueUseAnalyzer {
       call,
       scopePath,
       (name) => DeclaredTypeFacts.isScope(context.symbols, name),
+      context.program,
     );
     if (!resolved) return null;
     return ReturnValueUseAnalyzer.nonVoidCallee(resolved, scopePath, context);

@@ -120,6 +120,10 @@ class FunctionCallWalk {
       baseName,
       scope,
       (name) => this.analyzer.isScope(name),
+      {
+        memberOf: (scopePath: string, name: string) =>
+          this.analyzer.memberOf(scopePath, name),
+      },
     );
     if (!target.foundCall) return;
     this.analyzer.checkFunctionCall(
@@ -434,12 +438,17 @@ class FunctionCallAnalyzer {
    * @param isGlobalCall Whether the call used global. prefix
    */
   public checkFunctionCall(
-    name: string,
+    name: string | null,
     writtenName: string,
     span: ISourceSpan,
     currentScopePath: string,
     isGlobalCall: boolean = false,
   ): void {
+    if (name === null) {
+      this.reportUndefined(name, writtenName, span, false);
+      return;
+    }
+
     // Check for self-recursion (MISRA C:2012 Rule 17.2)
     if (this.currentFunctionName && name === this.currentFunctionName) {
       this.errors.push({
@@ -496,13 +505,26 @@ class FunctionCallAnalyzer {
       return; // OK - external C/C++ function
     }
 
+    this.reportUndefined(name, writtenName, span, isGlobalCall);
+  }
+
+  /**
+   * E0422 for a call nothing defines. `name` is null for a scope member
+   * 3-Declare never declared: no C name exists to look anything up by.
+   */
+  private reportUndefined(
+    name: string | null,
+    writtenName: string,
+    span: ISourceSpan,
+    isGlobalCall: boolean,
+  ): void {
     // Not defined - report error with optional hint
     // If the function is local (defined later in this file), it's a
     // define-before-use error regardless of global. prefix
-    const isLocalFunction = this.allLocalFunctions.has(name);
-    const header = this.findStdlibHeader(name);
+    const isLocalFunction = name !== null && this.allLocalFunctions.has(name);
+    const header = name === null ? null : this.findStdlibHeader(name);
     const message = this.buildUndefinedFunctionMessage(
-      name,
+      name ?? writtenName,
       writtenName,
       header,
       isGlobalCall && !isLocalFunction,
@@ -510,7 +532,7 @@ class FunctionCallAnalyzer {
 
     this.errors.push({
       code: "E0422",
-      functionName: name,
+      functionName: name ?? writtenName,
       span,
       message,
     });

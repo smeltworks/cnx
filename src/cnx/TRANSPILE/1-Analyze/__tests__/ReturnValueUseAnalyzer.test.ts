@@ -11,6 +11,7 @@ import CnxResolver from "../../../PARSE/3-Declare/cnx/index";
 import TSymbolInfoAdapter from "../../../PARSE/3-Declare/cnx/adapters/TSymbolInfoAdapter";
 import SymbolRegistry from "../../../PARSE/3-Declare/SymbolRegistry";
 import TranspileState from "../../TranspileState";
+import Program from "../../../PARSE/4-Resolve/Program";
 import ReturnValueUseAnalyzer from "../ReturnValueUseAnalyzer";
 import testAnalysisContext from "./testAnalysisContext";
 
@@ -28,13 +29,16 @@ function parse(source: string) {
  */
 function analyze(source: string) {
   const tree = parse(source);
-  state.symbols = TSymbolInfoAdapter.convert(
-    CnxResolver.resolve(
-      ProgramLowering.program(tree, null),
-      "test.cnx",
-      registry,
-    ).symbols,
+  const declared = CnxResolver.resolve(
+    ProgramLowering.program(tree, null),
+    "test.cnx",
+    registry,
   );
+  state.symbols = TSymbolInfoAdapter.convert(declared.symbols);
+  state.program = Program.build([declared], {
+    registry,
+    cppMode: state.cppMode,
+  });
   return ReturnValueUseAnalyzer.analyze(
     ProgramLowering.program(tree, null),
     testAnalysisContext(state),
