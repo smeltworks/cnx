@@ -102,7 +102,7 @@ class HeaderSymbolAdapter {
     state: TranspileState,
   ): IHeaderSymbol {
     // Get transpiled C name (scope-prefixed)
-    const cName = ScopeUtils.getTranspiledCName(variable);
+    const cName = variable.fullyQualifiedCName;
     const isGlobal = ScopeUtils.isGlobalScopePath(variable.scopePath);
 
     // ADR-057: the symbol layer already qualified scope-local type names.
