@@ -978,6 +978,21 @@ const tryKnownScopeAccess = (
   return output;
 };
 
+/** The C name 3-Declare gave this enum or register member (#2116) */
+const declaredMemberCName = (
+  ctx: IMemberAccessContext,
+  input: IGeneratorInput,
+): string => {
+  const cName = input
+    .symbols!.memberCNames.get(ctx.result)
+    ?.get(ctx.memberName);
+  invariant(
+    cName !== undefined,
+    `2.1 rejects a member '${ctx.result}' lacks (missing '${ctx.memberName}')`,
+  );
+  return cName;
+};
+
 /**
  * Check for enum member access (e.g., Color.Red).
  */
@@ -992,7 +1007,7 @@ const tryEnumMemberAccess = (
   const output = initializeMemberOutput(ctx);
   output.result = ctx.isCppAccessChain
     ? CppNamespaceUtils.fromParts([ctx.result, ctx.memberName])
-    : QualifiedCName.fromSourceName([ctx.result, ctx.memberName]);
+    : declaredMemberCName(ctx, input);
   return output;
 };
 

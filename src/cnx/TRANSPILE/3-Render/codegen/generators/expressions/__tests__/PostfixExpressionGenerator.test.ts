@@ -1156,6 +1156,7 @@ describe("PostfixExpressionGenerator", () => {
     it("generates enum member access", () => {
       const symbols = createMockSymbols({
         knownEnums: new Set(["Color"]),
+        memberCNames: new Map([["Color", new Map([["Red", "Color__Red"]])]]),
       });
       const ctx = createMockPostfixExpressionContext("Color", [
         createMockPostfixOp({ identifier: "Red" }),
@@ -1173,6 +1174,7 @@ describe("PostfixExpressionGenerator", () => {
     it("allows enum access without global prefix when no naming conflict", () => {
       const symbols = createMockSymbols({
         knownEnums: new Set(["Color"]),
+        memberCNames: new Map([["Color", new Map([["Red", "Color__Red"]])]]),
       });
       const ctx = createMockPostfixExpressionContext("Color", [
         createMockPostfixOp({ identifier: "Red" }),
