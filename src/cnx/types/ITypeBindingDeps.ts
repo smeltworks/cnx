@@ -26,6 +26,14 @@ interface ITypeBindingDeps {
    * because it is a codegen concern; without it the components are joined.
    */
   readonly resolveQualifiedType?: (identifiers: string[]) => string;
+  /**
+   * The C name 3-Declare gave `name` in `scopePath`, for `this.T` (#2116).
+   * Absent only in 3-Declare, which is still deciding those names.
+   */
+  readonly memberCName?: (
+    scopePath: string,
+    name: string,
+  ) => string | undefined;
 }
 
 export default ITypeBindingDeps;

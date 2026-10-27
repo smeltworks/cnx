@@ -72,7 +72,9 @@ class TypeNameLadder {
         return {
           branch: "this",
           written: type.name,
-          name: ScopeUtils.qualifyInScope(type.name, scopePath),
+          name:
+            deps?.memberCName?.(scopePath, type.name) ??
+            ScopeUtils.qualifyInScope(type.name, scopePath),
         };
       // global.T -- explicitly opts out of scope qualification
       case "global":

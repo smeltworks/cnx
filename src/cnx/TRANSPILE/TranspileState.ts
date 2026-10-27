@@ -867,6 +867,8 @@ class TranspileState {
     return {
       isScopeType: this.scopeTypePredicate,
       resolveQualifiedType,
+      memberCName: (scopePath: string, name: string) =>
+        this.program?.memberOf(scopePath, name)?.fullyQualifiedCName,
     };
   }
 

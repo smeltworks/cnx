@@ -1057,7 +1057,11 @@ class OperandTyper {
       TypeNameLadder.classifyNamed(
         type,
         ctx.program.lexicalFrameAt(ctx.sourceFile, at).scopePath,
-        { isScopeType: OperandTyper.scopeTypesSeenBy(ctx) },
+        {
+          isScopeType: OperandTyper.scopeTypesSeenBy(ctx),
+          memberCName: (scopePath: string, name: string) =>
+            ctx.program.memberOf(scopePath, name)?.fullyQualifiedCName,
+        },
       )?.name ?? null;
     if (cName !== null && OperandTyper.declaresNamedType(cName, ctx)) {
       return OperandTyper.fromType({ kind: "struct", name: cName }, [], ctx);

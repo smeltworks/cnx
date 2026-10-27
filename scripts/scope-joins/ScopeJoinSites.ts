@@ -307,8 +307,8 @@ class ScopeJoinSites {
     {
       file: "src/cnx/utils/TypeNameLadder.ts",
       element: "qualifyInScope(type.name, scopePath)",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
+      kind: "encoder",
+      why: "3-Declare deciding a `this.T` type reference's C name as it builds the symbols; every later pass passes `memberCName` and reads the declared type's fullyQualifiedCName (#2116)",
     },
     {
       file: "src/cnx/PARSE/4-Resolve/ConstantNames.ts",
