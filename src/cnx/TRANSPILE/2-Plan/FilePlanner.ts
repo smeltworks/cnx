@@ -456,7 +456,8 @@ class FilePlanner {
       identifiers.slice(1).join("."),
     );
     return (
-      member?.fullyQualifiedCName ?? QualifiedCName.fromSourceName(identifiers)
+      member?.fullyQualifiedCName ??
+      QualifiedCName.fromSourceName(identifiers.join("."))
     );
   }
 

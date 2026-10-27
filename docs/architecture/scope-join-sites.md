@@ -57,7 +57,7 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                         | `fromSourceName([functionCName, name, suffix === 1 ? null : String(suffix)])` | 1      | owner-c-name      |
 | `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                         | `fromSourceName([functionCName, name])`                                       | 1      | owner-c-name      |
 | `src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts`         | `fromSourceName(text)`                                                        | 1      | written-name      |
-| `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts`                          | `fromSourceName(identifiers)`                                                 | 1      | written-name      |
+| `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts`                          | `fromSourceName(identifiers.join("."))`                                       | 1      | written-name      |
 | `src/cnx/utils/QualifiedCName.ts`                                  | `QualifiedCName.SEPARATOR`                                                    | 3      | encoder           |
 | `src/cnx/utils/ScopeUtils.ts`                                      | `fromSourceName([scopePath, ...path])`                                        | 1      | encoder           |
 | `src/cnx/utils/ScopeUtils.ts`                                      | `fromSourceParts([symbol.scopePath, symbol.name])`                            | 1      | encoder           |
@@ -96,7 +96,7 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `fromSourceName([functionCName, name, suffix === 1 ? null : String(suffix)])`: a local renamed under its function's materialized C name when it hides a file-scope name, with a uniqueness suffix
 - `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `fromSourceName([functionCName, name])`: a local renamed under its function's materialized C name when it hides a file-scope name
 - `src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts` `fromSourceName(text)`: a dotted type that no cnx symbol declares (a foreign `TestNS.MyClass`); a declared `Scope.T` reads its `fullyQualifiedCName` through `memberOf`
-- `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts` `fromSourceName(identifiers)`: a `Scope.T` no cnx symbol declares (2.1 reports it); a declared one reads its `fullyQualifiedCName` through `memberOf`
+- `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts` `fromSourceName(identifiers.join("."))`: a `Scope.T` no cnx symbol declares (2.1 reports it); a declared one reads its `fullyQualifiedCName` through `memberOf`
 - `src/cnx/utils/QualifiedCName.ts` `QualifiedCName.SEPARATOR`: the ADR-063 separator's owner: its declaration, the one join, the split and the prefix test
 - `src/cnx/utils/ScopeUtils.ts` `fromSourceName([scopePath, ...path])`: `qualifyPathInScope` -- the one implementation the scope-qualifying callers route to; its parameter IS the enclosing path
 - `src/cnx/utils/ScopeUtils.ts` `fromSourceParts([symbol.scopePath, symbol.name])`: the owning code: getCnxScopedName's definition, the cnx spelling 3-Declare stores as cnxScopedName
