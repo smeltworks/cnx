@@ -1867,7 +1867,10 @@ class CodeGenWalker {
       case "enum":
         return this.invokeSuppressibleDeclaration(
           enumGenerator,
-          declaration.name,
+          this.declaredCName(
+            this.host.state.currentScopePath,
+            declaration.name,
+          ),
         );
       case "bitmap":
         return this.invokeSuppressibleDeclaration(

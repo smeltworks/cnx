@@ -118,7 +118,7 @@ describe("EnumGenerator", () => {
   });
 
   describe("scoped enum generation (ADR-016)", () => {
-    it("applies scope prefix when inside a scope", () => {
+    it("renders a scope's enum by the C name 3-Declare gave it", () => {
       const members = new Map([
         ["LOW", 0],
         ["HIGH", 1],
@@ -128,7 +128,7 @@ describe("EnumGenerator", () => {
       const state = createMockState("Motor");
       const orchestrator = createMockOrchestrator();
 
-      const result = generateEnum("Level", input, state, orchestrator);
+      const result = generateEnum("Motor__Level", input, state, orchestrator);
 
       expect(result.code).toBe(
         `typedef enum {
