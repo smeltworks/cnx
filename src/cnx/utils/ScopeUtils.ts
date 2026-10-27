@@ -263,12 +263,7 @@ class ScopeUtils {
     if (root === "global") {
       return head;
     }
-    const qualified = ScopeUtils.qualifyScopeType(
-      head,
-      scopePath,
-      isScopeTypeVisible,
-    );
-    return QualifiedCName.fromSourceName(qualified);
+    return ScopeUtils.qualifyScopeType(head, scopePath, isScopeTypeVisible);
   }
 
   /**

@@ -343,12 +343,6 @@ class ScopeJoinSites {
       why: "`getTranspiledCName` -- the single encoder. The symbol carries its whole enclosing path (#1298)",
     },
     {
-      file: "src/cnx/utils/ScopeUtils.ts",
-      element: "fromSourceName(qualified)",
-      kind: "encoder",
-      why: "`typeHeadCName` -- `qualifyScopeType` has already qualified the head from the enclosing PATH",
-    },
-    {
       file: "src/cnx/utils/TypeNameLadder.ts",
       element: "fromSourceName(type.path)",
       kind: "written-name",

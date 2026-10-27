@@ -67,7 +67,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/QualifiedNameGenerator.ts`                          | `qualifyInScope(funcName, scopePath)`                                         | 2      | encoder      |
 | `src/cnx/utils/ScopeUtils.ts`                                      | `fromSourceName([scopePath, ...path])`                                        | 1      | encoder      |
 | `src/cnx/utils/ScopeUtils.ts`                                      | `fromSourceName([symbol.scopePath, symbol.name])`                             | 1      | encoder      |
-| `src/cnx/utils/ScopeUtils.ts`                                      | `fromSourceName(qualified)`                                                   | 1      | encoder      |
 | `src/cnx/utils/ScopeUtils.ts`                                      | `getCnxScopedName(symbol)`                                                    | 1      | encoder      |
 | `src/cnx/utils/ScopeUtils.ts`                                      | `getTranspiledCName({ name: head, scopePath })`                               | 1      | encoder      |
 | `src/cnx/utils/ScopeUtils.ts`                                      | `getTranspiledCName({ name: typeName, scopePath, })`                          | 1      | encoder      |
@@ -76,9 +75,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                      | `qualifyPathInScope([name], scopePath)`                                       | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                  | `fromSourceName(type.path)`                                                   | 1      | written-name |
 | `src/cnx/utils/TypeNameLadder.ts`                                  | `qualifyInScope(type.name, scopePath)`                                        | 1      | encoder      |
-| **total**                                                          |                                                                               | **45** |              |
+| **total**                                                          |                                                                               | **44** |              |
 
-45 site(s) across 20 file(s).
+44 site(s) across 20 file(s).
 
 ## Why each site is not a scope join
 
@@ -111,7 +110,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/utils/QualifiedNameGenerator.ts` `qualifyInScope(funcName, scopePath)`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
 - `src/cnx/utils/ScopeUtils.ts` `fromSourceName([scopePath, ...path])`: `qualifyPathInScope` -- the one implementation the scope-qualifying callers route to; its parameter IS the enclosing path
 - `src/cnx/utils/ScopeUtils.ts` `fromSourceName([symbol.scopePath, symbol.name])`: `getTranspiledCName` -- the single encoder. The symbol carries its whole enclosing path (#1298)
-- `src/cnx/utils/ScopeUtils.ts` `fromSourceName(qualified)`: `typeHeadCName` -- `qualifyScopeType` has already qualified the head from the enclosing PATH
 - `src/cnx/utils/ScopeUtils.ts` `getCnxScopedName(symbol)`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
 - `src/cnx/utils/ScopeUtils.ts` `getTranspiledCName({ name: head, scopePath })`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
 - `src/cnx/utils/ScopeUtils.ts` `getTranspiledCName({ name: typeName, scopePath, })`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
