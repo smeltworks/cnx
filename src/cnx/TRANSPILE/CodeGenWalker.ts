@@ -2057,7 +2057,7 @@ class CodeGenWalker {
         fullName,
         isPrivate,
         args: decl.arguments.map((arg) =>
-          QualifiedNameGenerator.forMember(declaringScopePath, arg.name),
+          this.declaredCName(declaringScopePath, arg.name),
         ),
         renderType: () => this.renderType(decl.type),
       };

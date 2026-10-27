@@ -91,7 +91,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts`                         | `QualifiedCName.SEPARATOR`                                                    | 1      | owner-c-name |
 | `src/cnx/TRANSPILE/3-Render/codegen/helpers/PostfixChainBuilder.ts`                             | `join(result, step, memberName)`                                              | 1      | owner-c-name |
 | `src/cnx/TRANSPILE/3-Render/headers/generators/generateEnumHeader.ts`                           | `fromSourceName([name, memberName])`                                          | 1      | owner-c-name |
-| `src/cnx/TRANSPILE/CodeGenWalker.ts`                                                            | `forMember(declaringScopePath, arg.name)`                                     | 1      | recompute    |
 | `src/cnx/TRANSPILE/CodeGenWalker.ts`                                                            | `fromSourceName([this.host.state.expectedType, id])`                          | 1      | owner-c-name |
 | `src/cnx/utils/EnumZeroValue.ts`                                                                | `fromSourceName([enumName, member])`                                          | 1      | owner-c-name |
 | `src/cnx/utils/LengthProperty.ts`                                                               | `fromSourceName(type.name)`                                                   | 2      | written-name |
@@ -112,9 +111,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                                                   | `qualifyPathInScope([name], scopePath)`                                       | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `fromSourceName(type.path)`                                                   | 1      | written-name |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `qualifyInScope(type.name, scopePath)`                                        | 1      | recompute    |
-| **total**                                                                                       |                                                                               | **79** |              |
+| **total**                                                                                       |                                                                               | **78** |              |
 
-79 site(s) across 36 file(s).
+78 site(s) across 36 file(s).
 
 ## Why each site is not a scope join
 
@@ -166,7 +165,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts` `QualifiedCName.SEPARATOR`: `join`'s register step: a register member joined to its owner's C name. A scope member goes through `QualifiedNameGenerator.forMember` instead, and no method hands `__` out as a value (#2116)
 - `src/cnx/TRANSPILE/3-Render/codegen/helpers/PostfixChainBuilder.ts` `join(result, step, memberName)`: an assignment target's member step; `MemberSeparatorResolver.step` decided it, so a scope member goes through `QualifiedNameGenerator.forMember` and a register member joins its owner's C name
 - `src/cnx/TRANSPILE/3-Render/headers/generators/generateEnumHeader.ts` `fromSourceName([name, memberName])`: ADR-017 member of the header symbol's enum, whose `name` is its materialized C name
-- `src/cnx/TRANSPILE/CodeGenWalker.ts` `forMember(declaringScopePath, arg.name)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/CodeGenWalker.ts` `fromSourceName([this.host.state.expectedType, id])`: a bare member of the expected enum, whose C name keys `knownEnums`
 - `src/cnx/utils/EnumZeroValue.ts` `fromSourceName([enumName, member])`: ADR-017 zero member of the enum whose C name `enumName` is (`knownEnums` is keyed by C name); a C++ namespace enum joins with `::` instead
 - `src/cnx/utils/LengthProperty.ts` `fromSourceName(type.name)`: a resolved type's dotted name as its C lookup key
