@@ -65,7 +65,7 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                                                      | `getTranspiledCName({ name: parts.slice(1).join("."), scopePath, })`          | 1      | recompute    |
 | `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                                                      | `fromSourceName([functionCName, name, suffix === 1 ? null : String(suffix)])` | 1      | owner-c-name |
 | `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                                                      | `fromSourceName([functionCName, name])`                                       | 1      | owner-c-name |
-| `src/cnx/PARSE/4-Resolve/Program.ts`                                                            | `getTranspiledCName({ name, scopePath })`                                     | 2      | recompute    |
+| `src/cnx/PARSE/4-Resolve/Program.ts`                                                            | `getTranspiledCName({ name, scopePath })`                                     | 1      | recompute    |
 | `src/cnx/TRANSPILE/1-Analyze/EnumMemberValue.ts`                                                | `qualifyInScope(declaration.name, scopePath)`                                 | 1      | recompute    |
 | `src/cnx/TRANSPILE/1-Analyze/FunctionCallAnalyzer.ts`                                           | `qualifyInScope(declaration.name, this.scopePathOf(scope))`                   | 1      | recompute    |
 | `src/cnx/TRANSPILE/1-Analyze/FunctionCallAnalyzer.ts`                                           | `qualifyInScope(fn.name, scope)`                                              | 1      | recompute    |
@@ -128,9 +128,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                                                   | `qualifyPathInScope([name], scopePath)`                                       | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `fromSourceName(type.path)`                                                   | 1      | written-name |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `qualifyInScope(type.name, scopePath)`                                        | 1      | recompute    |
-| **total**                                                                                       |                                                                               | **96** |              |
+| **total**                                                                                       |                                                                               | **95** |              |
 
-96 site(s) across 42 file(s).
+95 site(s) across 42 file(s).
 
 ## Why each site is not a scope join
 

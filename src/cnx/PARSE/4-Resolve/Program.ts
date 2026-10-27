@@ -1528,8 +1528,8 @@ class Program {
     if (local) {
       return { kind: "local", declaration: local, scopePath };
     }
-    const symbol = facts.symbolsByCName.get(
-      ScopeUtils.getTranspiledCName({ name, scopePath }),
+    const symbol = facts.symbolsByIdentity.get(
+      Program.identityKey(scopePath, name),
     );
     return symbol?.kind === "variable" && symbol.sourceFile === sourceFile
       ? { kind: "variable", symbol }
