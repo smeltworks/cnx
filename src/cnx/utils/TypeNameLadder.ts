@@ -84,9 +84,14 @@ class TypeNameLadder {
         return {
           branch: "qualified",
           written: type.path.join("."),
+          // #2116: a declared `Scope.T` reads its stored C name; only a path
+          // no cnx symbol declares is spelled as written
           name: deps?.resolveQualifiedType
             ? deps.resolveQualifiedType([...type.path])
-            : QualifiedCName.fromSourceName(type.path),
+            : (deps?.memberCName?.(
+                type.path[0],
+                type.path.slice(1).join("."),
+              ) ?? QualifiedCName.fromSourceName(type.path)),
         };
       // Bare T -- the ONLY branch that resolves local -> scope -> global
       case "user":
