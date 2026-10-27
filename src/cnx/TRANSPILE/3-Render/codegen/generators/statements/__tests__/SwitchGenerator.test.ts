@@ -54,6 +54,13 @@ function createMockInput(options?: {
   return {
     symbols: createMockSymbols({
       enumMembers,
+      // what 3-Declare names each member (ADR-017)
+      memberCNames: new Map(
+        [...enumMembers].map(([enumName, members]) => [
+          enumName,
+          new Map([...members.keys()].map((m) => [m, `${enumName}__${m}`])),
+        ]),
+      ),
       knownEnums: new Set(enumMembers.keys()),
     }),
     symbolTable: null,

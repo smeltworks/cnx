@@ -340,12 +340,6 @@ class ScopeJoinSites {
     },
     {
       file: "src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts",
-      element: "fromSourceName([switchEnumType, id])",
-      kind: "owner-c-name",
-      why: "a bare case label that is a member of the subject's enum, whose C name `enumTypeOf` materialized",
-    },
-    {
-      file: "src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts",
       element: "fromSourceName(label.parts)",
       kind: "written-name",
       why: "a qualified case label as written (`Motor.State.IDLE`)",

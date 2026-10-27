@@ -64,7 +64,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts`                                                 | `fromSourceName(identifiers)`                                                 | 1      | written-name |
 | `src/cnx/TRANSPILE/2-Plan/TypeValidator.ts`                                               | `isInScope(identifier, currentScopePath)`                                     | 1      | scope-path   |
 | `src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts` | `fromSourceName([ctx.result, ctx.memberName])`                                | 2      | owner-c-name |
-| `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts`             | `fromSourceName([switchEnumType, id])`                                        | 1      | owner-c-name |
 | `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts`             | `fromSourceName(label.parts)`                                                 | 1      | written-name |
 | `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts`                   | `fromSourceName(identifierChain.slice(0, -1))`                                | 1      | written-name |
 | `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts`                   | `QualifiedCName.SEPARATOR`                                                    | 1      | owner-c-name |
@@ -87,9 +86,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                                             | `qualifyPathInScope([name], scopePath)`                                       | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                                         | `fromSourceName(type.path)`                                                   | 1      | written-name |
 | `src/cnx/utils/TypeNameLadder.ts`                                                         | `qualifyInScope(type.name, scopePath)`                                        | 1      | encoder      |
-| **total**                                                                                 |                                                                               | **59** |              |
+| **total**                                                                                 |                                                                               | **58** |              |
 
-59 site(s) across 28 file(s).
+58 site(s) across 28 file(s).
 
 ## Why each site is not a scope join
 
@@ -119,7 +118,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts` `fromSourceName(identifiers)`: a qualified type's identifier chain as written
 - `src/cnx/TRANSPILE/2-Plan/TypeValidator.ts` `isInScope(identifier, currentScopePath)`: is a known function declared in the current scope? Handed `currentScopePath`, so the prefix is spelled by `QualifiedCName.prefixFor`
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts` `fromSourceName([ctx.result, ctx.memberName])`: member of a register (`knownRegisters`) or an enum (`knownEnums`), each keyed by its materialized C name; a scope member reads its symbol's `fullyQualifiedCName` instead
-- `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts` `fromSourceName([switchEnumType, id])`: a bare case label that is a member of the subject's enum, whose C name `enumTypeOf` materialized
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts` `fromSourceName(label.parts)`: a qualified case label as written (`Motor.State.IDLE`)
 - `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts` `fromSourceName(identifierChain.slice(0, -1))`: the access chain as written, as a register lookup key
 - `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts` `QualifiedCName.SEPARATOR`: `join`'s register step: a register member joined to its owner's C name. A scope member's step carries its `fullyQualifiedCName` instead, and no method hands `__` out as a value (#2116)

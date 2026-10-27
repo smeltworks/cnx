@@ -23,6 +23,7 @@ import IGeneratorOutput from "../IGeneratorOutput";
 import IOrchestrator from "../IOrchestrator";
 import TGeneratorFn from "../TGeneratorFn";
 import QualifiedCName from "../../../../../utils/QualifiedCName";
+import invariant from "../../../../../utils/invariant";
 import type IPlannedSwitch from "../../types/IPlannedSwitch";
 import type IPlannedSwitchCase from "../../types/IPlannedSwitchCase";
 import type TPlannedCaseLabel from "../../types/TPlannedCaseLabel";
@@ -37,10 +38,13 @@ function tryResolveEnumMember(
   symbols: IGeneratorInput["symbols"],
 ): string | null {
   if (!symbols) return null;
-  const members = symbols.enumMembers.get(switchEnumType);
-  return members?.has(id)
-    ? QualifiedCName.fromSourceName([switchEnumType, id])
-    : null;
+  if (!symbols.enumMembers.get(switchEnumType)?.has(id)) return null;
+  const cName = symbols.memberCNames.get(switchEnumType)?.get(id);
+  invariant(
+    cName !== undefined,
+    `3-Declare names every member of '${switchEnumType}' (missing '${id}')`,
+  );
+  return cName;
 }
 
 /**
