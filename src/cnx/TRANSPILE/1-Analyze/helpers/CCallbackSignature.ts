@@ -121,7 +121,7 @@ class CCallbackSignature {
     const facts = CCallbackSignature.facts(context);
     const isCppMode = context.program.cppMode();
     const actualParameters = CallbackParameterShape.parameters(
-      ScopeUtils.getTranspiledCName(actual),
+      actual.fullyQualifiedCName,
       actual,
       facts,
     ).map(
