@@ -306,12 +306,6 @@ class ScopeJoinSites {
       why: ScopeJoinSites.RECOMPUTE,
     },
     {
-      file: "src/cnx/TRANSPILE/1-Analyze/UndeclaredValueAnalyzer.ts",
-      element: "qualifyInScope(name, scopePath)",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
       file: "src/cnx/TRANSPILE/2-Plan/FilePlanner.ts",
       element: "forMember(declaringScopePath, declaration.name)",
       kind: "recompute",
