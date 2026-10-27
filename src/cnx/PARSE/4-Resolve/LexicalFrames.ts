@@ -42,7 +42,10 @@ type TValueOf = (
 
 /** What settling a frame reads, the same for every frame of a file */
 interface ISettleFacts {
-  readonly isScopeType: (qualifiedName: string) => boolean;
+  readonly scopeTypeCName: (
+    scopePath: string,
+    name: string,
+  ) => string | undefined;
   readonly isFileScopeName: (cName: string) => boolean;
   readonly env: IConstantEnvironment;
   readonly settledOf: Map<ILocalDeclaration, ILocalDeclaration>;
@@ -54,12 +57,12 @@ class LexicalFrames {
   /**
    * The settled, frozen copy of a file's frames.
    *
-   * @param isScopeType the whole program's ADR-057 answer
+   * @param scopeTypeCName the whole program's ADR-057 answer, by identity
    * @param valueOf a name's value where it is written, from the one binder
    */
   static settle(
     frame: ILexicalFrame,
-    isScopeType: (qualifiedName: string) => boolean,
+    scopeTypeCName: (scopePath: string, name: string) => string | undefined,
     valueOf: TValueOf,
     /** A type name as C spells it where it is written (ADR-057) */
     cTypeName: IConstantEnvironment["cTypeName"],
@@ -81,7 +84,7 @@ class LexicalFrames {
       isTypeName,
     };
     return LexicalFrames.settleFrame(frame, null, {
-      isScopeType,
+      scopeTypeCName,
       isFileScopeName,
       env,
       settledOf,
@@ -256,7 +259,7 @@ class LexicalFrames {
   private static settleDeclaration(
     declaration: ILocalDeclaration,
     functionCName: string | null,
-    { isScopeType, env, isFileScopeName }: ISettleFacts,
+    { scopeTypeCName, env, isFileScopeName }: ISettleFacts,
     /** The settled local its own name binds to inside it, if any */
     shadowed: ILocalDeclaration | undefined,
   ): ILocalDeclaration {
@@ -264,7 +267,7 @@ class LexicalFrames {
       const expr = declaration.arrayDimensionExprs[i];
       return expr ? ConstantFold.dimension(expr, env) : dimension;
     });
-    const type = DeferredTypes.settleType(declaration.type, isScopeType);
+    const type = DeferredTypes.settleType(declaration.type, scopeTypeCName);
     const constValue =
       ConstantFold.hasCompileTimeValue(declaration) &&
       declaration.initialValueExpr !== null &&

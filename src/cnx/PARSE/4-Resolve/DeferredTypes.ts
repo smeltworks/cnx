@@ -36,7 +36,6 @@ import type IParameterInfo from "../../types/symbols/IParameterInfo";
 import type IStructFieldSymbol from "../../types/symbols/IStructFieldSymbol";
 import type IRegisterMemberSymbol from "../../types/symbols/IRegisterMemberSymbol";
 import type IFunctionSymbol from "../../types/symbols/IFunctionSymbol";
-import ScopeUtils from "../../utils/ScopeUtils";
 import TypeResolver from "../../utils/TypeResolver";
 import ScopeFunctions from "./ScopeFunctions";
 
@@ -45,7 +44,7 @@ class DeferredTypes {
    * Settle every deferred type in `symbols` against what their file can see.
    *
    * @param symbols one file's declared symbols, as Declare emitted them
-   * @param isScopeType whether a QUALIFIED name is a scope type visible from
+   * @param scopeTypeCName whether a QUALIFIED name is a scope type visible from
    *   the file these symbols belong to: declared there or anywhere in its
    *   include closure. Not Declare's own set, which cannot see an include, and
    *   not the whole program's, which also holds siblings the file never
@@ -55,7 +54,7 @@ class DeferredTypes {
    */
   static settle(
     symbols: ReadonlyArray<TSymbol>,
-    isScopeType: (qualifiedName: string) => boolean,
+    scopeTypeCName: (scopePath: string, name: string) => string | undefined,
     isOpaqueType: (typeName: string) => boolean,
   ): TSymbol[] {
     // Memoized on the ORIGINAL object, so a symbol reached twice yields one
@@ -71,7 +70,7 @@ class DeferredTypes {
       }
       const result = DeferredTypes.settleSymbol(
         symbol,
-        isScopeType,
+        scopeTypeCName,
         isOpaqueType,
       );
       settled.set(symbol, result);
@@ -102,11 +101,11 @@ class DeferredTypes {
 
   private static settleSymbol(
     symbol: TSymbol,
-    isScopeType: (qualifiedName: string) => boolean,
+    scopeTypeCName: (scopePath: string, name: string) => string | undefined,
     isOpaqueType: (typeName: string) => boolean,
   ): TSymbol {
     const settle = (type: TType): TType =>
-      DeferredTypes.settleType(type, isScopeType);
+      DeferredTypes.settleType(type, scopeTypeCName);
 
     // Identity is preserved wherever nothing was deferred, which is the common
     // case by a wide margin: only a bare name inside a scope can defer, so most
@@ -191,14 +190,12 @@ class DeferredTypes {
    */
   static settleType(
     type: TType,
-    isScopeType: (qualifiedName: string) => boolean,
+    scopeTypeCName: (scopePath: string, name: string) => string | undefined,
   ): TType {
     if (type.kind === "deferred") {
-      const name = ScopeUtils.qualifyScopeType(
-        type.name,
-        type.scopePath,
-        isScopeType,
-      );
+      // #2116: the scope type's stored C name, found by identity; a name
+      // no visible scope type declares stays as written (ADR-057)
+      const name = scopeTypeCName(type.scopePath, type.name) ?? type.name;
       // Re-classified from the settled name, because which ARM a name belongs
       // to -- struct, enum, bitmap -- is decided by the name, and Declare could
       // not decide it while the name was still unknown.
@@ -208,7 +205,7 @@ class DeferredTypes {
     if (type.kind === "array") {
       const elementType = DeferredTypes.settleType(
         type.elementType,
-        isScopeType,
+        scopeTypeCName,
       );
       return elementType === type.elementType ? type : { ...type, elementType };
     }
