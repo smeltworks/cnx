@@ -1494,11 +1494,7 @@ class OperandTyper {
     name: string,
     ctx: ITypingContext,
   ): TChainValue {
-    const cName =
-      scopePath === ""
-        ? name
-        : ScopeUtils.getTranspiledCName({ name, scopePath });
-    const symbol = ctx.program.symbolByCName(cName);
+    const symbol = ctx.program.memberOf(scopePath, name);
     switch (symbol?.kind) {
       case "variable": {
         const t = OperandTyper.boundValue({ kind: "variable", symbol }, ctx);
