@@ -76,16 +76,6 @@ const KIND_SECTIONS = [
       "  owner; this only appends the member, as ADR-016 and ADR-017 define.",
     ],
   },
-  {
-    kind: "recompute",
-    lines: [
-      "- **recompute** -- calls an encoder after the pass that owns the name",
-      "  stored it. 3-Declare materializes every symbol's `fullyQualifiedCName`",
-      "  and `cnxScopedName` (`ScopeUtils.identityOf`), so this decides again what",
-      "  is already decided (cnx-way: compute once, then read). Each row is",
-      "  converted to read the field, one commit per site, until none remain.",
-    ],
-  },
 ] as const;
 
 type TKind = (typeof KIND_SECTIONS)[number]["kind"];
@@ -141,10 +131,6 @@ class ScopeJoinSites {
    * `check` fails on a site with no entry here and on an entry matching no
    * site, so this list can neither miss a site nor keep a stale judgement.
    */
-  /** The one reason every `recompute` row shares, until the row is converted. */
-  private static readonly RECOMPUTE =
-    "calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)";
-
   private static readonly ADJUDICATIONS: readonly IAdjudication[] = [
     {
       file: "src/cnx/PARSE/3-Declare/cnx/collectors/BitmapCollector.ts",
@@ -236,18 +222,6 @@ class ScopeJoinSites {
         "identityOf({ name: input.name, scopePath: input.parentScopedName, })",
       kind: "encoder",
       why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
-    },
-    {
-      file: "src/cnx/TRANSPILE/1-Analyze/helpers/CalleeNameResolver.ts",
-      element: "qualifyInScope(memberName, currentScopePath)",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
-      file: "src/cnx/TRANSPILE/1-Analyze/helpers/CalleeNameResolver.ts",
-      element: "qualifyInScope(memberName, resolvedName)",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
     },
     {
       file: "src/cnx/utils/QualifiedNameGenerator.ts",

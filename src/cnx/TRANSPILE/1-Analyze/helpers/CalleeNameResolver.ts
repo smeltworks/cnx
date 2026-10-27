@@ -22,7 +22,6 @@ import type IProgram from "../../../types/IProgram";
 import type TExpression from "../../../types/syntax/TExpression";
 import type TPostfixOpSyntax from "../../../types/syntax/TPostfixOpSyntax";
 import QualifiedCName from "../../../utils/QualifiedCName";
-import ScopeUtils from "../../../utils/ScopeUtils";
 import ICalleeResolution from "../types/ICalleeResolution";
 
 class CalleeNameResolver {
@@ -66,7 +65,9 @@ class CalleeNameResolver {
 
     if (isScope(resolvedName)) {
       return {
-        resolvedName: ScopeUtils.qualifyInScope(memberName, resolvedName),
+        resolvedName:
+          program.memberOf(resolvedName, memberName)?.fullyQualifiedCName ??
+          null,
       };
     }
 
