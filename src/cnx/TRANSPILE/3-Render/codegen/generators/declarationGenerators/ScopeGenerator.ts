@@ -44,7 +44,7 @@ import IPlannedScope from "../../types/IPlannedScope";
 import TGeneratorFn from "../TGeneratorFn";
 import TPlannedScopeMember from "../../types/TPlannedScopeMember";
 import TPlannedScopeVariable from "../../types/TPlannedScopeVariable";
-import registerGeneratorFor from "./RegisterGenerator";
+import generateRegister from "./RegisterGenerator";
 import AdrProvenance from "../../../../../instrumentation/AdrProvenance";
 import DeclaredPointer from "../../../../../utils/DeclaredPointer";
 import generateEnumHeader from "../../../headers/generators/generateEnumHeader";
@@ -268,7 +268,7 @@ function renderScopeMember(
       return renderScopeFunction(member, orchestrator);
 
     case "register": {
-      const result = registerGeneratorFor(plan.declaringScopePath)(
+      const result = generateRegister(
         member.planRegister(),
         input,
         state,

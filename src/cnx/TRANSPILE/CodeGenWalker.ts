@@ -94,7 +94,7 @@ import type IPlannedSwitch from "./3-Render/codegen/types/IPlannedSwitch";
 import type TPlannedCaseLabel from "./3-Render/codegen/types/TPlannedCaseLabel";
 import enumGenerator from "./3-Render/codegen/generators/declarationGenerators/EnumGenerator";
 import bitmapGenerator from "./3-Render/codegen/generators/declarationGenerators/BitmapGenerator";
-import registerGeneratorFor from "./3-Render/codegen/generators/declarationGenerators/RegisterGenerator";
+import generateRegisterDeclaration from "./3-Render/codegen/generators/declarationGenerators/RegisterGenerator";
 import type IPlannedRegister from "./3-Render/codegen/types/IPlannedRegister";
 import type IPlannedFunction from "./3-Render/codegen/types/IPlannedFunction";
 import type IPlannedStruct from "./3-Render/codegen/types/IPlannedStruct";
@@ -2035,7 +2035,8 @@ class CodeGenWalker {
         return {
           kind: "register",
           adrLine,
-          planRegister: () => this.planRegister(declaration),
+          planRegister: () =>
+            this.planRegister(declaration, declaringScopePath),
         };
       default:
         return { kind: "other", adrLine };
@@ -2174,8 +2175,8 @@ class CodeGenWalker {
 
   private generateRegister(register: IRegisterDeclarationSyntax): string {
     return this.invokeGenerator(
-      registerGeneratorFor(this.host.getState().currentScopePath),
-      this.planRegister(register),
+      generateRegisterDeclaration,
+      this.planRegister(register, this.host.getState().currentScopePath),
     );
   }
 
@@ -2195,10 +2196,13 @@ class CodeGenWalker {
    * explicit `global.Flags` arrives as `Flags`. Nothing downstream may
    * re-qualify it.
    */
-  planRegister(register: IRegisterDeclarationSyntax): IPlannedRegister {
+  planRegister(
+    register: IRegisterDeclarationSyntax,
+    declaringScopePath: string,
+  ): IPlannedRegister {
     const baseAddress = this.renderExpression(register.address);
     return {
-      name: register.name,
+      name: this.declaredCName(declaringScopePath, register.name),
       baseAddress,
       members: register.members.map((member) => ({
         name: member.name,

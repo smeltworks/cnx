@@ -31,7 +31,7 @@ const REGISTER_EFFECTS: readonly TGeneratorEffect[] = [
 ];
 
 vi.mock("../RegisterGenerator", () => ({
-  default: () => () => ({
+  default: () => ({
     code: "volatile uint32_t *const Chip__CR = (uint32_t *)0x4000;",
     effects: REGISTER_EFFECTS,
   }),
