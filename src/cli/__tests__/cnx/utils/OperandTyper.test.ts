@@ -202,7 +202,9 @@ describe("OperandTyper.typeOfWritten (#1668)", () => {
     const source = `enum EMode { A, B }\nscope Motor {\nenum EMode { C, D }\npublic void f() {\nu8 x <- 1;\nu8 r <- (${written})x;\n}\n}`;
     const t = typeOf(source);
     expect(t?.category).toBe("enum");
-    expect(t?.enumTypeName).toBe(QualifiedCName.fromSourceName(parts));
+    expect(t?.enumTypeName).toBe(
+      QualifiedCName.fromSourceName(parts.join(".")),
+    );
   });
 });
 

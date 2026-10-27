@@ -96,6 +96,7 @@ class ScopeJoinSites {
     "QualifiedCName.fromSourceName",
     "QualifiedCName.fromSourceParts",
     "QualifiedCName.movedLocal",
+    "QualifiedCName.inScope",
     "ScopeUtils.getTranspiledCName",
     "ScopeUtils.getCnxScopedName",
     "ScopeUtils.identityOf",
@@ -316,7 +317,7 @@ class ScopeJoinSites {
     },
     {
       file: "src/cnx/utils/ScopeUtils.ts",
-      element: "fromSourceName([scopePath, ...path])",
+      element: "inScope(scopePath, path)",
       kind: "encoder",
       why: "`qualifyPathInScope` -- the one implementation the scope-qualifying callers route to; its parameter IS the enclosing path",
     },

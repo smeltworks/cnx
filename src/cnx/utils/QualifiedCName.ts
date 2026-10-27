@@ -61,19 +61,24 @@ class QualifiedCName {
     name: string,
     suffix: number,
   ): string {
-    return QualifiedCName.toParts([
+    return QualifiedCName.joined([
       functionCName,
       name,
       suffix === 1 ? null : String(suffix),
-    ]).join(QualifiedCName.SEPARATOR);
+    ]);
   }
 
-  static fromSourceName(
-    written: string | readonly (string | undefined | null)[],
-  ): string {
-    return QualifiedCName.toParts(
-      typeof written === "string" ? [written] : written,
-    ).join(QualifiedCName.SEPARATOR);
+  /**
+   * The C name of `path` declared in the scope at `scopePath` ("" for file
+   * scope). The scope join itself: only `ScopeUtils`' encoders call it, and
+   * only 3-Declare calls them to decide the name it stores (#2116).
+   */
+  static inScope(scopePath: string, path: readonly string[]): string {
+    return QualifiedCName.joined([scopePath, ...path]);
+  }
+
+  static fromSourceName(written: string): string {
+    return QualifiedCName.joined([written]);
   }
 
   /**
@@ -134,6 +139,12 @@ class QualifiedCName {
   /**
    * Expand components into flat parts, dropping empties and splitting dotted paths.
    */
+  private static joined(
+    components: readonly (string | undefined | null)[],
+  ): string {
+    return QualifiedCName.toParts(components).join(QualifiedCName.SEPARATOR);
+  }
+
   private static toParts(
     components: readonly (string | undefined | null)[],
   ): readonly string[] {
