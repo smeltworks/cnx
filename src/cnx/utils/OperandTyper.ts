@@ -1344,12 +1344,12 @@ class OperandTyper {
     if (symbols.knownEnums.has(enumCName)) {
       return { binding: null, value: { k: "enumType", name: enumCName }, ops };
     }
+    const scoped =
+      scopePath === "" ? undefined : ctx.program.memberOf(scopePath, name);
     const registerCName =
-      scopePath !== "" &&
-      symbols.knownRegisters.has(
-        ScopeUtils.getTranspiledCName({ name, scopePath }),
-      )
-        ? ScopeUtils.getTranspiledCName({ name, scopePath })
+      scoped !== undefined &&
+      symbols.knownRegisters.has(scoped.fullyQualifiedCName)
+        ? scoped.fullyQualifiedCName
         : name;
     if (symbols.knownRegisters.has(registerCName)) {
       return {
