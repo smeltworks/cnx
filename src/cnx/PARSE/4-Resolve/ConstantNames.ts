@@ -334,10 +334,7 @@ class ConstantNames {
     const lookup = (cName: string) => walk.facts.visibleSymbol(cName);
     const struct =
       current.type.kind === "struct"
-        ? LengthProperty.struct(
-            QualifiedCName.fromSourceName(current.type.name),
-            lookup,
-          )
+        ? LengthProperty.struct(current.type.name, lookup)
         : undefined;
     const header = ConstantNames.headerType(current.type, walk);
     const element = ConstantNames.elementBits(current, header, walk);
@@ -408,7 +405,7 @@ class ConstantNames {
       case "struct":
       case "enum":
       case "bitmap": {
-        const cName = QualifiedCName.fromSourceName(type.name);
+        const cName = type.name;
         const tag = walk.facts.headerNeedsStructKeyword(cName) ? "struct " : "";
         return `sizeof(${tag}${cName})`;
       }
@@ -467,9 +464,7 @@ class ConstantNames {
   private static headerType(type: TType, walk: IWalk): string | null {
     if (type.kind === "external") return type.name;
     if (type.kind !== "struct") return null;
-    const isCnx =
-      walk.facts.visibleSymbol(QualifiedCName.fromSourceName(type.name)) !==
-      undefined;
+    const isCnx = walk.facts.visibleSymbol(type.name) !== undefined;
     return !isCnx && walk.facts.headerStructFields(type.name) !== undefined
       ? type.name
       : null;
@@ -507,9 +502,7 @@ class ConstantNames {
       };
     }
     if (current.type.kind !== "struct") return null;
-    const struct = walk.facts.visibleSymbol(
-      QualifiedCName.fromSourceName(current.type.name),
-    );
+    const struct = walk.facts.visibleSymbol(current.type.name);
     const info =
       struct?.kind === "struct" ? struct.fields.get(field) : undefined;
     return info

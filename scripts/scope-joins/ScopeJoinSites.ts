@@ -271,12 +271,6 @@ class ScopeJoinSites {
     },
     {
       file: "src/cnx/PARSE/4-Resolve/ConstantNames.ts",
-      element: "fromSourceName(current.type.name)",
-      kind: "written-name",
-      why: "a resolved type's dotted name (`Motor.Config`) as its C struct key; the type carries its whole qualified name",
-    },
-    {
-      file: "src/cnx/PARSE/4-Resolve/ConstantNames.ts",
       element: "fromSourceName(parts.slice(1))",
       kind: "written-name",
       why: "`global.A.B`: everything after `global.` is the path as the author wrote it",
@@ -286,12 +280,6 @@ class ScopeJoinSites {
       element: "fromSourceName(qualified)",
       kind: "written-name",
       why: "a dotted type name as written; a bare one is first qualified from the enclosing PATH by `ScopeUtils.qualifyScopeType`",
-    },
-    {
-      file: "src/cnx/PARSE/4-Resolve/ConstantNames.ts",
-      element: "fromSourceName(type.name)",
-      kind: "written-name",
-      why: "a resolved type's dotted name as its C lookup key",
     },
     {
       file: "src/cnx/PARSE/4-Resolve/LexicalFrames.ts",

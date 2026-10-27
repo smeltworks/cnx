@@ -53,10 +53,8 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/PARSE/3-Declare/cnx/collectors/VariableCollector.ts`      | `identityOf({ name, scopePath })`                                             | 1      | encoder      |
 | `src/cnx/PARSE/3-Declare/cnx/index.ts`                             | `qualifyInScope(typeName, scopePath)`                                         | 1      | encoder      |
 | `src/cnx/PARSE/3-Declare/cnx/utils/MemberSymbolBase.ts`            | `identityOf({ name: input.name, scopePath: input.parentScopedName, })`        | 1      | encoder      |
-| `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                         | `fromSourceName(current.type.name)`                                           | 2      | written-name |
 | `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                         | `fromSourceName(parts.slice(1))`                                              | 1      | written-name |
 | `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                         | `fromSourceName(qualified)`                                                   | 1      | written-name |
-| `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                         | `fromSourceName(type.name)`                                                   | 2      | written-name |
 | `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                         | `fromSourceName([functionCName, name, suffix === 1 ? null : String(suffix)])` | 1      | owner-c-name |
 | `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                         | `fromSourceName([functionCName, name])`                                       | 1      | owner-c-name |
 | `src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts`         | `fromSourceName(text)`                                                        | 1      | written-name |
@@ -74,9 +72,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                      | `qualifyPathInScope([name], scopePath)`                                       | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                  | `fromSourceName(type.path)`                                                   | 1      | written-name |
 | `src/cnx/utils/TypeNameLadder.ts`                                  | `qualifyInScope(type.name, scopePath)`                                        | 1      | encoder      |
-| **total**                                                          |                                                                               | **42** |              |
+| **total**                                                          |                                                                               | **38** |              |
 
-42 site(s) across 19 file(s).
+38 site(s) across 19 file(s).
 
 ## Why each site is not a scope join
 
@@ -95,10 +93,8 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/PARSE/3-Declare/cnx/collectors/VariableCollector.ts` `identityOf({ name, scopePath })`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
 - `src/cnx/PARSE/3-Declare/cnx/index.ts` `qualifyInScope(typeName, scopePath)`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
 - `src/cnx/PARSE/3-Declare/cnx/utils/MemberSymbolBase.ts` `identityOf({ name: input.name, scopePath: input.parentScopedName, })`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
-- `src/cnx/PARSE/4-Resolve/ConstantNames.ts` `fromSourceName(current.type.name)`: a resolved type's dotted name (`Motor.Config`) as its C struct key; the type carries its whole qualified name
 - `src/cnx/PARSE/4-Resolve/ConstantNames.ts` `fromSourceName(parts.slice(1))`: `global.A.B`: everything after `global.` is the path as the author wrote it
 - `src/cnx/PARSE/4-Resolve/ConstantNames.ts` `fromSourceName(qualified)`: a dotted type name as written; a bare one is first qualified from the enclosing PATH by `ScopeUtils.qualifyScopeType`
-- `src/cnx/PARSE/4-Resolve/ConstantNames.ts` `fromSourceName(type.name)`: a resolved type's dotted name as its C lookup key
 - `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `fromSourceName([functionCName, name, suffix === 1 ? null : String(suffix)])`: a local renamed under its function's materialized C name when it hides a file-scope name, with a uniqueness suffix
 - `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `fromSourceName([functionCName, name])`: a local renamed under its function's materialized C name when it hides a file-scope name
 - `src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts` `fromSourceName(text)`: a dotted callback type name as written; `this.` goes through `ScopeUtils.qualifyInScope` instead
