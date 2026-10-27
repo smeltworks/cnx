@@ -36,6 +36,7 @@
  * definition is unknown to gcc); whether they name a type at all is #1458.
  */
 
+import invariant from "../../utils/invariant";
 import BUILTIN_TYPE_NAMES from "./BUILTIN_TYPE_NAMES";
 import ICodeGenSymbols from "../../types/ICodeGenSymbols";
 import IUndeclaredTypeError from "./types/IUndeclaredTypeError";
@@ -185,9 +186,10 @@ class UndeclaredTypeAnalyzer {
         qualified,
       ),
     );
-    return bound === typeName
-      ? typeName
-      : ScopeUtils.getCnxScopedName({ name: typeName, scopePath: scope });
+    if (bound === typeName) return typeName;
+    const member = this.context.program.memberOf(scope, typeName);
+    invariant(member !== undefined, "a visible scope type is a declared one");
+    return member.cnxScopedName;
   }
 
   /**
