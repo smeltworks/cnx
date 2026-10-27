@@ -100,7 +100,7 @@ function convertEnum(
   enumSym: import("../cnx/types/symbols/IEnumSymbol").default,
 ): ISymbolInfo[] {
   const result: ISymbolInfo[] = [];
-  const cName = ScopeUtils.getTranspiledCName(enumSym);
+  const cName = enumSym.fullyQualifiedCName;
   const parent = ScopeUtils.leafOf(enumSym.scopePath) || undefined;
   const enumId = enumSym.cnxScopedName;
   const enumParentId = getParentId(enumSym.scopePath);

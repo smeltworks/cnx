@@ -134,14 +134,13 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                                                   | `qualifyPathInScope([name], scopePath)`                                       | 1       | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `fromSourceName(type.path)`                                                   | 1       | written-name |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `qualifyInScope(type.name, scopePath)`                                        | 1       | recompute    |
-| `src/lib/parseWithSymbols.ts`                                                                   | `getTranspiledCName(enumSym)`                                                 | 1       | recompute    |
 | `src/lib/parseWithSymbols.ts`                                                                   | `getTranspiledCName(func)`                                                    | 1       | recompute    |
 | `src/lib/parseWithSymbols.ts`                                                                   | `getTranspiledCName(register)`                                                | 1       | recompute    |
 | `src/lib/parseWithSymbols.ts`                                                                   | `getTranspiledCName(struct)`                                                  | 1       | recompute    |
 | `src/lib/parseWithSymbols.ts`                                                                   | `getTranspiledCName(variable)`                                                | 1       | recompute    |
-| **total**                                                                                       |                                                                               | **109** |              |
+| **total**                                                                                       |                                                                               | **108** |              |
 
-109 site(s) across 46 file(s).
+108 site(s) across 46 file(s).
 
 ## Why each site is not a scope join
 
@@ -236,7 +235,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/utils/ScopeUtils.ts` `qualifyPathInScope([name], scopePath)`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
 - `src/cnx/utils/TypeNameLadder.ts` `fromSourceName(type.path)`: a qualified type's path as written, when no resolver is supplied
 - `src/cnx/utils/TypeNameLadder.ts` `qualifyInScope(type.name, scopePath)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
-- `src/lib/parseWithSymbols.ts` `getTranspiledCName(enumSym)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/lib/parseWithSymbols.ts` `getTranspiledCName(func)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/lib/parseWithSymbols.ts` `getTranspiledCName(register)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/lib/parseWithSymbols.ts` `getTranspiledCName(struct)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
