@@ -245,7 +245,6 @@ function renderScopeFunction(
  * Render a single scope member and return the lines it contributes.
  */
 function renderScopeMember(
-  plan: IPlannedScope,
   member: TPlannedScopeMember,
   input: IGeneratorInput,
   state: IGeneratorState,
@@ -315,7 +314,7 @@ const generateScope: TGeneratorFn<IPlannedScope> = (
   ];
 
   for (const member of plan.members) {
-    lines.push(...renderScopeMember(plan, member, input, state, orchestrator));
+    lines.push(...renderScopeMember(member, input, state, orchestrator));
   }
 
   lines.push("");
