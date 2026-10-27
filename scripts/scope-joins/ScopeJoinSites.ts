@@ -298,7 +298,7 @@ class ScopeJoinSites {
       file: "src/cnx/TRANSPILE/2-Plan/FilePlanner.ts",
       element: "fromSourceName(identifiers)",
       kind: "written-name",
-      why: "a qualified type's identifier chain as written",
+      why: "a `Scope.T` no cnx symbol declares (2.1 reports it); a declared one reads its `fullyQualifiedCName` through `memberOf`",
     },
     {
       file: "src/cnx/utils/QualifiedCName.ts",

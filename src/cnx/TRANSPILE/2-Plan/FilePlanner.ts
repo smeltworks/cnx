@@ -450,8 +450,15 @@ class FilePlanner {
       return CppNamespaceUtils.fromParts(identifiers);
     }
 
-    // cnx scope type: join all parts with _
-    return QualifiedCName.fromSourceName(identifiers);
+    // #2116: a cnx `Scope.T` reads the C name 3-Declare gave it; one no
+    // symbol declares is 2.1's to report, and is spelled as written until then
+    const member = this.state.program?.memberOf(
+      firstName,
+      identifiers.slice(1).join("."),
+    );
+    return (
+      member?.fullyQualifiedCName ?? QualifiedCName.fromSourceName(identifiers)
+    );
   }
 
   /**
