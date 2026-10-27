@@ -215,7 +215,7 @@ class HeaderSymbolAdapter {
     bitmap: import("../../../../types/symbols/IBitmapSymbol").default,
   ): IHeaderSymbol {
     // Get transpiled C name (scope-prefixed)
-    const cName = ScopeUtils.getTranspiledCName(bitmap);
+    const cName = bitmap.fullyQualifiedCName;
     const isGlobal = ScopeUtils.isGlobalScopePath(bitmap.scopePath);
 
     return {
