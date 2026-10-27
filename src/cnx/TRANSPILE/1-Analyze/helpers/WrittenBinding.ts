@@ -7,7 +7,6 @@
  */
 
 import ExpressionShape from "../../../utils/ExpressionShape";
-import ScopeUtils from "../../../utils/ScopeUtils";
 import type TChainRoot from "../../../types/TChainRoot";
 import type TExpression from "../../../types/syntax/TExpression";
 import type TPostfixOpSyntax from "../../../types/syntax/TPostfixOpSyntax";
@@ -78,12 +77,7 @@ class WrittenBinding {
     while (binding?.kind === "scope" && rest[0]?.kind === "member") {
       memberName = rest[0].name;
       rest = rest.slice(1);
-      const symbol = program.symbolByCName(
-        ScopeUtils.getTranspiledCName({
-          name: memberName,
-          scopePath: binding.scopePath,
-        }),
-      );
+      const symbol = program.memberOf(binding.scopePath, memberName);
       if (symbol?.kind === "variable") binding = { kind: "variable", symbol };
       else if (symbol?.kind === "scope")
         binding = { kind: "scope", scopePath: symbol.cnxScopedName };

@@ -313,13 +313,6 @@ class ScopeJoinSites {
       why: ScopeJoinSites.RECOMPUTE,
     },
     {
-      file: "src/cnx/TRANSPILE/1-Analyze/helpers/WrittenBinding.ts",
-      element:
-        "getTranspiledCName({ name: memberName, scopePath: binding.scopePath, })",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
       file: "src/cnx/TRANSPILE/1-Analyze/InitializationAnalyzer.ts",
       element: 'qualifyInScope(declaration.name, "")',
       kind: "recompute",
