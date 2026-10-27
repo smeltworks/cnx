@@ -177,7 +177,7 @@ function convertFunction(
   func: import("../cnx/types/symbols/IFunctionSymbol").default,
 ): ISymbolInfo[] {
   const result: ISymbolInfo[] = [];
-  const cName = ScopeUtils.getTranspiledCName(func);
+  const cName = func.fullyQualifiedCName;
   const parent = ScopeUtils.leafOf(func.scopePath) || undefined;
   const returnType = TypeResolver.getTypeName(func.returnType);
 

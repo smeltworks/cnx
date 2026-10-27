@@ -526,12 +526,6 @@ class ScopeJoinSites {
     },
     {
       file: "src/lib/parseWithSymbols.ts",
-      element: "getTranspiledCName(func)",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
-      file: "src/lib/parseWithSymbols.ts",
       element: "getTranspiledCName(register)",
       kind: "recompute",
       why: ScopeJoinSites.RECOMPUTE,
