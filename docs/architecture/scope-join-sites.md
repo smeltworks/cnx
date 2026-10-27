@@ -36,54 +36,52 @@ nobody has adjudicated, and on a judgement that no longer matches any site,
 so a scope join added in any pass is red until someone argues it is not
 one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 
-| File                                                                          | Expression                                                                    | Sites  | Kind         |
-| ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ------ | ------------ |
-| `src/cnx/PARSE/3-Declare/cnx/collectors/BitmapCollector.ts`                   | `identityOf({ name, scopePath })`                                             | 1      | encoder      |
-| `src/cnx/PARSE/3-Declare/cnx/collectors/CallbackUseCollector.ts`              | `qualifyInScope(members[0], scopePath)`                                       | 1      | encoder      |
-| `src/cnx/PARSE/3-Declare/cnx/collectors/CallbackUseCollector.ts`              | `qualifyInScope(named, scopePath)`                                            | 1      | encoder      |
-| `src/cnx/PARSE/3-Declare/cnx/collectors/CallbackUseCollector.ts`              | `qualifyPathInScope([primary.name, ...members], "")`                          | 1      | encoder      |
-| `src/cnx/PARSE/3-Declare/cnx/collectors/CallbackUseCollector.ts`              | `qualifyPathInScope(members, "")`                                             | 1      | encoder      |
-| `src/cnx/PARSE/3-Declare/cnx/collectors/CallbackUseCollector.ts`              | `qualifyPathInScope(path, "")`                                                | 2      | encoder      |
-| `src/cnx/PARSE/3-Declare/cnx/collectors/EnumCollector.ts`                     | `identityOf({ name, scopePath })`                                             | 1      | encoder      |
-| `src/cnx/PARSE/3-Declare/cnx/collectors/FunctionCollector.ts`                 | `identityOf({ name, scopePath })`                                             | 1      | encoder      |
-| `src/cnx/PARSE/3-Declare/cnx/collectors/LexicalScopeCollector.ts`             | `getTranspiledCName({ name: fn.name, scopePath })`                            | 1      | encoder      |
-| `src/cnx/PARSE/3-Declare/cnx/collectors/ParameterListCollector.ts`            | `qualifyInScope(inner.declaration.name, scopePath)`                           | 1      | encoder      |
-| `src/cnx/PARSE/3-Declare/cnx/collectors/RegisterCollector.ts`                 | `identityOf({ name, scopePath })`                                             | 1      | encoder      |
-| `src/cnx/PARSE/3-Declare/cnx/collectors/StructCollector.ts`                   | `identityOf({ name, scopePath })`                                             | 1      | encoder      |
-| `src/cnx/PARSE/3-Declare/cnx/collectors/VariableCollector.ts`                 | `identityOf({ name, scopePath })`                                             | 1      | encoder      |
-| `src/cnx/PARSE/3-Declare/cnx/index.ts`                                        | `qualifyInScope(typeName, scopePath)`                                         | 1      | encoder      |
-| `src/cnx/PARSE/3-Declare/cnx/utils/MemberSymbolBase.ts`                       | `identityOf({ name: input.name, scopePath: input.parentScopedName, })`        | 1      | encoder      |
-| `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                                    | `fromSourceName(current.type.name)`                                           | 2      | written-name |
-| `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                                    | `fromSourceName(parts.slice(1))`                                              | 1      | written-name |
-| `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                                    | `fromSourceName(qualified)`                                                   | 1      | written-name |
-| `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                                    | `fromSourceName(type.name)`                                                   | 2      | written-name |
-| `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                                    | `fromSourceName([functionCName, name, suffix === 1 ? null : String(suffix)])` | 1      | owner-c-name |
-| `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                                    | `fromSourceName([functionCName, name])`                                       | 1      | owner-c-name |
-| `src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts`                    | `fromSourceName(text)`                                                        | 1      | written-name |
-| `src/cnx/TRANSPILE/1-Analyze/SwitchStatementAnalyzer.ts`                      | `fromSourceName([head, ...label.path.slice(1)])`                              | 1      | owner-c-name |
-| `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts`                                     | `fromSourceName(identifiers)`                                                 | 1      | written-name |
-| `src/cnx/TRANSPILE/2-Plan/TypeValidator.ts`                                   | `isInScope(identifier, currentScopePath)`                                     | 1      | scope-path   |
-| `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts` | `fromSourceName(label.parts)`                                                 | 1      | written-name |
-| `src/cnx/utils/LengthProperty.ts`                                             | `fromSourceName(type.name)`                                                   | 2      | written-name |
-| `src/cnx/utils/OperandTyper.ts`                                               | `fromSourceName(sourceName)`                                                  | 1      | written-name |
-| `src/cnx/utils/QualifiedCName.ts`                                             | `prefixFor(scopePath)`                                                        | 1      | encoder      |
-| `src/cnx/utils/QualifiedCName.ts`                                             | `QualifiedCName.SEPARATOR`                                                    | 5      | encoder      |
-| `src/cnx/utils/QualifiedNameGenerator.ts`                                     | `getTranspiledCName(func)`                                                    | 1      | encoder      |
-| `src/cnx/utils/QualifiedNameGenerator.ts`                                     | `qualifyInScope(funcName, scopePath)`                                         | 2      | encoder      |
-| `src/cnx/utils/ScopeUtils.ts`                                                 | `fromSourceName([scopePath, ...path])`                                        | 1      | encoder      |
-| `src/cnx/utils/ScopeUtils.ts`                                                 | `fromSourceName([symbol.scopePath, symbol.name])`                             | 1      | encoder      |
-| `src/cnx/utils/ScopeUtils.ts`                                                 | `fromSourceName(qualified)`                                                   | 1      | encoder      |
-| `src/cnx/utils/ScopeUtils.ts`                                                 | `getCnxScopedName(symbol)`                                                    | 1      | encoder      |
-| `src/cnx/utils/ScopeUtils.ts`                                                 | `getTranspiledCName({ name: head, scopePath })`                               | 1      | encoder      |
-| `src/cnx/utils/ScopeUtils.ts`                                                 | `getTranspiledCName({ name: typeName, scopePath, })`                          | 1      | encoder      |
-| `src/cnx/utils/ScopeUtils.ts`                                                 | `getTranspiledCName(symbol)`                                                  | 1      | encoder      |
-| `src/cnx/utils/ScopeUtils.ts`                                                 | `identityOf({ name, scopePath: parentPath })`                                 | 1      | encoder      |
-| `src/cnx/utils/ScopeUtils.ts`                                                 | `qualifyPathInScope([name], scopePath)`                                       | 1      | encoder      |
-| `src/cnx/utils/TypeNameLadder.ts`                                             | `fromSourceName(type.path)`                                                   | 1      | written-name |
-| `src/cnx/utils/TypeNameLadder.ts`                                             | `qualifyInScope(type.name, scopePath)`                                        | 1      | encoder      |
-| **total**                                                                     |                                                                               | **52** |              |
+| File                                                               | Expression                                                                    | Sites  | Kind         |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------- | ------ | ------------ |
+| `src/cnx/PARSE/3-Declare/cnx/collectors/BitmapCollector.ts`        | `identityOf({ name, scopePath })`                                             | 1      | encoder      |
+| `src/cnx/PARSE/3-Declare/cnx/collectors/CallbackUseCollector.ts`   | `qualifyInScope(members[0], scopePath)`                                       | 1      | encoder      |
+| `src/cnx/PARSE/3-Declare/cnx/collectors/CallbackUseCollector.ts`   | `qualifyInScope(named, scopePath)`                                            | 1      | encoder      |
+| `src/cnx/PARSE/3-Declare/cnx/collectors/CallbackUseCollector.ts`   | `qualifyPathInScope([primary.name, ...members], "")`                          | 1      | encoder      |
+| `src/cnx/PARSE/3-Declare/cnx/collectors/CallbackUseCollector.ts`   | `qualifyPathInScope(members, "")`                                             | 1      | encoder      |
+| `src/cnx/PARSE/3-Declare/cnx/collectors/CallbackUseCollector.ts`   | `qualifyPathInScope(path, "")`                                                | 2      | encoder      |
+| `src/cnx/PARSE/3-Declare/cnx/collectors/EnumCollector.ts`          | `identityOf({ name, scopePath })`                                             | 1      | encoder      |
+| `src/cnx/PARSE/3-Declare/cnx/collectors/FunctionCollector.ts`      | `identityOf({ name, scopePath })`                                             | 1      | encoder      |
+| `src/cnx/PARSE/3-Declare/cnx/collectors/LexicalScopeCollector.ts`  | `getTranspiledCName({ name: fn.name, scopePath })`                            | 1      | encoder      |
+| `src/cnx/PARSE/3-Declare/cnx/collectors/ParameterListCollector.ts` | `qualifyInScope(inner.declaration.name, scopePath)`                           | 1      | encoder      |
+| `src/cnx/PARSE/3-Declare/cnx/collectors/RegisterCollector.ts`      | `identityOf({ name, scopePath })`                                             | 1      | encoder      |
+| `src/cnx/PARSE/3-Declare/cnx/collectors/StructCollector.ts`        | `identityOf({ name, scopePath })`                                             | 1      | encoder      |
+| `src/cnx/PARSE/3-Declare/cnx/collectors/VariableCollector.ts`      | `identityOf({ name, scopePath })`                                             | 1      | encoder      |
+| `src/cnx/PARSE/3-Declare/cnx/index.ts`                             | `qualifyInScope(typeName, scopePath)`                                         | 1      | encoder      |
+| `src/cnx/PARSE/3-Declare/cnx/utils/MemberSymbolBase.ts`            | `identityOf({ name: input.name, scopePath: input.parentScopedName, })`        | 1      | encoder      |
+| `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                         | `fromSourceName(current.type.name)`                                           | 2      | written-name |
+| `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                         | `fromSourceName(parts.slice(1))`                                              | 1      | written-name |
+| `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                         | `fromSourceName(qualified)`                                                   | 1      | written-name |
+| `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                         | `fromSourceName(type.name)`                                                   | 2      | written-name |
+| `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                         | `fromSourceName([functionCName, name, suffix === 1 ? null : String(suffix)])` | 1      | owner-c-name |
+| `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                         | `fromSourceName([functionCName, name])`                                       | 1      | owner-c-name |
+| `src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts`         | `fromSourceName(text)`                                                        | 1      | written-name |
+| `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts`                          | `fromSourceName(identifiers)`                                                 | 1      | written-name |
+| `src/cnx/TRANSPILE/2-Plan/TypeValidator.ts`                        | `isInScope(identifier, currentScopePath)`                                     | 1      | scope-path   |
+| `src/cnx/utils/LengthProperty.ts`                                  | `fromSourceName(type.name)`                                                   | 2      | written-name |
+| `src/cnx/utils/OperandTyper.ts`                                    | `fromSourceName(sourceName)`                                                  | 1      | written-name |
+| `src/cnx/utils/QualifiedCName.ts`                                  | `prefixFor(scopePath)`                                                        | 1      | encoder      |
+| `src/cnx/utils/QualifiedCName.ts`                                  | `QualifiedCName.SEPARATOR`                                                    | 5      | encoder      |
+| `src/cnx/utils/QualifiedNameGenerator.ts`                          | `getTranspiledCName(func)`                                                    | 1      | encoder      |
+| `src/cnx/utils/QualifiedNameGenerator.ts`                          | `qualifyInScope(funcName, scopePath)`                                         | 2      | encoder      |
+| `src/cnx/utils/ScopeUtils.ts`                                      | `fromSourceName([scopePath, ...path])`                                        | 1      | encoder      |
+| `src/cnx/utils/ScopeUtils.ts`                                      | `fromSourceName([symbol.scopePath, symbol.name])`                             | 1      | encoder      |
+| `src/cnx/utils/ScopeUtils.ts`                                      | `fromSourceName(qualified)`                                                   | 1      | encoder      |
+| `src/cnx/utils/ScopeUtils.ts`                                      | `getCnxScopedName(symbol)`                                                    | 1      | encoder      |
+| `src/cnx/utils/ScopeUtils.ts`                                      | `getTranspiledCName({ name: head, scopePath })`                               | 1      | encoder      |
+| `src/cnx/utils/ScopeUtils.ts`                                      | `getTranspiledCName({ name: typeName, scopePath, })`                          | 1      | encoder      |
+| `src/cnx/utils/ScopeUtils.ts`                                      | `getTranspiledCName(symbol)`                                                  | 1      | encoder      |
+| `src/cnx/utils/ScopeUtils.ts`                                      | `identityOf({ name, scopePath: parentPath })`                                 | 1      | encoder      |
+| `src/cnx/utils/ScopeUtils.ts`                                      | `qualifyPathInScope([name], scopePath)`                                       | 1      | encoder      |
+| `src/cnx/utils/TypeNameLadder.ts`                                  | `fromSourceName(type.path)`                                                   | 1      | written-name |
+| `src/cnx/utils/TypeNameLadder.ts`                                  | `qualifyInScope(type.name, scopePath)`                                        | 1      | encoder      |
+| **total**                                                          |                                                                               | **50** |              |
 
-52 site(s) across 24 file(s).
+50 site(s) across 22 file(s).
 
 ## Why each site is not a scope join
 
@@ -109,10 +107,8 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `fromSourceName([functionCName, name, suffix === 1 ? null : String(suffix)])`: a local renamed under its function's materialized C name when it hides a file-scope name, with a uniqueness suffix
 - `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `fromSourceName([functionCName, name])`: a local renamed under its function's materialized C name when it hides a file-scope name
 - `src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts` `fromSourceName(text)`: a dotted callback type name as written; `this.` goes through `ScopeUtils.qualifyInScope` instead
-- `src/cnx/TRANSPILE/1-Analyze/SwitchStatementAnalyzer.ts` `fromSourceName([head, ...label.path.slice(1)])`: `head` is the label's first component resolved by `ScopeUtils.typeHeadCName`; the rest is what the author wrote
 - `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts` `fromSourceName(identifiers)`: a qualified type's identifier chain as written
 - `src/cnx/TRANSPILE/2-Plan/TypeValidator.ts` `isInScope(identifier, currentScopePath)`: is a known function declared in the current scope? Handed `currentScopePath`, so the prefix is spelled by `QualifiedCName.prefixFor`
-- `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts` `fromSourceName(label.parts)`: a qualified case label as written (`Motor.State.IDLE`)
 - `src/cnx/utils/LengthProperty.ts` `fromSourceName(type.name)`: a resolved type's dotted name as its C lookup key
 - `src/cnx/utils/OperandTyper.ts` `fromSourceName(sourceName)`: a dotted source name as written, as its C lookup key
 - `src/cnx/utils/QualifiedCName.ts` `prefixFor(scopePath)`: `isInScope` asking the prefix builder for the path it was handed

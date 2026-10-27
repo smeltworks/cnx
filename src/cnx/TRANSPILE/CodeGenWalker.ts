@@ -182,6 +182,7 @@ import ParameterSignatureBuilder from "./3-Render/codegen/helpers/ParameterSigna
 import QualifiedNameGenerator from "../utils/QualifiedNameGenerator";
 import MisraSuppressionUtils from "./3-Render/MisraSuppressionUtils";
 import EnumZeroValue from "../utils/EnumZeroValue";
+import CaseLabelSymbol from "../utils/CaseLabelSymbol";
 import ToolchainRequirementUtils from "../utils/ToolchainRequirementUtils";
 import MainSignature from "../utils/MainSignature";
 import ScopeUtils from "../utils/ScopeUtils";
@@ -3652,7 +3653,16 @@ class CodeGenWalker {
           (name) =>
             typing.program.isScopeTypeVisibleFrom(typing.sourceFile, name),
         );
-        return { kind: "qualified", parts: [head, ...label.path.slice(1)] };
+        const named = CaseLabelSymbol.of(
+          typing.program,
+          head,
+          label.path.slice(1),
+        );
+        invariant(
+          named !== undefined,
+          `2.1 rejects a case label that names nothing ('${label.path.join(".")}')`,
+        );
+        return { kind: "qualified", cName: named.fullyQualifiedCName };
       }
       case "identifier": {
         const resolved = this.resolveCaseConst(

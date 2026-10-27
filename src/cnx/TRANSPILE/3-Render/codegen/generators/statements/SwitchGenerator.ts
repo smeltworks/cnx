@@ -22,7 +22,6 @@ import IGeneratorState from "../IGeneratorState";
 import IGeneratorOutput from "../IGeneratorOutput";
 import IOrchestrator from "../IOrchestrator";
 import TGeneratorFn from "../TGeneratorFn";
-import QualifiedCName from "../../../../../utils/QualifiedCName";
 import invariant from "../../../../../utils/invariant";
 import type IPlannedSwitch from "../../types/IPlannedSwitch";
 import type IPlannedSwitchCase from "../../types/IPlannedSwitchCase";
@@ -72,7 +71,7 @@ function renderCaseLabel(
 ): string {
   switch (label.kind) {
     case "qualified":
-      return QualifiedCName.fromSourceName(label.parts);
+      return label.cName;
     case "identifier":
       // Issue #471: an unqualified member of the switch's enum takes its
       // type prefix. #1322: a bare member the enum does NOT declare is E0424

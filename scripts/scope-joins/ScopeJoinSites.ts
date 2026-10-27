@@ -312,12 +312,6 @@ class ScopeJoinSites {
       why: "a local renamed under its function's materialized C name when it hides a file-scope name",
     },
     {
-      file: "src/cnx/TRANSPILE/1-Analyze/SwitchStatementAnalyzer.ts",
-      element: "fromSourceName([head, ...label.path.slice(1)])",
-      kind: "owner-c-name",
-      why: "`head` is the label's first component resolved by `ScopeUtils.typeHeadCName`; the rest is what the author wrote",
-    },
-    {
       file: "src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts",
       element: "fromSourceName(text)",
       kind: "written-name",
@@ -328,12 +322,6 @@ class ScopeJoinSites {
       element: "fromSourceName(identifiers)",
       kind: "written-name",
       why: "a qualified type's identifier chain as written",
-    },
-    {
-      file: "src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts",
-      element: "fromSourceName(label.parts)",
-      kind: "written-name",
-      why: "a qualified case label as written (`Motor.State.IDLE`)",
     },
     {
       file: "src/cnx/TRANSPILE/2-Plan/TypeValidator.ts",

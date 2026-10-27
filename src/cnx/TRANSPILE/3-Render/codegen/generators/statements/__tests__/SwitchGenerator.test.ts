@@ -122,13 +122,13 @@ describe("SwitchGenerator", () => {
   describe("case labels", () => {
     it.each<[string, TPlannedCaseLabel, string]>([
       [
-        "a qualified enum, in C underscore format",
-        { kind: "qualified", parts: ["State", "IDLE"] },
+        "a qualified label, as the C name it names",
+        { kind: "qualified", cName: "State__IDLE" },
         "State__IDLE",
       ],
       [
-        "a multi-part qualified name",
-        { kind: "qualified", parts: ["Motor", "State", "RUNNING"] },
+        "a scope's enum member, as the C name it names",
+        { kind: "qualified", cName: "Motor__State__RUNNING" },
         "Motor__State__RUNNING",
       ],
       [

@@ -24,7 +24,7 @@
  */
 
 import LengthProperty from "../../utils/LengthProperty";
-import QualifiedCName from "../../utils/QualifiedCName";
+import CaseLabelSymbol from "../../utils/CaseLabelSymbol";
 import ScopeUtils from "../../utils/ScopeUtils";
 import ConstLiteral from "../../utils/ConstLiteral";
 import type TChainRoot from "../../types/TChainRoot";
@@ -360,7 +360,15 @@ class SwitchStatementCheck {
     }
     if (label.kind === "qualified") {
       const head = this.headCName(label.root, label.path[0], label.span);
-      return `member:${QualifiedCName.fromSourceName([head, ...label.path.slice(1)])}`;
+      const named = CaseLabelSymbol.of(
+        this.context.program,
+        head,
+        label.path.slice(1),
+      );
+      // A chain that names nothing is already E0427's; key it as written
+      return named === undefined
+        ? `written:${label.root ?? ""}.${label.path.join(".")}`
+        : `member:${named.fullyQualifiedCName}`;
     }
     return `value:${SwitchStatementCheck.caseLabelValue(label)}`;
   }
