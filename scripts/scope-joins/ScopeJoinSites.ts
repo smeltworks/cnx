@@ -363,12 +363,6 @@ class ScopeJoinSites {
       why: "`join`'s register step: a register member joined to its owner's C name. A scope member's step carries its `fullyQualifiedCName` instead, and no method hands `__` out as a value (#2116)",
     },
     {
-      file: "src/cnx/TRANSPILE/CodeGenWalker.ts",
-      element: "fromSourceName([this.host.state.expectedType, id])",
-      kind: "owner-c-name",
-      why: "a bare member of the expected enum, whose C name keys `knownEnums`",
-    },
-    {
       file: "src/cnx/TRANSPILE/2-Plan/TypeValidator.ts",
       element: "isInScope(identifier, currentScopePath)",
       kind: "scope-path",

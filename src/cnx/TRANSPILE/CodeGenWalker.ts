@@ -3825,10 +3825,14 @@ class CodeGenWalker {
         this.host.state.expectedType,
       );
       if (members?.has(id)) {
-        return QualifiedCName.fromSourceName([
-          this.host.state.expectedType,
-          id,
-        ]);
+        const cName = this.host.state
+          .symbols!.memberCNames.get(this.host.state.expectedType)
+          ?.get(id);
+        invariant(
+          cName !== undefined,
+          `3-Declare names every member of '${this.host.state.expectedType}' (missing '${id}')`,
+        );
+        return cName;
       }
       // Not a member of the expected enum: falls through to the assertion
       // below. Before #1322 this returned null and the bare name was emitted

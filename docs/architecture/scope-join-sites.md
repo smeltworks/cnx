@@ -68,7 +68,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts`                   | `fromSourceName(identifierChain.slice(0, -1))`                                | 1      | written-name |
 | `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts`                   | `QualifiedCName.SEPARATOR`                                                    | 1      | owner-c-name |
 | `src/cnx/TRANSPILE/3-Render/codegen/helpers/PostfixChainBuilder.ts`                       | `join(result, step, memberName)`                                              | 1      | owner-c-name |
-| `src/cnx/TRANSPILE/CodeGenWalker.ts`                                                      | `fromSourceName([this.host.state.expectedType, id])`                          | 1      | owner-c-name |
 | `src/cnx/utils/LengthProperty.ts`                                                         | `fromSourceName(type.name)`                                                   | 2      | written-name |
 | `src/cnx/utils/OperandTyper.ts`                                                           | `fromSourceName(sourceName)`                                                  | 1      | written-name |
 | `src/cnx/utils/QualifiedCName.ts`                                                         | `prefixFor(scopePath)`                                                        | 1      | encoder      |
@@ -86,9 +85,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                                             | `qualifyPathInScope([name], scopePath)`                                       | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                                         | `fromSourceName(type.path)`                                                   | 1      | written-name |
 | `src/cnx/utils/TypeNameLadder.ts`                                                         | `qualifyInScope(type.name, scopePath)`                                        | 1      | encoder      |
-| **total**                                                                                 |                                                                               | **58** |              |
+| **total**                                                                                 |                                                                               | **57** |              |
 
-58 site(s) across 28 file(s).
+57 site(s) across 27 file(s).
 
 ## Why each site is not a scope join
 
@@ -122,7 +121,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts` `fromSourceName(identifierChain.slice(0, -1))`: the access chain as written, as a register lookup key
 - `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts` `QualifiedCName.SEPARATOR`: `join`'s register step: a register member joined to its owner's C name. A scope member's step carries its `fullyQualifiedCName` instead, and no method hands `__` out as a value (#2116)
 - `src/cnx/TRANSPILE/3-Render/codegen/helpers/PostfixChainBuilder.ts` `join(result, step, memberName)`: an assignment target's member step; `MemberSeparatorResolver.step` decided it, so a scope member's step carries its `fullyQualifiedCName` and a register member joins its owner's C name
-- `src/cnx/TRANSPILE/CodeGenWalker.ts` `fromSourceName([this.host.state.expectedType, id])`: a bare member of the expected enum, whose C name keys `knownEnums`
 - `src/cnx/utils/LengthProperty.ts` `fromSourceName(type.name)`: a resolved type's dotted name as its C lookup key
 - `src/cnx/utils/OperandTyper.ts` `fromSourceName(sourceName)`: a dotted source name as written, as its C lookup key
 - `src/cnx/utils/QualifiedCName.ts` `prefixFor(scopePath)`: `isInScope` asking the prefix builder for the path it was handed
