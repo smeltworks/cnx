@@ -427,6 +427,12 @@ describe("Program", () => {
       expect(program.isScopeTypeVisibleFrom("lib.cnx", "Lib__Point")).toBe(
         true,
       );
+      // #2116: the same answer found by identity, carrying the stored C name
+      expect(program.scopeTypeOf("use.cnx", "Lib", "Point")).toBeUndefined();
+      expect(
+        program.scopeTypeOf("lib.cnx", "Lib", "Point")?.fullyQualifiedCName,
+      ).toBe("Lib__Point");
+      expect(program.scopeTypeOf("lib.cnx", "", "Point")).toBeUndefined();
 
       const origin = find(program.symbolsInFile("use.cnx"), "origin");
       expect(SymbolGuards.isFunction(origin)).toBe(true);
