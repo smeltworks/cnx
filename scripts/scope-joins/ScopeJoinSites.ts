@@ -273,7 +273,7 @@ class ScopeJoinSites {
     },
     {
       file: "src/cnx/PARSE/4-Resolve/ConstantNames.ts",
-      element: "fromSourceName(written)",
+      element: 'fromSourceName(written.join("."))',
       kind: "written-name",
       why: "a dotted type no cnx symbol this file sees declares; a declared `Scope.T` reads its `fullyQualifiedCName` through `visibleMember`",
     },

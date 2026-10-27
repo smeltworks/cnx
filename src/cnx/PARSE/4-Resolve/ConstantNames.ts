@@ -167,7 +167,8 @@ class ConstantNames {
       // path no cnx symbol declares is spelled as written
       return (
         facts.visibleMember(written[0], written.slice(1).join("."))
-          ?.fullyQualifiedCName ?? QualifiedCName.fromSourceName(written)
+          ?.fullyQualifiedCName ??
+        QualifiedCName.fromSourceName(written.join("."))
       );
     }
     if (parts[0] === "global") return written[0];
