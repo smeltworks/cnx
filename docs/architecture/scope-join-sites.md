@@ -108,7 +108,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts`                         | `fromSourceName(identifierChain.slice(0, -1))`                                | 1       | written-name |
 | `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts`                         | `QualifiedCName.SEPARATOR`                                                    | 1       | owner-c-name |
 | `src/cnx/TRANSPILE/3-Render/codegen/helpers/PostfixChainBuilder.ts`                             | `join(result, step, memberName)`                                              | 1       | owner-c-name |
-| `src/cnx/TRANSPILE/3-Render/headers/adapters/HeaderSymbolAdapter.ts`                            | `getTranspiledCName(enumSym)`                                                 | 1       | recompute    |
 | `src/cnx/TRANSPILE/3-Render/headers/adapters/HeaderSymbolAdapter.ts`                            | `getTranspiledCName(func)`                                                    | 1       | recompute    |
 | `src/cnx/TRANSPILE/3-Render/headers/adapters/HeaderSymbolAdapter.ts`                            | `getTranspiledCName(register)`                                                | 1       | recompute    |
 | `src/cnx/TRANSPILE/3-Render/headers/adapters/HeaderSymbolAdapter.ts`                            | `getTranspiledCName(struct)`                                                  | 1       | recompute    |
@@ -146,9 +145,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/lib/parseWithSymbols.ts`                                                                   | `getTranspiledCName(register)`                                                | 1       | recompute    |
 | `src/lib/parseWithSymbols.ts`                                                                   | `getTranspiledCName(struct)`                                                  | 1       | recompute    |
 | `src/lib/parseWithSymbols.ts`                                                                   | `getTranspiledCName(variable)`                                                | 1       | recompute    |
-| **total**                                                                                       |                                                                               | **116** |              |
+| **total**                                                                                       |                                                                               | **115** |              |
 
-116 site(s) across 47 file(s).
+115 site(s) across 47 file(s).
 
 ## Why each site is not a scope join
 
@@ -217,7 +216,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts` `fromSourceName(identifierChain.slice(0, -1))`: the access chain as written, as a register lookup key
 - `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts` `QualifiedCName.SEPARATOR`: `join`'s register step: a register member joined to its owner's C name. A scope member goes through `QualifiedNameGenerator.forMember` instead, and no method hands `__` out as a value (#2116)
 - `src/cnx/TRANSPILE/3-Render/codegen/helpers/PostfixChainBuilder.ts` `join(result, step, memberName)`: an assignment target's member step; `MemberSeparatorResolver.step` decided it, so a scope member goes through `QualifiedNameGenerator.forMember` and a register member joins its owner's C name
-- `src/cnx/TRANSPILE/3-Render/headers/adapters/HeaderSymbolAdapter.ts` `getTranspiledCName(enumSym)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/3-Render/headers/adapters/HeaderSymbolAdapter.ts` `getTranspiledCName(func)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/3-Render/headers/adapters/HeaderSymbolAdapter.ts` `getTranspiledCName(register)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/3-Render/headers/adapters/HeaderSymbolAdapter.ts` `getTranspiledCName(struct)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)

@@ -199,7 +199,7 @@ class HeaderSymbolAdapter {
     enumSym: import("../../../../types/symbols/IEnumSymbol").default,
   ): IHeaderSymbol {
     // Get transpiled C name (scope-prefixed)
-    const cName = ScopeUtils.getTranspiledCName(enumSym);
+    const cName = enumSym.fullyQualifiedCName;
     const isGlobal = ScopeUtils.isGlobalScopePath(enumSym.scopePath);
 
     return {
