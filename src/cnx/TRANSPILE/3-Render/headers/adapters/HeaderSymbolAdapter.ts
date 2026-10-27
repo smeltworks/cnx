@@ -183,7 +183,7 @@ class HeaderSymbolAdapter {
     struct: import("../../../../types/symbols/IStructSymbol").default,
   ): IHeaderSymbol {
     // Get transpiled C name (scope-prefixed)
-    const cName = ScopeUtils.getTranspiledCName(struct);
+    const cName = struct.fullyQualifiedCName;
     const isGlobal = ScopeUtils.isGlobalScopePath(struct.scopePath);
 
     return {

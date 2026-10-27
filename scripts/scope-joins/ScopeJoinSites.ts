@@ -436,12 +436,6 @@ class ScopeJoinSites {
     },
     {
       file: "src/cnx/TRANSPILE/3-Render/headers/adapters/HeaderSymbolAdapter.ts",
-      element: "getTranspiledCName(struct)",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
-      file: "src/cnx/TRANSPILE/3-Render/headers/adapters/HeaderSymbolAdapter.ts",
       element: "getTranspiledCName(variable)",
       kind: "recompute",
       why: ScopeJoinSites.RECOMPUTE,
