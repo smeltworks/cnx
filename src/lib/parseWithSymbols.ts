@@ -226,7 +226,7 @@ function convertRegister(
   register: import("../cnx/types/symbols/IRegisterSymbol").default,
 ): ISymbolInfo[] {
   const result: ISymbolInfo[] = [];
-  const cName = ScopeUtils.getTranspiledCName(register);
+  const cName = register.fullyQualifiedCName;
   const parent = ScopeUtils.leafOf(register.scopePath) || undefined;
   const registerId = register.cnxScopedName;
   const registerParentId = getParentId(register.scopePath);
