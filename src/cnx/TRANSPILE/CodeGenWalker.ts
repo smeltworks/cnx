@@ -1957,12 +1957,19 @@ class CodeGenWalker {
     );
   }
 
+  /** The C name 3-Declare gave the member `name` of `scopePath` (#2116) */
+  private declaredCName(scopePath: string, name: string): string {
+    const symbol = this.host.state.program?.memberOf(scopePath, name);
+    invariant(symbol !== undefined, "3-Declare declares every scope member");
+    return symbol.fullyQualifiedCName;
+  }
+
   /** This type's transpiled C name, or null when the header already defines it. */
   private scopeTypeCNameIfAbsentFromHeader(
     name: string,
     declaringScopePath: string,
   ): string | null {
-    const fullName = QualifiedNameGenerator.forMember(declaringScopePath, name);
+    const fullName = this.declaredCName(declaringScopePath, name);
     const definedInHeader =
       this.host.state.sourcePath !== null &&
       PublicInterface.definesTypeInHeader(
