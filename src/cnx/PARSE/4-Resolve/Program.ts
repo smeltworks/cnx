@@ -1109,6 +1109,16 @@ class Program {
       visibleSymbol: (cName) => Program.visibleSymbolIn(facts, file(), cName),
       visibleMember: (scopePath, name) =>
         Program.visibleMemberIn(facts, file(), scopePath, name),
+      scopeTypeOf: (scopePath, name) => {
+        const member = Program.visibleMemberIn(facts, file(), scopePath, name);
+        return member !== undefined &&
+          options.files.isScopeTypeVisibleFrom(
+            file(),
+            member.fullyQualifiedCName,
+          )
+          ? member
+          : undefined;
+      },
       isScopeTypeVisible: (name) =>
         options.files.isScopeTypeVisibleFrom(file(), name),
       get reachesForeignHeader() {

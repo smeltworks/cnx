@@ -3648,8 +3648,12 @@ class CodeGenWalker {
           label.root,
           label.path[0],
           this.host.state.currentScopePath,
-          (name) =>
-            typing.program.isScopeTypeVisibleFrom(typing.sourceFile, name),
+          {
+            memberOf: (scopePath, name) =>
+              typing.program.memberOf(scopePath, name),
+            scopeTypeOf: (scopePath, name) =>
+              typing.program.scopeTypeOf(typing.sourceFile, scopePath, name),
+          },
         );
         const named = CaseLabelSymbol.of(
           typing.program,

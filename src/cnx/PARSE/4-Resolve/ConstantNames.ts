@@ -573,7 +573,12 @@ class ConstantNames {
       root,
       head,
       walk.facts.scopePathAt(walk.at),
-      (name) => walk.facts.isScopeTypeVisible(name),
+      {
+        memberOf: (scopePath, name) =>
+          walk.facts.visibleMember(scopePath, name),
+        scopeTypeOf: (scopePath, name) =>
+          walk.facts.scopeTypeOf(scopePath, name),
+      },
     );
     const symbol = walk.facts.visibleSymbol(cName);
     if (symbol?.kind === "enum" && ConstantNames.namesMember(symbol, rest)) {

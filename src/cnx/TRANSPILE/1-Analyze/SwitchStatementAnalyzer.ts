@@ -278,7 +278,11 @@ class SwitchStatementCheck {
       root,
       name,
       OperandTyper.scopePathAt(at, this.context),
-      (qualified) => program.isScopeTypeVisibleFrom(sourceFile, qualified),
+      {
+        memberOf: (scopePath, member) => program.memberOf(scopePath, member),
+        scopeTypeOf: (scopePath, member) =>
+          program.scopeTypeOf(sourceFile, scopePath, member),
+      },
     );
   }
 

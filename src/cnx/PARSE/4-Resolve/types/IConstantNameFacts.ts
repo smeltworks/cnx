@@ -31,6 +31,8 @@ interface IConstantNameFacts {
    * path and name rather than an encoded C name (#2116).
    */
   visibleMember(scopePath: string, name: string): TSymbol | undefined;
+  /** The scope type a bare `name` in `scopePath` binds to here (ADR-057) */
+  scopeTypeOf(scopePath: string, name: string): TSymbol | undefined;
   /** Whether a qualified cnx type name is a scope type this file can see */
   isScopeTypeVisible(qualifiedName: string): boolean;
   /** A const's settled value, or why it has none; undefined until it settles */

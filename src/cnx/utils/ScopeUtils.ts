@@ -9,6 +9,7 @@ import type TVisibility from "../types/TVisibility";
 import ESourceLanguage from "./types/ESourceLanguage";
 import QualifiedCName from "./QualifiedCName";
 import UNSET_SOURCE_SPAN from "../types/UNSET_SOURCE_SPAN";
+import type ITypeHeadLookup from "./types/ITypeHeadLookup";
 
 class ScopeUtils {
   // ============================================================================
@@ -255,15 +256,20 @@ class ScopeUtils {
     root: TChainRoot,
     head: string,
     scopePath: string,
-    isScopeTypeVisible: (qualifiedName: string) => boolean,
+    types: ITypeHeadLookup,
   ): string {
+    // #2116: each spelling reads the C name 3-Declare stored on the type it
+    // finds; only a `this.X` no symbol declares is spelled as written
     if (root === "this") {
-      return ScopeUtils.getTranspiledCName({ name: head, scopePath });
+      return (
+        types.memberOf(scopePath, head)?.fullyQualifiedCName ??
+        ScopeUtils.getTranspiledCName({ name: head, scopePath })
+      );
     }
     if (root === "global") {
       return head;
     }
-    return ScopeUtils.qualifyScopeType(head, scopePath, isScopeTypeVisible);
+    return types.scopeTypeOf(scopePath, head)?.fullyQualifiedCName ?? head;
   }
 
   /**
