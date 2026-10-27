@@ -11,13 +11,13 @@
  * 7. Per-field struct tracking
  */
 
+import ScopeUtils from "../../utils/ScopeUtils";
 import LengthProperty from "../../utils/LengthProperty";
 import ProgramExpressions from "../../utils/ProgramExpressions";
 import type ISourceSpan from "../../types/ISourceSpan";
 import IInitializationError from "./types/IInitializationError";
 import IDeclarationInfo from "./types/IDeclarationInfo";
 import ESourceLanguage from "../../utils/types/ESourceLanguage";
-import ScopeUtils from "../../utils/ScopeUtils";
 import ExpressionShape from "../../utils/ExpressionShape";
 import StatementChildren from "../../utils/StatementChildren";
 import StatementNodes from "../../utils/StatementNodes";
@@ -461,11 +461,18 @@ class InitializationAnalyzer {
       } else if (declaration.kind === "variableDeclaration") {
         this._declareMember(
           declaration,
-          ScopeUtils.qualifyInScope(declaration.name, ""),
+          this._declaredCName("", declaration.name),
           true,
         );
       }
     }
+  }
+
+  /** The C name 3-Declare gave the variable `name` in `scopePath` (#2116) */
+  private _declaredCName(scopePath: string, name: string): string {
+    const symbol = this.context.program.memberOf(scopePath, name);
+    invariant(symbol !== undefined, "3-Declare declares every variable");
+    return symbol.fullyQualifiedCName;
   }
 
   /** One scope block's variables, initialized when the block assigns them */
