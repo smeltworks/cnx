@@ -76,7 +76,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/TRANSPILE/1-Analyze/SwitchStatementAnalyzer.ts`                                        | `qualifyPathInScope(label.path.slice(1), scopePath)`                          | 1      | recompute    |
 | `src/cnx/TRANSPILE/1-Analyze/UndeclaredTypeAnalyzer.ts`                                         | `getCnxScopedName({ name: type.name, scopePath: scope })`                     | 1      | recompute    |
 | `src/cnx/TRANSPILE/1-Analyze/UndeclaredTypeAnalyzer.ts`                                         | `getCnxScopedName({ name: typeName, scopePath: scope })`                      | 1      | recompute    |
-| `src/cnx/TRANSPILE/1-Analyze/UndeclaredTypeAnalyzer.ts`                                         | `qualifyInScope(typeName, scope)`                                             | 1      | recompute    |
 | `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts`                                                       | `forMember(declaringScopePath, declaration.name)`                             | 1      | recompute    |
 | `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts`                                                       | `fromSourceName(identifiers)`                                                 | 1      | written-name |
 | `src/cnx/TRANSPILE/2-Plan/TypeValidator.ts`                                                     | `forMember(currentScopePath, identifier)`                                     | 1      | recompute    |
@@ -121,9 +120,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                                                   | `qualifyPathInScope([name], scopePath)`                                       | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `fromSourceName(type.path)`                                                   | 1      | written-name |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `qualifyInScope(type.name, scopePath)`                                        | 1      | recompute    |
-| **total**                                                                                       |                                                                               | **88** |              |
+| **total**                                                                                       |                                                                               | **87** |              |
 
-88 site(s) across 38 file(s).
+87 site(s) across 38 file(s).
 
 ## Why each site is not a scope join
 
@@ -160,7 +159,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/TRANSPILE/1-Analyze/SwitchStatementAnalyzer.ts` `qualifyPathInScope(label.path.slice(1), scopePath)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/1-Analyze/UndeclaredTypeAnalyzer.ts` `getCnxScopedName({ name: type.name, scopePath: scope })`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/1-Analyze/UndeclaredTypeAnalyzer.ts` `getCnxScopedName({ name: typeName, scopePath: scope })`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
-- `src/cnx/TRANSPILE/1-Analyze/UndeclaredTypeAnalyzer.ts` `qualifyInScope(typeName, scope)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts` `forMember(declaringScopePath, declaration.name)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts` `fromSourceName(identifiers)`: a qualified type's identifier chain as written
 - `src/cnx/TRANSPILE/2-Plan/TypeValidator.ts` `forMember(currentScopePath, identifier)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)

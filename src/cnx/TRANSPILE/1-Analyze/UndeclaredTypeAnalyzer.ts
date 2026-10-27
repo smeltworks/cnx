@@ -245,6 +245,7 @@ class UndeclaredTypeAnalyzer {
     return UndeclaredTypeAnalyzer._eitherSpelling(
       typeName,
       scope,
+      this.context.program,
       this.context.symbols,
       this.context.symbolTable,
       (name, fileSymbols, table) =>
@@ -271,6 +272,7 @@ class UndeclaredTypeAnalyzer {
     return UndeclaredTypeAnalyzer._eitherSpelling(
       typeName,
       scope,
+      this.context.program,
       // Reached only after `isVisibleType` returned false, which requires a
       // symbol view -- see its guard.
       this.context.symbols,
@@ -292,6 +294,7 @@ class UndeclaredTypeAnalyzer {
   private static _eitherSpelling(
     typeName: string,
     scope: string,
+    program: Pick<IProgram, "memberOf">,
     symbols: ICodeGenSymbols,
     symbolTable: IResolvedSymbols,
     test: (
@@ -300,11 +303,12 @@ class UndeclaredTypeAnalyzer {
       symbolTable: IResolvedSymbols,
     ) => boolean,
   ): boolean {
-    if (scope) {
-      const qualified = ScopeUtils.qualifyInScope(typeName, scope);
-      if (test(qualified, symbols, symbolTable)) {
-        return true;
-      }
+    const member = scope ? program.memberOf(scope, typeName) : undefined;
+    if (
+      member !== undefined &&
+      test(member.fullyQualifiedCName, symbols, symbolTable)
+    ) {
+      return true;
     }
 
     return test(typeName, symbols, symbolTable);
