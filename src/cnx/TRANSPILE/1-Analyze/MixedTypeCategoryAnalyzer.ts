@@ -383,7 +383,10 @@ class MixedTypeCategoryAnalyzer {
   public analyze(program: IProgramSyntax): IMixedTypeCategoryError[] {
     this.errors = [];
     const check = new MixedCategoryCheck(this, this.context);
-    const expressions = EnumMemberValue.expressions(program);
+    const expressions = EnumMemberValue.expressions(
+      program,
+      this.context.program,
+    );
 
     // Levels are met outermost first; checked innermost first, so a level
     // that is an operand of another has its category when that one asks

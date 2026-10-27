@@ -8,10 +8,10 @@
  */
 
 import DeclarationParts from "../../utils/DeclarationParts";
-import ScopeUtils from "../../utils/ScopeUtils";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import type TExpression from "../../types/syntax/TExpression";
 import type IOperandType from "../../types/IOperandType";
+import type IProgram from "../../types/IProgram";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TDeclarationSyntax from "../../types/syntax/TDeclarationSyntax";
 import type TSyntaxPart from "../../types/syntax/TSyntaxPart";
@@ -28,24 +28,32 @@ class EnumMemberValue {
    * values it is part of, or null -- through scopes, where `Perm` in
    * `scope Motor` is `Motor__Perm`.
    */
-  private static parts(program: IProgramSyntax): readonly TEnumPart[] {
+  private static parts(
+    program: IProgramSyntax,
+    declared: Pick<IProgram, "memberOf">,
+  ): readonly TEnumPart[] {
     return program.declarations.flatMap((member) =>
-      EnumMemberValue.partsOf(member.declaration, ""),
+      EnumMemberValue.partsOf(member.declaration, "", declared),
     );
   }
 
   /** Every expression node, outermost first, with its part's enum (see parts) */
-  static expressions(program: IProgramSyntax): readonly TEnumExpression[] {
-    return EnumMemberValue.parts(program).flatMap(([part, enumBeingDeclared]) =>
-      ExpressionNodes.of(part).map(
-        (expr): TEnumExpression => [expr, enumBeingDeclared],
-      ),
+  static expressions(
+    program: IProgramSyntax,
+    declared: Pick<IProgram, "memberOf">,
+  ): readonly TEnumExpression[] {
+    return EnumMemberValue.parts(program, declared).flatMap(
+      ([part, enumBeingDeclared]) =>
+        ExpressionNodes.of(part).map(
+          (expr): TEnumExpression => [expr, enumBeingDeclared],
+        ),
     );
   }
 
   private static partsOf(
     declaration: TDeclarationSyntax,
     scopePath: string,
+    declared: Pick<IProgram, "memberOf">,
   ): readonly TEnumPart[] {
     if (declaration.kind === "scope") {
       const path =
@@ -53,12 +61,13 @@ class EnumMemberValue {
           ? declaration.name
           : `${scopePath}.${declaration.name}`;
       return declaration.members.flatMap((member) =>
-        EnumMemberValue.partsOf(member.declaration, path),
+        EnumMemberValue.partsOf(member.declaration, path, declared),
       );
     }
     const enumBeingDeclared =
       declaration.kind === "enum"
-        ? ScopeUtils.qualifyInScope(declaration.name, scopePath)
+        ? (declared.memberOf(scopePath, declaration.name)
+            ?.fullyQualifiedCName ?? null)
         : null;
     return DeclarationParts.of(declaration).map(
       (part): TEnumPart => [part, enumBeingDeclared],
