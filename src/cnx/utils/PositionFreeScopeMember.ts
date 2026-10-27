@@ -26,7 +26,7 @@ class PositionFreeScopeMember {
     members: ReadonlySet<string> | undefined,
     scopePath: string,
     name: string,
-    program: Pick<IProgram, "symbolByCName">,
+    program: Pick<IProgram, "memberOf">,
   ): boolean {
     if (!(members?.has(name) ?? false)) {
       return false;

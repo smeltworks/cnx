@@ -1501,14 +1501,22 @@ class OperandTyper {
         return t ? { k: "value", t, registerMember: null } : UNKNOWN;
       }
       case "function":
-        return { k: "function", cName, returnType: symbol.returnType };
+        return {
+          k: "function",
+          cName: symbol.fullyQualifiedCName,
+          returnType: symbol.returnType,
+        };
       case "enum":
-        return { k: "enumType", name: cName };
+        return { k: "enumType", name: symbol.fullyQualifiedCName };
       case "register":
-        return { k: "register", name: cName };
+        return { k: "register", name: symbol.fullyQualifiedCName };
       default:
         break;
     }
+    // A scope declares no member of the name, so no type answers it either
+    const cName =
+      symbol?.fullyQualifiedCName ?? (scopePath === "" ? name : null);
+    if (cName === null) return UNKNOWN;
     // #1975 review: `Geo.Box`, `this.P`, `global.Point` name a type as a bare
     // `Point` does, so they answer its length properties alike
     const type = OperandTyper.namedTypeOf(cName, ctx);
