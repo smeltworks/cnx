@@ -2203,15 +2203,27 @@ class CodeGenWalker {
     declaringScopePath: string,
   ): IPlannedRegister {
     const baseAddress = this.renderExpression(register.address);
+    const symbol = this.host.state.program?.memberOf(
+      declaringScopePath,
+      register.name,
+    );
+    invariant(symbol?.kind === "register", "3-Declare declares every register");
     return {
-      name: this.declaredCName(declaringScopePath, register.name),
+      name: symbol.fullyQualifiedCName,
       baseAddress,
-      members: register.members.map((member) => ({
-        name: member.name,
-        cType: this.renderType(member.type),
-        access: member.access,
-        offset: this.renderExpression(member.offset),
-      })),
+      members: register.members.map((member) => {
+        const memberSymbol = symbol.members.get(member.name);
+        invariant(
+          memberSymbol !== undefined,
+          "3-Declare declares every register member",
+        );
+        return {
+          cName: memberSymbol.fullyQualifiedCName,
+          cType: this.renderType(member.type),
+          access: member.access,
+          offset: this.renderExpression(member.offset),
+        };
+      }),
     };
   }
 

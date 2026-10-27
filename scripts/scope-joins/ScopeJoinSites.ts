@@ -333,12 +333,6 @@ class ScopeJoinSites {
       why: "a qualified type's identifier chain as written",
     },
     {
-      file: "src/cnx/TRANSPILE/3-Render/codegen/generators/declarationGenerators/RegisterMacroGenerator.ts",
-      element: "fromSourceName([prefix, member.name])",
-      kind: "owner-c-name",
-      why: "register member macro; `prefix` is the register's C name, built from its declaring PATH by `RegisterGenerator`",
-    },
-    {
       file: "src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts",
       element: "fromSourceName([ctx.result, ctx.memberName])",
       kind: "owner-c-name",

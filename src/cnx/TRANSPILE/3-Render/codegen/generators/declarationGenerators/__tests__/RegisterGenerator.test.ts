@@ -45,23 +45,35 @@ const C_TYPES: Record<string, string> = {
   i64: "int64_t",
 };
 
-/** A planned member, with the C type the ladder resolved unless one is given. */
+/** A member as written, before 3-Declare names it. */
+type TMemberSpec = Omit<IPlannedRegisterMember, "cName"> & {
+  readonly name: string;
+};
+
+/** A register as written, before 3-Declare names it. */
+interface IRegisterSpec {
+  readonly name: string;
+  readonly baseAddress: string;
+  readonly members: readonly TMemberSpec[];
+}
+
+/** A member, with the C type the ladder resolved unless one is given. */
 function member(
   name: string,
   type: string,
   access: IPlannedRegisterMember["access"],
   offset: string,
   cType: string = C_TYPES[type] ?? type,
-): IPlannedRegisterMember {
+): TMemberSpec {
   return { name, cType, access, offset };
 }
 
-/** A planned register. */
+/** A register. */
 function planned(
   name: string,
   baseAddress: string,
-  members: IPlannedRegisterMember[],
-): IPlannedRegister {
+  members: TMemberSpec[],
+): IRegisterSpec {
   return { name, baseAddress, members };
 }
 
@@ -98,10 +110,19 @@ beforeEach(() => {
   state = new TranspileState();
 });
 
-/** Run the generator on a plan whose name carries 3-Declare's `prefix` (#2116). */
-function generate(prefix: string, register: IPlannedRegister) {
+/** Run the generator on the plan, named as 3-Declare names it under `prefix` (#2116). */
+function generate(prefix: string, register: IRegisterSpec) {
+  const name = `${prefix}${register.name}`;
+  const plan: IPlannedRegister = {
+    name,
+    baseAddress: register.baseAddress,
+    members: register.members.map(({ name: memberName, ...rest }) => ({
+      ...rest,
+      cName: `${name}__${memberName}`,
+    })),
+  };
   return generateRegister(
-    { ...register, name: `${prefix}${register.name}` },
+    plan,
     createMockInput(),
     createMockState(),
     createMockOrchestrator(),
