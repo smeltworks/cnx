@@ -41,7 +41,6 @@ import ICodeGenSymbols from "../../types/ICodeGenSymbols";
 import IUndeclaredTypeError from "./types/IUndeclaredTypeError";
 import NameExistence from "../../PARSE/3-Declare/NameExistence";
 import type IResolvedSymbols from "../../types/IResolvedSymbols";
-import QualifiedCName from "../../utils/QualifiedCName";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionChildren from "../../utils/ExpressionChildren";
 import type IProgram from "../../types/IProgram";
@@ -86,9 +85,12 @@ class UndeclaredTypeWalk {
         this.analyzer.checkQualifiedUse(type.text, type.name, type.span);
         return;
       case "qualified":
-        this.analyzer.checkQualifiedUse(
+        // #2116: the member the path names, by identity, read for the
+        // cnxScopedName 3-Declare stored -- not the path re-spelled to match it
+        this.analyzer.checkScopedUse(
           type.text,
-          QualifiedCName.fromSourceParts(type.path),
+          type.path.slice(1).join("."),
+          type.path[0],
           type.span,
         );
         return;
