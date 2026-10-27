@@ -315,12 +315,6 @@ class ScopeJoinSites {
       why: "`qualifyPathInScope` -- the one implementation the scope-qualifying callers route to; its parameter IS the enclosing path",
     },
     {
-      file: "src/cnx/utils/ScopeUtils.ts",
-      element: "fromSourceName([symbol.scopePath, symbol.name])",
-      kind: "encoder",
-      why: "`getTranspiledCName` -- the single encoder. The symbol carries its whole enclosing path (#1298)",
-    },
-    {
       file: "src/cnx/utils/TypeNameLadder.ts",
       element: "fromSourceName(type.path)",
       kind: "written-name",

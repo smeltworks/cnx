@@ -208,7 +208,7 @@ class ScopeUtils {
     name: string;
     scopePath: string;
   }): string {
-    return QualifiedCName.fromSourceName([symbol.scopePath, symbol.name]);
+    return ScopeUtils.qualifyPathInScope([symbol.name], symbol.scopePath);
   }
 
   /**
