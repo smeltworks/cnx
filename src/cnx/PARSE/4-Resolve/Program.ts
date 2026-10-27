@@ -39,7 +39,6 @@ import type TRunTarget from "../../types/TRunTarget";
 import invariant from "../../utils/invariant";
 import emittedLocalName from "../../utils/emittedLocalName";
 import type IFunctionSymbol from "../../types/symbols/IFunctionSymbol";
-import ScopeUtils from "../../utils/ScopeUtils";
 import type TDefinedAt from "../../utils/types/TDefinedAt";
 import DefinitionPoint from "../../utils/DefinitionPoint";
 import type IScopeSymbol from "../../types/symbols/IScopeSymbol";
@@ -1623,12 +1622,28 @@ class Program {
         ? undefined
         : symbol;
     };
-    const declared = (cName: string): TValueBinding | null => {
-      const symbol = visibleSymbol(cName);
+    const visibleMember = (
+      memberScopePath: string,
+      memberName: string,
+    ): TSymbol | undefined => {
+      const symbol = Program.visibleMemberIn(
+        facts,
+        sourceFile,
+        memberScopePath,
+        memberName,
+      );
+      return symbol !== undefined &&
+        Program.closesAfter(symbol, sourceFile, at, isDefinedAt)
+        ? undefined
+        : symbol;
+    };
+    const boundTo = (symbol: TSymbol | undefined): TValueBinding | null => {
       if (symbol?.kind === "variable") return { kind: "variable", symbol };
       if (symbol?.kind === "function") return { kind: "function", symbol };
       return null;
     };
+    const declared = (cName: string): TValueBinding | null =>
+      boundTo(visibleSymbol(cName));
     const scope = (): TValueBinding | null =>
       facts.registry?.getScope(name)
         ? { kind: "scope", scopePath: name }
@@ -1640,19 +1655,18 @@ class Program {
     // whatever its kind. A type binds no value, but it still hides a global
     // of the name; the step used to accept variables alone, so a scope
     // function let the global answer while emission wrote the function.
-    const memberCName = ScopeUtils.getTranspiledCName({ name, scopePath });
-    const isMember =
-      scopePath !== "" && visibleSymbol(memberCName) !== undefined;
+    const member =
+      scopePath === "" ? undefined : visibleMember(scopePath, name);
     if (root === "this") {
-      return isMember ? declared(memberCName) : null;
+      return boundTo(member);
     }
     if (root === "global") {
       // #1668 review: a header's name too. `global.` is how a scope reaches
       // one its own member shadows, and binding nothing left it untyped.
       return declared(name) ?? scope() ?? foreign();
     }
-    if (isMember) {
-      return declared(memberCName);
+    if (member !== undefined) {
+      return boundTo(member);
     }
     return declared(name) ?? scope() ?? foreign();
   }

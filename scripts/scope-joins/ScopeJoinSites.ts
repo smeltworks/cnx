@@ -246,12 +246,6 @@ class ScopeJoinSites {
       why: ScopeJoinSites.RECOMPUTE,
     },
     {
-      file: "src/cnx/PARSE/4-Resolve/Program.ts",
-      element: "getTranspiledCName({ name, scopePath })",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
       file: "src/cnx/TRANSPILE/1-Analyze/EnumMemberValue.ts",
       element: "qualifyInScope(declaration.name, scopePath)",
       kind: "recompute",
