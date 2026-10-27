@@ -42,6 +42,7 @@ function createMockSymbols(
 
     // Enum information
     enumMembers: new Map(),
+    memberCNames: new Map(),
 
     // Bitmap information
     bitmapFields: new Map(),

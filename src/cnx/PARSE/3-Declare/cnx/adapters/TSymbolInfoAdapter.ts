@@ -34,6 +34,7 @@ interface IRegisterMaps {
   registerBaseAddresses: Map<string, TExpression>;
   registerMemberOffsets: Map<string, TExpression>;
   registerMemberCTypes: Map<string, string>;
+  memberCNames: Map<string, Map<string, string>>;
 }
 
 /**
@@ -72,6 +73,7 @@ class TSymbolInfoAdapter {
 
     // === Enum Information ===
     const enumMembers = new Map<string, Map<string, number>>();
+    const memberCNames = new Map<string, Map<string, string>>();
 
     // === Bitmap Information ===
     const bitmapFields = new Map<string, Map<string, IBitmapFieldLayout>>();
@@ -102,7 +104,12 @@ class TSymbolInfoAdapter {
           break;
 
         case "enum":
-          TSymbolInfoAdapter.processEnum(symbol, knownEnums, enumMembers);
+          TSymbolInfoAdapter.processEnum(
+            symbol,
+            knownEnums,
+            enumMembers,
+            memberCNames,
+          );
           break;
 
         case "bitmap":
@@ -132,6 +139,7 @@ class TSymbolInfoAdapter {
             registerBaseAddresses,
             registerMemberOffsets,
             registerMemberCTypes,
+            memberCNames,
           });
           break;
 
@@ -167,6 +175,7 @@ class TSymbolInfoAdapter {
 
       // Enum info
       enumMembers,
+      memberCNames,
 
       // Bitmap info
       bitmapFields,
@@ -236,6 +245,7 @@ class TSymbolInfoAdapter {
     enumSym: IEnumSymbol,
     knownEnums: Set<string>,
     enumMembers: Map<string, Map<string, number>>,
+    memberCNames: Map<string, Map<string, string>>,
   ): void {
     const cName = TSymbolInfoAdapter.getTranspiledCName(enumSym);
     knownEnums.add(cName);
@@ -253,6 +263,19 @@ class TSymbolInfoAdapter {
           member.value === null ? [] : [[name, member.value] as const],
         ),
       ),
+    );
+    memberCNames.set(
+      cName,
+      TSymbolInfoAdapter.memberCNamesOf(enumSym.members.values()),
+    );
+  }
+
+  /** Each member's name to the C name 3-Declare gave it (#2116) */
+  private static memberCNamesOf(
+    members: Iterable<{ name: string; fullyQualifiedCName: string }>,
+  ): Map<string, string> {
+    return new Map(
+      [...members].map((member) => [member.name, member.fullyQualifiedCName]),
     );
   }
 
@@ -324,6 +347,10 @@ class TSymbolInfoAdapter {
     const cName = TSymbolInfoAdapter.getTranspiledCName(register);
     maps.knownRegisters.add(cName);
     maps.registerBaseAddresses.set(cName, register.baseAddress);
+    maps.memberCNames.set(
+      cName,
+      TSymbolInfoAdapter.memberCNamesOf(register.members.values()),
+    );
 
     // Check if this is a scoped register (has non-global scope)
     const isScoped = !ScopeUtils.isGlobalScopePath(register.scopePath);

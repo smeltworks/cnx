@@ -34,6 +34,7 @@ interface IMergeAccumulator {
   readonly knownEnums: Set<string>;
   readonly knownScopes: Set<string>;
   readonly enumMembers: Map<string, Map<string, number>>;
+  readonly memberCNames: Map<string, Map<string, string>>;
   readonly functionReturnTypes: Map<string, string>;
   readonly scopeMemberVisibility: Map<
     string,
@@ -93,6 +94,7 @@ class VisibleSymbols {
     const mergedBitmapBackingType = new Map(base.bitmapBackingType);
     const mergedBitmapBitWidth = new Map(base.bitmapBitWidth);
     const mergedEnumMembers = VisibleSymbols._copyNestedMap(base.enumMembers);
+    const mergedMemberCNames = VisibleSymbols._copyNestedMap(base.memberCNames);
     const mergedFunctionReturnTypes = new Map(base.functionReturnTypes);
     const mergedScopeMemberVisibility = VisibleSymbols._copyNestedMap(
       base.scopeMemberVisibility,
@@ -120,6 +122,7 @@ class VisibleSymbols {
         knownEnums: mergedKnownEnums,
         knownScopes: mergedKnownScopes,
         enumMembers: mergedEnumMembers,
+        memberCNames: mergedMemberCNames,
         functionReturnTypes: mergedFunctionReturnTypes,
         scopeMemberVisibility: mergedScopeMemberVisibility,
         knownStructs: mergedKnownStructs,
@@ -150,6 +153,7 @@ class VisibleSymbols {
       bitmapBackingType: mergedBitmapBackingType,
       bitmapBitWidth: mergedBitmapBitWidth,
       enumMembers: mergedEnumMembers,
+      memberCNames: mergedMemberCNames,
       functionReturnTypes: mergedFunctionReturnTypes,
       scopeMemberVisibility: mergedScopeMemberVisibility,
       knownRegisters: mergedKnownRegisters,
@@ -194,6 +198,11 @@ class VisibleSymbols {
     VisibleSymbols._mergePreferringLocal(
       external.enumMembers,
       into.enumMembers,
+      cloneMap,
+    );
+    VisibleSymbols._mergePreferringLocal(
+      external.memberCNames,
+      into.memberCNames,
       cloneMap,
     );
     VisibleSymbols._mergePreferringLocal(
