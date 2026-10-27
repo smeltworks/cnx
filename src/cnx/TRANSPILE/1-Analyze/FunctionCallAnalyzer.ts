@@ -23,7 +23,6 @@ import AdrProvenance from "../../instrumentation/AdrProvenance";
 import DynamicAllocation from "./DynamicAllocation";
 import StdlibFunctions from "./StdlibFunctions";
 import CalleeNameResolver from "./helpers/CalleeNameResolver";
-import ScopeUtils from "../../utils/ScopeUtils";
 import IncludeDirective from "./helpers/IncludeDirective";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import type TSymbol from "../../types/symbols/TSymbol";
@@ -262,14 +261,12 @@ class FunctionCallAnalyzer {
   private collectAllLocalFunctions(program: IProgramSyntax): void {
     for (const { declaration, scope } of program.members) {
       if (declaration.kind !== "function") continue;
-      this.allLocalFunctions.add(
-        scope === null
-          ? declaration.name
-          : ScopeUtils.qualifyInScope(
-              declaration.name,
-              this.scopePathOf(scope),
-            ),
+      const symbol = this.memberOf(scope ?? "", declaration.name);
+      invariant(
+        symbol !== undefined,
+        "3-Declare declares every function defined",
       );
+      this.allLocalFunctions.add(symbol.fullyQualifiedCName);
     }
   }
 
