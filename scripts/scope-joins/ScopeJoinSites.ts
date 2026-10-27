@@ -217,12 +217,6 @@ class ScopeJoinSites {
     },
     {
       file: "src/cnx/utils/QualifiedNameGenerator.ts",
-      element: "getTranspiledCName(func)",
-      kind: "encoder",
-      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
-    },
-    {
-      file: "src/cnx/utils/QualifiedNameGenerator.ts",
       element: "qualifyInScope(funcName, scopePath)",
       kind: "encoder",
       why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",

@@ -28,10 +28,10 @@ class QualifiedNameGenerator {
    * For scoped functions, returns "Scope_name" (e.g., "Test_fillData").
    * For nested scopes, returns "Outer_Inner_name" (e.g., "Outer_Inner_deepFunc").
    *
-   * Delegates to ScopeUtils.getTranspiledCName() to avoid duplication.
+   * #2116: 3-Declare stored it on the symbol; this reads it, never re-encodes.
    */
   static forFunction(func: IFunctionSymbol): string {
-    return ScopeUtils.getTranspiledCName(func);
+    return func.fullyQualifiedCName;
   }
 
   // #1298 removed `getScopePath`, a delegate to a `ScopeUtils` walk that no
