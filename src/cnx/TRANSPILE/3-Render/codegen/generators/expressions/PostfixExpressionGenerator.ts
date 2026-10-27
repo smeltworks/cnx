@@ -47,7 +47,6 @@ import QualifiedCName from "../../../../../utils/QualifiedCName";
 import CppNamespaceUtils from "../../../../../utils/CppNamespaceUtils";
 import OperandTyper from "../../../../../utils/OperandTyper";
 import invariant from "../../../../../utils/invariant";
-import QualifiedNameGenerator from "../../../../../utils/QualifiedNameGenerator";
 import DeclaredTypeFacts from "../../../../../utils/DeclaredTypeFacts";
 import PrivateConstValue from "../../PrivateConstValue";
 
@@ -965,9 +964,16 @@ const tryKnownScopeAccess = (
   }
 
   const output = initializeMemberOutput(ctx);
-  output.result = ctx.isCppAccessChain
-    ? CppNamespaceUtils.fromParts([ctx.result, ctx.memberName])
-    : QualifiedNameGenerator.forMember(ctx.result, ctx.memberName);
+  if (ctx.isCppAccessChain) {
+    output.result = CppNamespaceUtils.fromParts([ctx.result, ctx.memberName]);
+  } else {
+    const member = orchestrator.state.program?.memberOf(
+      ctx.result,
+      ctx.memberName,
+    );
+    invariant(member !== undefined, "2.1 rejects a member its scope lacks");
+    output.result = member.fullyQualifiedCName;
+  }
   output.resolvedIdentifier = output.result;
   return output;
 };
