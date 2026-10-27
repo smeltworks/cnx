@@ -24,6 +24,7 @@ import RegisterCollector from "./collectors/RegisterCollector";
 import ScopeCollector from "./collectors/ScopeCollector";
 import TYPE_FORMING_KINDS from "../TYPE_FORMING_KINDS";
 import TSymbolKindCnx from "../../../types/symbol-kinds/TSymbolKindCnx";
+import QualifiedTypeNames from "./QualifiedTypeNames";
 
 /** A declaration a scope may hold */
 type TScopeMemberSyntax = Extract<
@@ -59,6 +60,8 @@ class CnxResolver {
     program: IProgramSyntax,
     sourceFile: string,
     registry: SymbolRegistry,
+    /** Whether a name is a C++ namespace, class or enum the headers declare */
+    isCppScopeHead: (name: string) => boolean = () => false,
   ): IFileSymbols {
     const symbols: TSymbol[] = [];
     // There is no const pass. A dimension naming a const keeps its text here
@@ -135,6 +138,7 @@ class CnxResolver {
       lexicalScopes,
       parameterLists,
       callbackUses,
+      qualifiedTypeNames: QualifiedTypeNames.collect(program, isCppScopeHead),
     };
   }
 

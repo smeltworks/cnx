@@ -1282,6 +1282,7 @@ scope Gauge {
         "memberOf",
         "opaqueTypes",
         "passByValueParams",
+        "qualifiedTypeName",
         "resolveFunction",
         "scope",
         "scopePathOf",

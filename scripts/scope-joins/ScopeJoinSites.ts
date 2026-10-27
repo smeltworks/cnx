@@ -213,6 +213,12 @@ class ScopeJoinSites {
       why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
     },
     {
+      file: "src/cnx/PARSE/3-Declare/cnx/QualifiedTypeNames.ts",
+      element: 'fromSourceName(type.path.join("."))',
+      kind: "encoder",
+      why: "3-Declare, the first layer holding the headers' symbols, spelling each written Scope.T once and storing it as IFileSymbols.qualifiedTypeNames for later layers to read (#2116)",
+    },
+    {
       file: "src/cnx/PARSE/3-Declare/cnx/utils/MemberSymbolBase.ts",
       element:
         "identityOf({ name: input.name, scopePath: input.parentScopedName, })",

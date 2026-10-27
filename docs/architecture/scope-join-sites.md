@@ -52,6 +52,7 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/PARSE/3-Declare/cnx/collectors/StructCollector.ts`        | `identityOf({ name, scopePath })`                                      | 1      | encoder      |
 | `src/cnx/PARSE/3-Declare/cnx/collectors/VariableCollector.ts`      | `identityOf({ name, scopePath })`                                      | 1      | encoder      |
 | `src/cnx/PARSE/3-Declare/cnx/index.ts`                             | `qualifyInScope(typeName, scopePath)`                                  | 1      | encoder      |
+| `src/cnx/PARSE/3-Declare/cnx/QualifiedTypeNames.ts`                | `fromSourceName(type.path.join("."))`                                  | 1      | encoder      |
 | `src/cnx/PARSE/3-Declare/cnx/utils/MemberSymbolBase.ts`            | `identityOf({ name: input.name, scopePath: input.parentScopedName, })` | 1      | encoder      |
 | `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                         | `fromSourceName(written.join("."))`                                    | 1      | written-name |
 | `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                         | `movedLocal(functionCName, name, 1)`                                   | 1      | owner-c-name |
@@ -71,9 +72,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/TypeNameLadder.ts`                                  | `fromSourceName(type.path.join("."))`                                  | 1      | written-name |
 | `src/cnx/utils/TypeNameLadder.ts`                                  | `qualifyInScope(type.name, scopePath)`                                 | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                  | `qualifyScopeType(type.name, scopePath, deps.isScopeType)`             | 1      | encoder      |
-| **total**                                                          |                                                                        | **36** |              |
+| **total**                                                          |                                                                        | **37** |              |
 
-36 site(s) across 18 file(s).
+37 site(s) across 19 file(s).
 
 ## Why each site is not a scope join
 
@@ -91,6 +92,7 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/PARSE/3-Declare/cnx/collectors/StructCollector.ts` `identityOf({ name, scopePath })`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
 - `src/cnx/PARSE/3-Declare/cnx/collectors/VariableCollector.ts` `identityOf({ name, scopePath })`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
 - `src/cnx/PARSE/3-Declare/cnx/index.ts` `qualifyInScope(typeName, scopePath)`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
+- `src/cnx/PARSE/3-Declare/cnx/QualifiedTypeNames.ts` `fromSourceName(type.path.join("."))`: 3-Declare, the first layer holding the headers' symbols, spelling each written Scope.T once and storing it as IFileSymbols.qualifiedTypeNames for later layers to read (#2116)
 - `src/cnx/PARSE/3-Declare/cnx/utils/MemberSymbolBase.ts` `identityOf({ name: input.name, scopePath: input.parentScopedName, })`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
 - `src/cnx/PARSE/4-Resolve/ConstantNames.ts` `fromSourceName(written.join("."))`: a dotted type no cnx symbol this file sees declares; a declared `Scope.T` reads its `fullyQualifiedCName` through `visibleMember`
 - `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `movedLocal(functionCName, name, 1)`: 4-Resolve deciding, once, the C name a local moves to when it hides a file-scope name; stored on the settled local as emittedName

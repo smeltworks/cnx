@@ -75,6 +75,12 @@ interface IFileSymbols {
    * functions (#1544).
    */
   readonly callbackUses: ReadonlyArray<TCallbackUse>;
+  /**
+   * #2116: each `Scope.T` / `Ns.T` this file writes at a type position, by its
+   * written text, spelled once here (`QualifiedTypeNames`): `Ns::T` for a C++
+   * namespace, class or enum head, else the C name.
+   */
+  readonly qualifiedTypeNames: ReadonlyMap<string, string>;
 }
 
 export default IFileSymbols;

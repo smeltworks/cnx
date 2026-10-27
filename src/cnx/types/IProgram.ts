@@ -62,6 +62,12 @@ interface IProgram {
    * by identity; undefined when ADR-057 leaves a bare `name` the file's own.
    * Read `.fullyQualifiedCName` from it rather than encoding one (#2116).
    */
+  /**
+   * The spelling 1.3 gave a `Scope.T` / `Ns.T` written at a type position,
+   * by its written text (#2116): read it, never re-derive it.
+   */
+  qualifiedTypeName(written: string): string | undefined;
+
   scopeTypeOf(
     sourceFile: string,
     scopePath: string,

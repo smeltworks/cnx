@@ -180,6 +180,9 @@ class Program {
     const functionParamLists = new Map(
       files.flatMap((file) => [...file.parameterLists]),
     );
+    const qualifiedTypeNames = new Map(
+      files.flatMap((file) => [...file.qualifiedTypeNames]),
+    );
     const callbackCompatibleFunctions = CallbackCompatibility.derive(
       files,
       symbolTable,
@@ -255,6 +258,8 @@ class Program {
         symbolsByCName.get(cName),
       memberOf: (scopePath: string, name: string): TSymbol | undefined =>
         symbolsByIdentity.get(Program.identityKey(scopePath, name)),
+      qualifiedTypeName: (written: string): string | undefined =>
+        qualifiedTypeNames.get(written),
       scopeTypeOf: (
         sourceFile: string,
         scopePath: string,
