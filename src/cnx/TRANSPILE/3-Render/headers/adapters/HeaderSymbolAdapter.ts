@@ -53,7 +53,7 @@ class HeaderSymbolAdapter {
     const returnTypeStr = TypeResolver.getTypeName(func.returnType);
 
     // Get transpiled C name (scope-prefixed)
-    const cName = ScopeUtils.getTranspiledCName(func);
+    const cName = func.fullyQualifiedCName;
     const isGlobal = ScopeUtils.isGlobalScopePath(func.scopePath);
 
     // ADR-057: type names arrive already scope-qualified from the symbol
