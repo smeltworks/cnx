@@ -50,7 +50,8 @@ let state = new TranspileState();
 
 describe("FunctionReference.candidates -- the ADR-057 order", () => {
   /** `scope S { void f() {} }`, as 3-Declare names it (#2116). */
-  const scopeF: Pick<IProgram, "memberOf"> = {
+  const scopeF: Pick<IProgram, "memberOf" | "qualifiedTypeName"> = {
+    qualifiedTypeName: () => undefined,
     memberOf: (scopePath, name) =>
       scopePath === "S" && name === "f"
         ? ({ fullyQualifiedCName: "S__f" } as TSymbol)
@@ -77,7 +78,8 @@ describe("FunctionReference.candidates -- the ADR-057 order", () => {
 
 describe("FunctionReference.candidatesForTypeText", () => {
   // 3-Declare declared `handler` in scope `S` and nothing else
-  const declared: Pick<IProgram, "memberOf"> = {
+  const declared: Pick<IProgram, "memberOf" | "qualifiedTypeName"> = {
+    qualifiedTypeName: () => undefined,
     memberOf: (scopePath, name) =>
       scopePath === "S" && name === "handler"
         ? ({ fullyQualifiedCName: "S__handler" } as unknown as TSymbol)
@@ -110,22 +112,21 @@ describe("FunctionReference.candidatesForTypeText", () => {
     ).toEqual(["onDown"]);
   });
 
-  it("reads a declared member's C name for its qualified path", () => {
-    const renamed: Pick<IProgram, "memberOf"> = {
-      memberOf: (scopePath, name) =>
-        scopePath === "S" && name === "h"
-          ? ({ fullyQualifiedCName: "Stored__h" } as unknown as TSymbol)
-          : undefined,
+  it("reads the spelling 1.3 stored for a qualified path", () => {
+    const stored: Pick<IProgram, "memberOf" | "qualifiedTypeName"> = {
+      memberOf: () => undefined,
+      qualifiedTypeName: (written) =>
+        written === "TestNS.MyClass" ? "TestNS::MyClass" : undefined,
     };
-    expect(FunctionReference.candidatesForTypeText("S.h", "", renamed)).toEqual(
-      ["Stored__h"],
-    );
+    expect(
+      FunctionReference.candidatesForTypeText("TestNS.MyClass", "", stored),
+    ).toEqual(["TestNS::MyClass"]);
   });
 
-  it("spells a path no cnx symbol declares as written", () => {
-    expect(
+  it("treats a qualified path 1.3 did not spell as an internal error", () => {
+    expect(() =>
       FunctionReference.candidatesForTypeText("Outer.Inner.h", "", declared),
-    ).toEqual(["Outer__Inner__h"]);
+    ).toThrow(/1.3 spells every qualified type/);
   });
 
   it("searches from the enclosing scope for a bare name", () => {

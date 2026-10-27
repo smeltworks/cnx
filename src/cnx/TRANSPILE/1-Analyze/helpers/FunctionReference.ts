@@ -28,8 +28,8 @@ import IFunctionSymbol from "../../../types/symbols/IFunctionSymbol";
 import type TExpression from "../../../types/syntax/TExpression";
 import type TExpressionOf from "../../../types/syntax/TExpressionOf";
 import OperandTyper from "../../../utils/OperandTyper";
-import QualifiedCName from "../../../utils/QualifiedCName";
 import TypeText from "../../../utils/TypeText";
+import invariant from "../../../utils/invariant";
 import CalleeNameResolver from "./CalleeNameResolver";
 import ScopeCandidates from "./ScopeCandidates";
 import type IAnalysisContext from "../types/IAnalysisContext";
@@ -67,7 +67,7 @@ class FunctionReference {
   static candidatesForTypeText(
     typeText: string,
     scopePath: string,
-    program: Pick<IProgram, "memberOf">,
+    program: Pick<IProgram, "memberOf" | "qualifiedTypeName">,
   ): string[] {
     const text = TypeText.withoutDimensions(typeText);
     if (text.startsWith("this.")) {
@@ -81,13 +81,13 @@ class FunctionReference {
       return [text.slice("global.".length)];
     }
     if (text.includes(".")) {
-      // #2116: a cnx `Scope.T` reads the C name 3-Declare gave it; only a
-      // foreign path (`TestNS.MyClass`) has no symbol, and is spelled as written
-      const dot = text.indexOf(".");
-      const member = program.memberOf(text.slice(0, dot), text.slice(dot + 1));
-      return [
-        member?.fullyQualifiedCName ?? QualifiedCName.fromSourceName(text),
-      ];
+      // #2116: 1.3 spelled every written `Scope.T` / `Ns.T` once
+      const stored = program.qualifiedTypeName(text);
+      invariant(
+        stored !== undefined,
+        `1.3 spells every qualified type a file writes ('${text}')`,
+      );
+      return [stored];
     }
     return FunctionReference.candidates(text, scopePath, false, program);
   }
