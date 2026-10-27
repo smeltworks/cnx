@@ -45,6 +45,7 @@ import ScopeUtils from "../../utils/ScopeUtils";
 import QualifiedCName from "../../utils/QualifiedCName";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionChildren from "../../utils/ExpressionChildren";
+import type IProgram from "../../types/IProgram";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
