@@ -26,7 +26,6 @@ import TYPE_WIDTH from "../types/TYPE_WIDTH";
 import ForeignTypeFacts from "./ForeignTypeFacts";
 import LiteralUtils from "./LiteralUtils";
 import CompositeType from "./CompositeType";
-import QualifiedCName from "./QualifiedCName";
 import LengthProperty from "./LengthProperty";
 import TypeHead from "./TypeHead";
 import ResolvedTarget from "./ResolvedTarget";
@@ -483,12 +482,10 @@ class OperandTyper {
   ): IOperandType | null {
     const primitive = TypeHead.primitive(name);
     if (primitive !== null) return OperandTyper.fromType(primitive, [], ctx);
-    const cName = OperandTyper.cNameOf(
-      ScopeUtils.qualifyScopeType(
-        name,
-        scopePath,
-        OperandTyper.scopeTypesSeenBy(ctx),
-      ),
+    const cName = ScopeUtils.qualifyScopeType(
+      name,
+      scopePath,
+      OperandTyper.scopeTypesSeenBy(ctx),
     );
     const named = OperandTyper.namedTypeOf(cName, ctx);
     if (named !== null) return named;
@@ -1339,12 +1336,11 @@ class OperandTyper {
     // ADR-057's qualification, the program's one answer: a scope's own type
     // shadows a global one of the name, whatever kind each is (#1668 review:
     // an enums-only predicate let a global enum through a scope's struct)
-    const enumName = ScopeUtils.qualifyScopeType(
+    const enumCName = ScopeUtils.qualifyScopeType(
       name,
       scopePath,
       OperandTyper.scopeTypesSeenBy(ctx),
     );
-    const enumCName = OperandTyper.cNameOf(enumName);
     if (symbols.knownEnums.has(enumCName)) {
       return { binding: null, value: { k: "enumType", name: enumCName }, ops };
     }
@@ -2092,12 +2088,6 @@ class OperandTyper {
     return typeName !== null && TypeCheckUtils.isInteger(typeName)
       ? TYPE_WIDTH[typeName]
       : null;
-  }
-
-  private static cNameOf(sourceName: string): string {
-    return sourceName.includes(".")
-      ? QualifiedCName.fromSourceName(sourceName)
-      : sourceName;
   }
 
   private static booleanValue(hasSideEffect: boolean): IOperandType {

@@ -325,12 +325,6 @@ class ScopeJoinSites {
       why: "a resolved type's dotted name as its C lookup key",
     },
     {
-      file: "src/cnx/utils/OperandTyper.ts",
-      element: "fromSourceName(sourceName)",
-      kind: "written-name",
-      why: "a dotted source name as written, as its C lookup key",
-    },
-    {
       file: "src/cnx/utils/QualifiedCName.ts",
       element: "QualifiedCName.SEPARATOR",
       kind: "encoder",
