@@ -154,10 +154,12 @@ class ConstantNames {
     const scopePath = facts.scopePathAt(at);
     const parts = typeName.split(".");
     if (parts[0] === "this") {
-      return ScopeUtils.getTranspiledCName({
-        name: parts.slice(1).join("."),
-        scopePath,
-      });
+      // An undeclared `this.T` is 2.1's to report; until then it stays as
+      // written (#2116)
+      return (
+        facts.visibleMember(scopePath, parts.slice(1).join("."))
+          ?.fullyQualifiedCName ?? typeName
+      );
     }
     if (parts[0] === "global")
       return QualifiedCName.fromSourceName(parts.slice(1));

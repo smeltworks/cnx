@@ -62,7 +62,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                                                      | `fromSourceName(parts.slice(1))`                                              | 1      | written-name |
 | `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                                                      | `fromSourceName(qualified)`                                                   | 1      | written-name |
 | `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                                                      | `fromSourceName(type.name)`                                                   | 2      | written-name |
-| `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                                                      | `getTranspiledCName({ name: parts.slice(1).join("."), scopePath, })`          | 1      | recompute    |
 | `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                                                      | `fromSourceName([functionCName, name, suffix === 1 ? null : String(suffix)])` | 1      | owner-c-name |
 | `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                                                      | `fromSourceName([functionCName, name])`                                       | 1      | owner-c-name |
 | `src/cnx/TRANSPILE/1-Analyze/helpers/CalleeNameResolver.ts`                                     | `qualifyInScope(memberName, currentScopePath)`                                | 1      | recompute    |
@@ -101,9 +100,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                                                   | `qualifyPathInScope([name], scopePath)`                                       | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `fromSourceName(type.path)`                                                   | 1      | written-name |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `qualifyInScope(type.name, scopePath)`                                        | 1      | recompute    |
-| **total**                                                                                       |                                                                               | **68** |              |
+| **total**                                                                                       |                                                                               | **67** |              |
 
-68 site(s) across 33 file(s).
+67 site(s) across 33 file(s).
 
 ## Why each site is not a scope join
 
@@ -126,7 +125,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/PARSE/4-Resolve/ConstantNames.ts` `fromSourceName(parts.slice(1))`: `global.A.B`: everything after `global.` is the path as the author wrote it
 - `src/cnx/PARSE/4-Resolve/ConstantNames.ts` `fromSourceName(qualified)`: a dotted type name as written; a bare one is first qualified from the enclosing PATH by `ScopeUtils.qualifyScopeType`
 - `src/cnx/PARSE/4-Resolve/ConstantNames.ts` `fromSourceName(type.name)`: a resolved type's dotted name as its C lookup key
-- `src/cnx/PARSE/4-Resolve/ConstantNames.ts` `getTranspiledCName({ name: parts.slice(1).join("."), scopePath, })`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `fromSourceName([functionCName, name, suffix === 1 ? null : String(suffix)])`: a local renamed under its function's materialized C name when it hides a file-scope name, with a uniqueness suffix
 - `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `fromSourceName([functionCName, name])`: a local renamed under its function's materialized C name when it hides a file-scope name
 - `src/cnx/TRANSPILE/1-Analyze/helpers/CalleeNameResolver.ts` `qualifyInScope(memberName, currentScopePath)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)

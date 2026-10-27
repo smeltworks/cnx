@@ -239,13 +239,6 @@ class ScopeJoinSites {
       why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
     },
     {
-      file: "src/cnx/PARSE/4-Resolve/ConstantNames.ts",
-      element:
-        'getTranspiledCName({ name: parts.slice(1).join("."), scopePath, })',
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
       file: "src/cnx/TRANSPILE/1-Analyze/helpers/CalleeNameResolver.ts",
       element: "qualifyInScope(memberName, currentScopePath)",
       kind: "recompute",
