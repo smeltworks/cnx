@@ -44,6 +44,7 @@ class FunctionReference {
     resolvedName: string,
     scopePath: string,
     isGlobalCall: boolean,
+    program: Pick<IProgram, "memberOf">,
   ): string[] {
     // `scopeQualifiedCandidate` already returns null for a `global.` call, so
     // the root passed here is null: the search order is what differs, and it is
@@ -52,6 +53,7 @@ class FunctionReference {
       resolvedName,
       scopePath,
       isGlobalCall,
+      program,
     );
     return ScopeCandidates.forRoot(null, scoped, [resolvedName]);
   }
@@ -81,7 +83,7 @@ class FunctionReference {
     if (text.includes(".")) {
       return [QualifiedCName.fromSourceName(text)];
     }
-    return FunctionReference.candidates(text, scopePath, false);
+    return FunctionReference.candidates(text, scopePath, false, program);
   }
 
   /**
@@ -104,6 +106,7 @@ class FunctionReference {
         resolved.name,
         scopePath,
         resolved.isGlobalCall,
+        context.program,
       ),
       context,
     );
@@ -165,7 +168,12 @@ class FunctionReference {
     }
     if (name === "this" || name === "global") return null;
     return FunctionReference.lookup(
-      FunctionReference.candidates(name, scopePath, base === "global"),
+      FunctionReference.candidates(
+        name,
+        scopePath,
+        base === "global",
+        context.program,
+      ),
       context,
     );
   }

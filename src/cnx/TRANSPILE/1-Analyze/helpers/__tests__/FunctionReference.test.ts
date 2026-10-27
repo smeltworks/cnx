@@ -49,8 +49,16 @@ beforeEach(() => {
 let state = new TranspileState();
 
 describe("FunctionReference.candidates -- the ADR-057 order", () => {
+  /** `scope S { void f() {} }`, as 3-Declare names it (#2116). */
+  const scopeF: Pick<IProgram, "memberOf"> = {
+    memberOf: (scopePath, name) =>
+      scopePath === "S" && name === "f"
+        ? ({ fullyQualifiedCName: "S__f" } as TSymbol)
+        : undefined,
+  };
+
   it("tries the enclosing scope's member before the file-scope name", () => {
-    expect(FunctionReference.candidates("f", "S", false)).toEqual([
+    expect(FunctionReference.candidates("f", "S", false, scopeF)).toEqual([
       "S__f",
       "f",
     ]);
@@ -59,11 +67,11 @@ describe("FunctionReference.candidates -- the ADR-057 order", () => {
   it("gives a `global.` call exactly one candidate", () => {
     // Falling back to the scope's `f` here would make `global.f` resolve to
     // the very thing the spelling exists to bypass.
-    expect(FunctionReference.candidates("f", "S", true)).toEqual(["f"]);
+    expect(FunctionReference.candidates("f", "S", true, scopeF)).toEqual(["f"]);
   });
 
   it("has one candidate at file scope, where there is no scope to prefer", () => {
-    expect(FunctionReference.candidates("f", "", false)).toEqual(["f"]);
+    expect(FunctionReference.candidates("f", "", false, scopeF)).toEqual(["f"]);
   });
 });
 

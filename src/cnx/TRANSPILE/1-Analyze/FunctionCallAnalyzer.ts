@@ -407,6 +407,7 @@ class FunctionCallAnalyzer {
       name,
       currentScopePath,
       isGlobalCall,
+      this.context.program,
     );
     if (qualifiedName !== null) {
       if (this.definedFunctions.has(qualifiedName)) {
@@ -561,6 +562,7 @@ class FunctionCallAnalyzer {
       name,
       currentScopePath,
       isGlobalCall,
+      this.context.program,
     );
     if (scoped !== null) {
       // ADR-030: this file's own member, defined later, is not external (#786)

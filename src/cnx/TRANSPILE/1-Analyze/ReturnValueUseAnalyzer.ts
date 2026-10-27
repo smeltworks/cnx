@@ -79,6 +79,7 @@ class ReturnValueUseAnalyzer {
       resolved.name,
       currentScopePath,
       resolved.isGlobalCall,
+      context.program,
     );
     if (fallback && ReturnValueUseAnalyzer.returnsAValue(fallback, context)) {
       return fallback;

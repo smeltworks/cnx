@@ -18,6 +18,7 @@
  * function of what the caller can see.
  */
 
+import type IProgram from "../../../types/IProgram";
 import type TExpression from "../../../types/syntax/TExpression";
 import type TPostfixOpSyntax from "../../../types/syntax/TPostfixOpSyntax";
 import QualifiedCName from "../../../utils/QualifiedCName";
@@ -151,11 +152,14 @@ class CalleeNameResolver {
     name: string,
     currentScopePath: string,
     isGlobalCall: boolean,
+    program: Pick<IProgram, "memberOf">,
   ): string | null {
     if (!currentScopePath || isGlobalCall) return null;
     // Already qualified -- there is nothing to fall back from.
     if (QualifiedCName.isQualified(name)) return null;
-    return ScopeUtils.qualifyInScope(name, currentScopePath);
+    return (
+      program.memberOf(currentScopePath, name)?.fullyQualifiedCName ?? null
+    );
   }
 }
 

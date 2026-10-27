@@ -67,7 +67,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                                                      | `fromSourceName([functionCName, name])`                                       | 1      | owner-c-name |
 | `src/cnx/TRANSPILE/1-Analyze/helpers/CalleeNameResolver.ts`                                     | `qualifyInScope(memberName, currentScopePath)`                                | 1      | recompute    |
 | `src/cnx/TRANSPILE/1-Analyze/helpers/CalleeNameResolver.ts`                                     | `qualifyInScope(memberName, resolvedName)`                                    | 1      | recompute    |
-| `src/cnx/TRANSPILE/1-Analyze/helpers/CalleeNameResolver.ts`                                     | `qualifyInScope(name, currentScopePath)`                                      | 1      | recompute    |
 | `src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts`                                      | `fromSourceName(text)`                                                        | 1      | written-name |
 | `src/cnx/TRANSPILE/1-Analyze/SwitchStatementAnalyzer.ts`                                        | `fromSourceName([head, ...label.path.slice(1)])`                              | 1      | owner-c-name |
 | `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts`                                                       | `fromSourceName(identifiers)`                                                 | 1      | written-name |
@@ -106,9 +105,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                                                   | `qualifyPathInScope([name], scopePath)`                                       | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `fromSourceName(type.path)`                                                   | 1      | written-name |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `qualifyInScope(type.name, scopePath)`                                        | 1      | recompute    |
-| **total**                                                                                       |                                                                               | **73** |              |
+| **total**                                                                                       |                                                                               | **72** |              |
 
-73 site(s) across 34 file(s).
+72 site(s) across 34 file(s).
 
 ## Why each site is not a scope join
 
@@ -136,7 +135,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `fromSourceName([functionCName, name])`: a local renamed under its function's materialized C name when it hides a file-scope name
 - `src/cnx/TRANSPILE/1-Analyze/helpers/CalleeNameResolver.ts` `qualifyInScope(memberName, currentScopePath)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/1-Analyze/helpers/CalleeNameResolver.ts` `qualifyInScope(memberName, resolvedName)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
-- `src/cnx/TRANSPILE/1-Analyze/helpers/CalleeNameResolver.ts` `qualifyInScope(name, currentScopePath)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts` `fromSourceName(text)`: a dotted callback type name as written; `this.` goes through `ScopeUtils.qualifyInScope` instead
 - `src/cnx/TRANSPILE/1-Analyze/SwitchStatementAnalyzer.ts` `fromSourceName([head, ...label.path.slice(1)])`: `head` is the label's first component resolved by `ScopeUtils.typeHeadCName`; the rest is what the author wrote
 - `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts` `fromSourceName(identifiers)`: a qualified type's identifier chain as written
