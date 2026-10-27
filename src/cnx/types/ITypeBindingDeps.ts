@@ -22,6 +22,16 @@ interface ITypeBindingDeps {
   readonly isScopeType?: (qualifiedName: string) => boolean;
 
   /**
+   * The stored C name of the scope type a bare `name` in `scopePath` binds to
+   * (ADR-057), found by identity (#2116). Preferred over `isScopeType`, which
+   * only 3-Declare -- still deciding those names -- supplies.
+   */
+  readonly scopeTypeCName?: (
+    scopePath: string,
+    name: string,
+  ) => string | undefined;
+
+  /**
    * C++ namespace-aware resolution for `Scope.Type` (Issue #388). Injected
    * because it is a codegen concern; without it the components are joined.
    */

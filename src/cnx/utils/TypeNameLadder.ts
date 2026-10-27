@@ -93,13 +93,15 @@ class TypeNameLadder {
         return {
           branch: "bare",
           written: type.name,
-          name: deps?.isScopeType
-            ? ScopeUtils.qualifyScopeType(
-                type.name,
-                scopePath,
-                deps.isScopeType,
-              )
-            : type.name,
+          name: deps?.scopeTypeCName
+            ? (deps.scopeTypeCName(scopePath, type.name) ?? type.name)
+            : deps?.isScopeType
+              ? ScopeUtils.qualifyScopeType(
+                  type.name,
+                  scopePath,
+                  deps.isScopeType,
+                )
+              : type.name,
         };
       default:
         return null;

@@ -865,7 +865,11 @@ class TranspileState {
     resolveQualifiedType?: (identifiers: string[]) => string,
   ): ITypeBindingDeps {
     return {
-      isScopeType: this.scopeTypePredicate,
+      scopeTypeCName: (scopePath: string, name: string) =>
+        this.sourcePath === null
+          ? undefined
+          : this.program?.scopeTypeOf(this.sourcePath, scopePath, name)
+              ?.fullyQualifiedCName,
       resolveQualifiedType,
       memberCName: (scopePath: string, name: string) =>
         this.program?.memberOf(scopePath, name)?.fullyQualifiedCName,
