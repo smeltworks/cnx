@@ -2045,10 +2045,7 @@ class CodeGenWalker {
     declaringScopePath: string,
     isPrivate: boolean,
   ): TPlannedScopeVariable {
-    const fullName = QualifiedNameGenerator.forMember(
-      declaringScopePath,
-      decl.name,
-    );
+    const fullName = this.declaredCName(declaringScopePath, decl.name);
     // Issue #375: constructor syntax.
     //
     // #1322: the arguments are no longer VALIDATED here -- the const check that

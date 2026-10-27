@@ -330,12 +330,6 @@ class ScopeJoinSites {
       why: ScopeJoinSites.RECOMPUTE,
     },
     {
-      file: "src/cnx/TRANSPILE/CodeGenWalker.ts",
-      element: "forMember(declaringScopePath, decl.name)",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
       file: "src/cnx/utils/QualifiedNameGenerator.ts",
       element: "getTranspiledCName(func)",
       kind: "encoder",
