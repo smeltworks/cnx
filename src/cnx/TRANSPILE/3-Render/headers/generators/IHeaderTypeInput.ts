@@ -16,6 +16,9 @@ interface IHeaderTypeInput {
   /** Enum members and values: enumName -> (memberName -> value) */
   readonly enumMembers: ReadonlyMap<string, ReadonlyMap<string, number>>;
 
+  /** Each enum member's 3-Declare C name (`ICodeGenSymbols.memberCNames`) */
+  readonly memberCNames: ReadonlyMap<string, ReadonlyMap<string, string>>;
+
   /** Struct field types: structName -> (fieldName -> typeName) */
   readonly structFields: ReadonlyMap<string, ReadonlyMap<string, string>>;
 

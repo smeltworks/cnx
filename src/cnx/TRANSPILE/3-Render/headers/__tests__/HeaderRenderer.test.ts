@@ -40,6 +40,7 @@ describe("HeaderRenderer", () => {
       options,
       typeInput: {
         enumMembers: new Map(),
+        memberCNames: new Map(),
         structFields: new Map(),
         structFieldDimensions: new Map(),
         bitmapBackingType: new Map(),

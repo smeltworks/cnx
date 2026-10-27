@@ -23,6 +23,7 @@ function typeInputWith(symbolTable: SymbolTable) {
   return {
     symbolTable,
     enumMembers: new Map(),
+    memberCNames: new Map(),
     structFields: new Map(),
     structFieldDimensions: new Map(),
     bitmapBackingType: new Map(),
@@ -674,6 +675,7 @@ describe("CHeaderGenerator", () => {
       const typeInput = {
         symbolTable,
         enumMembers: new Map(),
+        memberCNames: new Map(),
         structFields: new Map(),
         structFieldDimensions: new Map(),
         bitmapBackingType: new Map(),
@@ -708,6 +710,7 @@ describe("CHeaderGenerator", () => {
       const typeInput = {
         symbolTable,
         enumMembers: new Map(),
+        memberCNames: new Map(),
         structFields: new Map(),
         structFieldDimensions: new Map(),
         bitmapBackingType: new Map(),
@@ -795,6 +798,7 @@ describe("CHeaderGenerator", () => {
       const typeInput = {
         symbolTable: new SymbolTable(),
         enumMembers: new Map(),
+        memberCNames: new Map(),
         structFields: new Map([["Point", pointFieldTypes]]),
         structFieldDimensions: new Map([["Point", new Map()]]),
         bitmapBackingType: new Map(),

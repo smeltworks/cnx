@@ -13,6 +13,13 @@ function createInput(
 ): IHeaderTypeInput {
   return {
     enumMembers,
+    // what 3-Declare names each member (ADR-017)
+    memberCNames: new Map(
+      [...enumMembers].map(([enumName, members]) => [
+        enumName,
+        new Map([...members.keys()].map((m) => [m, `${enumName}__${m}`])),
+      ]),
+    ),
     structFields: new Map(),
     structFieldDimensions: new Map(),
     bitmapBackingType: new Map(),
