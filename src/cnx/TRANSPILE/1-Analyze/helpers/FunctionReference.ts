@@ -23,12 +23,12 @@
  * one place the order is written, and every lookup walks it.
  */
 
+import type IProgram from "../../../types/IProgram";
 import IFunctionSymbol from "../../../types/symbols/IFunctionSymbol";
 import type TExpression from "../../../types/syntax/TExpression";
 import type TExpressionOf from "../../../types/syntax/TExpressionOf";
 import OperandTyper from "../../../utils/OperandTyper";
 import QualifiedCName from "../../../utils/QualifiedCName";
-import ScopeUtils from "../../../utils/ScopeUtils";
 import TypeText from "../../../utils/TypeText";
 import CalleeNameResolver from "./CalleeNameResolver";
 import ScopeCandidates from "./ScopeCandidates";
@@ -62,12 +62,18 @@ class FunctionReference {
    * struct field's type is recorded under. An array spelling names its
    * element type.
    */
-  static candidatesForTypeText(typeText: string, scopePath: string): string[] {
+  static candidatesForTypeText(
+    typeText: string,
+    scopePath: string,
+    program: Pick<IProgram, "memberOf">,
+  ): string[] {
     const text = TypeText.withoutDimensions(typeText);
     if (text.startsWith("this.")) {
-      return scopePath === ""
-        ? []
-        : [ScopeUtils.qualifyInScope(text.slice("this.".length), scopePath)];
+      const member =
+        scopePath === ""
+          ? undefined
+          : program.memberOf(scopePath, text.slice("this.".length));
+      return member === undefined ? [] : [member.fullyQualifiedCName];
     }
     if (text.startsWith("global.")) {
       return [text.slice("global.".length)];
@@ -171,7 +177,11 @@ class FunctionReference {
     context: IAnalysisContext,
   ): IFunctionSymbol | null {
     return FunctionReference.lookup(
-      FunctionReference.candidatesForTypeText(typeText, scopePath),
+      FunctionReference.candidatesForTypeText(
+        typeText,
+        scopePath,
+        context.program,
+      ),
       context,
     );
   }

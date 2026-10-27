@@ -7,6 +7,8 @@ import TranspileState from "../../../TranspileState";
 import Program from "../../../../PARSE/4-Resolve/Program";
 import SymbolRegistry from "../../../../PARSE/3-Declare/SymbolRegistry";
 import FunctionReference from "../FunctionReference";
+import type IProgram from "../../../../types/IProgram";
+import type TSymbol from "../../../../types/symbols/TSymbol";
 import testAnalysisContext from "../../__tests__/testAnalysisContext";
 
 /**
@@ -66,39 +68,50 @@ describe("FunctionReference.candidates -- the ADR-057 order", () => {
 });
 
 describe("FunctionReference.candidatesForTypeText", () => {
+  // 3-Declare declared `handler` in scope `S` and nothing else
+  const declared: Pick<IProgram, "memberOf"> = {
+    memberOf: (scopePath, name) =>
+      scopePath === "S" && name === "handler"
+        ? ({ fullyQualifiedCName: "S__handler" } as unknown as TSymbol)
+        : undefined,
+  };
+
   it("reads an array spelling as its element type", () => {
-    expect(FunctionReference.candidatesForTypeText("onDown[4]", "")).toEqual([
-      "onDown",
-    ]);
+    expect(
+      FunctionReference.candidatesForTypeText("onDown[4]", "", declared),
+    ).toEqual(["onDown"]);
   });
 
   it("binds `this.` to the enclosing scope and nothing else", () => {
     expect(
-      FunctionReference.candidatesForTypeText("this.handler", "S"),
+      FunctionReference.candidatesForTypeText("this.handler", "S", declared),
     ).toEqual(["S__handler"]);
+    // A member the scope does not declare names nothing either
+    expect(
+      FunctionReference.candidatesForTypeText("this.other", "S", declared),
+    ).toEqual([]);
     // Outside a scope, `this.` names nothing -- E0431 is the rule that says so.
-    expect(FunctionReference.candidatesForTypeText("this.handler", "")).toEqual(
-      [],
-    );
+    expect(
+      FunctionReference.candidatesForTypeText("this.handler", "", declared),
+    ).toEqual([]);
   });
 
   it("binds `global.` to the file scope, unqualified", () => {
     expect(
-      FunctionReference.candidatesForTypeText("global.onDown", "S"),
+      FunctionReference.candidatesForTypeText("global.onDown", "S", declared),
     ).toEqual(["onDown"]);
   });
 
   it("transpiles an explicitly qualified path", () => {
     expect(
-      FunctionReference.candidatesForTypeText("Outer.Inner.h", ""),
+      FunctionReference.candidatesForTypeText("Outer.Inner.h", "", declared),
     ).toEqual(["Outer__Inner__h"]);
   });
 
   it("searches from the enclosing scope for a bare name", () => {
-    expect(FunctionReference.candidatesForTypeText("handler", "S")).toEqual([
-      "S__handler",
-      "handler",
-    ]);
+    expect(
+      FunctionReference.candidatesForTypeText("handler", "S", declared),
+    ).toEqual(["S__handler", "handler"]);
   });
 });
 
