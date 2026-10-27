@@ -55,6 +55,9 @@ function createMockInput(withSymbols = false): IGeneratorInput {
     symbols: withSymbols
       ? createMockSymbols({
           enumMembers: new Map([["Driver__EState", new Map([["IDLE", 0]])]]),
+          memberCNames: new Map([
+            ["Driver__EState", new Map([["IDLE", "Driver__EState__IDLE"]])],
+          ]),
           structFields: new Map([
             ["Driver__Config", new Map([["timeout", "u32"]])],
           ]),
