@@ -1114,7 +1114,7 @@ class CodeGenWalker {
       hasGlobal || hasThis ? safeIdentifier : resolvedIdentifier,
       hasGlobal,
       hasThis,
-      this.host.state.currentScopePath,
+      (name) => this.declaredCName(this.host.state.currentScopePath, name),
     );
 
     // No postfix operations - return base

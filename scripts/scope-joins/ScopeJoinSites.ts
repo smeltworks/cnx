@@ -264,12 +264,6 @@ class ScopeJoinSites {
       why: ScopeJoinSites.RECOMPUTE,
     },
     {
-      file: "src/cnx/TRANSPILE/3-Render/codegen/helpers/BaseIdentifierBuilder.ts",
-      element: "forMember(currentScopePath, firstId)",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
       file: "src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts",
       element: "forMember(currentScopePath, firstId)",
       kind: "recompute",

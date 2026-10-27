@@ -77,7 +77,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts`       | `fromSourceName([ctx.result, ctx.memberName])`                                | 2      | owner-c-name |
 | `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts`                   | `fromSourceName([switchEnumType, id])`                                        | 1      | owner-c-name |
 | `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts`                   | `fromSourceName(label.parts)`                                                 | 1      | written-name |
-| `src/cnx/TRANSPILE/3-Render/codegen/helpers/BaseIdentifierBuilder.ts`                           | `forMember(currentScopePath, firstId)`                                        | 1      | recompute    |
 | `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts`                         | `forMember(currentScopePath, firstId)`                                        | 1      | recompute    |
 | `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts`                         | `forMember(result, member)`                                                   | 1      | recompute    |
 | `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts`                         | `fromSourceName(identifierChain.slice(0, -1))`                                | 1      | written-name |
@@ -104,9 +103,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                                                   | `qualifyPathInScope([name], scopePath)`                                       | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `fromSourceName(type.path)`                                                   | 1      | written-name |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `qualifyInScope(type.name, scopePath)`                                        | 1      | recompute    |
-| **total**                                                                                       |                                                                               | **71** |              |
+| **total**                                                                                       |                                                                               | **70** |              |
 
-71 site(s) across 34 file(s).
+70 site(s) across 33 file(s).
 
 ## Why each site is not a scope join
 
@@ -144,7 +143,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts` `fromSourceName([ctx.result, ctx.memberName])`: member of a register (`knownRegisters`) or an enum (`knownEnums`), each keyed by its materialized C name; a scope member goes through `QualifiedNameGenerator.forMember` instead
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts` `fromSourceName([switchEnumType, id])`: a bare case label that is a member of the subject's enum, whose C name `enumTypeOf` materialized
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts` `fromSourceName(label.parts)`: a qualified case label as written (`Motor.State.IDLE`)
-- `src/cnx/TRANSPILE/3-Render/codegen/helpers/BaseIdentifierBuilder.ts` `forMember(currentScopePath, firstId)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts` `forMember(currentScopePath, firstId)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts` `forMember(result, member)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts` `fromSourceName(identifierChain.slice(0, -1))`: the access chain as written, as a register lookup key

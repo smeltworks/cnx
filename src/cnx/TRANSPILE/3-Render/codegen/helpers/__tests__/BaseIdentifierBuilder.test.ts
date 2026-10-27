@@ -1,10 +1,21 @@
 import { describe, it, expect } from "vitest";
 import BaseIdentifierBuilder from "../BaseIdentifierBuilder";
 
+/** The C name 3-Declare gives a member of `scope` (#2116). */
+const memberOf =
+  (scope: string) =>
+  (name: string): string =>
+    `${scope}__${name}`;
+
 describe("BaseIdentifierBuilder", () => {
   describe("build", () => {
     it("should return identifier unchanged for global prefix", () => {
-      const result = BaseIdentifierBuilder.build("counter", true, false, "");
+      const result = BaseIdentifierBuilder.build(
+        "counter",
+        true,
+        false,
+        memberOf(""),
+      );
 
       expect(result).toEqual({
         result: "counter",
@@ -13,7 +24,12 @@ describe("BaseIdentifierBuilder", () => {
     });
 
     it("should prefix with scope for this prefix", () => {
-      const result = BaseIdentifierBuilder.build("speed", false, true, "Motor");
+      const result = BaseIdentifierBuilder.build(
+        "speed",
+        false,
+        true,
+        memberOf("Motor"),
+      );
 
       expect(result).toEqual({
         result: "Motor__speed",
@@ -32,7 +48,12 @@ describe("BaseIdentifierBuilder", () => {
     // line and column and carries in-scope negative controls.
 
     it("should return identifier unchanged for bare identifier", () => {
-      const result = BaseIdentifierBuilder.build("myVar", false, false, "");
+      const result = BaseIdentifierBuilder.build(
+        "myVar",
+        false,
+        false,
+        memberOf(""),
+      );
 
       expect(result).toEqual({
         result: "myVar",
@@ -46,7 +67,7 @@ describe("BaseIdentifierBuilder", () => {
         "localVar",
         false,
         false,
-        "Motor",
+        memberOf("Motor"),
       );
 
       expect(result).toEqual({
@@ -60,7 +81,7 @@ describe("BaseIdentifierBuilder", () => {
         "value",
         false,
         true,
-        "GPIO_Controller",
+        memberOf("GPIO_Controller"),
       );
 
       expect(result).toEqual({
