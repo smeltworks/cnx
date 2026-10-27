@@ -528,6 +528,10 @@ describe("PostfixExpressionGenerator", () => {
     // Render runs against a program (#1668); `this.member` asks it whether
     // the member is a private const (#1739)
     sharedState.program = {
+      // the C name 3-Declare gives a scope member (#2116)
+      memberOf: (scopePath: string, name: string) => ({
+        fullyQualifiedCName: `${scopePath}__${name}`,
+      }),
       symbolTable: () => new SymbolTable(),
       symbolByCName: () => undefined,
       settledConstOf: () => null,
@@ -782,6 +786,10 @@ describe("PostfixExpressionGenerator", () => {
         initialValueExpr: { kind: "binary" },
       };
       const program = {
+        // the C name 3-Declare gives a scope member (#2116)
+        memberOf: (scopePath: string, name: string) => ({
+          fullyQualifiedCName: `${scopePath}__${name}`,
+        }),
         symbolTable: () => new SymbolTable(),
         symbolByCName: (cName: string) =>
           cName === "Motor__MAX_SPEED" ? constSymbol : undefined,

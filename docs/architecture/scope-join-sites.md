@@ -74,7 +74,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/TRANSPILE/3-Render/codegen/generators/declarationGenerators/EnumGenerator.ts`          | `fromSourceName([fullName, memberName])`                                      | 1      | owner-c-name |
 | `src/cnx/TRANSPILE/3-Render/codegen/generators/declarationGenerators/RegisterMacroGenerator.ts` | `fromSourceName([prefix, member.name])`                                       | 1      | owner-c-name |
 | `src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts`       | `forMember(ctx.result, ctx.memberName)`                                       | 1      | recompute    |
-| `src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts`       | `forMember(state.currentScopePath, ctx.memberName)`                           | 1      | recompute    |
 | `src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts`       | `fromSourceName([ctx.result, ctx.memberName])`                                | 2      | owner-c-name |
 | `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts`                   | `fromSourceName([switchEnumType, id])`                                        | 1      | owner-c-name |
 | `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts`                   | `fromSourceName(label.parts)`                                                 | 1      | written-name |
@@ -105,9 +104,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                                                   | `qualifyPathInScope([name], scopePath)`                                       | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `fromSourceName(type.path)`                                                   | 1      | written-name |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `qualifyInScope(type.name, scopePath)`                                        | 1      | recompute    |
-| **total**                                                                                       |                                                                               | **72** |              |
+| **total**                                                                                       |                                                                               | **71** |              |
 
-72 site(s) across 34 file(s).
+71 site(s) across 34 file(s).
 
 ## Why each site is not a scope join
 
@@ -142,7 +141,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/declarationGenerators/EnumGenerator.ts` `fromSourceName([fullName, memberName])`: ADR-017 member of the enum whose C name `QualifiedNameGenerator.forMember` built from the enclosing PATH
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/declarationGenerators/RegisterMacroGenerator.ts` `fromSourceName([prefix, member.name])`: register member macro; `prefix` is the register's C name, built from its declaring PATH by `RegisterGenerator`
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts` `forMember(ctx.result, ctx.memberName)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
-- `src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts` `forMember(state.currentScopePath, ctx.memberName)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts` `fromSourceName([ctx.result, ctx.memberName])`: member of a register (`knownRegisters`) or an enum (`knownEnums`), each keyed by its materialized C name; a scope member goes through `QualifiedNameGenerator.forMember` instead
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts` `fromSourceName([switchEnumType, id])`: a bare case label that is a member of the subject's enum, whose C name `enumTypeOf` materialized
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts` `fromSourceName(label.parts)`: a qualified case label as written (`Motor.State.IDLE`)

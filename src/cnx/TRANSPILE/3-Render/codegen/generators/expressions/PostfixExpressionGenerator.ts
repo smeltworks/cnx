@@ -932,10 +932,12 @@ const tryScopeMemberAccess = (
   }
   // #1322: `this` outside a scope is E0431 in 2.1.
   const output = initializeMemberOutput(ctx);
-  const fullName = QualifiedNameGenerator.forMember(
+  const member = orchestrator.state.program?.memberOf(
     state.currentScopePath,
     ctx.memberName,
   );
+  invariant(member !== undefined, "3-Declare declares every this. member");
+  const fullName = member.fullyQualifiedCName;
   // #1739: a private const is written as its settled value
   const inlined = PrivateConstValue.inlined(
     state,
