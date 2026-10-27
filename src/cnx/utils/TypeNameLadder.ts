@@ -91,7 +91,7 @@ class TypeNameLadder {
             : (deps?.memberCName?.(
                 type.path[0],
                 type.path.slice(1).join("."),
-              ) ?? QualifiedCName.fromSourceName(type.path)),
+              ) ?? QualifiedCName.fromSourceName(type.path.join("."))),
         };
       // Bare T -- the ONLY branch that resolves local -> scope -> global
       case "user":

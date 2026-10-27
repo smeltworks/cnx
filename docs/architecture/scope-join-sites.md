@@ -68,7 +68,7 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                      | `identityOf({ name, scopePath: parentPath })`                                 | 1      | encoder           |
 | `src/cnx/utils/ScopeUtils.ts`                                      | `qualifyPathInScope([name], scopePath)`                                       | 1      | encoder           |
 | `src/cnx/utils/ScopeUtils.ts`                                      | `qualifyPathInScope([symbol.name], symbol.scopePath)`                         | 1      | **UNADJUDICATED** |
-| `src/cnx/utils/TypeNameLadder.ts`                                  | `fromSourceName(type.path)`                                                   | 1      | written-name      |
+| `src/cnx/utils/TypeNameLadder.ts`                                  | `fromSourceName(type.path.join("."))`                                         | 1      | written-name      |
 | `src/cnx/utils/TypeNameLadder.ts`                                  | `qualifyInScope(type.name, scopePath)`                                        | 1      | encoder           |
 | `src/cnx/utils/TypeNameLadder.ts`                                  | `qualifyScopeType(type.name, scopePath, deps.isScopeType)`                    | 1      | encoder           |
 | **total**                                                          |                                                                               | **36** |                   |
@@ -106,6 +106,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/utils/ScopeUtils.ts` `getTranspiledCName(symbol)`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
 - `src/cnx/utils/ScopeUtils.ts` `identityOf({ name, scopePath: parentPath })`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
 - `src/cnx/utils/ScopeUtils.ts` `qualifyPathInScope([name], scopePath)`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
-- `src/cnx/utils/TypeNameLadder.ts` `fromSourceName(type.path)`: a qualified type path no cnx symbol declares, spelled as written; a declared one reads its fullyQualifiedCName through `memberCName` (#2116)
+- `src/cnx/utils/TypeNameLadder.ts` `fromSourceName(type.path.join("."))`: a qualified type path no cnx symbol declares, spelled as written; a declared one reads its fullyQualifiedCName through `memberCName` (#2116)
 - `src/cnx/utils/TypeNameLadder.ts` `qualifyInScope(type.name, scopePath)`: 3-Declare deciding a `this.T` type reference's C name as it builds the symbols, or a `this.T` no symbol declares spelled as written; every later pass passes `memberCName` and reads the declared type's fullyQualifiedCName (#2116)
 - `src/cnx/utils/TypeNameLadder.ts` `qualifyScopeType(type.name, scopePath, deps.isScopeType)`: 3-Declare deciding a bare scope type's name: only it supplies isScopeType; every later pass supplies scopeTypeCName and reads the stored name

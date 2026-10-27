@@ -316,7 +316,7 @@ class ScopeJoinSites {
     },
     {
       file: "src/cnx/utils/TypeNameLadder.ts",
-      element: "fromSourceName(type.path)",
+      element: 'fromSourceName(type.path.join("."))',
       kind: "written-name",
       why: "a qualified type path no cnx symbol declares, spelled as written; a declared one reads its fullyQualifiedCName through `memberCName` (#2116)",
     },
