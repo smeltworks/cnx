@@ -721,17 +721,16 @@ class OperandTyper {
     scopePath: string,
     ctx: ITypingContext,
   ): string {
-    return (
-      ctx.program.scopeTypeOf(ctx.sourceFile, scopePath, name)
-        ?.fullyQualifiedCName ?? name
-    );
+    return OperandTyper.scopeTypeCNameIn(ctx)(scopePath, name) ?? name;
   }
 
-  private static scopeTypesSeenBy(
+  /** The stored C name of the scope type a bare name binds to, by identity */
+  private static scopeTypeCNameIn(
     ctx: ITypingContext,
-  ): (qualifiedName: string) => boolean {
-    return (qualifiedName) =>
-      ctx.program.isScopeTypeVisibleFrom(ctx.sourceFile, qualifiedName);
+  ): (scopePath: string, name: string) => string | undefined {
+    return (scopePath, name) =>
+      ctx.program.scopeTypeOf(ctx.sourceFile, scopePath, name)
+        ?.fullyQualifiedCName;
   }
 
   /**
@@ -1065,7 +1064,7 @@ class OperandTyper {
         type,
         ctx.program.lexicalFrameAt(ctx.sourceFile, at).scopePath,
         {
-          isScopeType: OperandTyper.scopeTypesSeenBy(ctx),
+          scopeTypeCName: OperandTyper.scopeTypeCNameIn(ctx),
           memberCName: (scopePath: string, name: string) =>
             ctx.program.memberOf(scopePath, name)?.fullyQualifiedCName,
         },
