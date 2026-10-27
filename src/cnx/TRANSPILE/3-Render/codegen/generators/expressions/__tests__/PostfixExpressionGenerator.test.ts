@@ -1198,6 +1198,7 @@ describe("PostfixExpressionGenerator", () => {
     it("generates register member access", () => {
       const symbols = createMockSymbols({
         knownRegisters: new Set(["GPIO"]),
+        memberCNames: new Map([["GPIO", new Map([["PIN0", "GPIO__PIN0"]])]]),
       });
       const ctx = createMockPostfixExpressionContext("GPIO", [
         createMockPostfixOp({ identifier: "PIN0" }),
@@ -1215,6 +1216,7 @@ describe("PostfixExpressionGenerator", () => {
     it("allows register access without global prefix when no naming conflict", () => {
       const symbols = createMockSymbols({
         knownRegisters: new Set(["GPIO"]),
+        memberCNames: new Map([["GPIO", new Map([["PIN0", "GPIO__PIN0"]])]]),
       });
       const ctx = createMockPostfixExpressionContext("GPIO", [
         createMockPostfixOp({ identifier: "PIN0" }),
@@ -1380,6 +1382,7 @@ describe("PostfixExpressionGenerator", () => {
         knownRegisters: new Set(["GPIO"]),
         knownBitmaps: new Set(["CtrlBits"]),
         registerMemberCTypes: new Map([["GPIO__CTRL", "CtrlBits"]]),
+        memberCNames: new Map([["GPIO", new Map([["CTRL", "GPIO__CTRL"]])]]),
         bitmapFields: new Map([
           ["CtrlBits", new Map([["ENABLE", { offset: 0, width: 1 }]])],
         ]),
@@ -1872,6 +1875,7 @@ describe("PostfixExpressionGenerator", () => {
     it("sets isRegisterChain when global member is a register", () => {
       const symbols = createMockSymbols({
         knownRegisters: new Set(["GPIO"]),
+        memberCNames: new Map([["GPIO", new Map([["PIN0", "GPIO__PIN0"]])]]),
       });
       const ctx = createMockPostfixExpressionContext("global", [
         createMockPostfixOp({ identifier: "GPIO" }),

@@ -43,7 +43,6 @@ import type ILengthName from "../../../../../utils/types/ILengthName";
 import type IChainStep from "../../../../../types/IChainStep";
 import TYPE_MAP from "../../../../2-Plan/types/TYPE_MAP";
 import type IStructSymbol from "../../../../../types/symbols/IStructSymbol";
-import QualifiedCName from "../../../../../utils/QualifiedCName";
 import CppNamespaceUtils from "../../../../../utils/CppNamespaceUtils";
 import OperandTyper from "../../../../../utils/OperandTyper";
 import invariant from "../../../../../utils/invariant";
@@ -1024,7 +1023,7 @@ const tryRegisterMemberAccess = (
 
   // #1322: a read of a `wo` member is E0870 in pass 2.1 (ADR-004).
   const output = initializeMemberOutput(ctx);
-  output.result = QualifiedCName.fromSourceName([ctx.result, ctx.memberName]);
+  output.result = declaredMemberCName(ctx, input);
   output.isRegisterChain = true;
   return output;
 };

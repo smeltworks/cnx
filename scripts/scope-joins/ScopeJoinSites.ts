@@ -333,12 +333,6 @@ class ScopeJoinSites {
       why: "a qualified type's identifier chain as written",
     },
     {
-      file: "src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts",
-      element: "fromSourceName([ctx.result, ctx.memberName])",
-      kind: "owner-c-name",
-      why: "member of a register (`knownRegisters`) or an enum (`knownEnums`), each keyed by its materialized C name; a scope member reads its symbol's `fullyQualifiedCName` instead",
-    },
-    {
       file: "src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts",
       element: "fromSourceName(label.parts)",
       kind: "written-name",
