@@ -63,7 +63,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                                                      | `fromSourceName(qualified)`                                                   | 1      | written-name |
 | `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                                                      | `fromSourceName(type.name)`                                                   | 2      | written-name |
 | `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                                                      | `getTranspiledCName({ name: member, scopePath })`                             | 1      | recompute    |
-| `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                                                      | `getTranspiledCName({ name: member, scopePath: binding.scopePath, })`         | 1      | recompute    |
 | `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                                                      | `getTranspiledCName({ name: parts.slice(1).join("."), scopePath, })`          | 1      | recompute    |
 | `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                                                      | `fromSourceName([functionCName, name, suffix === 1 ? null : String(suffix)])` | 1      | owner-c-name |
 | `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                                                      | `fromSourceName([functionCName, name])`                                       | 1      | owner-c-name |
@@ -130,9 +129,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                                                   | `qualifyPathInScope([name], scopePath)`                                       | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `fromSourceName(type.path)`                                                   | 1      | written-name |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `qualifyInScope(type.name, scopePath)`                                        | 1      | recompute    |
-| **total**                                                                                       |                                                                               | **98** |              |
+| **total**                                                                                       |                                                                               | **97** |              |
 
-98 site(s) across 42 file(s).
+97 site(s) across 42 file(s).
 
 ## Why each site is not a scope join
 
@@ -156,7 +155,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/PARSE/4-Resolve/ConstantNames.ts` `fromSourceName(qualified)`: a dotted type name as written; a bare one is first qualified from the enclosing PATH by `ScopeUtils.qualifyScopeType`
 - `src/cnx/PARSE/4-Resolve/ConstantNames.ts` `fromSourceName(type.name)`: a resolved type's dotted name as its C lookup key
 - `src/cnx/PARSE/4-Resolve/ConstantNames.ts` `getTranspiledCName({ name: member, scopePath })`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
-- `src/cnx/PARSE/4-Resolve/ConstantNames.ts` `getTranspiledCName({ name: member, scopePath: binding.scopePath, })`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/PARSE/4-Resolve/ConstantNames.ts` `getTranspiledCName({ name: parts.slice(1).join("."), scopePath, })`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `fromSourceName([functionCName, name, suffix === 1 ? null : String(suffix)])`: a local renamed under its function's materialized C name when it hides a file-scope name, with a uniqueness suffix
 - `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `fromSourceName([functionCName, name])`: a local renamed under its function's materialized C name when it hides a file-scope name

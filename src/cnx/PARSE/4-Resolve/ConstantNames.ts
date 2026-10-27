@@ -98,12 +98,7 @@ class ConstantNames {
     const rest = name.path.slice(1);
     const member = rest[0];
     if (binding.kind === "scope" && member !== undefined) {
-      const symbol = facts.visibleSymbol(
-        ScopeUtils.getTranspiledCName({
-          name: member,
-          scopePath: binding.scopePath,
-        }),
-      );
+      const symbol = facts.visibleMember(binding.scopePath, member);
       if (symbol?.kind === "variable") {
         return { binding: { kind: "variable", symbol }, rest: rest.slice(1) };
       }
