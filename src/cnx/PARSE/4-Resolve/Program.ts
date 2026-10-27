@@ -207,6 +207,7 @@ class Program {
     const bound: IBindingFacts = {
       framesByFile,
       symbolsByCName,
+      symbolsByIdentity,
       registry,
       foreignNames,
       foreignValues,
@@ -491,6 +492,7 @@ class Program {
         files.map((file) => [file.sourceFile, file.lexicalScopes]),
       ),
       symbolsByCName: Program.indexByCName(settledByFile),
+      symbolsByIdentity: Program.indexByIdentity(settledByFile),
       registry,
       foreignNames,
       foreignValues,
@@ -504,6 +506,7 @@ class Program {
     const dimensioned: IBindingFacts = {
       ...declared,
       symbolsByCName: Program.indexByCName(values.symbolsByFile),
+      symbolsByIdentity: Program.indexByIdentity(values.symbolsByFile),
     };
     // #1668: each file's lexical frames, settled against the scope types THAT
     // file can see (#1724) and the program's consts, then frozen with it.
@@ -1092,6 +1095,8 @@ class Program {
         LexicalFrames.frameAt(Program.framesOf(facts.framesByFile, file()), at)
           .scopePath,
       visibleSymbol: (cName) => Program.visibleSymbolIn(facts, file(), cName),
+      visibleMember: (scopePath, name) =>
+        Program.visibleMemberIn(facts, file(), scopePath, name),
       isScopeTypeVisible: (name) =>
         options.files.isScopeTypeVisibleFrom(file(), name),
       get reachesForeignHeader() {
@@ -1417,6 +1422,22 @@ class Program {
    * nothing there (#1760 second review): a reopened scope's member from an
    * un-included sibling beat the visible global, and sized `u8[N]` by it
    */
+  /** `visibleSymbolIn`, found by scope path and name instead of a C name. */
+  private static visibleMemberIn(
+    facts: IBindingFacts,
+    sourceFile: string,
+    scopePath: string,
+    name: string,
+  ): TSymbol | undefined {
+    const symbol = facts.symbolsByIdentity.get(
+      Program.identityKey(scopePath, name),
+    );
+    return symbol !== undefined &&
+      facts.visibleFiles.get(sourceFile)?.has(symbol.sourceFile)
+      ? symbol
+      : undefined;
+  }
+
   private static visibleSymbolIn(
     facts: IBindingFacts,
     sourceFile: string,

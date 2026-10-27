@@ -26,6 +26,11 @@ interface IConstantNameFacts {
   scopePathAt(at: ISourcePosition): string;
   /** A cnx declaration this file can see, by C name */
   visibleSymbol(cName: string): TSymbol | undefined;
+  /**
+   * The member `name` of `scopePath` this file can see, found by its scope
+   * path and name rather than an encoded C name (#2116).
+   */
+  visibleMember(scopePath: string, name: string): TSymbol | undefined;
   /** Whether a qualified cnx type name is a scope type this file can see */
   isScopeTypeVisible(qualifiedName: string): boolean;
   /** A const's settled value, or why it has none; undefined until it settles */

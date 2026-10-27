@@ -16,6 +16,8 @@ import type IForeignValue from "./IForeignValue";
 interface IBindingFacts {
   readonly framesByFile: ReadonlyMap<string, ILexicalFrame>;
   readonly symbolsByCName: ReadonlyMap<string, TSymbol>;
+  /** Every symbol by its scope path and name (`Program.identityKey`, #2116). */
+  readonly symbolsByIdentity: ReadonlyMap<string, TSymbol>;
   readonly registry: SymbolRegistry | null;
   readonly foreignNames: ReadonlySet<string>;
   /**
