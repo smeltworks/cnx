@@ -94,11 +94,13 @@ class ScopeJoinSites {
    */
   private static readonly BUILDERS: readonly string[] = [
     "QualifiedCName.fromSourceName",
+    "QualifiedCName.fromSourceParts",
     "ScopeUtils.getTranspiledCName",
     "ScopeUtils.getCnxScopedName",
     "ScopeUtils.identityOf",
     "ScopeUtils.qualifyInScope",
     "ScopeUtils.qualifyPathInScope",
+    "ScopeUtils.qualifyScopeType",
   ];
 
   /** The separator, wherever it is spelled by name. */
@@ -217,6 +219,12 @@ class ScopeJoinSites {
     },
     {
       file: "src/cnx/utils/ScopeUtils.ts",
+      element: "fromSourceParts([symbol.scopePath, symbol.name])",
+      kind: "encoder",
+      why: "the owning code: getCnxScopedName's definition, the cnx spelling 3-Declare stores as cnxScopedName",
+    },
+    {
+      file: "src/cnx/utils/ScopeUtils.ts",
       element: "getCnxScopedName(symbol)",
       kind: "encoder",
       why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
@@ -250,6 +258,12 @@ class ScopeJoinSites {
       element: "qualifyPathInScope([name], scopePath)",
       kind: "encoder",
       why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/utils/TypeNameLadder.ts",
+      element: "qualifyScopeType(type.name, scopePath, deps.isScopeType)",
+      kind: "encoder",
+      why: "3-Declare deciding a bare scope type's name: only it supplies isScopeType; every later pass supplies scopeTypeCName and reads the stored name",
     },
     {
       file: "src/cnx/utils/TypeNameLadder.ts",
