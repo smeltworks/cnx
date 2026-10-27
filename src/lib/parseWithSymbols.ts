@@ -138,7 +138,7 @@ function convertStruct(
   struct: import("../cnx/types/symbols/IStructSymbol").default,
 ): ISymbolInfo[] {
   const result: ISymbolInfo[] = [];
-  const cName = ScopeUtils.getTranspiledCName(struct);
+  const cName = struct.fullyQualifiedCName;
   const parent = ScopeUtils.leafOf(struct.scopePath) || undefined;
   const structId = struct.cnxScopedName;
   const structParentId = getParentId(struct.scopePath);
