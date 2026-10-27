@@ -161,15 +161,19 @@ class ConstantNames {
           ?.fullyQualifiedCName ?? typeName
       );
     }
-    if (parts[0] === "global")
-      return QualifiedCName.fromSourceName(parts.slice(1));
-    const qualified =
-      parts.length === 1
-        ? ScopeUtils.qualifyScopeType(typeName, scopePath, (name) =>
-            facts.isScopeTypeVisible(name),
-          )
-        : typeName;
-    return QualifiedCName.fromSourceName(qualified);
+    const written = parts[0] === "global" ? parts.slice(1) : parts;
+    if (written.length > 1) {
+      // #2116: a cnx `Scope.T` reads the C name 3-Declare gave it; only a
+      // path no cnx symbol declares is spelled as written
+      return (
+        facts.visibleMember(written[0], written.slice(1).join("."))
+          ?.fullyQualifiedCName ?? QualifiedCName.fromSourceName(written)
+      );
+    }
+    if (parts[0] === "global") return written[0];
+    return ScopeUtils.qualifyScopeType(typeName, scopePath, (name) =>
+      facts.isScopeTypeVisible(name),
+    );
   }
 
   /**

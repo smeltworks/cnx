@@ -271,15 +271,9 @@ class ScopeJoinSites {
     },
     {
       file: "src/cnx/PARSE/4-Resolve/ConstantNames.ts",
-      element: "fromSourceName(parts.slice(1))",
+      element: "fromSourceName(written)",
       kind: "written-name",
-      why: "`global.A.B`: everything after `global.` is the path as the author wrote it",
-    },
-    {
-      file: "src/cnx/PARSE/4-Resolve/ConstantNames.ts",
-      element: "fromSourceName(qualified)",
-      kind: "written-name",
-      why: "a dotted type name as written; a bare one is first qualified from the enclosing PATH by `ScopeUtils.qualifyScopeType`",
+      why: "a dotted type no cnx symbol this file sees declares; a declared `Scope.T` reads its `fullyQualifiedCName` through `visibleMember`",
     },
     {
       file: "src/cnx/PARSE/4-Resolve/LexicalFrames.ts",
