@@ -1279,6 +1279,7 @@ scope Gauge {
         "resolveFunction",
         "scope",
         "scopePathOf",
+        "scopeTypeOf",
         "settledConstOf",
         "sourceFiles",
         "symbolByCName",
