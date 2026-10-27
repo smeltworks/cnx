@@ -251,12 +251,6 @@ class ScopeJoinSites {
       why: ScopeJoinSites.RECOMPUTE,
     },
     {
-      file: "src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts",
-      element: "forMember(result, member)",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
       file: "src/cnx/utils/QualifiedNameGenerator.ts",
       element: "getTranspiledCName(func)",
       kind: "encoder",

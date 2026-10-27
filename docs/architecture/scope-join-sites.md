@@ -75,7 +75,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts`       | `fromSourceName([ctx.result, ctx.memberName])`                                | 2      | owner-c-name |
 | `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts`                   | `fromSourceName([switchEnumType, id])`                                        | 1      | owner-c-name |
 | `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts`                   | `fromSourceName(label.parts)`                                                 | 1      | written-name |
-| `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts`                         | `forMember(result, member)`                                                   | 1      | recompute    |
 | `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts`                         | `fromSourceName(identifierChain.slice(0, -1))`                                | 1      | written-name |
 | `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts`                         | `QualifiedCName.SEPARATOR`                                                    | 1      | owner-c-name |
 | `src/cnx/TRANSPILE/3-Render/codegen/helpers/PostfixChainBuilder.ts`                             | `join(result, step, memberName)`                                              | 1      | owner-c-name |
@@ -100,9 +99,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                                                   | `qualifyPathInScope([name], scopePath)`                                       | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `fromSourceName(type.path)`                                                   | 1      | written-name |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `qualifyInScope(type.name, scopePath)`                                        | 1      | recompute    |
-| **total**                                                                                       |                                                                               | **67** |              |
+| **total**                                                                                       |                                                                               | **66** |              |
 
-67 site(s) across 33 file(s).
+66 site(s) across 33 file(s).
 
 ## Why each site is not a scope join
 
@@ -138,7 +137,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts` `fromSourceName([ctx.result, ctx.memberName])`: member of a register (`knownRegisters`) or an enum (`knownEnums`), each keyed by its materialized C name; a scope member goes through `QualifiedNameGenerator.forMember` instead
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts` `fromSourceName([switchEnumType, id])`: a bare case label that is a member of the subject's enum, whose C name `enumTypeOf` materialized
 - `src/cnx/TRANSPILE/3-Render/codegen/generators/statements/SwitchGenerator.ts` `fromSourceName(label.parts)`: a qualified case label as written (`Motor.State.IDLE`)
-- `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts` `forMember(result, member)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts` `fromSourceName(identifierChain.slice(0, -1))`: the access chain as written, as a register lookup key
 - `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts` `QualifiedCName.SEPARATOR`: `join`'s register step: a register member joined to its owner's C name. A scope member goes through `QualifiedNameGenerator.forMember` instead, and no method hands `__` out as a value (#2116)
 - `src/cnx/TRANSPILE/3-Render/codegen/helpers/PostfixChainBuilder.ts` `join(result, step, memberName)`: an assignment target's member step; `MemberSeparatorResolver.step` decided it, so a scope member goes through `QualifiedNameGenerator.forMember` and a register member joins its owner's C name

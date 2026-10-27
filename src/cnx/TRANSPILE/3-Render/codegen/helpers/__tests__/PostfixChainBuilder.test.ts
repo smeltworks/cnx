@@ -148,9 +148,11 @@ describe("PostfixChainBuilder", () => {
       expect(result).toBe("point->x.y");
     });
 
-    it("joins a scope member through the encoder", () => {
+    it("renders a scope member as the C name its step carries", () => {
       const deps = createMockDeps({
-        memberStep: vi.fn((): TMemberStep => ({ kind: "scope-member" })),
+        memberStep: vi.fn(
+          (): TMemberStep => ({ kind: "scope-member", cName: "Motor__speed" }),
+        ),
       });
       const ops: IPostfixOperation[] = [memberOp("speed", true)];
 

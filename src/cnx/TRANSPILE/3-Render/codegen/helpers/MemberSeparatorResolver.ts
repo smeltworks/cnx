@@ -19,7 +19,7 @@
 import ISeparatorContext from "../types/ISeparatorContext";
 import IMemberSeparatorDeps from "../types/IMemberSeparatorDeps";
 import QualifiedCName from "../../../../utils/QualifiedCName";
-import QualifiedNameGenerator from "../../../../utils/QualifiedNameGenerator";
+import invariant from "../../../../utils/invariant";
 import type IRootHolding from "../types/IRootHolding";
 import type TMemberStep from "../types/TMemberStep";
 
@@ -40,7 +40,6 @@ interface IBuildContextInput {
  * Static utility for resolving member access separators
  */
 class MemberSeparatorResolver {
-  private static readonly SCOPE_MEMBER: TMemberStep = { kind: "scope-member" };
   private static readonly REGISTER_MEMBER: TMemberStep = {
     kind: "register-member",
   };
@@ -116,7 +115,7 @@ class MemberSeparatorResolver {
     if (ctx.isCrossScope) {
       return deps.isKnownRegister(identifierChain[0])
         ? MemberSeparatorResolver.REGISTER_MEMBER
-        : MemberSeparatorResolver.SCOPE_MEMBER;
+        : MemberSeparatorResolver.scopeMember(identifierChain, deps);
     }
 
     // Register member access: GPIO7.DR_SET -> GPIO7_DR_SET
@@ -132,7 +131,7 @@ class MemberSeparatorResolver {
       // #1322: the cross-scope visibility check that stood here -- with its
       // #779 exemption for a scoped register -- is E0435/E0436 in pass 2.1,
       // where the same exemption is stated once for all three positions.
-      return MemberSeparatorResolver.SCOPE_MEMBER;
+      return MemberSeparatorResolver.scopeMember(identifierChain, deps);
     }
 
     // Scoped register: this.MOTOR_REG.SPEED -> Scope_MOTOR_REG_SPEED
@@ -142,6 +141,16 @@ class MemberSeparatorResolver {
 
     // Default: struct field access
     return MemberSeparatorResolver.ACCESS_DOT;
+  }
+
+  /** `Scope.member` as the C name 3-Declare gave the member (#2116) */
+  private static scopeMember(
+    identifierChain: string[],
+    deps: IMemberSeparatorDeps,
+  ): TMemberStep {
+    const cName = deps.memberCName(identifierChain[0], identifierChain[1]);
+    invariant(cName !== undefined, "2.1 rejects a member its scope lacks");
+    return { kind: "scope-member", cName };
   }
 
   /**
@@ -183,13 +192,13 @@ class MemberSeparatorResolver {
 
   /**
    * `result` with `member` joined by `step`: the one place a member access
-   * chain spells a qualified C name. A scope member goes through the encoder;
-   * a register member joins its owner's C name (ADR-016).
+   * chain spells a qualified C name. A scope member is the C name its step
+   * carries; a register member joins its owner's C name (ADR-016).
    */
   static join(result: string, step: TMemberStep, member: string): string {
     switch (step.kind) {
       case "scope-member":
-        return QualifiedNameGenerator.forMember(result, member);
+        return step.cName;
       case "register-member":
         return `${result}${QualifiedCName.SEPARATOR}${member}`;
       case "access":

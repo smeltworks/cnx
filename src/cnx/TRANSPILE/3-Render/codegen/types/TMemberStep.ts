@@ -3,11 +3,11 @@
  *
  * A scope member and a register member become part of one C identifier
  * (ADR-016: `Motor.speed` -> `Motor__speed`); every other step keeps a C
- * operator between the two. `MemberSeparatorResolver.join` spells all of them,
- * so the `__` spelling never leaves that module as a value.
+ * operator between the two. A scope member's step carries the C name 3-Declare
+ * gave it, so nothing here spells it again.
  */
 type TMemberStep =
-  | { readonly kind: "scope-member" }
+  | { readonly kind: "scope-member"; readonly cName: string }
   | { readonly kind: "register-member" }
   | { readonly kind: "access"; readonly separator: "." | "->" | "::" };
 

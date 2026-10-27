@@ -229,9 +229,13 @@ describe("MemberSeparatorResolver", () => {
       const deps = createMockDeps();
       const ctx = createContext({ isCrossScope: true });
 
-      const sep = MemberSeparatorResolver.firstStep(["Motor"], ctx, deps);
+      const sep = MemberSeparatorResolver.firstStep(
+        ["Motor", "speed"],
+        ctx,
+        deps,
+      );
 
-      expect(sep).toEqual({ kind: "scope-member" });
+      expect(sep).toEqual({ kind: "scope-member", cName: "Motor__speed" });
     });
 
     it("should return _ for global register member access", () => {
@@ -253,9 +257,13 @@ describe("MemberSeparatorResolver", () => {
       });
       const ctx = createContext({ isCrossScope: true });
 
-      const sep = MemberSeparatorResolver.firstStep(["Motor"], ctx, deps);
+      const sep = MemberSeparatorResolver.firstStep(
+        ["Motor", "speed"],
+        ctx,
+        deps,
+      );
 
-      expect(sep).toEqual({ kind: "scope-member" });
+      expect(sep).toEqual({ kind: "scope-member", cName: "Motor__speed" });
     });
 
     it("should return _ for scoped register access", () => {
@@ -400,11 +408,11 @@ describe("MemberSeparatorResolver", () => {
     });
   });
   describe("join (#2116)", () => {
-    it("joins a scope member through the encoder", () => {
+    it("renders a scope member as the C name its step carries", () => {
       expect(
         MemberSeparatorResolver.join(
           "Motor",
-          { kind: "scope-member" },
+          { kind: "scope-member", cName: "Motor__speed" },
           "speed",
         ),
       ).toBe("Motor__speed");
