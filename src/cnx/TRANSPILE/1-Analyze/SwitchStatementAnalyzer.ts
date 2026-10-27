@@ -320,12 +320,7 @@ class SwitchStatementCheck {
         // or #1630's
         if (member === undefined) {
           return SwitchStatementCheck.isConstantThrough(
-            program.symbolByCName(
-              ScopeUtils.qualifyPathInScope(
-                label.path.slice(1, 2),
-                binding.scopePath,
-              ),
-            )?.kind,
+            program.memberOf(binding.scopePath, label.path[1])?.kind,
           );
         }
         return (
