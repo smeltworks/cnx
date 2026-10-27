@@ -333,12 +333,6 @@ class ScopeJoinSites {
       why: "a qualified type's identifier chain as written",
     },
     {
-      file: "src/cnx/TRANSPILE/3-Render/codegen/generators/declarationGenerators/EnumGenerator.ts",
-      element: "fromSourceName([fullName, memberName])",
-      kind: "owner-c-name",
-      why: "ADR-017 member of the enum whose `fullyQualifiedCName` 3-Declare stored",
-    },
-    {
       file: "src/cnx/TRANSPILE/3-Render/codegen/generators/declarationGenerators/RegisterMacroGenerator.ts",
       element: "fromSourceName([prefix, member.name])",
       kind: "owner-c-name",
