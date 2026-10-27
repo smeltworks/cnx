@@ -38,7 +38,7 @@
  *     one means valid code stops compiling. Only the second is a regression, so
  *     the external side is deliberately permissive.
  *
- * `TranspileState.isScopeType()` cannot serve here either: it answers only
+ * `IProgram.scopeTypeOf()` cannot serve here either: it answers only
  * for a type declared inside a SCOPE that the file being generated can see
  * (#1724), so it says nothing about a file-scope cnx type or a C/C++ one.
  */
