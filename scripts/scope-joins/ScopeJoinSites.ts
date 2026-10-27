@@ -232,14 +232,14 @@ class ScopeJoinSites {
     {
       file: "src/cnx/utils/ScopeUtils.ts",
       element: "getTranspiledCName({ name: head, scopePath })",
-      kind: "encoder",
-      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+      kind: "written-name",
+      why: "a `this.X` chain head no symbol declares, spelled as written; a declared head reads its fullyQualifiedCName through ITypeHeadLookup (#2116)",
     },
     {
       file: "src/cnx/utils/ScopeUtils.ts",
       element: "getTranspiledCName({ name: typeName, scopePath, })",
       kind: "encoder",
-      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+      why: "qualifyScopeType's candidate name, asked only by 3-Declare as it decides a bare scope type (#2116)",
     },
     {
       file: "src/cnx/utils/ScopeUtils.ts",
@@ -269,7 +269,7 @@ class ScopeJoinSites {
       file: "src/cnx/utils/TypeNameLadder.ts",
       element: "qualifyInScope(type.name, scopePath)",
       kind: "encoder",
-      why: "3-Declare deciding a `this.T` type reference's C name as it builds the symbols; every later pass passes `memberCName` and reads the declared type's fullyQualifiedCName (#2116)",
+      why: "3-Declare deciding a `this.T` type reference's C name as it builds the symbols, or a `this.T` no symbol declares spelled as written; every later pass passes `memberCName` and reads the declared type's fullyQualifiedCName (#2116)",
     },
     {
       file: "src/cnx/PARSE/4-Resolve/ConstantNames.ts",
@@ -324,7 +324,7 @@ class ScopeJoinSites {
       file: "src/cnx/utils/TypeNameLadder.ts",
       element: "fromSourceName(type.path)",
       kind: "written-name",
-      why: "a qualified type's path as written, when no resolver is supplied",
+      why: "a qualified type path no cnx symbol declares, spelled as written; a declared one reads its fullyQualifiedCName through `memberCName` (#2116)",
     },
   ];
 
