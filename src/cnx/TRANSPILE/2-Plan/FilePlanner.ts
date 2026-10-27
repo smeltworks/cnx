@@ -123,7 +123,6 @@ import CallExprUtils from "./CallExprUtils";
 import FunctionCatalog from "./FunctionCatalog";
 import type TPlanInputs from "../types/TPlanInputs";
 import AdrProvenance from "../../instrumentation/AdrProvenance";
-import QualifiedNameGenerator from "../../utils/QualifiedNameGenerator";
 import BitmapFieldStep from "../../utils/BitmapFieldStep";
 import type IBitmapFieldTarget from "../../types/IBitmapFieldTarget";
 import AtomicOwner from "../../utils/AtomicOwner";
@@ -3165,10 +3164,9 @@ class FilePlanner {
         continue;
       }
       planParameters(
-        QualifiedNameGenerator.forFunctionInScope(
+        this.state.declaredCName(
           this.state.program?.scopePathOf(scope) ?? scope,
           declaration.name,
-          this.state.program,
         ),
         declaration,
         this.state.scopePathOf(scope),
