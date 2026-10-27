@@ -232,7 +232,7 @@ class HeaderSymbolAdapter {
     register: import("../../../../types/symbols/IRegisterSymbol").default,
   ): IHeaderSymbol {
     // Get transpiled C name (scope-prefixed)
-    const cName = ScopeUtils.getTranspiledCName(register);
+    const cName = register.fullyQualifiedCName;
     const isGlobal = ScopeUtils.isGlobalScopePath(register.scopePath);
 
     return {
