@@ -307,12 +307,6 @@ class ScopeJoinSites {
       why: ScopeJoinSites.RECOMPUTE,
     },
     {
-      file: "src/cnx/TRANSPILE/1-Analyze/helpers/CCallbackSignature.ts",
-      element: "getTranspiledCName(expected)",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
       file: "src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts",
       element: "getTranspiledCName(symbol)",
       kind: "recompute",
