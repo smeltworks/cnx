@@ -171,8 +171,8 @@ class ConstantNames {
       );
     }
     if (parts[0] === "global") return written[0];
-    return ScopeUtils.qualifyScopeType(typeName, scopePath, (name) =>
-      facts.isScopeTypeVisible(name),
+    return (
+      facts.scopeTypeOf(scopePath, typeName)?.fullyQualifiedCName ?? typeName
     );
   }
 
