@@ -179,7 +179,6 @@ import AdrProvenance from "../instrumentation/AdrProvenance";
 import ExpressionNodes from "../utils/ExpressionNodes";
 import ParameterInputAdapter from "./3-Render/codegen/helpers/ParameterInputAdapter";
 import ParameterSignatureBuilder from "./3-Render/codegen/helpers/ParameterSignatureBuilder";
-import QualifiedNameGenerator from "../utils/QualifiedNameGenerator";
 import MisraSuppressionUtils from "./3-Render/MisraSuppressionUtils";
 import EnumZeroValue from "../utils/EnumZeroValue";
 import CaseLabelSymbol from "../utils/CaseLabelSymbol";
@@ -2023,10 +2022,9 @@ class CodeGenWalker {
           kind: "function",
           adrLine,
           isPrivate,
-          fullName: QualifiedNameGenerator.forFunctionInScope(
+          fullName: this.host.state.declaredCName(
             declaringScopePath,
             declaration.name,
-            this.host.state.program,
           ),
           renderReturnType: () => this.renderType(declaration.returnType),
           planParameters: () => this.planFunctionParameters(params),

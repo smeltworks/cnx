@@ -1031,6 +1031,19 @@ class TranspileState {
     this.generator = generator;
   }
 
+  /**
+   * The C name 3-Declare gave the member `name` declared in `scopePath`
+   * ("" for file scope): read off its symbol, never re-encoded (#2116).
+   */
+  declaredCName(scopePath: string, name: string): string {
+    const declared = this.program?.memberOf(scopePath, name);
+    invariant(
+      declared !== undefined,
+      `3-Declare declares every member 2.2 plans ('${name}' in '${scopePath}')`,
+    );
+    return declared.fullyQualifiedCName;
+  }
+
   private useInputs(inputs: TPlanInputs): void {
     this.program = inputs.program;
     this.symbols = inputs.symbols;
