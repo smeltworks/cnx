@@ -325,13 +325,6 @@ class ScopeJoinSites {
       why: ScopeJoinSites.RECOMPUTE,
     },
     {
-      file: "src/cnx/TRANSPILE/1-Analyze/ScopeAccessAnalyzer.ts",
-      element:
-        "getTranspiledCName({ scopePath: access.scope, name: access.member, })",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
       file: "src/cnx/TRANSPILE/1-Analyze/SwitchStatementAnalyzer.ts",
       element: "qualifyPathInScope(label.path.slice(1, 2), binding.scopePath)",
       kind: "recompute",

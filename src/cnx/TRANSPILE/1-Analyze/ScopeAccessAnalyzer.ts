@@ -34,7 +34,6 @@
  * frames.
  */
 
-import ScopeUtils from "../../utils/ScopeUtils";
 import SourceOrder from "../../utils/SourceOrder";
 import OperandTyper from "../../utils/OperandTyper";
 import DeclarationParts from "../../utils/DeclarationParts";
@@ -230,11 +229,11 @@ class ScopeAccessCheck {
   }
 
   private isScopedRegister(access: IAccess): boolean {
-    const cName = ScopeUtils.getTranspiledCName({
-      scopePath: access.scope,
-      name: access.member,
-    });
-    return this.context.symbols.scopedRegisters.has(cName);
+    const member = this.context.program.memberOf(access.scope, access.member);
+    return (
+      member !== undefined &&
+      this.context.symbols.scopedRegisters.has(member.fullyQualifiedCName)
+    );
   }
 }
 

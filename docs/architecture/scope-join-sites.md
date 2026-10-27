@@ -79,7 +79,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts`                                      | `qualifyInScope(text.slice("this.".length), scopePath)`                       | 1      | recompute    |
 | `src/cnx/TRANSPILE/1-Analyze/InitializationAnalyzer.ts`                                         | `qualifyInScope(declaration.name, "")`                                        | 1      | recompute    |
 | `src/cnx/TRANSPILE/1-Analyze/InitializationAnalyzer.ts`                                         | `qualifyInScope(declaration.name, scopePath)`                                 | 1      | recompute    |
-| `src/cnx/TRANSPILE/1-Analyze/ScopeAccessAnalyzer.ts`                                            | `getTranspiledCName({ scopePath: access.scope, name: access.member, })`       | 1      | recompute    |
 | `src/cnx/TRANSPILE/1-Analyze/SwitchStatementAnalyzer.ts`                                        | `fromSourceName([head, ...label.path.slice(1)])`                              | 1      | owner-c-name |
 | `src/cnx/TRANSPILE/1-Analyze/SwitchStatementAnalyzer.ts`                                        | `qualifyPathInScope(label.path.slice(1, 2), binding.scopePath)`               | 1      | recompute    |
 | `src/cnx/TRANSPILE/1-Analyze/SwitchStatementAnalyzer.ts`                                        | `qualifyPathInScope(label.path.slice(1), scopePath)`                          | 1      | recompute    |
@@ -131,9 +130,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                                                   | `qualifyPathInScope([name], scopePath)`                                       | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `fromSourceName(type.path)`                                                   | 1      | written-name |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `qualifyInScope(type.name, scopePath)`                                        | 1      | recompute    |
-| **total**                                                                                       |                                                                               | **99** |              |
+| **total**                                                                                       |                                                                               | **98** |              |
 
-99 site(s) across 43 file(s).
+98 site(s) across 42 file(s).
 
 ## Why each site is not a scope join
 
@@ -173,7 +172,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts` `qualifyInScope(text.slice("this.".length), scopePath)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/1-Analyze/InitializationAnalyzer.ts` `qualifyInScope(declaration.name, "")`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/1-Analyze/InitializationAnalyzer.ts` `qualifyInScope(declaration.name, scopePath)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
-- `src/cnx/TRANSPILE/1-Analyze/ScopeAccessAnalyzer.ts` `getTranspiledCName({ scopePath: access.scope, name: access.member, })`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/1-Analyze/SwitchStatementAnalyzer.ts` `fromSourceName([head, ...label.path.slice(1)])`: `head` is the label's first component resolved by `ScopeUtils.typeHeadCName`; the rest is what the author wrote
 - `src/cnx/TRANSPILE/1-Analyze/SwitchStatementAnalyzer.ts` `qualifyPathInScope(label.path.slice(1, 2), binding.scopePath)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/1-Analyze/SwitchStatementAnalyzer.ts` `qualifyPathInScope(label.path.slice(1), scopePath)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
