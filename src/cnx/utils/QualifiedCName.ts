@@ -103,31 +103,6 @@ class QualifiedCName {
   }
 
   /**
-   * Whether a qualified C name sits directly inside the given scope.
-   *
-   * Use instead of `name.startsWith(scope + "_")`, which hardcodes the separator.
-   */
-  static isInScope(
-    name: string,
-    scopePath: string | undefined | null,
-  ): boolean {
-    if (!scopePath) {
-      return false;
-    }
-    return name.startsWith(QualifiedCName.prefixFor(scopePath));
-  }
-
-  /**
-   * The prefix a member of the given scope carries, separator included.
-   */
-  static prefixFor(scopePath: string): string {
-    return (
-      QualifiedCName.toParts([scopePath]).join(QualifiedCName.SEPARATOR) +
-      QualifiedCName.SEPARATOR
-    );
-  }
-
-  /**
    * Re-qualify a generated C name for C++ namespace syntax (`A__B` -> `A::B`).
    *
    * Splits on the C separator rather than replacing every underscore, so a component

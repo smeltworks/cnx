@@ -52,16 +52,6 @@ describe("ScopeJoinSites", () => {
       ).toEqual(["fromSourceName([cName, x])"]);
     });
 
-    it("counts a scope prefix test by its whole argument", () => {
-      // TypeValidator's `isInScope` call was invisible to #1357's scan, so a
-      // leaf re-inlined there reddened nothing.
-      expect(
-        ScopeJoinSites.elements(
-          "QualifiedCName.isInScope(id, ScopeUtils.leafOf(currentScopePath));",
-        ),
-      ).toEqual(["isInScope(id, ScopeUtils.leafOf(currentScopePath))"]);
-    });
-
     it("counts the separator used by name", () => {
       expect(
         ScopeJoinSites.elements(

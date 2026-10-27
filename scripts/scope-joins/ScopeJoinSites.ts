@@ -90,15 +90,10 @@ interface IAdjudication {
 
 class ScopeJoinSites {
   /**
-   * The public `QualifiedCName` operations that build a qualified name, or a
-   * scope's prefix, from text. `isInScope` builds `prefixFor` internally, so it
-   * spells a scope prefix just as `fromSourceName` spells a name -- and was
-   * invisible to #1357's scan (#2116).
+   * The public operations that build a qualified name from text (#2116).
    */
   private static readonly BUILDERS: readonly string[] = [
     "QualifiedCName.fromSourceName",
-    "QualifiedCName.isInScope",
-    "QualifiedCName.prefixFor",
     "ScopeUtils.getTranspiledCName",
     "ScopeUtils.getCnxScopedName",
     "ScopeUtils.identityOf",
@@ -324,12 +319,6 @@ class ScopeJoinSites {
       why: "a qualified type's identifier chain as written",
     },
     {
-      file: "src/cnx/TRANSPILE/2-Plan/TypeValidator.ts",
-      element: "isInScope(identifier, currentScopePath)",
-      kind: "scope-path",
-      why: "is a known function declared in the current scope? Handed `currentScopePath`, so the prefix is spelled by `QualifiedCName.prefixFor`",
-    },
-    {
       file: "src/cnx/utils/LengthProperty.ts",
       element: "fromSourceName(type.name)",
       kind: "written-name",
@@ -346,12 +335,6 @@ class ScopeJoinSites {
       element: "QualifiedCName.SEPARATOR",
       kind: "encoder",
       why: "the ADR-063 separator's owner: its declaration, the one join, the split and the prefix test",
-    },
-    {
-      file: "src/cnx/utils/QualifiedCName.ts",
-      element: "prefixFor(scopePath)",
-      kind: "encoder",
-      why: "`isInScope` asking the prefix builder for the path it was handed",
     },
     {
       file: "src/cnx/utils/ScopeUtils.ts",

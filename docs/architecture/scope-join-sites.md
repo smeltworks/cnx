@@ -61,11 +61,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                         | `fromSourceName([functionCName, name])`                                       | 1      | owner-c-name |
 | `src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts`         | `fromSourceName(text)`                                                        | 1      | written-name |
 | `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts`                          | `fromSourceName(identifiers)`                                                 | 1      | written-name |
-| `src/cnx/TRANSPILE/2-Plan/TypeValidator.ts`                        | `isInScope(identifier, currentScopePath)`                                     | 1      | scope-path   |
 | `src/cnx/utils/LengthProperty.ts`                                  | `fromSourceName(type.name)`                                                   | 2      | written-name |
 | `src/cnx/utils/OperandTyper.ts`                                    | `fromSourceName(sourceName)`                                                  | 1      | written-name |
-| `src/cnx/utils/QualifiedCName.ts`                                  | `prefixFor(scopePath)`                                                        | 1      | encoder      |
-| `src/cnx/utils/QualifiedCName.ts`                                  | `QualifiedCName.SEPARATOR`                                                    | 5      | encoder      |
+| `src/cnx/utils/QualifiedCName.ts`                                  | `QualifiedCName.SEPARATOR`                                                    | 3      | encoder      |
 | `src/cnx/utils/QualifiedNameGenerator.ts`                          | `getTranspiledCName(func)`                                                    | 1      | encoder      |
 | `src/cnx/utils/QualifiedNameGenerator.ts`                          | `qualifyInScope(funcName, scopePath)`                                         | 2      | encoder      |
 | `src/cnx/utils/ScopeUtils.ts`                                      | `fromSourceName([scopePath, ...path])`                                        | 1      | encoder      |
@@ -79,9 +77,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                      | `qualifyPathInScope([name], scopePath)`                                       | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                  | `fromSourceName(type.path)`                                                   | 1      | written-name |
 | `src/cnx/utils/TypeNameLadder.ts`                                  | `qualifyInScope(type.name, scopePath)`                                        | 1      | encoder      |
-| **total**                                                          |                                                                               | **50** |              |
+| **total**                                                          |                                                                               | **46** |              |
 
-50 site(s) across 22 file(s).
+46 site(s) across 21 file(s).
 
 ## Why each site is not a scope join
 
@@ -108,10 +106,8 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `fromSourceName([functionCName, name])`: a local renamed under its function's materialized C name when it hides a file-scope name
 - `src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts` `fromSourceName(text)`: a dotted callback type name as written; `this.` goes through `ScopeUtils.qualifyInScope` instead
 - `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts` `fromSourceName(identifiers)`: a qualified type's identifier chain as written
-- `src/cnx/TRANSPILE/2-Plan/TypeValidator.ts` `isInScope(identifier, currentScopePath)`: is a known function declared in the current scope? Handed `currentScopePath`, so the prefix is spelled by `QualifiedCName.prefixFor`
 - `src/cnx/utils/LengthProperty.ts` `fromSourceName(type.name)`: a resolved type's dotted name as its C lookup key
 - `src/cnx/utils/OperandTyper.ts` `fromSourceName(sourceName)`: a dotted source name as written, as its C lookup key
-- `src/cnx/utils/QualifiedCName.ts` `prefixFor(scopePath)`: `isInScope` asking the prefix builder for the path it was handed
 - `src/cnx/utils/QualifiedCName.ts` `QualifiedCName.SEPARATOR`: the ADR-063 separator's owner: its declaration, the one join, the split and the prefix test
 - `src/cnx/utils/QualifiedNameGenerator.ts` `getTranspiledCName(func)`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
 - `src/cnx/utils/QualifiedNameGenerator.ts` `qualifyInScope(funcName, scopePath)`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol

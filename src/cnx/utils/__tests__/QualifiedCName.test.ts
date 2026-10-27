@@ -74,29 +74,6 @@ describe("QualifiedCName", () => {
     });
   });
 
-  describe("isInScope", () => {
-    it("recognizes a member of the given scope", () => {
-      expect(QualifiedCName.isInScope("Motor__init", "Motor")).toBe(true);
-    });
-
-    it("rejects a member of a different scope", () => {
-      expect(QualifiedCName.isInScope("Pump_init", "Motor")).toBe(false);
-    });
-
-    it("handles a dotted scope path", () => {
-      expect(QualifiedCName.isInScope("Outer__Inner__fn", "Outer.Inner")).toBe(
-        true,
-      );
-    });
-
-    it("returns false for a null or empty scope", () => {
-      // Preserves the previous `startsWith(null + "__")` behavior at call sites
-      expect(QualifiedCName.isInScope("Motor__init", null)).toBe(false);
-      expect(QualifiedCName.isInScope("Motor__init", undefined)).toBe(false);
-      expect(QualifiedCName.isInScope("Motor__init", "")).toBe(false);
-    });
-  });
-
   describe("toCppQualified", () => {
     it("re-qualifies for C++ namespace syntax", () => {
       expect(
