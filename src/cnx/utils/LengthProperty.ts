@@ -13,7 +13,6 @@
 import type TConstExpr from "../types/TConstExpr";
 import type TCaseLabelSyntax from "../types/syntax/TCaseLabelSyntax";
 import TYPE_WIDTH from "../types/TYPE_WIDTH";
-import QualifiedCName from "./QualifiedCName";
 import type IStructSymbol from "../types/symbols/IStructSymbol";
 import type TSymbol from "../types/symbols/TSymbol";
 import type IElementWidthFacts from "./types/IElementWidthFacts";
@@ -313,10 +312,7 @@ class LengthProperty {
   ): number | null {
     switch (type.kind) {
       case "struct": {
-        const struct = LengthProperty.struct(
-          QualifiedCName.fromSourceName(type.name),
-          lookup,
-        );
+        const struct = LengthProperty.struct(type.name, lookup);
         if (struct)
           return LengthProperty.structBits(struct, lookup, headerBits);
         // A header's struct, which a cnx field names as a struct (#1975)
@@ -330,7 +326,7 @@ class LengthProperty {
           ? BOOL_BITS
           : (TYPE_WIDTH[type.primitive] ?? null);
       case "enum": {
-        const symbol = lookup(QualifiedCName.fromSourceName(type.name));
+        const symbol = lookup(type.name);
         return symbol?.kind === "enum"
           ? LengthProperty.enumBits(
               [...symbol.members.values()].map((member) => member.value),

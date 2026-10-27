@@ -319,12 +319,6 @@ class ScopeJoinSites {
       why: "a qualified type's identifier chain as written",
     },
     {
-      file: "src/cnx/utils/LengthProperty.ts",
-      element: "fromSourceName(type.name)",
-      kind: "written-name",
-      why: "a resolved type's dotted name as its C lookup key",
-    },
-    {
       file: "src/cnx/utils/QualifiedCName.ts",
       element: "QualifiedCName.SEPARATOR",
       kind: "encoder",
