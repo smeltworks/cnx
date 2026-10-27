@@ -525,12 +525,6 @@ class ScopeJoinSites {
       why: ScopeJoinSites.RECOMPUTE,
     },
     {
-      file: "src/lib/parseWithSymbols.ts",
-      element: "getTranspiledCName(variable)",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
       file: "src/cnx/PARSE/4-Resolve/ConstantNames.ts",
       element: "fromSourceName(current.type.name)",
       kind: "written-name",

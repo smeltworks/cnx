@@ -206,7 +206,7 @@ function convertFunction(
 function convertVariable(
   variable: import("../cnx/types/symbols/IVariableSymbol").default,
 ): ISymbolInfo {
-  const cName = ScopeUtils.getTranspiledCName(variable);
+  const cName = variable.fullyQualifiedCName;
   const parent = ScopeUtils.leafOf(variable.scopePath) || undefined;
   const typeStr = TypeResolver.getTypeName(variable.type);
 
