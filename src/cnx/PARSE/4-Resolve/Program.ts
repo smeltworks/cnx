@@ -1119,8 +1119,6 @@ class Program {
           ? member
           : undefined;
       },
-      isScopeTypeVisible: (name) =>
-        options.files.isScopeTypeVisibleFrom(file(), name),
       get reachesForeignHeader() {
         return options.files.reachesForeignHeader(file());
       },

@@ -33,8 +33,6 @@ interface IConstantNameFacts {
   visibleMember(scopePath: string, name: string): TSymbol | undefined;
   /** The scope type a bare `name` in `scopePath` binds to here (ADR-057) */
   scopeTypeOf(scopePath: string, name: string): TSymbol | undefined;
-  /** Whether a qualified cnx type name is a scope type this file can see */
-  isScopeTypeVisible(qualifiedName: string): boolean;
   /** A const's settled value, or why it has none; undefined until it settles */
   constValue(symbol: IVariableSymbol): TSettledConst | undefined;
   /** A local as settled; undefined when it has not settled (yet) */
