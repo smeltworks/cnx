@@ -26,6 +26,8 @@ import CalleeNameResolver from "./helpers/CalleeNameResolver";
 import ScopeUtils from "../../utils/ScopeUtils";
 import IncludeDirective from "./helpers/IncludeDirective";
 import type IAnalysisContext from "./types/IAnalysisContext";
+import type TSymbol from "../../types/symbols/TSymbol";
+import invariant from "../../utils/invariant";
 
 /**
  * cnx built-in functions
@@ -59,7 +61,12 @@ class FunctionCallWalk {
   }
 
   private function(fn: IFunctionDeclarationSyntax, scope: string): void {
-    const fullName = ScopeUtils.qualifyInScope(fn.name, scope);
+    const symbol = this.analyzer.memberOf(scope, fn.name);
+    invariant(
+      symbol !== undefined,
+      "3-Declare declares every function defined",
+    );
+    const fullName = symbol.fullyQualifiedCName;
     this.analyzer.enterFunction(fullName);
     this.analyzer.defineFunction(fullName);
     this.part({ kind: "type", type: fn.returnType }, scope);
@@ -297,6 +304,25 @@ class FunctionCallAnalyzer {
    * @param name The lookup key, already qualified by the caller -- see
    *             `FunctionCallListener.isCallbackTypeHere`.
    */
+  /**
+   * The symbol 3-Declare made for `name` in `scope` ("" for file scope), so a
+   * site reads its `fullyQualifiedCName` instead of encoding one (#2116).
+   */
+  public memberOf(scope: string, name: string): TSymbol | undefined {
+    return this.context.program.memberOf(
+      scope === "" ? "" : this.scopePathOf(scope),
+      name,
+    );
+  }
+
+  /** ADR-029: `name`, written in `scope`, names a callback type it declares */
+  public isCallbackMember(scope: string, name: string): boolean {
+    const member = this.memberOf(scope, name);
+    return (
+      member !== undefined && this.isCallbackType(member.fullyQualifiedCName)
+    );
+  }
+
   public isCallbackType(name: string): boolean {
     return (
       this.allLocalFunctions.has(name) ||

@@ -67,7 +67,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                                                      | `fromSourceName([functionCName, name])`                                       | 1      | owner-c-name |
 | `src/cnx/TRANSPILE/1-Analyze/EnumMemberValue.ts`                                                | `qualifyInScope(declaration.name, scopePath)`                                 | 1      | recompute    |
 | `src/cnx/TRANSPILE/1-Analyze/FunctionCallAnalyzer.ts`                                           | `qualifyInScope(declaration.name, this.scopePathOf(scope))`                   | 1      | recompute    |
-| `src/cnx/TRANSPILE/1-Analyze/FunctionCallAnalyzer.ts`                                           | `qualifyInScope(fn.name, scope)`                                              | 1      | recompute    |
 | `src/cnx/TRANSPILE/1-Analyze/FunctionCallAnalyzer.ts`                                           | `qualifyInScope(typeName, scope)`                                             | 1      | recompute    |
 | `src/cnx/TRANSPILE/1-Analyze/helpers/CalleeNameResolver.ts`                                     | `qualifyInScope(memberName, currentScopePath)`                                | 1      | recompute    |
 | `src/cnx/TRANSPILE/1-Analyze/helpers/CalleeNameResolver.ts`                                     | `qualifyInScope(memberName, resolvedName)`                                    | 1      | recompute    |
@@ -127,9 +126,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                                                   | `qualifyPathInScope([name], scopePath)`                                       | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `fromSourceName(type.path)`                                                   | 1      | written-name |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `qualifyInScope(type.name, scopePath)`                                        | 1      | recompute    |
-| **total**                                                                                       |                                                                               | **94** |              |
+| **total**                                                                                       |                                                                               | **93** |              |
 
-94 site(s) across 41 file(s).
+93 site(s) across 41 file(s).
 
 ## Why each site is not a scope join
 
@@ -157,7 +156,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `fromSourceName([functionCName, name])`: a local renamed under its function's materialized C name when it hides a file-scope name
 - `src/cnx/TRANSPILE/1-Analyze/EnumMemberValue.ts` `qualifyInScope(declaration.name, scopePath)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/1-Analyze/FunctionCallAnalyzer.ts` `qualifyInScope(declaration.name, this.scopePathOf(scope))`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
-- `src/cnx/TRANSPILE/1-Analyze/FunctionCallAnalyzer.ts` `qualifyInScope(fn.name, scope)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/1-Analyze/FunctionCallAnalyzer.ts` `qualifyInScope(typeName, scope)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/1-Analyze/helpers/CalleeNameResolver.ts` `qualifyInScope(memberName, currentScopePath)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/1-Analyze/helpers/CalleeNameResolver.ts` `qualifyInScope(memberName, resolvedName)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
