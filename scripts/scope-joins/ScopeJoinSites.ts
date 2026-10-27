@@ -298,7 +298,7 @@ class ScopeJoinSites {
       file: "src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts",
       element: "fromSourceName(text)",
       kind: "written-name",
-      why: "a dotted callback type name as written; `this.` goes through `ScopeUtils.qualifyInScope` instead",
+      why: "a dotted type that no cnx symbol declares (a foreign `TestNS.MyClass`); a declared `Scope.T` reads its `fullyQualifiedCName` through `memberOf`",
     },
     {
       file: "src/cnx/TRANSPILE/2-Plan/FilePlanner.ts",

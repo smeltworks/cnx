@@ -81,7 +81,13 @@ class FunctionReference {
       return [text.slice("global.".length)];
     }
     if (text.includes(".")) {
-      return [QualifiedCName.fromSourceName(text)];
+      // #2116: a cnx `Scope.T` reads the C name 3-Declare gave it; only a
+      // foreign path (`TestNS.MyClass`) has no symbol, and is spelled as written
+      const dot = text.indexOf(".");
+      const member = program.memberOf(text.slice(0, dot), text.slice(dot + 1));
+      return [
+        member?.fullyQualifiedCName ?? QualifiedCName.fromSourceName(text),
+      ];
     }
     return FunctionReference.candidates(text, scopePath, false, program);
   }

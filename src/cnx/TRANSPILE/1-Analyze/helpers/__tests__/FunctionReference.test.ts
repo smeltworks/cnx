@@ -110,7 +110,19 @@ describe("FunctionReference.candidatesForTypeText", () => {
     ).toEqual(["onDown"]);
   });
 
-  it("transpiles an explicitly qualified path", () => {
+  it("reads a declared member's C name for its qualified path", () => {
+    const renamed: Pick<IProgram, "memberOf"> = {
+      memberOf: (scopePath, name) =>
+        scopePath === "S" && name === "h"
+          ? ({ fullyQualifiedCName: "Stored__h" } as unknown as TSymbol)
+          : undefined,
+    };
+    expect(FunctionReference.candidatesForTypeText("S.h", "", renamed)).toEqual(
+      ["Stored__h"],
+    );
+  });
+
+  it("spells a path no cnx symbol declares as written", () => {
     expect(
       FunctionReference.candidatesForTypeText("Outer.Inner.h", "", declared),
     ).toEqual(["Outer__Inner__h"]);
