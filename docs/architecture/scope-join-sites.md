@@ -70,7 +70,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/TRANSPILE/1-Analyze/helpers/CalleeNameResolver.ts`                                     | `qualifyInScope(name, currentScopePath)`                                      | 1      | recompute    |
 | `src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts`                                      | `fromSourceName(text)`                                                        | 1      | written-name |
 | `src/cnx/TRANSPILE/1-Analyze/SwitchStatementAnalyzer.ts`                                        | `fromSourceName([head, ...label.path.slice(1)])`                              | 1      | owner-c-name |
-| `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts`                                                       | `forMember(declaringScopePath, declaration.name)`                             | 1      | recompute    |
 | `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts`                                                       | `fromSourceName(identifiers)`                                                 | 1      | written-name |
 | `src/cnx/TRANSPILE/2-Plan/TypeValidator.ts`                                                     | `forMember(currentScopePath, identifier)`                                     | 1      | recompute    |
 | `src/cnx/TRANSPILE/2-Plan/TypeValidator.ts`                                                     | `isInScope(identifier, currentScopePath)`                                     | 1      | scope-path   |
@@ -108,9 +107,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                                                   | `qualifyPathInScope([name], scopePath)`                                       | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `fromSourceName(type.path)`                                                   | 1      | written-name |
 | `src/cnx/utils/TypeNameLadder.ts`                                                               | `qualifyInScope(type.name, scopePath)`                                        | 1      | recompute    |
-| **total**                                                                                       |                                                                               | **75** |              |
+| **total**                                                                                       |                                                                               | **74** |              |
 
-75 site(s) across 34 file(s).
+74 site(s) across 34 file(s).
 
 ## Why each site is not a scope join
 
@@ -141,7 +140,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/TRANSPILE/1-Analyze/helpers/CalleeNameResolver.ts` `qualifyInScope(name, currentScopePath)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts` `fromSourceName(text)`: a dotted callback type name as written; `this.` goes through `ScopeUtils.qualifyInScope` instead
 - `src/cnx/TRANSPILE/1-Analyze/SwitchStatementAnalyzer.ts` `fromSourceName([head, ...label.path.slice(1)])`: `head` is the label's first component resolved by `ScopeUtils.typeHeadCName`; the rest is what the author wrote
-- `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts` `forMember(declaringScopePath, declaration.name)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/2-Plan/FilePlanner.ts` `fromSourceName(identifiers)`: a qualified type's identifier chain as written
 - `src/cnx/TRANSPILE/2-Plan/TypeValidator.ts` `forMember(currentScopePath, identifier)`: calls an encoder outside 3-Declare; the name is already on the symbol, so this converts to reading it (#2116)
 - `src/cnx/TRANSPILE/2-Plan/TypeValidator.ts` `isInScope(identifier, currentScopePath)`: is a known function declared in the current scope? Handed `currentScopePath`, so the prefix is spelled by `QualifiedCName.prefixFor`

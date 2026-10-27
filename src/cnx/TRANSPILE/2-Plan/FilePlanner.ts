@@ -1140,10 +1140,15 @@ class FilePlanner {
     for (const { declaration } of scope.members) {
       if (declaration.kind !== "variableDeclaration") continue;
       if (constructorArguments.has(declaration.name)) continue;
-      const cName = QualifiedNameGenerator.forMember(
+      const symbol = this.state.program?.memberOf(
         declaringScopePath,
         declaration.name,
       );
+      invariant(
+        symbol !== undefined,
+        "3-Declare declares every scope variable",
+      );
+      const cName = symbol.fullyQualifiedCName;
       if (!PrivateConstSpelling.inlines(constants, cName)) continue;
       inlined.add(declaration);
       const narrowing = PrivateConstSpelling.narrowingOf(constants, cName);
