@@ -49,6 +49,25 @@ class QualifiedCName {
    * @param written The name as written, e.g. "Motor.State.IDLE"
    * @returns The generated C identifier, e.g. "Motor__State__IDLE"
    */
+  /**
+   * The C name a function-local moves to when it hides a file-scope name or
+   * the enclosing local its initializer reads (#1643): `<function>__<name>`,
+   * then `<function>__<name>__2`, and so on. `__` cannot be written in a cnx
+   * identifier (E0201), so the moved name collides with nothing declared.
+   * Only 4-Resolve's LexicalFrames decides it, once per local (#2116).
+   */
+  static movedLocal(
+    functionCName: string,
+    name: string,
+    suffix: number,
+  ): string {
+    return QualifiedCName.toParts([
+      functionCName,
+      name,
+      suffix === 1 ? null : String(suffix),
+    ]).join(QualifiedCName.SEPARATOR);
+  }
+
   static fromSourceName(
     written: string | readonly (string | undefined | null)[],
   ): string {

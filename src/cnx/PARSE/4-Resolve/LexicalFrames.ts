@@ -319,18 +319,14 @@ class LexicalFrames {
     }
     let emitted =
       nameMoves.length > 0
-        ? QualifiedCName.fromSourceName([functionCName, name])
+        ? QualifiedCName.movedLocal(functionCName, name, 1)
         : name;
     if (emitted === readsEmitted) {
       nameMoves.push("readsEnclosing");
     }
     let suffix = 1;
     while (emitted === readsEmitted) {
-      emitted = QualifiedCName.fromSourceName([
-        functionCName,
-        name,
-        suffix === 1 ? null : String(suffix),
-      ]);
+      emitted = QualifiedCName.movedLocal(functionCName, name, suffix);
       suffix++;
     }
     return {

@@ -95,6 +95,7 @@ class ScopeJoinSites {
   private static readonly BUILDERS: readonly string[] = [
     "QualifiedCName.fromSourceName",
     "QualifiedCName.fromSourceParts",
+    "QualifiedCName.movedLocal",
     "ScopeUtils.getTranspiledCName",
     "ScopeUtils.getCnxScopedName",
     "ScopeUtils.identityOf",
@@ -218,6 +219,18 @@ class ScopeJoinSites {
       why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
     },
     {
+      file: "src/cnx/PARSE/4-Resolve/LexicalFrames.ts",
+      element: "movedLocal(functionCName, name, 1)",
+      kind: "owner-c-name",
+      why: "4-Resolve deciding, once, the C name a local moves to when it hides a file-scope name; stored on the settled local as emittedName",
+    },
+    {
+      file: "src/cnx/PARSE/4-Resolve/LexicalFrames.ts",
+      element: "movedLocal(functionCName, name, suffix)",
+      kind: "owner-c-name",
+      why: "4-Resolve deciding, once, the uniqueness-suffixed C name a local moves to when it shadows the enclosing local it reads (#1643); stored as emittedName",
+    },
+    {
       file: "src/cnx/utils/ScopeUtils.ts",
       element: "fromSourceParts([symbol.scopePath, symbol.name])",
       kind: "encoder",
@@ -282,19 +295,6 @@ class ScopeJoinSites {
       element: 'fromSourceName(written.join("."))',
       kind: "written-name",
       why: "a dotted type no cnx symbol this file sees declares; a declared `Scope.T` reads its `fullyQualifiedCName` through `visibleMember`",
-    },
-    {
-      file: "src/cnx/PARSE/4-Resolve/LexicalFrames.ts",
-      element:
-        "fromSourceName([functionCName, name, suffix === 1 ? null : String(suffix)])",
-      kind: "owner-c-name",
-      why: "a local renamed under its function's materialized C name when it hides a file-scope name, with a uniqueness suffix",
-    },
-    {
-      file: "src/cnx/PARSE/4-Resolve/LexicalFrames.ts",
-      element: "fromSourceName([functionCName, name])",
-      kind: "owner-c-name",
-      why: "a local renamed under its function's materialized C name when it hides a file-scope name",
     },
     {
       file: "src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts",
