@@ -11,7 +11,6 @@
  * 7. Per-field struct tracking
  */
 
-import ScopeUtils from "../../utils/ScopeUtils";
 import LengthProperty from "../../utils/LengthProperty";
 import ProgramExpressions from "../../utils/ProgramExpressions";
 import type ISourceSpan from "../../types/ISourceSpan";
@@ -483,7 +482,7 @@ class InitializationAnalyzer {
     const assigned = this._assignedMembers(block);
     for (const { declaration } of block.members) {
       if (declaration.kind !== "variableDeclaration") continue;
-      const fullName = ScopeUtils.qualifyInScope(declaration.name, scopePath); // Transpiled C name
+      const fullName = this._declaredCName(scopePath, declaration.name);
       this._declareMember(
         declaration,
         fullName,

@@ -276,12 +276,6 @@ class ScopeJoinSites {
       why: ScopeJoinSites.RECOMPUTE,
     },
     {
-      file: "src/cnx/TRANSPILE/1-Analyze/InitializationAnalyzer.ts",
-      element: "qualifyInScope(declaration.name, scopePath)",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
       file: "src/cnx/TRANSPILE/1-Analyze/SwitchStatementAnalyzer.ts",
       element: "qualifyPathInScope(label.path.slice(1, 2), binding.scopePath)",
       kind: "recompute",
