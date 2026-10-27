@@ -455,7 +455,7 @@ class FunctionCallAnalyzer {
         code: "E0423",
         functionName: name,
         span,
-        message: `recursive call to '${name}' is forbidden (MISRA C:2012 Rule 17.2)`,
+        message: `recursive call to '${writtenName}' is forbidden (MISRA C:2012 Rule 17.2)`,
       });
       return;
     }
