@@ -9,7 +9,7 @@ import type ISourcePosition from "../../utils/types/ISourcePosition";
 import AdrProvenance from "../../instrumentation/AdrProvenance";
 // SonarCloud S3776: Extracted literal parsing to reduce complexity
 import QualifiedCName from "../../utils/QualifiedCName";
-import QualifiedNameGenerator from "../../utils/QualifiedNameGenerator";
+import invariant from "../../utils/invariant";
 import PositionFreeScopeMember from "../../utils/PositionFreeScopeMember";
 import type TranspileState from "../TranspileState";
 
@@ -187,7 +187,14 @@ class TypeValidator {
         state.typingContext().program,
       )
     ) {
-      return QualifiedNameGenerator.forMember(currentScopePath, identifier);
+      const member = state
+        .typingContext()
+        .program.memberOf(currentScopePath, identifier);
+      invariant(
+        member !== undefined,
+        "a position-free scope member is declared",
+      );
+      return member.fullyQualifiedCName;
     }
     return null;
   }
