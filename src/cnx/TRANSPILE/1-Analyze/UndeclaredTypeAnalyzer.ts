@@ -36,13 +36,11 @@
  * definition is unknown to gcc); whether they name a type at all is #1458.
  */
 
-import invariant from "../../utils/invariant";
 import BUILTIN_TYPE_NAMES from "./BUILTIN_TYPE_NAMES";
 import ICodeGenSymbols from "../../types/ICodeGenSymbols";
 import IUndeclaredTypeError from "./types/IUndeclaredTypeError";
 import NameExistence from "../../PARSE/3-Declare/NameExistence";
 import type IResolvedSymbols from "../../types/IResolvedSymbols";
-import ScopeUtils from "../../utils/ScopeUtils";
 import QualifiedCName from "../../utils/QualifiedCName";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionChildren from "../../utils/ExpressionChildren";
@@ -180,16 +178,10 @@ class UndeclaredTypeAnalyzer {
    * predicate 1.4 binds the name with (`DeferredTypes.settleType`).
    */
   private boundName(typeName: string, scope: string): string {
-    const bound = ScopeUtils.qualifyScopeType(typeName, scope, (qualified) =>
-      this.context.program.isScopeTypeVisibleFrom(
-        this.context.sourceFile,
-        qualified,
-      ),
+    return (
+      this.context.program.scopeTypeOf(this.context.sourceFile, scope, typeName)
+        ?.cnxScopedName ?? typeName
     );
-    if (bound === typeName) return typeName;
-    const member = this.context.program.memberOf(scope, typeName);
-    invariant(member !== undefined, "a visible scope type is a declared one");
-    return member.cnxScopedName;
   }
 
   /**

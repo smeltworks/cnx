@@ -255,6 +255,19 @@ class Program {
         symbolsByCName.get(cName),
       memberOf: (scopePath: string, name: string): TSymbol | undefined =>
         symbolsByIdentity.get(Program.identityKey(scopePath, name)),
+      scopeTypeOf: (
+        sourceFile: string,
+        scopePath: string,
+        name: string,
+      ): TSymbol | undefined => {
+        const member = symbolsByIdentity.get(
+          Program.identityKey(scopePath, name),
+        );
+        return member !== undefined &&
+          isScopeTypeVisibleFrom(sourceFile, member.fullyQualifiedCName)
+          ? member
+          : undefined;
+      },
       symbolsInFile: (sourceFile: string): ReadonlyArray<TSymbol> =>
         symbolsByFile.get(sourceFile) ?? [],
       sourceFiles: (): ReadonlyArray<string> => sourceFiles,

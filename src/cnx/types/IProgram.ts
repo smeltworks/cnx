@@ -58,6 +58,17 @@ interface IProgram {
   isScopeTypeVisibleFrom(sourceFile: string, qualifiedName: string): boolean;
 
   /**
+   * The type `name` declared in `scopePath` that `sourceFile` can see, found
+   * by identity; undefined when ADR-057 leaves a bare `name` the file's own.
+   * Read `.fullyQualifiedCName` from it rather than encoding one (#2116).
+   */
+  scopeTypeOf(
+    sourceFile: string,
+    scopePath: string,
+    name: string,
+  ): TSymbol | undefined;
+
+  /**
    * The cnx symbol whose canonical identity is this transpiled C name.
    *
    * Exact identity, never the bare-name index: asking a bare-name lookup with a
