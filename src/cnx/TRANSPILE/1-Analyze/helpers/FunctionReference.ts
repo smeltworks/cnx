@@ -178,7 +178,7 @@ class FunctionReference {
 
   /** The symbol's C name -- the identity ADR-029's nominal rule compares. */
   static cNameOf(symbol: IFunctionSymbol): string {
-    return ScopeUtils.getTranspiledCName(symbol);
+    return symbol.fullyQualifiedCName;
   }
 
   private static lookup(

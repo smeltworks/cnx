@@ -308,12 +308,6 @@ class ScopeJoinSites {
     },
     {
       file: "src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts",
-      element: "getTranspiledCName(symbol)",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
-      file: "src/cnx/TRANSPILE/1-Analyze/helpers/FunctionReference.ts",
       element: 'qualifyInScope(text.slice("this.".length), scopePath)',
       kind: "recompute",
       why: ScopeJoinSites.RECOMPUTE,
