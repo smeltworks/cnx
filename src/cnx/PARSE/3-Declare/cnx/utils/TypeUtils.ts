@@ -131,8 +131,7 @@ class TypeUtils {
     if (!typeFacts) return undefined;
     return {
       isScopeType: (qualifiedName) => typeFacts.isScopeType(qualifiedName),
-      resolveQualifiedType: (identifiers) =>
-        typeFacts.qualifiedTypeName(identifiers.join(".")),
+      qualifiedTypeName: (written) => typeFacts.qualifiedTypeName(written),
     };
   }
 }

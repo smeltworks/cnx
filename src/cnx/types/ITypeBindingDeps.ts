@@ -32,10 +32,11 @@ interface ITypeBindingDeps {
   ) => string | undefined;
 
   /**
-   * C++ namespace-aware resolution for `Scope.Type` (Issue #388). Injected
-   * because it is a codegen concern; without it the components are joined.
+   * The spelling 1.3 gave a written `Scope.T` / `Ns.T` -- `Ns::T` for a C++
+   * head, else the C name (#388, #2116). A ladder that meets a qualified type
+   * reads it here; there is no fallback spelling.
    */
-  readonly resolveQualifiedType?: (identifiers: string[]) => string;
+  readonly qualifiedTypeName?: (written: string) => string;
   /**
    * The C name 3-Declare gave `name` in `scopePath`, for `this.T` (#2116).
    * Absent only in 3-Declare, which is still deciding those names.

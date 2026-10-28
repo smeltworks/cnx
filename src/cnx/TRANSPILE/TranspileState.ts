@@ -807,23 +807,24 @@ class TranspileState {
    * (`utils/TypeNameLadder`), and codegen reaches the same decision through
    * this method. Deleted under #1452 with the rule that named it.
    *
-   * `resolveQualifiedType` stays the caller's: it is the one half that really
-   * does differ, routing to a generator's C++ namespace resolution or to a
-   * callback's, and binding it here would invent a dependency from `state/` on
-   * whichever one happened to be first.
-   *
-   * @param resolveQualifiedType the caller's `Scope.Type` resolver, if it has one
+   * `qualifiedTypeName` reads 1.3's spelling of a written `Scope.T` (#2116).
+   * It was the caller's, as a C++-namespace resolver; every caller now reads
+   * the same stored spelling, so it is bound here.
    */
-  typeBindingDeps(
-    resolveQualifiedType?: (identifiers: string[]) => string,
-  ): ITypeBindingDeps {
+  typeBindingDeps(): ITypeBindingDeps {
     return {
       scopeTypeCName: (scopePath: string, name: string) =>
         this.sourcePath === null
           ? undefined
           : this.program?.scopeTypeOf(this.sourcePath, scopePath, name)
               ?.fullyQualifiedCName,
-      resolveQualifiedType,
+      qualifiedTypeName: (written: string) => {
+        invariant(
+          this.program !== null,
+          "a qualified type is read from the program",
+        );
+        return this.program.qualifiedTypeName(written);
+      },
       memberCName: (scopePath: string, name: string) =>
         this.program?.memberOf(scopePath, name)?.fullyQualifiedCName,
     };

@@ -36,7 +36,7 @@
  */
 import type INamedTypeResolution from "../types/INamedTypeResolution";
 import type ITypeBindingDeps from "../types/ITypeBindingDeps";
-import QualifiedCName from "./QualifiedCName";
+import invariant from "./invariant";
 import ScopeUtils from "./ScopeUtils";
 import type TTypeSyntax from "../types/syntax/TTypeSyntax";
 import type ISyntaxNode from "../types/syntax/ISyntaxNode";
@@ -84,14 +84,8 @@ class TypeNameLadder {
         return {
           branch: "qualified",
           written: type.path.join("."),
-          // #2116: a declared `Scope.T` reads its stored C name; only a path
-          // no cnx symbol declares is spelled as written
-          name: deps?.resolveQualifiedType
-            ? deps.resolveQualifiedType([...type.path])
-            : (deps?.memberCName?.(
-                type.path[0],
-                type.path.slice(1).join("."),
-              ) ?? QualifiedCName.fromSourceName(type.path.join("."))),
+          // #2116: 1.3 spelled every written `Scope.T` / `Ns.T` once
+          name: TypeNameLadder.qualifiedName(deps, type.path.join(".")),
         };
       // Bare T -- the ONLY branch that resolves local -> scope -> global
       case "user":
@@ -142,6 +136,18 @@ class TypeNameLadder {
       default:
         return null;
     }
+  }
+
+  /** The spelling 1.3 stored for a written `Scope.T`; every caller supplies it */
+  private static qualifiedName(
+    deps: ITypeBindingDeps | undefined,
+    written: string,
+  ): string {
+    invariant(
+      deps?.qualifiedTypeName !== undefined,
+      `a qualified type ('${written}') is read from 1.3's spellings`,
+    );
+    return deps.qualifiedTypeName(written);
   }
 }
 

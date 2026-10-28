@@ -1065,6 +1065,8 @@ class OperandTyper {
         ctx.program.lexicalFrameAt(ctx.sourceFile, at).scopePath,
         {
           scopeTypeCName: OperandTyper.scopeTypeCNameIn(ctx),
+          qualifiedTypeName: (written: string) =>
+            ctx.program.qualifiedTypeName(written),
           memberCName: (scopePath: string, name: string) =>
             ctx.program.memberOf(scopePath, name)?.fullyQualifiedCName,
         },

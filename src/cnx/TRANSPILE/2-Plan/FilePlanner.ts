@@ -233,9 +233,7 @@ class FilePlanner {
 
   private planType(type: TTypeSyntax, scopePath: string): IPlannedType {
     const element = type.kind === "array" ? type.element : type;
-    const deps = this.state.typeBindingDeps((identifiers) =>
-      this.resolveQualifiedType(identifiers),
-    );
+    const deps = this.state.typeBindingDeps();
 
     return {
       named: TypeNameLadder.classifyNamed(element, scopePath, deps),
@@ -367,9 +365,7 @@ class FilePlanner {
     const resolved = TypeNameLadder.resolveWrittenName(
       type,
       scopePath,
-      this.state.typeBindingDeps((identifiers) =>
-        this.resolveQualifiedType(identifiers),
-      ),
+      this.state.typeBindingDeps(),
     );
     // #1508: the other half of ADR-010's promise. A cross-file declaration is
     // reached two ways -- it is CALLED, which the postfix generator records, or
@@ -424,28 +420,6 @@ class FilePlanner {
       typeName,
       this.state.symbolTable,
     );
-  }
-
-  /**
-   * Issue #388: Resolve a qualified type from dot notation to the correct output format.
-   * For C++ namespace types (like MockLib.Parse.ParseResult), uses :: separator.
-   * For cnx scope types (like Motor.State), uses _ separator.
-   *
-   * @param identifiers Array of identifier names forming the qualified type
-   * @returns The resolved type name with appropriate separator
-   */
-  resolveQualifiedType(identifiers: string[]): string {
-    if (identifiers.length === 0) {
-      return "";
-    }
-    // #2116: 1.3 spelled every written `Scope.T` / `Ns.T` once -- `Ns::T` for
-    // a C++ head, else the C name -- so this reads it and never re-derives it
-    const program = this.state.program;
-    invariant(
-      program !== null,
-      "2.2 Plan reads 1.3's spellings off the program",
-    );
-    return program.qualifiedTypeName(identifiers.join("."));
   }
 
   /**
@@ -1707,9 +1681,7 @@ class FilePlanner {
         TypeNameLadder.resolveWrittenName(
           type,
           this.state.scopePathOf(typeScopes.get(type) ?? null),
-          this.state.typeBindingDeps((identifiers) =>
-            this.resolveQualifiedType(identifiers),
-          ),
+          this.state.typeBindingDeps(),
         ) ?? type.text
       );
     };
