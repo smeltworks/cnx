@@ -91,6 +91,14 @@ describe("ScopeJoinSites", () => {
       ).toEqual(["CppNamespaceUtils.SEPARATOR", '.join("::")']);
     });
 
+    it("counts a separator held in a binding (#2360 review)", () => {
+      expect(
+        ScopeJoinSites.elements(
+          'const sep = "__"; const step = { separator: "::" };',
+        ),
+      ).toEqual(['= "__"', ': "::"']);
+    });
+
     it("does not count text that merely contains two underscores", () => {
       // Negative control: a float bit shadow and a reserved-prefix test are not
       // joins, and counting them would make every row a false positive.

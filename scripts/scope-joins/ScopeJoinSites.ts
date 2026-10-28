@@ -116,6 +116,13 @@ class ScopeJoinSites {
    * or a `"__"` literal joined or concatenated. `__bits_${name}` and
    * `startsWith("__")` are not joins and do not match.
    */
+  /**
+   * The separator held in a binding -- `const sep = "__"`, `separator: "::"` --
+   * so a later `scope + sep + member` cannot spell it out of the scan's sight.
+   * Each such binding is a site, adjudicated like any other.
+   */
+  private static readonly BOUND_SEPARATOR = /(?:=|:)\s*["'](?:__|::)["']/g;
+
   private static readonly SPELLED_SEPARATOR =
     /\$\{[^{}`]*\}(?:__|::)|\.join\(\s*["'](?:__|::)["']\s*\)|\+\s*["'](?:__|::)["']|["'](?:__|::)["']\s*\+/g;
 
@@ -131,6 +138,24 @@ class ScopeJoinSites {
    * site, so this list can neither miss a site nor keep a stale judgement.
    */
   private static readonly ADJUDICATIONS: readonly IAdjudication[] = [
+    {
+      file: "src/cnx/utils/QualifiedCName.ts",
+      element: '= "__"',
+      kind: "encoder",
+      why: "the ADR-063 separator's declaration, `QualifiedCName.SEPARATOR`",
+    },
+    {
+      file: "src/cnx/utils/CppNamespaceUtils.ts",
+      element: '= "::"',
+      kind: "encoder",
+      why: "the C++ separator's declaration, `CppNamespaceUtils.SEPARATOR`",
+    },
+    {
+      file: "src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts",
+      element: ': "::"',
+      kind: "encoder",
+      why: "ACCESS_CPP, the `::` access step; only `MemberSeparatorResolver.join` spells a step, so this is the operator it writes, not a held separator",
+    },
     {
       file: "src/cnx/PARSE/3-Declare/cnx/QualifiedTypeNames.ts",
       element: "fromParts(type.path)",
@@ -475,6 +500,9 @@ class ScopeJoinSites {
       ),
       ...[...source.matchAll(ScopeJoinSites.SEPARATOR)].map(
         (match) => match[0],
+      ),
+      ...[...source.matchAll(ScopeJoinSites.BOUND_SEPARATOR)].map((match) =>
+        match[0].replace(/\s+/g, " "),
       ),
       ...[...source.matchAll(ScopeJoinSites.SPELLED_SEPARATOR)].map((match) =>
         match[0].replace(/\s+/g, " "),
