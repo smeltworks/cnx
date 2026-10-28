@@ -3,6 +3,7 @@ import type IProgramSyntax from "../../../../../cnx/types/syntax/IProgramSyntax"
 import CnxSourceParser from "../../../../../cnx/PARSE/2-Parse/CnxSourceParser";
 import type * as Parser from "../../../../../cnx/PARSE/2-Parse/grammar/CnxParser";
 import CnxResolver from "../../../../../cnx/PARSE/3-Declare/cnx/index";
+import CppNamespaceUtils from "../../../../../cnx/utils/CppNamespaceUtils";
 import SymbolRegistry from "../../../../../cnx/PARSE/3-Declare/SymbolRegistry";
 import SymbolTable from "../../../../../cnx/PARSE/3-Declare/SymbolTable";
 import Program from "../../../../../cnx/PARSE/4-Resolve/Program";
@@ -71,6 +72,7 @@ function testAnalysisContextFor(
   context: IAnalysisContext;
 } {
   const registry = new SymbolRegistry();
+  const symbolTable = options.symbolTable ?? new SymbolTable();
   const files = [
     ...Object.entries(options.helpers ?? {}),
     [TEST_SOURCE, source] as const,
@@ -83,11 +85,12 @@ function testAnalysisContextFor(
         ProgramLowering.program(parsed.tree, null),
         path,
         registry,
+        // as Declare.sources does: the headers are declared before the source
+        (name) => CppNamespaceUtils.isCppNamespace(name, symbolTable),
       ),
     };
   });
   const main = files.at(-1)!;
-  const symbolTable = options.symbolTable ?? new SymbolTable();
 
   const program = Program.build(
     files.map((file) => file.declared),
