@@ -445,7 +445,7 @@ class FunctionCallAnalyzer {
     isGlobalCall: boolean = false,
   ): void {
     if (name === null) {
-      this.reportUndefined(name, writtenName, span, false);
+      this.reportUndefined(name, writtenName, span, isGlobalCall);
       return;
     }
 
