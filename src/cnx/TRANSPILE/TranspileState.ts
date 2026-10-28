@@ -23,6 +23,7 @@ import type IDeclarationPlan from "../types/IDeclarationPlan";
 import type IEmissionPlan from "../types/IEmissionPlan";
 import type IFunctionSignature from "../types/IFunctionSignature";
 import invariant from "../utils/invariant";
+import DeclaredMember from "../utils/DeclaredMember";
 import emittedLocalName from "../utils/emittedLocalName";
 import AdrProvenance from "../instrumentation/AdrProvenance";
 import type ILocalDeclaration from "../types/ILocalDeclaration";
@@ -994,12 +995,7 @@ class TranspileState {
    * ("" for file scope): read off its symbol, never re-encoded (#2116).
    */
   declaredCName(scopePath: string, name: string): string {
-    const declared = this.program?.memberOf(scopePath, name);
-    invariant(
-      declared !== undefined,
-      `3-Declare declares every member 2.2 plans ('${name}' in '${scopePath}')`,
-    );
-    return declared.fullyQualifiedCName;
+    return DeclaredMember.cNameOf(this.program, scopePath, name);
   }
 
   private useInputs(inputs: TPlanInputs): void {

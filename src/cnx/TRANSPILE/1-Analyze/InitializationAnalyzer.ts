@@ -29,6 +29,7 @@ import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
 import type TSyntaxPart from "../../types/syntax/TSyntaxPart";
 import type TTypeSyntax from "../../types/syntax/TTypeSyntax";
 import type TExpression from "../../types/syntax/TExpression";
+import DeclaredMember from "../../utils/DeclaredMember";
 import invariant from "../../utils/invariant";
 import type ISourcePosition from "../../utils/types/ISourcePosition";
 import type ILocalDeclaration from "../../types/ILocalDeclaration";
@@ -469,9 +470,7 @@ class InitializationAnalyzer {
 
   /** The C name 3-Declare gave the variable `name` in `scopePath` (#2116) */
   private _declaredCName(scopePath: string, name: string): string {
-    const symbol = this.context.program.memberOf(scopePath, name);
-    invariant(symbol !== undefined, "3-Declare declares every variable");
-    return symbol.fullyQualifiedCName;
+    return DeclaredMember.cNameOf(this.context.program, scopePath, name);
   }
 
   /** One scope block's variables, initialized when the block assigns them */
