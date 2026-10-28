@@ -67,6 +67,9 @@ class CCallee {
       OperandTyper.typeOf(receiver, context),
     );
     if (typeName === null) return null;
+    // Every overload of one (class, method) shares its name: 3-Declare spells
+    // it from the class and the method alone, so the first one's is all of
+    // theirs; only the parameters differ.
     return context.symbolTable.getCppMembers(typeName, method)[0]?.name ?? null;
   }
 
