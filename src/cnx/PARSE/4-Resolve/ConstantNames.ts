@@ -155,9 +155,9 @@ class ConstantNames {
     if (parts[0] === "this") {
       // An undeclared `this.T` is 2.1's to report; until then it stays as
       // written (#2116)
-      return (
-        facts.visibleMember(scopePath, parts.slice(1).join("."))
-          ?.fullyQualifiedCName ?? typeName
+      return ConstantNames.storedOrWritten(
+        facts.visibleMember(scopePath, parts.slice(1).join(".")),
+        typeName,
       );
     }
     const written = parts[0] === "global" ? parts.slice(1) : parts;
@@ -166,9 +166,21 @@ class ConstantNames {
       return facts.qualifiedTypeName(written.join("."));
     }
     if (parts[0] === "global") return written[0];
-    return (
-      facts.scopeTypeOf(scopePath, typeName)?.fullyQualifiedCName ?? typeName
+    return ConstantNames.storedOrWritten(
+      facts.scopeTypeOf(scopePath, typeName),
+      typeName,
     );
+  }
+
+  /**
+   * The C name 3-Declare stored on the type a name found, or the name as
+   * written when it found none: an undeclared type is 2.1's to report (#2116).
+   */
+  private static storedOrWritten(
+    found: TSymbol | undefined,
+    written: string,
+  ): string {
+    return found?.fullyQualifiedCName ?? written;
   }
 
   /**
@@ -564,7 +576,7 @@ class ConstantNames {
     walk: IWalk,
   ): TConstResult {
     if (rest.length === 0) return ConstantNames.unbound(root, head, rest, walk);
-    const cName = ScopeUtils.typeHeadCName(
+    const found = ScopeUtils.typeHead(
       root,
       head,
       walk.facts.scopePathAt(walk.at),
@@ -575,7 +587,8 @@ class ConstantNames {
           walk.facts.scopeTypeOf(scopePath, name),
       },
     );
-    const symbol = walk.facts.visibleSymbol(cName);
+    const cName = found.cName;
+    const symbol = found.symbol ?? walk.facts.visibleSymbol(cName);
     if (symbol?.kind === "enum" && ConstantNames.namesMember(symbol, rest)) {
       return walk.facts.enumMember(cName, rest[0], walk.spelling, walk.at);
     }

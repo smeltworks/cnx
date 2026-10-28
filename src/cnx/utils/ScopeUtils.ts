@@ -5,6 +5,7 @@
  */
 import type TChainRoot from "../types/TChainRoot";
 import type IScopeSymbol from "../types/symbols/IScopeSymbol";
+import type TSymbol from "../types/symbols/TSymbol";
 import type TVisibility from "../types/TVisibility";
 import ESourceLanguage from "./types/ESourceLanguage";
 import QualifiedCName from "./QualifiedCName";
@@ -258,18 +259,35 @@ class ScopeUtils {
     scopePath: string,
     types: ITypeHeadLookup,
   ): string {
+    return ScopeUtils.typeHead(root, head, scopePath, types).cName;
+  }
+
+  /**
+   * `typeHeadCName` with the symbol it read the name off, when it found one,
+   * so a caller that needs the symbol does not look it up again by the name.
+   */
+  static typeHead(
+    root: TChainRoot,
+    head: string,
+    scopePath: string,
+    types: ITypeHeadLookup,
+  ): { readonly cName: string; readonly symbol: TSymbol | undefined } {
     // #2116: each spelling reads the C name 3-Declare stored on the type it
     // finds; only a `this.X` no symbol declares is spelled as written
-    if (root === "this") {
-      return (
-        types.memberOf(scopePath, head)?.fullyQualifiedCName ??
-        ScopeUtils.getTranspiledCName({ name: head, scopePath })
-      );
-    }
     if (root === "global") {
-      return head;
+      return { cName: head, symbol: undefined };
     }
-    return types.scopeTypeOf(scopePath, head)?.fullyQualifiedCName ?? head;
+    if (root === "this") {
+      const symbol = types.memberOf(scopePath, head);
+      return {
+        cName:
+          symbol?.fullyQualifiedCName ??
+          ScopeUtils.getTranspiledCName({ name: head, scopePath }),
+        symbol,
+      };
+    }
+    const symbol = types.scopeTypeOf(scopePath, head);
+    return { cName: symbol?.fullyQualifiedCName ?? head, symbol };
   }
 
   /**
