@@ -251,6 +251,11 @@ class Program {
       symbolTable.addTSymbols(resolved);
     }
 
+    // One scope-type lookup per file, built on its first use (#2360 review)
+    const scopeTypesByFile = new Map<
+      string,
+      (scopePath: string, name: string) => TSymbol | undefined
+    >();
     return Object.freeze({
       isScopeTypeVisibleFrom,
       symbolTable: (): IResolvedSymbols => symbolTable,
@@ -264,12 +269,18 @@ class Program {
         sourceFile: string,
         scopePath: string,
         name: string,
-      ): TSymbol | undefined =>
-        Program.scopeTypeIn(
-          symbolsByIdentity,
-          isScopeTypeVisibleFrom,
-          sourceFile,
-        )(scopePath, name),
+      ): TSymbol | undefined => {
+        let inFile = scopeTypesByFile.get(sourceFile);
+        if (inFile === undefined) {
+          inFile = Program.scopeTypeIn(
+            symbolsByIdentity,
+            isScopeTypeVisibleFrom,
+            sourceFile,
+          );
+          scopeTypesByFile.set(sourceFile, inFile);
+        }
+        return inFile(scopePath, name);
+      },
       symbolsInFile: (sourceFile: string): ReadonlyArray<TSymbol> =>
         symbolsByFile.get(sourceFile) ?? [],
       sourceFiles: (): ReadonlyArray<string> => sourceFiles,
@@ -540,12 +551,11 @@ class Program {
         file.sourceFile,
         LexicalFrames.settle(
           file.lexicalScopes,
-          (scopePath, name) =>
-            Program.scopeTypeIn(
-              declared.symbolsByIdentity,
-              isScopeTypeVisibleFrom,
-              file.sourceFile,
-            )(scopePath, name)?.fullyQualifiedCName,
+          Program.scopeTypeCNameIn(
+            declared.symbolsByIdentity,
+            isScopeTypeVisibleFrom,
+            file.sourceFile,
+          ),
           (name, settled) =>
             ConstantNames.valueOf(
               name,
@@ -885,12 +895,11 @@ class Program {
         file.sourceFile,
         DeferredTypes.settle(
           file.symbols,
-          (scopePath, name) =>
-            Program.scopeTypeIn(
-              declaredByIdentity,
-              isScopeTypeVisibleFrom,
-              file.sourceFile,
-            )(scopePath, name)?.fullyQualifiedCName,
+          Program.scopeTypeCNameIn(
+            declaredByIdentity,
+            isScopeTypeVisibleFrom,
+            file.sourceFile,
+          ),
           (typeName) => opaqueTypes.has(typeName),
         ),
       );
@@ -1773,6 +1782,24 @@ class Program {
         ? member
         : undefined;
     };
+  }
+
+  /** `scopeTypeIn`'s answer as the C name 3-Declare stored on the type */
+  private static scopeTypeCNameIn(
+    byIdentity: ReadonlyMap<string, TSymbol>,
+    isScopeTypeVisibleFrom: (
+      sourceFile: string,
+      qualifiedName: string,
+    ) => boolean,
+    sourceFile: string,
+  ): (scopePath: string, name: string) => string | undefined {
+    const scopeTypeOf = Program.scopeTypeIn(
+      byIdentity,
+      isScopeTypeVisibleFrom,
+      sourceFile,
+    );
+    return (scopePath, name) =>
+      scopeTypeOf(scopePath, name)?.fullyQualifiedCName;
   }
 
   private static identityKey(scopePath: string, name: string): string {
