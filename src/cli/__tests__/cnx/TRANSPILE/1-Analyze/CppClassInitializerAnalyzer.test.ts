@@ -22,6 +22,7 @@ const withCppClass = (className: string) => {
   // is exactly what `CppConstructorHelper.hasConstructor` looks for.
   table.addCppSymbol({
     name: `${className}::${className.split("::").at(-1)}`,
+    unqualifiedName: className.split("::").at(-1)!,
     kind: "function",
     type: "void",
     visibility: "public",
@@ -34,6 +35,7 @@ const withCppClass = (className: string) => {
   if (rest.length > 0) {
     table.addCppSymbol({
       name: head,
+      unqualifiedName: head,
       kind: "namespace",
       visibility: "public",
       sourceFile: "Class.hpp",

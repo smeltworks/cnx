@@ -103,6 +103,10 @@ class SymbolTable implements IResolvedSymbols {
   /** C++ symbols indexed by source file */
   private readonly cppSymbolsByFile: Map<string, TCppSymbol[]> = new Map();
 
+  /** C++ symbols by owner (`""` at file scope), then unqualified name (#2116) */
+  private readonly cppMembers: Map<string, Map<string, TCppSymbol[]>> =
+    new Map();
+
   // ========================================================================
   // Auxiliary Data (shared across languages)
   // ========================================================================
@@ -412,6 +416,13 @@ class SymbolTable implements IResolvedSymbols {
   addCppSymbol(symbol: TCppSymbol): void {
     SymbolTable.appendToIndex(this.cppSymbols, symbol.name, symbol);
     SymbolTable.appendToIndex(this.cppSymbolsByFile, symbol.sourceFile, symbol);
+    const owner = symbol.parent ?? "";
+    let members = this.cppMembers.get(owner);
+    if (members === undefined) {
+      members = new Map();
+      this.cppMembers.set(owner, members);
+    }
+    SymbolTable.appendToIndex(members, symbol.unqualifiedName, symbol);
   }
 
   /**
@@ -436,6 +447,15 @@ class SymbolTable implements IResolvedSymbols {
    */
   getCppOverloads(name: string): TCppSymbol[] {
     return this.cppSymbols.get(name) ?? [];
+  }
+
+  /**
+   * The C++ symbols `owner` declares as `member` -- `owner` the stored name of
+   * a namespace or class, undefined at file scope. Asked by identity, so no
+   * caller spells `owner::member` to find them (#2116).
+   */
+  getCppMembers(owner: string | undefined, member: string): TCppSymbol[] {
+    return this.cppMembers.get(owner ?? "")?.get(member) ?? [];
   }
 
   /**

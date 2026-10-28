@@ -393,9 +393,24 @@ describe("CacheManager", () => {
         visibility: "public" as const,
       };
       const symbols: TCSymbol[] = [
-        { ...base, kind: "function", name: "func1", type: "void" },
-        { ...base, kind: "variable", name: "var1", type: "int" },
-        { ...base, kind: "struct", name: "MyStruct", isUnion: false },
+        {
+          ...base,
+          kind: "function",
+          name: "func1",
+          type: "void",
+        },
+        {
+          ...base,
+          kind: "variable",
+          name: "var1",
+          type: "int",
+        },
+        {
+          ...base,
+          kind: "struct",
+          name: "MyStruct",
+          isUnion: false,
+        },
       ];
       storeSymbols(testFile, symbols, new Map());
 
@@ -823,17 +838,44 @@ describe("CacheManager", () => {
       };
       const fields = new Map([["x", { name: "x", type: "int" }]]);
       const symbols: TCSymbol[] = [
-        { ...base, kind: "function", name: "func", type: "void" },
-        { ...base, kind: "variable", name: "var", type: "int" },
-        { ...base, kind: "struct", name: "MyStruct", isUnion: false, fields },
+        {
+          ...base,
+          kind: "function",
+          name: "func",
+          type: "void",
+        },
+        {
+          ...base,
+          kind: "variable",
+          name: "var",
+          type: "int",
+        },
+        {
+          ...base,
+          kind: "struct",
+          name: "MyStruct",
+          isUnion: false,
+          fields,
+        },
         {
           ...base,
           kind: "enum",
           name: "MyEnum",
           members: [{ name: "A", value: 0 }],
         },
-        { ...base, kind: "enum_member", name: "A", parent: "MyEnum", value: 0 },
-        { ...base, kind: "type", name: "MyType", type: "int" },
+        {
+          ...base,
+          kind: "enum_member",
+          name: "A",
+          parent: "MyEnum",
+          value: 0,
+        },
+        {
+          ...base,
+          kind: "type",
+          name: "MyType",
+          type: "int",
+        },
       ];
 
       storeSymbols(testFile, symbols, new Map());
@@ -871,14 +913,55 @@ describe("CacheManager", () => {
         visibility: "public" as const,
       };
       const symbols: TCppSymbol[] = [
-        { ...base, kind: "function", name: "func", type: "void" },
-        { ...base, kind: "variable", name: "var", type: "int" },
-        { ...base, kind: "struct", name: "MyStruct" },
-        { ...base, kind: "class", name: "MyClass", parent: "Outer" },
-        { ...base, kind: "namespace", name: "ns" },
-        { ...base, kind: "enum", name: "MyEnum", bitWidth: 8 },
-        { ...base, kind: "enum_member", name: "A", value: 0 },
-        { ...base, kind: "type", name: "MyAlias", type: "int" },
+        {
+          ...base,
+          kind: "function",
+          name: "func",
+          unqualifiedName: "func",
+          type: "void",
+        },
+        {
+          ...base,
+          kind: "variable",
+          name: "var",
+          unqualifiedName: "var",
+          type: "int",
+        },
+        {
+          ...base,
+          kind: "struct",
+          name: "MyStruct",
+          unqualifiedName: "MyStruct",
+        },
+        {
+          ...base,
+          kind: "class",
+          name: "MyClass",
+          unqualifiedName: "MyClass",
+          parent: "Outer",
+        },
+        { ...base, kind: "namespace", name: "ns", unqualifiedName: "ns" },
+        {
+          ...base,
+          kind: "enum",
+          name: "MyEnum",
+          unqualifiedName: "MyEnum",
+          bitWidth: 8,
+        },
+        {
+          ...base,
+          kind: "enum_member",
+          name: "A",
+          unqualifiedName: "A",
+          value: 0,
+        },
+        {
+          ...base,
+          kind: "type",
+          name: "MyAlias",
+          unqualifiedName: "MyAlias",
+          type: "int",
+        },
       ];
 
       storeSymbols(testFile, symbols, new Map());
@@ -901,6 +984,8 @@ describe("CacheManager", () => {
       // #1214: parent and bitWidth were both dropped by the old adapter.
       const cppClass = restored[3] as Extract<TCppSymbol, { kind: "class" }>;
       expect(cppClass.parent).toBe("Outer");
+      // #2116: the (owner, member) index reads the unqualified name
+      expect(cppClass.unqualifiedName).toBe("MyClass");
       const cppEnum = restored[5] as Extract<TCppSymbol, { kind: "enum" }>;
       expect(cppEnum.bitWidth).toBe(8);
     });
@@ -919,6 +1004,7 @@ describe("CacheManager", () => {
         createTestSymbol({ sourceFile: testFile, name: "cFunc" }),
         {
           name: "cppFunc",
+          unqualifiedName: "cppFunc",
           kind: "function",
           type: "void",
           sourceFile: testFile,
@@ -1697,7 +1783,7 @@ describe("CacheManager", () => {
       const content = mockFs.getWrittenContent("/project/.cnx/config.json");
       expect(content).toBeDefined();
       const newConfig = JSON.parse(content!);
-      expect(newConfig.version).toBe(20); // Current CACHE_VERSION (C pointer depth, #1668, #1760's volatile spellings, field declarators, #1653's plain-JSON symbols.json, then #1975's union and bit-field layout, its struct-level layouts, then its bit-field widths, then #2103's typedef-with-body tag alias)
+      expect(newConfig.version).toBe(21); // Current CACHE_VERSION (C pointer depth, #1668, #1760's volatile spellings, field declarators, #1653's plain-JSON symbols.json, then #1975's union and bit-field layout, its struct-level layouts, then its bit-field widths, then #2103's typedef-with-body tag alias, then #2116's C++ unqualified names)
     });
 
     it("should not cache files that do not exist in IFileSystem", () => {

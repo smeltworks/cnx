@@ -189,6 +189,7 @@ describe("SymbolTable", () => {
       const symbol: TCppSymbol = {
         kind: "class",
         name: "MyClass",
+        unqualifiedName: "MyClass",
         sourceFile: "test.hpp",
         span: TestSourceSpan.at(5),
         sourceLanguage: ESourceLanguage.Cpp,
@@ -202,6 +203,36 @@ describe("SymbolTable", () => {
       expect(retrieved?.name).toBe("MyClass");
       expect(retrieved?.kind).toBe("class");
       expect(retrieved?.sourceLanguage).toBe(ESourceLanguage.Cpp);
+    });
+
+    it("finds a member by its owner and unqualified name (#2116)", () => {
+      const at = {
+        sourceFile: "test.hpp",
+        span: TestSourceSpan.at(1),
+        sourceLanguage: ESourceLanguage.Cpp,
+        visibility: "public",
+      } as const;
+      symbolTable.addCppSymbol({
+        ...at,
+        kind: "namespace",
+        name: "Outer",
+        unqualifiedName: "Outer",
+      });
+      symbolTable.addCppSymbol({
+        ...at,
+        kind: "class",
+        name: "Outer::Widget",
+        unqualifiedName: "Widget",
+        parent: "Outer",
+      });
+
+      expect(symbolTable.getCppMembers(undefined, "Outer")[0]?.name).toBe(
+        "Outer",
+      );
+      expect(symbolTable.getCppMembers("Outer", "Widget")[0]?.name).toBe(
+        "Outer::Widget",
+      );
+      expect(symbolTable.getCppMembers(undefined, "Widget")).toEqual([]);
     });
   });
 
@@ -242,6 +273,7 @@ describe("SymbolTable", () => {
       symbolTable.addCppSymbol({
         kind: "variable",
         name: "cppVar",
+        unqualifiedName: "cppVar",
         sourceFile: "test.hpp",
         span: TestSourceSpan.at(1),
         sourceLanguage: ESourceLanguage.Cpp,
@@ -274,6 +306,7 @@ describe("SymbolTable", () => {
       symbolTable.addCppSymbol({
         kind: "function",
         name: "process",
+        unqualifiedName: "process",
         sourceFile: "test.hpp",
         span: TestSourceSpan.at(1),
         sourceLanguage: ESourceLanguage.Cpp,

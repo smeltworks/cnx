@@ -58,7 +58,9 @@ import Write from "../../cnx/WRITE/1-Write/Write";
 // 20: #2103 -- `typedef struct _w {...} w;` records w's tag as it does for a
 // forward-declared tag, so an entry written before reads `w` and `_w` as two
 // types under an unchanged shape, and E0895 rejects one passed for the other.
-const CACHE_VERSION = 20;
+// 21: #2116 -- a C++ symbol records its unqualified name, which the
+// (owner, member) index reads; an entry written before has none.
+const CACHE_VERSION = 21;
 
 const TRANSPILER_VERSION = packageJson.version;
 

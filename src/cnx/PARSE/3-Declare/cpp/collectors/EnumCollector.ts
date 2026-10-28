@@ -38,6 +38,7 @@ class EnumCollector {
     return {
       kind: "enum",
       name: fullName,
+      unqualifiedName: name,
       sourceFile,
       span,
       sourceLanguage: ESourceLanguage.Cpp,

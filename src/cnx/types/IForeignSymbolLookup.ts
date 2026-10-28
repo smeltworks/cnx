@@ -12,6 +12,8 @@ interface IForeignSymbolLookup {
   getCppSymbol(name: string): TCppSymbol | undefined;
   getCOverloads(name: string): TCSymbol[];
   getCppOverloads(name: string): TCppSymbol[];
+  /** #2116: `SymbolTable.getCppMembers` */
+  getCppMembers(owner: string | undefined, member: string): TCppSymbol[];
   getStructFieldInfo(
     structName: string,
     fieldName: string,

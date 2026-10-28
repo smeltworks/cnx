@@ -72,6 +72,7 @@ function setupGenerator(
   for (const className of options.cppConstructors ?? []) {
     symbolTable.addCppSymbol({
       name: `${className}::${className}`,
+      unqualifiedName: className,
       kind: "function",
       type: "void",
       visibility: "public",
@@ -1684,6 +1685,7 @@ describe("CodeGenWalker Coverage Tests", () => {
       symbolTable.addCppSymbol({
         kind: "namespace",
         name: "SeaDash",
+        unqualifiedName: "SeaDash",
         sourceFile: "SeaDash.h",
         span: TestSourceSpan.at(1),
         sourceLanguage: ESourceLanguage.Cpp,

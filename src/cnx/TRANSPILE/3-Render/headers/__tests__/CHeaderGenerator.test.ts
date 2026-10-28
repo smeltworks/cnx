@@ -661,6 +661,7 @@ describe("CHeaderGenerator", () => {
       // MyLib is a C++ namespace, so 1.3 stores `MyLib.MyClass` as `MyLib::MyClass`
       symbolTable.addCppSymbol({
         name: "MyLib",
+        unqualifiedName: "MyLib",
         kind: "namespace",
         visibility: "public",
         sourceFile: "MyLib.hpp",
@@ -694,6 +695,7 @@ describe("CHeaderGenerator", () => {
       // Register a C++ namespace symbol
       symbolTable.addCppSymbol({
         name: "LibName",
+        unqualifiedName: "LibName",
         kind: "namespace",
         visibility: "public",
         sourceFile: "LibName.hpp",

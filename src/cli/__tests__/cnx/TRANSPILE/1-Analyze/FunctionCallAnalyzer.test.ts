@@ -412,6 +412,7 @@ describe("FunctionCallAnalyzer", () => {
       const symbolTable = new SymbolTable();
       symbolTable.addCppSymbol({
         name: "cppHelper",
+        unqualifiedName: "cppHelper",
         kind: "function",
         sourceLanguage: ESourceLanguage.Cpp,
         sourceFile: "helper.hpp",
@@ -532,6 +533,7 @@ describe("FunctionCallAnalyzer", () => {
       const symbolTable = new SymbolTable();
       symbolTable.addCppSymbol({
         name: "customExternalFunc",
+        unqualifiedName: "customExternalFunc",
         kind: "function",
         sourceLanguage: ESourceLanguage.Cpp,
         sourceFile: "custom.hpp",

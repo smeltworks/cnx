@@ -24,6 +24,7 @@ class VariableCollector {
     return {
       kind: "variable",
       name: CppNamespaceUtils.qualify(currentNamespace, name),
+      unqualifiedName: name,
       // #2058: the `*`s are the declarator's, as a C variable's are
       type: DeclaratorTypes.pointerType(baseType, declarator),
       sourceFile,

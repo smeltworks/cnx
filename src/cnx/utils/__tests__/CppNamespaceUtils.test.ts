@@ -20,6 +20,7 @@ describe("CppNamespaceUtils", () => {
     return {
       kind: "namespace",
       name,
+      unqualifiedName: name,
       sourceFile,
       span: TestSourceSpan.at(1),
       sourceLanguage: ESourceLanguage.Cpp,
@@ -32,6 +33,7 @@ describe("CppNamespaceUtils", () => {
     return {
       kind: "class",
       name,
+      unqualifiedName: name,
       sourceFile,
       span: TestSourceSpan.at(1),
       sourceLanguage: ESourceLanguage.Cpp,
@@ -44,6 +46,7 @@ describe("CppNamespaceUtils", () => {
     return {
       kind: "enum",
       name,
+      unqualifiedName: name,
       sourceFile,
       span: TestSourceSpan.at(1),
       sourceLanguage: ESourceLanguage.Cpp,
@@ -56,6 +59,7 @@ describe("CppNamespaceUtils", () => {
     return {
       kind: "function",
       name,
+      unqualifiedName: name,
       sourceFile,
       span: TestSourceSpan.at(1),
       sourceLanguage: ESourceLanguage.Cpp,

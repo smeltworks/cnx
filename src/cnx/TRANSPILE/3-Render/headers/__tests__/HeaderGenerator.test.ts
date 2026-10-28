@@ -236,6 +236,7 @@ describe("HeaderGenerator", () => {
       const symbolTable = new SymbolTable();
       symbolTable.addCppSymbol({
         name: namespaceName,
+        unqualifiedName: namespaceName,
         kind: "namespace",
         sourceFile: `${namespaceName}.hpp`,
         span: TestSourceSpan.at(1),
