@@ -217,6 +217,15 @@ class MemberSeparatorResolver {
    * the C name its step carries (ADR-016); any other step keeps its C
    * operator between the two.
    */
+  /** `result::member`, a C++ access chain's next step, spelled by `join` */
+  static cppAccess(result: string, member: string): string {
+    return MemberSeparatorResolver.join(
+      result,
+      MemberSeparatorResolver.ACCESS_CPP,
+      member,
+    );
+  }
+
   static join(result: string, step: TMemberStep, member: string): string {
     switch (step.kind) {
       case "scope-member":

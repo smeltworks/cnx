@@ -29,6 +29,7 @@ import generateFunctionCall from "./CallExprGenerator";
 import memberAccessChain from "../../memberAccessChain";
 import type IRootHolding from "../../types/IRootHolding";
 import BitmapAccessHelper from "./BitmapAccessHelper";
+import MemberSeparatorResolver from "../../helpers/MemberSeparatorResolver";
 import BitRangeHelper from "../../helpers/BitRangeHelper";
 import FloatBitHelper from "../../helpers/FloatBitHelper";
 import NarrowingCastHelper from "../../../../2-Plan/NarrowingCastHelper";
@@ -964,7 +965,11 @@ const tryKnownScopeAccess = (
 
   const output = initializeMemberOutput(ctx);
   if (ctx.isCppAccessChain) {
-    output.result = CppNamespaceUtils.fromParts([ctx.result, ctx.memberName]);
+    // #2116: a written C++ chain's step, spelled where every chain step is
+    output.result = MemberSeparatorResolver.cppAccess(
+      ctx.result,
+      ctx.memberName,
+    );
   } else {
     const member = orchestrator.state.program?.memberOf(
       ctx.result,

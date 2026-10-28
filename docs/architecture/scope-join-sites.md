@@ -71,7 +71,7 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                                                | `movedLocal(functionCName, name, suffix)`                              | 1      | owner-c-name |
 | `src/cnx/TRANSPILE/1-Analyze/helpers/CCallee.ts`                                          | `.join("::")`                                                          | 1      | recompute    |
 | `src/cnx/TRANSPILE/1-Analyze/helpers/CCallee.ts`                                          | `qualify(typeName, method)`                                            | 1      | recompute    |
-| `src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts` | `fromParts([ctx.result, ctx.memberName])`                              | 2      | recompute    |
+| `src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts` | `fromParts([ctx.result, ctx.memberName])`                              | 1      | recompute    |
 | `src/cnx/utils/CppConstructorHelper.ts`                                                   | `qualify(qualifiedName, className)`                                    | 1      | recompute    |
 | `src/cnx/utils/CppNamespaceUtils.ts`                                                      | `CppNamespaceUtils.SEPARATOR`                                          | 1      | encoder      |
 | `src/cnx/utils/CppNamespaceUtils.ts`                                                      | `fromParts([scope, name])`                                             | 1      | encoder      |
@@ -91,9 +91,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                                             | `qualifyPathInScope([symbol.name], symbol.scopePath)`                  | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                                         | `qualifyInScope(type.name, scopePath)`                                 | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                                         | `qualifyScopeType(type.name, scopePath, deps.isScopeType)`             | 1      | encoder      |
-| **total**                                                                                 |                                                                        | **55** |              |
+| **total**                                                                                 |                                                                        | **54** |              |
 
-55 site(s) across 28 file(s).
+54 site(s) across 28 file(s).
 
 ## Why each site is not a scope join
 
