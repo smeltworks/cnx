@@ -7,6 +7,7 @@ import ProgramLowering from "../../../2-Parse/ProgramLowering";
 import parse from "./testHelpers";
 import CnxResolver from "../index";
 import SymbolRegistry from "../../SymbolRegistry";
+import QualifiedTypeNames from "../QualifiedTypeNames";
 
 const namesOf = (
   code: string,
@@ -42,5 +43,18 @@ describe("QualifiedTypeNames", () => {
 
   it("records nothing for a bare or primitive type", () => {
     expect(namesOf(`u8 x;`).size).toBe(0);
+  });
+
+  it("reads back the one spelling it stored", () => {
+    const names = namesOf(`TestNS.MyClass obj;`, (name) => name === "TestNS");
+    expect(QualifiedTypeNames.read(names, "TestNS.MyClass")).toBe(
+      "TestNS::MyClass",
+    );
+  });
+
+  it("treats a path it never collected as an internal error", () => {
+    expect(() => QualifiedTypeNames.read(new Map(), "Outer.Inner.h")).toThrow(
+      /1.3 spells every qualified type/,
+    );
   });
 });

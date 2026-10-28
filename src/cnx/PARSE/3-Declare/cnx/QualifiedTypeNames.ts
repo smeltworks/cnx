@@ -3,6 +3,7 @@ import type TTypeSyntax from "../../../types/syntax/TTypeSyntax";
 import CppNamespaceUtils from "../../../utils/CppNamespaceUtils";
 import DeclarationParts from "../../../utils/DeclarationParts";
 import ExpressionNodes from "../../../utils/ExpressionNodes";
+import invariant from "../../../utils/invariant";
 import QualifiedCName from "../../../utils/QualifiedCName";
 
 /**
@@ -40,6 +41,20 @@ class QualifiedTypeNames {
       }
     }
     return names;
+  }
+
+  /**
+   * The spelling `collect` stored for `written`. Every qualified type a file
+   * writes was collected, so a miss is a bug in the collection, not a name
+   * to spell here.
+   */
+  static read(names: ReadonlyMap<string, string>, written: string): string {
+    const stored = names.get(written);
+    invariant(
+      stored !== undefined,
+      `1.3 spells every qualified type a file writes ('${written}')`,
+    );
+    return stored;
   }
 }
 

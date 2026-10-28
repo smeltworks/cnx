@@ -440,13 +440,12 @@ class FilePlanner {
     }
     // #2116: 1.3 spelled every written `Scope.T` / `Ns.T` once -- `Ns::T` for
     // a C++ head, else the C name -- so this reads it and never re-derives it
-    const written = identifiers.join(".");
-    const stored = this.state.program?.qualifiedTypeName(written);
+    const program = this.state.program;
     invariant(
-      stored !== undefined,
-      `1.3 spells every qualified type a file writes ('${written}')`,
+      program !== null,
+      "2.2 Plan reads 1.3's spellings off the program",
     );
-    return stored;
+    return program.qualifiedTypeName(identifiers.join("."));
   }
 
   /**

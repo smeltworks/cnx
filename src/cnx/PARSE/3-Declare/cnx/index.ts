@@ -109,7 +109,8 @@ class CnxResolver {
     );
     const typeFacts: IDeclareTypeFacts = {
       isScopeType,
-      qualifiedTypeName: (written) => qualifiedTypeNames.get(written),
+      qualifiedTypeName: (written) =>
+        QualifiedTypeNames.read(qualifiedTypeNames, written),
     };
 
     // Pass 1: Collect every declaration in source order. Whether a register

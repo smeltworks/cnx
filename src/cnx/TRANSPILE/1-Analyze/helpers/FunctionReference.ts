@@ -29,7 +29,6 @@ import type TExpression from "../../../types/syntax/TExpression";
 import type TExpressionOf from "../../../types/syntax/TExpressionOf";
 import OperandTyper from "../../../utils/OperandTyper";
 import TypeText from "../../../utils/TypeText";
-import invariant from "../../../utils/invariant";
 import CalleeNameResolver from "./CalleeNameResolver";
 import ScopeCandidates from "./ScopeCandidates";
 import type IAnalysisContext from "../types/IAnalysisContext";
@@ -82,12 +81,7 @@ class FunctionReference {
     }
     if (text.includes(".")) {
       // #2116: 1.3 spelled every written `Scope.T` / `Ns.T` once
-      const stored = program.qualifiedTypeName(text);
-      invariant(
-        stored !== undefined,
-        `1.3 spells every qualified type a file writes ('${text}')`,
-      );
-      return [stored];
+      return [program.qualifiedTypeName(text)];
     }
     return FunctionReference.candidates(text, scopePath, false, program);
   }

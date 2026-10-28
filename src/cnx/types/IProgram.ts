@@ -58,15 +58,17 @@ interface IProgram {
   isScopeTypeVisibleFrom(sourceFile: string, qualifiedName: string): boolean;
 
   /**
+   * The spelling 1.3 gave a `Scope.T` / `Ns.T` written at a type position,
+   * by its written text (#2116): read it, never re-derive it. Every one a
+   * file writes was spelled, so there is no miss to handle.
+   */
+  qualifiedTypeName(written: string): string;
+
+  /**
    * The type `name` declared in `scopePath` that `sourceFile` can see, found
    * by identity; undefined when ADR-057 leaves a bare `name` the file's own.
    * Read `.fullyQualifiedCName` from it rather than encoding one (#2116).
    */
-  /**
-   * The spelling 1.3 gave a `Scope.T` / `Ns.T` written at a type position,
-   * by its written text (#2116): read it, never re-derive it.
-   */
-  qualifiedTypeName(written: string): string | undefined;
 
   scopeTypeOf(
     sourceFile: string,

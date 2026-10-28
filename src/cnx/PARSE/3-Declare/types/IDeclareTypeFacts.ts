@@ -7,7 +7,7 @@ interface IDeclareTypeFacts {
   /** Whether a qualified name is a type this file declares in a scope */
   isScopeType(qualifiedName: string): boolean;
   /** The spelling of a `Scope.T` / `Ns.T` this file writes, by its text */
-  qualifiedTypeName(written: string): string | undefined;
+  qualifiedTypeName(written: string): string;
 }
 
 export default IDeclareTypeFacts;

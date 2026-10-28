@@ -9,7 +9,6 @@ import TTypeUtils from "../../../../utils/TTypeUtils";
 import ScopeUtils from "../../../../utils/ScopeUtils";
 import type TType from "../../../../types/TType";
 import type ITypeBindingDeps from "../../../../types/ITypeBindingDeps";
-import invariant from "../../../../utils/invariant";
 import type IDeclareTypeFacts from "../../types/IDeclareTypeFacts";
 
 /**
@@ -132,15 +131,8 @@ class TypeUtils {
     if (!typeFacts) return undefined;
     return {
       isScopeType: (qualifiedName) => typeFacts.isScopeType(qualifiedName),
-      resolveQualifiedType: (identifiers) => {
-        const written = identifiers.join(".");
-        const stored = typeFacts.qualifiedTypeName(written);
-        invariant(
-          stored !== undefined,
-          `1.3 spells every qualified type a file writes ('${written}')`,
-        );
-        return stored;
-      },
+      resolveQualifiedType: (identifiers) =>
+        typeFacts.qualifiedTypeName(identifiers.join(".")),
     };
   }
 }

@@ -10,6 +10,9 @@ import FunctionReference from "../FunctionReference";
 import type IProgram from "../../../../types/IProgram";
 import type TSymbol from "../../../../types/symbols/TSymbol";
 import testAnalysisContext from "../../__tests__/testAnalysisContext";
+import QualifiedTypeNames from "../../../../PARSE/3-Declare/cnx/QualifiedTypeNames";
+
+const NONE_WRITTEN = new Map<string, string>();
 
 /**
  * #1322. Which cnx function a spelling denotes, and -- the part that is a
@@ -51,7 +54,8 @@ let state = new TranspileState();
 describe("FunctionReference.candidates -- the ADR-057 order", () => {
   /** `scope S { void f() {} }`, as 3-Declare names it (#2116). */
   const scopeF: Pick<IProgram, "memberOf" | "qualifiedTypeName"> = {
-    qualifiedTypeName: () => undefined,
+    qualifiedTypeName: (written) =>
+      QualifiedTypeNames.read(NONE_WRITTEN, written),
     memberOf: (scopePath, name) =>
       scopePath === "S" && name === "f"
         ? ({ fullyQualifiedCName: "S__f" } as TSymbol)
@@ -79,7 +83,8 @@ describe("FunctionReference.candidates -- the ADR-057 order", () => {
 describe("FunctionReference.candidatesForTypeText", () => {
   // 3-Declare declared `handler` in scope `S` and nothing else
   const declared: Pick<IProgram, "memberOf" | "qualifiedTypeName"> = {
-    qualifiedTypeName: () => undefined,
+    qualifiedTypeName: (written) =>
+      QualifiedTypeNames.read(NONE_WRITTEN, written),
     memberOf: (scopePath, name) =>
       scopePath === "S" && name === "handler"
         ? ({ fullyQualifiedCName: "S__handler" } as unknown as TSymbol)
@@ -116,7 +121,10 @@ describe("FunctionReference.candidatesForTypeText", () => {
     const stored: Pick<IProgram, "memberOf" | "qualifiedTypeName"> = {
       memberOf: () => undefined,
       qualifiedTypeName: (written) =>
-        written === "TestNS.MyClass" ? "TestNS::MyClass" : undefined,
+        QualifiedTypeNames.read(
+          new Map([["TestNS.MyClass", "TestNS::MyClass"]]),
+          written,
+        ),
     };
     expect(
       FunctionReference.candidatesForTypeText("TestNS.MyClass", "", stored),

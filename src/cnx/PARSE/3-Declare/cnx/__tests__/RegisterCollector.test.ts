@@ -5,6 +5,9 @@ import RegisterCollector from "../collectors/RegisterCollector";
 import ESourceLanguage from "../../../../utils/types/ESourceLanguage";
 import TypeResolver from "../../../../utils/TypeResolver";
 import FirstDeclaration from "./FirstDeclaration";
+import QualifiedTypeNames from "../QualifiedTypeNames";
+
+const NONE_WRITTEN = new Map<string, string>();
 
 describe("RegisterCollector", () => {
   beforeEach(() => {
@@ -200,7 +203,11 @@ describe("RegisterCollector", () => {
         "motor.cnx",
         "Motor",
         "public",
-        { isScopeType, qualifiedTypeName: () => undefined },
+        {
+          isScopeType,
+          qualifiedTypeName: (written) =>
+            QualifiedTypeNames.read(NONE_WRITTEN, written),
+        },
       );
 
       expect(TypeResolver.getTypeName(symbol.members.get("FLAGS")!.type)).toBe(
@@ -228,7 +235,11 @@ describe("RegisterCollector", () => {
         "motor.cnx",
         "Motor",
         "public",
-        { isScopeType, qualifiedTypeName: () => undefined },
+        {
+          isScopeType,
+          qualifiedTypeName: (written) =>
+            QualifiedTypeNames.read(NONE_WRITTEN, written),
+        },
       );
 
       expect(TypeResolver.getTypeName(symbol.members.get("FLAGS")!.type)).toBe(

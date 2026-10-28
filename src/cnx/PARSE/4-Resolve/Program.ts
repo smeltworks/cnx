@@ -71,6 +71,7 @@ import type IProgramInputs from "./types/IProgramInputs";
 import type ISettledFiles from "./types/ISettledFiles";
 import type IVisibilityInput from "./types/IVisibilityInput";
 import TSymbolInfoAdapter from "../3-Declare/cnx/adapters/TSymbolInfoAdapter";
+import QualifiedTypeNames from "../3-Declare/cnx/QualifiedTypeNames";
 import TransitiveEnumCollector from "./TransitiveEnumCollector";
 import VisibleSymbols from "./VisibleSymbols";
 import ConstantNames from "./ConstantNames";
@@ -258,8 +259,8 @@ class Program {
         symbolsByCName.get(cName),
       memberOf: (scopePath: string, name: string): TSymbol | undefined =>
         symbolsByIdentity.get(Program.identityKey(scopePath, name)),
-      qualifiedTypeName: (written: string): string | undefined =>
-        qualifiedTypeNames.get(written),
+      qualifiedTypeName: (written: string): string =>
+        QualifiedTypeNames.read(qualifiedTypeNames, written),
       scopeTypeOf: (
         sourceFile: string,
         scopePath: string,
