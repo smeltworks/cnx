@@ -72,8 +72,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/CppNamespaceUtils.ts`                               | `CppNamespaceUtils.SEPARATOR`                                          | 1      | encoder      |
 | `src/cnx/utils/CppNamespaceUtils.ts`                               | `fromParts([scope, name])`                                             | 1      | encoder      |
 | `src/cnx/utils/ForeignTypeFacts.ts`                                | `fromParts([...scopes.slice(0, depth), spelling])`                     | 1      | recompute    |
-| `src/cnx/utils/OperandTyper.ts`                                    | `fromParts(current.parts)`                                             | 2      | recompute    |
-| `src/cnx/utils/OperandTyper.ts`                                    | `fromParts(parts)`                                                     | 1      | recompute    |
 | `src/cnx/utils/QualifiedCName.ts`                                  | `QualifiedCName.SEPARATOR`                                             | 2      | encoder      |
 | `src/cnx/utils/ScopeUtils.ts`                                      | `fromSourceParts([symbol.scopePath, symbol.name])`                     | 1      | encoder      |
 | `src/cnx/utils/ScopeUtils.ts`                                      | `getCnxScopedName(symbol)`                                             | 1      | encoder      |
@@ -86,9 +84,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                      | `qualifyPathInScope([symbol.name], symbol.scopePath)`                  | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                  | `qualifyInScope(type.name, scopePath)`                                 | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                  | `qualifyScopeType(type.name, scopePath, deps.isScopeType)`             | 1      | encoder      |
-| **total**                                                          |                                                                        | **49** |              |
+| **total**                                                          |                                                                        | **46** |              |
 
-49 site(s) across 25 file(s).
+46 site(s) across 24 file(s).
 
 ## Why each site is not a scope join
 
@@ -122,8 +120,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/utils/CppNamespaceUtils.ts` `CppNamespaceUtils.SEPARATOR`: the C++ separator's owner: the one `::` join
 - `src/cnx/utils/CppNamespaceUtils.ts` `fromParts([scope, name])`: `qualify`, defined in terms of the one join; 3-Declare's C++ collectors are its callers
 - `src/cnx/utils/ForeignTypeFacts.ts` `fromParts([...scopes.slice(0, depth), spelling])`: builds a C++ name after 3-Declare named the header symbol; converts to resolving the symbol and reading its name (#2116)
-- `src/cnx/utils/OperandTyper.ts` `fromParts(current.parts)`: builds a C++ name after 3-Declare named the header symbol; converts to resolving the symbol and reading its name (#2116)
-- `src/cnx/utils/OperandTyper.ts` `fromParts(parts)`: builds a C++ name after 3-Declare named the header symbol; converts to resolving the symbol and reading its name (#2116)
 - `src/cnx/utils/QualifiedCName.ts` `QualifiedCName.SEPARATOR`: the ADR-063 separator's owner: its declaration, the one join and the prefix test
 - `src/cnx/utils/ScopeUtils.ts` `fromSourceParts([symbol.scopePath, symbol.name])`: the owning code: getCnxScopedName's definition, the cnx spelling 3-Declare stores as cnxScopedName
 - `src/cnx/utils/ScopeUtils.ts` `getCnxScopedName(symbol)`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol

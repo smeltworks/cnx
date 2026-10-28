@@ -14,7 +14,6 @@
  * and the run's target.
  */
 import ExpressionCalls from "./ExpressionCalls";
-import CppNamespaceUtils from "./CppNamespaceUtils";
 import ExpressionShape from "./ExpressionShape";
 import ConstExprLowering from "./ConstExprLowering";
 import ConstantEvaluator from "./ConstantEvaluator";
@@ -78,8 +77,16 @@ type TChainValue =
       readonly cName: string;
       readonly returnType: TType;
     }
-  /** An unresolved name path: a C/C++ namespace, class or function */
-  | { readonly k: "foreignPath"; readonly parts: readonly string[] }
+  /**
+   * An unresolved name path: a C/C++ namespace, class or function. `owner` is
+   * the stored name of the C++ class the path starts in (`dev.read` starts
+   * in `Dev`), undefined for a path written from file scope (#2116)
+   */
+  | {
+      readonly k: "foreignPath";
+      readonly owner: string | undefined;
+      readonly path: readonly string[];
+    }
   /** A header's function pointer, not yet called: its call's result */
   | { readonly k: "foreignFunction"; readonly result: IOperandType | null }
   | { readonly k: "unknown" };
@@ -415,7 +422,7 @@ class OperandTyper {
           next.k === "value" ? (next.registerMember?.cName ?? null) : null,
         subscript,
         after: next.k === "value" ? next.t : null,
-        callee: op.kind === "call" ? OperandTyper.calleeOf(current) : null,
+        callee: op.kind === "call" ? OperandTyper.calleeOf(current, ctx) : null,
         member,
         property:
           before !== null &&
@@ -1394,7 +1401,11 @@ class OperandTyper {
     if (binding?.kind === "foreign") {
       return OperandTyper.foreignStart(binding, name, ops, ctx);
     }
-    return { binding: null, value: { k: "foreignPath", parts: [name] }, ops };
+    return {
+      binding: null,
+      value: { k: "foreignPath", owner: undefined, path: [name] },
+      ops,
+    };
   }
 
   /** #1975 review: whether a header declares a function or variable `name` */
@@ -1493,7 +1504,7 @@ class OperandTyper {
       binding,
       value: t
         ? { k: "value", t, registerMember: null }
-        : { k: "foreignPath", parts: [name] },
+        : { k: "foreignPath", owner: undefined, path: [name] },
       ops,
     };
   }
@@ -1651,7 +1662,11 @@ class OperandTyper {
         return { k: "value", registerMember, t };
       }
       case "foreignPath":
-        return OperandTyper.foreignPathOf([...current.parts, member], ctx);
+        return OperandTyper.foreignPathOf(
+          current.owner,
+          [...current.path, member],
+          ctx,
+        );
       case "value":
         return OperandTyper.fieldOf(current.t, member, ctx);
       default:
@@ -1853,7 +1868,7 @@ class OperandTyper {
     // static member's call already is, so the call that follows
     // resolves it (#1668 review: an instance method's result was untyped)
     return t.form.kind === "foreign" || t.form.kind === "declared"
-      ? { k: "foreignPath", parts: [typeName, member] }
+      ? { k: "foreignPath", owner: typeName, path: [member] }
       : UNKNOWN;
   }
 
@@ -1864,17 +1879,40 @@ class OperandTyper {
    * (#1668 review: a namespace variable was typed only when called).
    */
   private static foreignPathOf(
-    parts: readonly string[],
+    owner: string | undefined,
+    path: readonly string[],
     ctx: ITypingContext,
   ): TChainValue {
-    const t = ForeignTypeFacts.variableOperand(
-      CppNamespaceUtils.fromParts(parts),
-      ctx.symbolTable,
-      OperandTyper.target(ctx),
-    );
+    const named = ForeignTypeFacts.cppPath(ctx.symbolTable, owner, path)[0];
+    const t =
+      named === undefined
+        ? null
+        : ForeignTypeFacts.variableOperand(
+            named.name,
+            ctx.symbolTable,
+            OperandTyper.target(ctx),
+          );
     return t
       ? { k: "value", registerMember: null, t }
-      : { k: "foreignPath", parts };
+      : { k: "foreignPath", owner, path };
+  }
+
+  /**
+   * The stored name of what a foreign path names: a bare name written at file
+   * scope is its own C name; any longer path is found member by member and
+   * never spelled (#2116). Null when no header declares it.
+   */
+  private static foreignPathName(
+    current: Extract<TChainValue, { k: "foreignPath" }>,
+    ctx: ITypingContext,
+  ): string | null {
+    if (current.owner === undefined && current.path.length === 1) {
+      return current.path[0];
+    }
+    return (
+      ForeignTypeFacts.cppPath(ctx.symbolTable, current.owner, current.path)[0]
+        ?.name ?? null
+    );
   }
 
   /**
@@ -2011,10 +2049,14 @@ class OperandTyper {
   }
 
   /** The C name of the function a call on `current` calls */
-  private static calleeOf(current: TChainValue): string | null {
+  private static calleeOf(
+    current: TChainValue,
+    ctx: ITypingContext,
+  ): string | null {
     if (current.k === "function") return current.cName;
-    if (current.k === "foreignPath")
-      return CppNamespaceUtils.fromParts(current.parts);
+    if (current.k === "foreignPath") {
+      return OperandTyper.foreignPathName(current, ctx);
+    }
     return null;
   }
 
@@ -2059,11 +2101,15 @@ class OperandTyper {
         : UNKNOWN;
     }
     if (current.k === "foreignPath") {
-      const t = ForeignTypeFacts.callOperand(
-        CppNamespaceUtils.fromParts(current.parts),
-        ctx.symbolTable,
-        OperandTyper.target(ctx),
-      );
+      const name = OperandTyper.foreignPathName(current, ctx);
+      const t =
+        name === null
+          ? null
+          : ForeignTypeFacts.callOperand(
+              name,
+              ctx.symbolTable,
+              OperandTyper.target(ctx),
+            );
       return t ? { k: "value", registerMember: null, t } : UNKNOWN;
     }
     return UNKNOWN;

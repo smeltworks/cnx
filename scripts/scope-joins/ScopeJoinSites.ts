@@ -217,18 +217,6 @@ class ScopeJoinSites {
       why: ScopeJoinSites.RECOMPUTE,
     },
     {
-      file: "src/cnx/utils/OperandTyper.ts",
-      element: "fromParts(current.parts)",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
-      file: "src/cnx/utils/OperandTyper.ts",
-      element: "fromParts(parts)",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
       file: "src/cnx/PARSE/3-Declare/cnx/collectors/BitmapCollector.ts",
       element: "identityOf({ name, scopePath })",
       kind: "encoder",
