@@ -15,7 +15,7 @@
  * qualified-name construction and decomposition through here.
  *
  * NOT for C++ namespace qualification (`Ns::Type`). That is a different separator for
- * a different target language; see FormatUtils.getScopeSeparator().
+ * a different target language; see CppNamespaceUtils.
  */
 class QualifiedCName {
   /**
@@ -53,7 +53,12 @@ class QualifiedCName {
    * The C name a function-local moves to when it hides a file-scope name or
    * the enclosing local its initializer reads (#1643): `<function>__<name>`,
    * then `<function>__<name>__2`, and so on. `__` cannot be written in a cnx
-   * identifier (E0201), so the moved name collides with nothing declared.
+   * identifier (E0201), so no written name is spelled this way. The separator
+   * alone does not keep it apart from `inScope`'s names, though:
+   * `movedLocal("Motor__init", "x", 1)` and `inScope("Motor", ["init", "x"])`
+   * both spell `Motor__init__x`. What does is that `function` is a declared
+   * function's C name, and a scope cannot declare a function and a type or
+   * member path under the same name, so no declared `Motor.init.x` exists.
    * Only 4-Resolve's LexicalFrames decides it, once per local (#2116).
    */
   static movedLocal(
