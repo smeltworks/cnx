@@ -73,7 +73,8 @@ function register(
   }) => TSymbol,
 ): void {
   for (const qualifiedName of names) {
-    const parts = QualifiedCName.split(qualifiedName);
+    // a fixture decoding its own mock C name; no pass reads a C name back
+    const parts = qualifiedName.split(QualifiedCName.SEPARATOR);
     const base = {
       name: parts.at(-1)!,
       fullyQualifiedCName: qualifiedName,

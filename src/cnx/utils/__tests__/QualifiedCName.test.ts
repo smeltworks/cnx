@@ -51,15 +51,6 @@ describe("QualifiedCName", () => {
     );
   });
 
-  describe("split", () => {
-    it("is the inverse of join", () => {
-      const parts = ["Motor", "State", "IDLE"];
-      expect(
-        QualifiedCName.split(QualifiedCName.fromSourceName(parts.join("."))),
-      ).toEqual(parts);
-    });
-  });
-
   describe("isQualified", () => {
     it("is true for a scope-qualified name", () => {
       expect(QualifiedCName.isQualified("Motor__init")).toBe(true);

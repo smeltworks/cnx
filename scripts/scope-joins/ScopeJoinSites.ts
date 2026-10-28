@@ -301,7 +301,7 @@ class ScopeJoinSites {
       file: "src/cnx/utils/QualifiedCName.ts",
       element: "QualifiedCName.SEPARATOR",
       kind: "encoder",
-      why: "the ADR-063 separator's owner: its declaration, the one join, the split and the prefix test",
+      why: "the ADR-063 separator's owner: its declaration, the one join and the prefix test",
     },
     {
       file: "src/cnx/utils/ScopeUtils.ts",

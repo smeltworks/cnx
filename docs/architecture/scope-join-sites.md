@@ -56,7 +56,7 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/PARSE/3-Declare/cnx/utils/MemberSymbolBase.ts`            | `identityOf({ name: input.name, scopePath: input.parentScopedName, })` | 1      | encoder      |
 | `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                         | `movedLocal(functionCName, name, 1)`                                   | 1      | owner-c-name |
 | `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                         | `movedLocal(functionCName, name, suffix)`                              | 1      | owner-c-name |
-| `src/cnx/utils/QualifiedCName.ts`                                  | `QualifiedCName.SEPARATOR`                                             | 3      | encoder      |
+| `src/cnx/utils/QualifiedCName.ts`                                  | `QualifiedCName.SEPARATOR`                                             | 2      | encoder      |
 | `src/cnx/utils/ScopeUtils.ts`                                      | `fromSourceParts([symbol.scopePath, symbol.name])`                     | 1      | encoder      |
 | `src/cnx/utils/ScopeUtils.ts`                                      | `getCnxScopedName(symbol)`                                             | 1      | encoder      |
 | `src/cnx/utils/ScopeUtils.ts`                                      | `getTranspiledCName({ name: head, scopePath })`                        | 1      | written-name |
@@ -68,9 +68,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                      | `qualifyPathInScope([symbol.name], symbol.scopePath)`                  | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                  | `qualifyInScope(type.name, scopePath)`                                 | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                  | `qualifyScopeType(type.name, scopePath, deps.isScopeType)`             | 1      | encoder      |
-| **total**                                                          |                                                                        | **33** |              |
+| **total**                                                          |                                                                        | **32** |              |
 
-33 site(s) across 16 file(s).
+32 site(s) across 16 file(s).
 
 ## Why each site is not a scope join
 
@@ -92,7 +92,7 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/PARSE/3-Declare/cnx/utils/MemberSymbolBase.ts` `identityOf({ name: input.name, scopePath: input.parentScopedName, })`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
 - `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `movedLocal(functionCName, name, 1)`: 4-Resolve deciding, once, the C name a local moves to when it hides a file-scope name; stored on the settled local as emittedName
 - `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `movedLocal(functionCName, name, suffix)`: 4-Resolve deciding, once, the uniqueness-suffixed C name a local moves to when it shadows the enclosing local it reads (#1643); stored as emittedName
-- `src/cnx/utils/QualifiedCName.ts` `QualifiedCName.SEPARATOR`: the ADR-063 separator's owner: its declaration, the one join, the split and the prefix test
+- `src/cnx/utils/QualifiedCName.ts` `QualifiedCName.SEPARATOR`: the ADR-063 separator's owner: its declaration, the one join and the prefix test
 - `src/cnx/utils/ScopeUtils.ts` `fromSourceParts([symbol.scopePath, symbol.name])`: the owning code: getCnxScopedName's definition, the cnx spelling 3-Declare stores as cnxScopedName
 - `src/cnx/utils/ScopeUtils.ts` `getCnxScopedName(symbol)`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
 - `src/cnx/utils/ScopeUtils.ts` `getTranspiledCName({ name: head, scopePath })`: a `this.X` chain head no symbol declares, spelled as written; a declared head reads its fullyQualifiedCName through ITypeHeadLookup (#2116)

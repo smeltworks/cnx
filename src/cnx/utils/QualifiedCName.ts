@@ -104,18 +104,6 @@ class QualifiedCName {
   }
 
   /**
-   * Split a qualified C name back into its components.
-   *
-   * Exact inverse of fromSourceName() for names built from ADR-063-conformant identifiers.
-   *
-   * @param qualifiedName A generated C identifier, e.g. "Motor__State__IDLE"
-   * @returns The components, e.g. ["Motor", "State", "IDLE"]
-   */
-  static split(qualifiedName: string): string[] {
-    return qualifiedName.split(QualifiedCName.SEPARATOR);
-  }
-
-  /**
    * Whether a generated C identifier carries a scope qualification.
    *
    * Use instead of testing for a bare underscore: a plain identifier is allowed to
