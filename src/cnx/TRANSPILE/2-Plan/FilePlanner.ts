@@ -440,25 +440,15 @@ class FilePlanner {
     if (identifiers.length === 0) {
       return "";
     }
-
-    const firstName = identifiers[0];
-
-    // Check if the first identifier is a C++ scope symbol (namespace, class, enum)
-    if (this.queries.isCppScopeSymbol(firstName)) {
-      // C++ namespace type: join all parts with ::
-      return CppNamespaceUtils.fromParts(identifiers);
-    }
-
-    // #2116: a cnx `Scope.T` reads the C name 3-Declare gave it; one no
-    // symbol declares is 2.1's to report, and is spelled as written until then
-    const member = this.state.program?.memberOf(
-      firstName,
-      identifiers.slice(1).join("."),
+    // #2116: 1.3 spelled every written `Scope.T` / `Ns.T` once -- `Ns::T` for
+    // a C++ head, else the C name -- so this reads it and never re-derives it
+    const written = identifiers.join(".");
+    const stored = this.state.program?.qualifiedTypeName(written);
+    invariant(
+      stored !== undefined,
+      `1.3 spells every qualified type a file writes ('${written}')`,
     );
-    return (
-      member?.fullyQualifiedCName ??
-      QualifiedCName.fromSourceName(identifiers.join("."))
-    );
+    return stored;
   }
 
   /**

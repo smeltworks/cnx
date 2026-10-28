@@ -304,12 +304,6 @@ class ScopeJoinSites {
       why: "a dotted type no cnx symbol this file sees declares; a declared `Scope.T` reads its `fullyQualifiedCName` through `visibleMember`",
     },
     {
-      file: "src/cnx/TRANSPILE/2-Plan/FilePlanner.ts",
-      element: 'fromSourceName(identifiers.join("."))',
-      kind: "written-name",
-      why: "a `Scope.T` no cnx symbol declares (2.1 reports it); a declared one reads its `fullyQualifiedCName` through `memberOf`",
-    },
-    {
       file: "src/cnx/utils/QualifiedCName.ts",
       element: "QualifiedCName.SEPARATOR",
       kind: "encoder",
