@@ -291,6 +291,7 @@ class CnxResolver {
         sourceFile,
         globalScopePath,
         ScopeUtils.getTopLevelVisibility(),
+        typeFacts,
       );
       symbols.push(symbol);
       return;
@@ -315,6 +316,7 @@ class CnxResolver {
         sourceFile,
         globalScopePath,
         ScopeUtils.getTopLevelVisibility(),
+        typeFacts,
       );
       symbols.push(symbol);
       return;
@@ -332,6 +334,7 @@ class CnxResolver {
         // renamed the rule -- a top-level declaration is public because it has
         // no enclosing scope, not because it is a function.
         ScopeUtils.getTopLevelVisibility(),
+        typeFacts,
       );
       symbols.push(symbol);
       return;
@@ -347,6 +350,7 @@ class CnxResolver {
         sourceFile,
         globalScopePath,
         ScopeUtils.getTopLevelVisibility(),
+        typeFacts,
       );
       symbols.push(symbol);
     }
