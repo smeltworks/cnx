@@ -63,6 +63,13 @@ interface ICodeGenSymbols {
   readonly structFieldArrays: ReadonlyMap<string, ReadonlySet<string>>;
 
   /**
+   * ADR-030 / #1744: fields held through a pointer because their type is an
+   * opaque C handle -- `IStructFieldSymbol.isOpaqueHandle`, the one decision
+   * the `.h`, the `.c` and every argument naming the field read.
+   */
+  readonly structFieldHandles: ReadonlyMap<string, ReadonlySet<string>>;
+
+  /**
    * Array dimensions for struct fields: structName -> (fieldName -> dimensions)
    *
    * A dimension is a number when it folds at compile time, or a string when it

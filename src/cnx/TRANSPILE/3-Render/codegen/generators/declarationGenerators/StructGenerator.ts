@@ -25,6 +25,7 @@ import IGeneratorOutput from "../IGeneratorOutput";
 import IOrchestrator from "../IOrchestrator";
 import TGeneratorFn from "../TGeneratorFn";
 import TGeneratorEffect from "../TGeneratorEffect";
+import DeclaredPointer from "../../../../../utils/DeclaredPointer";
 import ICodeGenSymbols from "../../../../../types/ICodeGenSymbols";
 import StructInitFunction from "../../helpers/StructInitFunction";
 import type IPlannedStruct from "../../types/IPlannedStruct";
@@ -51,7 +52,11 @@ function generateRegularField(
   structName: string,
   input: IGeneratorInput,
 ): string {
-  const type = field.renderCType();
+  // #1744: a field of an opaque C type holds the handle, as the `.h` says
+  const type = DeclaredPointer.spell(
+    field.renderCType(),
+    input.symbols?.structFieldHandles.get(structName)?.has(field.name) ?? false,
+  );
 
   // Check if we have tracked dimensions for this field (includes string capacity for string arrays)
   const fieldDims = getTrackedFieldDimensions(

@@ -17,6 +17,8 @@ interface ICArgumentFacts {
   readonly isArray: boolean;
   /** ADR-030: one element of an array of handles, already a pointer */
   readonly isHandleArrayElement: boolean;
+  /** ADR-030 / #1744: a struct field holding a handle, or one element of an array of them */
+  readonly isHandleField: boolean;
 }
 
 export default ICArgumentFacts;

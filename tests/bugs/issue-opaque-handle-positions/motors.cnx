@@ -1,0 +1,13 @@
+// The struct for `struct-field-cross-file`, one include hop away. The includer
+// reaches its layout only through this file's generated header, so the field
+// there must be the handle the definition here holds.
+#include "dev.h"
+
+struct Motor {
+    Dev d;
+    u32 speed;
+}
+
+void spinMotor(mut Motor m) {
+    global.dev_poke(m.d);
+}

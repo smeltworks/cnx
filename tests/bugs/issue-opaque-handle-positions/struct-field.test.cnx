@@ -1,0 +1,49 @@
+// test-execution
+// test-no-warnings
+// test-adr: 030
+// test-link: dev_impl.c
+// Issue #1744: a struct field of an opaque type is held as a pointer, as every
+// other position of an opaque handle is. The field was emitted by value,
+// `Dev d;`, an incomplete type gcc rejects, while the transpiler exited 0.
+//
+// The field holds the handle itself, so it reaches a C function and a cnx
+// function without an `&`, and a poke through it reaches the same object. An
+// element of an array field of handles is a handle too (the #996 rule).
+#include "dev.h"
+
+struct Motor {
+    Dev d;
+    u32 speed;
+    Dev[2] spares;
+}
+
+// Control: the parameter position, already a pointer (`Dev* d`).
+void spin(mut Dev d) {
+    dev_poke(d);
+}
+
+i32 main() {
+    mut Motor m;
+    m.d <- dev_create();
+    m.speed <- 7;
+
+    dev_poke(m.d);
+    spin(m.d);
+    i32 pokes <- dev_pokes(m.d);
+    if (pokes != 2) {
+        return 1;
+    }
+    if (m.speed != 7) {
+        return 2;
+    }
+
+    m.spares[1] <- dev_create();
+    dev_poke(m.spares[1]);
+    spin(m.spares[1]);
+    i32 spare <- dev_pokes(m.spares[1]);
+    if (spare != 2) {
+        return 3;
+    }
+
+    return 0;
+}

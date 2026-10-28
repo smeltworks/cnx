@@ -1431,6 +1431,7 @@ class FilePlanner {
           OperandTyper.typeOf(object, this.state.typingContext()),
         ),
         isHandleArrayElement: this.isHandleArrayElement(object),
+        isHandleField: this.isHandleField(object),
       },
       this.queries,
     );
@@ -1489,6 +1490,24 @@ class FilePlanner {
       this.state.targetDescription,
     ).typeInfo;
     return (array?.isArray ?? false) && (array?.isPointer ?? false);
+  }
+
+  /**
+   * ADR-030 / #1744: whether an argument reads a struct field that holds a
+   * handle -- `m.d` of a `Dev d` field, or `m.devs[i]` of a `Dev[2] devs`
+   * one. The field's own stamp says so (`structFieldHandles`), for a struct
+   * declared here or in an included file alike.
+   */
+  private isHandleField(expr: TExpression): boolean {
+    const typing = this.state.typingContext();
+    if (ExpressionShape.postfixView(expr) === null) return false;
+    const steps = OperandTyper.chainOf(expr, typing).steps;
+    const last = steps.at(-1);
+    const field = last?.subscript === "array_element" ? steps.at(-2) : last;
+    const member = field?.member ?? null;
+    const struct = field?.before?.typeName ?? null;
+    if (member === null || struct === null) return false;
+    return typing.symbols.structFieldHandles.get(struct)?.has(member) ?? false;
   }
 
   /**

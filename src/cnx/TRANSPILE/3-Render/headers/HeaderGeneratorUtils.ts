@@ -125,6 +125,7 @@ class HeaderGeneratorUtils {
     localTypes: Set<string>,
     localBitmaps: Set<string>,
     allKnownEnums?: ReadonlySet<string>,
+    structFieldTypes: Iterable<string> = [],
   ): Set<string> {
     const externalTypes = new Set<string>();
 
@@ -168,6 +169,12 @@ class HeaderGeneratorUtils {
     // Check variable types
     for (const v of variables) {
       addIfExternal(v.type);
+    }
+
+    // #1744: a struct the header defines names its fields' types, so an
+    // opaque C handle in a field is declared or included like any other
+    for (const fieldType of structFieldTypes) {
+      addIfExternal(fieldType);
     }
 
     return externalTypes;

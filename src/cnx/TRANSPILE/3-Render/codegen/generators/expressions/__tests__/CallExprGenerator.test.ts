@@ -122,6 +122,7 @@ function cArgumentFacts(
     isArray: orchestrator.isArrayExpression(expression),
     isHandleArrayElement:
       (array?.isArray ?? false) && (array?.isPointer ?? false),
+    isHandleField: false,
   };
 }
 

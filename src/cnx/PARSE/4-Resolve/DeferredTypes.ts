@@ -27,7 +27,8 @@
  * whether a typedef ever received a body is decided over every header -- and
  * stamping here, where the one settled object is made, is what lets the scope's
  * copy carry it: a separate pass would rebuild the function a second time and
- * leave `scope.functions` on the unstamped one.
+ * leave `scope.functions` on the unstamped one. #1744 stamps a struct field
+ * of an opaque type the same way (`IStructFieldSymbol.isOpaqueHandle`).
  */
 
 import type TSymbol from "../../types/symbols/TSymbol";
@@ -50,7 +51,7 @@ class DeferredTypes {
    *   not the whole program's, which also holds siblings the file never
    *   includes (#1724).
    * @param isOpaqueType whether a settled type name is an opaque C typedef, so
-   *   a parameter of it holds a handle (ADR-030, #1722)
+   *   a parameter or struct field of it holds a handle (ADR-030, #1722, #1744)
    */
   static settle(
     symbols: ReadonlyArray<TSymbol>,
@@ -142,12 +143,19 @@ class DeferredTypes {
       const fields = new Map<string, IStructFieldSymbol>();
       for (const [name, field] of symbol.fields) {
         const type = settle(field.type);
-        if (type === field.type) {
+        // #1744: a field holds a handle on the parameter's terms (#1722)
+        const isOpaqueHandle = isOpaqueType(TypeResolver.getTypeName(type));
+        if (type === field.type && !isOpaqueHandle) {
           fields.set(name, field);
           continue;
         }
         fieldsChanged = true;
-        fields.set(name, { ...field, type });
+        fields.set(
+          name,
+          isOpaqueHandle
+            ? { ...field, type, isOpaqueHandle }
+            : { ...field, type },
+        );
       }
       return fieldsChanged ? { ...symbol, fields } : symbol;
     }

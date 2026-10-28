@@ -38,6 +38,7 @@ function createMockSymbols(
     // Struct information
     structFields: new Map(),
     structFieldArrays: new Map(),
+    structFieldHandles: new Map(),
     structFieldDimensions: new Map(),
 
     // Enum information

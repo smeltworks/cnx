@@ -245,6 +245,22 @@ describe("HeaderGeneratorUtils", () => {
   });
 
   describe("collectExternalTypes", () => {
+    it("collects types from struct fields (#1744)", () => {
+      const result = HeaderGeneratorUtils.collectExternalTypes(
+        [],
+        [],
+        new Set(),
+        new Set(),
+        new Set(),
+        new Set(),
+        undefined,
+        ["Dev", "u32"],
+      );
+
+      expect(result.has("Dev")).toBe(true);
+      expect(result.has("u32")).toBe(false);
+    });
+
     it("collects types from function return types", () => {
       const functions: IHeaderSymbol[] = [
         makeSymbol({
