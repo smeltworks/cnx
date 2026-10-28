@@ -42,7 +42,6 @@ import OperandTyper from "../../utils/OperandTyper";
 import StringValueForm from "../../utils/StringValueForm";
 import StringUtils from "../../utils/StringUtils";
 import type TStringValueForm from "../../types/TStringValueForm";
-import CppNamespaceUtils from "../../utils/CppNamespaceUtils";
 import headerCType from "../../utils/headerCType";
 import HeaderTypeNames from "./HeaderTypeNames";
 import PublicInterface from "./PublicInterface";
@@ -3640,10 +3639,8 @@ class FilePlanner {
       targetExpr,
       this.state.typingContext(),
     );
-    const name = written?.cType ?? written?.typeName ?? null;
-    return name === null
-      ? null
-      : CppNamespaceUtils.convertToCppNamespace(name, this.state.symbolTable);
+    // #2116: a C++ `Ns.T` is already `Ns::T`, as 1.3 stored it
+    return written?.cType ?? written?.typeName ?? null;
   }
 
   /**
