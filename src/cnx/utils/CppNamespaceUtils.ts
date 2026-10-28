@@ -1,8 +1,9 @@
 /**
  * C++ Namespace Detection Utilities
  *
- * Provides shared logic for detecting C++ namespaced types and converting
- * between underscore format (used in C headers) and :: format (used in C++).
+ * Provides shared logic for detecting C++ scope-like symbols and spelling C++
+ * qualified names. Nothing converts a generated `A__B` back to `A::B`: 1.3
+ * spells a written C++ path once and later layers read it (#2116).
  *
  * Issue #522: Consolidated from duplicate implementations in:
  * - CodeGenerator.ts (isCppScopeSymbol)
@@ -11,7 +12,6 @@
 
 import type IResolvedSymbols from "../types/IResolvedSymbols";
 import ESourceLanguage from "./types/ESourceLanguage";
-import QualifiedCName from "./QualifiedCName";
 
 /**
  * Static utility methods for C++ namespace operations
@@ -63,71 +63,6 @@ class CppNamespaceUtils {
     }
 
     return false;
-  }
-
-  /**
-   * Check if a type name (potentially with underscores) is a C++ namespaced type.
-   * This checks if the first part of an underscore-separated name is a C++ namespace.
-   *
-   * @param typeName - The type name to check (e.g., "SeaDash_Parse_ParseResult")
-   * @param symbolTable - Optional symbol table for lookups
-   * @returns true if this is a C++ namespaced type in underscore format
-   */
-  static isCppNamespaceType(
-    typeName: string,
-    symbolTable: IResolvedSymbols | undefined,
-  ): boolean {
-    // Types already in :: format are clearly C++ namespaced
-    if (typeName.includes("::")) {
-      return true;
-    }
-
-    // Check separator-qualified names
-    if (!QualifiedCName.isQualified(typeName)) {
-      return false;
-    }
-
-    const parts = QualifiedCName.split(typeName);
-    if (parts.length > 1) {
-      return CppNamespaceUtils.isCppNamespace(parts[0], symbolTable);
-    }
-
-    return false;
-  }
-
-  /**
-   * Convert underscore-separated type names to C++ namespace syntax
-   * if the first part is a known C++ namespace.
-   *
-   * @param typeName - The type name to convert (e.g., "SeaDash_Parse_ParseResult")
-   * @param symbolTable - Optional symbol table for lookups
-   * @returns The converted type name (e.g., "SeaDash::Parse::ParseResult") or original if not C++ namespaced
-   */
-  static convertToCppNamespace(
-    typeName: string,
-    symbolTable: IResolvedSymbols | undefined,
-  ): string {
-    // Already in :: format
-    if (typeName.includes("::")) {
-      return typeName;
-    }
-
-    // Only process separator-qualified types
-    if (!QualifiedCName.isQualified(typeName)) {
-      return typeName;
-    }
-
-    // Check if this looks like a qualified type
-    const parts = QualifiedCName.split(typeName);
-    if (
-      parts.length > 1 &&
-      CppNamespaceUtils.isCppNamespace(parts[0], symbolTable)
-    ) {
-      // It's a C++ namespaced type - re-qualify for C++ namespace syntax
-      return CppNamespaceUtils.fromParts(parts);
-    }
-
-    return typeName;
   }
 }
 
