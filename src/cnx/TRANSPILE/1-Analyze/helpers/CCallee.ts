@@ -1,5 +1,4 @@
 import OperandTyper from "../../../utils/OperandTyper";
-import CppNamespaceUtils from "../../../utils/CppNamespaceUtils";
 import TypedefParamParser from "../../../utils/TypedefParamParser";
 import type TExpression from "../../../types/syntax/TExpression";
 import type IAnalysisContext from "../types/IAnalysisContext";
@@ -53,7 +52,11 @@ class CCallee {
     );
   }
 
-  /** The C++ name of `method` on what `receiver` is, or null */
+  /**
+   * The C++ name of `method` on what `receiver` is, or null: the stored name
+   * of the member the receiver's class declares, found by (class, method)
+   * rather than spelled `Class::method` (#2116)
+   */
   static methodName(
     receiver: TExpression,
     method: string,
@@ -62,9 +65,8 @@ class CCallee {
     const typeName = OperandTyper.directTypeName(
       OperandTyper.typeOf(receiver, context),
     );
-    return typeName === null
-      ? null
-      : CppNamespaceUtils.qualify(typeName, method);
+    if (typeName === null) return null;
+    return context.symbolTable.getCppMembers(typeName, method)[0]?.name ?? null;
   }
 
   private static namesOf(expr: TPostfix, context: IAnalysisContext): string[] {

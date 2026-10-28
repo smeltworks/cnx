@@ -70,7 +70,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                         | `movedLocal(functionCName, name, 1)`                                   | 1      | owner-c-name |
 | `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                         | `movedLocal(functionCName, name, suffix)`                              | 1      | owner-c-name |
 | `src/cnx/TRANSPILE/1-Analyze/helpers/CCallee.ts`                   | `.join("::")`                                                          | 1      | recompute    |
-| `src/cnx/TRANSPILE/1-Analyze/helpers/CCallee.ts`                   | `qualify(typeName, method)`                                            | 1      | recompute    |
 | `src/cnx/utils/CppNamespaceUtils.ts`                               | `CppNamespaceUtils.SEPARATOR`                                          | 1      | encoder      |
 | `src/cnx/utils/CppNamespaceUtils.ts`                               | `fromParts([scope, name])`                                             | 1      | encoder      |
 | `src/cnx/utils/ForeignTypeFacts.ts`                                | `fromParts([...scopes.slice(0, depth), spelling])`                     | 1      | recompute    |
@@ -89,9 +88,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                      | `qualifyPathInScope([symbol.name], symbol.scopePath)`                  | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                  | `qualifyInScope(type.name, scopePath)`                                 | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                  | `qualifyScopeType(type.name, scopePath, deps.isScopeType)`             | 1      | encoder      |
-| **total**                                                          |                                                                        | **52** |              |
+| **total**                                                          |                                                                        | **51** |              |
 
-52 site(s) across 26 file(s).
+51 site(s) across 26 file(s).
 
 ## Why each site is not a scope join
 
@@ -123,7 +122,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `movedLocal(functionCName, name, 1)`: 4-Resolve deciding, once, the C name a local moves to when it hides a file-scope name; stored on the settled local as emittedName
 - `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `movedLocal(functionCName, name, suffix)`: 4-Resolve deciding, once, the uniqueness-suffixed C name a local moves to when it shadows the enclosing local it reads (#1643); stored as emittedName
 - `src/cnx/TRANSPILE/1-Analyze/helpers/CCallee.ts` `.join("::")`: builds a C++ name after 3-Declare named the header symbol; converts to resolving the symbol and reading its name (#2116)
-- `src/cnx/TRANSPILE/1-Analyze/helpers/CCallee.ts` `qualify(typeName, method)`: builds a C++ name after 3-Declare named the header symbol; converts to resolving the symbol and reading its name (#2116)
 - `src/cnx/utils/CppNamespaceUtils.ts` `CppNamespaceUtils.SEPARATOR`: the C++ separator's owner: the one `::` join
 - `src/cnx/utils/CppNamespaceUtils.ts` `fromParts([scope, name])`: `qualify`, defined in terms of the one join; 3-Declare's C++ collectors are its callers
 - `src/cnx/utils/ForeignTypeFacts.ts` `fromParts([...scopes.slice(0, depth), spelling])`: builds a C++ name after 3-Declare named the header symbol; converts to resolving the symbol and reading its name (#2116)

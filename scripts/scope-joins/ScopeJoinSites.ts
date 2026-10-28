@@ -217,12 +217,6 @@ class ScopeJoinSites {
       why: ScopeJoinSites.RECOMPUTE,
     },
     {
-      file: "src/cnx/TRANSPILE/1-Analyze/helpers/CCallee.ts",
-      element: "qualify(typeName, method)",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
       file: "src/cnx/utils/ForeignTypeFacts.ts",
       element: "fromParts([...scopes.slice(0, depth), spelling])",
       kind: "recompute",
