@@ -1414,11 +1414,14 @@ class OperandTyper {
     ctx: ITypingContext,
   ): boolean {
     const first = ops[0];
+    // #2116: the member `name` declares, found by (owner, member)
     return (
       first?.kind === "member" &&
-      OperandTyper.headerNamesValue(
-        CppNamespaceUtils.fromParts([name, first.name]),
-        ctx,
+      ForeignTypeFacts.cppPath(ctx.symbolTable, undefined, [
+        name,
+        first.name,
+      ]).some(
+        (symbol) => symbol.kind === "function" || symbol.kind === "variable",
       )
     );
   }

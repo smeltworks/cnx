@@ -218,12 +218,6 @@ class ScopeJoinSites {
     },
     {
       file: "src/cnx/utils/OperandTyper.ts",
-      element: "fromParts([name, first.name])",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
-      file: "src/cnx/utils/OperandTyper.ts",
       element: "fromParts(current.parts)",
       kind: "recompute",
       why: ScopeJoinSites.RECOMPUTE,
