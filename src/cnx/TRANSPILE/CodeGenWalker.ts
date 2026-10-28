@@ -94,7 +94,7 @@ import type IPlannedSwitch from "./3-Render/codegen/types/IPlannedSwitch";
 import type TPlannedCaseLabel from "./3-Render/codegen/types/TPlannedCaseLabel";
 import enumGenerator from "./3-Render/codegen/generators/declarationGenerators/EnumGenerator";
 import bitmapGenerator from "./3-Render/codegen/generators/declarationGenerators/BitmapGenerator";
-import registerGeneratorFor from "./3-Render/codegen/generators/declarationGenerators/RegisterGenerator";
+import generateRegisterDeclaration from "./3-Render/codegen/generators/declarationGenerators/RegisterGenerator";
 import type IPlannedRegister from "./3-Render/codegen/types/IPlannedRegister";
 import type IPlannedFunction from "./3-Render/codegen/types/IPlannedFunction";
 import type IPlannedStruct from "./3-Render/codegen/types/IPlannedStruct";
@@ -179,10 +179,9 @@ import AdrProvenance from "../instrumentation/AdrProvenance";
 import ExpressionNodes from "../utils/ExpressionNodes";
 import ParameterInputAdapter from "./3-Render/codegen/helpers/ParameterInputAdapter";
 import ParameterSignatureBuilder from "./3-Render/codegen/helpers/ParameterSignatureBuilder";
-import QualifiedNameGenerator from "../utils/QualifiedNameGenerator";
 import MisraSuppressionUtils from "./3-Render/MisraSuppressionUtils";
 import EnumZeroValue from "../utils/EnumZeroValue";
-import QualifiedCName from "../utils/QualifiedCName";
+import CaseLabelSymbol from "../utils/CaseLabelSymbol";
 import ToolchainRequirementUtils from "../utils/ToolchainRequirementUtils";
 import MainSignature from "../utils/MainSignature";
 import ScopeUtils from "../utils/ScopeUtils";
@@ -1114,7 +1113,7 @@ class CodeGenWalker {
       hasGlobal || hasThis ? safeIdentifier : resolvedIdentifier,
       hasGlobal,
       hasThis,
-      this.host.state.currentScopePath,
+      (name) => this.declaredCName(this.host.state.currentScopePath, name),
     );
 
     // No postfix operations - return base
@@ -1208,7 +1207,7 @@ class CodeGenWalker {
     if (resolved) {
       // Check if enum
       if (this.host.state.symbols!.knownEnums.has(resolved.name)) {
-        return this._getEnumZeroValue(resolved.name, resolved.separator);
+        return this._getEnumZeroValue(resolved.name);
       }
       // Issue #1004: struct/class zero-init. C++ value-initialization ({})
       // works for every aggregate (including ones whose first field is an
@@ -1410,6 +1409,10 @@ class CodeGenWalker {
       isKnownScope: (name: string) => this.host.isKnownScope(name),
       isKnownRegister: (name: string) =>
         this.host.state.symbols!.knownRegisters.has(name),
+      memberCName: (scopePath: string, name: string) =>
+        this.host.state.program?.memberOf(scopePath, name)?.fullyQualifiedCName,
+      registerMemberCName: (registerCName: string, member: string) =>
+        this.host.state.symbols!.memberCNames.get(registerCName)?.get(member),
       rootMemberSeparator: (holding: IRootHolding) =>
         memberAccessChain.rootMemberSeparator(holding, this.host.state.cppMode),
     };
@@ -1867,12 +1870,18 @@ class CodeGenWalker {
       case "enum":
         return this.invokeSuppressibleDeclaration(
           enumGenerator,
-          declaration.name,
+          this.declaredCName(
+            this.host.state.currentScopePath,
+            declaration.name,
+          ),
         );
       case "bitmap":
         return this.invokeSuppressibleDeclaration(
           bitmapGenerator,
-          declaration.name,
+          this.declaredCName(
+            this.host.state.currentScopePath,
+            declaration.name,
+          ),
         );
       case "function":
         return this.generateFunction(declaration);
@@ -1957,12 +1966,19 @@ class CodeGenWalker {
     );
   }
 
+  /** The C name 3-Declare gave the member `name` of `scopePath` (#2116) */
+  private declaredCName(scopePath: string, name: string): string {
+    const symbol = this.host.state.program?.memberOf(scopePath, name);
+    invariant(symbol !== undefined, "3-Declare declares every scope member");
+    return symbol.fullyQualifiedCName;
+  }
+
   /** This type's transpiled C name, or null when the header already defines it. */
   private scopeTypeCNameIfAbsentFromHeader(
     name: string,
     declaringScopePath: string,
   ): string | null {
-    const fullName = QualifiedNameGenerator.forMember(declaringScopePath, name);
+    const fullName = this.declaredCName(declaringScopePath, name);
     const definedInHeader =
       this.host.state.sourcePath !== null &&
       PublicInterface.definesTypeInHeader(
@@ -2006,10 +2022,9 @@ class CodeGenWalker {
           kind: "function",
           adrLine,
           isPrivate,
-          fullName: QualifiedNameGenerator.forFunctionInScope(
+          fullName: this.host.state.declaredCName(
             declaringScopePath,
             declaration.name,
-            this.host.state.program,
           ),
           renderReturnType: () => this.renderType(declaration.returnType),
           planParameters: () => this.planFunctionParameters(params),
@@ -2022,7 +2037,8 @@ class CodeGenWalker {
         return {
           kind: "register",
           adrLine,
-          planRegister: () => this.planRegister(declaration),
+          planRegister: () =>
+            this.planRegister(declaration, declaringScopePath),
         };
       default:
         return { kind: "other", adrLine };
@@ -2038,10 +2054,7 @@ class CodeGenWalker {
     declaringScopePath: string,
     isPrivate: boolean,
   ): TPlannedScopeVariable {
-    const fullName = QualifiedNameGenerator.forMember(
-      declaringScopePath,
-      decl.name,
-    );
+    const fullName = this.declaredCName(declaringScopePath, decl.name);
     // Issue #375: constructor syntax.
     //
     // #1322: the arguments are no longer VALIDATED here -- the const check that
@@ -2053,7 +2066,7 @@ class CodeGenWalker {
         fullName,
         isPrivate,
         args: decl.arguments.map((arg) =>
-          QualifiedNameGenerator.forMember(declaringScopePath, arg.name),
+          this.declaredCName(declaringScopePath, arg.name),
         ),
         renderType: () => this.renderType(decl.type),
       };
@@ -2164,8 +2177,8 @@ class CodeGenWalker {
 
   private generateRegister(register: IRegisterDeclarationSyntax): string {
     return this.invokeGenerator(
-      registerGeneratorFor(this.host.getState().currentScopePath),
-      this.planRegister(register),
+      generateRegisterDeclaration,
+      this.planRegister(register, this.host.getState().currentScopePath),
     );
   }
 
@@ -2185,17 +2198,32 @@ class CodeGenWalker {
    * explicit `global.Flags` arrives as `Flags`. Nothing downstream may
    * re-qualify it.
    */
-  planRegister(register: IRegisterDeclarationSyntax): IPlannedRegister {
+  planRegister(
+    register: IRegisterDeclarationSyntax,
+    declaringScopePath: string,
+  ): IPlannedRegister {
     const baseAddress = this.renderExpression(register.address);
+    const symbol = this.host.state.program?.memberOf(
+      declaringScopePath,
+      register.name,
+    );
+    invariant(symbol?.kind === "register", "3-Declare declares every register");
     return {
-      name: register.name,
+      name: symbol.fullyQualifiedCName,
       baseAddress,
-      members: register.members.map((member) => ({
-        name: member.name,
-        cType: this.renderType(member.type),
-        access: member.access,
-        offset: this.renderExpression(member.offset),
-      })),
+      members: register.members.map((member) => {
+        const memberSymbol = symbol.members.get(member.name);
+        invariant(
+          memberSymbol !== undefined,
+          "3-Declare declares every register member",
+        );
+        return {
+          cName: memberSymbol.fullyQualifiedCName,
+          cType: this.renderType(member.type),
+          access: member.access,
+          offset: this.renderExpression(member.offset),
+        };
+      }),
     };
   }
 
@@ -3098,26 +3126,19 @@ class CodeGenWalker {
    * Returns member with value 0, or first member, or casted 0.
    * ADR-017: Enums initialize to first member
    */
-  private _getEnumZeroValue(
-    enumName: string,
-    separator: string = QualifiedCName.SEPARATOR,
-  ): string {
-    return EnumZeroValue.of(
-      this.host.state.symbols!.enumMembers,
-      enumName,
-      separator,
-    );
+  private _getEnumZeroValue(enumName: string): string {
+    return EnumZeroValue.of(this.host.state.symbols!, enumName);
   }
 
   /**
    * Resolve full type name from any TypeContext variant.
-   * Returns { name, separator } or null if not a named type.
+   * Returns { name } or null if not a named type.
    * ADR-016: Handles scoped, global, qualified, and user types
    */
   private namedTypeOf(
     type: TTypeSyntax,
     ofElement = false,
-  ): { name: string; separator: string } | null {
+  ): { name: string } | null {
     // #1285: ask for named types by name. Everything else -- string, array,
     // template, primitive, `void` -- returns null and is handled by the
     // caller's own chain, which is where it was always handled. An enumerated
@@ -3133,9 +3154,8 @@ class CodeGenWalker {
       return null;
     }
 
-    // Issue #388: a C++ namespace type comes back `::`-joined.
-    const separator = name.includes("::") ? "::" : QualifiedCName.SEPARATOR;
-    return { name, separator };
+    // Issue #388: a C++ namespace type comes back `::`-joined, as 1.3 spelled it
+    return { name };
   }
 
   /**
@@ -3375,10 +3395,15 @@ class CodeGenWalker {
       );
 
     return {
-      getSeparator: (isFirstOp: boolean, identifierChain: string[]) =>
-        MemberSeparatorResolver.getSeparator(
+      memberStep: (
+        isFirstOp: boolean,
+        identifierChain: string[],
+        owner: string,
+      ) =>
+        MemberSeparatorResolver.step(
           isFirstOp,
           identifierChain,
+          owner,
           separatorCtx,
           separatorDeps,
         ),
@@ -3623,10 +3648,23 @@ class CodeGenWalker {
           label.root,
           label.path[0],
           this.host.state.currentScopePath,
-          (name) =>
-            typing.program.isScopeTypeVisibleFrom(typing.sourceFile, name),
+          {
+            memberOf: (scopePath, name) =>
+              typing.program.memberOf(scopePath, name),
+            scopeTypeOf: (scopePath, name) =>
+              typing.program.scopeTypeOf(typing.sourceFile, scopePath, name),
+          },
         );
-        return { kind: "qualified", parts: [head, ...label.path.slice(1)] };
+        const named = CaseLabelSymbol.of(
+          typing.program,
+          head,
+          label.path.slice(1),
+        );
+        invariant(
+          named !== undefined,
+          `2.1 rejects a case label that names nothing ('${label.path.join(".")}')`,
+        );
+        return { kind: "qualified", cName: named.fullyQualifiedCName };
       }
       case "identifier": {
         const resolved = this.resolveCaseConst(
@@ -3805,7 +3843,14 @@ class CodeGenWalker {
         this.host.state.expectedType,
       );
       if (members?.has(id)) {
-        return `${this.host.state.expectedType}${this.host.getScopeSeparator(false)}${id}`;
+        const cName = this.host.state
+          .symbols!.memberCNames.get(this.host.state.expectedType)
+          ?.get(id);
+        invariant(
+          cName !== undefined,
+          `3-Declare names every member of '${this.host.state.expectedType}' (missing '${id}')`,
+        );
+        return cName;
       }
       // Not a member of the expected enum: falls through to the assertion
       // below. Before #1322 this returned null and the bare name was emitted

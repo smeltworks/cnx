@@ -193,15 +193,11 @@ abstract class BaseHeaderGenerator {
       HeaderGeneratorUtils.filterCCompatibleTypes(
         externalTypes,
         typesWithHeaders,
-        symbolTable,
       ).filter((typeName) => !typeInput?.callbackTypes?.has(typeName));
 
     // Filter to C-compatible variables
     const cCompatibleVariables =
-      HeaderGeneratorUtils.filterCCompatibleVariables(
-        groups.variables,
-        symbolTable,
-      );
+      HeaderGeneratorUtils.filterCCompatibleVariables(groups.variables);
 
     if (!options.cHeadersIncluded) {
       BaseHeaderGenerator.assertNoPointerTypedefs(
@@ -254,7 +250,6 @@ abstract class BaseHeaderGenerator {
       ...this.generateFunctionSection(
         groups.functions,
         options.generatedStructInits,
-        symbolTable,
       ),
       ...HeaderGeneratorUtils.generateHeaderEnd(guard),
     ];
@@ -280,7 +275,6 @@ abstract class BaseHeaderGenerator {
   private generateFunctionSection(
     functions: IHeaderSymbol[],
     generatedStructInits?: ReadonlySet<string>,
-    symbolTable?: IResolvedSymbols,
   ): string[] {
     // #1205: the ADR-029 init functions are declarations too, so the section
     // exists when there is either kind. Keying the early return on `functions`
@@ -295,7 +289,7 @@ abstract class BaseHeaderGenerator {
 
     const lines: string[] = ["/* Function prototypes */"];
     for (const sym of functions) {
-      const proto = this.generateFunctionPrototype(sym, symbolTable);
+      const proto = this.generateFunctionPrototype(sym);
       if (proto) {
         lines.push(proto);
       }
@@ -307,15 +301,11 @@ abstract class BaseHeaderGenerator {
   /**
    * Generate a function prototype
    */
-  private generateFunctionPrototype(
-    sym: IHeaderSymbol,
-    symbolTable?: IResolvedSymbols,
-  ): string | null {
-    // Map return type (main() always returns int). `headerCType`, not
-    // `mapType`: a C++ namespaced return type is written `A::B` here exactly as
-    // it is in a struct field, and calling the narrower one is what made those
-    // two disagree (#1520).
-    const mappedType = sym.type ? headerCType(sym.type, symbolTable) : "void";
+  private generateFunctionPrototype(sym: IHeaderSymbol): string | null {
+    // Map return type (main() always returns int). `headerCType`, the same
+    // mapping a struct field uses, so a return type and a field cannot name
+    // one type two ways (#1520).
+    const mappedType = sym.type ? headerCType(sym.type) : "void";
     const returnType = sym.name === "main" ? "int" : mappedType;
 
     // Get pass-by-value parameter names for this function
@@ -325,7 +315,7 @@ abstract class BaseHeaderGenerator {
 
     if (sym.parameters && sym.parameters.length > 0) {
       const translatedParams = sym.parameters.map((p) =>
-        this.generateParameter(p, symbolTable),
+        this.generateParameter(p),
       );
       params = translatedParams.join(", ");
     }
@@ -336,12 +326,9 @@ abstract class BaseHeaderGenerator {
   /**
    * Generate a single parameter with appropriate semantics
    */
-  private generateParameter(
-    p: IParameterSymbol,
-    symbolTable?: IResolvedSymbols,
-  ): string {
+  private generateParameter(p: IParameterSymbol): string {
     const input = ParameterInputAdapter.fromSymbol(p, {
-      mapType: (t) => headerCType(t, symbolTable),
+      mapType: headerCType,
     });
 
     return ParameterSignatureBuilder.build(input, this.getRefSuffix());

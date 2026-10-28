@@ -22,10 +22,29 @@ interface ITypeBindingDeps {
   readonly isScopeType?: (qualifiedName: string) => boolean;
 
   /**
-   * C++ namespace-aware resolution for `Scope.Type` (Issue #388). Injected
-   * because it is a codegen concern; without it the components are joined.
+   * The stored C name of the scope type a bare `name` in `scopePath` binds to
+   * (ADR-057), found by identity (#2116). Preferred over `isScopeType`, which
+   * only 3-Declare -- still deciding those names -- supplies.
    */
-  readonly resolveQualifiedType?: (identifiers: string[]) => string;
+  readonly scopeTypeCName?: (
+    scopePath: string,
+    name: string,
+  ) => string | undefined;
+
+  /**
+   * The spelling 1.3 gave a written `Scope.T` / `Ns.T` -- `Ns::T` for a C++
+   * head, else the C name (#388, #2116). A ladder that meets a qualified type
+   * reads it here; there is no fallback spelling.
+   */
+  readonly qualifiedTypeName?: (written: string) => string;
+  /**
+   * The C name 3-Declare gave `name` in `scopePath`, for `this.T` (#2116).
+   * Absent only in 3-Declare, which is still deciding those names.
+   */
+  readonly memberCName?: (
+    scopePath: string,
+    name: string,
+  ) => string | undefined;
 }
 
 export default ITypeBindingDeps;

@@ -26,7 +26,6 @@ import type TExpression from "../../../types/syntax/TExpression";
 import CallbackParameterShape from "../../../utils/CallbackParameterShape";
 import CallbackTypedefFormatter from "../../../utils/CallbackTypedefFormatter";
 import DeclaredTypeFacts from "../../../utils/DeclaredTypeFacts";
-import ScopeUtils from "../../../utils/ScopeUtils";
 import CNX_TO_C_TYPE_MAP from "../../../utils/constants/TypeMappings";
 import type ICallbackShapeFacts from "../../../utils/types/ICallbackShapeFacts";
 import type IAnalysisContext from "../types/IAnalysisContext";
@@ -121,7 +120,7 @@ class CCallbackSignature {
     const facts = CCallbackSignature.facts(context);
     const isCppMode = context.program.cppMode();
     const actualParameters = CallbackParameterShape.parameters(
-      ScopeUtils.getTranspiledCName(actual),
+      actual.fullyQualifiedCName,
       actual,
       facts,
     ).map(
@@ -188,7 +187,7 @@ class CCallbackSignature {
     const verdicts = [
       returned,
       ...CallbackParameterShape.parameters(
-        ScopeUtils.getTranspiledCName(expected),
+        expected.fullyQualifiedCName,
         expected,
         facts,
       ).map((parameter, index) =>

@@ -132,7 +132,7 @@ module.exports = {
         "data, 42 files against the original 7. It stops there because an " +
         "import-level rule is all-or-nothing, and codegen and analysis " +
         "legitimately decode names (split, isQualified, toCppQualified) and " +
-        "build whole paths (fromParts). What THEY must not do is a call SHAPE, " +
+        "build whole written names (fromSourceName). What THEY must not do is a call SHAPE, " +
         "not an import, so it is gated by `npm run scope-joins:check` against " +
         "docs/architecture/scope-join-sites.md instead.",
       severity: "error",

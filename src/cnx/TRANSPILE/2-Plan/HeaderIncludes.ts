@@ -27,7 +27,6 @@
  * prefer over a text scan that could only ever over-include.
  */
 
-import type IResolvedSymbols from "../../types/IResolvedSymbols";
 import type TSymbol from "../../types/symbols/TSymbol";
 import headerCType from "../../utils/headerCType";
 import CTypeIncludes from "./CTypeIncludes";
@@ -43,19 +42,17 @@ class HeaderIncludes {
    *
    * @param exportedSymbols the file's public interface, as `PublicInterface`
    *   settled it -- the same list the header is generated from
-   * @param symbolTable for the C++ namespace spelling `headerCType` needs
    * @param writtenIncludes the `#include` lines the header carries through
    *   from the source, whose system headers it must not include twice (#2188)
    */
   static decide(
     exportedSymbols: readonly TSymbol[],
-    symbolTable: IResolvedSymbols | undefined,
     writtenIncludes: readonly string[],
   ): string[] {
     return UnwrittenIncludes.of(
       CTypeIncludes.decide(
         [...HeaderTypeNames.collect(exportedSymbols)].map((named) =>
-          headerCType(named, symbolTable),
+          headerCType(named),
         ),
       ),
       writtenIncludes.flatMap((line) => UnwrittenIncludes.targetOf(line) ?? []),

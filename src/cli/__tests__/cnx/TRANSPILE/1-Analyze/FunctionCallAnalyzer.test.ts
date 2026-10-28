@@ -412,6 +412,7 @@ describe("FunctionCallAnalyzer", () => {
       const symbolTable = new SymbolTable();
       symbolTable.addCppSymbol({
         name: "cppHelper",
+        unqualifiedName: "cppHelper",
         kind: "function",
         sourceLanguage: ESourceLanguage.Cpp,
         sourceFile: "helper.hpp",
@@ -532,6 +533,7 @@ describe("FunctionCallAnalyzer", () => {
       const symbolTable = new SymbolTable();
       symbolTable.addCppSymbol({
         name: "customExternalFunc",
+        unqualifiedName: "customExternalFunc",
         kind: "function",
         sourceLanguage: ESourceLanguage.Cpp,
         sourceFile: "custom.hpp",
@@ -847,8 +849,10 @@ describe("FunctionCallAnalyzer", () => {
 
       expect(errors).toHaveLength(1);
       expect(errors[0].code).toBe("E0422");
-      expect(errors[0].functionName).toBe("Motor__undefinedMethod");
-      expect(errors[0].message).toContain("called before definition");
+      expect(errors[0].functionName).toBe("global.Motor.undefinedMethod");
+      expect(errors[0].message).toContain(
+        "function 'global.Motor.undefinedMethod' called before definition",
+      );
       expect(errors[0].message).not.toContain(
         "not declared in any included header",
       );

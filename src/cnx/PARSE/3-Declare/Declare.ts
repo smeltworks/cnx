@@ -6,6 +6,7 @@ import type IParsedSources from "../2-Parse/types/IParsedSources";
 import type ITranspileError from "../../types/ITranspileError";
 import CaughtError from "../../utils/CaughtError";
 import CnxResolver from "./cnx/index";
+import CppNamespaceUtils from "../../utils/CppNamespaceUtils";
 import HeaderDeclarationRecord from "./HeaderDeclarationRecord";
 import HeaderDeclarations from "./HeaderDeclarations";
 import SymbolRegistry from "./SymbolRegistry";
@@ -34,7 +35,12 @@ class Declare {
       try {
         declared.push({
           file,
-          fileSymbols: CnxResolver.resolve(syntax.program, file.path, registry),
+          fileSymbols: CnxResolver.resolve(
+            syntax.program,
+            file.path,
+            registry,
+            (name) => CppNamespaceUtils.isCppNamespace(name, symbolTable),
+          ),
           syntax,
         });
       } catch (err) {

@@ -59,7 +59,7 @@ function bitmap(name: string, backingType: string): IBitmapSymbol {
 const decide = (
   symbols: TSymbol[],
   writtenIncludes: readonly string[] = [],
-): string[] => HeaderIncludes.decide(symbols, undefined, writtenIncludes);
+): string[] => HeaderIncludes.decide(symbols, writtenIncludes);
 
 describe("HeaderIncludes.decide (#1517)", () => {
   it.each([

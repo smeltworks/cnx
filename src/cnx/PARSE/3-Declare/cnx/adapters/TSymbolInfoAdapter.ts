@@ -21,7 +21,6 @@ import IScopeSymbol from "../../../../types/symbols/IScopeSymbol";
 import IVariableSymbol from "../../../../types/symbols/IVariableSymbol";
 import TypeResolver from "../../../../utils/TypeResolver";
 import ScopeUtils from "../../../../utils/ScopeUtils";
-import QualifiedCName from "../../../../utils/QualifiedCName";
 import type TExpression from "../../../../types/syntax/TExpression";
 
 /**
@@ -35,6 +34,7 @@ interface IRegisterMaps {
   registerBaseAddresses: Map<string, TExpression>;
   registerMemberOffsets: Map<string, TExpression>;
   registerMemberCTypes: Map<string, string>;
+  memberCNames: Map<string, Map<string, string>>;
 }
 
 /**
@@ -73,6 +73,7 @@ class TSymbolInfoAdapter {
 
     // === Enum Information ===
     const enumMembers = new Map<string, Map<string, number>>();
+    const memberCNames = new Map<string, Map<string, string>>();
 
     // === Bitmap Information ===
     const bitmapFields = new Map<string, Map<string, IBitmapFieldLayout>>();
@@ -103,7 +104,12 @@ class TSymbolInfoAdapter {
           break;
 
         case "enum":
-          TSymbolInfoAdapter.processEnum(symbol, knownEnums, enumMembers);
+          TSymbolInfoAdapter.processEnum(
+            symbol,
+            knownEnums,
+            enumMembers,
+            memberCNames,
+          );
           break;
 
         case "bitmap":
@@ -133,6 +139,7 @@ class TSymbolInfoAdapter {
             registerBaseAddresses,
             registerMemberOffsets,
             registerMemberCTypes,
+            memberCNames,
           });
           break;
 
@@ -168,6 +175,7 @@ class TSymbolInfoAdapter {
 
       // Enum info
       enumMembers,
+      memberCNames,
 
       // Bitmap info
       bitmapFields,
@@ -190,9 +198,6 @@ class TSymbolInfoAdapter {
 
   // === Private Processing Methods ===
 
-  // Use shared utility for transpiled C names
-  private static readonly getTranspiledCName = ScopeUtils.getTranspiledCName;
-
   private static processStruct(
     struct: IStructSymbol,
     knownStructs: Set<string>,
@@ -201,7 +206,7 @@ class TSymbolInfoAdapter {
     structFieldDimensions: Map<string, Map<string, (number | string)[]>>,
   ): void {
     // Use transpiled C name for lookups (e.g., "Geometry_Point")
-    const cName = TSymbolInfoAdapter.getTranspiledCName(struct);
+    const cName = struct.fullyQualifiedCName;
     knownStructs.add(cName);
 
     const fields = new Map<string, string>();
@@ -237,8 +242,9 @@ class TSymbolInfoAdapter {
     enumSym: IEnumSymbol,
     knownEnums: Set<string>,
     enumMembers: Map<string, Map<string, number>>,
+    memberCNames: Map<string, Map<string, string>>,
   ): void {
-    const cName = TSymbolInfoAdapter.getTranspiledCName(enumSym);
+    const cName = enumSym.fullyQualifiedCName;
     knownEnums.add(cName);
     // #1318: members are symbols now. `ICodeGenSymbols.enumMembers` is the
     // name-to-value view codegen wants, so project rather than widen it --
@@ -255,6 +261,19 @@ class TSymbolInfoAdapter {
         ),
       ),
     );
+    memberCNames.set(
+      cName,
+      TSymbolInfoAdapter.memberCNamesOf(enumSym.members.values()),
+    );
+  }
+
+  /** Each member's name to the C name 3-Declare gave it (#2116) */
+  private static memberCNamesOf(
+    members: Iterable<{ name: string; fullyQualifiedCName: string }>,
+  ): Map<string, string> {
+    return new Map(
+      [...members].map((member) => [member.name, member.fullyQualifiedCName]),
+    );
   }
 
   private static processBitmap(
@@ -264,7 +283,7 @@ class TSymbolInfoAdapter {
     bitmapBackingType: Map<string, string>,
     bitmapBitWidth: Map<string, number>,
   ): void {
-    const cName = TSymbolInfoAdapter.getTranspiledCName(bitmap);
+    const cName = bitmap.fullyQualifiedCName;
     knownBitmaps.add(cName);
     bitmapBackingType.set(cName, bitmap.backingType);
     bitmapBitWidth.set(cName, bitmap.bitWidth);
@@ -322,9 +341,13 @@ class TSymbolInfoAdapter {
     register: IRegisterSymbol,
     maps: IRegisterMaps,
   ): void {
-    const cName = TSymbolInfoAdapter.getTranspiledCName(register);
+    const cName = register.fullyQualifiedCName;
     maps.knownRegisters.add(cName);
     maps.registerBaseAddresses.set(cName, register.baseAddress);
+    maps.memberCNames.set(
+      cName,
+      TSymbolInfoAdapter.memberCNamesOf(register.members.values()),
+    );
 
     // Check if this is a scoped register (has non-global scope)
     const isScoped = !ScopeUtils.isGlobalScopePath(register.scopePath);
@@ -332,8 +355,8 @@ class TSymbolInfoAdapter {
       maps.scopedRegisters.set(cName, register.baseAddress);
     }
 
-    for (const [memberName, memberInfo] of register.members) {
-      const fullName = QualifiedCName.fromParts([cName, memberName]);
+    for (const memberInfo of register.members.values()) {
+      const fullName = memberInfo.fullyQualifiedCName;
 
       maps.registerMemberAccess.set(fullName, memberInfo.access);
       maps.registerMemberOffsets.set(fullName, memberInfo.offset);
@@ -378,7 +401,7 @@ class TSymbolInfoAdapter {
     // Track function return types for enum validation in assignments
     // This enables recognizing that Motor.getMode() returns Motor_EMode
     // Use transpiled C name (e.g., "Motor_getMode") for lookup consistency
-    const cName = TSymbolInfoAdapter.getTranspiledCName(func);
+    const cName = func.fullyQualifiedCName;
     const returnTypeStr = TypeResolver.getTypeName(func.returnType);
     functionReturnTypes.set(cName, returnTypeStr);
   }

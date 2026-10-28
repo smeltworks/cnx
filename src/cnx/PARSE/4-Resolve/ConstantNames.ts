@@ -15,7 +15,6 @@
  * and every later pass asks it through the settled `Program`, with the same
  * facts. That is what makes `u8[N]` one size in the .c and the .h.
  */
-import QualifiedCName from "../../utils/QualifiedCName";
 import CNX_TO_C_TYPE_MAP from "../../utils/constants/TypeMappings";
 import ScopeUtils from "../../utils/ScopeUtils";
 import LengthProperty from "../../utils/LengthProperty";
@@ -98,12 +97,7 @@ class ConstantNames {
     const rest = name.path.slice(1);
     const member = rest[0];
     if (binding.kind === "scope" && member !== undefined) {
-      const symbol = facts.visibleSymbol(
-        ScopeUtils.getTranspiledCName({
-          name: member,
-          scopePath: binding.scopePath,
-        }),
-      );
+      const symbol = facts.visibleMember(binding.scopePath, member);
       if (symbol?.kind === "variable") {
         return { binding: { kind: "variable", symbol }, rest: rest.slice(1) };
       }
@@ -146,8 +140,8 @@ class ConstantNames {
   /**
    * #1863 review: a cnx type name as C spells it where it is written -- a
    * primitive's C type, or the scope type ADR-057 qualifies a bare name to
-   * (`(P)x` inside scope S is `(S__P)x`). Through
-   * `ScopeUtils.qualifyScopeType`, the rule every type position uses.
+   * (`(P)x` inside scope S is `(S__P)x`). Each is read, never encoded: a
+   * scope type's stored C name, or the spelling 1.3 gave a `Scope.T` (#2116).
    */
   static cTypeName(
     typeName: string,
@@ -159,19 +153,34 @@ class ConstantNames {
     const scopePath = facts.scopePathAt(at);
     const parts = typeName.split(".");
     if (parts[0] === "this") {
-      return ScopeUtils.getTranspiledCName({
-        name: parts.slice(1).join("."),
-        scopePath,
-      });
+      // An undeclared `this.T` is 2.1's to report; until then it stays as
+      // written (#2116)
+      return ConstantNames.storedOrWritten(
+        facts.visibleMember(scopePath, parts.slice(1).join(".")),
+        typeName,
+      );
     }
-    if (parts[0] === "global") return QualifiedCName.fromParts(parts.slice(1));
-    const qualified =
-      parts.length === 1
-        ? ScopeUtils.qualifyScopeType(typeName, scopePath, (name) =>
-            facts.isScopeTypeVisible(name),
-          )
-        : typeName;
-    return QualifiedCName.fromParts(qualified.split("."));
+    const written = parts[0] === "global" ? parts.slice(1) : parts;
+    if (written.length > 1) {
+      // #2116: 1.3 spelled every written `Scope.T` / `Ns.T` once
+      return facts.qualifiedTypeName(written.join("."));
+    }
+    if (parts[0] === "global") return written[0];
+    return ConstantNames.storedOrWritten(
+      facts.scopeTypeOf(scopePath, typeName),
+      typeName,
+    );
+  }
+
+  /**
+   * The C name 3-Declare stored on the type a name found, or the name as
+   * written when it found none: an undeclared type is 2.1's to report (#2116).
+   */
+  private static storedOrWritten(
+    found: TSymbol | undefined,
+    written: string,
+  ): string {
+    return found?.fullyQualifiedCName ?? written;
   }
 
   /**
@@ -336,10 +345,7 @@ class ConstantNames {
     const lookup = (cName: string) => walk.facts.visibleSymbol(cName);
     const struct =
       current.type.kind === "struct"
-        ? LengthProperty.struct(
-            QualifiedCName.fromParts(current.type.name.split(".")),
-            lookup,
-          )
+        ? LengthProperty.struct(current.type.name, lookup)
         : undefined;
     const header = ConstantNames.headerType(current.type, walk);
     const element = ConstantNames.elementBits(current, header, walk);
@@ -410,7 +416,7 @@ class ConstantNames {
       case "struct":
       case "enum":
       case "bitmap": {
-        const cName = QualifiedCName.fromParts(type.name.split("."));
+        const cName = type.name;
         const tag = walk.facts.headerNeedsStructKeyword(cName) ? "struct " : "";
         return `sizeof(${tag}${cName})`;
       }
@@ -469,10 +475,7 @@ class ConstantNames {
   private static headerType(type: TType, walk: IWalk): string | null {
     if (type.kind === "external") return type.name;
     if (type.kind !== "struct") return null;
-    const isCnx =
-      walk.facts.visibleSymbol(
-        QualifiedCName.fromParts(type.name.split(".")),
-      ) !== undefined;
+    const isCnx = walk.facts.visibleSymbol(type.name) !== undefined;
     return !isCnx && walk.facts.headerStructFields(type.name) !== undefined
       ? type.name
       : null;
@@ -510,9 +513,7 @@ class ConstantNames {
       };
     }
     if (current.type.kind !== "struct") return null;
-    const struct = walk.facts.visibleSymbol(
-      QualifiedCName.fromParts(current.type.name.split(".")),
-    );
+    const struct = walk.facts.visibleSymbol(current.type.name);
     const info =
       struct?.kind === "struct" ? struct.fields.get(field) : undefined;
     return info
@@ -535,17 +536,24 @@ class ConstantNames {
     const member = rest[0];
     const more = rest.slice(1);
     if (member === undefined) return ConstantNames.without("scope", walk);
-    const cName = ScopeUtils.getTranspiledCName({ name: member, scopePath });
-    const symbol = walk.facts.visibleSymbol(cName);
+    const symbol = walk.facts.visibleMember(scopePath, member);
     // A member variable is `target`'s, which reads it as its own binding
     if (symbol?.kind === "enum" && ConstantNames.namesMember(symbol, more)) {
-      return walk.facts.enumMember(cName, more[0], walk.spelling, walk.at);
+      return walk.facts.enumMember(
+        symbol.fullyQualifiedCName,
+        more[0],
+        walk.spelling,
+        walk.at,
+      );
     }
     if (symbol === undefined) {
       return ConstantNames.without("undeclaredMember", walk);
     }
     // #1975 review: `Geo.Box.type_byte_length`, as a bare `Point.type_byte_length`
-    const type = more.length === 0 ? null : TypeHead.ofSymbol(symbol, cName);
+    const type =
+      more.length === 0
+        ? null
+        : TypeHead.ofSymbol(symbol, symbol.fullyQualifiedCName);
     if (type !== null) {
       return ConstantNames.ofMember({ type, dimensions: [] }, more, walk);
     }
@@ -568,13 +576,19 @@ class ConstantNames {
     walk: IWalk,
   ): TConstResult {
     if (rest.length === 0) return ConstantNames.unbound(root, head, rest, walk);
-    const cName = ScopeUtils.typeHeadCName(
+    const found = ScopeUtils.typeHead(
       root,
       head,
       walk.facts.scopePathAt(walk.at),
-      (name) => walk.facts.isScopeTypeVisible(name),
+      {
+        memberOf: (scopePath, name) =>
+          walk.facts.visibleMember(scopePath, name),
+        scopeTypeOf: (scopePath, name) =>
+          walk.facts.scopeTypeOf(scopePath, name),
+      },
     );
-    const symbol = walk.facts.visibleSymbol(cName);
+    const cName = found.cName;
+    const symbol = found.symbol ?? walk.facts.visibleSymbol(cName);
     if (symbol?.kind === "enum" && ConstantNames.namesMember(symbol, rest)) {
       return walk.facts.enumMember(cName, rest[0], walk.spelling, walk.at);
     }

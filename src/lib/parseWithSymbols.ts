@@ -60,7 +60,7 @@ function convertBitmap(
   bitmap: import("../cnx/types/symbols/IBitmapSymbol").default,
 ): ISymbolInfo[] {
   const result: ISymbolInfo[] = [];
-  const cName = ScopeUtils.getTranspiledCName(bitmap);
+  const cName = bitmap.fullyQualifiedCName;
   const parent = ScopeUtils.leafOf(bitmap.scopePath) || undefined;
   const bitmapId = bitmap.cnxScopedName;
   const bitmapParentId = getParentId(bitmap.scopePath);
@@ -100,7 +100,7 @@ function convertEnum(
   enumSym: import("../cnx/types/symbols/IEnumSymbol").default,
 ): ISymbolInfo[] {
   const result: ISymbolInfo[] = [];
-  const cName = ScopeUtils.getTranspiledCName(enumSym);
+  const cName = enumSym.fullyQualifiedCName;
   const parent = ScopeUtils.leafOf(enumSym.scopePath) || undefined;
   const enumId = enumSym.cnxScopedName;
   const enumParentId = getParentId(enumSym.scopePath);
@@ -138,7 +138,7 @@ function convertStruct(
   struct: import("../cnx/types/symbols/IStructSymbol").default,
 ): ISymbolInfo[] {
   const result: ISymbolInfo[] = [];
-  const cName = ScopeUtils.getTranspiledCName(struct);
+  const cName = struct.fullyQualifiedCName;
   const parent = ScopeUtils.leafOf(struct.scopePath) || undefined;
   const structId = struct.cnxScopedName;
   const structParentId = getParentId(struct.scopePath);
@@ -177,7 +177,7 @@ function convertFunction(
   func: import("../cnx/types/symbols/IFunctionSymbol").default,
 ): ISymbolInfo[] {
   const result: ISymbolInfo[] = [];
-  const cName = ScopeUtils.getTranspiledCName(func);
+  const cName = func.fullyQualifiedCName;
   const parent = ScopeUtils.leafOf(func.scopePath) || undefined;
   const returnType = TypeResolver.getTypeName(func.returnType);
 
@@ -206,7 +206,7 @@ function convertFunction(
 function convertVariable(
   variable: import("../cnx/types/symbols/IVariableSymbol").default,
 ): ISymbolInfo {
-  const cName = ScopeUtils.getTranspiledCName(variable);
+  const cName = variable.fullyQualifiedCName;
   const parent = ScopeUtils.leafOf(variable.scopePath) || undefined;
   const typeStr = TypeResolver.getTypeName(variable.type);
 
@@ -226,7 +226,7 @@ function convertRegister(
   register: import("../cnx/types/symbols/IRegisterSymbol").default,
 ): ISymbolInfo[] {
   const result: ISymbolInfo[] = [];
-  const cName = ScopeUtils.getTranspiledCName(register);
+  const cName = register.fullyQualifiedCName;
   const parent = ScopeUtils.leafOf(register.scopePath) || undefined;
   const registerId = register.cnxScopedName;
   const registerParentId = getParentId(register.scopePath);

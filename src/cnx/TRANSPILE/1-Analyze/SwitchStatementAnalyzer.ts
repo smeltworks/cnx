@@ -24,7 +24,7 @@
  */
 
 import LengthProperty from "../../utils/LengthProperty";
-import QualifiedCName from "../../utils/QualifiedCName";
+import CaseLabelSymbol from "../../utils/CaseLabelSymbol";
 import ScopeUtils from "../../utils/ScopeUtils";
 import ConstLiteral from "../../utils/ConstLiteral";
 import type TChainRoot from "../../types/TChainRoot";
@@ -278,7 +278,11 @@ class SwitchStatementCheck {
       root,
       name,
       OperandTyper.scopePathAt(at, this.context),
-      (qualified) => program.isScopeTypeVisibleFrom(sourceFile, qualified),
+      {
+        memberOf: (scopePath, member) => program.memberOf(scopePath, member),
+        scopeTypeOf: (scopePath, member) =>
+          program.scopeTypeOf(sourceFile, scopePath, member),
+      },
     );
   }
 
@@ -287,9 +291,11 @@ class SwitchStatementCheck {
     label: Extract<TCaseLabelSyntax, { kind: "qualified" }>,
     scopePath: string,
   ): TSymbol | undefined {
-    return this.context.program.symbolByCName(
-      ScopeUtils.qualifyPathInScope(label.path.slice(1), scopePath),
-    );
+    // ADR-016: scopes are flat, so only `Scope.member` names a symbol; a
+    // longer chain goes through the member's type
+    return label.path.length === 2
+      ? this.context.program.memberOf(scopePath, label.path[1])
+      : undefined;
   }
 
   /** Whether a bound label is a constant, asked of the one const-value answer */
@@ -318,12 +324,7 @@ class SwitchStatementCheck {
         // or #1630's
         if (member === undefined) {
           return SwitchStatementCheck.isConstantThrough(
-            program.symbolByCName(
-              ScopeUtils.qualifyPathInScope(
-                label.path.slice(1, 2),
-                binding.scopePath,
-              ),
-            )?.kind,
+            program.memberOf(binding.scopePath, label.path[1])?.kind,
           );
         }
         return (
@@ -363,7 +364,15 @@ class SwitchStatementCheck {
     }
     if (label.kind === "qualified") {
       const head = this.headCName(label.root, label.path[0], label.span);
-      return `member:${QualifiedCName.fromParts([head, ...label.path.slice(1)])}`;
+      const named = CaseLabelSymbol.of(
+        this.context.program,
+        head,
+        label.path.slice(1),
+      );
+      // A chain that names nothing is already E0427's; key it as written
+      return named === undefined
+        ? `written:${label.root ?? ""}.${label.path.join(".")}`
+        : `member:${named.fullyQualifiedCName}`;
     }
     return `value:${SwitchStatementCheck.caseLabelValue(label)}`;
   }

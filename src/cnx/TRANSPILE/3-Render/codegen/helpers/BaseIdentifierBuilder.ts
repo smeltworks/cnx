@@ -9,7 +9,6 @@
  */
 
 import IBaseIdentifierResult from "../types/IBaseIdentifierResult";
-import QualifiedNameGenerator from "../../../../utils/QualifiedNameGenerator";
 
 /**
  * Static utility for building base identifiers
@@ -21,7 +20,8 @@ class BaseIdentifierBuilder {
    * @param identifier The raw identifier
    * @param hasGlobal Whether global. prefix is present
    * @param hasThis Whether this. prefix is present
-   * @param currentScopePath The current scope name (required if hasThis)
+   * @param thisMemberCName The C name 3-Declare gave a member of the current
+   *   scope (read for `this.`, #2116)
    * @returns The built identifier and first ID
    * @throws Error if this. is used outside a scope
    */
@@ -29,7 +29,7 @@ class BaseIdentifierBuilder {
     identifier: string,
     hasGlobal: boolean,
     hasThis: boolean,
-    currentScopePath: string,
+    thisMemberCName: (name: string) => string,
   ): IBaseIdentifierResult {
     const firstId = identifier;
 
@@ -40,10 +40,9 @@ class BaseIdentifierBuilder {
 
     if (hasThis) {
       // #1322: `this` outside a scope is E0431 in 2.1, so codegen is never
-      // reached with an empty `currentScopePath` here.
-      // this.x - prefix with current scope
+      // reached outside a scope here.
       return {
-        result: QualifiedNameGenerator.forMember(currentScopePath, firstId),
+        result: thisMemberCName(firstId),
         firstId,
       };
     }

@@ -1,138 +1,97 @@
 import { describe, it, expect } from "vitest";
 import CppConstructorHelper from "../CppConstructorHelper";
+import SymbolTable from "../../PARSE/3-Declare/SymbolTable";
+import ESourceLanguage from "../types/ESourceLanguage";
+import TestSourceSpan from "../../types/__testUtils__/testSourceSpan";
+
+const AT = {
+  sourceFile: "Class.hpp",
+  span: TestSourceSpan.at(1),
+  sourceLanguage: ESourceLanguage.Cpp,
+  visibility: "public",
+} as const;
+
+/** `Outer::Widget` with a member `memberName` of `memberKind` */
+const tableWith = (
+  memberName: string,
+  memberKind: "function" | "variable",
+): SymbolTable => {
+  const table = new SymbolTable();
+  table.addCppSymbol({
+    ...AT,
+    kind: "class",
+    name: "Outer::Widget",
+    unqualifiedName: "Widget",
+    parent: "Outer",
+  });
+  table.addCppSymbol(
+    memberKind === "function"
+      ? {
+          ...AT,
+          kind: "function",
+          name: `Outer::Widget::${memberName}`,
+          unqualifiedName: memberName,
+          parent: "Outer::Widget",
+          type: "void",
+        }
+      : {
+          ...AT,
+          kind: "variable",
+          name: `Outer::Widget::${memberName}`,
+          unqualifiedName: memberName,
+          parent: "Outer::Widget",
+          type: "int",
+        },
+  );
+  return table;
+};
 
 describe("CppConstructorHelper", () => {
-  describe("toQualifiedName", () => {
-    it("converts underscore format to :: notation", () => {
-      expect(CppConstructorHelper.toQualifiedName("TestNS__MyClass")).toBe(
-        "TestNS::MyClass",
-      );
-    });
-
-    it("handles multiple underscores", () => {
-      expect(
-        CppConstructorHelper.toQualifiedName("Outer__Inner__MyClass"),
-      ).toBe("Outer::Inner::MyClass");
-    });
-
-    it("leaves :: notation unchanged", () => {
-      expect(CppConstructorHelper.toQualifiedName("TestNS::MyClass")).toBe(
-        "TestNS::MyClass",
-      );
-    });
-
-    it("leaves simple names unchanged", () => {
-      expect(CppConstructorHelper.toQualifiedName("MyClass")).toBe("MyClass");
-    });
-
-    it("does not convert if :: already present", () => {
-      expect(CppConstructorHelper.toQualifiedName("Test_NS::MyClass")).toBe(
-        "Test_NS::MyClass",
-      );
-    });
-  });
-
-  describe("extractClassName", () => {
-    it("extracts class name from qualified name", () => {
-      expect(CppConstructorHelper.extractClassName("TestNS::MyClass")).toBe(
-        "MyClass",
-      );
-    });
-
-    it("handles deeply nested namespaces", () => {
-      expect(
-        CppConstructorHelper.extractClassName("Outer::Inner::MyClass"),
-      ).toBe("MyClass");
-    });
-
-    it("returns the name for unqualified types", () => {
-      expect(CppConstructorHelper.extractClassName("MyClass")).toBe("MyClass");
-    });
-  });
-
-  describe("buildConstructorName", () => {
-    it("builds constructor name pattern", () => {
-      expect(
-        CppConstructorHelper.buildConstructorName("TestNS::MyClass", "MyClass"),
-      ).toBe("TestNS::MyClass::MyClass");
-    });
-
-    it("handles simple class names", () => {
-      expect(
-        CppConstructorHelper.buildConstructorName("MyClass", "MyClass"),
-      ).toBe("MyClass::MyClass");
-    });
-  });
-
   describe("hasConstructor", () => {
     it("returns false when symbolTable is null", () => {
-      expect(CppConstructorHelper.hasConstructor("MyClass", null)).toBe(false);
+      expect(CppConstructorHelper.hasConstructor("Widget", null)).toBe(false);
     });
 
     it("returns false when symbolTable is undefined", () => {
-      expect(CppConstructorHelper.hasConstructor("MyClass", undefined)).toBe(
+      expect(CppConstructorHelper.hasConstructor("Widget", undefined)).toBe(
         false,
       );
     });
 
-    it("returns false when constructor symbol not found", () => {
-      const mockSymbolTable = {
-        getSymbol: () => undefined,
-      };
+    it("finds a function the class declares under its own name", () => {
       expect(
-        CppConstructorHelper.hasConstructor("MyClass", mockSymbolTable),
+        CppConstructorHelper.hasConstructor(
+          "Outer::Widget",
+          tableWith("Widget", "function"),
+        ),
+      ).toBe(true);
+    });
+
+    it("returns false when the class declares no function of its name", () => {
+      expect(
+        CppConstructorHelper.hasConstructor(
+          "Outer::Widget",
+          tableWith("reset", "function"),
+        ),
       ).toBe(false);
     });
 
-    it("returns false when symbol is not a function", () => {
-      const mockSymbolTable = {
-        getSymbol: () => ({ kind: "variable" as const }),
-      };
+    it("returns false when the member of its name is not a function", () => {
       expect(
-        CppConstructorHelper.hasConstructor("MyClass", mockSymbolTable),
+        CppConstructorHelper.hasConstructor(
+          "Outer::Widget",
+          tableWith("Widget", "variable"),
+        ),
       ).toBe(false);
     });
 
-    it("returns true when constructor function found", () => {
-      const mockSymbolTable = {
-        getSymbol: (name: string) => {
-          if (name === "MyClass::MyClass") {
-            return { kind: "function" as const };
-          }
-          return undefined;
-        },
-      };
+    it("reads a C name as-is rather than re-spelling it as C++", () => {
       expect(
-        CppConstructorHelper.hasConstructor("MyClass", mockSymbolTable),
-      ).toBe(true);
-    });
-
-    it("handles namespaced types with underscore format", () => {
-      const mockSymbolTable = {
-        getSymbol: (name: string) => {
-          if (name === "TestNS::MyClass::MyClass") {
-            return { kind: "function" as const };
-          }
-          return undefined;
-        },
-      };
-      expect(
-        CppConstructorHelper.hasConstructor("TestNS__MyClass", mockSymbolTable),
-      ).toBe(true);
-    });
-
-    it("handles namespaced types with :: format", () => {
-      const mockSymbolTable = {
-        getSymbol: (name: string) => {
-          if (name === "TestNS::MyClass::MyClass") {
-            return { kind: "function" as const };
-          }
-          return undefined;
-        },
-      };
-      expect(
-        CppConstructorHelper.hasConstructor("TestNS::MyClass", mockSymbolTable),
-      ).toBe(true);
+        CppConstructorHelper.hasConstructor(
+          "Outer__Widget",
+          tableWith("Widget", "function"),
+        ),
+      ).toBe(false);
     });
   });
 });

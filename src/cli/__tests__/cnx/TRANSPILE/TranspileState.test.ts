@@ -14,19 +14,6 @@ import ScopeUtils from "../../../../cnx/utils/ScopeUtils";
 import Program from "../../../../cnx/PARSE/4-Resolve/Program";
 import CnxResolver from "../../../../cnx/PARSE/3-Declare/cnx/index";
 import parse from "../../../../cnx/PARSE/3-Declare/cnx/__tests__/testHelpers";
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
-import { fileURLToPath } from "node:url";
-
-/** Repo root, for the source-scanning guard in `scopeTypePredicate`. */
-const repoRootForGuard = join(
-  dirname(fileURLToPath(import.meta.url)),
-  "..",
-  "..",
-  "..",
-  "..",
-  "..",
-);
 
 let registry = new SymbolRegistry();
 
@@ -180,7 +167,7 @@ describe("TranspileState", () => {
   });
 
   describe("Scope Type Qualification (ADR-057)", () => {
-    it("isScopeType answers for the file being generated, from the program (#1724)", () => {
+    it("binds a bare scope type for the file being generated, from the program (#1724)", () => {
       // `declares.cnx` declares three scope types. `includer.cnx` includes it;
       // `sibling.cnx` is in the same run and does not. Codegen used to ask the
       // run-wide symbol table, which holds all three for every file -- so a
@@ -216,20 +203,26 @@ describe("TranspileState", () => {
         },
       });
 
+      const cName = (name: string): string | undefined =>
+        state.typeBindingDeps().scopeTypeCName?.("A", name);
       state.sourcePath = "includer.cnx";
-      expect(state.isScopeType("A__B")).toBe(true);
-      expect(state.isScopeType("A__S")).toBe(true);
-      expect(state.isScopeType("A__Flags")).toBe(true);
-      expect(state.isScopeType("A__Nope")).toBe(false);
+      expect(cName("B")).toBe("A__B");
+      expect(cName("S")).toBe("A__S");
+      expect(cName("Flags")).toBe("A__Flags");
+      expect(cName("Nope")).toBeUndefined();
 
       state.sourcePath = "sibling.cnx";
-      expect(state.isScopeType("A__S")).toBe(false);
+      expect(cName("S")).toBeUndefined();
     });
 
-    it("isScopeType returns false without a program", () => {
+    it("fails loudly on any type binding read without a program (#2360 review)", () => {
       state.program = null;
       state.sourcePath = "includer.cnx";
-      expect(state.isScopeType("A__B")).toBe(false);
+      const deps = state.typeBindingDeps();
+      const unbound = /a type binding is read from the program/;
+      expect(() => deps.scopeTypeCName?.("A", "B")).toThrow(unbound);
+      expect(() => deps.memberCName?.("A", "B")).toThrow(unbound);
+      expect(() => deps.qualifiedTypeName?.("A.B")).toThrow(unbound);
     });
 
     // #1452: four `qualifyScopeType` cases lived here. The method had no
@@ -239,8 +232,8 @@ describe("TranspileState", () => {
     // `ScopeUtils.test.ts` asserts the chain-qualified lookup, the fall-through
     // to a bare name when a scope member is not a type, and that a different
     // scope's type is not reachable bare. What is gone with them is only the
-    // binding to `currentScopePath`, which `scopeTypePredicate`'s own test
-    // below covers.
+    // binding to `currentScopePath`, which the `typeBindingDeps` cases above
+    // cover (#2116: by identity, through `scopeTypeCName`).
   });
 
   // #1447: the derivation moved to `Program` -- which fields a header's struct
@@ -384,22 +377,6 @@ describe("TranspileState", () => {
   });
 
   /**
-   * Issue #1450 box 4: one binding, not six.
-   *
-   * `isScopeType` is a static that reads `this.symbolTable`, so a bare
-   * reference loses its receiver. Six sites each wrote the same closure to work
-   * around that. Unifying them rots silently -- every closure returns the same
-   * answer, so a seventh would keep every fixture green -- which is why
-   * `docs/architecture/README.md` principle 5 wants the invariant stated with a
-   * gate rather than in a comment.
-   *
-   * The forbidden form is derived by reading `src/`, never listed, so the guard
-   * cannot go stale against a file it does not know about. The first attempt at
-   * the inventory this replaced grepped for the parameter name `qualifiedName`
-   * and missed a site that spelled it `qn` -- matching on the RECEIVER is what
-   * makes the spelling irrelevant.
-   */
-  /**
    * Issue #1450 box 4: `withScopePath` exists for the `finally`.
    *
    * Two sites hand-rolled the save/restore with the restore as a plain trailing
@@ -413,71 +390,6 @@ describe("TranspileState", () => {
    * what this pins. Mutation: replacing the `finally` with a trailing
    * assignment reddens exactly this test.
    */
-  describe("scopeTypePredicate", () => {
-    it("survives being passed unbound, which is why it exists", () => {
-      const predicate: (name: string) => boolean = state.scopeTypePredicate;
-
-      expect(() => predicate("NoSuchType")).not.toThrow();
-      expect(predicate("NoSuchType")).toBe(false);
-    });
-
-    it("is the only closure in src/ that binds state.isScopeType", () => {
-      // #1452: the module that owns the predicate. The path recorded here was
-      // `src/transpiler/state/state.ts`, which has never existed, so the
-      // exclusion covered no file -- it passed only because the owner spells
-      // the call `this.isScopeType(` and the pattern looked for the class name.
-      // Pointed at the real file so the exclusion means what it says.
-      const owner = join("src", "cnx", "TRANSPILE", "TranspileState.ts");
-
-      // Matches the RECEIVER, not the class. The pattern was
-      // `/TranspileState\s*\.\s*isScopeType\s*\(/` -- the static-call spelling,
-      // which stopped existing the moment box 4 made the class an instance.
-      // Every way a site can actually re-bind the predicate today spells it
-      // `state.isScopeType(`, `ctx.state.isScopeType(` or
-      // `this.host.state.isScopeType(`, and the class-name pattern matched none
-      // of them: a seventh duplicate closure was added as a probe and this
-      // assertion stayed green. Mutation-checked in both directions -- see the
-      // control below, which is what makes the new pattern's reach checkable
-      // rather than asserted.
-      const binds = /\.\s*isScopeType\s*\(/;
-
-      // POPULATION CONTROL for `binds`. An emptiness claim over a pattern that
-      // matches nothing is the failure this assertion just had, so prove the
-      // pattern fires on the shape it forbids before trusting that it found
-      // none. `state.` is the spelling five call sites used before
-      // `typeBindingDeps()` collapsed them.
-      expect(
-        binds.test("const dup = (n: string) => state.isScopeType(n);"),
-      ).toBe(true);
-
-      const walk = (dir: string): string[] =>
-        readdirSync(dir).flatMap((entry) => {
-          const full = join(dir, entry);
-          return statSync(full).isDirectory()
-            ? walk(full)
-            : entry.endsWith(".ts")
-              ? [full]
-              : [];
-        });
-
-      // Comments are stripped first. `NameExistence` explains at length why
-      // `state.isScopeType()` cannot serve its purpose, and a guard that
-      // forbade naming the method in prose would forbid exactly the
-      // documentation that keeps the next person from reaching for it.
-      const code = (source: string): string =>
-        source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
-
-      const offenders = walk(join(repoRootForGuard, "src"))
-        .map((file) => relative(repoRootForGuard, file))
-        .filter((file) => file !== owner && !file.includes("__tests__"))
-        .filter((file) =>
-          binds.test(code(readFileSync(join(repoRootForGuard, file), "utf8"))),
-        );
-
-      expect(offenders).toEqual([]);
-    });
-  });
-
   /**
    * #1295 and #1304 are two halves of ONE decision: a scope's identity is its
    * `cnxScopedName`, and the producer (`TSymbolInfoAdapter.processScope`, which

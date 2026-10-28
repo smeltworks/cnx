@@ -318,12 +318,13 @@ describe("ConstAssignmentAnalyzer, a C callee's pointer (#2103)", () => {
 describe("ConstAssignmentAnalyzer, a C++ method's object (#2102 review)", () => {
   const withCounter = (source: string): string[] => {
     const symbolTable = new SymbolTable();
-    for (const [name, isConstMember] of [
-      ["Counter::bump", false],
-      ["Counter::get", true],
+    for (const [name, unqualifiedName, isConstMember] of [
+      ["Counter::bump", "bump", false],
+      ["Counter::get", "get", true],
     ] as const) {
       symbolTable.addCppSymbol({
         name,
+        unqualifiedName,
         kind: "function",
         sourceLanguage: ESourceLanguage.Cpp,
         sourceFile: "counter.hpp",

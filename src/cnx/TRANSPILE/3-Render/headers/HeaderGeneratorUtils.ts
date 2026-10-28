@@ -7,8 +7,6 @@
 
 import DeclaredPointer from "../../../utils/DeclaredPointer";
 import IHeaderSymbol from "./types/IHeaderSymbol";
-import type IResolvedSymbols from "../../../types/IResolvedSymbols";
-import CppNamespaceUtils from "../../../utils/CppNamespaceUtils";
 import GeneratedBanner from "../../../utils/GeneratedBanner";
 import typeUtils from "../../../utils/mapType";
 import IGroupedSymbols from "./types/IGroupedSymbols";
@@ -177,12 +175,12 @@ class HeaderGeneratorUtils {
 
   /**
    * Filter external types to those that are C-compatible (can be forward-declared)
-   * Excludes C++ templates, namespaces, and underscore-format namespace types
+   * Excludes C++ templates and namespaced types. A C++ namespaced type arrives
+   * as `Ns::T`, the spelling 1.3 stored (#2116).
    */
   static filterCCompatibleTypes(
     externalTypes: Set<string>,
     typesWithHeaders: Set<string>,
-    symbolTable?: IResolvedSymbols,
   ): string[] {
     return [...externalTypes].filter(
       (t) =>
@@ -190,25 +188,22 @@ class HeaderGeneratorUtils {
         !t.includes("<") &&
         !t.includes(">") &&
         !t.includes("::") &&
-        !t.includes(".") &&
-        !CppNamespaceUtils.isCppNamespaceType(t, symbolTable),
+        !t.includes("."),
     );
   }
 
   /**
    * Filter variables to those that are C-compatible
-   * Excludes C++ namespace types, templates, and underscore-format namespace types
+   * Excludes C++ templates and namespaced types, which arrive as `Ns::T` (#2116)
    */
   static filterCCompatibleVariables(
     variables: IHeaderSymbol[],
-    symbolTable?: IResolvedSymbols,
   ): IHeaderSymbol[] {
     return variables.filter(
       (v) =>
         !v.type?.includes("::") &&
         !v.type?.includes(".") &&
-        !HeaderGeneratorUtils.isCppTemplateType(v.type) &&
-        !CppNamespaceUtils.isCppNamespaceType(v.type ?? "", symbolTable),
+        !HeaderGeneratorUtils.isCppTemplateType(v.type),
     );
   }
 

@@ -63,6 +63,7 @@ describe("InitializationAnalyzer", () => {
       // Set up TranspileState with C++ class
       TestSymbolTable.of(state).addCppSymbol({
         name: "CppMessage",
+        unqualifiedName: "CppMessage",
         kind: "class",
         sourceLanguage: ESourceLanguage.Cpp,
         sourceFile: "CppMessage.hpp",
@@ -123,6 +124,7 @@ describe("InitializationAnalyzer", () => {
       // Set up TranspileState with C++ struct (not class)
       TestSymbolTable.of(state).addCppSymbol({
         name: "CppStruct",
+        unqualifiedName: "CppStruct",
         kind: "struct",
         sourceLanguage: ESourceLanguage.Cpp,
         sourceFile: "types.hpp",
@@ -1164,6 +1166,7 @@ describe("InitializationAnalyzer", () => {
       const symbolTable = new SymbolTable();
       symbolTable.addCppSymbol({
         name: "CppEnum",
+        unqualifiedName: "CppEnum",
         kind: "enum",
         sourceLanguage: ESourceLanguage.Cpp,
         sourceFile: "types.hpp",

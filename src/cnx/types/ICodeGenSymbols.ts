@@ -81,6 +81,13 @@ interface ICodeGenSymbols {
   /** Enum members and values: enumName -> (memberName -> value) */
   readonly enumMembers: ReadonlyMap<string, ReadonlyMap<string, number>>;
 
+  /**
+   * The C name 3-Declare gave each enum and register member:
+   * ownerCName -> (memberName -> member's `fullyQualifiedCName`). Rendering
+   * reads a member's name here rather than spelling it again (#2116).
+   */
+  readonly memberCNames: ReadonlyMap<string, ReadonlyMap<string, string>>;
+
   // === Bitmap Information (ADR-034) ===
 
   /** Bitmap field info: bitmapName -> (fieldName -> {offset, width}) */

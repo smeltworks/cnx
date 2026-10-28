@@ -39,6 +39,7 @@ class FunctionCollector {
     return {
       kind: "function",
       name: CppNamespaceUtils.qualify(currentNamespace, name),
+      unqualifiedName: name,
       type: DeclaratorTypes.pointerType(funcDef.returnType, funcDef.declarator),
       sourceFile,
       span: funcDef.span,
@@ -65,6 +66,7 @@ class FunctionCollector {
     return {
       kind: "function",
       name: CppNamespaceUtils.qualify(currentNamespace, name),
+      unqualifiedName: name,
       // #2058: a return type keeps the declarator's `*`s, as in C
       type: DeclaratorTypes.pointerType(baseType, declarator),
       sourceFile,
@@ -92,6 +94,7 @@ class FunctionCollector {
     return {
       kind: "function",
       name: CppNamespaceUtils.qualify(className, funcName),
+      unqualifiedName: funcName,
       type: DeclaratorTypes.pointerType(returnType, declarator),
       sourceFile,
       span,

@@ -23,9 +23,10 @@ import AdrProvenance from "../../instrumentation/AdrProvenance";
 import DynamicAllocation from "./DynamicAllocation";
 import StdlibFunctions from "./StdlibFunctions";
 import CalleeNameResolver from "./helpers/CalleeNameResolver";
-import ScopeUtils from "../../utils/ScopeUtils";
 import IncludeDirective from "./helpers/IncludeDirective";
 import type IAnalysisContext from "./types/IAnalysisContext";
+import type TSymbol from "../../types/symbols/TSymbol";
+import invariant from "../../utils/invariant";
 
 /**
  * cnx built-in functions
@@ -59,7 +60,12 @@ class FunctionCallWalk {
   }
 
   private function(fn: IFunctionDeclarationSyntax, scope: string): void {
-    const fullName = ScopeUtils.qualifyInScope(fn.name, scope);
+    const symbol = this.analyzer.memberOf(scope, fn.name);
+    invariant(
+      symbol !== undefined,
+      "3-Declare declares every function defined",
+    );
+    const fullName = symbol.fullyQualifiedCName;
     this.analyzer.enterFunction(fullName);
     this.analyzer.defineFunction(fullName);
     this.part({ kind: "type", type: fn.returnType }, scope);
@@ -114,10 +120,15 @@ class FunctionCallWalk {
       baseName,
       scope,
       (name) => this.analyzer.isScope(name),
+      {
+        memberOf: (scopePath: string, name: string) =>
+          this.analyzer.memberOf(scopePath, name),
+      },
     );
     if (!target.foundCall) return;
     this.analyzer.checkFunctionCall(
       target.resolvedName,
+      target.writtenName,
       expr.span,
       scope,
       target.isGlobalCall,
@@ -132,9 +143,7 @@ class FunctionCallWalk {
   ): void {
     if (
       typeName === "ISR" ||
-      this.analyzer.isCallbackType(
-        ScopeUtils.qualifyInScope(typeName, scope),
-      ) ||
+      this.analyzer.isCallbackMember(scope, typeName) ||
       this.analyzer.isCallbackType(typeName) ||
       this.analyzer.isCFunctionPointerTypedef(typeName)
     ) {
@@ -257,14 +266,12 @@ class FunctionCallAnalyzer {
   private collectAllLocalFunctions(program: IProgramSyntax): void {
     for (const { declaration, scope } of program.members) {
       if (declaration.kind !== "function") continue;
-      this.allLocalFunctions.add(
-        scope === null
-          ? declaration.name
-          : ScopeUtils.qualifyInScope(
-              declaration.name,
-              this.scopePathOf(scope),
-            ),
+      const symbol = this.memberOf(scope ?? "", declaration.name);
+      invariant(
+        symbol !== undefined,
+        "3-Declare declares every function defined",
       );
+      this.allLocalFunctions.add(symbol.fullyQualifiedCName);
     }
   }
 
@@ -297,6 +304,25 @@ class FunctionCallAnalyzer {
    * @param name The lookup key, already qualified by the caller -- see
    *             `FunctionCallListener.isCallbackTypeHere`.
    */
+  /**
+   * The symbol 3-Declare made for `name` in `scope` ("" for file scope), so a
+   * site reads its `fullyQualifiedCName` instead of encoding one (#2116).
+   */
+  public memberOf(scope: string, name: string): TSymbol | undefined {
+    return this.context.program.memberOf(
+      scope === "" ? "" : this.scopePathOf(scope),
+      name,
+    );
+  }
+
+  /** ADR-029: `name`, written in `scope`, names a callback type it declares */
+  public isCallbackMember(scope: string, name: string): boolean {
+    const member = this.memberOf(scope, name);
+    return (
+      member !== undefined && this.isCallbackType(member.fullyQualifiedCName)
+    );
+  }
+
   public isCallbackType(name: string): boolean {
     return (
       this.allLocalFunctions.has(name) ||
@@ -386,6 +412,7 @@ class FunctionCallAnalyzer {
       name,
       currentScopePath,
       isGlobalCall,
+      this.context.program,
     );
     if (qualifiedName !== null) {
       if (this.definedFunctions.has(qualifiedName)) {
@@ -405,23 +432,30 @@ class FunctionCallAnalyzer {
   /**
    * Check if a function call is valid (function is defined or external)
    * @param name The function name being called
+   * @param writtenName The callee as the author wrote it, for the diagnostic
    * @param span Where the call is written
    * @param currentScopePath Path of the scope enclosing the call; `""` at file scope
    * @param isGlobalCall Whether the call used global. prefix
    */
   public checkFunctionCall(
-    name: string,
+    name: string | null,
+    writtenName: string,
     span: ISourceSpan,
     currentScopePath: string,
     isGlobalCall: boolean = false,
   ): void {
+    if (name === null) {
+      this.reportUndefined(name, writtenName, span, isGlobalCall);
+      return;
+    }
+
     // Check for self-recursion (MISRA C:2012 Rule 17.2)
     if (this.currentFunctionName && name === this.currentFunctionName) {
       this.errors.push({
         code: "E0423",
         functionName: name,
         span,
-        message: `recursive call to '${name}' is forbidden (MISRA C:2012 Rule 17.2)`,
+        message: `recursive call to '${writtenName}' is forbidden (MISRA C:2012 Rule 17.2)`,
       });
       return;
     }
@@ -471,20 +505,34 @@ class FunctionCallAnalyzer {
       return; // OK - external C/C++ function
     }
 
+    this.reportUndefined(name, writtenName, span, isGlobalCall);
+  }
+
+  /**
+   * E0422 for a call nothing defines. `name` is null for a scope member
+   * 3-Declare never declared: no C name exists to look anything up by.
+   */
+  private reportUndefined(
+    name: string | null,
+    writtenName: string,
+    span: ISourceSpan,
+    isGlobalCall: boolean,
+  ): void {
     // Not defined - report error with optional hint
     // If the function is local (defined later in this file), it's a
     // define-before-use error regardless of global. prefix
-    const isLocalFunction = this.allLocalFunctions.has(name);
-    const header = this.findStdlibHeader(name);
+    const isLocalFunction = name !== null && this.allLocalFunctions.has(name);
+    const header = name === null ? null : this.findStdlibHeader(name);
     const message = this.buildUndefinedFunctionMessage(
-      name,
+      name ?? writtenName,
+      writtenName,
       header,
       isGlobalCall && !isLocalFunction,
     );
 
     this.errors.push({
       code: "E0422",
-      functionName: name,
+      functionName: name ?? writtenName,
       span,
       message,
     });
@@ -493,9 +541,11 @@ class FunctionCallAnalyzer {
   /**
    * Issue #985: Build error message for undefined function calls.
    * Adjusts hint based on whether the call used global. prefix.
+   * A cnx error names the call as the author wrote it, never its C name (#2116).
    */
   private buildUndefinedFunctionMessage(
     name: string,
+    writtenName: string,
     header: string | null,
     isGlobalCall: boolean,
   ): string {
@@ -505,7 +555,7 @@ class FunctionCallAnalyzer {
     if (isGlobalCall) {
       return `'${name}' is not declared in any included header`;
     }
-    let message = `function '${name}' called before definition`;
+    let message = `function '${writtenName}' called before definition`;
     if (header) {
       message += `; hint: '${name}' is available from ${header} — try global.${name}()`;
     }
@@ -540,6 +590,7 @@ class FunctionCallAnalyzer {
       name,
       currentScopePath,
       isGlobalCall,
+      this.context.program,
     );
     if (scoped !== null) {
       // ADR-030: this file's own member, defined later, is not external (#786)

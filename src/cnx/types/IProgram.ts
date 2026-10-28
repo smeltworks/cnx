@@ -58,6 +58,26 @@ interface IProgram {
   isScopeTypeVisibleFrom(sourceFile: string, qualifiedName: string): boolean;
 
   /**
+   * The spelling 1.3 gave a `Scope.T` / `Ns.T` written at a type position,
+   * by the file that writes it and its written text (#2116): read it, never
+   * re-derive it. Every one a file writes was spelled, so there is no miss to
+   * handle. Per file, so two files' spellings never meet in one map.
+   */
+  qualifiedTypeName(sourceFile: string, written: string): string;
+
+  /**
+   * The type `name` declared in `scopePath` that `sourceFile` can see, found
+   * by identity; undefined when ADR-057 leaves a bare `name` the file's own.
+   * Read `.fullyQualifiedCName` from it rather than encoding one (#2116).
+   */
+
+  scopeTypeOf(
+    sourceFile: string,
+    scopePath: string,
+    name: string,
+  ): TSymbol | undefined;
+
+  /**
    * The cnx symbol whose canonical identity is this transpiled C name.
    *
    * Exact identity, never the bare-name index: asking a bare-name lookup with a
@@ -65,6 +85,13 @@ interface IProgram {
    * such symbol" rather than "wrong question" (#1139).
    */
   symbolByCName(cName: string): TSymbol | undefined;
+
+  /**
+   * The symbol declared as `name` directly in `scopePath` ("" for file
+   * scope), found by the identity 3-Declare gave it rather than by an encoded
+   * C name (#2116). Read `.fullyQualifiedCName` from the result.
+   */
+  memberOf(scopePath: string, name: string): TSymbol | undefined;
 
   /** The settled symbols a file declares. */
   symbolsInFile(sourceFile: string): ReadonlyArray<TSymbol>;

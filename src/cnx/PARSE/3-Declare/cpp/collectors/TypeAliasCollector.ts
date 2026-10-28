@@ -16,6 +16,7 @@ class TypeAliasCollector {
     return {
       kind: "type",
       name,
+      unqualifiedName: name,
       sourceFile,
       span,
       sourceLanguage: ESourceLanguage.Cpp,

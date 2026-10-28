@@ -1,30 +1,34 @@
 /**
- * Issue #1357: the committed inventory of scope-denoting `fromParts` sites.
+ * Issues #1357 and #2116: the committed inventory of every place a qualified C
+ * name is built.
  *
- * `QualifiedCName.fromParts(parts)` builds a qualified C name from a COMPLETE
- * path. Passing a scope's NAME as the first element claims a complete path while
- * supplying a leaf, which drops every outer scope -- the divergence #1285 removed
- * from the collectors and #1357 removes from everywhere else.
+ * A qualified C name has exactly two sources. A symbol's own name comes from
+ * its declaring scope's whole PATH, through the encoders in `ScopeUtils`, and
+ * is materialized on the symbol (`fullyQualifiedCName`). A name the author
+ * wrote in full -- `Motor.State.IDLE` -- is spelled for C by
+ * `QualifiedCName.fromSourceName`. ADR-016 makes scopes flat -- they never nest
+ * -- so a scope's name IS its path, and what a hand join gets wrong is not the
+ * name but where it is decided: `Scope__member` spelled outside the encoders is
+ * a second decider of the same spelling (#1285, #1357, #2116).
  *
- * The type system already rejects the honest mistake: no API takes a scope name,
- * so a caller must either thread the `IScopeSymbol` (correct) or write the leaf
- * into a `fromParts` array (this list). What is left is a call SHAPE, which no
- * import-level rule can see -- `fromParts` is legitimately used 38 times by
- * callers that really do hold a whole path.
+ * #1357's version of this gate counted only `fromParts` calls whose first
+ * element READ as a scope, by a name pattern, and let the other 32 through
+ * never judged. It also could not see a join spelled as a template string, which is
+ * how three render sites built names (#2116). So nothing here filters by name:
+ * every builder call, every use of the separator and every `${...}__` template
+ * is a site, and every site needs a reviewed judgement in `ADJUDICATIONS`.
+ * A new site -- a scope join in any pass -- has none, and `check` exits 1.
  *
- * Keyed on a per-file COUNT rather than `file:line`. Two reasons, both learned
- * the expensive way: an eleven-site change silently invalidated eighteen
- * `file:line` citations in `throw-classification.md` through pure line
- * drift, and #1374 records that a citation gate cannot detect two rows trading
- * sites. A count cannot rot when code moves and still fails the moment the
- * residue grows -- which is the requirement, since #1348 moved the population
- * 61 -> 65 with nothing going red.
+ * Keyed on a per-file COUNT of each distinct expression rather than `file:line`.
+ * An eleven-site change once silently invalidated eighteen `file:line` citations
+ * in `throw-classification.md` through pure line drift, and #1374 records that
+ * a citation gate cannot detect two rows trading sites. A count cannot rot when
+ * code moves and still fails the moment a file gains a site.
  */
 
-import RegExpUtils from "../../src/cnx/utils/RegExpUtils";
 import type ICheckOutcome from "../types/ICheckOutcome";
 
-/** One distinct call shape in one file, and how many times it occurs there. */
+/** One distinct site expression in one file, and how many times it occurs there. */
 interface ISite {
   readonly file: string;
   readonly element: string;
@@ -32,165 +36,384 @@ interface ISite {
 }
 
 /**
- * What kind of join a site performs. An ORDERED partition, not a set of labels:
- * the descriptions overlap (a site can be built from source text AND read a
- * leaf-keyed map), so a site takes the FIRST kind that applies, in the order
- * declared here.
- *
- * Nothing APPLIES this -- no code picks a kind; the ordering is an instruction
- * to the human writing the row. But it is no longer stated twice: `TKind` is
- * derived from `KIND_SECTIONS`, and `render` emits the preamble bullets from
- * the same array, so the union and the document cannot disagree about
- * precedence. They did disagree once, in opposite directions, and the
- * preamble's order is what decides a site that several descriptions fit. The
- * worked example lives in `render()` ONLY, and deliberately: it used to be
- * stated here as well, the two copies disagreed the moment one row was
- * re-argued, and `scope-joins:check` cannot see prose. Reordering the array
- * moves the union and the document together, and a reorder that touches only
- * one is unrepresentable.
- *
- * A kind is an ARGUMENT, not a label: an entry has to be re-argued when the
- * collection it names is re-measured, which is why each row carries a `why`.
+ * Why a site is not a scope join. An ORDERED partition: a site takes the FIRST
+ * kind that applies, in the order declared here. Nothing computes the kind --
+ * it is an argument made by whoever writes the row, which is why each row
+ * carries a `why`. `TKind` and the document's bullets both derive from this
+ * array, so they cannot disagree about the order.
  */
 const KIND_SECTIONS = [
   {
     kind: "encoder",
     lines: [
-      "- **encoder** -- inside `ScopeUtils` itself, where joining an enclosing path",
-      "  to a leaf IS the definition of the operation every other row is judged",
-      "  against. #1298 made these visible: the enclosing path used to arrive as a",
-      "  spread of a chain walk, which the scan could not see, and is now a named",
-      "  `scopePath`. The path is complete by construction rather than a leaf",
-      "  standing in for one, so there is nothing here to convert.",
+      "- **encoder** -- the definition of the operation every other row is",
+      "  judged against: `QualifiedCName`'s own separator, and the `ScopeUtils`",
+      "  encoders that take a symbol's whole enclosing PATH.",
     ],
   },
   {
-    kind: "via-scope-utils",
+    kind: "written-name",
     lines: [
-      "- **via-scope-utils** -- already routed correctly, and matched only because",
-      "  the enclosing block mentions a scope.",
+      "- **written-name** -- a name the author wrote in full, such as",
+      "  `Motor.State.IDLE`, spelled for C component by component. Nothing is",
+      "  resolved against an enclosing scope, so no scope spelling is decided here.",
     ],
   },
   {
-    kind: "leaf-keyed",
+    kind: "scope-path",
     lines: [
-      "- **leaf-keyed** -- paired with a collection filed under a leaf-built key.",
-      "  Converting one side alone breaks the pairing, so the row names the",
-      "  collection and the card that must move both.",
+      "- **scope-path** -- handed the enclosing scope's PATH",
+      "  (`currentScopePath`) and asks `QualifiedCName` for its prefix, so the",
+      "  prefix is spelled by the separator's owner.",
     ],
   },
   {
-    kind: "path",
+    kind: "owner-c-name",
     lines: [
-      "- **path** -- the first element is source text from a parse-tree identifier",
-      "  chain. `ids[0]` in `Scope.REG.MEMBER` is what the author wrote, so joining",
-      "  it rebuilds a lookup KEY rather than qualifying a member by its declaring",
-      "  scope. Under nesting the author writes more components and the INDEXING",
-      "  changes, not the join. `fromParts` documents this as its remaining use.",
+      "- **owner-c-name** -- a member of an entity whose C name is already",
+      "  materialized from its path: an enum or register member, or a local",
+      "  renamed under its function's C name. The encoders already spelled the",
+      "  owner; this only appends the member, as ADR-016 and ADR-017 define.",
     ],
   },
 ] as const;
 
 type TKind = (typeof KIND_SECTIONS)[number]["kind"];
 
-/** A reviewed judgement about one call shape. */
+/** A reviewed judgement about one site expression. */
 interface IAdjudication {
   readonly file: string;
   readonly element: string;
   readonly kind: TKind;
-  /** The collection whose keying this join must match, for `leaf-keyed`. */
-  readonly pairedWith: string | null;
-  /** The card that must move this site, or null when nothing needs to. */
-  readonly movesWith: string | null;
   readonly why: string;
 }
 
 class ScopeJoinSites {
-  /** The builder whose first element must be an outermost path component. */
-  private static readonly CALL = "QualifiedCName.fromParts([";
-
   /**
-   * Identifiers that name a scope rather than a complete path.
-   *
-   * Deliberately a name heuristic: the alternative is type-directed analysis of
-   * every call site, and a name is what a reviewer reads anyway. A false
-   * positive costs one baseline row, which is the cheap direction.
-   *
-   * SHAPE-matched, not a list of exact names. It was a list, and #1298 renamed
-   * two of its six entries -- `currentScope` -> `currentScopePath`,
-   * `declaringScope` -> `declaringScopePath` -- across ~45 sites. `\b` does not
-   * match between `Scope` and `Path`, so both replacements became invisible to
-   * this scan in the same commit that created them: the gate's contract is "this
-   * list may shrink freely, it may not grow", and it could no longer see growth.
-   *
-   * The docblock here used to claim a false negative "is caught the next time the
-   * expression is renamed to say what it holds". A rename is precisely what hid
-   * them, so the claim was the opposite of true. Matching the shape removes the
-   * assumption instead of restating it -- any `<prefix>Scope`, with an optional
-   * `Path`/`Name` suffix, is counted however it is spelled.
+   * The public operations that build a qualified name from text (#2116).
    */
-  private static readonly SCOPE_DENOTING =
-    /\b\w*[Ss]cope(?:Path|Name)?\b|scope\.name/;
-
-  /**
-   * Routing through one of these is the CORRECT form, whatever the argument is
-   * called.
-   *
-   * Two spellings, one operation. `QualifiedNameGenerator.forMember` is a
-   * one-line delegate to `ScopeUtils.qualifyInScope` -- its own doc calls it
-   * "the canonical spelling for `output/`", because `logic/` cannot import from
-   * `output/` and so needs the other door. #1450 converted the 14 `output/`
-   * sites that still used the `ScopeUtils` spelling, and this list is why that
-   * conversion does not read as fourteen sites regressing INTO the population:
-   * the exclusion is about whether a join went through the single encoder, not
-   * about which of the encoder's two public names was typed.
-   */
-  private static readonly VIA_ENCODER: readonly string[] = [
-    "ScopeUtils.",
-    "QualifiedNameGenerator.forMember(",
+  private static readonly BUILDERS: readonly string[] = [
+    "QualifiedCName.fromSourceName",
+    "QualifiedCName.fromSourceParts",
+    "QualifiedCName.movedLocal",
+    "QualifiedCName.inScope",
+    "ScopeUtils.getTranspiledCName",
+    "ScopeUtils.getCnxScopedName",
+    "ScopeUtils.identityOf",
+    "ScopeUtils.qualifyInScope",
+    "ScopeUtils.qualifyPathInScope",
+    "ScopeUtils.qualifyScopeType",
+    "CppNamespaceUtils.fromParts",
+    "CppNamespaceUtils.qualify",
   ];
+
+  /** The separator, wherever it is spelled by name. */
+  private static readonly SEPARATOR =
+    /\b(?:QualifiedCName|CppNamespaceUtils)\.SEPARATOR\b/g;
+
+  /**
+   * The separator spelled as text: a template interpolation followed by `__`,
+   * or a `"__"` literal joined or concatenated. `__bits_${name}` and
+   * `startsWith("__")` are not joins and do not match.
+   */
+  /**
+   * The separator held in a binding -- `const sep = "__"`, `separator: "::"` --
+   * so a later `scope + sep + member` cannot spell it out of the scan's sight.
+   * Each such binding is a site, adjudicated like any other.
+   */
+  private static readonly BOUND_SEPARATOR = /(?:=|:)\s*["'](?:__|::)["']/g;
+
+  /**
+   * A builder taken as a value -- `getName = ScopeUtils.getTranspiledCName` --
+   * so its later calls go through an alias the call scan cannot see. Each
+   * such binding is a site (#2360 review).
+   */
+  private static readonly BOUND_BUILDER = new RegExp(
+    `(?:=|:|\\(|,|return)\\s*(?:${ScopeJoinSites.BUILDERS.map((builder) =>
+      builder.replace(".", "\\."),
+    ).join("|")})\\b(?!\\s*\\()`,
+    "g",
+  );
+
+  private static readonly SPELLED_SEPARATOR =
+    /\$\{[^{}`]*\}(?:__|::)|\.join\(\s*["'](?:__|::)["']\s*\)|\+\s*["'](?:__|::)["']|["'](?:__|::)["']\s*\+/g;
 
   /**
    * The reviewed judgement for every site the scan finds.
    *
-   * Keyed on (file, first element) rather than `file:line`, for the reason the
-   * module docblock gives: line citations rot silently when code moves. An
-   * element text moves WITH its call, and when it does change -- a rename, a
-   * different expression -- the site becomes undeclared and the gate says so.
-   * That is the intended behavior: the adjudication was made about a specific
-   * expression, so a different expression has not been adjudicated.
+   * Keyed on (file, element) rather than `file:line`, for the reason the module
+   * docblock gives. An element moves WITH its expression, and when the
+   * expression changes the site becomes unadjudicated and the gate says so: the
+   * judgement was made about a specific expression.
    *
-   * `check` fails on a site with no entry here and on an entry matching no site,
-   * so this list can neither miss a site nor keep a stale judgement. Before this
-   * existed, the committed document classified the POPULATION in prose and left
-   * the reader to work out which row was which -- and both sites it described as
-   * "moving with #1295" turned out not to: one reads a map that is never written
-   * (#1394), the other reads `constValues`, which #1295 does not own.
+   * `check` fails on a site with no entry here and on an entry matching no
+   * site, so this list can neither miss a site nor keep a stale judgement.
    */
   private static readonly ADJUDICATIONS: readonly IAdjudication[] = [
     {
-      file: "src/cnx/utils/ScopeUtils.ts",
-      element: "symbol.scopePath",
+      file: "src/cnx/utils/QualifiedCName.ts",
+      element: '= "__"',
       kind: "encoder",
-      pairedWith: null,
-      movesWith: null,
-      why: "`getTranspiledCName` -- the single encoder. The symbol carries its whole enclosing path (#1298), so this joins a complete path to a leaf rather than standing a leaf in for one",
+      why: "the ADR-063 separator's declaration, `QualifiedCName.SEPARATOR`",
+    },
+    {
+      file: "src/cnx/utils/CppNamespaceUtils.ts",
+      element: '= "::"',
+      kind: "encoder",
+      why: "the C++ separator's declaration, `CppNamespaceUtils.SEPARATOR`",
+    },
+    {
+      file: "src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts",
+      element: ': "::"',
+      kind: "encoder",
+      why: "ACCESS_CPP, the `::` access step; only `MemberSeparatorResolver.join` spells a step, so this is the operator it writes, not a held separator",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/QualifiedTypeNames.ts",
+      element: "fromParts(type.path)",
+      kind: "encoder",
+      why: "3-Declare, the first layer holding the headers' symbols, spelling a written C++ `Ns.T` once as `Ns::T` and storing it as IFileSymbols.qualifiedTypeNames for later layers to read (#2116)",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cpp/collectors/ClassCollector.ts",
+      element: "qualify(ctx.className, name)",
+      kind: "encoder",
+      why: "3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cpp/collectors/ClassCollector.ts",
+      element: "qualify(currentNamespace, name)",
+      kind: "encoder",
+      why: "3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cpp/collectors/EnumCollector.ts",
+      element: "qualify(currentNamespace, name)",
+      kind: "encoder",
+      why: "3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cpp/collectors/FunctionCollector.ts",
+      element: "qualify(className, funcName)",
+      kind: "encoder",
+      why: "3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cpp/collectors/FunctionCollector.ts",
+      element: "qualify(currentNamespace, name)",
+      kind: "encoder",
+      why: "3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cpp/collectors/NamespaceCollector.ts",
+      element: "qualify(currentNamespace, name)",
+      kind: "encoder",
+      why: "3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cpp/collectors/VariableCollector.ts",
+      element: "qualify(currentNamespace, name)",
+      kind: "encoder",
+      why: "3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cpp/index.ts",
+      element: "qualify(ctx.currentNamespace, name)",
+      kind: "encoder",
+      why: "3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)",
+    },
+    {
+      file: "src/cnx/utils/CppNamespaceUtils.ts",
+      element: "CppNamespaceUtils.SEPARATOR",
+      kind: "encoder",
+      why: "the C++ separator's owner: the one `::` join",
+    },
+    {
+      file: "src/cnx/utils/CppNamespaceUtils.ts",
+      element: "fromParts([scope, name])",
+      kind: "encoder",
+      why: "`qualify`, defined in terms of the one join; 3-Declare's C++ collectors are its callers",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/BitmapCollector.ts",
+      element: "identityOf({ name, scopePath })",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/CallbackUseCollector.ts",
+      element: "qualifyInScope(members[0], scopePath)",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/CallbackUseCollector.ts",
+      element: "qualifyInScope(named, scopePath)",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/CallbackUseCollector.ts",
+      element: 'qualifyPathInScope([primary.name, ...members], "")',
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/CallbackUseCollector.ts",
+      element: 'qualifyPathInScope(members, "")',
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/CallbackUseCollector.ts",
+      element: 'qualifyPathInScope(path, "")',
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/EnumCollector.ts",
+      element: "identityOf({ name, scopePath })",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/FunctionCollector.ts",
+      element: "identityOf({ name, scopePath })",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/LexicalScopeCollector.ts",
+      element: "getTranspiledCName({ name: fn.name, scopePath })",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/ParameterListCollector.ts",
+      element: "qualifyInScope(inner.declaration.name, scopePath)",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/RegisterCollector.ts",
+      element: "identityOf({ name, scopePath })",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/StructCollector.ts",
+      element: "identityOf({ name, scopePath })",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/collectors/VariableCollector.ts",
+      element: "identityOf({ name, scopePath })",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/index.ts",
+      element: "qualifyInScope(typeName, scopePath)",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/QualifiedTypeNames.ts",
+      element: 'fromSourceName(type.path.join("."))',
+      kind: "encoder",
+      why: "3-Declare, the first layer holding the headers' symbols, spelling each written Scope.T once and storing it as IFileSymbols.qualifiedTypeNames for later layers to read (#2116)",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/utils/MemberSymbolBase.ts",
+      element:
+        "identityOf({ name: input.name, scopePath: input.parentScopedName, })",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/PARSE/4-Resolve/LexicalFrames.ts",
+      element: "movedLocal(functionCName, name, 1)",
+      kind: "owner-c-name",
+      why: "4-Resolve deciding, once, the C name a local moves to when it hides a file-scope name; stored on the settled local as emittedName",
+    },
+    {
+      file: "src/cnx/PARSE/4-Resolve/LexicalFrames.ts",
+      element: "movedLocal(functionCName, name, suffix)",
+      kind: "owner-c-name",
+      why: "4-Resolve deciding, once, the uniqueness-suffixed C name a local moves to when it shadows the enclosing local it reads (#1643); stored as emittedName",
     },
     {
       file: "src/cnx/utils/ScopeUtils.ts",
-      element: "scopePath",
+      element: "fromSourceParts([symbol.scopePath, symbol.name])",
       kind: "encoder",
-      pairedWith: null,
-      movesWith: null,
-      why: "`qualifyPathInScope` -- the one implementation the converted sites route to; its parameter IS the enclosing path",
+      why: "the owning code: getCnxScopedName's definition, the cnx spelling 3-Declare stores as cnxScopedName",
     },
     {
-      file: "src/cnx/TRANSPILE/1-Analyze/helpers/CalleeNameResolver.ts",
-      element: "resolvedName",
-      kind: "path",
-      pairedWith: null,
-      movesWith: null,
-      why: "callee chain `Scope.method()`; `resolvedName` is source text, and the `isScope` guard only confirms the author named a scope",
+      file: "src/cnx/utils/ScopeUtils.ts",
+      element: "qualifyPathInScope([symbol.name], symbol.scopePath)",
+      kind: "encoder",
+      why: "the owning code: getTranspiledCName's definition, the C name 3-Declare stores as fullyQualifiedCName",
+    },
+    {
+      file: "src/cnx/utils/ScopeUtils.ts",
+      element: "getCnxScopedName(symbol)",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/utils/ScopeUtils.ts",
+      element: "getTranspiledCName({ name: head, scopePath })",
+      kind: "written-name",
+      why: "a `this.X` chain head no symbol declares, spelled as written; a declared head reads its fullyQualifiedCName through ITypeHeadLookup (#2116)",
+    },
+    {
+      file: "src/cnx/utils/ScopeUtils.ts",
+      element: "getTranspiledCName({ name: typeName, scopePath, })",
+      kind: "encoder",
+      why: "qualifyScopeType's candidate name, asked only by 3-Declare as it decides a bare scope type (#2116)",
+    },
+    {
+      file: "src/cnx/utils/ScopeUtils.ts",
+      element: "getTranspiledCName(symbol)",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/utils/ScopeUtils.ts",
+      element: "identityOf({ name, scopePath: parentPath })",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/utils/ScopeUtils.ts",
+      element: "qualifyPathInScope([name], scopePath)",
+      kind: "encoder",
+      why: "the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol",
+    },
+    {
+      file: "src/cnx/utils/TypeNameLadder.ts",
+      element: "qualifyScopeType(type.name, scopePath, deps.isScopeType)",
+      kind: "encoder",
+      why: "3-Declare deciding a bare scope type's name: only it supplies isScopeType; every later pass supplies scopeTypeCName and reads the stored name",
+    },
+    {
+      file: "src/cnx/utils/TypeNameLadder.ts",
+      element: "qualifyInScope(type.name, scopePath)",
+      kind: "encoder",
+      why: "3-Declare deciding a `this.T` type reference's C name as it builds the symbols, or a `this.T` no symbol declares spelled as written; every later pass passes `memberCName` and reads the declared type's fullyQualifiedCName (#2116)",
+    },
+    {
+      file: "src/cnx/utils/QualifiedCName.ts",
+      element: "QualifiedCName.SEPARATOR",
+      kind: "encoder",
+      why: "the ADR-063 separator's owner: its declaration, the one join and the prefix test",
+    },
+    {
+      file: "src/cnx/utils/ScopeUtils.ts",
+      element: "inScope(scopePath, path)",
+      kind: "encoder",
+      why: "`qualifyPathInScope` -- the one implementation the scope-qualifying callers route to; its parameter IS the enclosing path",
     },
   ];
 
@@ -198,9 +421,7 @@ class ScopeJoinSites {
    * The adjudication for a site, or undefined when it has not been reviewed.
    *
    * `verdicts` defaults to the committed table and is injectable so the unit
-   * tests exercise the MECHANISM rather than today's twelve sites -- otherwise
-   * every test would have to name a real file, and closing a site would redden
-   * tests that are not about it.
+   * tests exercise the MECHANISM rather than today's sites.
    */
   private static adjudicationFor(
     file: string,
@@ -213,56 +434,40 @@ class ScopeJoinSites {
   /**
    * `source` with comments removed.
    *
-   * The scan is a text search, and in this codebase the text it looks for appears
-   * in JSDoc constantly -- these calls are what the prose is ABOUT
-   * (`ScopeUtils.ts` and `HeaderSymbolAdapter.ts` each carry one today). Counting
-   * a sentence produces a baseline row for a file with no such site, and the only
-   * way to green that is to record the phantom permanently. `ScopeUtils.ts` is
-   * precisely the file that must never hold a row, so the phantom would read as
-   * the encoder itself having regressed, with nothing saying it came from a
-   * comment.
+   * The scan is a text search, and the text it looks for appears in JSDoc
+   * constantly -- these builders are what the prose is ABOUT. Counting a
+   * sentence produces a row for a file with no such site, and the only way to
+   * green that is to record the phantom permanently.
    *
-   * String literals are the other theoretical vector; no call is spelled inside
-   * one today, so they are deliberately not handled.
+   * String literals are the other theoretical vector; no builder is spelled
+   * inside one today, so they are deliberately not handled.
    */
   private static withoutComments(source: string): string {
     return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
   }
 
   /**
-   * The first array element of each `fromParts([...])` call in `source`.
+   * Each `<builder>(...)` call in `source`, as `<method>(<argument>)`.
    *
-   * Scans for the matching delimiter rather than matching a regex: several of
-   * these calls span four lines and contain nested calls with their own commas.
-   * @public test seam: scope-join-sites.test.ts pins the #1357 gate's call scanner through it
+   * Scans for the matching delimiter rather than matching a regex: these calls
+   * span lines and contain nested calls and arrays with their own commas.
    */
-  static firstElements(rawSource: string): readonly string[] {
-    return ScopeJoinSites.calls(rawSource).map((call) => call.element);
-  }
-
-  /**
-   * Every `fromParts([...])` call: its first element and where it sits.
-   *
-   * The position is what lets `isScopeDenoting` look at the ENCLOSING BLOCK. A
-   * file-wide search for the guard would count
-   * `PostfixExpressionGenerator`'s two `ctx.result` calls, which are guarded by
-   * `knownRegisters.has` while an unrelated function in the same file happens to
-   * call `isKnownScope(ctx.result)` -- three false positives out of nine on a
-   * naive pass, which is the argument for scoping the search rather than
-   * widening it.
-   */
-  static calls(rawSource: string): readonly { element: string; at: number }[] {
-    const source = ScopeJoinSites.withoutComments(rawSource);
-    const found: { element: string; at: number }[] = [];
+  private static builderCalls(
+    source: string,
+    builder: string,
+  ): readonly string[] {
+    const marker = `${builder}(`;
+    const method = builder.slice(builder.lastIndexOf(".") + 1);
+    const found: string[] = [];
     let from = 0;
     for (;;) {
-      const at = source.indexOf(ScopeJoinSites.CALL, from);
+      const at = source.indexOf(marker, from);
       if (at < 0) {
         return found;
       }
       let depth = 0;
-      let element = "";
-      let i = at + ScopeJoinSites.CALL.length;
+      let i = at + marker.length;
+      const start = i;
       for (; i < source.length; i++) {
         const c = source[i];
         if ("([{".includes(c)) {
@@ -272,102 +477,66 @@ class ScopeJoinSites {
             break;
           }
           depth--;
-        } else if (c === "," && depth === 0) {
-          break;
         }
-        element += c;
       }
-      found.push({ element: element.trim().replace(/\s+/g, " "), at });
+      const argument = source
+        .slice(start, i)
+        .trim()
+        .replace(/\s+/g, " ")
+        .replace(/,\s*([)\]])/g, "$1")
+        .replace(/,$/, "")
+        .replace(/\[ /g, "[")
+        .replace(/ \]/g, "]");
+      found.push(`${method}(${argument})`);
       from = i + 1;
     }
   }
 
   /**
-   * Is `element` proven to hold a scope name by a guard in its enclosing block?
-   *
-   * The committed document's criterion is "passes a scope's NAME as the first
-   * element". A name heuristic cannot see `parts[0]`, `ids[0]` or
-   * `identifierChain[0]` -- and nobody is going to rename those, so the module's
-   * stated mitigation ("caught the next time the expression is renamed") never
-   * fires for them. Six sites satisfied the document's criterion and went
-   * uncounted, which would have let PR 3 report a zero baseline with live sites
-   * remaining, and a zero licenses removing this gate.
-   *
-   * The window runs from the head of the enclosing block to the call, so the
-   * predicate must guard THIS call rather than merely appear in the file.
+   * Every site in `source`, as element texts: each builder call,
+   * each named use of the separator, and each separator spelled as text.
+   * @public test seam: scope-join-sites.test.ts pins the scanner through it
    */
-  private static guardedByScopePredicate(
-    source: string,
-    element: string,
-    at: number,
-  ): boolean {
-    let depth = 0;
-    let open = -1;
-    for (let i = at; i >= 0; i--) {
-      const c = source[i];
-      if (c === "}") depth++;
-      else if (c === "{") {
-        if (depth === 0) {
-          open = i;
-          break;
-        }
-        depth--;
-      }
-    }
-    if (open < 0) return false;
-    // Back up over the block's header (`if (...)`) to the previous statement end.
-    let start = 0;
-    for (let i = open - 1; i >= 0; i--) {
-      if (";}{".includes(source[i])) {
-        start = i + 1;
-        break;
-      }
-    }
-    const window = source.slice(start, at);
-    const escaped = RegExpUtils.escape(element);
-    return new RegExp(`\\bis(?:Known)?Scope\\(\\s*${escaped}\\s*[),]`).test(
-      window,
+  static elements(rawSource: string): readonly string[] {
+    const source = ScopeJoinSites.withoutComments(rawSource);
+    // A backtick would end the element's code span in the document's table.
+    return ScopeJoinSites.found(source).map((element) =>
+      element.replace(/`/g, "'"),
     );
   }
 
-  /** Does this first element name a scope instead of an outermost component? */
-  static isScopeDenoting(element: string): boolean {
-    if (ScopeJoinSites.VIA_ENCODER.some((door) => element.includes(door))) {
-      return false;
-    }
-    return ScopeJoinSites.SCOPE_DENOTING.test(element);
-  }
-
-  /** Every counted call in `source`, as first-element texts. */
-  private static countedElements(source: string): readonly string[] {
-    const stripped = ScopeJoinSites.withoutComments(source);
-    return ScopeJoinSites.calls(source)
-      .filter(
-        (call) =>
-          ScopeJoinSites.isScopeDenoting(call.element) ||
-          ScopeJoinSites.guardedByScopePredicate(
-            stripped,
-            call.element,
-            call.at,
-          ),
-      )
-      .map((call) => call.element);
+  private static found(source: string): readonly string[] {
+    return [
+      ...ScopeJoinSites.BUILDERS.flatMap((builder) =>
+        ScopeJoinSites.builderCalls(source, builder),
+      ),
+      ...[...source.matchAll(ScopeJoinSites.SEPARATOR)].map(
+        (match) => match[0],
+      ),
+      ...[...source.matchAll(ScopeJoinSites.BOUND_BUILDER)].map((match) =>
+        match[0].replace(/\s+/g, " "),
+      ),
+      ...[...source.matchAll(ScopeJoinSites.BOUND_SEPARATOR)].map((match) =>
+        match[0].replace(/\s+/g, " "),
+      ),
+      ...[...source.matchAll(ScopeJoinSites.SPELLED_SEPARATOR)].map((match) =>
+        match[0].replace(/\s+/g, " "),
+      ),
+    ];
   }
 
   /**
-   * Distinct (file, first element) sites with their occurrence counts.
+   * Distinct (file, element) sites with their occurrence counts.
    *
-   * Two calls in one file can share an element text -- `AssignmentClassifier`
-   * has `scopeName` twice, in different methods. They collapse to one row on
-   * purpose: an adjudication is about what the expression IS, and identical text
-   * in one file is the same judgement. A row's count still fails the gate if it
+   * Identical text in one file collapses to one row on purpose: an adjudication
+   * is about what the expression IS. A row's count still fails the gate if it
    * grows, so the collapse cannot hide a new site.
    */
   static sites(sources: ReadonlyMap<string, string>): readonly ISite[] {
     const rows: ISite[] = [];
     for (const [file, source] of sources) {
       const tally = new Map<string, number>();
-      for (const element of ScopeJoinSites.countedElements(source)) {
+      for (const element of ScopeJoinSites.elements(source)) {
         tally.set(element, (tally.get(element) ?? 0) + 1);
       }
       for (const [element, count] of tally) {
@@ -386,18 +555,13 @@ class ScopeJoinSites {
    * Shared rather than computed twice: the two must agree, and jscpd caught the
    * copy the moment it existed.
    */
-  private static summarize(
-    sites: readonly ISite[],
-    verdicts: readonly IAdjudication[],
-  ): { total: number; files: number; moving: readonly ISite[] } {
+  private static summarize(sites: readonly ISite[]): {
+    total: number;
+    files: number;
+  } {
     return {
       total: sites.reduce((sum, row) => sum + row.count, 0),
       files: new Set(sites.map((row) => row.file)).size,
-      moving: sites.filter(
-        (row) =>
-          ScopeJoinSites.adjudicationFor(row.file, row.element, verdicts)
-            ?.movesWith,
-      ),
     };
   }
 
@@ -406,45 +570,36 @@ class ScopeJoinSites {
     sites: readonly ISite[],
     verdicts: readonly IAdjudication[] = ScopeJoinSites.ADJUDICATIONS,
   ): string {
-    const { total, files, moving } = ScopeJoinSites.summarize(sites, verdicts);
+    const { total, files } = ScopeJoinSites.summarize(sites);
     const lines = [
-      "# Scope-denoting `fromParts` sites",
+      "# Qualified C name construction sites",
       "",
       "<!-- Generated by `npm run scope-joins`. Do not edit by hand. -->",
       "",
-      "Issue #1357. Each row is one call shape in one file: the first element",
-      "reads as a scope, or a nearby `isScope` guard proves it is one.",
+      "Issues #1357 and #2116. Each row is one expression in one file that builds",
+      "a qualified C name: a `QualifiedCName.fromSourceName` call, a use of",
+      "`QualifiedCName.SEPARATOR`, or the separator spelled as text.",
       "",
-      "**A row is not by itself a defect.** The population that WAS one -- a",
-      "scope's leaf name standing in for a complete path, correct only while",
-      "`scopeMember` admits no `scopeDeclaration` (`grammar/Cnx.g4`) -- has been",
-      "converted to `ScopeUtils.qualifyInScope`, which takes the whole",
-      "enclosing PATH. Every row below carries the judgement that was made",
-      "about it, so no reader has to re-derive which is which:",
+      "A qualified name comes from a symbol's declaring scope's whole PATH",
+      "(`ScopeUtils`, materialized as `fullyQualifiedCName`), or from a name the",
+      "author wrote in full. Scopes are flat (ADR-016), so a scope's name is its",
+      "path; a hand join of one to a member is wrong because it decides the",
+      "`Scope__member` spelling a second time. Every row below carries the",
+      "judgement that it is not that join:",
       "",
       ...KIND_SECTIONS.flatMap((section) => section.lines),
       "",
-      "They overlap as descriptions -- a site can be built from source text AND",
-      "read a leaf-keyed map -- so a site takes the FIRST kind above that applies,",
-      "which makes them a partition rather than labels. **Nothing computes this.**",
-      "The order is an instruction to whoever writes the row. The worked example",
-      "was the old symbol collector index's `scopeName`, deleted with 1.3's const pass (#1664",
-      "box 7): source text from a parse-tree identifier, so `path` by description,",
-      "though it was long filed as `leaf-keyed` on the grounds that it was paired",
-      "with a collection. #1295 argued that the pairing did not exist -- the",
-      "collection's key went through `fromParts`, which splits dotted paths -- so",
-      "it was `path` on that argument.",
+      "A site takes the FIRST kind above that applies. **Nothing computes this.**",
+      "The order is an instruction to whoever writes the row.",
       "",
-      "This list may shrink freely. It may not grow: `npm run scope-joins:check`",
-      "fails on a file that gains a site, on a call shape nobody has adjudicated,",
-      "and on a judgement that no longer matches any site. So the population cannot",
-      "drift upward unnoticed the way it did when #1348 moved it 61 to 65, and a",
-      "judgement cannot outlive the code it was made about. A new row is a prompt",
-      "to adjudicate, not proof of a bug -- but it must be adjudicated before it",
-      "lands.",
+      "No row is excluded by how its expression is spelled. `npm run",
+      "scope-joins:check` fails on a file that gains a site, on an expression",
+      "nobody has adjudicated, and on a judgement that no longer matches any site,",
+      "so a scope join added in any pass is red until someone argues it is not",
+      "one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.",
       "",
-      "| File | First element | Sites | Kind | Moves with |",
-      "| --- | --- | --- | --- | --- |",
+      "| File | Expression | Sites | Kind |",
+      "| --- | --- | --- | --- |",
       ...sites.map((row) => {
         const verdict = ScopeJoinSites.adjudicationFor(
           row.file,
@@ -452,43 +607,26 @@ class ScopeJoinSites {
           verdicts,
         );
         const kind = verdict?.kind ?? "**UNADJUDICATED**";
-        const moves = verdict?.movesWith ?? "--";
-        return `| \`${row.file}\` | \`${row.element}\` | ${row.count} | ${kind} | ${moves} |`;
+        return `| \`${row.file}\` | \`${row.element.replace(/\|/g, "\\|")}\` | ${row.count} | ${kind} |`;
       }),
-      `| **total** | | **${total}** | | |`,
+      `| **total** | | **${total}** | |`,
       "",
       `${total} site(s) across ${files} file(s).`,
       "",
-      "## What must move, and with what",
+      "## Why each site is not a scope join",
       "",
-    ];
-    if (moving.length === 0) {
-      lines.push(
-        "Nothing. Every remaining site is adjudicated as needing no change.",
-        "",
-      );
-    } else {
-      lines.push(
-        "The checklist for whoever re-keys these collections. Each row is a call",
-        "shape that must change in the SAME commit as its collection's keying --",
-        "a key built one way against a map filed another returns empty, which",
-        'reads as "no such symbol" rather than "wrong question" (#1139).',
-        "",
-        "| Site | Paired with | Moves with | Why |",
-        "| --- | --- | --- | --- |",
-      );
-      for (const row of moving) {
+      ...sites.flatMap((row) => {
         const verdict = ScopeJoinSites.adjudicationFor(
           row.file,
           row.element,
           verdicts,
-        )!;
-        lines.push(
-          `| \`${row.file}\` (\`${row.element}\`) | \`${verdict.pairedWith}\` | ${verdict.movesWith} | ${verdict.why} |`,
         );
-      }
-      lines.push("");
-    }
+        return verdict
+          ? [`- \`${row.file}\` \`${row.element}\`: ${verdict.why}`]
+          : [];
+      }),
+      "",
+    ];
     return lines.join("\n");
   }
 
@@ -536,9 +674,12 @@ class ScopeJoinSites {
     // fails against the very file the generator just wrote.
     const expected = new Map<string, number>();
     for (const match of committed.matchAll(
-      /^\|\s*`([^`]+)`\s*\|\s*`([^`]+)`\s*\|\s*(\d+)\s*\|/gm,
+      /^\|\s*`([^`]+)`\s*\|\s*`((?:[^`\\]|\\.)+)`\s*\|\s*(\d+)\s*\|/gm,
     )) {
-      expected.set(`${match[1]}\u0000${match[2]}`, Number(match[3]));
+      expected.set(
+        `${match[1]}\u0000${match[2].replace(/\\\|/g, "|")}`,
+        Number(match[3]),
+      );
     }
     const actual = new Map(
       sites.map((row) => [`${row.file}\u0000${row.element}`, row.count]),
@@ -549,7 +690,7 @@ class ScopeJoinSites {
       const was = expected.get(key);
       if (was === undefined) {
         siteErrors.push(
-          `${file}: new scope-denoting call shape \`${element}\` (${n} site(s))`,
+          `${file}: new qualified-name site \`${element}\` (${n} site(s))`,
         );
       } else if (n > was) {
         siteErrors.push(
@@ -622,14 +763,11 @@ class ScopeJoinSites {
       );
     }
 
-    const { total, files, moving } = ScopeJoinSites.summarize(sites, verdicts);
+    const { total, files } = ScopeJoinSites.summarize(sites);
     return {
       ok: errors.length === 0,
       errors,
-      info: [
-        `${total} scope-denoting site(s) across ${files} file(s); ` +
-          `${moving.length} awaiting another card.`,
-      ],
+      info: [`${total} qualified-name site(s) across ${files} file(s).`],
     };
   }
 }

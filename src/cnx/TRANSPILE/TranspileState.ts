@@ -23,6 +23,7 @@ import type IDeclarationPlan from "../types/IDeclarationPlan";
 import type IEmissionPlan from "../types/IEmissionPlan";
 import type IFunctionSignature from "../types/IFunctionSignature";
 import invariant from "../utils/invariant";
+import DeclaredMember from "../utils/DeclaredMember";
 import emittedLocalName from "../utils/emittedLocalName";
 import AdrProvenance from "../instrumentation/AdrProvenance";
 import type ILocalDeclaration from "../types/ILocalDeclaration";
@@ -760,37 +761,6 @@ class TranspileState {
   }
 
   /**
-   * Check if a *qualified* name is a type declared in a scope that the file
-   * being generated can see.
-   * Used by `ScopeUtils.qualifyScopeType()`, through `typeBindingDeps`, to
-   * ensure only actual type declarations (enum/struct/bitmap/function) capture
-   * the name at a type position. ADR-029 makes a function definition create a
-   * callback type, so a scope function is a type declaration for this purpose;
-   * a scope VARIABLE is not, and deliberately does not capture (ADR-057).
-   *
-   * @param qualifiedName The already-joined C name (e.g. "A__B")
-   * @returns true if the qualified name is an enum, struct, bitmap, or
-   *          function-as-type (ADR-029) declared in a scope, by this file or a
-   *          file it includes
-   */
-  isScopeType(qualifiedName: string): boolean {
-    // #1724: the answer 1.4 settled this file's symbols with, asked about the
-    // same file, so the `.c` and the `.h` cannot disagree. This read the
-    // run-wide symbol table, which also holds the scope types of files this
-    // one never includes: a bare `Config` in a reopened scope became a
-    // sibling's `Motor__Config` here while 1.4, reading a run-wide union, made
-    // the same mistake in the header -- two lookups agreeing by coincidence.
-    //
-    // Which kinds form a type is still TYPE_FORMING_KINDS' answer (#1285): 1.3
-    // Declare's pass 0b asks it when it collects each file's scope types.
-    const sourcePath = this.sourcePath;
-    if (this.program === null || sourcePath === null) {
-      return false;
-    }
-    return this.program.isScopeTypeVisibleFrom(sourcePath, qualifiedName);
-  }
-
-  /**
    * ADR-010: does this transpiled C name refer to a declaration that lives in
    * a DIFFERENT file from the one being generated?
    *
@@ -825,49 +795,47 @@ class TranspileState {
   }
 
   /**
-   * `isScopeType` as a VALUE, bound to this class.
-   *
-   * `isScopeType` is an instance method reading `this.program`, so a bare
-   * reference to it loses its receiver and throws. Six sites each wrote the
-   * same closure to work around that -- five feeding `ITypeBindingDeps`, one
-   * feeding `ITypeGenerationDeps`, which CLAUDE.md keeps separate so
-   * `TypeGenerationHelper` stays unit-testable. The two CONTRACTS are
-   * different and stay different; the BINDING was the same six times.
-   *
-   * An arrow property rather than a method precisely because a method cannot
-   * be passed unbound -- that is the whole problem it solves.
-   */
-  readonly scopeTypePredicate = (qualifiedName: string): boolean =>
-    this.isScopeType(qualifiedName);
-
-  /**
    * ADR-057: bind this state's type sets to `TypeNameLadder`'s injected deps.
    *
    * THE binding, for the sites that resolve a whole `TypeContext`.
-   * `isScopeType` is an instance method reading `this.program`, so it cannot be
-   * passed unbound -- which is why five call sites each wrote the same closure,
-   * paired with `currentScopePath`, and why the rule against re-pairing them
-   * needed something to call instead of only saying not to.
+   * Five call sites once each wrote the same closure over a C-name predicate,
+   * paired with `currentScopePath`. #2116: a bare scope type now binds by
+   * identity, through `program.scopeTypeOf`, reading the C name 3-Declare
+   * stored rather than encoding one to ask about.
    *
    * It had a bare-name sibling, `qualifyScopeType`, which CLAUDE.md told codegen
    * to call. Nothing did: the bare-name path resolves in the symbols layer
    * (`utils/TypeNameLadder`), and codegen reaches the same decision through
    * this method. Deleted under #1452 with the rule that named it.
    *
-   * `resolveQualifiedType` stays the caller's: it is the one half that really
-   * does differ, routing to a generator's C++ namespace resolution or to a
-   * callback's, and binding it here would invent a dependency from `state/` on
-   * whichever one happened to be first.
-   *
-   * @param resolveQualifiedType the caller's `Scope.Type` resolver, if it has one
+   * `qualifiedTypeName` reads 1.3's spelling of a written `Scope.T` (#2116).
+   * It was the caller's, as a C++-namespace resolver; every caller now reads
+   * the same stored spelling, so it is bound here.
    */
-  typeBindingDeps(
-    resolveQualifiedType?: (identifiers: string[]) => string,
-  ): ITypeBindingDeps {
+  typeBindingDeps(): ITypeBindingDeps {
     return {
-      isScopeType: this.scopeTypePredicate,
-      resolveQualifiedType,
+      scopeTypeCName: (scopePath: string, name: string) => {
+        const { program, sourcePath } = this.boundProgram();
+        return program.scopeTypeOf(sourcePath, scopePath, name)
+          ?.fullyQualifiedCName;
+      },
+      qualifiedTypeName: (written: string) => {
+        const { program, sourcePath } = this.boundProgram();
+        return program.qualifiedTypeName(sourcePath, written);
+      },
+      memberCName: (scopePath: string, name: string) =>
+        this.boundProgram().program.memberOf(scopePath, name)
+          ?.fullyQualifiedCName,
     };
+  }
+
+  /** The program and the file a type binding reads from; set before any is read. */
+  private boundProgram(): { program: IProgram; sourcePath: string } {
+    invariant(
+      this.program !== null && this.sourcePath !== null,
+      "a type binding is read from the program, for the file it is in",
+    );
+    return { program: this.program, sourcePath: this.sourcePath };
   }
 
   /**
@@ -1027,6 +995,14 @@ class TranspileState {
     this.clearFileData(inputs.targetDescription);
     this.useInputs(inputs);
     this.generator = generator;
+  }
+
+  /**
+   * The C name 3-Declare gave the member `name` declared in `scopePath`
+   * ("" for file scope): read off its symbol, never re-encoded (#2116).
+   */
+  declaredCName(scopePath: string, name: string): string {
+    return DeclaredMember.cNameOf(this.program, scopePath, name);
   }
 
   private useInputs(inputs: TPlanInputs): void {

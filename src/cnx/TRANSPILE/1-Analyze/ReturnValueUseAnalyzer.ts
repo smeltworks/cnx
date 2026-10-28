@@ -79,6 +79,7 @@ class ReturnValueUseAnalyzer {
       resolved.name,
       currentScopePath,
       resolved.isGlobalCall,
+      context.program,
     );
     if (fallback && ReturnValueUseAnalyzer.returnsAValue(fallback, context)) {
       return fallback;
@@ -161,6 +162,7 @@ class ReturnValueUseAnalyzer {
       call,
       scopePath,
       (name) => DeclaredTypeFacts.isScope(context.symbols, name),
+      context.program,
     );
     if (!resolved) return null;
     return ReturnValueUseAnalyzer.nonVoidCallee(resolved, scopePath, context);

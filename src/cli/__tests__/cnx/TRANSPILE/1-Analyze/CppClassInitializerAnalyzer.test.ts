@@ -18,10 +18,24 @@ import testAnalysisContextFor from "./testAnalysisContextFor";
  */
 const withCppClass = (className: string) => {
   const table = new SymbolTable();
-  // A class's constructor is a function symbol named `Qualified::Class`, which
-  // is exactly what `CppConstructorHelper.hasConstructor` looks for.
+  // A class's constructor is a function the class declares under its own
+  // name, which is what `CppConstructorHelper.hasConstructor` looks for.
+  const [head, ...rest] = className.split("::");
+  const leaf = className.split("::").at(-1)!;
   table.addCppSymbol({
-    name: `${className}::${className.split("::").at(-1)}`,
+    name: className,
+    unqualifiedName: leaf,
+    parent: rest.length > 0 ? head : undefined,
+    kind: "class",
+    visibility: "public",
+    sourceFile: "Class.hpp",
+    span: TestSourceSpan.at(1),
+    sourceLanguage: ESourceLanguage.Cpp,
+  });
+  table.addCppSymbol({
+    name: `${className}::${leaf}`,
+    unqualifiedName: leaf,
+    parent: className,
     kind: "function",
     type: "void",
     visibility: "public",
@@ -29,6 +43,18 @@ const withCppClass = (className: string) => {
     span: TestSourceSpan.at(1),
     sourceLanguage: ESourceLanguage.Cpp,
   });
+  // A namespaced class's header declares its namespace too
+  if (rest.length > 0) {
+    table.addCppSymbol({
+      name: head,
+      unqualifiedName: head,
+      kind: "namespace",
+      visibility: "public",
+      sourceFile: "Class.hpp",
+      span: TestSourceSpan.at(1),
+      sourceLanguage: ESourceLanguage.Cpp,
+    });
+  }
   return table;
 };
 
@@ -104,11 +130,10 @@ describe("CppClassInitializerAnalyzer (E0508)", () => {
     expect(analyze(source, withCppClass("CppTestClass"), false)).toEqual([]);
   });
 
-  it("names a namespaced class through the transpiled spelling", () => {
+  it("names a namespaced class by the spelling 1.3 stored", () => {
     // The text in hand is the SOURCE spelling `TestNS.MyClass`, which the
-    // symbol table does not hold -- it keys `TestNS::MyClass`. Reading the
-    // dotted text straight into the lookup answers "no such class" for every
-    // namespaced type.
+    // symbol table does not hold -- it keys `TestNS::MyClass`, the spelling
+    // 1.3 stored for the path because `TestNS` is a C++ namespace (#2116).
     const source = [
       "TestNS.MyClass globalObj <- { id: 7 };",
       "",

@@ -4,12 +4,19 @@ import ProgramLowering from "../../../2-Parse/ProgramLowering";
 import LexicalScopeCollector from "../collectors/LexicalScopeCollector";
 import SymbolRegistry from "../../SymbolRegistry";
 import type ILexicalFrame from "../../../../types/ILexicalFrame";
+import QualifiedTypeNames from "../QualifiedTypeNames";
+
+const NONE_WRITTEN = new Map<string, string>();
 
 const framesOf = (source: string): ILexicalFrame =>
   LexicalScopeCollector.collect(
     ProgramLowering.program(parse(source), null),
     new SymbolRegistry(),
-    () => false,
+    {
+      isScopeType: () => false,
+      qualifiedTypeName: (written) =>
+        QualifiedTypeNames.read(NONE_WRITTEN, written),
+    },
   );
 
 interface IShape {

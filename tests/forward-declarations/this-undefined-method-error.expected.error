@@ -1,1 +1,1 @@
-10:8 error[E0422]: function 'Test__undefinedFunction' called before definition
+10:8 error[E0422]: function 'this.undefinedFunction' called before definition

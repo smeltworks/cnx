@@ -26,8 +26,13 @@ interface IConstantNameFacts {
   scopePathAt(at: ISourcePosition): string;
   /** A cnx declaration this file can see, by C name */
   visibleSymbol(cName: string): TSymbol | undefined;
-  /** Whether a qualified cnx type name is a scope type this file can see */
-  isScopeTypeVisible(qualifiedName: string): boolean;
+  /**
+   * The member `name` of `scopePath` this file can see, found by its scope
+   * path and name rather than an encoded C name (#2116).
+   */
+  visibleMember(scopePath: string, name: string): TSymbol | undefined;
+  /** The scope type a bare `name` in `scopePath` binds to here (ADR-057) */
+  scopeTypeOf(scopePath: string, name: string): TSymbol | undefined;
   /** A const's settled value, or why it has none; undefined until it settles */
   constValue(symbol: IVariableSymbol): TSettledConst | undefined;
   /** A local as settled; undefined when it has not settled (yet) */
@@ -45,6 +50,8 @@ interface IConstantNameFacts {
   headerStructFields: IFileConstantFacts["headerStructFields"];
   /** #2076: `IFileConstantFacts.headerTypeBits` */
   headerTypeBits: IFileConstantFacts["headerTypeBits"];
+  /** #2116: `IFileConstantFacts.qualifiedTypeName`, for this file */
+  qualifiedTypeName(written: string): string;
   /** #1975 review: `IFileConstantFacts.headerTypeHead` */
   headerTypeHead: IFileConstantFacts["headerTypeHead"];
   /** #1975 review: `IFileConstantFacts.headerFieldCount` */

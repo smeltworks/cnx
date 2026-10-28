@@ -19,6 +19,7 @@ class NamespaceCollector {
     return {
       kind: "namespace",
       name: CppNamespaceUtils.qualify(currentNamespace, name),
+      unqualifiedName: name,
       sourceFile,
       span,
       sourceLanguage: ESourceLanguage.Cpp,

@@ -121,7 +121,6 @@ function createMockOrchestrator(overrides?: {
   isKnownStruct?: (name: string) => boolean;
   isKnownScope?: (name: string) => boolean;
   isCppScopeSymbol?: (name: string) => boolean;
-  getScopeSeparator?: (isCpp: boolean) => string;
   tryEvaluateConstant?: (ctx: unknown) => number | undefined;
   hasFloatBitShadow?: (name: string) => boolean;
   registerFloatBitShadow?: (name: string) => void;
@@ -200,7 +199,6 @@ function createMockOrchestrator(overrides?: {
       overrides?.generatePrimaryExpr ?? vi.fn((ctx) => ctx.getText()),
     isKnownScope: overrides?.isKnownScope ?? vi.fn(() => false),
     isCppScopeSymbol: overrides?.isCppScopeSymbol ?? vi.fn(() => false),
-    getScopeSeparator: overrides?.getScopeSeparator ?? vi.fn(() => "__"),
     addPendingTempDeclaration: overrides?.addPendingTempDeclaration ?? vi.fn(),
     registerFloatBitShadow: overrides?.registerFloatBitShadow ?? vi.fn(),
     markFloatShadowCurrent: overrides?.markFloatShadowCurrent ?? vi.fn(),
@@ -530,6 +528,10 @@ describe("PostfixExpressionGenerator", () => {
     // Render runs against a program (#1668); `this.member` asks it whether
     // the member is a private const (#1739)
     sharedState.program = {
+      // the C name 3-Declare gives a scope member (#2116)
+      memberOf: (scopePath: string, name: string) => ({
+        fullyQualifiedCName: `${scopePath}__${name}`,
+      }),
       symbolTable: () => new SymbolTable(),
       symbolByCName: () => undefined,
       settledConstOf: () => null,
@@ -784,6 +786,10 @@ describe("PostfixExpressionGenerator", () => {
         initialValueExpr: { kind: "binary" },
       };
       const program = {
+        // the C name 3-Declare gives a scope member (#2116)
+        memberOf: (scopePath: string, name: string) => ({
+          fullyQualifiedCName: `${scopePath}__${name}`,
+        }),
         symbolTable: () => new SymbolTable(),
         symbolByCName: (cName: string) =>
           cName === "Motor__MAX_SPEED" ? constSymbol : undefined,
@@ -1123,7 +1129,6 @@ describe("PostfixExpressionGenerator", () => {
       const orchestrator = createMockOrchestrator({
         generatePrimaryExpr: () => "LED",
         isKnownScope: (name) => name === "LED",
-        getScopeSeparator: () => "__",
       });
 
       const result = runPostfix(ctx, input, state, orchestrator);
@@ -1140,7 +1145,6 @@ describe("PostfixExpressionGenerator", () => {
         generatePrimaryExpr: () => "LED",
         isKnownScope: (name) => name === "LED",
         isCppScopeSymbol: () => true,
-        getScopeSeparator: (isCpp) => (isCpp ? "::" : "__"),
       });
 
       const result = runPostfix(ctx, input, state, orchestrator);
@@ -1152,6 +1156,7 @@ describe("PostfixExpressionGenerator", () => {
     it("generates enum member access", () => {
       const symbols = createMockSymbols({
         knownEnums: new Set(["Color"]),
+        memberCNames: new Map([["Color", new Map([["Red", "Color__Red"]])]]),
       });
       const ctx = createMockPostfixExpressionContext("Color", [
         createMockPostfixOp({ identifier: "Red" }),
@@ -1160,7 +1165,6 @@ describe("PostfixExpressionGenerator", () => {
       const state = createMockState();
       const orchestrator = createMockOrchestrator({
         generatePrimaryExpr: () => "Color",
-        getScopeSeparator: () => "__",
       });
 
       const result = runPostfix(ctx, input, state, orchestrator);
@@ -1170,6 +1174,7 @@ describe("PostfixExpressionGenerator", () => {
     it("allows enum access without global prefix when no naming conflict", () => {
       const symbols = createMockSymbols({
         knownEnums: new Set(["Color"]),
+        memberCNames: new Map([["Color", new Map([["Red", "Color__Red"]])]]),
       });
       const ctx = createMockPostfixExpressionContext("Color", [
         createMockPostfixOp({ identifier: "Red" }),
@@ -1182,7 +1187,6 @@ describe("PostfixExpressionGenerator", () => {
       });
       const orchestrator = createMockOrchestrator({
         generatePrimaryExpr: () => "Color",
-        getScopeSeparator: () => "__",
       });
 
       const result = runPostfix(ctx, input, state, orchestrator);
@@ -1194,6 +1198,7 @@ describe("PostfixExpressionGenerator", () => {
     it("generates register member access", () => {
       const symbols = createMockSymbols({
         knownRegisters: new Set(["GPIO"]),
+        memberCNames: new Map([["GPIO", new Map([["PIN0", "GPIO__PIN0"]])]]),
       });
       const ctx = createMockPostfixExpressionContext("GPIO", [
         createMockPostfixOp({ identifier: "PIN0" }),
@@ -1211,6 +1216,7 @@ describe("PostfixExpressionGenerator", () => {
     it("allows register access without global prefix when no naming conflict", () => {
       const symbols = createMockSymbols({
         knownRegisters: new Set(["GPIO"]),
+        memberCNames: new Map([["GPIO", new Map([["PIN0", "GPIO__PIN0"]])]]),
       });
       const ctx = createMockPostfixExpressionContext("GPIO", [
         createMockPostfixOp({ identifier: "PIN0" }),
@@ -1376,6 +1382,7 @@ describe("PostfixExpressionGenerator", () => {
         knownRegisters: new Set(["GPIO"]),
         knownBitmaps: new Set(["CtrlBits"]),
         registerMemberCTypes: new Map([["GPIO__CTRL", "CtrlBits"]]),
+        memberCNames: new Map([["GPIO", new Map([["CTRL", "GPIO__CTRL"]])]]),
         bitmapFields: new Map([
           ["CtrlBits", new Map([["ENABLE", { offset: 0, width: 1 }]])],
         ]),
@@ -1841,7 +1848,6 @@ describe("PostfixExpressionGenerator", () => {
       const orchestrator = createMockOrchestrator({
         generatePrimaryExpr: () => "std",
         isCppScopeSymbol: (name) => name === "std",
-        getScopeSeparator: (isCpp) => (isCpp ? "::" : "."),
       });
 
       const result = runPostfix(ctx, input, state, orchestrator);
@@ -1860,7 +1866,6 @@ describe("PostfixExpressionGenerator", () => {
       const orchestrator = createMockOrchestrator({
         generatePrimaryExpr: () => "__GLOBAL_PREFIX__",
         isCppScopeSymbol: (name) => name === "std",
-        getScopeSeparator: (isCpp) => (isCpp ? "::" : "__"),
       });
 
       const result = runPostfix(ctx, input, state, orchestrator);
@@ -1870,6 +1875,7 @@ describe("PostfixExpressionGenerator", () => {
     it("sets isRegisterChain when global member is a register", () => {
       const symbols = createMockSymbols({
         knownRegisters: new Set(["GPIO"]),
+        memberCNames: new Map([["GPIO", new Map([["PIN0", "GPIO__PIN0"]])]]),
       });
       const ctx = createMockPostfixExpressionContext("global", [
         createMockPostfixOp({ identifier: "GPIO" }),

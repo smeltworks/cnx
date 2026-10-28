@@ -89,6 +89,7 @@ describe("ConflictDetector", () => {
       cpp.push({
         kind: "function",
         name: "overloaded",
+        unqualifiedName: "overloaded",
         sourceFile: "test.hpp",
         span: TestSourceSpan.at(1),
         sourceLanguage: ESourceLanguage.Cpp,
@@ -100,6 +101,7 @@ describe("ConflictDetector", () => {
       cpp.push({
         kind: "function",
         name: "overloaded",
+        unqualifiedName: "overloaded",
         sourceFile: "test.hpp",
         span: TestSourceSpan.at(5),
         sourceLanguage: ESourceLanguage.Cpp,

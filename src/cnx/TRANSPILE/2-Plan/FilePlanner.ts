@@ -42,7 +42,6 @@ import OperandTyper from "../../utils/OperandTyper";
 import StringValueForm from "../../utils/StringValueForm";
 import StringUtils from "../../utils/StringUtils";
 import type TStringValueForm from "../../types/TStringValueForm";
-import CppNamespaceUtils from "../../utils/CppNamespaceUtils";
 import headerCType from "../../utils/headerCType";
 import HeaderTypeNames from "./HeaderTypeNames";
 import PublicInterface from "./PublicInterface";
@@ -123,12 +122,10 @@ import CallExprUtils from "./CallExprUtils";
 import FunctionCatalog from "./FunctionCatalog";
 import type TPlanInputs from "../types/TPlanInputs";
 import AdrProvenance from "../../instrumentation/AdrProvenance";
-import QualifiedNameGenerator from "../../utils/QualifiedNameGenerator";
 import BitmapFieldStep from "../../utils/BitmapFieldStep";
 import type IBitmapFieldTarget from "../../types/IBitmapFieldTarget";
 import AtomicOwner from "../../utils/AtomicOwner";
 import AtomicOperandType from "./AtomicOperandType";
-import QualifiedCName from "../../utils/QualifiedCName";
 import TypeNameLadder from "../../utils/TypeNameLadder";
 import SymbolTypeResolver from "../../utils/TypeResolver";
 import ESourceLanguage from "../../utils/types/ESourceLanguage";
@@ -236,9 +233,7 @@ class FilePlanner {
 
   private planType(type: TTypeSyntax, scopePath: string): IPlannedType {
     const element = type.kind === "array" ? type.element : type;
-    const deps = this.state.typeBindingDeps((identifiers) =>
-      this.resolveQualifiedType(identifiers),
-    );
+    const deps = this.state.typeBindingDeps();
 
     return {
       named: TypeNameLadder.classifyNamed(element, scopePath, deps),
@@ -370,9 +365,7 @@ class FilePlanner {
     const resolved = TypeNameLadder.resolveWrittenName(
       type,
       scopePath,
-      this.state.typeBindingDeps((identifiers) =>
-        this.resolveQualifiedType(identifiers),
-      ),
+      this.state.typeBindingDeps(),
     );
     // #1508: the other half of ADR-010's promise. A cross-file declaration is
     // reached two ways -- it is CALLED, which the postfix generator records, or
@@ -427,31 +420,6 @@ class FilePlanner {
       typeName,
       this.state.symbolTable,
     );
-  }
-
-  /**
-   * Issue #388: Resolve a qualified type from dot notation to the correct output format.
-   * For C++ namespace types (like MockLib.Parse.ParseResult), uses :: separator.
-   * For cnx scope types (like Motor.State), uses _ separator.
-   *
-   * @param identifiers Array of identifier names forming the qualified type
-   * @returns The resolved type name with appropriate separator
-   */
-  resolveQualifiedType(identifiers: string[]): string {
-    if (identifiers.length === 0) {
-      return "";
-    }
-
-    const firstName = identifiers[0];
-
-    // Check if the first identifier is a C++ scope symbol (namespace, class, enum)
-    if (this.queries.isCppScopeSymbol(firstName)) {
-      // C++ namespace type: join all parts with ::
-      return CppNamespaceUtils.fromParts(identifiers);
-    }
-
-    // cnx scope type: join all parts with _
-    return QualifiedCName.fromParts(identifiers);
   }
 
   /**
@@ -1140,10 +1108,15 @@ class FilePlanner {
     for (const { declaration } of scope.members) {
       if (declaration.kind !== "variableDeclaration") continue;
       if (constructorArguments.has(declaration.name)) continue;
-      const cName = QualifiedNameGenerator.forMember(
+      const symbol = this.state.program?.memberOf(
         declaringScopePath,
         declaration.name,
       );
+      invariant(
+        symbol !== undefined,
+        "3-Declare declares every scope variable",
+      );
+      const cName = symbol.fullyQualifiedCName;
       if (!PrivateConstSpelling.inlines(constants, cName)) continue;
       inlined.add(declaration);
       const narrowing = PrivateConstSpelling.narrowingOf(constants, cName);
@@ -1708,9 +1681,7 @@ class FilePlanner {
         TypeNameLadder.resolveWrittenName(
           type,
           this.state.scopePathOf(typeScopes.get(type) ?? null),
-          this.state.typeBindingDeps((identifiers) =>
-            this.resolveQualifiedType(identifiers),
-          ),
+          this.state.typeBindingDeps(),
         ) ?? type.text
       );
     };
@@ -2640,7 +2611,7 @@ class FilePlanner {
         (symbol) => symbol.kind === "struct" || symbol.kind === "bitmap",
       ),
     )) {
-      cTypes.add(headerCType(named, symbolTable));
+      cTypes.add(headerCType(named));
     }
   }
 
@@ -3025,10 +2996,9 @@ class FilePlanner {
     funcDecl: IFunctionDeclarationSyntax,
     typeScopePath: string,
   ): void {
-    const fullName = QualifiedNameGenerator.forFunctionInScope(
+    const fullName = this.state.declaredCName(
       declaringScopePath,
       funcDecl.name,
-      this.state.program,
     );
     catalog.addFunction(
       fullName,
@@ -3154,10 +3124,9 @@ class FilePlanner {
         continue;
       }
       planParameters(
-        QualifiedNameGenerator.forFunctionInScope(
+        this.state.declaredCName(
           this.state.program?.scopePathOf(scope) ?? scope,
           declaration.name,
-          this.state.program,
         ),
         declaration,
         this.state.scopePathOf(scope),
@@ -3588,22 +3557,16 @@ class FilePlanner {
   }
 
   /**
-   * Resolve the C type string for a named struct field, converting C++ underscore-separated
-   * names to :: notation. Returns undefined if the field is not in the type map.
-   * Issue #502: cnx stores C++ types with _ separator; codegen needs ::.
+   * The C type string of a named struct field, or undefined if the field is not
+   * in the type map. #2116: 1.3 stored a C++ `Ns.T` field type as `Ns::T`
+   * already (#502), so it is read, not re-spelled.
    */
   private _resolveFieldType(
     fieldName: string,
     structFieldTypes: Map<string, string> | undefined,
   ): string | undefined {
     if (!structFieldTypes?.has(fieldName)) return undefined;
-    const fieldType = structFieldTypes.get(fieldName)!;
-    if (!QualifiedCName.isQualified(fieldType)) return fieldType;
-    const parts = QualifiedCName.split(fieldType);
-    if (parts.length > 1 && this.queries.isCppScopeSymbol(parts[0])) {
-      return CppNamespaceUtils.fromParts(parts);
-    }
-    return fieldType;
+    return structFieldTypes.get(fieldName)!;
   }
 
   constantOf(expr: TExpression): number | undefined {
@@ -3647,10 +3610,8 @@ class FilePlanner {
       targetExpr,
       this.state.typingContext(),
     );
-    const name = written?.cType ?? written?.typeName ?? null;
-    return name === null
-      ? null
-      : CppNamespaceUtils.convertToCppNamespace(name, this.state.symbolTable);
+    // #2116: a C++ `Ns.T` is already `Ns::T`, as 1.3 stored it
+    return written?.cType ?? written?.typeName ?? null;
   }
 
   /**

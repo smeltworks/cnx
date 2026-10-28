@@ -14,7 +14,6 @@
  * and the run's target.
  */
 import ExpressionCalls from "./ExpressionCalls";
-import CppNamespaceUtils from "./CppNamespaceUtils";
 import ExpressionShape from "./ExpressionShape";
 import ConstExprLowering from "./ConstExprLowering";
 import ConstantEvaluator from "./ConstantEvaluator";
@@ -26,12 +25,10 @@ import TYPE_WIDTH from "../types/TYPE_WIDTH";
 import ForeignTypeFacts from "./ForeignTypeFacts";
 import LiteralUtils from "./LiteralUtils";
 import CompositeType from "./CompositeType";
-import QualifiedCName from "./QualifiedCName";
 import LengthProperty from "./LengthProperty";
 import TypeHead from "./TypeHead";
 import ResolvedTarget from "./ResolvedTarget";
 import PROPERTY_NAMES from "./constants/PROPERTY_NAMES";
-import ScopeUtils from "./ScopeUtils";
 import SubscriptClassifier from "./SubscriptClassifier";
 import TypeResolver from "./TypeResolver";
 import TypeNameLadder from "./TypeNameLadder";
@@ -80,8 +77,16 @@ type TChainValue =
       readonly cName: string;
       readonly returnType: TType;
     }
-  /** An unresolved name path: a C/C++ namespace, class or function */
-  | { readonly k: "foreignPath"; readonly parts: readonly string[] }
+  /**
+   * An unresolved name path: a C/C++ namespace, class or function. `owner` is
+   * the stored name of the C++ class the path starts in (`dev.read` starts
+   * in `Dev`), undefined for a path written from file scope (#2116)
+   */
+  | {
+      readonly k: "foreignPath";
+      readonly owner: string | undefined;
+      readonly path: readonly string[];
+    }
   /** A header's function pointer, not yet called: its call's result */
   | { readonly k: "foreignFunction"; readonly result: IOperandType | null }
   | { readonly k: "unknown" };
@@ -417,7 +422,7 @@ class OperandTyper {
           next.k === "value" ? (next.registerMember?.cName ?? null) : null,
         subscript,
         after: next.k === "value" ? next.t : null,
-        callee: op.kind === "call" ? OperandTyper.calleeOf(current) : null,
+        callee: op.kind === "call" ? OperandTyper.calleeOf(current, ctx) : null,
         member,
         property:
           before !== null &&
@@ -483,13 +488,7 @@ class OperandTyper {
   ): IOperandType | null {
     const primitive = TypeHead.primitive(name);
     if (primitive !== null) return OperandTyper.fromType(primitive, [], ctx);
-    const cName = OperandTyper.cNameOf(
-      ScopeUtils.qualifyScopeType(
-        name,
-        scopePath,
-        OperandTyper.scopeTypesSeenBy(ctx),
-      ),
-    );
+    const cName = OperandTyper.scopeTypeCName(name, scopePath, ctx);
     const named = OperandTyper.namedTypeOf(cName, ctx);
     if (named !== null) return named;
     const target = OperandTyper.target(ctx);
@@ -720,11 +719,25 @@ class OperandTyper {
    * settled the file's symbols with and codegen qualifies with, so the typer
    * cannot see a sibling's scope type the file never includes.
    */
-  private static scopeTypesSeenBy(
+  /**
+   * ADR-057's binding of a bare `name` written in `scopePath`: the scope's
+   * own type's stored C name when this file sees one, else `name` (#2116).
+   */
+  private static scopeTypeCName(
+    name: string,
+    scopePath: string,
     ctx: ITypingContext,
-  ): (qualifiedName: string) => boolean {
-    return (qualifiedName) =>
-      ctx.program.isScopeTypeVisibleFrom(ctx.sourceFile, qualifiedName);
+  ): string {
+    return OperandTyper.scopeTypeCNameIn(ctx)(scopePath, name) ?? name;
+  }
+
+  /** The stored C name of the scope type a bare name binds to, by identity */
+  private static scopeTypeCNameIn(
+    ctx: ITypingContext,
+  ): (scopePath: string, name: string) => string | undefined {
+    return (scopePath, name) =>
+      ctx.program.scopeTypeOf(ctx.sourceFile, scopePath, name)
+        ?.fullyQualifiedCName;
   }
 
   /**
@@ -1057,7 +1070,13 @@ class OperandTyper {
       TypeNameLadder.classifyNamed(
         type,
         ctx.program.lexicalFrameAt(ctx.sourceFile, at).scopePath,
-        { isScopeType: OperandTyper.scopeTypesSeenBy(ctx) },
+        {
+          scopeTypeCName: OperandTyper.scopeTypeCNameIn(ctx),
+          qualifiedTypeName: (written: string) =>
+            ctx.program.qualifiedTypeName(ctx.sourceFile, written),
+          memberCName: (scopePath: string, name: string) =>
+            ctx.program.memberOf(scopePath, name)?.fullyQualifiedCName,
+        },
       )?.name ?? null;
     if (cName !== null && OperandTyper.declaresNamedType(cName, ctx)) {
       return OperandTyper.fromType({ kind: "struct", name: cName }, [], ctx);
@@ -1325,7 +1344,7 @@ class OperandTyper {
           binding: null,
           value: {
             k: "function",
-            cName: ScopeUtils.getTranspiledCName(fn),
+            cName: fn.fullyQualifiedCName,
             returnType: fn.returnType,
           },
           ops,
@@ -1335,21 +1354,16 @@ class OperandTyper {
     // ADR-057's qualification, the program's one answer: a scope's own type
     // shadows a global one of the name, whatever kind each is (#1668 review:
     // an enums-only predicate let a global enum through a scope's struct)
-    const enumName = ScopeUtils.qualifyScopeType(
-      name,
-      scopePath,
-      OperandTyper.scopeTypesSeenBy(ctx),
-    );
-    const enumCName = OperandTyper.cNameOf(enumName);
+    const enumCName = OperandTyper.scopeTypeCName(name, scopePath, ctx);
     if (symbols.knownEnums.has(enumCName)) {
       return { binding: null, value: { k: "enumType", name: enumCName }, ops };
     }
+    const scoped =
+      scopePath === "" ? undefined : ctx.program.memberOf(scopePath, name);
     const registerCName =
-      scopePath !== "" &&
-      symbols.knownRegisters.has(
-        ScopeUtils.getTranspiledCName({ name, scopePath }),
-      )
-        ? ScopeUtils.getTranspiledCName({ name, scopePath })
+      scoped !== undefined &&
+      symbols.knownRegisters.has(scoped.fullyQualifiedCName)
+        ? scoped.fullyQualifiedCName
         : name;
     if (symbols.knownRegisters.has(registerCName)) {
       return {
@@ -1387,7 +1401,11 @@ class OperandTyper {
     if (binding?.kind === "foreign") {
       return OperandTyper.foreignStart(binding, name, ops, ctx);
     }
-    return { binding: null, value: { k: "foreignPath", parts: [name] }, ops };
+    return {
+      binding: null,
+      value: { k: "foreignPath", owner: undefined, path: [name] },
+      ops,
+    };
   }
 
   /** #1975 review: whether a header declares a function or variable `name` */
@@ -1407,11 +1425,14 @@ class OperandTyper {
     ctx: ITypingContext,
   ): boolean {
     const first = ops[0];
+    // #2116: the member `name` declares, found by (owner, member)
     return (
       first?.kind === "member" &&
-      OperandTyper.headerNamesValue(
-        CppNamespaceUtils.fromParts([name, first.name]),
-        ctx,
+      ForeignTypeFacts.cppPath(ctx.symbolTable, undefined, [
+        name,
+        first.name,
+      ]).some(
+        (symbol) => symbol.kind === "function" || symbol.kind === "variable",
       )
     );
   }
@@ -1483,7 +1504,7 @@ class OperandTyper {
       binding,
       value: t
         ? { k: "value", t, registerMember: null }
-        : { k: "foreignPath", parts: [name] },
+        : { k: "foreignPath", owner: undefined, path: [name] },
       ops,
     };
   }
@@ -1494,25 +1515,29 @@ class OperandTyper {
     name: string,
     ctx: ITypingContext,
   ): TChainValue {
-    const cName =
-      scopePath === ""
-        ? name
-        : ScopeUtils.getTranspiledCName({ name, scopePath });
-    const symbol = ctx.program.symbolByCName(cName);
+    const symbol = ctx.program.memberOf(scopePath, name);
     switch (symbol?.kind) {
       case "variable": {
         const t = OperandTyper.boundValue({ kind: "variable", symbol }, ctx);
         return t ? { k: "value", t, registerMember: null } : UNKNOWN;
       }
       case "function":
-        return { k: "function", cName, returnType: symbol.returnType };
+        return {
+          k: "function",
+          cName: symbol.fullyQualifiedCName,
+          returnType: symbol.returnType,
+        };
       case "enum":
-        return { k: "enumType", name: cName };
+        return { k: "enumType", name: symbol.fullyQualifiedCName };
       case "register":
-        return { k: "register", name: cName };
+        return { k: "register", name: symbol.fullyQualifiedCName };
       default:
         break;
     }
+    // A scope declares no member of the name, so no type answers it either
+    const cName =
+      symbol?.fullyQualifiedCName ?? (scopePath === "" ? name : null);
+    if (cName === null) return UNKNOWN;
     // #1975 review: `Geo.Box`, `this.P`, `global.Point` name a type as a bare
     // `Point` does, so they answer its length properties alike
     const type = OperandTyper.namedTypeOf(cName, ctx);
@@ -1590,7 +1615,7 @@ class OperandTyper {
         // access rules apply to it
         const registerMember = {
           register: current.name,
-          cName: QualifiedCName.fromParts([current.name, member]),
+          cName: info.fullyQualifiedCName,
         };
         // #1514: whether it names a bitmap is asked of the names this file
         // SEES, so an included bitmap counts
@@ -1637,7 +1662,11 @@ class OperandTyper {
         return { k: "value", registerMember, t };
       }
       case "foreignPath":
-        return OperandTyper.foreignPathOf([...current.parts, member], ctx);
+        return OperandTyper.foreignPathOf(
+          current.owner,
+          [...current.path, member],
+          ctx,
+        );
       case "value":
         return OperandTyper.fieldOf(current.t, member, ctx);
       default:
@@ -1839,7 +1868,7 @@ class OperandTyper {
     // static member's call already is, so the call that follows
     // resolves it (#1668 review: an instance method's result was untyped)
     return t.form.kind === "foreign" || t.form.kind === "declared"
-      ? { k: "foreignPath", parts: [typeName, member] }
+      ? { k: "foreignPath", owner: typeName, path: [member] }
       : UNKNOWN;
   }
 
@@ -1850,17 +1879,40 @@ class OperandTyper {
    * (#1668 review: a namespace variable was typed only when called).
    */
   private static foreignPathOf(
-    parts: readonly string[],
+    owner: string | undefined,
+    path: readonly string[],
     ctx: ITypingContext,
   ): TChainValue {
-    const t = ForeignTypeFacts.variableOperand(
-      CppNamespaceUtils.fromParts(parts),
-      ctx.symbolTable,
-      OperandTyper.target(ctx),
-    );
+    const named = ForeignTypeFacts.cppPath(ctx.symbolTable, owner, path)[0];
+    const t =
+      named === undefined
+        ? null
+        : ForeignTypeFacts.variableOperand(
+            named.name,
+            ctx.symbolTable,
+            OperandTyper.target(ctx),
+          );
     return t
       ? { k: "value", registerMember: null, t }
-      : { k: "foreignPath", parts };
+      : { k: "foreignPath", owner, path };
+  }
+
+  /**
+   * The stored name of what a foreign path names: a bare name written at file
+   * scope is its own C name; any longer path is found member by member and
+   * never spelled (#2116). Null when no header declares it.
+   */
+  private static foreignPathName(
+    current: Extract<TChainValue, { k: "foreignPath" }>,
+    ctx: ITypingContext,
+  ): string | null {
+    if (current.owner === undefined && current.path.length === 1) {
+      return current.path[0];
+    }
+    return (
+      ForeignTypeFacts.cppPath(ctx.symbolTable, current.owner, current.path)[0]
+        ?.name ?? null
+    );
   }
 
   /**
@@ -1997,10 +2049,14 @@ class OperandTyper {
   }
 
   /** The C name of the function a call on `current` calls */
-  private static calleeOf(current: TChainValue): string | null {
+  private static calleeOf(
+    current: TChainValue,
+    ctx: ITypingContext,
+  ): string | null {
     if (current.k === "function") return current.cName;
-    if (current.k === "foreignPath")
-      return CppNamespaceUtils.fromParts(current.parts);
+    if (current.k === "foreignPath") {
+      return OperandTyper.foreignPathName(current, ctx);
+    }
     return null;
   }
 
@@ -2045,11 +2101,15 @@ class OperandTyper {
         : UNKNOWN;
     }
     if (current.k === "foreignPath") {
-      const t = ForeignTypeFacts.callOperand(
-        CppNamespaceUtils.fromParts(current.parts),
-        ctx.symbolTable,
-        OperandTyper.target(ctx),
-      );
+      const name = OperandTyper.foreignPathName(current, ctx);
+      const t =
+        name === null
+          ? null
+          : ForeignTypeFacts.callOperand(
+              name,
+              ctx.symbolTable,
+              OperandTyper.target(ctx),
+            );
       return t ? { k: "value", registerMember: null, t } : UNKNOWN;
     }
     return UNKNOWN;
@@ -2084,12 +2144,6 @@ class OperandTyper {
     return typeName !== null && TypeCheckUtils.isInteger(typeName)
       ? TYPE_WIDTH[typeName]
       : null;
-  }
-
-  private static cNameOf(sourceName: string): string {
-    return sourceName.includes(".")
-      ? QualifiedCName.fromParts(sourceName.split("."))
-      : sourceName;
   }
 
   private static booleanValue(hasSideEffect: boolean): IOperandType {

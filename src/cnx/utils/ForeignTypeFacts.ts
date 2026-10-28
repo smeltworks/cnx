@@ -1,5 +1,5 @@
 import type IResolvedSymbols from "../types/IResolvedSymbols";
-import CppNamespaceUtils from "./CppNamespaceUtils";
+import ESourceLanguage from "./types/ESourceLanguage";
 import type TTypeInfo from "../types/TTypeInfo";
 import TYPE_WIDTH from "../types/TYPE_WIDTH";
 import LengthProperty from "./LengthProperty";
@@ -111,6 +111,25 @@ class ForeignTypeFacts {
    * A header symbol by name: C first, then C++ (a `.hpp` in `--cpp` mode).
    * Both carry the same `kind` and `type` string for the shapes read here.
    */
+  /**
+   * The C++ symbols a written path names under `owner` (undefined at file
+   * scope), member by member: each step asks for the next member of the
+   * stored name the last step found, so nothing spells `A::B` (#2116).
+   */
+  static cppPath(
+    lookup: Pick<IForeignSymbolLookup, "getCppMembers">,
+    owner: string | undefined,
+    path: readonly string[],
+  ): TCppSymbol[] {
+    let found = lookup.getCppMembers(owner, path[0]);
+    for (const member of path.slice(1)) {
+      const scope = found[0];
+      if (scope === undefined) return [];
+      found = lookup.getCppMembers(scope.name, member);
+    }
+    return found;
+  }
+
   static foreignSymbol(
     lookup: Pick<IForeignSymbolLookup, "getCSymbol" | "getCppSymbol">,
     name: string,
@@ -240,7 +259,7 @@ class ForeignTypeFacts {
     const symbol = ForeignTypeFacts.foreignSymbol(lookup, name);
     if (symbol?.kind !== "variable" || !symbol.type) return null;
     return ForeignTypeFacts.operandType(
-      ForeignTypeFacts.inNamespaceOf(name, symbol.type, lookup),
+      ForeignTypeFacts.inNamespaceOf(symbol, symbol.type, lookup),
       lookup,
       target,
       symbol.isArray ? (symbol.arrayDimensions ?? [""]) : [],
@@ -250,32 +269,33 @@ class ForeignTypeFacts {
   /**
    * A type spelled inside a C++ namespace, as C++ looks it up: `PS` in
    * `namespace NS` is `NS::PS` when NS declares one, else the enclosing
-   * namespace's, out to the global one. A header's collectors key a
-   * namespace's types by their full name, and a variable records its type
-   * as written (#1668 review: `NS.nps.pf` was untyped).
+   * namespace's, out to the global one. A variable records its type as
+   * written (#1668 review: `NS.nps.pf` was untyped). Each scope is asked for
+   * its member by (scope, name) and the walk climbs through each scope's
+   * stored parent, so no `NS::PS` is split or spelled (#2116).
    */
   private static inNamespaceOf(
-    qualifiedName: string,
+    variable: TCSymbol | TCppSymbol,
     type: string,
     lookup: IForeignSymbolLookup,
   ): string {
     const spelling = ForeignTypeFacts.spellingOf(type);
-    const scopes = qualifiedName.split("::").slice(0, -1);
-    for (let depth = scopes.length; depth > 0; depth -= 1) {
-      const candidate = CppNamespaceUtils.fromParts([
-        ...scopes.slice(0, depth),
-        spelling,
-      ]);
-      const symbol = lookup.getCppSymbol(candidate);
-      if (
-        symbol !== undefined &&
-        (symbol.kind === "type" ||
-          symbol.kind === "struct" ||
-          symbol.kind === "class" ||
-          symbol.kind === "enum")
-      ) {
-        return candidate;
-      }
+    let scope =
+      variable.sourceLanguage === ESourceLanguage.Cpp
+        ? variable.parent
+        : undefined;
+    while (scope !== undefined) {
+      const named = lookup
+        .getCppMembers(scope, spelling)
+        .find(
+          (symbol) =>
+            symbol.kind === "type" ||
+            symbol.kind === "struct" ||
+            symbol.kind === "class" ||
+            symbol.kind === "enum",
+        );
+      if (named !== undefined) return named.name;
+      scope = lookup.getCppSymbol(scope)?.parent;
     }
     return type;
   }

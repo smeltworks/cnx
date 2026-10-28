@@ -17,10 +17,7 @@ interface ISeparatorContext {
   /** Whether this is a C++ namespace/class access requiring :: */
   readonly isCppAccess: boolean;
 
-  /** The scoped register name if using `this.REG`, otherwise null */
-  readonly scopedRegName: string | null;
-
-  /** Whether scopedRegName refers to a known register */
+  /** Whether `this.REG` names a register the current scope declares */
   readonly isScopedRegister: boolean;
 }
 

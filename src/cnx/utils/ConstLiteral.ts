@@ -2,7 +2,6 @@ import type IProgram from "../types/IProgram";
 import type IVariableSymbol from "../types/symbols/IVariableSymbol";
 import type TConstLiteral from "../types/TConstLiteral";
 import type TSettledConst from "../types/TSettledConst";
-import QualifiedCName from "./QualifiedCName";
 import ConstantFold from "./ConstantFold";
 
 /**
@@ -187,16 +186,14 @@ class ConstLiteral {
   ): string | null {
     const enumSymbol = program.symbolByCName(settled.typeName);
     if (enumSymbol?.kind !== "enum") return null;
-    const names = [...enumSymbol.members.keys()];
+    const members = [...enumSymbol.members.values()];
     const index = program
       .enumMemberValues(settled.typeName)
       .findIndex(
         (member) =>
           member.kind === "value" && member.value.toString() === settled.digits,
       );
-    return index < 0
-      ? null
-      : QualifiedCName.fromParts([settled.typeName, names[index]]);
+    return index < 0 ? null : members[index].fullyQualifiedCName;
   }
 }
 

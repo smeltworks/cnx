@@ -36,7 +36,7 @@
  */
 import type INamedTypeResolution from "../types/INamedTypeResolution";
 import type ITypeBindingDeps from "../types/ITypeBindingDeps";
-import QualifiedCName from "./QualifiedCName";
+import invariant from "./invariant";
 import ScopeUtils from "./ScopeUtils";
 import type TTypeSyntax from "../types/syntax/TTypeSyntax";
 import type ISyntaxNode from "../types/syntax/ISyntaxNode";
@@ -72,7 +72,9 @@ class TypeNameLadder {
         return {
           branch: "this",
           written: type.name,
-          name: ScopeUtils.qualifyInScope(type.name, scopePath),
+          name:
+            deps?.memberCName?.(scopePath, type.name) ??
+            ScopeUtils.qualifyInScope(type.name, scopePath),
         };
       // global.T -- explicitly opts out of scope qualification
       case "global":
@@ -82,22 +84,23 @@ class TypeNameLadder {
         return {
           branch: "qualified",
           written: type.path.join("."),
-          name: deps?.resolveQualifiedType
-            ? deps.resolveQualifiedType([...type.path])
-            : QualifiedCName.fromParts([...type.path]),
+          // #2116: 1.3 spelled every written `Scope.T` / `Ns.T` once
+          name: TypeNameLadder.qualifiedName(deps, type.path.join(".")),
         };
       // Bare T -- the ONLY branch that resolves local -> scope -> global
       case "user":
         return {
           branch: "bare",
           written: type.name,
-          name: deps?.isScopeType
-            ? ScopeUtils.qualifyScopeType(
-                type.name,
-                scopePath,
-                deps.isScopeType,
-              )
-            : type.name,
+          name: deps?.scopeTypeCName
+            ? (deps.scopeTypeCName(scopePath, type.name) ?? type.name)
+            : deps?.isScopeType
+              ? ScopeUtils.qualifyScopeType(
+                  type.name,
+                  scopePath,
+                  deps.isScopeType,
+                )
+              : type.name,
         };
       default:
         return null;
@@ -133,6 +136,18 @@ class TypeNameLadder {
       default:
         return null;
     }
+  }
+
+  /** The spelling 1.3 stored for a written `Scope.T`; every caller supplies it */
+  private static qualifiedName(
+    deps: ITypeBindingDeps | undefined,
+    written: string,
+  ): string {
+    invariant(
+      deps?.qualifiedTypeName !== undefined,
+      `a qualified type ('${written}') is read from 1.3's spellings`,
+    );
+    return deps.qualifiedTypeName(written);
   }
 }
 

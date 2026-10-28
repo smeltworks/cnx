@@ -2,6 +2,7 @@ import type TStructLayout from "./TStructLayout";
 import type IStructFieldInfo from "./symbols/IStructFieldInfo";
 import type TCSymbol from "./symbols/c/TCSymbol";
 import type TCppSymbol from "./symbols/cpp/TCppSymbol";
+import type IResolvedSymbols from "./IResolvedSymbols";
 
 /**
  * What the operand typer reads about C and C++ headers (#1668). Structural,
@@ -12,6 +13,8 @@ interface IForeignSymbolLookup {
   getCppSymbol(name: string): TCppSymbol | undefined;
   getCOverloads(name: string): TCSymbol[];
   getCppOverloads(name: string): TCppSymbol[];
+  /** #2116: the (owner, member) lookup `IResolvedSymbols` declares */
+  readonly getCppMembers: IResolvedSymbols["getCppMembers"];
   getStructFieldInfo(
     structName: string,
     fieldName: string,

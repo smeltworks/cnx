@@ -23,6 +23,7 @@ function typeInputWith(symbolTable: SymbolTable) {
   return {
     symbolTable,
     enumMembers: new Map(),
+    memberCNames: new Map(),
     structFields: new Map(),
     structFieldDimensions: new Map(),
     bitmapBackingType: new Map(),
@@ -654,12 +655,13 @@ describe("CHeaderGenerator", () => {
       );
     });
 
-    it("filters variables with namespace underscore format types using symbol table", () => {
+    it("filters variables of a C++ namespaced type, spelled as 1.3 stores it", () => {
       const generator = new CHeaderGenerator();
       const symbolTable = new SymbolTable();
-      // Register a C++ namespace symbol to make MyLib__MyClass appear as namespace type
+      // MyLib is a C++ namespace, so 1.3 stores `MyLib.MyClass` as `MyLib::MyClass`
       symbolTable.addCppSymbol({
         name: "MyLib",
+        unqualifiedName: "MyLib",
         kind: "namespace",
         visibility: "public",
         sourceFile: "MyLib.hpp",
@@ -668,12 +670,13 @@ describe("CHeaderGenerator", () => {
       });
 
       const symbols: IHeaderSymbol[] = [
-        createVariableSymbol("instance", "MyLib__MyClass"),
+        createVariableSymbol("instance", "MyLib::MyClass"),
       ];
 
       const typeInput = {
         symbolTable,
         enumMembers: new Map(),
+        memberCNames: new Map(),
         structFields: new Map(),
         structFieldDimensions: new Map(),
         bitmapBackingType: new Map(),
@@ -682,16 +685,17 @@ describe("CHeaderGenerator", () => {
 
       const result = generator.generate(symbols, "test.h", {}, typeInput);
 
-      // Variable with underscore-format namespace type should be filtered
-      expect(result).not.toContain("MyLib__MyClass instance");
+      // A C header cannot declare a variable of a C++ namespaced type
+      expect(result).not.toContain("MyLib::MyClass instance");
     });
 
-    it("filters external types with underscore format using symbol table", () => {
+    it("does not forward-declare a C++ namespaced type, spelled as 1.3 stores it", () => {
       const generator = new CHeaderGenerator();
       const symbolTable = new SymbolTable();
       // Register a C++ namespace symbol
       symbolTable.addCppSymbol({
         name: "LibName",
+        unqualifiedName: "LibName",
         kind: "namespace",
         visibility: "public",
         sourceFile: "LibName.hpp",
@@ -701,13 +705,14 @@ describe("CHeaderGenerator", () => {
 
       const symbols: IHeaderSymbol[] = [
         createFunctionSymbol("process", "void", [
-          createParam("obj", "LibName__Object"),
+          createParam("obj", "LibName::Object"),
         ]),
       ];
 
       const typeInput = {
         symbolTable,
         enumMembers: new Map(),
+        memberCNames: new Map(),
         structFields: new Map(),
         structFieldDimensions: new Map(),
         bitmapBackingType: new Map(),
@@ -716,8 +721,8 @@ describe("CHeaderGenerator", () => {
 
       const result = generator.generate(symbols, "test.h", {}, typeInput);
 
-      // Should not forward-declare underscore-format namespace types
-      expect(result).not.toContain("typedef struct LibName__Object");
+      // Should not forward-declare C++ namespaced types
+      expect(result).not.toContain("typedef struct LibName::Object");
     });
 
     it("includes external type headers when specified", () => {
@@ -795,6 +800,7 @@ describe("CHeaderGenerator", () => {
       const typeInput = {
         symbolTable: new SymbolTable(),
         enumMembers: new Map(),
+        memberCNames: new Map(),
         structFields: new Map([["Point", pointFieldTypes]]),
         structFieldDimensions: new Map([["Point", new Map()]]),
         bitmapBackingType: new Map(),

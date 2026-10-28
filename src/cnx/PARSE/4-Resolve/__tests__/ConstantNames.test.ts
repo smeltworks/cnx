@@ -264,7 +264,7 @@ scope Motor {
     }
     u8[4] buf;
 }
-u8 after;`;
+Motor.Config after;`;
     const INSIDE = { line: 6, column: 4 };
     const OUTSIDE = { line: 8, column: 0 };
 
@@ -274,6 +274,7 @@ u8 after;`;
       ["a scope's type, bare, inside it", "Config", INSIDE, "Motor__Config"],
       ["the same bare name outside it", "Config", OUTSIDE, "Config"],
       ["a `this.` type", "this.Config", INSIDE, "Motor__Config"],
+      // #2116: the spelling 1.3 gave the `Motor.Config` the file writes
       ["a qualified type", "Motor.Config", OUTSIDE, "Motor__Config"],
       ["a `global.` type", "global.Config", INSIDE, "Config"],
     ])("names %s", (_label, typeName, at, expected) => {

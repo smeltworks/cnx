@@ -92,6 +92,7 @@ describe("ForeignTypeFacts", () => {
         visibility: "public",
         kind: "variable",
         name: "cppScale",
+        unqualifiedName: "cppScale",
         type: "float",
       });
       expect(ForeignTypeFacts.variableType(symbolTable, "cppScale", null)).toBe(
@@ -134,6 +135,7 @@ describe("ForeignTypeFacts", () => {
         visibility: "public",
         kind: "variable",
         name: "cppLevel",
+        unqualifiedName: "cppLevel",
         type: "double",
       });
       expect(

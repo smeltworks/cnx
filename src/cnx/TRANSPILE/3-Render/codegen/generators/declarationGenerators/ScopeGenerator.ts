@@ -44,7 +44,7 @@ import IPlannedScope from "../../types/IPlannedScope";
 import TGeneratorFn from "../TGeneratorFn";
 import TPlannedScopeMember from "../../types/TPlannedScopeMember";
 import TPlannedScopeVariable from "../../types/TPlannedScopeVariable";
-import registerGeneratorFor from "./RegisterGenerator";
+import generateRegister from "./RegisterGenerator";
 import AdrProvenance from "../../../../../instrumentation/AdrProvenance";
 import DeclaredPointer from "../../../../../utils/DeclaredPointer";
 import generateEnumHeader from "../../../headers/generators/generateEnumHeader";
@@ -245,7 +245,6 @@ function renderScopeFunction(
  * Render a single scope member and return the lines it contributes.
  */
 function renderScopeMember(
-  plan: IPlannedScope,
   member: TPlannedScopeMember,
   input: IGeneratorInput,
   state: IGeneratorState,
@@ -268,7 +267,7 @@ function renderScopeMember(
       return renderScopeFunction(member, orchestrator);
 
     case "register": {
-      const result = registerGeneratorFor(plan.declaringScopePath)(
+      const result = generateRegister(
         member.planRegister(),
         input,
         state,
@@ -315,7 +314,7 @@ const generateScope: TGeneratorFn<IPlannedScope> = (
   ];
 
   for (const member of plan.members) {
-    lines.push(...renderScopeMember(plan, member, input, state, orchestrator));
+    lines.push(...renderScopeMember(member, input, state, orchestrator));
   }
 
   lines.push("");

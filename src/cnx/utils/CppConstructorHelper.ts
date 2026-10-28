@@ -13,76 +13,32 @@
  * a codegen fact.
  */
 
-import TSymbolKind from "../types/symbol-kinds/TSymbolKind";
-import CppNamespaceUtils from "./CppNamespaceUtils";
-import QualifiedCName from "./QualifiedCName";
-
-/**
- * Symbol lookup interface for constructor detection
- */
-interface ISymbolLookup {
-  getSymbol(name: string): { kind: TSymbolKind } | undefined;
-}
+import type IResolvedSymbols from "../types/IResolvedSymbols";
 
 class CppConstructorHelper {
   /**
-   * Convert underscore format to :: for namespaced types.
-   * e.g., TestNS__MyClass -> TestNS::MyClass
-   * A single underscore is part of a component name and is preserved:
-   * Adafruit_BMP280 -> Adafruit_BMP280 (not Adafruit::BMP280)
-   */
-  static toQualifiedName(typeName: string): string {
-    if (QualifiedCName.isQualified(typeName) && !typeName.includes("::")) {
-      // Split on the qualified-name separator rather than replacing every
-      // underscore: a component may legally contain single underscores
-      // (`tick_count`), and a blanket replace would mangle those too.
-      return QualifiedCName.toCppQualified(typeName, "::");
-    }
-    return typeName;
-  }
-
-  /**
-   * Extract just the class name (part after last ::).
-   * e.g., TestNS::MyClass -> MyClass, CppTestClass -> CppTestClass
-   */
-  static extractClassName(qualifiedName: string): string {
-    const parts = qualifiedName.split("::");
-    return parts.at(-1)!;
-  }
-
-  /**
-   * Build the constructor name pattern.
-   * e.g., TestNS::MyClass -> TestNS::MyClass::MyClass
-   */
-  static buildConstructorName(
-    qualifiedName: string,
-    className: string,
-  ): string {
-    return CppNamespaceUtils.qualify(qualifiedName, className);
-  }
-
-  /**
-   * Check if a type has a C++ constructor in the symbol table.
+   * Check if a type has a C++ constructor in the symbol table: a function the
+   * class declares under its own unqualified name.
    *
-   * @param typeName - The type name (may use underscore or :: notation)
+   * @param typeName - The type's C++ name as 1.3 stored it (`Ns::T`), read
+   *   as-is and never re-spelled; the constructor is found by (class, name),
+   *   so nothing spells `Ns::T::T` (#2116)
    * @param symbolTable - Symbol table for lookup (may be null)
    * @returns true if a constructor function symbol exists
    */
   static hasConstructor(
     typeName: string,
-    symbolTable: ISymbolLookup | null | undefined,
+    symbolTable:
+      | Pick<IResolvedSymbols, "getCppSymbol" | "getCppMembers">
+      | null
+      | undefined,
   ): boolean {
     if (!symbolTable) return false;
-
-    const qualifiedName = CppConstructorHelper.toQualifiedName(typeName);
-    const className = CppConstructorHelper.extractClassName(qualifiedName);
-    const constructorName = CppConstructorHelper.buildConstructorName(
-      qualifiedName,
-      className,
-    );
-
-    const constructorSymbol = symbolTable.getSymbol(constructorName);
-    return constructorSymbol?.kind === "function";
+    const cls = symbolTable.getCppSymbol(typeName);
+    if (cls === undefined) return false;
+    return symbolTable
+      .getCppMembers(cls.name, cls.unqualifiedName)
+      .some((member) => member.kind === "function");
   }
 }
 

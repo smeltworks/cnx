@@ -860,6 +860,7 @@ describe("HeaderGeneratorUtils", () => {
         structFields: new Map(),
         structFieldDimensions: new Map(),
         enumMembers: new Map(),
+        memberCNames: new Map(),
         bitmapBackingType: new Map(),
         bitmapFields: new Map(),
         callbackTypes: undefined,
@@ -877,6 +878,7 @@ describe("HeaderGeneratorUtils", () => {
         structFields: new Map(),
         structFieldDimensions: new Map(),
         enumMembers: new Map(),
+        memberCNames: new Map(),
         bitmapBackingType: new Map(),
         bitmapFields: new Map(),
         callbackTypes: new Map([
@@ -906,6 +908,7 @@ describe("HeaderGeneratorUtils", () => {
         structFields: new Map(),
         structFieldDimensions: new Map(),
         enumMembers: new Map(),
+        memberCNames: new Map(),
         bitmapBackingType: new Map(),
         bitmapFields: new Map(),
         callbackTypes: new Map([
@@ -940,6 +943,7 @@ describe("HeaderGeneratorUtils", () => {
         structFields: new Map(),
         structFieldDimensions: new Map(),
         enumMembers: new Map(),
+        memberCNames: new Map(),
         bitmapBackingType: new Map(),
         bitmapFields: new Map(),
         callbackTypes: new Map([
@@ -970,6 +974,7 @@ describe("HeaderGeneratorUtils", () => {
         structFields: new Map(),
         structFieldDimensions: new Map(),
         enumMembers: new Map(),
+        memberCNames: new Map(),
         bitmapBackingType: new Map(),
         bitmapFields: new Map(),
         callbackTypes: new Map([
@@ -1009,6 +1014,7 @@ describe("HeaderGeneratorUtils", () => {
         structFields: new Map(),
         structFieldDimensions: new Map(),
         enumMembers: new Map(),
+        memberCNames: new Map(),
         bitmapBackingType: new Map(),
         bitmapFields: new Map(),
         callbackTypes: undefined,
@@ -1025,6 +1031,7 @@ describe("HeaderGeneratorUtils", () => {
         structFields: new Map(),
         structFieldDimensions: new Map(),
         enumMembers: new Map(),
+        memberCNames: new Map(),
         bitmapBackingType: new Map(),
         bitmapFields: new Map(),
         callbackTypes: new Map([
@@ -1052,6 +1059,7 @@ describe("HeaderGeneratorUtils", () => {
         structFields: new Map(),
         structFieldDimensions: new Map(),
         enumMembers: new Map(),
+        memberCNames: new Map(),
         bitmapBackingType: new Map(),
         bitmapFields: new Map(),
         callbackTypes: new Map([
@@ -1077,6 +1085,7 @@ describe("HeaderGeneratorUtils", () => {
         structFields: new Map(),
         structFieldDimensions: new Map(),
         enumMembers: new Map(),
+        memberCNames: new Map(),
         bitmapBackingType: new Map(),
         bitmapFields: new Map(),
         callbackTypes: new Map([
@@ -1102,6 +1111,7 @@ describe("HeaderGeneratorUtils", () => {
         structFields: new Map(),
         structFieldDimensions: new Map(),
         enumMembers: new Map(),
+        memberCNames: new Map(),
         bitmapBackingType: new Map(),
         bitmapFields: new Map(),
         callbackTypes: new Map([

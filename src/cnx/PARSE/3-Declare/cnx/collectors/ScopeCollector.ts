@@ -22,6 +22,7 @@ import VariableCollector from "./VariableCollector";
 import RegisterCollector from "./RegisterCollector";
 import type ISourceSpan from "../../../../types/ISourceSpan";
 import UNSET_SOURCE_SPAN from "../../../../types/UNSET_SOURCE_SPAN";
+import type IDeclareTypeFacts from "../../types/IDeclareTypeFacts";
 
 type TScopeSyntax = Extract<TDeclarationSyntax, { kind: "scope" }>;
 type TScopeMemberSyntax = Exclude<
@@ -42,7 +43,7 @@ class ScopeCollector {
    *
    * @param syntax The scope declaration, as 1.2 lowered it
    * @param sourceFile Source file path
-   * @param isScopeType ADR-057: predicate answering whether a *qualified* name
+   * @param typeFacts ADR-057: predicate answering whether a *qualified* name
    *                    is a type declared in a scope. Supplied by CnxResolver
    *                    from a pre-pass so the answer is complete before any
    *                    member's types are resolved.
@@ -52,7 +53,7 @@ class ScopeCollector {
     registry: SymbolRegistry,
     syntax: TScopeSyntax,
     sourceFile: string,
-    isScopeType?: (qualifiedName: string) => boolean,
+    typeFacts?: IDeclareTypeFacts,
   ): IScopeCollectorResult {
     const scopeName = syntax.name;
     const span = syntax.span;
@@ -152,7 +153,7 @@ class ScopeCollector {
           sourceFile,
           scopePath,
           visibility,
-          isScopeType,
+          typeFacts,
         ),
       );
     }
@@ -167,7 +168,7 @@ class ScopeCollector {
     sourceFile: string,
     scopePath: string,
     visibility: TVisibility,
-    isScopeType?: (qualifiedName: string) => boolean,
+    typeFacts?: IDeclareTypeFacts,
   ): TSymbol {
     switch (declaration.kind) {
       case "variableDeclaration":
@@ -177,7 +178,7 @@ class ScopeCollector {
           sourceFile,
           scopePath,
           visibility,
-          isScopeType,
+          typeFacts,
         );
       case "function":
         // collectAndRegister populates both memberSymbols and SymbolRegistry
@@ -187,7 +188,7 @@ class ScopeCollector {
           sourceFile,
           scopePath,
           visibility,
-          isScopeType,
+          typeFacts,
         );
       case "enum":
         return EnumCollector.collect(
@@ -209,7 +210,7 @@ class ScopeCollector {
           sourceFile,
           scopePath,
           visibility,
-          isScopeType,
+          typeFacts,
         );
       case "register":
         return RegisterCollector.collect(
@@ -217,7 +218,7 @@ class ScopeCollector {
           sourceFile,
           scopePath,
           visibility,
-          isScopeType,
+          typeFacts,
         );
     }
   }

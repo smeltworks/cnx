@@ -13,8 +13,8 @@
  * ignores a leading minus -- `'-'` is not a negative character.
  */
 type TPlannedCaseLabel =
-  /** `EState.IDLE` -- the identifiers of a qualified type, in order. */
-  | { readonly kind: "qualified"; readonly parts: readonly string[] }
+  /** `EState.IDLE` -- the C name 3-Declare gave the symbol it names (#2116) */
+  | { readonly kind: "qualified"; readonly cName: string }
   /** A bare identifier: a const, or an enum member the switch's type declares. */
   | {
       readonly kind: "identifier";

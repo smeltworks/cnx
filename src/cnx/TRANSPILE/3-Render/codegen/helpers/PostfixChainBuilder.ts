@@ -10,6 +10,7 @@
 
 import IPostfixChainDeps from "../types/IPostfixChainDeps";
 import IPostfixOperation from "../types/IPostfixOperation";
+import MemberSeparatorResolver from "./MemberSeparatorResolver";
 
 /**
  * Static utility for building postfix operation chains
@@ -62,8 +63,8 @@ class PostfixChainBuilder {
     deps: IPostfixChainDeps,
   ): string {
     const chainWithMember = [...identifierChain, memberName];
-    const separator = deps.getSeparator(isFirstOp, chainWithMember);
-    return `${result}${separator}${memberName}`;
+    const step = deps.memberStep(isFirstOp, chainWithMember, result);
+    return MemberSeparatorResolver.join(result, step, memberName);
   }
 
   /**

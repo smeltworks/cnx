@@ -95,6 +95,7 @@ class ClassCollector {
     const classSymbol: ICppClassSymbol = {
       kind: "class",
       name: fullName,
+      unqualifiedName: name,
       sourceFile,
       span,
       sourceLanguage: ESourceLanguage.Cpp,
@@ -118,7 +119,9 @@ class ClassCollector {
    */
   static collectAnonymousTypedef(
     classSyntax: ICppClassSyntax,
+    unqualifiedName: string,
     typedefName: string,
+    currentNamespace: string | undefined,
     sourceFile: string,
     span: ISourceSpan,
     symbolTable: SymbolTable,
@@ -146,10 +149,12 @@ class ClassCollector {
     const classSymbol: ICppClassSymbol = {
       kind: "class",
       name: typedefName,
+      unqualifiedName,
       sourceFile,
       span,
       sourceLanguage: ESourceLanguage.Cpp,
       visibility: "public",
+      parent: currentNamespace,
       fields: fields.size > 0 ? fields : undefined,
     };
 
@@ -268,6 +273,7 @@ class ClassCollector {
     return {
       kind: "variable",
       name: CppNamespaceUtils.qualify(ctx.className, name),
+      unqualifiedName: name,
       sourceFile: ctx.sourceFile,
       span: member.span,
       sourceLanguage: ESourceLanguage.Cpp,

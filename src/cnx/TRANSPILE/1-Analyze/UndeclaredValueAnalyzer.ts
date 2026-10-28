@@ -30,6 +30,7 @@
  * diagnostics for one name is worse than one.
  */
 
+import type TSymbol from "../../types/symbols/TSymbol";
 import type ISourcePosition from "../../utils/types/ISourcePosition";
 import BUILTIN_TYPE_NAMES from "./BUILTIN_TYPE_NAMES";
 import PrimitiveKindUtils from "../../utils/PrimitiveKindUtils";
@@ -47,7 +48,6 @@ import type IChainHead from "../../types/IChainHead";
 import IUndeclaredValueError from "./types/IUndeclaredValueError";
 import NameExistence from "../../PARSE/3-Declare/NameExistence";
 import REJECTED_KEYWORDS from "./REJECTED_KEYWORDS";
-import ScopeUtils from "../../utils/ScopeUtils";
 import PositionFreeScopeMember from "../../utils/PositionFreeScopeMember";
 import OperandTyper from "../../utils/OperandTyper";
 import TChainRoot from "../../types/TChainRoot";
@@ -307,6 +307,21 @@ class UndeclaredValueAnalyzer {
     );
   }
 
+  /** `member` is a value the symbol layer knows, by the C name 3-Declare gave it */
+  private static isValueMember(
+    member: TSymbol | undefined,
+    context: IAnalysisContext,
+  ): boolean {
+    return (
+      member !== undefined &&
+      NameExistence.isValueName(
+        member.fullyQualifiedCName,
+        context.symbols,
+        context.symbolTable,
+      )
+    );
+  }
+
   /**
    * Whether a name is a value declared by the scope at `scopePath`.
    *
@@ -324,10 +339,9 @@ class UndeclaredValueAnalyzer {
   ): boolean {
     const symbols = context.symbols;
     return (
-      NameExistence.isValueName(
-        ScopeUtils.qualifyInScope(name, scopePath),
-        symbols,
-        context.symbolTable,
+      UndeclaredValueAnalyzer.isValueMember(
+        context.program.memberOf(scopePath, name),
+        context,
       ) ||
       PositionFreeScopeMember.is(
         symbols.scopeMembers.get(scopePath),

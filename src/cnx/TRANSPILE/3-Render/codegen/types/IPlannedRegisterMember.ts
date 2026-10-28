@@ -28,8 +28,8 @@
 import type TRegisterAccessMode from "../../../../types/TRegisterAccessMode";
 
 interface IPlannedRegisterMember {
-  /** Member name as written, e.g. `DR`. Unqualified -- the prefix is applied by the formatter. */
-  readonly name: string;
+  /** The C name 3-Declare gave the member, e.g. `GPIO7__DR` (#2116). */
+  readonly cName: string;
 
   /** The rendered C type, e.g. `uint32_t`. Already ADR-057 resolved. */
   readonly cType: string;

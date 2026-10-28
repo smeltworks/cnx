@@ -55,7 +55,11 @@ class StructDefault {
   static factsOf(
     symbols: Pick<
       ICodeGenSymbols,
-      "structFields" | "functionReturnTypes" | "knownEnums" | "enumMembers"
+      | "structFields"
+      | "functionReturnTypes"
+      | "knownEnums"
+      | "enumMembers"
+      | "memberCNames"
     >,
   ): IStructDefaultFacts {
     return {
@@ -63,7 +67,7 @@ class StructDefault {
       isCallbackType: (typeName) => symbols.functionReturnTypes.has(typeName),
       enumZeroOf: (typeName) =>
         symbols.knownEnums.has(typeName)
-          ? EnumZeroValue.of(symbols.enumMembers, typeName)
+          ? EnumZeroValue.of(symbols, typeName)
           : null,
     };
   }

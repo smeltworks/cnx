@@ -15,6 +15,7 @@ function createInput(
 ): IHeaderTypeInput {
   return {
     enumMembers: new Map(),
+    memberCNames: new Map(),
     structFields: new Map(),
     structFieldDimensions: new Map(),
     bitmapBackingType,

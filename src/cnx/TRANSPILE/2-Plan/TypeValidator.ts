@@ -8,8 +8,7 @@ import type TValueBinding from "../../types/TValueBinding";
 import type ISourcePosition from "../../utils/types/ISourcePosition";
 import AdrProvenance from "../../instrumentation/AdrProvenance";
 // SonarCloud S3776: Extracted literal parsing to reduce complexity
-import QualifiedCName from "../../utils/QualifiedCName";
-import QualifiedNameGenerator from "../../utils/QualifiedNameGenerator";
+import invariant from "../../utils/invariant";
 import PositionFreeScopeMember from "../../utils/PositionFreeScopeMember";
 import type TranspileState from "../TranspileState";
 
@@ -187,9 +186,28 @@ class TypeValidator {
         state.typingContext().program,
       )
     ) {
-      return QualifiedNameGenerator.forMember(currentScopePath, identifier);
+      const member = state
+        .typingContext()
+        .program.memberOf(currentScopePath, identifier);
+      invariant(
+        member !== undefined,
+        "a position-free scope member is declared",
+      );
+      return member.fullyQualifiedCName;
     }
     return null;
+  }
+
+  private static _isDeclaredInScope(
+    cName: string,
+    currentScopePath: string,
+    state: TranspileState,
+  ): boolean {
+    return (
+      currentScopePath !== "" &&
+      state.typingContext().program.symbolByCName(cName)?.scopePath ===
+        currentScopePath
+    );
   }
 
   private static _isKnownGlobalIdentifier(
@@ -200,21 +218,9 @@ class TypeValidator {
   ): boolean {
     if (
       state.knownFunctions.has(identifier) &&
-      // #1295: pass the PATH, not its leaf. `isInScope` needs no help encoding
-      // it -- `prefixFor` runs the path through `toParts`, which splits on the
-      // source separator, so `Outer.Inner` becomes the prefix `Outer__Inner__`
-      // where `leafOf` gave `Inner__`. File scope is handled before that, by
-      // `isInScope`'s own `if (!scopeName) return false`: `prefixFor("")` would
-      // otherwise return the bogus `"__"`.
-      //
-      // NO GATE COVERS THIS CALL SITE -- review is what catches it. An earlier
-      // revision of this comment claimed the scope-join inventory did, which is
-      // the guard-that-cannot-fail shape CLAUDE.md flags: that scan matches the
-      // single literal `QualifiedCName.fromParts([` and inspects only the first
-      // ARRAY ELEMENT, so `isInScope(...)`, `prefixFor(...)`, and a
-      // `ScopeUtils.leafOf(...)` passed as an argument here are all invisible to
-      // it. Verified: re-inlining the leaf reddens nothing in that check.
-      !QualifiedCName.isInScope(identifier, currentScopePath)
+      // #2116: whether the function sits in this scope is its symbol's
+      // `scopePath`, not a prefix read back off its C name
+      !TypeValidator._isDeclaredInScope(identifier, currentScopePath, state)
     ) {
       return true;
     }

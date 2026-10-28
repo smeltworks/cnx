@@ -42,8 +42,7 @@ const ENV: IConstantEnvironment = {
   // The printer writes what the environment names; ConstantNames.cTypeName
   // is the rule (ConstantNames.test.ts)
   isTypeName: () => true,
-  cTypeName: (t) =>
-    CNX_TO_C_TYPE_MAP[t] ?? QualifiedCName.fromParts(t.split(".")),
+  cTypeName: (t) => CNX_TO_C_TYPE_MAP[t] ?? QualifiedCName.fromSourceName(t),
 };
 
 describe("ConstExprPrinter (#1175)", () => {

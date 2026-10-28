@@ -41,10 +41,9 @@ import ICodeGenSymbols from "../../types/ICodeGenSymbols";
 import IUndeclaredTypeError from "./types/IUndeclaredTypeError";
 import NameExistence from "../../PARSE/3-Declare/NameExistence";
 import type IResolvedSymbols from "../../types/IResolvedSymbols";
-import ScopeUtils from "../../utils/ScopeUtils";
-import QualifiedCName from "../../utils/QualifiedCName";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionChildren from "../../utils/ExpressionChildren";
+import type IProgram from "../../types/IProgram";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
@@ -80,19 +79,18 @@ class UndeclaredTypeWalk {
         this.analyzer.checkUse(type.name, scope, type.span);
         return;
       case "scoped":
-        this.analyzer.checkQualifiedUse(
-          type.text,
-          ScopeUtils.getCnxScopedName({ name: type.name, scopePath: scope }),
-          type.span,
-        );
+        this.analyzer.checkScopedUse(type.text, type.name, scope, type.span);
         return;
       case "global":
         this.analyzer.checkQualifiedUse(type.text, type.name, type.span);
         return;
       case "qualified":
-        this.analyzer.checkQualifiedUse(
+        // #2116: the member the path names, by identity, read for the
+        // cnxScopedName 3-Declare stored -- not the path re-spelled to match it
+        this.analyzer.checkScopedUse(
           type.text,
-          QualifiedCName.fromSourceParts(type.path),
+          type.path.slice(1).join("."),
+          type.path[0],
           type.span,
         );
         return;
@@ -182,15 +180,26 @@ class UndeclaredTypeAnalyzer {
    * predicate 1.4 binds the name with (`DeferredTypes.settleType`).
    */
   private boundName(typeName: string, scope: string): string {
-    const bound = ScopeUtils.qualifyScopeType(typeName, scope, (qualified) =>
-      this.context.program.isScopeTypeVisibleFrom(
-        this.context.sourceFile,
-        qualified,
-      ),
+    return (
+      this.context.program.scopeTypeOf(this.context.sourceFile, scope, typeName)
+        ?.cnxScopedName ?? typeName
     );
-    return bound === typeName
-      ? typeName
-      : ScopeUtils.getCnxScopedName({ name: typeName, scopePath: scope });
+  }
+
+  /**
+   * A `this.T` use: the scope's own `T`, by the `cnxScopedName` 3-Declare gave
+   * it. A `T` the scope does not declare has no definition to come after.
+   */
+  checkScopedUse(
+    written: string,
+    name: string,
+    scope: string,
+    span: ISourceSpan,
+  ): void {
+    const member = this.context.program.memberOf(scope, name);
+    if (member !== undefined) {
+      this.checkQualifiedUse(written, member.cnxScopedName, span);
+    }
   }
 
   /**
@@ -245,6 +254,7 @@ class UndeclaredTypeAnalyzer {
     return UndeclaredTypeAnalyzer._eitherSpelling(
       typeName,
       scope,
+      this.context.program,
       this.context.symbols,
       this.context.symbolTable,
       (name, fileSymbols, table) =>
@@ -271,6 +281,7 @@ class UndeclaredTypeAnalyzer {
     return UndeclaredTypeAnalyzer._eitherSpelling(
       typeName,
       scope,
+      this.context.program,
       // Reached only after `isVisibleType` returned false, which requires a
       // symbol view -- see its guard.
       this.context.symbols,
@@ -292,6 +303,7 @@ class UndeclaredTypeAnalyzer {
   private static _eitherSpelling(
     typeName: string,
     scope: string,
+    program: Pick<IProgram, "memberOf">,
     symbols: ICodeGenSymbols,
     symbolTable: IResolvedSymbols,
     test: (
@@ -300,11 +312,12 @@ class UndeclaredTypeAnalyzer {
       symbolTable: IResolvedSymbols,
     ) => boolean,
   ): boolean {
-    if (scope) {
-      const qualified = ScopeUtils.qualifyInScope(typeName, scope);
-      if (test(qualified, symbols, symbolTable)) {
-        return true;
-      }
+    const member = scope ? program.memberOf(scope, typeName) : undefined;
+    if (
+      member !== undefined &&
+      test(member.fullyQualifiedCName, symbols, symbolTable)
+    ) {
+      return true;
     }
 
     return test(typeName, symbols, symbolTable);

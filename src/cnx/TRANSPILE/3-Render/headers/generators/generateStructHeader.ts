@@ -16,10 +16,10 @@ function resolveFieldCType(fieldType: string, input: IHeaderTypeInput): string {
   if (callbackInfo) {
     return callbackInfo.typedefName;
   }
-  // Issue #502/#522: a C++ namespaced type is written `A::B`, not `A__B`.
-  // Shared with the function-prototype path, which used to skip the conversion
-  // and name a type nothing declares (#1520).
-  return headerCType(fieldType, input.symbolTable);
+  // Issue #502/#522: a C++ namespaced type is written `A::B`, as 1.3 stored
+  // it (#2116). Shared with the function-prototype path, so the two cannot
+  // name one type two ways (#1520).
+  return headerCType(fieldType);
 }
 
 /**

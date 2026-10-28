@@ -67,11 +67,22 @@ function setupGenerator(
   // Issue #831: Register TSymbols in SymbolTable (single source of truth)
   symbolTable.addTSymbols(tSymbols);
   const symbols = TSymbolInfoAdapter.convert(tSymbols);
-  // Issue #517: a class's constructor is the function symbol `Class::Class`,
-  // which is what a C++ header gives the table in a run
+  // Issue #517: a class's constructor is the function `Class::Class` the class
+  // declares, which is what a C++ header gives the table in a run
   for (const className of options.cppConstructors ?? []) {
     symbolTable.addCppSymbol({
+      name: className,
+      unqualifiedName: className,
+      kind: "class",
+      visibility: "public",
+      sourceFile: "Class.hpp",
+      span: TestSourceSpan.at(1),
+      sourceLanguage: ESourceLanguage.Cpp,
+    });
+    symbolTable.addCppSymbol({
       name: `${className}::${className}`,
+      unqualifiedName: className,
+      parent: className,
       kind: "function",
       type: "void",
       visibility: "public",
@@ -1684,6 +1695,7 @@ describe("CodeGenWalker Coverage Tests", () => {
       symbolTable.addCppSymbol({
         kind: "namespace",
         name: "SeaDash",
+        unqualifiedName: "SeaDash",
         sourceFile: "SeaDash.h",
         span: TestSourceSpan.at(1),
         sourceLanguage: ESourceLanguage.Cpp,

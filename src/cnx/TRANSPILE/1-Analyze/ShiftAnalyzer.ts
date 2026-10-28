@@ -191,6 +191,7 @@ class ShiftAnalyzer {
 
     for (const [expr, enumBeingDeclared] of EnumMemberValue.expressions(
       program,
+      this.context.program,
     )) {
       if (expr.kind === "binary") check.checkLevel(expr, enumBeingDeclared);
     }

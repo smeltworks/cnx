@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * Issue #1357: gate the population of scope-denoting `fromParts` sites.
+ * Issues #1357 and #2116: gate every site that builds a qualified C name.
  *
  * `write` regenerates `docs/architecture/scope-join-sites.md`; `check`
  * regenerates in memory and fails when a file gained sites, or when the

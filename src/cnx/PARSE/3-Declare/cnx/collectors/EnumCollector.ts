@@ -43,7 +43,7 @@ class EnumCollector {
     // #1318: a member's identity hangs off the ENUM's source-spelled name, not
     // the enclosing scope's. `identityOf` then yields the identifier codegen
     // already emits -- EColor__RED, and Motor__EMode__HIGH for a scope-declared
-    // enum, because fromParts expands the dotted component. Derived here once
+    // enum, because fromSourceName expands the dotted component. Derived here once
     // rather than at each consumer (#1285).
     const identity = ScopeUtils.identityOf({ name, scopePath });
     const enumScopedName = identity.cnxScopedName;

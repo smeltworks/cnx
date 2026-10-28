@@ -370,6 +370,7 @@ describe("runAnalyzers", () => {
       const caller = new SymbolTable();
       caller.addCppSymbol({
         name: "CppMessage",
+        unqualifiedName: "CppMessage",
         kind: "class",
         sourceLanguage: ESourceLanguage.Cpp,
         sourceFile: "CppMessage.hpp",

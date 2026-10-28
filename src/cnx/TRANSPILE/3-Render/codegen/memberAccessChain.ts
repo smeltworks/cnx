@@ -86,7 +86,10 @@ function rootHolding(
  * The separator a held root's first member takes: `->` for a pointer local
  * and for a parameter held through a pointer, `.` for a C++ reference
  */
-function rootMemberSeparator(holding: IRootHolding, cppMode: boolean): string {
+function rootMemberSeparator(
+  holding: IRootHolding,
+  cppMode: boolean,
+): "." | "->" {
   return getStructParamSeparator({
     cppMode,
     forcePointerSemantics:
@@ -128,7 +131,7 @@ function isPointer(options: StructParamOptions): boolean {
  * @param options - The struct param options
  * @returns "->" for a pointer, "." for a C++ reference
  */
-function getStructParamSeparator(options: StructParamOptions): string {
+function getStructParamSeparator(options: StructParamOptions): "." | "->" {
   return isPointer(options) ? "->" : ".";
 }
 

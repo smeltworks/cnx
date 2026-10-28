@@ -5,10 +5,12 @@
  */
 import type TChainRoot from "../types/TChainRoot";
 import type IScopeSymbol from "../types/symbols/IScopeSymbol";
+import type TSymbol from "../types/symbols/TSymbol";
 import type TVisibility from "../types/TVisibility";
 import ESourceLanguage from "./types/ESourceLanguage";
 import QualifiedCName from "./QualifiedCName";
 import UNSET_SOURCE_SPAN from "../types/UNSET_SOURCE_SPAN";
+import type ITypeHeadLookup from "./types/ITypeHeadLookup";
 
 class ScopeUtils {
   // ============================================================================
@@ -196,7 +198,7 @@ class ScopeUtils {
    * builds the chain, so correctness here cannot be argued from what the grammar
    * admits.
    *
-   * `fromParts` expands a dotted component and drops empties, so the path goes in
+   * `fromSourceName` expands a dotted component and drops empties, so the path goes in
    * as one element and needs no splitting: `["Outer.Inner", "process"]` joins to
    * `Outer__Inner__process`, and `["", "init"]` to `init`.
    *
@@ -207,7 +209,7 @@ class ScopeUtils {
     name: string;
     scopePath: string;
   }): string {
-    return QualifiedCName.fromParts([symbol.scopePath, symbol.name]);
+    return ScopeUtils.qualifyPathInScope([symbol.name], symbol.scopePath);
   }
 
   /**
@@ -228,7 +230,7 @@ class ScopeUtils {
    * The C name a bare member of `scope` is emitted under, or the bare name at
    * file scope.
    *
-   * The drop-in for `QualifiedCName.fromParts([currentScopeName, name])`, which is the
+   * The drop-in for joining `currentScopeName` to `name`, which is the
    * leaf-only encoder #1285 exists to remove. Identical at depth one -- a
    * top-level scope's leaf name IS its whole chain -- and correct beyond it,
    * where the string version dropped every outer component.
@@ -255,20 +257,37 @@ class ScopeUtils {
     root: TChainRoot,
     head: string,
     scopePath: string,
-    isScopeTypeVisible: (qualifiedName: string) => boolean,
+    types: ITypeHeadLookup,
   ): string {
-    if (root === "this") {
-      return ScopeUtils.getTranspiledCName({ name: head, scopePath });
-    }
+    return ScopeUtils.typeHead(root, head, scopePath, types).cName;
+  }
+
+  /**
+   * `typeHeadCName` with the symbol it read the name off, when it found one,
+   * so a caller that needs the symbol does not look it up again by the name.
+   */
+  static typeHead(
+    root: TChainRoot,
+    head: string,
+    scopePath: string,
+    types: ITypeHeadLookup,
+  ): { readonly cName: string; readonly symbol: TSymbol | undefined } {
+    // #2116: each spelling reads the C name 3-Declare stored on the type it
+    // finds; only a `this.X` no symbol declares is spelled as written
     if (root === "global") {
-      return head;
+      return { cName: head, symbol: undefined };
     }
-    const qualified = ScopeUtils.qualifyScopeType(
-      head,
-      scopePath,
-      isScopeTypeVisible,
-    );
-    return QualifiedCName.fromParts(qualified.split("."));
+    if (root === "this") {
+      const symbol = types.memberOf(scopePath, head);
+      return {
+        cName:
+          symbol?.fullyQualifiedCName ??
+          ScopeUtils.getTranspiledCName({ name: head, scopePath }),
+        symbol,
+      };
+    }
+    const symbol = types.scopeTypeOf(scopePath, head);
+    return { cName: symbol?.fullyQualifiedCName ?? head, symbol };
   }
 
   /**
@@ -309,12 +328,12 @@ class ScopeUtils {
    * single-component spelling of it.
    *
    * #1385 review: the two used to branch on the same guard and then both build
-   * `fromParts([scopePath, ...])`, which is one decision written twice -- in the
+   * the C name from `[scopePath, ...]`, which is one decision written twice -- in the
    * file whose entire purpose is being the one encoder.
    *
    * Collapsing them settles a divergence rather than introducing one. The old
    * `qualifyInScope` returned a DOTTED name verbatim at file scope but expanded
-   * it inside a scope, because only the second path reached `fromParts`:
+   * it inside a scope, because only the second path reached the encoder:
    *
    *     qualifyInScope("a.b", null)   -> "a.b"      <- did not expand
    *     qualifyInScope("a.b", Motor)  -> "Motor__a__b"
@@ -327,7 +346,7 @@ class ScopeUtils {
     path: readonly string[],
     scopePath: string,
   ): string {
-    return QualifiedCName.fromParts([scopePath, ...path]);
+    return QualifiedCName.inScope(scopePath, path);
   }
 
   /**

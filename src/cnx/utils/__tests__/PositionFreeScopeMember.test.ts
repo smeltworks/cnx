@@ -5,18 +5,14 @@
  */
 
 import PositionFreeScopeMember from "../PositionFreeScopeMember";
-import ScopeUtils from "../ScopeUtils";
 import type IProgram from "../../types/IProgram";
 import type TSymbol from "../../types/symbols/TSymbol";
 
 const programWith = (
   kinds: Record<string, string>,
-): Pick<IProgram, "symbolByCName"> => ({
-  symbolByCName: (cName) => {
-    const kind = Object.entries(kinds).find(
-      ([name]) =>
-        ScopeUtils.getTranspiledCName({ name, scopePath: "S" }) === cName,
-    )?.[1];
+): Pick<IProgram, "memberOf"> => ({
+  memberOf: (scopePath, name) => {
+    const kind = scopePath === "S" ? kinds[name] : undefined;
     return kind === undefined ? undefined : ({ kind } as unknown as TSymbol);
   },
 });

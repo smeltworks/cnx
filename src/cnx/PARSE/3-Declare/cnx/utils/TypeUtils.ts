@@ -8,6 +8,8 @@ import TypeResolver from "../../../../utils/TypeResolver";
 import TTypeUtils from "../../../../utils/TTypeUtils";
 import ScopeUtils from "../../../../utils/ScopeUtils";
 import type TType from "../../../../types/TType";
+import type ITypeBindingDeps from "../../../../types/ITypeBindingDeps";
+import type IDeclareTypeFacts from "../../types/IDeclareTypeFacts";
 
 /**
  * Static utility class for extracting and converting cnx type names.
@@ -21,7 +23,7 @@ class TypeUtils {
    * @param ctx The type context (may be null)
    * @param scopePath Enclosing scope path for this.Type resolution ("" at file
    *                  scope)
-   * @param isScopeType ADR-057: predicate answering whether a *qualified* name
+   * @param typeFacts ADR-057: predicate answering whether a *qualified* name
    *                    is a type declared in the current scope. Omit at call
    *                    sites that have no scope context.
    * @returns The resolved type name
@@ -29,15 +31,17 @@ class TypeUtils {
   static getTypeName(
     type: TTypeSyntax | null,
     scopePath = "",
-    isScopeType?: (qualifiedName: string) => boolean,
+    typeFacts?: IDeclareTypeFacts,
   ): string {
     if (!type) return "void";
 
     // #1285/#1932: one ladder for a type's written name. The walker asks the
     // same `resolveWrittenName`, so the `.h` and the `.c` cannot disagree.
-    const result = TypeNameLadder.resolveWrittenName(type, scopePath, {
-      isScopeType,
-    });
+    const result = TypeNameLadder.resolveWrittenName(
+      type,
+      scopePath,
+      TypeUtils.depsOf(typeFacts),
+    );
     if (result !== null) {
       return result;
     }
@@ -64,16 +68,12 @@ class TypeUtils {
   static resolveType(
     type: TTypeSyntax | null,
     scopePath = "",
-    isScopeType?: (qualifiedName: string) => boolean,
+    typeFacts?: IDeclareTypeFacts,
   ): TType {
-    const deferred = TypeUtils.deferredIfUnsettled(
-      type,
-      scopePath,
-      isScopeType,
-    );
+    const deferred = TypeUtils.deferredIfUnsettled(type, scopePath, typeFacts);
     return (
       deferred ??
-      TypeResolver.resolve(TypeUtils.getTypeName(type, scopePath, isScopeType))
+      TypeResolver.resolve(TypeUtils.getTypeName(type, scopePath, typeFacts))
     );
   }
 
@@ -99,17 +99,19 @@ class TypeUtils {
   private static deferredIfUnsettled(
     type: TTypeSyntax | null,
     scopePath: string,
-    isScopeType?: (qualifiedName: string) => boolean,
+    typeFacts?: IDeclareTypeFacts,
   ): TType | null {
-    if (!type || !isScopeType || ScopeUtils.isGlobalScopePath(scopePath)) {
+    if (!type || !typeFacts || ScopeUtils.isGlobalScopePath(scopePath)) {
       return null;
     }
 
     const lowered = type;
     const element = lowered.kind === "array" ? lowered.element : lowered;
-    const classified = TypeNameLadder.classifyNamed(element, scopePath, {
-      isScopeType,
-    });
+    const classified = TypeNameLadder.classifyNamed(
+      element,
+      scopePath,
+      TypeUtils.depsOf(typeFacts),
+    );
     if (classified?.branch !== "bare") {
       return null;
     }
@@ -120,6 +122,17 @@ class TypeUtils {
     }
 
     return TTypeUtils.createDeferred(classified.written, scopePath);
+  }
+
+  /** 1.3's ladder deps: ADR-057's predicate, and the stored `Scope.T` spelling */
+  private static depsOf(
+    typeFacts?: IDeclareTypeFacts,
+  ): ITypeBindingDeps | undefined {
+    if (!typeFacts) return undefined;
+    return {
+      isScopeType: (qualifiedName) => typeFacts.isScopeType(qualifiedName),
+      qualifiedTypeName: (written) => typeFacts.qualifiedTypeName(written),
+    };
   }
 }
 

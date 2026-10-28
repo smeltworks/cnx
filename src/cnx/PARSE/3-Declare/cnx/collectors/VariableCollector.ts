@@ -25,6 +25,7 @@ import type IVariableDeclarationSyntax from "../../../../types/syntax/IVariableD
 import type TDeclarationSyntax from "../../../../types/syntax/TDeclarationSyntax";
 import type TExpression from "../../../../types/syntax/TExpression";
 import type TStatement from "../../../../types/syntax/TStatement";
+import type IDeclareTypeFacts from "../../types/IDeclareTypeFacts";
 
 /** A declaration 1.2 lowered from `variableDeclaration`, with or without a constructor */
 type TVariableSyntax = Extract<
@@ -129,7 +130,7 @@ class VariableCollector {
   static declaredFacts(
     declaration: IVariableDeclarationSyntax,
     scopePath: string,
-    isScopeType?: (qualifiedName: string) => boolean,
+    typeFacts?: IDeclareTypeFacts,
   ): {
     type: TType;
     isConst: boolean;
@@ -149,13 +150,13 @@ class VariableCollector {
     const typeStr = TypeUtils.getTypeName(
       declaration.type,
       scopePath,
-      isScopeType,
+      typeFacts,
     );
     const initializer = declaration.initializer;
     const type = VariableCollector.resolveDeclaredType(
       typeStr,
       initializer,
-      TypeUtils.resolveType(declaration.type, scopePath, isScopeType),
+      TypeUtils.resolveType(declaration.type, scopePath, typeFacts),
     );
     // ADR-071: read-only unless declared `mut`
     const isConst = !declaration.modifiers.mut;
@@ -233,7 +234,7 @@ class VariableCollector {
    * @param scopePath The path of the scope this variable belongs to (dotted path, "" at file scope)
    * @param visibility Required: #1161 -- a default here is a third source of
    *   truth for one fact, which is how #1300 happened to the type kinds
-   * @param isScopeType ADR-057 predicate: is this *qualified* name a scope type?
+   * @param typeFacts ADR-057 predicate: is this *qualified* name a scope type?
    * @returns The variable symbol with TType-based types and scope reference
    */
   static collect(
@@ -241,7 +242,7 @@ class VariableCollector {
     sourceFile: string,
     scopePath: string,
     visibility: TVisibility,
-    isScopeType?: (qualifiedName: string) => boolean,
+    typeFacts?: IDeclareTypeFacts,
   ): IVariableSymbol {
     invariant(
       declaration.kind === "variableDeclaration" ||
@@ -253,7 +254,7 @@ class VariableCollector {
     const facts = VariableCollector.declaredFacts(
       variable,
       scopePath,
-      isScopeType,
+      typeFacts,
     );
 
     // Build base symbol

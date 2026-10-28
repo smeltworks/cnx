@@ -11,8 +11,15 @@ interface ICppBaseSymbol {
   /** Symbol kind - discriminator for type narrowing */
   readonly kind: TSymbolKindCpp;
 
-  /** Symbol name */
+  /** Symbol name: the full `A::B` path 3-Declare spelled once */
   readonly name: string;
+
+  /**
+   * The name as declared, without its namespace or class (`Widget` of
+   * `Outer::Inner::Widget`). A later layer holding an owner and a member asks
+   * `getCppMembers(owner, member)` rather than spelling `owner::member` (#2116).
+   */
+  readonly unqualifiedName: string;
 
   /** Source file where the symbol is defined */
   readonly sourceFile: string;

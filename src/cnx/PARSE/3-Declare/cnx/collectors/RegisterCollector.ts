@@ -13,6 +13,7 @@ import TypeUtils from "../utils/TypeUtils";
 import ScopeUtils from "../../../../utils/ScopeUtils";
 import TVisibility from "../../../../types/TVisibility";
 import MemberSymbolBase from "../utils/MemberSymbolBase";
+import type IDeclareTypeFacts from "../../types/IDeclareTypeFacts";
 
 class RegisterCollector {
   /**
@@ -21,7 +22,7 @@ class RegisterCollector {
    * @param syntax The register declaration, as 1.2 lowered it
    * @param sourceFile Source file path
    * @param scopePath The path of the scope this register belongs to (dotted path, "" at file scope)
-   * @param isScopeType ADR-057 predicate: is this *qualified* name a scope type?
+   * @param typeFacts ADR-057 predicate: is this *qualified* name a scope type?
    * @returns The register symbol with proper scope reference
    */
   static collect(
@@ -29,7 +30,7 @@ class RegisterCollector {
     sourceFile: string,
     scopePath: string,
     visibility: TVisibility,
-    isScopeType?: (qualifiedName: string) => boolean,
+    typeFacts?: IDeclareTypeFacts,
   ): IRegisterSymbol {
     const name = syntax.name;
     const span = syntax.span;
@@ -55,7 +56,7 @@ class RegisterCollector {
       // set here read "not declared here" as "not a bitmap". A bare name
       // inside a scope may also name an included scope's type, which is why
       // this is `resolveType`: it defers that case to 1.4 Resolve (ADR-057).
-      const type = TypeUtils.resolveType(member.type, scopePath, isScopeType);
+      const type = TypeUtils.resolveType(member.type, scopePath, typeFacts);
 
       const memberInfo: IRegisterMemberSymbol = {
         ...MemberSymbolBase.of({

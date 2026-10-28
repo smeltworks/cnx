@@ -222,7 +222,9 @@ class CppResolver {
     if (anonymousClass && ctx.symbolTable) {
       const result = ClassCollector.collectAnonymousTypedef(
         anonymousClass,
+        name,
         fullName,
+        ctx.currentNamespace,
         ctx.sourceFile,
         span,
         ctx.symbolTable,

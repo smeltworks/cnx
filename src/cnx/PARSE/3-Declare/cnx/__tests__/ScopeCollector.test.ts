@@ -8,6 +8,9 @@ import SymbolGuards from "../../../../types/symbols/SymbolGuards";
 import SymbolRegistry from "../../SymbolRegistry";
 import TypeResolver from "../../../../utils/TypeResolver";
 import SettledEnumValues from "../../../../utils/__testUtils__/SettledEnumValues";
+import QualifiedTypeNames from "../QualifiedTypeNames";
+
+const NONE_WRITTEN = new Map<string, string>();
 
 let registry = new SymbolRegistry();
 
@@ -363,7 +366,11 @@ describe("ScopeCollector", () => {
         registry,
         FirstDeclaration.scope(tree),
         "test.cnx",
-        isScopeType,
+        {
+          isScopeType,
+          qualifiedTypeName: (written) =>
+            QualifiedTypeNames.read(NONE_WRITTEN, written),
+        },
       );
 
       const regSymbol = result.memberSymbols.find((s) => s.name === "CTRL");
@@ -394,7 +401,11 @@ describe("ScopeCollector", () => {
         registry,
         FirstDeclaration.scope(tree),
         "test.cnx",
-        isScopeType,
+        {
+          isScopeType,
+          qualifiedTypeName: (written) =>
+            QualifiedTypeNames.read(NONE_WRITTEN, written),
+        },
       );
 
       const regSymbol = result.memberSymbols.find((s) => s.name === "CTRL");

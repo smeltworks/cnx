@@ -186,7 +186,10 @@ class CachedSymbolReader {
       return C_KINDS.has(candidate.kind);
     }
     if (candidate.sourceLanguage === ESourceLanguage.Cpp) {
-      return CPP_KINDS.has(candidate.kind);
+      return (
+        CPP_KINDS.has(candidate.kind) &&
+        typeof candidate.unqualifiedName === "string"
+      );
     }
     return false;
   }

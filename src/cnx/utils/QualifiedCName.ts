@@ -15,7 +15,7 @@
  * qualified-name construction and decomposition through here.
  *
  * NOT for C++ namespace qualification (`Ns::Type`). That is a different separator for
- * a different target language; see FormatUtils.getScopeSeparator().
+ * a different target language; see CppNamespaceUtils.
  */
 class QualifiedCName {
   /**
@@ -32,41 +32,72 @@ class QualifiedCName {
   static readonly SOURCE_SEPARATOR = ".";
 
   /**
-   * Build a qualified C name from a COMPLETE path, outermost first.
+   * The C name of a name the author wrote IN FULL -- `Motor.State.IDLE`, or its
+   * identifier chain `["Motor", "State", "IDLE"]` -- outermost first.
    *
-   * Empty and undefined parts are dropped, so a global symbol (no scope) keeps its
-   * bare name. Any part may itself be a dotted source path (`"Outer.Inner"`), which
-   * is expanded before joining.
+   * Empty and undefined parts are dropped, so a global symbol keeps its bare
+   * name, and any part may itself be dotted (`"Outer.Inner"`).
    *
-   * Takes an array rather than a variadic list, and is named for the whole path
-   * for the act of joining, because the variadic spelling it replaces made
-   * `join(scopeName, member)` the obvious call -- a scope LEAF joined to a leaf,
-   * which drops every outer scope and is the divergence #1357 exists to remove. A
-   * caller that holds a scope cannot build a correct path from its name, so it has
-   * no business here: `ScopeUtils.qualifyInScope` takes the whole enclosing
-   * PATH, which carries every outer component. What is left for this method is the case where the caller
-   * genuinely already holds every component -- a parse-tree identifier chain, or an
-   * already-qualified type name plus its member.
+   * This translates a complete written name into its C spelling; it does not
+   * qualify a member by its scope. A caller that holds a scope has a REFERENCE,
+   * and the encoders in `ScopeUtils` take that reference's whole enclosing PATH.
+   * Joining a scope's name to a member here would decide the `Scope__member`
+   * spelling a second time, outside the encoders (ADR-016 scopes are flat, so the
+   * name is right; the decision is in the wrong place) -- which is why every call
+   * is adjudicated by `npm run scope-joins:check` (#2116).
    *
-   * @param parts Ordered name parts, e.g. ["Motor", "State", "IDLE"]
+   * @param written The name as written, e.g. "Motor.State.IDLE"
    * @returns The generated C identifier, e.g. "Motor__State__IDLE"
    */
-  static fromParts(parts: readonly (string | undefined | null)[]): string {
-    return QualifiedCName.toParts(parts).join(QualifiedCName.SEPARATOR);
+  /**
+   * The C name a function-local moves to when it hides a file-scope name or
+   * the enclosing local its initializer reads (#1643): `<function>__<name>`,
+   * then `<function>__<name>__2`, and so on. `__` cannot be written in a cnx
+   * identifier (E0201), so no written name is spelled this way. The separator
+   * alone does not keep it apart from `inScope`'s names, though:
+   * `movedLocal("Motor__init", "x", 1)` and `inScope("Motor", ["init", "x"])`
+   * both spell `Motor__init__x`. What does is that `function` is a declared
+   * function's C name, and a scope cannot declare a function and a type or
+   * member path under the same name, so no declared `Motor.init.x` exists.
+   * Only 4-Resolve's LexicalFrames decides it, once per local (#2116).
+   */
+  static movedLocal(
+    functionCName: string,
+    name: string,
+    suffix: number,
+  ): string {
+    return QualifiedCName.joined([
+      functionCName,
+      name,
+      suffix === 1 ? null : String(suffix),
+    ]);
+  }
+
+  /**
+   * The C name of `path` declared in the scope at `scopePath` ("" for file
+   * scope). The scope join itself: only `ScopeUtils`' encoders call it, and
+   * only 3-Declare calls them to decide the name it stores (#2116).
+   */
+  static inScope(scopePath: string, path: readonly string[]): string {
+    return QualifiedCName.joined([scopePath, ...path]);
+  }
+
+  static fromSourceName(written: string): string {
+    return QualifiedCName.joined([written]);
   }
 
   /**
    * Build the SOURCE-language qualified name from its components, outermost
    * first — `Outer.Inner.tick`, the way a cnx author would write it.
    *
-   * The counterpart to fromParts(). The two namespaces are separate on purpose:
+   * The counterpart to fromSourceName(). The two namespaces are separate on purpose:
    * `Outer__Inner__tick` is what the C compiler sees, `Outer.Inner.tick` is what
    * the author typed, and neither is derivable from the other at a call site
    * without knowing which one it already holds. A diagnostic wants this one; a
-   * lookup key wants fromParts().
+   * lookup key wants fromSourceName().
    *
-   * Takes a complete path for the same reason fromParts() does -- the source
-   * spelling is just as capable of dropping an outer scope as the C spelling.
+   * Takes a complete path for the same reason fromSourceName() does: the parts
+   * are the name, and nothing here resolves them against an enclosing scope.
    *
    * @param parts Ordered name parts, e.g. ["Motor", "State", "IDLE"]
    * @returns The source spelling, e.g. "Motor.State.IDLE"
@@ -75,18 +106,6 @@ class QualifiedCName {
     parts: readonly (string | undefined | null)[],
   ): string {
     return QualifiedCName.toParts(parts).join(QualifiedCName.SOURCE_SEPARATOR);
-  }
-
-  /**
-   * Split a qualified C name back into its components.
-   *
-   * Exact inverse of join() for names built from ADR-063-conformant identifiers.
-   *
-   * @param qualifiedName A generated C identifier, e.g. "Motor__State__IDLE"
-   * @returns The components, e.g. ["Motor", "State", "IDLE"]
-   */
-  static split(qualifiedName: string): string[] {
-    return qualifiedName.split(QualifiedCName.SEPARATOR);
   }
 
   /**
@@ -101,43 +120,14 @@ class QualifiedCName {
   }
 
   /**
-   * Whether a qualified C name sits directly inside the given scope.
-   *
-   * Use instead of `name.startsWith(scope + "_")`, which hardcodes the separator.
-   */
-  static isInScope(
-    name: string,
-    scopeName: string | undefined | null,
-  ): boolean {
-    if (!scopeName) {
-      return false;
-    }
-    return name.startsWith(QualifiedCName.prefixFor(scopeName));
-  }
-
-  /**
-   * The prefix a member of the given scope carries, separator included.
-   */
-  static prefixFor(scopeName: string): string {
-    return (
-      QualifiedCName.toParts([scopeName]).join(QualifiedCName.SEPARATOR) +
-      QualifiedCName.SEPARATOR
-    );
-  }
-
-  /**
-   * Re-qualify a generated C name for C++ namespace syntax (`A__B` -> `A::B`).
-   *
-   * Splits on the C separator rather than replacing every underscore, so a component
-   * containing a single underscore (`tick_count`) survives intact.
-   */
-  static toCppQualified(name: string, cppSeparator: string): string {
-    return QualifiedCName.split(name).join(cppSeparator);
-  }
-
-  /**
    * Expand components into flat parts, dropping empties and splitting dotted paths.
    */
+  private static joined(
+    components: readonly (string | undefined | null)[],
+  ): string {
+    return QualifiedCName.toParts(components).join(QualifiedCName.SEPARATOR);
+  }
+
   private static toParts(
     components: readonly (string | undefined | null)[],
   ): readonly string[] {

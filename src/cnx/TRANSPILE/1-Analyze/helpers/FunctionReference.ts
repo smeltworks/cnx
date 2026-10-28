@@ -23,12 +23,11 @@
  * one place the order is written, and every lookup walks it.
  */
 
+import type IProgram from "../../../types/IProgram";
 import IFunctionSymbol from "../../../types/symbols/IFunctionSymbol";
 import type TExpression from "../../../types/syntax/TExpression";
 import type TExpressionOf from "../../../types/syntax/TExpressionOf";
 import OperandTyper from "../../../utils/OperandTyper";
-import QualifiedCName from "../../../utils/QualifiedCName";
-import ScopeUtils from "../../../utils/ScopeUtils";
 import TypeText from "../../../utils/TypeText";
 import CalleeNameResolver from "./CalleeNameResolver";
 import ScopeCandidates from "./ScopeCandidates";
@@ -44,6 +43,7 @@ class FunctionReference {
     resolvedName: string,
     scopePath: string,
     isGlobalCall: boolean,
+    program: Pick<IProgram, "memberOf">,
   ): string[] {
     // `scopeQualifiedCandidate` already returns null for a `global.` call, so
     // the root passed here is null: the search order is what differs, and it is
@@ -52,6 +52,7 @@ class FunctionReference {
       resolvedName,
       scopePath,
       isGlobalCall,
+      program,
     );
     return ScopeCandidates.forRoot(null, scoped, [resolvedName]);
   }
@@ -62,20 +63,28 @@ class FunctionReference {
    * struct field's type is recorded under. An array spelling names its
    * element type.
    */
-  static candidatesForTypeText(typeText: string, scopePath: string): string[] {
+  static candidatesForTypeText(
+    typeText: string,
+    scopePath: string,
+    sourceFile: string,
+    program: Pick<IProgram, "memberOf" | "qualifiedTypeName">,
+  ): string[] {
     const text = TypeText.withoutDimensions(typeText);
     if (text.startsWith("this.")) {
-      return scopePath === ""
-        ? []
-        : [ScopeUtils.qualifyInScope(text.slice("this.".length), scopePath)];
+      const member =
+        scopePath === ""
+          ? undefined
+          : program.memberOf(scopePath, text.slice("this.".length));
+      return member === undefined ? [] : [member.fullyQualifiedCName];
     }
     if (text.startsWith("global.")) {
       return [text.slice("global.".length)];
     }
     if (text.includes(".")) {
-      return [QualifiedCName.fromParts(text.split("."))];
+      // #2116: 1.3 spelled every written `Scope.T` / `Ns.T` once
+      return [program.qualifiedTypeName(sourceFile, text)];
     }
-    return FunctionReference.candidates(text, scopePath, false);
+    return FunctionReference.candidates(text, scopePath, false, program);
   }
 
   /**
@@ -91,6 +100,7 @@ class FunctionReference {
       chain,
       scopePath,
       (name) => context.symbols.knownScopes.has(name),
+      context.program,
     );
     if (resolved === null) return null;
     return FunctionReference.lookup(
@@ -98,6 +108,7 @@ class FunctionReference {
         resolved.name,
         scopePath,
         resolved.isGlobalCall,
+        context.program,
       ),
       context,
     );
@@ -153,13 +164,19 @@ class FunctionReference {
         op.kind === "member" ? op.name : "",
         scopePath,
         (name) => context.symbols.knownScopes.has(name),
+        context.program,
       );
-      if (next === null) return null;
-      name = next;
+      if (next === null || next.resolvedName === null) return null;
+      name = next.resolvedName;
     }
     if (name === "this" || name === "global") return null;
     return FunctionReference.lookup(
-      FunctionReference.candidates(name, scopePath, base === "global"),
+      FunctionReference.candidates(
+        name,
+        scopePath,
+        base === "global",
+        context.program,
+      ),
       context,
     );
   }
@@ -171,14 +188,19 @@ class FunctionReference {
     context: IAnalysisContext,
   ): IFunctionSymbol | null {
     return FunctionReference.lookup(
-      FunctionReference.candidatesForTypeText(typeText, scopePath),
+      FunctionReference.candidatesForTypeText(
+        typeText,
+        scopePath,
+        context.sourceFile,
+        context.program,
+      ),
       context,
     );
   }
 
   /** The symbol's C name -- the identity ADR-029's nominal rule compares. */
   static cNameOf(symbol: IFunctionSymbol): string {
-    return ScopeUtils.getTranspiledCName(symbol);
+    return symbol.fullyQualifiedCName;
   }
 
   private static lookup(

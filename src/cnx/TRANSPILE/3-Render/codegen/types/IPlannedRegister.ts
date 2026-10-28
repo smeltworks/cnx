@@ -22,7 +22,10 @@ import type IPlannedRegisterMember from "./IPlannedRegisterMember";
  * hold.
  */
 interface IPlannedRegister {
-  /** The register's name as written, before any scope prefix. */
+  /**
+   * The C name 3-Declare gave the register: `GPIO7` at file scope,
+   * `Teensy4__GPIO7` inside `scope Teensy4` (#2116).
+   */
   readonly name: string;
 
   /**

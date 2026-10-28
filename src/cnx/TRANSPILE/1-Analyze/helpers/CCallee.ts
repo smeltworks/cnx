@@ -1,5 +1,5 @@
 import OperandTyper from "../../../utils/OperandTyper";
-import CppNamespaceUtils from "../../../utils/CppNamespaceUtils";
+import ForeignTypeFacts from "../../../utils/ForeignTypeFacts";
 import TypedefParamParser from "../../../utils/TypedefParamParser";
 import type TExpression from "../../../types/syntax/TExpression";
 import type IAnalysisContext from "../types/IAnalysisContext";
@@ -53,7 +53,11 @@ class CCallee {
     );
   }
 
-  /** The C++ name of `method` on what `receiver` is, or null */
+  /**
+   * The C++ name of `method` on what `receiver` is, or null: the stored name
+   * of the member the receiver's class declares, found by (class, method)
+   * rather than spelled `Class::method` (#2116)
+   */
   static methodName(
     receiver: TExpression,
     method: string,
@@ -62,9 +66,11 @@ class CCallee {
     const typeName = OperandTyper.directTypeName(
       OperandTyper.typeOf(receiver, context),
     );
-    return typeName === null
-      ? null
-      : CppNamespaceUtils.qualify(typeName, method);
+    if (typeName === null) return null;
+    // Every overload of one (class, method) shares its name: 3-Declare spells
+    // it from the class and the method alone, so the first one's is all of
+    // theirs; only the parameters differ.
+    return context.symbolTable.getCppMembers(typeName, method)[0]?.name ?? null;
   }
 
   private static namesOf(expr: TPostfix, context: IAnalysisContext): string[] {
@@ -81,12 +87,12 @@ class CCallee {
       expr.primary.kind === "identifier" &&
       before.every((op) => op.kind === "member")
     ) {
-      names.push(
-        [
-          expr.primary.name,
-          ...before.map((op) => (op.kind === "member" ? op.name : "")),
-        ].join("::"),
-      );
+      // #2116: `hw.f(a)` reads the stored name of the `f` namespace hw declares
+      const named = ForeignTypeFacts.cppPath(context.symbolTable, undefined, [
+        expr.primary.name,
+        ...before.map((op) => (op.kind === "member" ? op.name : "")),
+      ])[0];
+      if (named !== undefined) names.push(named.name);
     }
     const method = before.at(-1);
     if (method?.kind === "member") {

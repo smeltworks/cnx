@@ -2,7 +2,7 @@
  * Unit tests for the ADR-004 register generator.
  *
  * #1445 merged `generateRegister` and `generateScopedRegister` into one
- * `registerGeneratorFor(path)`; this file merges the two suites that tested
+ * register generator; this file merges the two suites that tested
  * them. They had drifted into ~100 lines of duplicated scaffolding and two
  * copies of the access-modifier and effects assertions, differing only in the
  * macro prefix -- the S5976 cluster CLAUDE.md says to convert in the PR that
@@ -21,7 +21,7 @@
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import TranspileState from "../../../../../TranspileState";
-import registerGeneratorFor from "../RegisterGenerator";
+import generateRegister from "../RegisterGenerator";
 import IGeneratorInput from "../../IGeneratorInput";
 import IGeneratorState from "../../IGeneratorState";
 import IOrchestrator from "../../IOrchestrator";
@@ -45,23 +45,35 @@ const C_TYPES: Record<string, string> = {
   i64: "int64_t",
 };
 
-/** A planned member, with the C type the ladder resolved unless one is given. */
+/** A member as written, before 3-Declare names it. */
+type TMemberSpec = Omit<IPlannedRegisterMember, "cName"> & {
+  readonly name: string;
+};
+
+/** A register as written, before 3-Declare names it. */
+interface IRegisterSpec {
+  readonly name: string;
+  readonly baseAddress: string;
+  readonly members: readonly TMemberSpec[];
+}
+
+/** A member, with the C type the ladder resolved unless one is given. */
 function member(
   name: string,
   type: string,
   access: IPlannedRegisterMember["access"],
   offset: string,
   cType: string = C_TYPES[type] ?? type,
-): IPlannedRegisterMember {
+): TMemberSpec {
   return { name, cType, access, offset };
 }
 
-/** A planned register. */
+/** A register. */
 function planned(
   name: string,
   baseAddress: string,
-  members: IPlannedRegisterMember[],
-): IPlannedRegister {
+  members: TMemberSpec[],
+): IRegisterSpec {
   return { name, baseAddress, members };
 }
 
@@ -98,10 +110,19 @@ beforeEach(() => {
   state = new TranspileState();
 });
 
-/** Run the generator for one scope path. */
-function generate(scopePath: string, register: IPlannedRegister) {
-  return registerGeneratorFor(scopePath)(
-    register,
+/** Run the generator on the plan, named as 3-Declare names it under `prefix` (#2116). */
+function generate(prefix: string, register: IRegisterSpec) {
+  const name = `${prefix}${register.name}`;
+  const plan: IPlannedRegister = {
+    name,
+    baseAddress: register.baseAddress,
+    members: register.members.map(({ name: memberName, ...rest }) => ({
+      ...rest,
+      cName: `${name}__${memberName}`,
+    })),
+  };
+  return generateRegister(
+    plan,
     createMockInput(),
     createMockState(),
     createMockOrchestrator(),
@@ -115,11 +136,11 @@ function generate(scopePath: string, register: IPlannedRegister) {
 describe.each([
   ["file scope", "", ""],
   ["inside a scope", "Teensy4", "Teensy4__"],
-])("RegisterGenerator (%s)", (_label, scopePath, prefix) => {
+])("RegisterGenerator (%s)", (_label, _scopePath, prefix) => {
   describe("basic register generation", () => {
     it("generates register with single rw member", () => {
       const result = generate(
-        scopePath,
+        prefix,
         planned("GPIO7", "0x42004000", [member("DR", "u32", "rw", "0x00")]),
       );
 
@@ -133,7 +154,7 @@ describe.each([
 
     it("generates register with multiple members", () => {
       const result = generate(
-        scopePath,
+        prefix,
         planned("TIMER", "0x40000000", [
           member("CTRL", "u32", "rw", "0x00"),
           member("COUNT", "u32", "ro", "0x04"),
@@ -163,7 +184,7 @@ describe.each([
       ["read-write member does not", "rw", "uint8_t*"],
     ])("%s", (_case, access, cast) => {
       const result = generate(
-        scopePath,
+        prefix,
         planned("STATUS", "0x50000000", [
           member(
             "FLAGS",
@@ -188,7 +209,7 @@ describe.each([
       ["64-bit", "u64", "uint64_t"],
     ])("generates %s register members", (_case, cnxType, cType) => {
       const result = generate(
-        scopePath,
+        prefix,
         planned("REG", "0x40000000", [member("DATA", cnxType, "rw", "0x00")]),
       );
 
@@ -199,7 +220,7 @@ describe.each([
   describe("non-contiguous register layouts", () => {
     it("handles gaps in register offsets (like i.MX RT1062)", () => {
       const result = generate(
-        scopePath,
+        prefix,
         planned("GPIO", "0x401B8000", [
           member("DR", "u32", "rw", "0x00"),
           member("GDIR", "u32", "rw", "0x04"),
@@ -235,7 +256,7 @@ describe.each([
     it("returns empty effects array", () => {
       expect(
         generate(
-          scopePath,
+          prefix,
           planned("TEST", "0x40000000", [member("DATA", "u32", "rw", "0x00")]),
         ).effects,
       ).toEqual([]);
@@ -254,7 +275,7 @@ describe("RegisterGenerator (scoped bitmap type resolution)", () => {
     // bare `GPIO7Pins` inside `scope Teensy4` arrives ALREADY qualified.
     // The ladder qualified it -- that is what production hands over.
     const result = generate(
-      "Teensy4",
+      "Teensy4__",
       planned("GPIO7", "0x42004000", [
         member("PINS", "GPIO7Pins", "rw", "0x00", "Teensy4__GPIO7Pins"),
       ]),
@@ -273,7 +294,7 @@ describe("RegisterGenerator (scoped bitmap type resolution)", () => {
     // exactly why nothing below the ladder may qualify.
     // The `global.` branch returns the bare identifier.
     const result = generate(
-      "Teensy4",
+      "Teensy4__",
       planned("GPIO7", "0x42004000", [
         member("PINS", "GPIO7Pins", "rw", "0x00", "GPIO7Pins"),
       ]),
@@ -285,7 +306,7 @@ describe("RegisterGenerator (scoped bitmap type resolution)", () => {
 
   it("keeps original type when scoped bitmap does not exist", () => {
     const result = generate(
-      "Teensy4",
+      "Teensy4__",
       planned("GPIO7", "0x42004000", [member("DATA", "u32", "rw", "0x00")]),
     );
 

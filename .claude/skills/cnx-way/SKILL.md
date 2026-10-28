@@ -41,6 +41,29 @@ Real example: a report inferred output mode from a requirement's own
 reaching that line happened to be single-mode. One dual-mode entry would have
 judged a C transpile against the C++ baseline.
 
+**Compute once, then read.** A derived value is decided once, by the pass that
+owns it, and stored where every later site can read it. The owner is **the first
+layer that _can_ compute it** -- the earliest pass holding everything the decision
+needs -- and it is the only layer allowed to. It computes and stores the value
+even when it never uses it itself, purely to pass it along; a later layer that
+needs it reads the stored value and never computes it, even when it holds the
+same inputs. Calling the decider again is deciding again, even though the logic
+is shared. The edit-count question above
+misses this: every call goes through one function, so the answer is "one place",
+and the test passes while the decision is being made a hundred times.
+
+Real example (#2116): 3-Declare stores every symbol's C name on it
+(`fullyQualifiedCName`, through `ScopeUtils.identityOf`). Yet
+`ScopeUtils.getTranspiledCName` had 32 non-test callers, only one of them in
+3-Declare. Every later pass recomputed a value it could have read. The review
+filed the encoder calls as "the definition, fine" because they were the function.
+The defect is calling the function, not writing it.
+
+Ask: *is this value already on the thing I am holding?* If it is, read the field.
+If it is not, find the first layer that could have computed it; that layer
+should store it, and you read it. A
+deciding function called outside its owning pass is a defect, whoever wrote it.
+
 ### 3. Nothing goes under the rug. Fix it or file it. Hard stop.
 
 Not just bugs — **anything you notice**. A smell, a doubt, a "that looks wrong",
@@ -221,6 +244,8 @@ Then ask yourself:
 - [ ] Can my harness even **construct** the contexts this code runs in, or is it
       green only where it can reach?
 - [ ] Would changing one fact require editing **more than one place**?
+- [ ] Does anything I wrote **recompute** a value its owning pass already
+      stored (an encoder or decider called outside that pass)? Read the field.
 - [ ] Is **everything** I noticed fixed or filed — not just the bugs?
 - [ ] Does anything I added have **only test callers**? Plain `npx knip` reports
       it (#1418): delete it, or tag it `@public` with the reason it stays.

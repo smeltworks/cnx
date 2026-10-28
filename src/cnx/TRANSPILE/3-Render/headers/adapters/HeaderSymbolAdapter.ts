@@ -53,7 +53,7 @@ class HeaderSymbolAdapter {
     const returnTypeStr = TypeResolver.getTypeName(func.returnType);
 
     // Get transpiled C name (scope-prefixed)
-    const cName = ScopeUtils.getTranspiledCName(func);
+    const cName = func.fullyQualifiedCName;
     const isGlobal = ScopeUtils.isGlobalScopePath(func.scopePath);
 
     // ADR-057: type names arrive already scope-qualified from the symbol
@@ -102,7 +102,7 @@ class HeaderSymbolAdapter {
     state: TranspileState,
   ): IHeaderSymbol {
     // Get transpiled C name (scope-prefixed)
-    const cName = ScopeUtils.getTranspiledCName(variable);
+    const cName = variable.fullyQualifiedCName;
     const isGlobal = ScopeUtils.isGlobalScopePath(variable.scopePath);
 
     // ADR-057: the symbol layer already qualified scope-local type names.
@@ -183,7 +183,7 @@ class HeaderSymbolAdapter {
     struct: import("../../../../types/symbols/IStructSymbol").default,
   ): IHeaderSymbol {
     // Get transpiled C name (scope-prefixed)
-    const cName = ScopeUtils.getTranspiledCName(struct);
+    const cName = struct.fullyQualifiedCName;
     const isGlobal = ScopeUtils.isGlobalScopePath(struct.scopePath);
 
     return {
@@ -199,7 +199,7 @@ class HeaderSymbolAdapter {
     enumSym: import("../../../../types/symbols/IEnumSymbol").default,
   ): IHeaderSymbol {
     // Get transpiled C name (scope-prefixed)
-    const cName = ScopeUtils.getTranspiledCName(enumSym);
+    const cName = enumSym.fullyQualifiedCName;
     const isGlobal = ScopeUtils.isGlobalScopePath(enumSym.scopePath);
 
     return {
@@ -215,7 +215,7 @@ class HeaderSymbolAdapter {
     bitmap: import("../../../../types/symbols/IBitmapSymbol").default,
   ): IHeaderSymbol {
     // Get transpiled C name (scope-prefixed)
-    const cName = ScopeUtils.getTranspiledCName(bitmap);
+    const cName = bitmap.fullyQualifiedCName;
     const isGlobal = ScopeUtils.isGlobalScopePath(bitmap.scopePath);
 
     return {
@@ -232,7 +232,7 @@ class HeaderSymbolAdapter {
     register: import("../../../../types/symbols/IRegisterSymbol").default,
   ): IHeaderSymbol {
     // Get transpiled C name (scope-prefixed)
-    const cName = ScopeUtils.getTranspiledCName(register);
+    const cName = register.fullyQualifiedCName;
     const isGlobal = ScopeUtils.isGlobalScopePath(register.scopePath);
 
     return {

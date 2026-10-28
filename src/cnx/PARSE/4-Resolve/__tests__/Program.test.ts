@@ -124,6 +124,27 @@ describe("Program", () => {
     });
   });
 
+  describe("memberOf() (#2116)", () => {
+    it("finds a symbol by its scope path and name, not by an encoded C name", () => {
+      const program = Program.build(
+        [
+          declare(
+            "u32 x <- 1;\nscope Motor { public u32 speed <- 2; }",
+            "a.cnx",
+          ),
+        ],
+        { cppMode: false, symbolTable: new SymbolTable() },
+      );
+
+      expect(program.memberOf("", "x")).toBe(program.symbolByCName("x"));
+      expect(program.memberOf("Motor", "speed")?.fullyQualifiedCName).toBe(
+        "Motor__speed",
+      );
+      // Negative control: a name declared elsewhere is not a member here.
+      expect(program.memberOf("", "speed")).toBeUndefined();
+    });
+  });
+
   // #1760 review: a file the program does not hold is a caller's bug. The
   // binding accessors used to fall back to "no locals" for one, which loses
   // every shadowing decision with no error, while lexicalFrameAt asserted.
@@ -406,6 +427,12 @@ describe("Program", () => {
       expect(program.isScopeTypeVisibleFrom("lib.cnx", "Lib__Point")).toBe(
         true,
       );
+      // #2116: the same answer found by identity, carrying the stored C name
+      expect(program.scopeTypeOf("use.cnx", "Lib", "Point")).toBeUndefined();
+      expect(
+        program.scopeTypeOf("lib.cnx", "Lib", "Point")?.fullyQualifiedCName,
+      ).toBe("Lib__Point");
+      expect(program.scopeTypeOf("lib.cnx", "", "Point")).toBeUndefined();
 
       const origin = find(program.symbolsInFile("use.cnx"), "origin");
       expect(SymbolGuards.isFunction(origin)).toBe(true);
@@ -1252,11 +1279,14 @@ scope Gauge {
         "lexicalDeclarationAt",
         "lexicalFrameAt",
         "mayBeHeaderName",
+        "memberOf",
         "opaqueTypes",
         "passByValueParams",
+        "qualifiedTypeName",
         "resolveFunction",
         "scope",
         "scopePathOf",
+        "scopeTypeOf",
         "settledConstOf",
         "sourceFiles",
         "symbolByCName",

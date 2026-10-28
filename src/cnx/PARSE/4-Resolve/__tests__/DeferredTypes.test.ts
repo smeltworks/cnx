@@ -38,7 +38,10 @@ describe("DeferredTypes.settle", () => {
 
     const settled = DeferredTypes.settle(
       declared.symbols,
-      (qualifiedName) => qualifiedName === "Spanned__Point",
+      (scopePath, name) =>
+        scopePath === "Spanned" && name === "Point"
+          ? "Spanned__Point"
+          : undefined,
       () => false, // no headers: nothing is opaque (#1722)
     );
     const origin = settled.find((sym) => sym.name === "origin");
@@ -51,7 +54,7 @@ describe("DeferredTypes.settle", () => {
 
     const unqualified = DeferredTypes.settle(
       declared.symbols,
-      () => false,
+      () => undefined,
       () => false,
     );
     const bare = unqualified.find((sym) => sym.name === "origin");

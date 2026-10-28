@@ -17,7 +17,6 @@ import type ISourceSpan from "../../types/ISourceSpan";
 import IInitializationError from "./types/IInitializationError";
 import IDeclarationInfo from "./types/IDeclarationInfo";
 import ESourceLanguage from "../../utils/types/ESourceLanguage";
-import ScopeUtils from "../../utils/ScopeUtils";
 import ExpressionShape from "../../utils/ExpressionShape";
 import StatementChildren from "../../utils/StatementChildren";
 import StatementNodes from "../../utils/StatementNodes";
@@ -30,6 +29,7 @@ import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
 import type TSyntaxPart from "../../types/syntax/TSyntaxPart";
 import type TTypeSyntax from "../../types/syntax/TTypeSyntax";
 import type TExpression from "../../types/syntax/TExpression";
+import DeclaredMember from "../../utils/DeclaredMember";
 import invariant from "../../utils/invariant";
 import type ISourcePosition from "../../utils/types/ISourcePosition";
 import type ILocalDeclaration from "../../types/ILocalDeclaration";
@@ -461,11 +461,16 @@ class InitializationAnalyzer {
       } else if (declaration.kind === "variableDeclaration") {
         this._declareMember(
           declaration,
-          ScopeUtils.qualifyInScope(declaration.name, ""),
+          this._declaredCName("", declaration.name),
           true,
         );
       }
     }
+  }
+
+  /** The C name 3-Declare gave the variable `name` in `scopePath` (#2116) */
+  private _declaredCName(scopePath: string, name: string): string {
+    return DeclaredMember.cNameOf(this.context.program, scopePath, name);
   }
 
   /** One scope block's variables, initialized when the block assigns them */
@@ -476,7 +481,7 @@ class InitializationAnalyzer {
     const assigned = this._assignedMembers(block);
     for (const { declaration } of block.members) {
       if (declaration.kind !== "variableDeclaration") continue;
-      const fullName = ScopeUtils.qualifyInScope(declaration.name, scopePath); // Transpiled C name
+      const fullName = this._declaredCName(scopePath, declaration.name);
       this._declareMember(
         declaration,
         fullName,

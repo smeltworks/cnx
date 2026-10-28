@@ -39,7 +39,6 @@ import type TRunTarget from "../../types/TRunTarget";
 import invariant from "../../utils/invariant";
 import emittedLocalName from "../../utils/emittedLocalName";
 import type IFunctionSymbol from "../../types/symbols/IFunctionSymbol";
-import ScopeUtils from "../../utils/ScopeUtils";
 import type TDefinedAt from "../../utils/types/TDefinedAt";
 import DefinitionPoint from "../../utils/DefinitionPoint";
 import type IScopeSymbol from "../../types/symbols/IScopeSymbol";
@@ -72,6 +71,7 @@ import type IProgramInputs from "./types/IProgramInputs";
 import type ISettledFiles from "./types/ISettledFiles";
 import type IVisibilityInput from "./types/IVisibilityInput";
 import TSymbolInfoAdapter from "../3-Declare/cnx/adapters/TSymbolInfoAdapter";
+import QualifiedTypeNames from "../3-Declare/cnx/QualifiedTypeNames";
 import TransitiveEnumCollector from "./TransitiveEnumCollector";
 import VisibleSymbols from "./VisibleSymbols";
 import ConstantNames from "./ConstantNames";
@@ -151,6 +151,8 @@ type TSettleInputs = Pick<
 /** No symbol views, for a closure walk that reads only the paths it visits. */
 const NO_VIEWS: ReadonlyMap<string, ICodeGenSymbols> = new Map();
 
+/** A file 1.3 spelled no qualified type for */
+const EMPTY_SPELLINGS: ReadonlyMap<string, string> = new Map();
 class Program {
   /**
    * Build the artifact from every declared file.
@@ -203,9 +205,11 @@ class Program {
     const framesByFile = settled.framesByFile;
     const symbolsByFile = settled.symbolsByFile;
     const symbolsByCName = Program.indexByCName(symbolsByFile);
+    const symbolsByIdentity = Program.indexByIdentity(symbolsByFile);
     const bound: IBindingFacts = {
       framesByFile,
       symbolsByCName,
+      symbolsByIdentity,
       registry,
       foreignNames,
       foreignValues,
@@ -247,11 +251,36 @@ class Program {
       symbolTable.addTSymbols(resolved);
     }
 
+    // One scope-type lookup per file, built on its first use (#2360 review)
+    const scopeTypesByFile = new Map<
+      string,
+      (scopePath: string, name: string) => TSymbol | undefined
+    >();
     return Object.freeze({
       isScopeTypeVisibleFrom,
       symbolTable: (): IResolvedSymbols => symbolTable,
       symbolByCName: (cName: string): TSymbol | undefined =>
         symbolsByCName.get(cName),
+      memberOf: (scopePath: string, name: string): TSymbol | undefined =>
+        symbolsByIdentity.get(Program.identityKey(scopePath, name)),
+      qualifiedTypeName: (sourceFile: string, written: string): string =>
+        fileFacts.qualifiedTypeName(sourceFile, written),
+      scopeTypeOf: (
+        sourceFile: string,
+        scopePath: string,
+        name: string,
+      ): TSymbol | undefined => {
+        let inFile = scopeTypesByFile.get(sourceFile);
+        if (inFile === undefined) {
+          inFile = Program.scopeTypeIn(
+            symbolsByIdentity,
+            isScopeTypeVisibleFrom,
+            sourceFile,
+          );
+          scopeTypesByFile.set(sourceFile, inFile);
+        }
+        return inFile(scopePath, name);
+      },
       symbolsInFile: (sourceFile: string): ReadonlyArray<TSymbol> =>
         symbolsByFile.get(sourceFile) ?? [],
       sourceFiles: (): ReadonlyArray<string> => sourceFiles,
@@ -446,9 +475,19 @@ class Program {
     const opaqueTypes = Program.deriveOpaqueTypes(foreign);
     const target = inputs.target ?? null;
     const headers = inputs.symbolTable ?? null;
+    // #2116: each file's written `Scope.T` / `Ns.T`, as 1.3 spelled it for
+    // that file -- kept per file, so two files' spellings never meet
+    const qualifiedTypeNames = new Map(
+      files.map((file) => [file.sourceFile, file.qualifiedTypeNames]),
+    );
     // #1175: what a constant name's facts read of the files, beside the binder
     const fileFacts: IFileConstantFacts = {
       isScopeTypeVisibleFrom,
+      qualifiedTypeName: (sourceFile, written) =>
+        QualifiedTypeNames.read(
+          qualifiedTypeNames.get(sourceFile) ?? EMPTY_SPELLINGS,
+          written,
+        ),
       reachesForeignHeader: (sourceFile) =>
         (inputs.filesReachingForeignHeaders ?? EMPTY_NAMES).has(sourceFile),
       headerStructFields: (structName) => headers?.getStructFields(structName),
@@ -488,6 +527,7 @@ class Program {
         files.map((file) => [file.sourceFile, file.lexicalScopes]),
       ),
       symbolsByCName: Program.indexByCName(settledByFile),
+      symbolsByIdentity: Program.indexByIdentity(settledByFile),
       registry,
       foreignNames,
       foreignValues,
@@ -501,6 +541,7 @@ class Program {
     const dimensioned: IBindingFacts = {
       ...declared,
       symbolsByCName: Program.indexByCName(values.symbolsByFile),
+      symbolsByIdentity: Program.indexByIdentity(values.symbolsByFile),
     };
     // #1668: each file's lexical frames, settled against the scope types THAT
     // file can see (#1724) and the program's consts, then frozen with it.
@@ -510,8 +551,11 @@ class Program {
         file.sourceFile,
         LexicalFrames.settle(
           file.lexicalScopes,
-          (qualifiedName) =>
-            isScopeTypeVisibleFrom(file.sourceFile, qualifiedName),
+          Program.scopeTypeCNameIn(
+            declared.symbolsByIdentity,
+            isScopeTypeVisibleFrom,
+            file.sourceFile,
+          ),
           (name, settled) =>
             ConstantNames.valueOf(
               name,
@@ -843,13 +887,19 @@ class Program {
     opaqueTypes: ReadonlySet<string>,
   ): Map<string, ReadonlyArray<TSymbol>> {
     const settledByFile = new Map<string, ReadonlyArray<TSymbol>>();
+    const declaredByIdentity = Program.indexByIdentity(
+      new Map(files.map((file) => [file.sourceFile, file.symbols])),
+    );
     for (const file of files) {
       settledByFile.set(
         file.sourceFile,
         DeferredTypes.settle(
           file.symbols,
-          (qualifiedName) =>
-            isScopeTypeVisibleFrom(file.sourceFile, qualifiedName),
+          Program.scopeTypeCNameIn(
+            declaredByIdentity,
+            isScopeTypeVisibleFrom,
+            file.sourceFile,
+          ),
           (typeName) => opaqueTypes.has(typeName),
         ),
       );
@@ -1089,8 +1139,18 @@ class Program {
         LexicalFrames.frameAt(Program.framesOf(facts.framesByFile, file()), at)
           .scopePath,
       visibleSymbol: (cName) => Program.visibleSymbolIn(facts, file(), cName),
-      isScopeTypeVisible: (name) =>
-        options.files.isScopeTypeVisibleFrom(file(), name),
+      visibleMember: (scopePath, name) =>
+        Program.visibleMemberIn(facts, file(), scopePath, name),
+      scopeTypeOf: (scopePath, name) => {
+        const member = Program.visibleMemberIn(facts, file(), scopePath, name);
+        return member !== undefined &&
+          options.files.isScopeTypeVisibleFrom(
+            file(),
+            member.fullyQualifiedCName,
+          )
+          ? member
+          : undefined;
+      },
       get reachesForeignHeader() {
         return options.files.reachesForeignHeader(file());
       },
@@ -1100,6 +1160,8 @@ class Program {
       headerStructFields: (structName) =>
         options.files.headerStructFields(structName),
       headerTypeBits: (cType) => options.files.headerTypeBits(cType),
+      qualifiedTypeName: (written) =>
+        options.files.qualifiedTypeName(file(), written),
       headerTypeHead: (name) => options.files.headerTypeHead(name),
       headerFieldCount: (structName) =>
         options.files.headerFieldCount(structName),
@@ -1208,7 +1270,11 @@ class Program {
       );
       const constants = Program.deriveConstants(
         symbols,
-        { ...declared, symbolsByCName: Program.indexByCName(symbols) },
+        {
+          ...declared,
+          symbolsByCName: Program.indexByCName(symbols),
+          symbolsByIdentity: Program.indexByIdentity(symbols),
+        },
         files,
       );
       const next = Program.resolveDimensions(
@@ -1355,6 +1421,7 @@ class Program {
       const facts: IBindingFacts = {
         ...declared,
         symbolsByCName: Program.indexByCName(current),
+        symbolsByIdentity: Program.indexByIdentity(current),
       };
       const next = new Map<string, ReadonlyArray<TSymbol>>();
       for (const [sourceFile, symbols] of current) {
@@ -1414,6 +1481,22 @@ class Program {
    * nothing there (#1760 second review): a reopened scope's member from an
    * un-included sibling beat the visible global, and sized `u8[N]` by it
    */
+  /** `visibleSymbolIn`, found by scope path and name instead of a C name. */
+  private static visibleMemberIn(
+    facts: IBindingFacts,
+    sourceFile: string,
+    scopePath: string,
+    name: string,
+  ): TSymbol | undefined {
+    const symbol = facts.symbolsByIdentity.get(
+      Program.identityKey(scopePath, name),
+    );
+    return symbol !== undefined &&
+      facts.visibleFiles.get(sourceFile)?.has(symbol.sourceFile)
+      ? symbol
+      : undefined;
+  }
+
   private static visibleSymbolIn(
     facts: IBindingFacts,
     sourceFile: string,
@@ -1504,8 +1587,8 @@ class Program {
     if (local) {
       return { kind: "local", declaration: local, scopePath };
     }
-    const symbol = facts.symbolsByCName.get(
-      ScopeUtils.getTranspiledCName({ name, scopePath }),
+    const symbol = facts.symbolsByIdentity.get(
+      Program.identityKey(scopePath, name),
     );
     return symbol?.kind === "variable" && symbol.sourceFile === sourceFile
       ? { kind: "variable", symbol }
@@ -1599,12 +1682,28 @@ class Program {
         ? undefined
         : symbol;
     };
-    const declared = (cName: string): TValueBinding | null => {
-      const symbol = visibleSymbol(cName);
+    const visibleMember = (
+      memberScopePath: string,
+      memberName: string,
+    ): TSymbol | undefined => {
+      const symbol = Program.visibleMemberIn(
+        facts,
+        sourceFile,
+        memberScopePath,
+        memberName,
+      );
+      return symbol !== undefined &&
+        Program.closesAfter(symbol, sourceFile, at, isDefinedAt)
+        ? undefined
+        : symbol;
+    };
+    const boundTo = (symbol: TSymbol | undefined): TValueBinding | null => {
       if (symbol?.kind === "variable") return { kind: "variable", symbol };
       if (symbol?.kind === "function") return { kind: "function", symbol };
       return null;
     };
+    const declared = (cName: string): TValueBinding | null =>
+      boundTo(visibleSymbol(cName));
     const scope = (): TValueBinding | null =>
       facts.registry?.getScope(name)
         ? { kind: "scope", scopePath: name }
@@ -1616,19 +1715,18 @@ class Program {
     // whatever its kind. A type binds no value, but it still hides a global
     // of the name; the step used to accept variables alone, so a scope
     // function let the global answer while emission wrote the function.
-    const memberCName = ScopeUtils.getTranspiledCName({ name, scopePath });
-    const isMember =
-      scopePath !== "" && visibleSymbol(memberCName) !== undefined;
+    const member =
+      scopePath === "" ? undefined : visibleMember(scopePath, name);
     if (root === "this") {
-      return isMember ? declared(memberCName) : null;
+      return boundTo(member);
     }
     if (root === "global") {
       // #1668 review: a header's name too. `global.` is how a scope reaches
       // one its own member shadows, and binding nothing left it untyped.
       return declared(name) ?? scope() ?? foreign();
     }
-    if (isMember) {
-      return declared(memberCName);
+    if (member !== undefined) {
+      return boundTo(member);
     }
     return declared(name) ?? scope() ?? foreign();
   }
@@ -1663,6 +1761,70 @@ class Program {
    * precedence. A genuine clash is a diagnostic 2.1 owns, not a silent
    * overwrite here.
    */
+  /** The key `memberOf` finds a symbol by: its own scope path and name (#2116). */
+  /**
+   * The scope type `name` declared in `scopePath` that `sourceFile` can see,
+   * found by identity (#2116). One answer for settling, the frames and
+   * `IProgram.scopeTypeOf`, so none of them encodes a name to ask about.
+   */
+  private static scopeTypeIn(
+    byIdentity: ReadonlyMap<string, TSymbol>,
+    isScopeTypeVisibleFrom: (
+      sourceFile: string,
+      qualifiedName: string,
+    ) => boolean,
+    sourceFile: string,
+  ): (scopePath: string, name: string) => TSymbol | undefined {
+    return (scopePath, name) => {
+      const member = byIdentity.get(Program.identityKey(scopePath, name));
+      return member !== undefined &&
+        isScopeTypeVisibleFrom(sourceFile, member.fullyQualifiedCName)
+        ? member
+        : undefined;
+    };
+  }
+
+  /** `scopeTypeIn`'s answer as the C name 3-Declare stored on the type */
+  private static scopeTypeCNameIn(
+    byIdentity: ReadonlyMap<string, TSymbol>,
+    isScopeTypeVisibleFrom: (
+      sourceFile: string,
+      qualifiedName: string,
+    ) => boolean,
+    sourceFile: string,
+  ): (scopePath: string, name: string) => string | undefined {
+    const scopeTypeOf = Program.scopeTypeIn(
+      byIdentity,
+      isScopeTypeVisibleFrom,
+      sourceFile,
+    );
+    return (scopePath, name) =>
+      scopeTypeOf(scopePath, name)?.fullyQualifiedCName;
+  }
+
+  private static identityKey(scopePath: string, name: string): string {
+    return `${scopePath}\u0000${name}`;
+  }
+
+  /**
+   * Every symbol by the identity 3-Declare gave it, so a site that holds a
+   * scope path and a written name finds the symbol without encoding a C name
+   * to search by (#2116: compute once, then read). First symbol wins, as in
+   * `indexByCName`.
+   */
+  private static indexByIdentity(
+    symbolsByFile: ReadonlyMap<string, ReadonlyArray<TSymbol>>,
+  ): Map<string, TSymbol> {
+    const index = new Map<string, TSymbol>();
+    for (const symbols of symbolsByFile.values()) {
+      for (const symbol of symbols) {
+        const key = Program.identityKey(symbol.scopePath, symbol.name);
+        if (!index.has(key)) index.set(key, symbol);
+      }
+    }
+    return index;
+  }
+
   private static indexByCName(
     symbolsByFile: ReadonlyMap<string, ReadonlyArray<TSymbol>>,
   ): Map<string, TSymbol> {

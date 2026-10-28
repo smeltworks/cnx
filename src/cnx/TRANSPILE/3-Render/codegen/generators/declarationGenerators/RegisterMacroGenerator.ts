@@ -7,19 +7,16 @@
  * obtain four strings per member.
  */
 import IPlannedRegisterMember from "../../types/IPlannedRegisterMember";
-import QualifiedCName from "../../../../../utils/QualifiedCName";
 
 /**
  * Generate #define macros for register members.
  *
  * @param members - The planned members, in declaration order
- * @param prefix - Prefix for macro names (e.g., "GPIO7" or "Teensy4_GPIO7")
  * @param baseAddress - Base address expression string
  * @returns Array of #define lines
  */
 function generateRegisterMacros(
   members: readonly IPlannedRegisterMember[],
-  prefix: string,
   baseAddress: string,
 ): string[] {
   return members.map((member) => {
@@ -30,7 +27,7 @@ function generateRegisterMacros(
         : `volatile ${member.cType}*`;
 
     // Generate: #define PREFIX_REGNAME (*(volatile type*)(base + offset))
-    return `#define ${QualifiedCName.fromParts([prefix, member.name])} (*(${cast})(${baseAddress} + ${member.offset}))`;
+    return `#define ${member.cName} (*(${cast})(${baseAddress} + ${member.offset}))`;
   });
 }
 

@@ -29,6 +29,7 @@ import generateFunctionCall from "./CallExprGenerator";
 import memberAccessChain from "../../memberAccessChain";
 import type IRootHolding from "../../types/IRootHolding";
 import BitmapAccessHelper from "./BitmapAccessHelper";
+import MemberSeparatorResolver from "../../helpers/MemberSeparatorResolver";
 import BitRangeHelper from "../../helpers/BitRangeHelper";
 import FloatBitHelper from "../../helpers/FloatBitHelper";
 import NarrowingCastHelper from "../../../../2-Plan/NarrowingCastHelper";
@@ -43,10 +44,8 @@ import type ILengthName from "../../../../../utils/types/ILengthName";
 import type IChainStep from "../../../../../types/IChainStep";
 import TYPE_MAP from "../../../../2-Plan/types/TYPE_MAP";
 import type IStructSymbol from "../../../../../types/symbols/IStructSymbol";
-import QualifiedCName from "../../../../../utils/QualifiedCName";
 import OperandTyper from "../../../../../utils/OperandTyper";
 import invariant from "../../../../../utils/invariant";
-import QualifiedNameGenerator from "../../../../../utils/QualifiedNameGenerator";
 import DeclaredTypeFacts from "../../../../../utils/DeclaredTypeFacts";
 import PrivateConstValue from "../../PrivateConstValue";
 
@@ -863,7 +862,7 @@ const generateMemberAccess = (
     tryBitmapFieldAccess(ctx, input, effects, orchestrator) ??
     tryScopeMemberAccess(ctx, state, orchestrator, effects) ??
     tryKnownScopeAccess(ctx, orchestrator) ??
-    tryEnumMemberAccess(ctx, input, orchestrator) ??
+    tryEnumMemberAccess(ctx, input) ??
     tryRegisterMemberAccess(ctx, input) ??
     tryStructParamAccess(ctx, orchestrator) ??
     tryRegisterBitmapAccess(ctx, input, effects, orchestrator) ??
@@ -931,10 +930,12 @@ const tryScopeMemberAccess = (
   }
   // #1322: `this` outside a scope is E0431 in 2.1.
   const output = initializeMemberOutput(ctx);
-  const fullName = QualifiedNameGenerator.forMember(
+  const member = orchestrator.state.program?.memberOf(
     state.currentScopePath,
     ctx.memberName,
   );
+  invariant(member !== undefined, "3-Declare declares every this. member");
+  const fullName = member.fullyQualifiedCName;
   // #1739: a private const is written as its settled value
   const inlined = PrivateConstValue.inlined(
     state,
@@ -962,9 +963,37 @@ const tryKnownScopeAccess = (
   }
 
   const output = initializeMemberOutput(ctx);
-  output.result = `${ctx.result}${orchestrator.getScopeSeparator(ctx.isCppAccessChain)}${ctx.memberName}`;
+  if (ctx.isCppAccessChain) {
+    // #2116: a written C++ chain's step, spelled where every chain step is
+    output.result = MemberSeparatorResolver.cppAccess(
+      ctx.result,
+      ctx.memberName,
+    );
+  } else {
+    const member = orchestrator.state.program?.memberOf(
+      ctx.result,
+      ctx.memberName,
+    );
+    invariant(member !== undefined, "2.1 rejects a member its scope lacks");
+    output.result = member.fullyQualifiedCName;
+  }
   output.resolvedIdentifier = output.result;
   return output;
+};
+
+/** The C name 3-Declare gave this enum or register member (#2116) */
+const declaredMemberCName = (
+  ctx: IMemberAccessContext,
+  input: IGeneratorInput,
+): string => {
+  const cName = input
+    .symbols!.memberCNames.get(ctx.result)
+    ?.get(ctx.memberName);
+  invariant(
+    cName !== undefined,
+    `2.1 rejects a member '${ctx.result}' lacks (missing '${ctx.memberName}')`,
+  );
+  return cName;
 };
 
 /**
@@ -973,14 +1002,15 @@ const tryKnownScopeAccess = (
 const tryEnumMemberAccess = (
   ctx: IMemberAccessContext,
   input: IGeneratorInput,
-  orchestrator: IOrchestrator,
 ): MemberAccessResult | null => {
   if (!input.symbols!.knownEnums.has(ctx.result)) {
     return null;
   }
 
   const output = initializeMemberOutput(ctx);
-  output.result = `${ctx.result}${orchestrator.getScopeSeparator(ctx.isCppAccessChain)}${ctx.memberName}`;
+  output.result = ctx.isCppAccessChain
+    ? MemberSeparatorResolver.cppAccess(ctx.result, ctx.memberName)
+    : declaredMemberCName(ctx, input);
   return output;
 };
 
@@ -997,7 +1027,7 @@ const tryRegisterMemberAccess = (
 
   // #1322: a read of a `wo` member is E0870 in pass 2.1 (ADR-004).
   const output = initializeMemberOutput(ctx);
-  output.result = QualifiedCName.fromParts([ctx.result, ctx.memberName]);
+  output.result = declaredMemberCName(ctx, input);
   output.isRegisterChain = true;
   return output;
 };
