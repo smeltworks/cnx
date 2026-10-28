@@ -59,10 +59,11 @@ interface IProgram {
 
   /**
    * The spelling 1.3 gave a `Scope.T` / `Ns.T` written at a type position,
-   * by its written text (#2116): read it, never re-derive it. Every one a
-   * file writes was spelled, so there is no miss to handle.
+   * by the file that writes it and its written text (#2116): read it, never
+   * re-derive it. Every one a file writes was spelled, so there is no miss to
+   * handle. Per file, so two files' spellings never meet in one map.
    */
-  qualifiedTypeName(written: string): string;
+  qualifiedTypeName(sourceFile: string, written: string): string;
 
   /**
    * The type `name` declared in `scopePath` that `sourceFile` can see, found

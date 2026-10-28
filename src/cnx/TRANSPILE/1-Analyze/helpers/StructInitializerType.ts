@@ -38,6 +38,7 @@ class StructInitializerType {
       FunctionReference.candidatesForTypeText(
         typeText,
         scopePath,
+        context.sourceFile,
         context.program,
       ).find((c) => fields.has(c)) ?? null
     );
@@ -82,6 +83,7 @@ class StructInitializerType {
     const candidates = FunctionReference.candidatesForTypeText(
       typeName,
       OperandTyper.scopePathAt(at, context),
+      context.sourceFile,
       context.program,
     );
     if (candidates.some((c) => DeclaredTypeFacts.isBitmap(symbols, c))) {

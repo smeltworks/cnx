@@ -104,6 +104,7 @@ class CppClassInitializerCheck {
     for (const candidate of FunctionReference.candidatesForTypeText(
       typeText,
       scopePath,
+      this.context.sourceFile,
       this.context.program,
     )) {
       if (

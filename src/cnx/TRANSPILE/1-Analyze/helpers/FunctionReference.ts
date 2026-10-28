@@ -66,6 +66,7 @@ class FunctionReference {
   static candidatesForTypeText(
     typeText: string,
     scopePath: string,
+    sourceFile: string,
     program: Pick<IProgram, "memberOf" | "qualifiedTypeName">,
   ): string[] {
     const text = TypeText.withoutDimensions(typeText);
@@ -81,7 +82,7 @@ class FunctionReference {
     }
     if (text.includes(".")) {
       // #2116: 1.3 spelled every written `Scope.T` / `Ns.T` once
-      return [program.qualifiedTypeName(text)];
+      return [program.qualifiedTypeName(sourceFile, text)];
     }
     return FunctionReference.candidates(text, scopePath, false, program);
   }
@@ -190,6 +191,7 @@ class FunctionReference {
       FunctionReference.candidatesForTypeText(
         typeText,
         scopePath,
+        context.sourceFile,
         context.program,
       ),
       context,

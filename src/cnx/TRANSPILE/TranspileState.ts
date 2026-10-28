@@ -821,10 +821,10 @@ class TranspileState {
               ?.fullyQualifiedCName,
       qualifiedTypeName: (written: string) => {
         invariant(
-          this.program !== null,
-          "a qualified type is read from the program",
+          this.program !== null && this.sourcePath !== null,
+          "a qualified type is read from the program, for the file it is in",
         );
-        return this.program.qualifiedTypeName(written);
+        return this.program.qualifiedTypeName(this.sourcePath, written);
       },
       memberCName: (scopePath: string, name: string) =>
         this.program?.memberOf(scopePath, name)?.fullyQualifiedCName,

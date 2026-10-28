@@ -1073,7 +1073,7 @@ class OperandTyper {
         {
           scopeTypeCName: OperandTyper.scopeTypeCNameIn(ctx),
           qualifiedTypeName: (written: string) =>
-            ctx.program.qualifiedTypeName(written),
+            ctx.program.qualifiedTypeName(ctx.sourceFile, written),
           memberCName: (scopePath: string, name: string) =>
             ctx.program.memberOf(scopePath, name)?.fullyQualifiedCName,
         },

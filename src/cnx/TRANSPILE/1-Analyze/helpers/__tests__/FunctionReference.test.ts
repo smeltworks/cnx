@@ -54,7 +54,7 @@ let state = new TranspileState();
 describe("FunctionReference.candidates -- the ADR-057 order", () => {
   /** `scope S { void f() {} }`, as 3-Declare names it (#2116). */
   const scopeF: Pick<IProgram, "memberOf" | "qualifiedTypeName"> = {
-    qualifiedTypeName: (written) =>
+    qualifiedTypeName: (_sourceFile, written) =>
       QualifiedTypeNames.read(NONE_WRITTEN, written),
     memberOf: (scopePath, name) =>
       scopePath === "S" && name === "f"
@@ -83,7 +83,7 @@ describe("FunctionReference.candidates -- the ADR-057 order", () => {
 describe("FunctionReference.candidatesForTypeText", () => {
   // 3-Declare declared `handler` in scope `S` and nothing else
   const declared: Pick<IProgram, "memberOf" | "qualifiedTypeName"> = {
-    qualifiedTypeName: (written) =>
+    qualifiedTypeName: (_sourceFile, written) =>
       QualifiedTypeNames.read(NONE_WRITTEN, written),
     memberOf: (scopePath, name) =>
       scopePath === "S" && name === "handler"
@@ -93,53 +93,93 @@ describe("FunctionReference.candidatesForTypeText", () => {
 
   it("reads an array spelling as its element type", () => {
     expect(
-      FunctionReference.candidatesForTypeText("onDown[4]", "", declared),
+      FunctionReference.candidatesForTypeText(
+        "onDown[4]",
+        "",
+        "test.cnx",
+        declared,
+      ),
     ).toEqual(["onDown"]);
   });
 
   it("binds `this.` to the enclosing scope and nothing else", () => {
     expect(
-      FunctionReference.candidatesForTypeText("this.handler", "S", declared),
+      FunctionReference.candidatesForTypeText(
+        "this.handler",
+        "S",
+        "test.cnx",
+        declared,
+      ),
     ).toEqual(["S__handler"]);
     // A member the scope does not declare names nothing either
     expect(
-      FunctionReference.candidatesForTypeText("this.other", "S", declared),
+      FunctionReference.candidatesForTypeText(
+        "this.other",
+        "S",
+        "test.cnx",
+        declared,
+      ),
     ).toEqual([]);
     // Outside a scope, `this.` names nothing -- E0431 is the rule that says so.
     expect(
-      FunctionReference.candidatesForTypeText("this.handler", "", declared),
+      FunctionReference.candidatesForTypeText(
+        "this.handler",
+        "",
+        "test.cnx",
+        declared,
+      ),
     ).toEqual([]);
   });
 
   it("binds `global.` to the file scope, unqualified", () => {
     expect(
-      FunctionReference.candidatesForTypeText("global.onDown", "S", declared),
+      FunctionReference.candidatesForTypeText(
+        "global.onDown",
+        "S",
+        "test.cnx",
+        declared,
+      ),
     ).toEqual(["onDown"]);
   });
 
   it("reads the spelling 1.3 stored for a qualified path", () => {
     const stored: Pick<IProgram, "memberOf" | "qualifiedTypeName"> = {
       memberOf: () => undefined,
-      qualifiedTypeName: (written) =>
+      qualifiedTypeName: (_sourceFile, written) =>
         QualifiedTypeNames.read(
           new Map([["TestNS.MyClass", "TestNS::MyClass"]]),
           written,
         ),
     };
     expect(
-      FunctionReference.candidatesForTypeText("TestNS.MyClass", "", stored),
+      FunctionReference.candidatesForTypeText(
+        "TestNS.MyClass",
+        "",
+        "test.cnx",
+        stored,
+      ),
     ).toEqual(["TestNS::MyClass"]);
   });
 
   it("treats a qualified path 1.3 did not spell as an internal error", () => {
     expect(() =>
-      FunctionReference.candidatesForTypeText("Outer.Inner.h", "", declared),
+      FunctionReference.candidatesForTypeText(
+        "Outer.Inner.h",
+        "",
+        "test.cnx",
+        declared,
+      ),
     ).toThrow(/1.3 spells every qualified type/);
   });
 
   it("searches from the enclosing scope for a bare name", () => {
     expect(
-      FunctionReference.candidatesForTypeText("handler", "S", declared),
+      FunctionReference.candidatesForTypeText(
+        "handler",
+        "S",
+        "test.cnx",
+        declared,
+      ),
     ).toEqual(["S__handler", "handler"]);
   });
 });

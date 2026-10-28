@@ -151,6 +151,8 @@ type TSettleInputs = Pick<
 /** No symbol views, for a closure walk that reads only the paths it visits. */
 const NO_VIEWS: ReadonlyMap<string, ICodeGenSymbols> = new Map();
 
+/** A file 1.3 spelled no qualified type for */
+const EMPTY_SPELLINGS: ReadonlyMap<string, string> = new Map();
 class Program {
   /**
    * Build the artifact from every declared file.
@@ -256,8 +258,8 @@ class Program {
         symbolsByCName.get(cName),
       memberOf: (scopePath: string, name: string): TSymbol | undefined =>
         symbolsByIdentity.get(Program.identityKey(scopePath, name)),
-      qualifiedTypeName: (written: string): string =>
-        fileFacts.qualifiedTypeName(written),
+      qualifiedTypeName: (sourceFile: string, written: string): string =>
+        fileFacts.qualifiedTypeName(sourceFile, written),
       scopeTypeOf: (
         sourceFile: string,
         scopePath: string,
@@ -462,15 +464,19 @@ class Program {
     const opaqueTypes = Program.deriveOpaqueTypes(foreign);
     const target = inputs.target ?? null;
     const headers = inputs.symbolTable ?? null;
-    // #2116: every file's written `Scope.T` / `Ns.T`, as 1.3 spelled it
+    // #2116: each file's written `Scope.T` / `Ns.T`, as 1.3 spelled it for
+    // that file -- kept per file, so two files' spellings never meet
     const qualifiedTypeNames = new Map(
-      files.flatMap((file) => [...file.qualifiedTypeNames]),
+      files.map((file) => [file.sourceFile, file.qualifiedTypeNames]),
     );
     // #1175: what a constant name's facts read of the files, beside the binder
     const fileFacts: IFileConstantFacts = {
       isScopeTypeVisibleFrom,
-      qualifiedTypeName: (written) =>
-        QualifiedTypeNames.read(qualifiedTypeNames, written),
+      qualifiedTypeName: (sourceFile, written) =>
+        QualifiedTypeNames.read(
+          qualifiedTypeNames.get(sourceFile) ?? EMPTY_SPELLINGS,
+          written,
+        ),
       reachesForeignHeader: (sourceFile) =>
         (inputs.filesReachingForeignHeaders ?? EMPTY_NAMES).has(sourceFile),
       headerStructFields: (structName) => headers?.getStructFields(structName),
@@ -1145,7 +1151,8 @@ class Program {
       headerStructFields: (structName) =>
         options.files.headerStructFields(structName),
       headerTypeBits: (cType) => options.files.headerTypeBits(cType),
-      qualifiedTypeName: (written) => options.files.qualifiedTypeName(written),
+      qualifiedTypeName: (written) =>
+        options.files.qualifiedTypeName(file(), written),
       headerTypeHead: (name) => options.files.headerTypeHead(name),
       headerFieldCount: (structName) =>
         options.files.headerFieldCount(structName),
