@@ -127,16 +127,6 @@ class QualifiedCName {
   }
 
   /**
-   * Re-qualify a generated C name for C++ namespace syntax (`A__B` -> `A::B`).
-   *
-   * Splits on the C separator rather than replacing every underscore, so a component
-   * containing a single underscore (`tick_count`) survives intact.
-   */
-  static toCppQualified(name: string, cppSeparator: string): string {
-    return QualifiedCName.split(name).join(cppSeparator);
-  }
-
-  /**
    * Expand components into flat parts, dropping empties and splitting dotted paths.
    */
   private static joined(

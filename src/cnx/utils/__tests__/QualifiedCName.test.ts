@@ -70,21 +70,6 @@ describe("QualifiedCName", () => {
     });
   });
 
-  describe("toCppQualified", () => {
-    it("re-qualifies for C++ namespace syntax", () => {
-      expect(
-        QualifiedCName.toCppQualified("SeaDash__Parse__Result", "::"),
-      ).toBe("SeaDash::Parse::Result");
-    });
-
-    it("leaves single underscores inside a component alone", () => {
-      // The old blanket replaceAll("_", "::") would have mangled this
-      expect(QualifiedCName.toCppQualified("Timer__tick_count", "::")).toBe(
-        "Timer::tick_count",
-      );
-    });
-  });
-
   describe("injectivity (ADR-063)", () => {
     // The property the whole ADR exists to establish: distinct component lists
     // must never produce the same C identifier, given ADR-063-conformant input.
