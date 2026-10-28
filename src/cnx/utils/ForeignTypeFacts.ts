@@ -111,6 +111,25 @@ class ForeignTypeFacts {
    * A header symbol by name: C first, then C++ (a `.hpp` in `--cpp` mode).
    * Both carry the same `kind` and `type` string for the shapes read here.
    */
+  /**
+   * The C++ symbols a written path names under `owner` (undefined at file
+   * scope), member by member: each step asks for the next member of the
+   * stored name the last step found, so nothing spells `A::B` (#2116).
+   */
+  static cppPath(
+    lookup: Pick<IForeignSymbolLookup, "getCppMembers">,
+    owner: string | undefined,
+    path: readonly string[],
+  ): TCppSymbol[] {
+    let found = lookup.getCppMembers(owner, path[0]);
+    for (const member of path.slice(1)) {
+      const scope = found[0];
+      if (scope === undefined) return [];
+      found = lookup.getCppMembers(scope.name, member);
+    }
+    return found;
+  }
+
   static foreignSymbol(
     lookup: Pick<IForeignSymbolLookup, "getCSymbol" | "getCppSymbol">,
     name: string,

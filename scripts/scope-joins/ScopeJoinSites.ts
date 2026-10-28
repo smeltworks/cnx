@@ -211,12 +211,6 @@ class ScopeJoinSites {
       why: "`qualify`, defined in terms of the one join; 3-Declare's C++ collectors are its callers",
     },
     {
-      file: "src/cnx/TRANSPILE/1-Analyze/helpers/CCallee.ts",
-      element: '.join("::")',
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
       file: "src/cnx/utils/ForeignTypeFacts.ts",
       element: "fromParts([...scopes.slice(0, depth), spelling])",
       kind: "recompute",

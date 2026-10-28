@@ -1,4 +1,5 @@
 import OperandTyper from "../../../utils/OperandTyper";
+import ForeignTypeFacts from "../../../utils/ForeignTypeFacts";
 import TypedefParamParser from "../../../utils/TypedefParamParser";
 import type TExpression from "../../../types/syntax/TExpression";
 import type IAnalysisContext from "../types/IAnalysisContext";
@@ -83,12 +84,12 @@ class CCallee {
       expr.primary.kind === "identifier" &&
       before.every((op) => op.kind === "member")
     ) {
-      names.push(
-        [
-          expr.primary.name,
-          ...before.map((op) => (op.kind === "member" ? op.name : "")),
-        ].join("::"),
-      );
+      // #2116: `hw.f(a)` reads the stored name of the `f` namespace hw declares
+      const named = ForeignTypeFacts.cppPath(context.symbolTable, undefined, [
+        expr.primary.name,
+        ...before.map((op) => (op.kind === "member" ? op.name : "")),
+      ])[0];
+      if (named !== undefined) names.push(named.name);
     }
     const method = before.at(-1);
     if (method?.kind === "member") {
