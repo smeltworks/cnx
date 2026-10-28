@@ -814,22 +814,30 @@ class TranspileState {
    */
   typeBindingDeps(): ITypeBindingDeps {
     return {
-      scopeTypeCName: (scopePath: string, name: string) =>
-        this.sourcePath === null
-          ? undefined
-          : this.program?.scopeTypeOf(this.sourcePath, scopePath, name)
-              ?.fullyQualifiedCName,
+      scopeTypeCName: (scopePath: string, name: string) => {
+        const { program, sourcePath } = this.boundProgram();
+        return program.scopeTypeOf(sourcePath, scopePath, name)
+          ?.fullyQualifiedCName;
+      },
       qualifiedTypeName: (written: string) => {
-        invariant(
-          this.program !== null && this.sourcePath !== null,
-          "a qualified type is read from the program, for the file it is in",
-        );
-        return this.program.qualifiedTypeName(this.sourcePath, written);
+        const { program, sourcePath } = this.boundProgram();
+        return program.qualifiedTypeName(sourcePath, written);
       },
       memberCName: (scopePath: string, name: string) =>
-        this.program?.memberOf(scopePath, name)?.fullyQualifiedCName,
+        this.boundProgram().program.memberOf(scopePath, name)
+          ?.fullyQualifiedCName,
     };
   }
+
+  /** The program and the file a type binding reads from; set before any is read. */
+  private boundProgram(): { program: IProgram; sourcePath: string } {
+    invariant(
+      this.program !== null && this.sourcePath !== null,
+      "a type binding is read from the program, for the file it is in",
+    );
+    return { program: this.program, sourcePath: this.sourcePath };
+  }
+
 
   /**
    * ADR-030: is a cnx declaration of this type held through a pointer?
