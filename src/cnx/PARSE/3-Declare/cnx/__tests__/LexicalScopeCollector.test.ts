@@ -9,7 +9,7 @@ const framesOf = (source: string): ILexicalFrame =>
   LexicalScopeCollector.collect(
     ProgramLowering.program(parse(source), null),
     new SymbolRegistry(),
-    () => false,
+    { isScopeType: () => false, qualifiedTypeName: () => undefined },
   );
 
 interface IShape {

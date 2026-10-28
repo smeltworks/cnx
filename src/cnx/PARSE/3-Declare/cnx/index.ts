@@ -25,6 +25,7 @@ import ScopeCollector from "./collectors/ScopeCollector";
 import TYPE_FORMING_KINDS from "../TYPE_FORMING_KINDS";
 import TSymbolKindCnx from "../../../types/symbol-kinds/TSymbolKindCnx";
 import QualifiedTypeNames from "./QualifiedTypeNames";
+import type IDeclareTypeFacts from "../types/IDeclareTypeFacts";
 
 /** A declaration a scope may hold */
 type TScopeMemberSyntax = Extract<
@@ -100,6 +101,16 @@ class CnxResolver {
     // guess ADR-057 cannot recover from once the name is a string.
     const isScopeType = (qualifiedName: string): boolean =>
       declaredScopeTypes.has(qualifiedName);
+    // #2116: each written `Scope.T` / `Ns.T` spelled once, before any symbol
+    // is collected, so every type the collectors resolve reads the spelling
+    const qualifiedTypeNames = QualifiedTypeNames.collect(
+      program,
+      isCppScopeHead,
+    );
+    const typeFacts: IDeclareTypeFacts = {
+      isScopeType,
+      qualifiedTypeName: (written) => qualifiedTypeNames.get(written),
+    };
 
     // Pass 1: Collect every declaration in source order. Whether a register
     // member's type IS a bitmap is not decided here: the bitmap may be another
@@ -109,7 +120,7 @@ class CnxResolver {
       program,
       sourceFile,
       symbols,
-      isScopeType,
+      typeFacts,
     );
 
     // #1668: the lexical frames, over the same ADR-057 predicate the symbols
@@ -117,7 +128,7 @@ class CnxResolver {
     const lexicalScopes = LexicalScopeCollector.collect(
       program,
       registry,
-      isScopeType,
+      typeFacts,
     );
 
     // #1825: ADR-006's and ADR-029's per-file halves. Each records what this
@@ -138,7 +149,7 @@ class CnxResolver {
       lexicalScopes,
       parameterLists,
       callbackUses,
-      qualifiedTypeNames: QualifiedTypeNames.collect(program, isCppScopeHead),
+      qualifiedTypeNames,
     };
   }
 
@@ -220,7 +231,7 @@ class CnxResolver {
     program: IProgramSyntax,
     sourceFile: string,
     symbols: TSymbol[],
-    isScopeType: (qualifiedName: string) => boolean,
+    typeFacts: IDeclareTypeFacts,
   ): void {
     for (const { declaration: syntax } of program.declarations) {
       CnxResolver._collectDeclaration(
@@ -228,7 +239,7 @@ class CnxResolver {
         syntax,
         sourceFile,
         symbols,
-        isScopeType,
+        typeFacts,
       );
     }
   }
@@ -244,7 +255,7 @@ class CnxResolver {
     syntax: TDeclarationSyntax,
     sourceFile: string,
     symbols: TSymbol[],
-    isScopeType: (qualifiedName: string) => boolean,
+    typeFacts: IDeclareTypeFacts,
   ): void {
     // #1298: file scope is the empty path.
     const globalScopePath = "";
@@ -256,7 +267,7 @@ class CnxResolver {
         syntax,
         sourceFile,
         symbols,
-        isScopeType,
+        typeFacts,
       );
       return;
     }
@@ -349,13 +360,13 @@ class CnxResolver {
     scopeSyntax: Extract<TDeclarationSyntax, { kind: "scope" }>,
     sourceFile: string,
     symbols: TSymbol[],
-    isScopeType: (qualifiedName: string) => boolean,
+    typeFacts: IDeclareTypeFacts,
   ): void {
     const result = ScopeCollector.collect(
       registry,
       scopeSyntax,
       sourceFile,
-      isScopeType,
+      typeFacts,
     );
 
     symbols.push(result.scopeSymbol);

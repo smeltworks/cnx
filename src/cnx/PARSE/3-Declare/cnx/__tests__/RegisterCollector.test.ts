@@ -200,7 +200,7 @@ describe("RegisterCollector", () => {
         "motor.cnx",
         "Motor",
         "public",
-        isScopeType,
+        { isScopeType, qualifiedTypeName: () => undefined },
       );
 
       expect(TypeResolver.getTypeName(symbol.members.get("FLAGS")!.type)).toBe(
@@ -228,7 +228,7 @@ describe("RegisterCollector", () => {
         "motor.cnx",
         "Motor",
         "public",
-        isScopeType,
+        { isScopeType, qualifiedTypeName: () => undefined },
       );
 
       expect(TypeResolver.getTypeName(symbol.members.get("FLAGS")!.type)).toBe(

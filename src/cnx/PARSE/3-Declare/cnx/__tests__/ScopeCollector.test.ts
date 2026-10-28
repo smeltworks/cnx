@@ -363,7 +363,7 @@ describe("ScopeCollector", () => {
         registry,
         FirstDeclaration.scope(tree),
         "test.cnx",
-        isScopeType,
+        { isScopeType, qualifiedTypeName: () => undefined },
       );
 
       const regSymbol = result.memberSymbols.find((s) => s.name === "CTRL");
@@ -394,7 +394,7 @@ describe("ScopeCollector", () => {
         registry,
         FirstDeclaration.scope(tree),
         "test.cnx",
-        isScopeType,
+        { isScopeType, qualifiedTypeName: () => undefined },
       );
 
       const regSymbol = result.memberSymbols.find((s) => s.name === "CTRL");

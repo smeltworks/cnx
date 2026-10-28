@@ -15,6 +15,7 @@ import SymbolRegistry from "../../SymbolRegistry";
 import ScopeUtils from "../../../../utils/ScopeUtils";
 import TVisibility from "../../../../types/TVisibility";
 import DimensionResolver from "../utils/DimensionResolver";
+import type IDeclareTypeFacts from "../../types/IDeclareTypeFacts";
 
 class FunctionCollector {
   /**
@@ -26,7 +27,7 @@ class FunctionCollector {
    * @param visibility Required: #1161 — a default here is a third source
    *   of truth for ADR-016 and drifted from it. Callers pass
    *   ScopeUtils.getDefaultVisibility() or an explicit keyword.
-   * @param isScopeType ADR-057 predicate: is this *qualified* name a scope type?
+   * @param typeFacts ADR-057 predicate: is this *qualified* name a scope type?
    * @returns The function symbol with TType-based types and scope reference
    */
   static collect(
@@ -34,7 +35,7 @@ class FunctionCollector {
     sourceFile: string,
     scopePath: string,
     visibility: TVisibility,
-    isScopeType?: (qualifiedName: string) => boolean,
+    typeFacts?: IDeclareTypeFacts,
   ): IFunctionSymbol {
     const name = syntax.name;
     const span = syntax.span;
@@ -48,13 +49,13 @@ class FunctionCollector {
     const returnType = TypeUtils.resolveType(
       syntax.returnType,
       scopePath,
-      isScopeType,
+      typeFacts,
     );
 
     const parameters = FunctionCollector.collectParameters(
       syntax.parameters ?? [],
       scopePath,
-      isScopeType,
+      typeFacts,
     );
 
     return {
@@ -87,7 +88,7 @@ class FunctionCollector {
    * @param visibility Required: #1161 — a default here is a third source
    *   of truth for ADR-016 and drifted from it. Callers pass
    *   ScopeUtils.getDefaultVisibility() or an explicit keyword.
-   * @param isScopeType ADR-057 predicate: is this *qualified* name a scope type?
+   * @param typeFacts ADR-057 predicate: is this *qualified* name a scope type?
    * @returns The function symbol
    */
   static collectAndRegister(
@@ -96,7 +97,7 @@ class FunctionCollector {
     sourceFile: string,
     scopePath: string,
     visibility: TVisibility,
-    isScopeType?: (qualifiedName: string) => boolean,
+    typeFacts?: IDeclareTypeFacts,
   ): IFunctionSymbol {
     // 1. Get or create the scope in SymbolRegistry
 
@@ -106,7 +107,7 @@ class FunctionCollector {
       sourceFile,
       scopePath,
       visibility,
-      isScopeType,
+      typeFacts,
     );
 
     // 3. Register in SymbolRegistry
@@ -122,11 +123,11 @@ class FunctionCollector {
   static collectParameters(
     params: readonly IParameterSyntax[],
     scopePath = "",
-    isScopeType?: (qualifiedName: string) => boolean,
+    typeFacts?: IDeclareTypeFacts,
   ): IParameterInfo[] {
     return params.map((p) => {
       const name = p.name;
-      const type = TypeUtils.resolveType(p.type, scopePath, isScopeType);
+      const type = TypeUtils.resolveType(p.type, scopePath, typeFacts);
       // ADR-071: read-only unless declared `mut`
       const isConst = !p.mut;
 

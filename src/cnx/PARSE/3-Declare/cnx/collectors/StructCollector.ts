@@ -19,6 +19,7 @@ import ScopeUtils from "../../../../utils/ScopeUtils";
 import TVisibility from "../../../../types/TVisibility";
 import MemberSymbolBase from "../utils/MemberSymbolBase";
 import OverflowBehaviorUtils from "../../../../utils/OverflowBehaviorUtils";
+import type IDeclareTypeFacts from "../../types/IDeclareTypeFacts";
 
 /**
  * Result of processing a field's array type, as 1.2 lowered it.
@@ -149,7 +150,7 @@ class StructCollector {
    * @param ctx The struct declaration context
    * @param sourceFile Source file path
    * @param scopePath The path of the scope this struct belongs to (dotted path, "" at file scope)
-   * @param isScopeType ADR-057 predicate: is this *qualified* name a scope type?
+   * @param typeFacts ADR-057 predicate: is this *qualified* name a scope type?
    * @returns The struct symbol with TType-based types and scope reference
    */
   static collect(
@@ -157,7 +158,7 @@ class StructCollector {
     sourceFile: string,
     scopePath: string,
     visibility: TVisibility,
-    isScopeType?: (qualifiedName: string) => boolean,
+    typeFacts?: IDeclareTypeFacts,
   ): IStructSymbol {
     const name = syntax.name;
     const span = syntax.span;
@@ -177,7 +178,7 @@ class StructCollector {
         fieldName,
         { scopedName: ownerScopedName, sourceFile, visibility },
         scopePath,
-        isScopeType,
+        typeFacts,
       );
       fields.set(fieldName, fieldInfo);
     }
@@ -212,10 +213,10 @@ class StructCollector {
     fieldName: string,
     owner: IFieldOwner,
     scopePath = "",
-    isScopeType?: (qualifiedName: string) => boolean,
+    typeFacts?: IDeclareTypeFacts,
   ): IStructFieldSymbol {
     const typeSyntax = field.type;
-    const fieldType = TypeUtils.resolveType(typeSyntax, scopePath, isScopeType);
+    const fieldType = TypeUtils.resolveType(typeSyntax, scopePath, typeFacts);
     // Note: cnx struct members don't have const modifier in grammar
     const isConst = false;
     // cnx struct members don't have atomic modifier

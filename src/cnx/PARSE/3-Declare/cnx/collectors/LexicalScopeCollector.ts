@@ -27,6 +27,7 @@ import type IProgramSyntax from "../../../../types/syntax/IProgramSyntax";
 import type IVariableDeclarationSyntax from "../../../../types/syntax/IVariableDeclarationSyntax";
 import type TBlockSyntax from "../../../../types/syntax/TBlockSyntax";
 import type TStatement from "../../../../types/syntax/TStatement";
+import type IDeclareTypeFacts from "../../types/IDeclareTypeFacts";
 
 /** A frame while it is being filled */
 interface IFrameBuilder {
@@ -42,7 +43,7 @@ interface IFrameBuilder {
 class FrameWalker {
   constructor(
     private readonly registry: SymbolRegistry,
-    private readonly isScopeType: (qualifiedName: string) => boolean,
+    private readonly typeFacts: IDeclareTypeFacts,
   ) {}
 
   private static open(
@@ -101,7 +102,7 @@ class FrameWalker {
     const infos = FunctionCollector.collectParameters(
       parameters,
       scopePath,
-      this.isScopeType,
+      this.typeFacts,
     );
     infos.forEach((info, index) => {
       frame.declarations.push({
@@ -215,7 +216,7 @@ class FrameWalker {
     const facts = VariableCollector.declaredFacts(
       declaration,
       frame.scopePath,
-      this.isScopeType,
+      this.typeFacts,
     );
     frame.declarations.push({
       name: declaration.name,
@@ -247,13 +248,13 @@ class LexicalScopeCollector {
    * Array dimensions are left for 1.4 to fold in each declaration's lexical
    * environment, except a literal, which needs no const.
    *
-   * @param isScopeType ADR-057: is this QUALIFIED name a scope type this file
+   * @param typeFacts ADR-057: is this QUALIFIED name a scope type this file
    *   declares? A bare type it cannot settle is deferred, as for symbols
    */
   static collect(
     program: IProgramSyntax,
     registry: SymbolRegistry,
-    isScopeType: (qualifiedName: string) => boolean,
+    typeFacts: IDeclareTypeFacts,
   ): ILexicalFrame {
     const root: IFrameBuilder = {
       kind: "file",
@@ -263,7 +264,7 @@ class LexicalScopeCollector {
       declarations: [],
       children: [],
     };
-    new FrameWalker(registry, isScopeType).program(root, program);
+    new FrameWalker(registry, typeFacts).program(root, program);
     return root;
   }
 }
