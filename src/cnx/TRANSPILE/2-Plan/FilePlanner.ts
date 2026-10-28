@@ -2640,7 +2640,7 @@ class FilePlanner {
         (symbol) => symbol.kind === "struct" || symbol.kind === "bitmap",
       ),
     )) {
-      cTypes.add(headerCType(named, symbolTable));
+      cTypes.add(headerCType(named));
     }
   }
 

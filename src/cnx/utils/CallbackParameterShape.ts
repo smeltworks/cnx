@@ -50,7 +50,7 @@ class CallbackParameterShape {
    */
   static cType(typeName: string, symbolTable: IResolvedSymbols): string {
     return userCType(
-      headerCType(typeName, symbolTable),
+      headerCType(typeName),
       symbolTable.checkNeedsStructKeyword(typeName),
     );
   }
