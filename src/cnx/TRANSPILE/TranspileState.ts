@@ -838,7 +838,6 @@ class TranspileState {
     return { program: this.program, sourcePath: this.sourcePath };
   }
 
-
   /**
    * ADR-030: is a cnx declaration of this type held through a pointer?
    *
