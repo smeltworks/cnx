@@ -51,9 +51,11 @@ class CalleeNameResolver {
     if (resolvedName === "this") {
       return currentScopePath
         ? {
-            resolvedName:
-              program.memberOf(currentScopePath, memberName)
-                ?.fullyQualifiedCName ?? null,
+            resolvedName: CalleeNameResolver.declaredCName(
+              program,
+              currentScopePath,
+              memberName,
+            ),
           }
         : null;
     }
@@ -65,9 +67,11 @@ class CalleeNameResolver {
 
     if (isScope(resolvedName)) {
       return {
-        resolvedName:
-          program.memberOf(resolvedName, memberName)?.fullyQualifiedCName ??
-          null,
+        resolvedName: CalleeNameResolver.declaredCName(
+          program,
+          resolvedName,
+          memberName,
+        ),
       };
     }
 
@@ -175,9 +179,19 @@ class CalleeNameResolver {
     if (!currentScopePath || isGlobalCall) return null;
     // Already qualified -- there is nothing to fall back from.
     if (QualifiedCName.isQualified(name)) return null;
-    return (
-      program.memberOf(currentScopePath, name)?.fullyQualifiedCName ?? null
-    );
+    return CalleeNameResolver.declaredCName(program, currentScopePath, name);
+  }
+
+  /**
+   * The C name 3-Declare gave `name` in `scopePath`, or null when it declared
+   * none there: an undeclared callee has no C name (#2116).
+   */
+  private static declaredCName(
+    program: Pick<IProgram, "memberOf">,
+    scopePath: string,
+    name: string,
+  ): string | null {
+    return program.memberOf(scopePath, name)?.fullyQualifiedCName ?? null;
   }
 }
 
