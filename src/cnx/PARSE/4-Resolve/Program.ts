@@ -181,9 +181,6 @@ class Program {
     const functionParamLists = new Map(
       files.flatMap((file) => [...file.parameterLists]),
     );
-    const qualifiedTypeNames = new Map(
-      files.flatMap((file) => [...file.qualifiedTypeNames]),
-    );
     const callbackCompatibleFunctions = CallbackCompatibility.derive(
       files,
       symbolTable,
@@ -260,7 +257,7 @@ class Program {
       memberOf: (scopePath: string, name: string): TSymbol | undefined =>
         symbolsByIdentity.get(Program.identityKey(scopePath, name)),
       qualifiedTypeName: (written: string): string =>
-        QualifiedTypeNames.read(qualifiedTypeNames, written),
+        fileFacts.qualifiedTypeName(written),
       scopeTypeOf: (
         sourceFile: string,
         scopePath: string,
@@ -465,9 +462,15 @@ class Program {
     const opaqueTypes = Program.deriveOpaqueTypes(foreign);
     const target = inputs.target ?? null;
     const headers = inputs.symbolTable ?? null;
+    // #2116: every file's written `Scope.T` / `Ns.T`, as 1.3 spelled it
+    const qualifiedTypeNames = new Map(
+      files.flatMap((file) => [...file.qualifiedTypeNames]),
+    );
     // #1175: what a constant name's facts read of the files, beside the binder
     const fileFacts: IFileConstantFacts = {
       isScopeTypeVisibleFrom,
+      qualifiedTypeName: (written) =>
+        QualifiedTypeNames.read(qualifiedTypeNames, written),
       reachesForeignHeader: (sourceFile) =>
         (inputs.filesReachingForeignHeaders ?? EMPTY_NAMES).has(sourceFile),
       headerStructFields: (structName) => headers?.getStructFields(structName),
@@ -1142,6 +1145,7 @@ class Program {
       headerStructFields: (structName) =>
         options.files.headerStructFields(structName),
       headerTypeBits: (cType) => options.files.headerTypeBits(cType),
+      qualifiedTypeName: (written) => options.files.qualifiedTypeName(written),
       headerTypeHead: (name) => options.files.headerTypeHead(name),
       headerFieldCount: (structName) =>
         options.files.headerFieldCount(structName),

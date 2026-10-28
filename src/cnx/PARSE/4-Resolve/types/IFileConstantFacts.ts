@@ -8,6 +8,8 @@ import type TType from "../../../types/TType";
 interface IFileConstantFacts {
   /** ADR-057: whether a qualified type name is a scope type `sourceFile` sees */
   isScopeTypeVisibleFrom(sourceFile: string, qualifiedName: string): boolean;
+  /** `IProgram.qualifiedTypeName`: the spelling 1.3 gave a written `Scope.T` */
+  qualifiedTypeName(written: string): string;
   /** Whether `sourceFile` includes a C or C++ header, so a name may be a macro */
   reachesForeignHeader(sourceFile: string): boolean;
   /** #2076: a header struct's fields; undefined for a name no header's struct has */

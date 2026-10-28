@@ -15,7 +15,6 @@
  * and every later pass asks it through the settled `Program`, with the same
  * facts. That is what makes `u8[N]` one size in the .c and the .h.
  */
-import QualifiedCName from "../../utils/QualifiedCName";
 import CNX_TO_C_TYPE_MAP from "../../utils/constants/TypeMappings";
 import ScopeUtils from "../../utils/ScopeUtils";
 import LengthProperty from "../../utils/LengthProperty";
@@ -141,8 +140,8 @@ class ConstantNames {
   /**
    * #1863 review: a cnx type name as C spells it where it is written -- a
    * primitive's C type, or the scope type ADR-057 qualifies a bare name to
-   * (`(P)x` inside scope S is `(S__P)x`). Through
-   * `ScopeUtils.qualifyScopeType`, the rule every type position uses.
+   * (`(P)x` inside scope S is `(S__P)x`). Each is read, never encoded: a
+   * scope type's stored C name, or the spelling 1.3 gave a `Scope.T` (#2116).
    */
   static cTypeName(
     typeName: string,
@@ -163,13 +162,8 @@ class ConstantNames {
     }
     const written = parts[0] === "global" ? parts.slice(1) : parts;
     if (written.length > 1) {
-      // #2116: a cnx `Scope.T` reads the C name 3-Declare gave it; only a
-      // path no cnx symbol declares is spelled as written
-      return (
-        facts.visibleMember(written[0], written.slice(1).join("."))
-          ?.fullyQualifiedCName ??
-        QualifiedCName.fromSourceName(written.join("."))
-      );
+      // #2116: 1.3 spelled every written `Scope.T` / `Ns.T` once
+      return facts.qualifiedTypeName(written.join("."));
     }
     if (parts[0] === "global") return written[0];
     return (

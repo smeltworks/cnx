@@ -50,6 +50,8 @@ interface IConstantNameFacts {
   headerStructFields: IFileConstantFacts["headerStructFields"];
   /** #2076: `IFileConstantFacts.headerTypeBits` */
   headerTypeBits: IFileConstantFacts["headerTypeBits"];
+  /** #2116: `IFileConstantFacts.qualifiedTypeName` */
+  qualifiedTypeName: IFileConstantFacts["qualifiedTypeName"];
   /** #1975 review: `IFileConstantFacts.headerTypeHead` */
   headerTypeHead: IFileConstantFacts["headerTypeHead"];
   /** #1975 review: `IFileConstantFacts.headerFieldCount` */
