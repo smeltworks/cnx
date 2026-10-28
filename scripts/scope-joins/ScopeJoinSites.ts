@@ -76,6 +76,15 @@ const KIND_SECTIONS = [
       "  owner; this only appends the member, as ADR-016 and ADR-017 define.",
     ],
   },
+  {
+    kind: "recompute",
+    lines: [
+      "- **recompute** -- builds a C++ `A::B` name after 3-Declare, whose",
+      "  collectors already named every header symbol by that spelling. This",
+      "  decides again what is already decided (cnx-way: compute once, then",
+      "  read). Each row is converted, one commit per site, until none remain.",
+    ],
+  },
 ] as const;
 
 type TKind = (typeof KIND_SECTIONS)[number]["kind"];
@@ -103,10 +112,13 @@ class ScopeJoinSites {
     "ScopeUtils.qualifyInScope",
     "ScopeUtils.qualifyPathInScope",
     "ScopeUtils.qualifyScopeType",
+    "CppNamespaceUtils.fromParts",
+    "CppNamespaceUtils.qualify",
   ];
 
   /** The separator, wherever it is spelled by name. */
-  private static readonly SEPARATOR = /\bQualifiedCName\.SEPARATOR\b/g;
+  private static readonly SEPARATOR =
+    /\b(?:QualifiedCName|CppNamespaceUtils)\.SEPARATOR\b/g;
 
   /**
    * The separator spelled as text: a template interpolation followed by `__`,
@@ -114,7 +126,7 @@ class ScopeJoinSites {
    * `startsWith("__")` are not joins and do not match.
    */
   private static readonly SPELLED_SEPARATOR =
-    /\$\{[^{}`]*\}__|\.join\(\s*["']__["']\s*\)|\+\s*["']__["']|["']__["']\s*\+/g;
+    /\$\{[^{}`]*\}(?:__|::)|\.join\(\s*["'](?:__|::)["']\s*\)|\+\s*["'](?:__|::)["']|["'](?:__|::)["']\s*\+/g;
 
   /**
    * The reviewed judgement for every site the scan finds.
@@ -127,7 +139,131 @@ class ScopeJoinSites {
    * `check` fails on a site with no entry here and on an entry matching no
    * site, so this list can neither miss a site nor keep a stale judgement.
    */
+  /** The one reason every `recompute` row shares, until the row is converted. */
+  private static readonly RECOMPUTE =
+    "builds a C++ name after 3-Declare named the header symbol; converts to resolving the symbol and reading its name (#2116)";
+
   private static readonly ADJUDICATIONS: readonly IAdjudication[] = [
+    {
+      file: "src/cnx/PARSE/3-Declare/cnx/QualifiedTypeNames.ts",
+      element: "fromParts(type.path)",
+      kind: "encoder",
+      why: "3-Declare, the first layer holding the headers' symbols, spelling a written C++ `Ns.T` once as `Ns::T` and storing it as IFileSymbols.qualifiedTypeNames for later layers to read (#2116)",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cpp/collectors/ClassCollector.ts",
+      element: "qualify(ctx.className, name)",
+      kind: "encoder",
+      why: "3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cpp/collectors/ClassCollector.ts",
+      element: "qualify(currentNamespace, name)",
+      kind: "encoder",
+      why: "3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cpp/collectors/EnumCollector.ts",
+      element: "qualify(currentNamespace, name)",
+      kind: "encoder",
+      why: "3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cpp/collectors/FunctionCollector.ts",
+      element: "qualify(className, funcName)",
+      kind: "encoder",
+      why: "3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cpp/collectors/FunctionCollector.ts",
+      element: "qualify(currentNamespace, name)",
+      kind: "encoder",
+      why: "3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cpp/collectors/NamespaceCollector.ts",
+      element: "qualify(currentNamespace, name)",
+      kind: "encoder",
+      why: "3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cpp/collectors/VariableCollector.ts",
+      element: "qualify(currentNamespace, name)",
+      kind: "encoder",
+      why: "3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)",
+    },
+    {
+      file: "src/cnx/PARSE/3-Declare/cpp/index.ts",
+      element: "qualify(ctx.currentNamespace, name)",
+      kind: "encoder",
+      why: "3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)",
+    },
+    {
+      file: "src/cnx/utils/CppNamespaceUtils.ts",
+      element: "CppNamespaceUtils.SEPARATOR",
+      kind: "encoder",
+      why: "the C++ separator's owner: the one `::` join",
+    },
+    {
+      file: "src/cnx/utils/CppNamespaceUtils.ts",
+      element: "fromParts([scope, name])",
+      kind: "encoder",
+      why: "`qualify`, defined in terms of the one join; 3-Declare's C++ collectors are its callers",
+    },
+    {
+      file: "src/cnx/TRANSPILE/1-Analyze/helpers/CCallee.ts",
+      element: '.join("::")',
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/1-Analyze/helpers/CCallee.ts",
+      element: "qualify(typeName, method)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/TRANSPILE/3-Render/codegen/generators/expressions/PostfixExpressionGenerator.ts",
+      element: "fromParts([ctx.result, ctx.memberName])",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/utils/CppConstructorHelper.ts",
+      element: "qualify(qualifiedName, className)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/utils/EnumZeroValue.ts",
+      element: "fromParts([enumName, member])",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/utils/ForeignTypeFacts.ts",
+      element: "fromParts([...scopes.slice(0, depth), spelling])",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/utils/OperandTyper.ts",
+      element: "fromParts([name, first.name])",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/utils/OperandTyper.ts",
+      element: "fromParts(current.parts)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
+    {
+      file: "src/cnx/utils/OperandTyper.ts",
+      element: "fromParts(parts)",
+      kind: "recompute",
+      why: ScopeJoinSites.RECOMPUTE,
+    },
     {
       file: "src/cnx/PARSE/3-Declare/cnx/collectors/BitmapCollector.ts",
       element: "identityOf({ name, scopePath })",
@@ -405,7 +541,7 @@ class ScopeJoinSites {
         ScopeJoinSites.builderCalls(source, builder),
       ),
       ...[...source.matchAll(ScopeJoinSites.SEPARATOR)].map(
-        () => "QualifiedCName.SEPARATOR",
+        (match) => match[0],
       ),
       ...[...source.matchAll(ScopeJoinSites.SPELLED_SEPARATOR)].map((match) =>
         match[0].replace(/\s+/g, " "),

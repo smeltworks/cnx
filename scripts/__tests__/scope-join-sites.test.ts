@@ -75,6 +75,22 @@ describe("ScopeJoinSites", () => {
       ).toEqual(['.join("__")', '+ "__"']);
     });
 
+    it("counts a C++ name built from parts (#2116)", () => {
+      expect(
+        ScopeJoinSites.elements(
+          "CppNamespaceUtils.fromParts([ns, name]); CppNamespaceUtils.qualify(ns, name);",
+        ),
+      ).toEqual(["fromParts([ns, name])", "qualify(ns, name)"]);
+    });
+
+    it("counts the C++ separator by name and joined as a literal (#2116)", () => {
+      expect(
+        ScopeJoinSites.elements(
+          'parts.join(CppNamespaceUtils.SEPARATOR); parts.join("::");',
+        ),
+      ).toEqual(["CppNamespaceUtils.SEPARATOR", '.join("::")']);
+    });
+
     it("does not count text that merely contains two underscores", () => {
       // Negative control: a float bit shadow and a reserved-prefix test are not
       // joins, and counting them would make every row a false positive.
