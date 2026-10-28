@@ -1,0 +1,13 @@
+// Test: an array sized by a sibling's size, three levels deep (#2360 review)
+// Each level settles in a later pass of 1.4's fixpoint, so `third` is sized
+// only if `this.second` is read from the pass that sized it.
+
+scope Probe {
+    u32 BASE <- 2;
+    u32 SIZE <- BASE + 2;
+    u8[SIZE] first;
+    u8[this.first.type_element_count] second;
+    u8[this.second.type_element_count] third;
+}
+
+void main() {}

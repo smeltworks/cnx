@@ -1261,7 +1261,11 @@ class Program {
       );
       const constants = Program.deriveConstants(
         symbols,
-        { ...declared, symbolsByCName: Program.indexByCName(symbols) },
+        {
+          ...declared,
+          symbolsByCName: Program.indexByCName(symbols),
+          symbolsByIdentity: Program.indexByIdentity(symbols),
+        },
         files,
       );
       const next = Program.resolveDimensions(
@@ -1408,6 +1412,7 @@ class Program {
       const facts: IBindingFacts = {
         ...declared,
         symbolsByCName: Program.indexByCName(current),
+        symbolsByIdentity: Program.indexByIdentity(current),
       };
       const next = new Map<string, ReadonlyArray<TSymbol>>();
       for (const [sourceFile, symbols] of current) {
