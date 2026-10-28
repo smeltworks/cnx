@@ -22,6 +22,9 @@ interface IHeaderTypeInput {
   /** Struct field types: structName -> (fieldName -> typeName) */
   readonly structFields: ReadonlyMap<string, ReadonlyMap<string, string>>;
 
+  /** #1744: fields held through a pointer (`ICodeGenSymbols.structFieldHandles`) */
+  readonly structFieldHandles?: ReadonlyMap<string, ReadonlySet<string>>;
+
   /** Array dimensions for struct fields: structName -> (fieldName -> dimensions) */
   readonly structFieldDimensions: ReadonlyMap<
     string,

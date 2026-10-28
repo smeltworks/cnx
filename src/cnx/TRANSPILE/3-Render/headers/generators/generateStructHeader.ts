@@ -6,6 +6,7 @@
  */
 
 import headerCType from "../../../../utils/headerCType";
+import DeclaredPointer from "../../../../utils/DeclaredPointer";
 import IHeaderTypeInput from "./IHeaderTypeInput";
 /**
  * Resolve the C type for a struct field, checking for callback types first.
@@ -75,13 +76,18 @@ function generateStructHeader(name: string, input: IHeaderTypeInput): string {
   }
 
   const dimensions = input.structFieldDimensions.get(name);
+  const handles = input.structFieldHandles?.get(name);
   const lines: string[] = [];
   // Issue #296: Use named struct for forward declaration compatibility
   lines.push(`typedef struct ${name} {`);
 
   // Iterate fields in insertion order (Map preserves order)
   for (const [fieldName, fieldType] of fields) {
-    const cType = resolveFieldCType(fieldType, input);
+    // #1744: a field of an opaque C type holds the handle
+    const cType = DeclaredPointer.spell(
+      resolveFieldCType(fieldType, input),
+      handles?.has(fieldName) ?? false,
+    );
     const dims = dimensions?.get(fieldName);
     lines.push(generateFieldLine(fieldName, cType, dims));
   }

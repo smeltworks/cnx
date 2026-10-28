@@ -66,6 +66,7 @@ class TSymbolInfoAdapter {
     // === Struct Information ===
     const structFields = new Map<string, Map<string, string>>();
     const structFieldArrays = new Map<string, Set<string>>();
+    const structFieldHandles = new Map<string, Set<string>>();
     const structFieldDimensions = new Map<
       string,
       Map<string, (number | string)[]>
@@ -99,6 +100,7 @@ class TSymbolInfoAdapter {
             knownStructs,
             structFields,
             structFieldArrays,
+            structFieldHandles,
             structFieldDimensions,
           );
           break;
@@ -171,6 +173,7 @@ class TSymbolInfoAdapter {
       // Struct info
       structFields,
       structFieldArrays,
+      structFieldHandles,
       structFieldDimensions,
 
       // Enum info
@@ -203,6 +206,7 @@ class TSymbolInfoAdapter {
     knownStructs: Set<string>,
     structFields: Map<string, Map<string, string>>,
     structFieldArrays: Map<string, Set<string>>,
+    structFieldHandles: Map<string, Set<string>>,
     structFieldDimensions: Map<string, Map<string, (number | string)[]>>,
   ): void {
     // Use transpiled C name for lookups (e.g., "Geometry_Point")
@@ -211,12 +215,16 @@ class TSymbolInfoAdapter {
 
     const fields = new Map<string, string>();
     const arrayFields = new Set<string>();
+    const handleFields = new Set<string>();
     const dimensions = new Map<string, (number | string)[]>();
 
     for (const [fieldName, fieldInfo] of struct.fields) {
       // Convert TType to string for legacy ISymbolInfo format
       const typeStr = TypeResolver.getTypeName(fieldInfo.type);
       fields.set(fieldName, typeStr);
+      if (fieldInfo.isOpaqueHandle) {
+        handleFields.add(fieldName);
+      }
 
       if (fieldInfo.isArray) {
         arrayFields.add(fieldName);
@@ -233,6 +241,7 @@ class TSymbolInfoAdapter {
 
     structFields.set(cName, fields);
     structFieldArrays.set(cName, arrayFields);
+    structFieldHandles.set(cName, handleFields);
     if (dimensions.size > 0) {
       structFieldDimensions.set(cName, dimensions);
     }

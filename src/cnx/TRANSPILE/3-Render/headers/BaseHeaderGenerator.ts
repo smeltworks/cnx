@@ -170,6 +170,9 @@ abstract class BaseHeaderGenerator {
       localTypeNamesWithCallbacks,
       localTypes.localBitmapNames,
       allKnownEnums,
+      [...groups.structs, ...groups.classes].flatMap((struct) => [
+        ...(typeInput?.structFields.get(struct.name)?.values() ?? []),
+      ]),
     );
 
     // Build external type header includes

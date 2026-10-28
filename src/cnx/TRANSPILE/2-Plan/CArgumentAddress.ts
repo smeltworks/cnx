@@ -53,7 +53,7 @@ class CArgumentAddress {
     const valueDepth = CArgumentAddress.valueDepth(
       argType,
       facts.declared?.isPointer ?? false,
-      facts.isHandleArrayElement,
+      facts.isHandleArrayElement || facts.isHandleField,
     );
     if (valueDepth > 0) {
       return CArgumentAddress.pointerDepth(param.baseType) === valueDepth + 1;
@@ -112,16 +112,16 @@ class CArgumentAddress {
    *
    * A C variable says so in its declared type: `Dev**` is 2. Issue #895 Bug B:
    * a variable inferred as a pointer is one; so is an opaque handle (ADR-030),
-   * held in a scope variable (#948) or as an element of an array of handles
-   * (#996). Anything else is a value, 0.
+   * held in a scope variable (#948), as an element of an array of handles
+   * (#996) or in a struct field (#1744). Anything else is a value, 0.
    */
   private static valueDepth(
     argType: string,
     declaredPointer: boolean,
-    isHandleArrayElement: boolean,
+    isHeldHandle: boolean,
   ): number {
     if (argType.endsWith("*")) return CArgumentAddress.pointerDepth(argType);
-    return declaredPointer || isHandleArrayElement ? 1 : 0;
+    return declaredPointer || isHeldHandle ? 1 : 0;
   }
 }
 

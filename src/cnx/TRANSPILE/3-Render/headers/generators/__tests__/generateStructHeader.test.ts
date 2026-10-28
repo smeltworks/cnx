@@ -23,6 +23,31 @@ function createInput(
 }
 
 describe("generateStructHeader", () => {
+  describe("opaque handle fields (#1744)", () => {
+    it("spells a field the symbols mark as a handle as a pointer", () => {
+      const fields = new Map<string, string>([
+        ["d", "Dev"],
+        ["speed", "u32"],
+      ]);
+      const input: IHeaderTypeInput = {
+        ...createInput(new Map([["Motor", fields]])),
+        structFieldHandles: new Map([["Motor", new Set(["d"])]]),
+      };
+
+      const result = generateStructHeader("Motor", input);
+
+      expect(result).toContain("    Dev* d;");
+      expect(result).toContain("    uint32_t speed;");
+    });
+
+    it("leaves an unmarked field of the same type by value", () => {
+      const fields = new Map<string, string>([["d", "Dev"]]);
+      const input = createInput(new Map([["Motor", fields]]));
+
+      expect(generateStructHeader("Motor", input)).toContain("    Dev d;");
+    });
+  });
+
   describe("basic struct generation", () => {
     it("should generate typedef struct with mapped types", () => {
       const fields = new Map<string, string>([

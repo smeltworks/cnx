@@ -66,4 +66,36 @@ describe("DeferredTypes.settle", () => {
     expect(DeferredTypes.hasUnsettled(settled)).toBe(false);
     expect(DeferredTypes.hasUnsettled(unqualified)).toBe(false);
   });
+
+  it("stamps a struct field of an opaque type, and only that field (#1744)", () => {
+    const code = `struct Motor { Dev d; u32 speed; }`;
+    const declared = CnxResolver.resolve(
+      ProgramLowering.program(parse(code), null),
+      "test.cnx",
+      registry,
+    );
+
+    const settled = DeferredTypes.settle(
+      declared.symbols,
+      () => undefined,
+      (typeName) => typeName === "Dev",
+    );
+    const motor = settled.find((sym) => sym.name === "Motor");
+    expect(motor?.kind).toBe("struct");
+    if (motor?.kind === "struct") {
+      expect(motor.fields.get("d")?.isOpaqueHandle).toBe(true);
+      expect(motor.fields.get("speed")?.isOpaqueHandle).toBeUndefined();
+    }
+
+    // The negative control: with nothing opaque, nothing is stamped.
+    const plain = DeferredTypes.settle(
+      declared.symbols,
+      () => undefined,
+      () => false,
+    );
+    const unstamped = plain.find((sym) => sym.name === "Motor");
+    if (unstamped?.kind === "struct") {
+      expect(unstamped.fields.get("d")?.isOpaqueHandle).toBeUndefined();
+    }
+  });
 });

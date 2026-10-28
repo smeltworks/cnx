@@ -53,6 +53,7 @@ interface IMergeAccumulator {
   readonly bitmapBitWidth: Map<string, number>;
   readonly structFields: Map<string, Map<string, string>>;
   readonly structFieldArrays: Map<string, Set<string>>;
+  readonly structFieldHandles: Map<string, Set<string>>;
   readonly structFieldDimensions: Map<
     string,
     Map<string, ReadonlyArray<number | string>>
@@ -112,6 +113,12 @@ class VisibleSymbols {
         new Set(fields),
       ]),
     );
+    const mergedStructFieldHandles = new Map(
+      [...base.structFieldHandles].map(([name, fields]) => [
+        name,
+        new Set(fields),
+      ]),
+    );
     const mergedStructFieldDimensions = VisibleSymbols._copyNestedMap(
       base.structFieldDimensions,
     );
@@ -138,6 +145,7 @@ class VisibleSymbols {
         registerMemberCTypes: mergedRegisterMemberCTypes,
         structFields: mergedStructFields,
         structFieldArrays: mergedStructFieldArrays,
+        structFieldHandles: mergedStructFieldHandles,
         structFieldDimensions: mergedStructFieldDimensions,
       });
     }
@@ -164,6 +172,7 @@ class VisibleSymbols {
       registerMemberCTypes: mergedRegisterMemberCTypes,
       structFields: mergedStructFields,
       structFieldArrays: mergedStructFieldArrays,
+      structFieldHandles: mergedStructFieldHandles,
       structFieldDimensions: mergedStructFieldDimensions,
     };
   }
@@ -239,6 +248,11 @@ class VisibleSymbols {
     VisibleSymbols._mergePreferringLocal(
       external.structFieldArrays,
       into.structFieldArrays,
+      (fields) => new Set(fields),
+    );
+    VisibleSymbols._mergePreferringLocal(
+      external.structFieldHandles,
+      into.structFieldHandles,
       (fields) => new Set(fields),
     );
     VisibleSymbols._mergePreferringLocal(

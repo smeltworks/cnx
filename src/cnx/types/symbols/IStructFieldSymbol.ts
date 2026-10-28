@@ -37,6 +37,13 @@ interface IStructFieldSymbol extends IBaseSymbol {
   /** Whether this field is an array */
   readonly isArray: boolean;
 
+  /**
+   * ADR-030 / #1744: the field's type is an opaque C handle, so the struct
+   * holds it through a pointer (`Dev* d;`). Stamped by 1.4 Resolve, as a
+   * parameter's `isOpaqueHandle` is (#1722).
+   */
+  readonly isOpaqueHandle?: boolean;
+
   /** Array dimensions if isArray is true */
   readonly dimensions?: ReadonlyArray<number | string>;
   /**
