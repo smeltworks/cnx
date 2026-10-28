@@ -26,10 +26,6 @@ judgement that it is not that join:
   materialized from its path: an enum or register member, or a local
   renamed under its function's C name. The encoders already spelled the
   owner; this only appends the member, as ADR-016 and ADR-017 define.
-- **recompute** -- builds a C++ `A::B` name after 3-Declare, whose
-  collectors already named every header symbol by that spelling. This
-  decides again what is already decided (cnx-way: compute once, then
-  read). Each row is converted, one commit per site, until none remain.
 
 A site takes the FIRST kind above that applies. **Nothing computes this.**
 The order is an instruction to whoever writes the row.

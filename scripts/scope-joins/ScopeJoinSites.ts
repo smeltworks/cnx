@@ -76,15 +76,6 @@ const KIND_SECTIONS = [
       "  owner; this only appends the member, as ADR-016 and ADR-017 define.",
     ],
   },
-  {
-    kind: "recompute",
-    lines: [
-      "- **recompute** -- builds a C++ `A::B` name after 3-Declare, whose",
-      "  collectors already named every header symbol by that spelling. This",
-      "  decides again what is already decided (cnx-way: compute once, then",
-      "  read). Each row is converted, one commit per site, until none remain.",
-    ],
-  },
 ] as const;
 
 type TKind = (typeof KIND_SECTIONS)[number]["kind"];
@@ -139,10 +130,6 @@ class ScopeJoinSites {
    * `check` fails on a site with no entry here and on an entry matching no
    * site, so this list can neither miss a site nor keep a stale judgement.
    */
-  /** The one reason every `recompute` row shares, until the row is converted. */
-  private static readonly RECOMPUTE =
-    "builds a C++ name after 3-Declare named the header symbol; converts to resolving the symbol and reading its name (#2116)";
-
   private static readonly ADJUDICATIONS: readonly IAdjudication[] = [
     {
       file: "src/cnx/PARSE/3-Declare/cnx/QualifiedTypeNames.ts",
