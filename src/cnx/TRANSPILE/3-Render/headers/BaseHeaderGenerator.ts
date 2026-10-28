@@ -193,15 +193,11 @@ abstract class BaseHeaderGenerator {
       HeaderGeneratorUtils.filterCCompatibleTypes(
         externalTypes,
         typesWithHeaders,
-        symbolTable,
       ).filter((typeName) => !typeInput?.callbackTypes?.has(typeName));
 
     // Filter to C-compatible variables
     const cCompatibleVariables =
-      HeaderGeneratorUtils.filterCCompatibleVariables(
-        groups.variables,
-        symbolTable,
-      );
+      HeaderGeneratorUtils.filterCCompatibleVariables(groups.variables);
 
     if (!options.cHeadersIncluded) {
       BaseHeaderGenerator.assertNoPointerTypedefs(

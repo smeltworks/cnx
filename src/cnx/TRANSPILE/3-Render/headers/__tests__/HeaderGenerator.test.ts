@@ -272,13 +272,13 @@ describe("HeaderGenerator", () => {
         expect(header).not.toContain("extern Lib.Sub.Data");
       });
 
-      it("should filter out variables with underscore C++ namespace types when symbolTable provided", () => {
-        const symbols = [makeVarSymbol("data", "SeaDash__Parse__Result")];
+      it("should filter out variables of a C++ namespaced type, spelled as 1.3 stores it", () => {
+        const symbols = [makeVarSymbol("data", "SeaDash::Parse::Result")];
         const typeInput = makeTypeInputWithCppNamespace("SeaDash");
         const header = generator.generate(symbols, "test.h", {}, typeInput);
 
         expect(header).not.toContain("External variables");
-        expect(header).not.toContain("extern SeaDash__Parse__Result");
+        expect(header).not.toContain("extern SeaDash::Parse::Result");
       });
 
       it("should NOT filter snake_case types that are not C++ namespaces", () => {
@@ -337,12 +337,12 @@ describe("HeaderGenerator", () => {
         expect(header).not.toContain("External type dependencies");
       });
 
-      it("should filter out forward declarations for underscore C++ namespace types", () => {
-        const symbols = [makeFuncSymbol("process", "SeaDash__Parse__Result")];
+      it("should filter out forward declarations for a C++ namespaced type, spelled as 1.3 stores it", () => {
+        const symbols = [makeFuncSymbol("process", "SeaDash::Parse::Result")];
         const typeInput = makeTypeInputWithCppNamespace("SeaDash");
         const header = generator.generate(symbols, "test.h", {}, typeInput);
 
-        expect(header).not.toContain("typedef struct SeaDash__Parse__Result");
+        expect(header).not.toContain("typedef struct SeaDash::Parse::Result");
         expect(header).not.toContain("External type dependencies");
       });
 
