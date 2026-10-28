@@ -215,12 +215,14 @@ describe("TranspileState", () => {
       expect(cName("S")).toBeUndefined();
     });
 
-    it("binds no scope type without a program", () => {
+    it("fails loudly on any type binding read without a program (#2360 review)", () => {
       state.program = null;
       state.sourcePath = "includer.cnx";
-      expect(
-        state.typeBindingDeps().scopeTypeCName?.("A", "B"),
-      ).toBeUndefined();
+      const deps = state.typeBindingDeps();
+      const unbound = /a type binding is read from the program/;
+      expect(() => deps.scopeTypeCName?.("A", "B")).toThrow(unbound);
+      expect(() => deps.memberCName?.("A", "B")).toThrow(unbound);
+      expect(() => deps.qualifiedTypeName?.("A.B")).toThrow(unbound);
     });
 
     // #1452: four `qualifyScopeType` cases lived here. The method had no
