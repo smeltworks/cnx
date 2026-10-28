@@ -44,7 +44,6 @@ import type ILengthName from "../../../../../utils/types/ILengthName";
 import type IChainStep from "../../../../../types/IChainStep";
 import TYPE_MAP from "../../../../2-Plan/types/TYPE_MAP";
 import type IStructSymbol from "../../../../../types/symbols/IStructSymbol";
-import CppNamespaceUtils from "../../../../../utils/CppNamespaceUtils";
 import OperandTyper from "../../../../../utils/OperandTyper";
 import invariant from "../../../../../utils/invariant";
 import DeclaredTypeFacts from "../../../../../utils/DeclaredTypeFacts";
@@ -1010,7 +1009,7 @@ const tryEnumMemberAccess = (
 
   const output = initializeMemberOutput(ctx);
   output.result = ctx.isCppAccessChain
-    ? CppNamespaceUtils.fromParts([ctx.result, ctx.memberName])
+    ? MemberSeparatorResolver.cppAccess(ctx.result, ctx.memberName)
     : declaredMemberCName(ctx, input);
   return output;
 };
