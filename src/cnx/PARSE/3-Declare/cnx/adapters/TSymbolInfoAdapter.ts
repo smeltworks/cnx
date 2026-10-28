@@ -198,9 +198,6 @@ class TSymbolInfoAdapter {
 
   // === Private Processing Methods ===
 
-  // Use shared utility for transpiled C names
-  private static readonly getTranspiledCName = ScopeUtils.getTranspiledCName;
-
   private static processStruct(
     struct: IStructSymbol,
     knownStructs: Set<string>,
@@ -209,7 +206,7 @@ class TSymbolInfoAdapter {
     structFieldDimensions: Map<string, Map<string, (number | string)[]>>,
   ): void {
     // Use transpiled C name for lookups (e.g., "Geometry_Point")
-    const cName = TSymbolInfoAdapter.getTranspiledCName(struct);
+    const cName = struct.fullyQualifiedCName;
     knownStructs.add(cName);
 
     const fields = new Map<string, string>();
@@ -247,7 +244,7 @@ class TSymbolInfoAdapter {
     enumMembers: Map<string, Map<string, number>>,
     memberCNames: Map<string, Map<string, string>>,
   ): void {
-    const cName = TSymbolInfoAdapter.getTranspiledCName(enumSym);
+    const cName = enumSym.fullyQualifiedCName;
     knownEnums.add(cName);
     // #1318: members are symbols now. `ICodeGenSymbols.enumMembers` is the
     // name-to-value view codegen wants, so project rather than widen it --
@@ -286,7 +283,7 @@ class TSymbolInfoAdapter {
     bitmapBackingType: Map<string, string>,
     bitmapBitWidth: Map<string, number>,
   ): void {
-    const cName = TSymbolInfoAdapter.getTranspiledCName(bitmap);
+    const cName = bitmap.fullyQualifiedCName;
     knownBitmaps.add(cName);
     bitmapBackingType.set(cName, bitmap.backingType);
     bitmapBitWidth.set(cName, bitmap.bitWidth);
@@ -344,7 +341,7 @@ class TSymbolInfoAdapter {
     register: IRegisterSymbol,
     maps: IRegisterMaps,
   ): void {
-    const cName = TSymbolInfoAdapter.getTranspiledCName(register);
+    const cName = register.fullyQualifiedCName;
     maps.knownRegisters.add(cName);
     maps.registerBaseAddresses.set(cName, register.baseAddress);
     maps.memberCNames.set(
@@ -404,7 +401,7 @@ class TSymbolInfoAdapter {
     // Track function return types for enum validation in assignments
     // This enables recognizing that Motor.getMode() returns Motor_EMode
     // Use transpiled C name (e.g., "Motor_getMode") for lookup consistency
-    const cName = TSymbolInfoAdapter.getTranspiledCName(func);
+    const cName = func.fullyQualifiedCName;
     const returnTypeStr = TypeResolver.getTypeName(func.returnType);
     functionReturnTypes.set(cName, returnTypeStr);
   }
