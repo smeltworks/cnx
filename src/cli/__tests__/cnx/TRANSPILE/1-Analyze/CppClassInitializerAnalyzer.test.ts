@@ -18,11 +18,24 @@ import testAnalysisContextFor from "./testAnalysisContextFor";
  */
 const withCppClass = (className: string) => {
   const table = new SymbolTable();
-  // A class's constructor is a function symbol named `Qualified::Class`, which
-  // is exactly what `CppConstructorHelper.hasConstructor` looks for.
+  // A class's constructor is a function the class declares under its own
+  // name, which is what `CppConstructorHelper.hasConstructor` looks for.
+  const [head, ...rest] = className.split("::");
+  const leaf = className.split("::").at(-1)!;
   table.addCppSymbol({
-    name: `${className}::${className.split("::").at(-1)}`,
-    unqualifiedName: className.split("::").at(-1)!,
+    name: className,
+    unqualifiedName: leaf,
+    parent: rest.length > 0 ? head : undefined,
+    kind: "class",
+    visibility: "public",
+    sourceFile: "Class.hpp",
+    span: TestSourceSpan.at(1),
+    sourceLanguage: ESourceLanguage.Cpp,
+  });
+  table.addCppSymbol({
+    name: `${className}::${leaf}`,
+    unqualifiedName: leaf,
+    parent: className,
     kind: "function",
     type: "void",
     visibility: "public",
@@ -31,7 +44,6 @@ const withCppClass = (className: string) => {
     sourceLanguage: ESourceLanguage.Cpp,
   });
   // A namespaced class's header declares its namespace too
-  const [head, ...rest] = className.split("::");
   if (rest.length > 0) {
     table.addCppSymbol({
       name: head,

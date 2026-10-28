@@ -223,12 +223,6 @@ class ScopeJoinSites {
       why: ScopeJoinSites.RECOMPUTE,
     },
     {
-      file: "src/cnx/utils/CppConstructorHelper.ts",
-      element: "qualify(qualifiedName, className)",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
       file: "src/cnx/utils/ForeignTypeFacts.ts",
       element: "fromParts([...scopes.slice(0, depth), spelling])",
       kind: "recompute",

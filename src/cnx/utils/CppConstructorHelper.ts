@@ -13,59 +13,32 @@
  * a codegen fact.
  */
 
-import TSymbolKind from "../types/symbol-kinds/TSymbolKind";
-import CppNamespaceUtils from "./CppNamespaceUtils";
-
-/**
- * Symbol lookup interface for constructor detection
- */
-interface ISymbolLookup {
-  getSymbol(name: string): { kind: TSymbolKind } | undefined;
-}
+import type IResolvedSymbols from "../types/IResolvedSymbols";
 
 class CppConstructorHelper {
   /**
-   * Extract just the class name (part after last ::).
-   * e.g., TestNS::MyClass -> MyClass, CppTestClass -> CppTestClass
-   */
-  static extractClassName(qualifiedName: string): string {
-    const parts = qualifiedName.split("::");
-    return parts.at(-1)!;
-  }
-
-  /**
-   * Build the constructor name pattern.
-   * e.g., TestNS::MyClass -> TestNS::MyClass::MyClass
-   */
-  static buildConstructorName(
-    qualifiedName: string,
-    className: string,
-  ): string {
-    return CppNamespaceUtils.qualify(qualifiedName, className);
-  }
-
-  /**
-   * Check if a type has a C++ constructor in the symbol table.
+   * Check if a type has a C++ constructor in the symbol table: a function the
+   * class declares under its own unqualified name.
    *
    * @param typeName - The type's C++ name as 1.3 stored it (`Ns::T`), read
-   *   as-is and never re-spelled (#2116)
+   *   as-is and never re-spelled; the constructor is found by (class, name),
+   *   so nothing spells `Ns::T::T` (#2116)
    * @param symbolTable - Symbol table for lookup (may be null)
    * @returns true if a constructor function symbol exists
    */
   static hasConstructor(
     typeName: string,
-    symbolTable: ISymbolLookup | null | undefined,
+    symbolTable:
+      | Pick<IResolvedSymbols, "getCppSymbol" | "getCppMembers">
+      | null
+      | undefined,
   ): boolean {
     if (!symbolTable) return false;
-
-    const className = CppConstructorHelper.extractClassName(typeName);
-    const constructorName = CppConstructorHelper.buildConstructorName(
-      typeName,
-      className,
-    );
-
-    const constructorSymbol = symbolTable.getSymbol(constructorName);
-    return constructorSymbol?.kind === "function";
+    const cls = symbolTable.getCppSymbol(typeName);
+    if (cls === undefined) return false;
+    return symbolTable
+      .getCppMembers(cls.name, cls.unqualifiedName)
+      .some((member) => member.kind === "function");
   }
 }
 
