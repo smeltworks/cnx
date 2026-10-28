@@ -127,7 +127,6 @@ import BitmapFieldStep from "../../utils/BitmapFieldStep";
 import type IBitmapFieldTarget from "../../types/IBitmapFieldTarget";
 import AtomicOwner from "../../utils/AtomicOwner";
 import AtomicOperandType from "./AtomicOperandType";
-import QualifiedCName from "../../utils/QualifiedCName";
 import TypeNameLadder from "../../utils/TypeNameLadder";
 import SymbolTypeResolver from "../../utils/TypeResolver";
 import ESourceLanguage from "../../utils/types/ESourceLanguage";
@@ -3588,22 +3587,16 @@ class FilePlanner {
   }
 
   /**
-   * Resolve the C type string for a named struct field, converting C++ underscore-separated
-   * names to :: notation. Returns undefined if the field is not in the type map.
-   * Issue #502: cnx stores C++ types with _ separator; codegen needs ::.
+   * The C type string of a named struct field, or undefined if the field is not
+   * in the type map. #2116: 1.3 stored a C++ `Ns.T` field type as `Ns::T`
+   * already (#502), so it is read, not re-spelled.
    */
   private _resolveFieldType(
     fieldName: string,
     structFieldTypes: Map<string, string> | undefined,
   ): string | undefined {
     if (!structFieldTypes?.has(fieldName)) return undefined;
-    const fieldType = structFieldTypes.get(fieldName)!;
-    if (!QualifiedCName.isQualified(fieldType)) return fieldType;
-    const parts = QualifiedCName.split(fieldType);
-    if (parts.length > 1 && this.queries.isCppScopeSymbol(parts[0])) {
-      return CppNamespaceUtils.fromParts(parts);
-    }
-    return fieldType;
+    return structFieldTypes.get(fieldName)!;
   }
 
   constantOf(expr: TExpression): number | undefined {
