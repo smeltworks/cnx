@@ -1,7 +1,6 @@
 import type IResolvedSymbols from "../../types/IResolvedSymbols";
 import type IProgram from "../../types/IProgram";
 import type TSymbol from "../../types/symbols/TSymbol";
-import QualifiedCName from "../../utils/QualifiedCName";
 import HeaderTypeNames from "./HeaderTypeNames";
 
 /**
@@ -75,18 +74,13 @@ class HeaderUserIncludes {
 
     // Known to a C/C++ header, but not as something forward-declarable.
     //
-    // The C++ index is keyed by the C++ NAME -- `SeaDash::Parse::ParseResult`
-    // -- while a cnx type naming it carries the generated C form,
-    // `SeaDash__Parse__ParseResult`. Asking the index with the transpiled name
-    // returns nothing for every namespaced type, which reads as "no such
-    // symbol" rather than "wrong question" (CLAUDE.md, #1139). That is why
-    // #1520's four headers declared a field whose type nothing defined: the
-    // lookup could not fail loudly, it just answered no. `toCppQualified` is
-    // the single encoder for that key, and it leaves an unqualified name alone.
+    // The C++ index is keyed by the C++ NAME, `SeaDash::Parse::ParseResult`,
+    // and that is the spelling a cnx type naming it carries: 1.3 settled the
+    // written path from the header's symbols (#2116). #1520's four headers
+    // declared a field whose type nothing defined because this lookup used to
+    // get the C join, `SeaDash__Parse__ParseResult`, and answered no.
     const declared =
-      symbolTable.getCppSymbol(QualifiedCName.toCppQualified(typeName, "::")) ??
-      symbolTable.getCppSymbol(typeName) ??
-      symbolTable.getCSymbol(typeName);
+      symbolTable.getCppSymbol(typeName) ?? symbolTable.getCSymbol(typeName);
     if (!declared) {
       return false;
     }
