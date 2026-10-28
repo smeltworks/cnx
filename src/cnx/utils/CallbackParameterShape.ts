@@ -1,7 +1,6 @@
 import type ICallbackTypedefParameter from "../types/ICallbackTypedefParameter";
 import type IResolvedSymbols from "../types/IResolvedSymbols";
 import type IFunctionSymbol from "../types/symbols/IFunctionSymbol";
-import CppNamespaceUtils from "./CppNamespaceUtils";
 import DeclaredPointer from "./DeclaredPointer";
 import DeclaredTypeFacts from "./DeclaredTypeFacts";
 import headerCType from "./headerCType";
@@ -138,12 +137,11 @@ class CallbackParameterShape {
     isOpaqueHandle: boolean;
   } {
     // ADR-006: struct-ness drives reference semantics. A C++ namespaced
-    // struct is known by its `::` spelling, which is how the prototype that
-    // takes it by reference names it; the C join (`hw__Dev`) is not.
+    // struct arrives in its `::` spelling, the one 1.3 stored (#2116).
     const isStruct = DeclaredTypeFacts.isStruct(
       facts.symbols,
       facts.symbolTable,
-      CppNamespaceUtils.convertToCppNamespace(typeName, facts.symbolTable),
+      typeName,
     );
 
     // ADR-029: a parameter whose type is itself a function-as-type.
