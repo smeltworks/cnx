@@ -211,12 +211,6 @@ class ScopeJoinSites {
       why: "`qualify`, defined in terms of the one join; 3-Declare's C++ collectors are its callers",
     },
     {
-      file: "src/cnx/utils/ForeignTypeFacts.ts",
-      element: "fromParts([...scopes.slice(0, depth), spelling])",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
       file: "src/cnx/PARSE/3-Declare/cnx/collectors/BitmapCollector.ts",
       element: "identityOf({ name, scopePath })",
       kind: "encoder",
