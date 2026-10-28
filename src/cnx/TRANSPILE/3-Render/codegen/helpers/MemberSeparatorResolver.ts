@@ -80,7 +80,6 @@ class MemberSeparatorResolver {
       isCrossScope,
       holding,
       isCppAccess,
-      scopedRegName,
       isScopedRegister,
     };
   }

@@ -47,7 +47,6 @@ describe("MemberSeparatorResolver", () => {
       isCrossScope: false,
       holding: NOT_HELD,
       isCppAccess: false,
-      scopedRegName: null,
       isScopedRegister: false,
       ...overrides,
     };
@@ -111,7 +110,6 @@ describe("MemberSeparatorResolver", () => {
         deps,
       );
 
-      expect(ctx.scopedRegName).toBe("Motor__CONTROL_REG");
       expect(ctx.isScopedRegister).toBe(true);
     });
 
@@ -130,7 +128,6 @@ describe("MemberSeparatorResolver", () => {
         deps,
       );
 
-      expect(ctx.scopedRegName).toBeNull();
       expect(ctx.isScopedRegister).toBe(false);
     });
 
