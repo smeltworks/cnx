@@ -2,36 +2,6 @@ import { describe, it, expect } from "vitest";
 import CppConstructorHelper from "../CppConstructorHelper";
 
 describe("CppConstructorHelper", () => {
-  describe("toQualifiedName", () => {
-    it("converts underscore format to :: notation", () => {
-      expect(CppConstructorHelper.toQualifiedName("TestNS__MyClass")).toBe(
-        "TestNS::MyClass",
-      );
-    });
-
-    it("handles multiple underscores", () => {
-      expect(
-        CppConstructorHelper.toQualifiedName("Outer__Inner__MyClass"),
-      ).toBe("Outer::Inner::MyClass");
-    });
-
-    it("leaves :: notation unchanged", () => {
-      expect(CppConstructorHelper.toQualifiedName("TestNS::MyClass")).toBe(
-        "TestNS::MyClass",
-      );
-    });
-
-    it("leaves simple names unchanged", () => {
-      expect(CppConstructorHelper.toQualifiedName("MyClass")).toBe("MyClass");
-    });
-
-    it("does not convert if :: already present", () => {
-      expect(CppConstructorHelper.toQualifiedName("Test_NS::MyClass")).toBe(
-        "Test_NS::MyClass",
-      );
-    });
-  });
-
   describe("extractClassName", () => {
     it("extracts class name from qualified name", () => {
       expect(CppConstructorHelper.extractClassName("TestNS::MyClass")).toBe(
@@ -107,7 +77,7 @@ describe("CppConstructorHelper", () => {
       ).toBe(true);
     });
 
-    it("handles namespaced types with underscore format", () => {
+    it("reads a C name as-is rather than re-spelling it as C++", () => {
       const mockSymbolTable = {
         getSymbol: (name: string) => {
           if (name === "TestNS::MyClass::MyClass") {
@@ -118,7 +88,7 @@ describe("CppConstructorHelper", () => {
       };
       expect(
         CppConstructorHelper.hasConstructor("TestNS__MyClass", mockSymbolTable),
-      ).toBe(true);
+      ).toBe(false);
     });
 
     it("handles namespaced types with :: format", () => {

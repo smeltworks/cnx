@@ -94,8 +94,8 @@ class CppClassInitializerCheck {
    *
    * The text in hand is the SOURCE spelling: `TestNS.MyClass`, which the symbol
    * table does not hold. `candidatesForTypeText` is the same ADR-057 mapping
-   * every other rule here uses, and it produces `TestNS__MyClass`, which
-   * `CppConstructorHelper` re-spells as `TestNS::MyClass` to look up.
+   * every other rule here uses; for a qualified path it reads the spelling 1.3
+   * stored (`TestNS::MyClass`), which is the name the symbol table holds (#2116).
    */
   private cppClassWithConstructor(
     typeText: string,
@@ -109,7 +109,7 @@ class CppClassInitializerCheck {
       if (
         CppConstructorHelper.hasConstructor(candidate, this.context.symbolTable)
       ) {
-        return CppConstructorHelper.toQualifiedName(candidate);
+        return candidate;
       }
     }
     return null;
