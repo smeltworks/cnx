@@ -123,6 +123,18 @@ class ScopeJoinSites {
    */
   private static readonly BOUND_SEPARATOR = /(?:=|:)\s*["'](?:__|::)["']/g;
 
+  /**
+   * A builder taken as a value -- `getName = ScopeUtils.getTranspiledCName` --
+   * so its later calls go through an alias the call scan cannot see. Each
+   * such binding is a site (#2360 review).
+   */
+  private static readonly BOUND_BUILDER = new RegExp(
+    `(?:=|:|\\(|,|return)\\s*(?:${ScopeJoinSites.BUILDERS.map((builder) =>
+      builder.replace(".", "\\."),
+    ).join("|")})\\b(?!\\s*\\()`,
+    "g",
+  );
+
   private static readonly SPELLED_SEPARATOR =
     /\$\{[^{}`]*\}(?:__|::)|\.join\(\s*["'](?:__|::)["']\s*\)|\+\s*["'](?:__|::)["']|["'](?:__|::)["']\s*\+/g;
 
@@ -500,6 +512,9 @@ class ScopeJoinSites {
       ),
       ...[...source.matchAll(ScopeJoinSites.SEPARATOR)].map(
         (match) => match[0],
+      ),
+      ...[...source.matchAll(ScopeJoinSites.BOUND_BUILDER)].map((match) =>
+        match[0].replace(/\s+/g, " "),
       ),
       ...[...source.matchAll(ScopeJoinSites.BOUND_SEPARATOR)].map((match) =>
         match[0].replace(/\s+/g, " "),

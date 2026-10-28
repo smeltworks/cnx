@@ -99,6 +99,14 @@ describe("ScopeJoinSites", () => {
       ).toEqual(['= "__"', ': "::"']);
     });
 
+    it("counts a builder taken as a value (#2360 review)", () => {
+      expect(
+        ScopeJoinSites.elements(
+          "private static readonly getName = ScopeUtils.getTranspiledCName;",
+        ),
+      ).toEqual(["= ScopeUtils.getTranspiledCName"]);
+    });
+
     it("does not count text that merely contains two underscores", () => {
       // Negative control: a float bit shadow and a reserved-prefix test are not
       // joins, and counting them would make every row a false positive.
