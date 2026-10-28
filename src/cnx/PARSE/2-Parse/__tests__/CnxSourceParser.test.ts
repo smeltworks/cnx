@@ -255,4 +255,98 @@ void main() { u8 y <- ; }`;
       expect(result.parseErrors[0].message).not.toContain("E0430");
     });
   });
+
+  /**
+   * Issue #2366: the C idiom `foo(void)` for a zero-parameter function is
+   * rejected with E0926 rather than ANTLR's raw "missing IDENTIFIER" text.
+   *
+   * The one genuine near-miss -- `foo(const)`, a bare modifier with no type
+   * or name, which fails from the SAME rule with the SAME offending ')' as
+   * the real bug -- stays green under a mutation that drops the
+   * previous-token check and keys only on the rule and the offending symbol
+   * (verified by mutation during development). Pinning it as a
+   * `.expected.error` fixture would mean asserting ANTLR's raw "expecting
+   * {...}" token list, the exact kind of brittle, unrelated-to-this-bug text
+   * #1306's precedent (above) avoids pinning. So it is asserted here instead.
+   */
+  describe("void parameter rejection (E0926)", () => {
+    it("reports E0926 at the offending ')' for a C-style empty parameter list", () => {
+      const source = `u32 main(void) {\n    return 0;\n}`;
+
+      const result = CnxSourceParser.parse(source);
+
+      expect(result.parseErrors).toHaveLength(1);
+      expect(result.parseErrors[0].message).toBe(
+        "error[E0926]: 'void' is not a valid parameter type",
+      );
+      expect(result.parseErrors[0].helpText).toBe(
+        "cnx has no C-style (void) parameter -- declare a zero-parameter function as foo(), or remove the void parameter if other parameters remain",
+      );
+      expect(result.parseErrors[0].line).toBe(1);
+      expect(result.parseErrors[0].column).toBe(13);
+    });
+
+    it("reports E0926 for every void parameter, not just the first", () => {
+      const source = `u32 main(void) {\n    return 0;\n}\nvoid helper(void) {\n}`;
+
+      const result = CnxSourceParser.parse(source);
+
+      expect(result.parseErrors).toHaveLength(2);
+      expect(result.parseErrors[0].message).toContain("E0926");
+      expect(result.parseErrors[1].message).toContain("E0926");
+    });
+
+    it("reports E0926 when void trails a real parameter", () => {
+      const source = `u32 f(i32 x, void) {\n    return x;\n}`;
+
+      const result = CnxSourceParser.parse(source);
+
+      expect(result.parseErrors).toHaveLength(1);
+      expect(result.parseErrors[0].message).toContain("E0926");
+    });
+
+    it("reports E0926 when void leads a real parameter, off the comma it leaves behind", () => {
+      // The offending token here is the ',' that was meant to separate
+      // parameters, not ')' -- the predicate keys on the token BEFORE the
+      // offending one (always VOID) rather than the offending one itself
+      // (which varies by shape), precisely so this case is caught too.
+      const source = `u32 f(void, i32 x) {\n    return x;\n}`;
+
+      const result = CnxSourceParser.parse(source);
+
+      expect(result.parseErrors).toHaveLength(1);
+      expect(result.parseErrors[0].message).toContain("E0926");
+    });
+
+    it("does not misfire on the correct zero-parameter form", () => {
+      const source = `u32 main() {\n    return 0;\n}`;
+
+      const result = CnxSourceParser.parse(source);
+
+      expect(result.parseErrors).toHaveLength(0);
+    });
+
+    it("does not misfire on a parameter name that merely contains 'void'", () => {
+      const source = `u32 f(i32 avoid) {\n    return avoid;\n}`;
+
+      const result = CnxSourceParser.parse(source);
+
+      expect(result.parseErrors).toHaveLength(0);
+    });
+
+    // OVER-ENFORCEMENT CONTROL. A bare `const` with no type or name fails
+    // from the same rule (RULE_parameter) with the same offending ')' as the
+    // real bug -- but `type_()` never matched here, so the token before the
+    // offending one is CONST, never VOID.
+    it("does not claim E0926 for a bare 'const' with no type or name", () => {
+      const source = `u32 main(const) {\n    return 0;\n}`;
+
+      const result = CnxSourceParser.parse(source);
+
+      expect(result.parseErrors.length).toBeGreaterThan(0);
+      for (const error of result.parseErrors) {
+        expect(error.message).not.toContain("E0926");
+      }
+    });
+  });
 });

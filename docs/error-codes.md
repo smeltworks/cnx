@@ -10,18 +10,18 @@ codes that already have a fixture.
 
 ## Error Code Ranges
 
-| Range     | Category                                                                                                                                                                          | Count   |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| E00xx     | Reserved/Test                                                                                                                                                                     | 1       |
-| E02xx     | Identifier/Param Naming                                                                                                                                                           | 5       |
-| E03xx     | Struct Fields/Init                                                                                                                                                                | 6       |
-| E04xx     | Symbol Resolution                                                                                                                                                                 | 16      |
-| E05xx     | Include/Preprocessor                                                                                                                                                              | 19      |
-| E06xx     | Sizeof Expressions                                                                                                                                                                | 3       |
-| E07xx     | Control Flow                                                                                                                                                                      | 15      |
-| E08xx     | Arithmetic/Array Safety                                                                                                                                                           | 61      |
-| E09xx     | NULL Safety, Compile-Time Values, Literal Form, String Conversions, Interrupt Masking, `mut` Arguments, `for` Arrays, Config File Names, Environment Variables, Operator Operands | 26      |
-| **Total** |                                                                                                                                                                                   | **152** |
+| Range     | Category                                                                                                                                                                                           | Count   |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| E00xx     | Reserved/Test                                                                                                                                                                                      | 1       |
+| E02xx     | Identifier/Param Naming                                                                                                                                                                            | 5       |
+| E03xx     | Struct Fields/Init                                                                                                                                                                                 | 6       |
+| E04xx     | Symbol Resolution                                                                                                                                                                                  | 16      |
+| E05xx     | Include/Preprocessor                                                                                                                                                                               | 19      |
+| E06xx     | Sizeof Expressions                                                                                                                                                                                 | 3       |
+| E07xx     | Control Flow                                                                                                                                                                                       | 15      |
+| E08xx     | Arithmetic/Array Safety                                                                                                                                                                            | 61      |
+| E09xx     | NULL Safety, Compile-Time Values, Literal Form, String Conversions, Interrupt Masking, `mut` Arguments, `for` Arrays, Config File Names, Environment Variables, Operator Operands, Parameter Lists | 27      |
+| **Total** |                                                                                                                                                                                                    | **153** |
 
 ---
 
@@ -488,6 +488,12 @@ base: bare, `this.` and `global.`.
 | Code  | Message                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Help                                                                                                                               | Source                                           |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
 | E0925 | An arithmetic, bitwise, shift or relational operator, a prefix `-` or `~`, or a compound assignment is applied to an operand outside the set it takes: an array (whole or partly indexed), a struct, a string other than under `+`, an enum outside its own member values, a char other than under binary `+` and `-` and the comparisons (so also under a prefix `-` or `~`), or a float under a bitwise or shift operator (#1191, #1798). A bool is E0807 and a float under `%` is E0804 | Index an array down to one element, use a struct's field, compare strings with `=` / `!=`, cast an enum or char to an integer type | `TRANSPILE/1-Analyze/OperatorOperandAnalyzer.ts` |
+
+## E0926 — C-Style Empty Parameter List `(void)` (#2366)
+
+| Code  | Message                              | Help                                                                                                                                       | Source                             |
+| ----- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
+| E0926 | 'void' is not a valid parameter type | cnx has no C-style (void) parameter -- declare a zero-parameter function as foo(), or remove the void parameter if other parameters remain | `PARSE/2-Parse/CnxSourceParser.ts` |
 
 ---
 
