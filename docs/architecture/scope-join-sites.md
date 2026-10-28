@@ -75,7 +75,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/CppConstructorHelper.ts`                                                   | `qualify(qualifiedName, className)`                                    | 1      | recompute    |
 | `src/cnx/utils/CppNamespaceUtils.ts`                                                      | `CppNamespaceUtils.SEPARATOR`                                          | 1      | encoder      |
 | `src/cnx/utils/CppNamespaceUtils.ts`                                                      | `fromParts([scope, name])`                                             | 1      | encoder      |
-| `src/cnx/utils/EnumZeroValue.ts`                                                          | `fromParts([enumName, member])`                                        | 1      | recompute    |
 | `src/cnx/utils/ForeignTypeFacts.ts`                                                       | `fromParts([...scopes.slice(0, depth), spelling])`                     | 1      | recompute    |
 | `src/cnx/utils/OperandTyper.ts`                                                           | `fromParts([name, first.name])`                                        | 1      | recompute    |
 | `src/cnx/utils/OperandTyper.ts`                                                           | `fromParts(current.parts)`                                             | 2      | recompute    |
@@ -92,9 +91,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                                             | `qualifyPathInScope([symbol.name], symbol.scopePath)`                  | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                                         | `qualifyInScope(type.name, scopePath)`                                 | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                                         | `qualifyScopeType(type.name, scopePath, deps.isScopeType)`             | 1      | encoder      |
-| **total**                                                                                 |                                                                        | **56** |              |
+| **total**                                                                                 |                                                                        | **55** |              |
 
-56 site(s) across 29 file(s).
+55 site(s) across 28 file(s).
 
 ## Why each site is not a scope join
 
@@ -131,7 +130,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/utils/CppConstructorHelper.ts` `qualify(qualifiedName, className)`: builds a C++ name after 3-Declare named the header symbol; converts to resolving the symbol and reading its name (#2116)
 - `src/cnx/utils/CppNamespaceUtils.ts` `CppNamespaceUtils.SEPARATOR`: the C++ separator's owner: the one `::` join
 - `src/cnx/utils/CppNamespaceUtils.ts` `fromParts([scope, name])`: `qualify`, defined in terms of the one join; 3-Declare's C++ collectors are its callers
-- `src/cnx/utils/EnumZeroValue.ts` `fromParts([enumName, member])`: builds a C++ name after 3-Declare named the header symbol; converts to resolving the symbol and reading its name (#2116)
 - `src/cnx/utils/ForeignTypeFacts.ts` `fromParts([...scopes.slice(0, depth), spelling])`: builds a C++ name after 3-Declare named the header symbol; converts to resolving the symbol and reading its name (#2116)
 - `src/cnx/utils/OperandTyper.ts` `fromParts([name, first.name])`: builds a C++ name after 3-Declare named the header symbol; converts to resolving the symbol and reading its name (#2116)
 - `src/cnx/utils/OperandTyper.ts` `fromParts(current.parts)`: builds a C++ name after 3-Declare named the header symbol; converts to resolving the symbol and reading its name (#2116)

@@ -235,12 +235,6 @@ class ScopeJoinSites {
       why: ScopeJoinSites.RECOMPUTE,
     },
     {
-      file: "src/cnx/utils/EnumZeroValue.ts",
-      element: "fromParts([enumName, member])",
-      kind: "recompute",
-      why: ScopeJoinSites.RECOMPUTE,
-    },
-    {
       file: "src/cnx/utils/ForeignTypeFacts.ts",
       element: "fromParts([...scopes.slice(0, depth), spelling])",
       kind: "recompute",
