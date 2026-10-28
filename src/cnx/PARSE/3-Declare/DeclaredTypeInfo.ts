@@ -11,7 +11,6 @@
  * mean here", so this only says what that declaration's type looks like --
  * the same way for a local, a global, and a global read from another file.
  */
-import CppNamespaceUtils from "../../utils/CppNamespaceUtils";
 import DeclaredPointer from "../../utils/DeclaredPointer";
 import DeclaredTypeFacts from "../../utils/DeclaredTypeFacts";
 import ForeignTypeFacts from "../../utils/ForeignTypeFacts";
@@ -148,7 +147,7 @@ class DeclaredTypeInfo {
         isAtomic: d.isAtomic,
       };
     }
-    const baseType = DeclaredTypeInfo.baseTypeOf(d.type, symbolTable);
+    const baseType = TypeResolver.getTypeName(d.type);
     const isArray = dimensions.length > 0;
     return {
       baseType,
@@ -188,7 +187,7 @@ class DeclaredTypeInfo {
     const isString =
       d.type.kind === "string" ||
       (d.type.kind === "struct" && d.type.name === "string");
-    let baseType = DeclaredTypeInfo.baseTypeOf(d.type, symbolTable);
+    let baseType = TypeResolver.getTypeName(d.type);
     if (isString && !isArray) baseType = "string";
     if (capacity !== undefined && isArray) dimensions.push(capacity + 1);
     return {
@@ -206,17 +205,6 @@ class DeclaredTypeInfo {
         isPointer: true,
       }),
     };
-  }
-
-  /** A declared type's name as C spells it, `::` for a C++ namespace */
-  private static baseTypeOf(
-    type: TType,
-    symbolTable: IResolvedSymbols,
-  ): string {
-    return CppNamespaceUtils.convertToCppNamespace(
-      TypeResolver.getTypeName(type),
-      symbolTable,
-    );
   }
 }
 
