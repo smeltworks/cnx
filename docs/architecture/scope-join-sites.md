@@ -54,7 +54,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/PARSE/3-Declare/cnx/index.ts`                             | `qualifyInScope(typeName, scopePath)`                                  | 1      | encoder      |
 | `src/cnx/PARSE/3-Declare/cnx/QualifiedTypeNames.ts`                | `fromSourceName(type.path.join("."))`                                  | 1      | encoder      |
 | `src/cnx/PARSE/3-Declare/cnx/utils/MemberSymbolBase.ts`            | `identityOf({ name: input.name, scopePath: input.parentScopedName, })` | 1      | encoder      |
-| `src/cnx/PARSE/4-Resolve/ConstantNames.ts`                         | `fromSourceName(written.join("."))`                                    | 1      | written-name |
 | `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                         | `movedLocal(functionCName, name, 1)`                                   | 1      | owner-c-name |
 | `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                         | `movedLocal(functionCName, name, suffix)`                              | 1      | owner-c-name |
 | `src/cnx/utils/QualifiedCName.ts`                                  | `QualifiedCName.SEPARATOR`                                             | 3      | encoder      |
@@ -67,12 +66,11 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                      | `inScope(scopePath, path)`                                             | 1      | encoder      |
 | `src/cnx/utils/ScopeUtils.ts`                                      | `qualifyPathInScope([name], scopePath)`                                | 1      | encoder      |
 | `src/cnx/utils/ScopeUtils.ts`                                      | `qualifyPathInScope([symbol.name], symbol.scopePath)`                  | 1      | encoder      |
-| `src/cnx/utils/TypeNameLadder.ts`                                  | `fromSourceName(type.path.join("."))`                                  | 1      | written-name |
 | `src/cnx/utils/TypeNameLadder.ts`                                  | `qualifyInScope(type.name, scopePath)`                                 | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                  | `qualifyScopeType(type.name, scopePath, deps.isScopeType)`             | 1      | encoder      |
-| **total**                                                          |                                                                        | **35** |              |
+| **total**                                                          |                                                                        | **33** |              |
 
-35 site(s) across 17 file(s).
+33 site(s) across 16 file(s).
 
 ## Why each site is not a scope join
 
@@ -92,7 +90,6 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/PARSE/3-Declare/cnx/index.ts` `qualifyInScope(typeName, scopePath)`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
 - `src/cnx/PARSE/3-Declare/cnx/QualifiedTypeNames.ts` `fromSourceName(type.path.join("."))`: 3-Declare, the first layer holding the headers' symbols, spelling each written Scope.T once and storing it as IFileSymbols.qualifiedTypeNames for later layers to read (#2116)
 - `src/cnx/PARSE/3-Declare/cnx/utils/MemberSymbolBase.ts` `identityOf({ name: input.name, scopePath: input.parentScopedName, })`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
-- `src/cnx/PARSE/4-Resolve/ConstantNames.ts` `fromSourceName(written.join("."))`: a dotted type no cnx symbol this file sees declares; a declared `Scope.T` reads its `fullyQualifiedCName` through `visibleMember`
 - `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `movedLocal(functionCName, name, 1)`: 4-Resolve deciding, once, the C name a local moves to when it hides a file-scope name; stored on the settled local as emittedName
 - `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `movedLocal(functionCName, name, suffix)`: 4-Resolve deciding, once, the uniqueness-suffixed C name a local moves to when it shadows the enclosing local it reads (#1643); stored as emittedName
 - `src/cnx/utils/QualifiedCName.ts` `QualifiedCName.SEPARATOR`: the ADR-063 separator's owner: its declaration, the one join, the split and the prefix test
@@ -105,6 +102,5 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/utils/ScopeUtils.ts` `inScope(scopePath, path)`: `qualifyPathInScope` -- the one implementation the scope-qualifying callers route to; its parameter IS the enclosing path
 - `src/cnx/utils/ScopeUtils.ts` `qualifyPathInScope([name], scopePath)`: the owning code: an encoder defined in terms of another, or 3-Declare materializing the name it stores on the symbol
 - `src/cnx/utils/ScopeUtils.ts` `qualifyPathInScope([symbol.name], symbol.scopePath)`: the owning code: getTranspiledCName's definition, the C name 3-Declare stores as fullyQualifiedCName
-- `src/cnx/utils/TypeNameLadder.ts` `fromSourceName(type.path.join("."))`: a qualified type path no cnx symbol declares, spelled as written; a declared one reads its fullyQualifiedCName through `memberCName` (#2116)
 - `src/cnx/utils/TypeNameLadder.ts` `qualifyInScope(type.name, scopePath)`: 3-Declare deciding a `this.T` type reference's C name as it builds the symbols, or a `this.T` no symbol declares spelled as written; every later pass passes `memberCName` and reads the declared type's fullyQualifiedCName (#2116)
 - `src/cnx/utils/TypeNameLadder.ts` `qualifyScopeType(type.name, scopePath, deps.isScopeType)`: 3-Declare deciding a bare scope type's name: only it supplies isScopeType; every later pass supplies scopeTypeCName and reads the stored name

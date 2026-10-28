@@ -298,12 +298,6 @@ class ScopeJoinSites {
       why: "3-Declare deciding a `this.T` type reference's C name as it builds the symbols, or a `this.T` no symbol declares spelled as written; every later pass passes `memberCName` and reads the declared type's fullyQualifiedCName (#2116)",
     },
     {
-      file: "src/cnx/PARSE/4-Resolve/ConstantNames.ts",
-      element: 'fromSourceName(written.join("."))',
-      kind: "written-name",
-      why: "a dotted type no cnx symbol this file sees declares; a declared `Scope.T` reads its `fullyQualifiedCName` through `visibleMember`",
-    },
-    {
       file: "src/cnx/utils/QualifiedCName.ts",
       element: "QualifiedCName.SEPARATOR",
       kind: "encoder",
@@ -314,12 +308,6 @@ class ScopeJoinSites {
       element: "inScope(scopePath, path)",
       kind: "encoder",
       why: "`qualifyPathInScope` -- the one implementation the scope-qualifying callers route to; its parameter IS the enclosing path",
-    },
-    {
-      file: "src/cnx/utils/TypeNameLadder.ts",
-      element: 'fromSourceName(type.path.join("."))',
-      kind: "written-name",
-      why: "a qualified type path no cnx symbol declares, spelled as written; a declared one reads its fullyQualifiedCName through `memberCName` (#2116)",
     },
   ];
 
