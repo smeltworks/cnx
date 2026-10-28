@@ -3,7 +3,6 @@ import type IByValueFacts from "./types/IByValueFacts";
 import type IParameterInfo from "../types/symbols/IParameterInfo";
 import SymbolGuards from "../types/symbols/SymbolGuards";
 import CNX_TO_C_TYPE_MAP from "./constants/TypeMappings";
-import CppNamespaceUtils from "./CppNamespaceUtils";
 import invariant from "./invariant";
 import SymbolTypeResolver from "./TypeResolver";
 
@@ -87,16 +86,9 @@ class ParameterByValue {
       return true;
     }
 
-    // 1.4 settles a C++ namespaced struct as `hw__Dev`, which the struct
-    // registry knows as `hw::Dev` (#1520)
-    const isKnownStruct =
-      facts.isKnownStruct(typeName) ||
-      facts.isKnownStruct(
-        CppNamespaceUtils.convertToCppNamespace(
-          typeName,
-          program?.symbolTable(),
-        ),
-      );
+    // A C++ namespaced struct arrives as `hw::Dev`, the spelling 1.3 stored
+    // and the struct registry keys (#1520, #2116)
+    const isKnownStruct = facts.isKnownStruct(typeName);
 
     // #1603: a callback-compatible function whose typedef does not resolve
     // takes a struct by value, as such typedefs usually do
