@@ -1,0 +1,39 @@
+// test-error
+// Issue #2366: a C-style `(void)` empty parameter list produced a raw,
+// uncoded ANTLR parser message ("missing IDENTIFIER at ')'") instead of a
+// cnx diagnostic. cnx has no `(void)` -- a zero-parameter function is
+// declared `foo()`.
+//
+// NEGATIVE CONTROLS stay silent: `zeroParams` uses the correct empty-
+// parentheses form, and `withSubstring`'s parameter name merely CONTAINS
+// "void" as a substring (lexed as one IDENTIFIER token, never as the VOID
+// keyword). Both must transpile clean.
+
+u32 zeroParams() {
+    return 0;
+}
+
+u32 withSubstring(i32 avoid) {
+    return avoid;
+}
+
+u32 main(void) {
+    return 0;
+}
+
+void helper(void) {
+}
+
+u32 trailingVoid(i32 x, void) {
+    return x;
+}
+
+u32 leadingVoid(void, i32 x) {
+    return x;
+}
+
+// PR #2368 review: a comment between `void` and the delimiter sits on the
+// HIDDEN channel, same as any other token index -- the lookup must skip it.
+u32 commentedVoid(void /* unused */) {
+    return 0;
+}

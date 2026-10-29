@@ -84,6 +84,35 @@ const NESTED_SCOPE_RULES: ReadonlySet<number> = new Set([
 ]);
 
 /**
+ * cnx has no C-style `(void)` empty parameter list -- a zero-parameter
+ * function is declared `foo()` (docs/learn-cnx-in-y-minutes.md). Issue #2366.
+ */
+const VOID_PARAMETER_MESSAGE = CodedErrorText.of(
+  "E0926",
+  "'void' is not a valid parameter type",
+);
+
+const VOID_PARAMETER_HELP =
+  "cnx has no C-style (void) parameter -- declare a zero-parameter function as foo(), or remove the void parameter if other parameters remain";
+
+/**
+ * `parameter: constModifier? mutModifier? type IDENTIFIER arrayDimension*`,
+ * and `type` has a bare `'void'` alternative so `void` can be a function's
+ * RETURN type. `foo(void)` parses `void` as the PARAMETER's type (matched
+ * and popped by `type_()`), then fails expecting the IDENTIFIER that was
+ * supposed to name it -- so the error reports from `parameter`, not `type`.
+ *
+ * Held as a rule INDEX, by name, for the same reason NESTED_SCOPE_RULES is:
+ * `parameterList`/`parameter` are referenced from exactly one place in the
+ * grammar (functionDeclaration), so this index names only a function's
+ * parameter list, and a grammar rename fails to compile here instead of
+ * silently ceasing to match.
+ */
+const VOID_PARAMETER_RULES: ReadonlySet<number> = new Set([
+  CnxParser.RULE_parameter,
+]);
+
+/**
  * Parses cnx source code and collects errors.
  *
  * Returns `IParsedFile` -- 1.2 Parse's artifact -- rather than a private result
@@ -147,6 +176,50 @@ class CnxSourceParser {
   }
 
   /**
+   * Whether this syntax error is the C `(void)` empty-parameter-list idiom.
+   *
+   * Keyed on the token immediately BEFORE the offending one, never the
+   * offending one itself or the rule alone: the offending token is whatever
+   * follows the bogus `void` parameter -- `)` closing the list (`foo(void)`)
+   * or `,` continuing it (`foo(void, i32 x)`) -- so there are two possible
+   * offending tokens for the one cause, and `RULE_parameter` alone is not
+   * enough to tell this apart from a different missing-identifier failure
+   * reported from the same rule, e.g. a bare `const` with no type and no
+   * name (`foo(const)`): same rule, often the same offending `)`, but never
+   * preceded by VOID, because `type` never matched there. No recovery-noise
+   * suppression analog of NESTED_SCOPE_RULES is needed alongside this: ANTLR's
+   * single-token-insertion recovery resumes cleanly after a missing-identifier
+   * error, so each occurrence reports exactly once (verified empirically
+   * against issue #2366's fixture, including multiple void parameters in one
+   * file).
+   *
+   * The walk back skips HIDDEN-channel tokens: `DOC_COMMENT`/`LINE_COMMENT`/
+   * `BLOCK_COMMENT` occupy a token index like any other token (only `WS` is
+   * `-> skip` in the grammar), so `foo(void /* c *\/)` or a trailing `// c`
+   * would otherwise land this lookup on the comment instead of `VOID` and
+   * silently miss (PR #2368 review).
+   */
+  private static isVoidParameter(
+    recognizer: unknown,
+    offendingSymbol: Token | null,
+  ): boolean {
+    if (!(recognizer instanceof Parser)) return false;
+    if (!VOID_PARAMETER_RULES.has(recognizer.context?.ruleIndex ?? -1)) {
+      return false;
+    }
+    if (offendingSymbol === null || offendingSymbol.tokenIndex <= 0) {
+      return false;
+    }
+    let index = offendingSymbol.tokenIndex - 1;
+    let previousToken = recognizer.tokenStream.get(index);
+    while (previousToken.channel !== Token.DEFAULT_CHANNEL && index > 0) {
+      index -= 1;
+      previousToken = recognizer.tokenStream.get(index);
+    }
+    return previousToken.type === CnxParser.VOID;
+  }
+
+  /**
    * Parse cnx source code
    * @param source - The source code string to parse
    * @returns 1.2 Parse's artifact for this source
@@ -175,6 +248,17 @@ class CnxSourceParser {
             column: charPositionInLine,
             message: NESTED_SCOPE_MESSAGE,
             helpText: NESTED_SCOPE_HELP,
+            severity: "error" as const,
+          });
+          return;
+        }
+
+        if (CnxSourceParser.isVoidParameter(recognizer, offendingSymbol)) {
+          errors.push({
+            line,
+            column: charPositionInLine,
+            message: VOID_PARAMETER_MESSAGE,
+            helpText: VOID_PARAMETER_HELP,
             severity: "error" as const,
           });
           return;
