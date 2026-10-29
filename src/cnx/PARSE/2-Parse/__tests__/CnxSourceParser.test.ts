@@ -318,6 +318,28 @@ void main() { u8 y <- ; }`;
       expect(result.parseErrors[0].message).toContain("E0926");
     });
 
+    it("reports E0926 past a block comment between void and the offending ')'", () => {
+      // PR #2368 review: DOC_COMMENT/LINE_COMMENT/BLOCK_COMMENT sit on the
+      // HIDDEN channel (only WS is `-> skip`), so a comment here occupies a
+      // token index of its own -- the walk back from the offending ')' must
+      // skip it to still land on VOID.
+      const source = `u32 main(void /* c */) {\n    return 0;\n}`;
+
+      const result = CnxSourceParser.parse(source);
+
+      expect(result.parseErrors).toHaveLength(1);
+      expect(result.parseErrors[0].message).toContain("E0926");
+    });
+
+    it("reports E0926 past a line comment between void and the offending ')'", () => {
+      const source = `u32 main(void // c\n) {\n    return 0;\n}`;
+
+      const result = CnxSourceParser.parse(source);
+
+      expect(result.parseErrors).toHaveLength(1);
+      expect(result.parseErrors[0].message).toContain("E0926");
+    });
+
     it("does not misfire on the correct zero-parameter form", () => {
       const source = `u32 main() {\n    return 0;\n}`;
 

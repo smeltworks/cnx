@@ -6,3 +6,5 @@
        help: cnx has no C-style (void) parameter -- declare a zero-parameter function as foo(), or remove the void parameter if other parameters remain
 31:20 error[E0926]: 'void' is not a valid parameter type
        help: cnx has no C-style (void) parameter -- declare a zero-parameter function as foo(), or remove the void parameter if other parameters remain
+37:35 error[E0926]: 'void' is not a valid parameter type
+       help: cnx has no C-style (void) parameter -- declare a zero-parameter function as foo(), or remove the void parameter if other parameters remain

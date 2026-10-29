@@ -192,6 +192,12 @@ class CnxSourceParser {
    * error, so each occurrence reports exactly once (verified empirically
    * against issue #2366's fixture, including multiple void parameters in one
    * file).
+   *
+   * The walk back skips HIDDEN-channel tokens: `DOC_COMMENT`/`LINE_COMMENT`/
+   * `BLOCK_COMMENT` occupy a token index like any other token (only `WS` is
+   * `-> skip` in the grammar), so `foo(void /* c *\/)` or a trailing `// c`
+   * would otherwise land this lookup on the comment instead of `VOID` and
+   * silently miss (PR #2368 review).
    */
   private static isVoidParameter(
     recognizer: unknown,
@@ -204,9 +210,12 @@ class CnxSourceParser {
     if (offendingSymbol === null || offendingSymbol.tokenIndex <= 0) {
       return false;
     }
-    const previousToken = recognizer.tokenStream.get(
-      offendingSymbol.tokenIndex - 1,
-    );
+    let index = offendingSymbol.tokenIndex - 1;
+    let previousToken = recognizer.tokenStream.get(index);
+    while (previousToken.channel !== Token.DEFAULT_CHANNEL && index > 0) {
+      index -= 1;
+      previousToken = recognizer.tokenStream.get(index);
+    }
     return previousToken.type === CnxParser.VOID;
   }
 

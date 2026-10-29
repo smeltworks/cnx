@@ -31,3 +31,9 @@ u32 trailingVoid(i32 x, void) {
 u32 leadingVoid(void, i32 x) {
     return x;
 }
+
+// PR #2368 review: a comment between `void` and the delimiter sits on the
+// HIDDEN channel, same as any other token index -- the lookup must skip it.
+u32 commentedVoid(void /* unused */) {
+    return 0;
+}
