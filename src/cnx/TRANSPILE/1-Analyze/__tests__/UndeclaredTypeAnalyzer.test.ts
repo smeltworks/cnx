@@ -206,9 +206,9 @@ describe("UndeclaredTypeAnalyzer", () => {
     // state the program cannot enter: `Analyze._inputsOf` is the
     // single producer and it returns `ICodeGenSymbols` or throws, so 2.1 never
     // runs without a view. What the test actually held up was a defensive
-    // guard in `isVisibleType`, reachable only from the test itself -- the
-    // #1418 shape, where a unit test is the sole caller keeping a branch
-    // alive.
+    // guard in `isVisibleType` (`denotesType` since #1458), reachable only
+    // from the test itself -- the #1418 shape, where a unit test is the sole
+    // caller keeping a branch alive.
     //
     // `IAnalysisContext.symbols` is non-nullable now, so the state is
     // unrepresentable rather than guarded, and six `if (!symbols)` branches
