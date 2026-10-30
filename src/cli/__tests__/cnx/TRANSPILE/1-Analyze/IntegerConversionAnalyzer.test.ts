@@ -415,4 +415,40 @@ describe("IntegerConversionAnalyzer -- on 1.2's syntax", () => {
       ),
     ).toEqual([]);
   });
+
+  describe("E0927 -- one character of a string<N> takes a character (#1748)", () => {
+    const inF = (body: string): string =>
+      `mut string<8> s;\nstring<8> t <- "QRS";\nmut u8 n <- 66;\nmut f32 x <- 1.5;\nvoid f() {\n${body}\n}`;
+    const codesOf = (body: string): string[] =>
+      errors(inF(body)).map((e) => e.code);
+
+    it("rejects an integer, a bool and a float written into one character", () => {
+      expect(
+        codesOf(
+          "    s[0] <- 65;\n    s[1] <- n;\n    s[2] <- true;\n    s[3] <- x;",
+        ),
+      ).toEqual(["E0927", "E0927", "E0927", "E0927"]);
+    });
+
+    it("names the value, at the value's position", () => {
+      const [found] = errors(inF("    s[0] <- 65;"));
+      expect(found.message).toBe(
+        "A value that is not a character cannot be assigned to a string's character: '65'",
+      );
+      expect(found.span.line).toBe(6);
+    });
+
+    it("accepts a character, another string's character, and a string", () => {
+      expect(
+        codesOf(
+          "    s[0] <- 'a';\n    s[1] <- t[0];\n    s[2] <- \"x\";\n    s[3] <- (n > 0) ? 'a' : 'b';",
+        ),
+      ).toEqual([]);
+    });
+
+    it("leaves a compound assignment and a whole-string write to other rules", () => {
+      expect(codesOf("    s[0] +<- 1;")).not.toContain("E0927");
+      expect(codesOf('    s <- "abc";')).toEqual([]);
+    });
+  });
 });
