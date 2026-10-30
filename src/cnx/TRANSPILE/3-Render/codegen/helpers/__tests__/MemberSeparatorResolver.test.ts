@@ -26,6 +26,7 @@ describe("MemberSeparatorResolver", () => {
   ): IMemberSeparatorDeps {
     return {
       isKnownScope: vi.fn(() => false),
+      isCppScopeSymbol: vi.fn(() => false),
       isKnownRegister: vi.fn(() => false),
       memberCName: vi.fn(
         (scopePath: string, name: string) => `${scopePath}__${name}`,
@@ -46,7 +47,6 @@ describe("MemberSeparatorResolver", () => {
     return {
       isCrossScope: false,
       holding: NOT_HELD,
-      isCppAccess: false,
       isScopedRegister: false,
       ...overrides,
     };
@@ -65,7 +65,6 @@ describe("MemberSeparatorResolver", () => {
           hasThis: false,
           currentScopePath: "",
           holding: NOT_HELD,
-          isCppAccess: false,
         },
         deps,
       );
@@ -85,7 +84,6 @@ describe("MemberSeparatorResolver", () => {
           hasThis: false,
           currentScopePath: "",
           holding: NOT_HELD,
-          isCppAccess: false,
         },
         deps,
       );
@@ -105,7 +103,6 @@ describe("MemberSeparatorResolver", () => {
           hasThis: true,
           currentScopePath: "Motor",
           holding: NOT_HELD,
-          isCppAccess: false,
         },
         deps,
       );
@@ -123,7 +120,6 @@ describe("MemberSeparatorResolver", () => {
           hasThis: false,
           currentScopePath: "Motor",
           holding: NOT_HELD,
-          isCppAccess: false,
         },
         deps,
       );
@@ -141,48 +137,73 @@ describe("MemberSeparatorResolver", () => {
           hasThis: false,
           currentScopePath: "",
           holding: STRUCT_PARAM,
-          isCppAccess: false,
         },
         deps,
       );
 
       expect(ctx.holding).toBe(STRUCT_PARAM);
     });
-
-    it("should preserve isCppAccess flag", () => {
-      const deps = createMockDeps();
-
-      const ctx = MemberSeparatorResolver.buildContext(
-        {
-          firstId: "SeaDash",
-          hasGlobal: true,
-          hasThis: false,
-          currentScopePath: "",
-          holding: NOT_HELD,
-          isCppAccess: true,
-        },
-        deps,
-      );
-
-      expect(ctx.isCppAccess).toBe(true);
-    });
   });
 
-  describe("firstStep", () => {
-    it("should return :: for C++ namespace access", () => {
-      const deps = createMockDeps();
-      const ctx = createContext({ isCppAccess: true });
+  describe("C++ paths (#1695)", () => {
+    // A C++ header's `namespace SeaDash { namespace Gauge { extern Reading cfg; } }`
+    const cppScopes = new Set(["SeaDash", "SeaDash::Gauge"]);
+    const cppDeps = (): IMemberSeparatorDeps =>
+      createMockDeps({
+        isCppScopeSymbol: vi.fn((name: string) => cppScopes.has(name)),
+        // A namespace is a known scope too (#1656); `::` must win over it
+        isKnownScope: vi.fn(() => true),
+      });
 
-      const sep = MemberSeparatorResolver.firstStep(
-        ["SeaDash"],
+    it("joins a namespace's member with ::", () => {
+      const sep = MemberSeparatorResolver.step(
+        true,
+        ["SeaDash", "cfg"],
         "SeaDash",
-        ctx,
-        deps,
+        createContext(),
+        cppDeps(),
       );
 
       expect(sep).toEqual({ kind: "access", separator: "::" });
     });
 
+    it("keeps :: through a nested namespace", () => {
+      const sep = MemberSeparatorResolver.step(
+        false,
+        ["SeaDash", "Gauge", "cfg"],
+        "SeaDash::Gauge",
+        createContext(),
+        cppDeps(),
+      );
+
+      expect(sep).toEqual({ kind: "access", separator: "::" });
+    });
+
+    it("joins a member of a namespace variable with .", () => {
+      const sep = MemberSeparatorResolver.step(
+        false,
+        ["SeaDash", "Gauge", "cfg", "value"],
+        "SeaDash::Gauge::cfg",
+        createContext(),
+        cppDeps(),
+      );
+
+      expect(sep).toEqual({ kind: "access", separator: "." });
+    });
+
+    it("continues the path only while the owner names a C++ scope", () => {
+      const deps = cppDeps();
+
+      expect(MemberSeparatorResolver.continuesCppPath("SeaDash", deps)).toBe(
+        true,
+      );
+      expect(
+        MemberSeparatorResolver.continuesCppPath("SeaDash::read()", deps),
+      ).toBe(false);
+    });
+  });
+
+  describe("firstStep", () => {
     it("should return -> for struct param in C mode", () => {
       const deps = createMockDeps({
         rootMemberSeparator: vi.fn((): "." | "->" => "->"),
@@ -383,8 +404,10 @@ describe("MemberSeparatorResolver", () => {
 
   describe("step (dispatch)", () => {
     it("should dispatch to firstStep when isFirstOp is true", () => {
-      const deps = createMockDeps();
-      const ctx = createContext({ isCppAccess: true });
+      const deps = createMockDeps({
+        isCppScopeSymbol: vi.fn((name: string) => name === "SeaDash"),
+      });
+      const ctx = createContext();
 
       const sep = MemberSeparatorResolver.step(
         true, // isFirstOp
@@ -418,14 +441,14 @@ describe("MemberSeparatorResolver", () => {
   describe("priority ordering", () => {
     it("should prioritize C++ access over struct param", () => {
       const deps = createMockDeps({
+        isCppScopeSymbol: vi.fn(() => true),
         rootMemberSeparator: vi.fn((): "." | "->" => "->"),
       });
       const ctx = createContext({
-        isCppAccess: true,
         holding: STRUCT_PARAM,
       });
 
-      const sep = MemberSeparatorResolver.firstStep(["obj"], "obj", ctx, deps);
+      const sep = MemberSeparatorResolver.step(true, ["obj"], "obj", ctx, deps);
 
       expect(sep).toEqual({ kind: "access", separator: "::" });
       expect(deps.rootMemberSeparator).not.toHaveBeenCalled();

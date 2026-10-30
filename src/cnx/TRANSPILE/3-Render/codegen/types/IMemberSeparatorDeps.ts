@@ -7,6 +7,9 @@ interface IMemberSeparatorDeps {
   /** Check if an identifier is a known scope */
   isKnownScope(name: string): boolean;
 
+  /** Whether `name` is a C++ namespace, class or enum (`CppNamespaceUtils.isCppNamespace`) */
+  isCppScopeSymbol(name: string): boolean;
+
   /** Check if an identifier is a known register */
   isKnownRegister(name: string): boolean;
   /** The C name 3-Declare gave `name` in `scopePath`, when it declared one (#2116). */

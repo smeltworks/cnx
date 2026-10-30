@@ -1853,10 +1853,52 @@ describe("PostfixExpressionGenerator", () => {
       const result = runPostfix(ctx, input, state, orchestrator);
       expect(result.code).toBe("std::cout");
     });
+
+    // #1695: a call's result is a value, not a namespace path
+    it("joins a member of a namespace call's result with .", () => {
+      const ctx = createMockPostfixExpressionContext("Dev", [
+        createMockPostfixOp({ identifier: "read" }),
+        createMockPostfixOp({ argumentList: { expression: () => [] } }),
+        createMockPostfixOp({ identifier: "value" }),
+      ]);
+      const orchestrator = createMockOrchestrator({
+        generatePrimaryExpr: () => "Dev",
+        isCppScopeSymbol: (name) => name === "Dev",
+      });
+
+      const result = runPostfix(
+        ctx,
+        createMockInput(),
+        createMockState(),
+        orchestrator,
+      );
+      expect(result.code).toBe("Dev::read().value");
+    });
+
+    // #1695: `::` continues through a nested namespace and ends at its variable
+    it("joins a member of a namespace variable with .", () => {
+      const ctx = createMockPostfixExpressionContext("Dev", [
+        createMockPostfixOp({ identifier: "Inner" }),
+        createMockPostfixOp({ identifier: "cfg" }),
+        createMockPostfixOp({ identifier: "value" }),
+      ]);
+      const orchestrator = createMockOrchestrator({
+        generatePrimaryExpr: () => "Dev",
+        isCppScopeSymbol: (name) => name === "Dev" || name === "Dev::Inner",
+      });
+
+      const result = runPostfix(
+        ctx,
+        createMockInput(),
+        createMockState(),
+        orchestrator,
+      );
+      expect(result.code).toBe("Dev::Inner::cfg.value");
+    });
   });
 
   describe("global access edge cases", () => {
-    it("sets isCppAccessChain when global member is C++ scope symbol", () => {
+    it("uses :: when a global member is a C++ scope symbol", () => {
       const ctx = createMockPostfixExpressionContext("global", [
         createMockPostfixOp({ identifier: "std" }),
         createMockPostfixOp({ identifier: "cout" }),

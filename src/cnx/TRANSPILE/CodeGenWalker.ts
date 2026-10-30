@@ -1407,6 +1407,7 @@ class CodeGenWalker {
   private _buildMemberSeparatorDeps(): IMemberSeparatorDeps {
     return {
       isKnownScope: (name: string) => this.host.isKnownScope(name),
+      isCppScopeSymbol: (name: string) => this.host.isCppScopeSymbol(name),
       isKnownRegister: (name: string) =>
         this.host.state.symbols!.knownRegisters.has(name),
       memberCName: (scopePath: string, name: string) =>
@@ -3378,7 +3379,6 @@ class CodeGenWalker {
       rootTypeInfo,
       this.host,
     );
-    const isCppAccess = hasGlobal && this.host.isCppScopeSymbol(firstId);
     const separatorDeps = this._buildMemberSeparatorDeps();
 
     const separatorCtx: ISeparatorContext =
@@ -3389,7 +3389,6 @@ class CodeGenWalker {
           hasThis,
           currentScopePath: this.host.state.currentScopePath,
           holding,
-          isCppAccess,
         },
         separatorDeps,
       );

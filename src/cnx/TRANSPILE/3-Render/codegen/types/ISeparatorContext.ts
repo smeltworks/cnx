@@ -14,9 +14,6 @@ interface ISeparatorContext {
   /** How the chain's root is held (`memberAccessChain.rootHolding`) */
   readonly holding: IRootHolding;
 
-  /** Whether this is a C++ namespace/class access requiring :: */
-  readonly isCppAccess: boolean;
-
   /** Whether `this.REG` names a register the current scope declares */
   readonly isScopedRegister: boolean;
 }

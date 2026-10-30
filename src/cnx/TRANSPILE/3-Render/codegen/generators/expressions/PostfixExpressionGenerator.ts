@@ -68,7 +68,6 @@ interface ITrackingState {
   resolvedIdentifier: string | undefined;
   subscriptDepth: number;
   isGlobalAccess: boolean;
-  isCppAccessChain: boolean;
 }
 
 /**
@@ -110,16 +109,10 @@ const initializeTrackingState = (
   rootIdentifier: string | undefined,
   result: string,
   input: IGeneratorInput,
-  orchestrator: IOrchestrator,
 ): ITrackingState => {
   const isRegisterChain = rootIdentifier
     ? input.symbols!.knownRegisters.has(rootIdentifier)
     : false;
-
-  let isCppAccessChain = false;
-  if (rootIdentifier && orchestrator.isCppScopeSymbol(rootIdentifier)) {
-    isCppAccessChain = true;
-  }
 
   return {
     base,
@@ -128,7 +121,6 @@ const initializeTrackingState = (
     resolvedIdentifier: rootIdentifier,
     subscriptDepth: 0,
     isGlobalAccess: false,
-    isCppAccessChain,
   };
 };
 
@@ -198,7 +190,6 @@ const generatePostfixExpression = (
     rootIdentifier,
     result,
     input,
-    orchestrator,
   );
 
   const postfixCtx: IPostfixContext = {
@@ -329,7 +320,10 @@ const handleMemberOp = (
       rootParameter: ctx.rootParameter,
       holding: ctx.holding,
       isGlobalAccess: tracking.isGlobalAccess,
-      isCppAccessChain: tracking.isCppAccessChain,
+      isCppAccessChain: MemberSeparatorResolver.continuesCppPath(
+        tracking.result,
+        ctx.orchestrator,
+      ),
       typed: step?.before ?? null,
       narrowing: op.narrowing,
       resolvedIdentifier: tracking.resolvedIdentifier,
@@ -352,8 +346,6 @@ const handleMemberOp = (
     memberResult.resolvedIdentifier ?? tracking.resolvedIdentifier;
   tracking.isRegisterChain =
     memberResult.isRegisterChain ?? tracking.isRegisterChain;
-  tracking.isCppAccessChain =
-    memberResult.isCppAccessChain ?? tracking.isCppAccessChain;
 };
 
 /**
@@ -376,9 +368,6 @@ const handleGlobalPrefix = (
   // shadowing local is emitted under a distinct C name, so plain `memberName`
   // still denotes the global here.
 
-  if (ctx.orchestrator.isCppScopeSymbol(memberName)) {
-    tracking.isCppAccessChain = true;
-  }
   if (ctx.input.symbols!.knownRegisters.has(memberName)) {
     tracking.isRegisterChain = true;
   }
@@ -764,7 +753,6 @@ interface MemberAccessResult {
   result: string;
   resolvedIdentifier?: string;
   isRegisterChain?: boolean;
-  isCppAccessChain?: boolean;
 }
 
 /**
@@ -787,6 +775,7 @@ interface IMemberAccessContext {
   /** How the root is held (`memberAccessChain.rootHolding`) */
   holding: IRootHolding;
   isGlobalAccess: boolean;
+  /** The member joins with `::` (`MemberSeparatorResolver.continuesCppPath`) */
   isCppAccessChain: boolean;
   /**
    * #1668 (C12): the value this member is read from, as the one operand
@@ -808,7 +797,6 @@ const initializeMemberOutput = (
   result: ctx.result,
   resolvedIdentifier: ctx.resolvedIdentifier,
   isRegisterChain: ctx.isRegisterChain,
-  isCppAccessChain: ctx.isCppAccessChain,
 });
 
 /**
