@@ -153,11 +153,11 @@ int main(void) {
     if (castRingCall != 0) {
         return 17U;
     }
-    const uint16_t toClamp = (uint16_t)wideRing + 1U;
+    const uint16_t toClamp = cnx_clamp_add_u16((uint16_t)wideRing, 1U);
     if (toClamp != 65535) {
         return 18U;
     }
-    const uint16_t toWrap = cnx_clamp_add_u16((uint16_t)wide, 1U);
+    const uint16_t toWrap = (uint16_t)wide + 1U;
     if (toWrap != 0) {
         return 19U;
     }
