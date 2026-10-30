@@ -3053,6 +3053,36 @@ class CodeGenWalker {
   }
 
   /** A concatenation's or a substring's parts as generated C (ADR-045) */
+  /**
+   * #1748: the first character of a string written into one character of a
+   * `string<N>` -- ADR-045's `string<1>` write. E0864 has made it fit one.
+   */
+  private renderFirstCharacter(form: TStringValueForm): string {
+    switch (form.kind) {
+      case "literal":
+        return StringUtils.firstCharacter(form.literal.written);
+      case "substring": {
+        const part = form.part;
+        const source = this.generateAssignmentTarget(
+          part.chain,
+          AssignmentTarget.parts(part.chain).ops.length - 1,
+        );
+        return `${source}[${this.renderExpression(part.start)}]`;
+      }
+      case "copy": {
+        const code = this.renderExpression(form.value);
+        const bare =
+          form.value.kind === "identifier" || form.value.kind === "postfix";
+        return bare ? `${code}[0]` : `(${code})[0]`;
+      }
+      case "concat":
+        invariant(
+          false,
+          "2.2 plans no concatenation as a character write (#2374)",
+        );
+    }
+  }
+
   private renderStringParts(
     form: TStringValueForm,
   ): readonly TRenderedStringPart[] {
@@ -3224,7 +3254,13 @@ class CodeGenWalker {
     const builtApart =
       stringForm !== undefined &&
       (stringForm.kind === "concat" || stringForm.kind === "substring");
-    const value = builtApart ? "" : this.renderExpression(site.value);
+    const character = this.filePlan.characterWrites.get(site);
+    const value =
+      character !== undefined
+        ? this.renderFirstCharacter(character)
+        : builtApart
+          ? ""
+          : this.renderExpression(site.value);
 
     // #1322: the operator was mapped to its C form here and used for nothing
     // but the `isCompound` flag that `AssignmentValidator` took. ADR-065's

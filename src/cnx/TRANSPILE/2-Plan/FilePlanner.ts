@@ -1325,6 +1325,7 @@ class FilePlanner {
       clampOps: clamps.ops,
       sliceSources,
       stringCopies: stringCopies.copies,
+      characterWrites: this.planCharacterWrites(program),
       stringValueForms: stringCopies.forms,
       substringCounts: this.planSubstringCounts(stringCopies.forms),
       stringFields: stringCopies.fields,
@@ -2099,6 +2100,31 @@ class FilePlanner {
     return program.members.flatMap((entry) =>
       StatementNodes.assignments(entry.declaration),
     );
+  }
+
+  /**
+   * #1748: each `<-` that writes a string into one character of a
+   * `string<N>`, by the value's form, as `OperandTyper.characterWrite` --
+   * which 2.1's E0927 and E0864 read -- decides it. A concatenation is not
+   * lowered here (#2374).
+   */
+  private planCharacterWrites(
+    program: IProgramSyntax,
+  ): ReadonlyMap<IAssignmentSyntax, TStringValueForm> {
+    const writes = new Map<IAssignmentSyntax, TStringValueForm>();
+    const typing = this.state.typingContext();
+    for (const site of FilePlanner.assignmentSites(program)) {
+      if (site.operator !== "<-") continue;
+      const write = OperandTyper.characterWrite(
+        site.target,
+        site.value,
+        typing,
+      );
+      if (write !== "string") continue;
+      const form = StringValueForm.of(site.value, typing);
+      if (form.kind !== "concat") writes.set(site, form);
+    }
+    return writes;
   }
 
   /**

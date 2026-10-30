@@ -1,0 +1,2 @@
+10:12 error[E0864]: String literal (2 chars) exceeds string<1> capacity
+       help: One character of a string<N> is a string<1> (ADR-045): shorten the literal.

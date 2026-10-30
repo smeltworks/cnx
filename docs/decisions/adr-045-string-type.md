@@ -270,6 +270,18 @@ string<1> ch <- source[0];    // Sugar for source[0, 1] -> "H"
 
 **`s[0]` is equivalent to `s[0, 1]`** - both return a `string<1>` containing the character at that position.
 
+Writing one character is a `string<1>` write (owner ruling, 2026-10-30, #1748). It
+takes a character -- a char literal or another string's character -- or a string
+that fits one character, which writes that string's character:
+
+```cnx
+mut string<8> s <- "hello";
+s[2] <- 'x';      // OK: s is "hexlo"
+s[2] <- "x";      // OK: the same write
+s[2] <- "xy";     // E0864: "xy" does not fit a string<1>
+s[2] <- 65;       // E0927: an integer is not a character (MISRA C:2012 Rule 10.3)
+```
+
 ### Character Operands (MISRA C:2012 Rule 10.1)
 
 A character -- a string element, a char literal, a C `char` -- takes only binary `+` and `-` and the comparisons. Under `*`, `/`, `%`, `&`, `|`, `^`, `<<`, `>>`, a prefix `-` or `~`, or the compound form of one of these, it is E0925; a cast to an integer type is the fix (#2347 review, owner ruling 2026-10-25: "MISRA always wins, so cast required as per 10.1").
@@ -390,6 +402,7 @@ the field like any string. At file scope only a literal can initialize one
 | E0862 | A string's capacity cannot be determined: none written, and none inferable        | `tests/adr-045/string-error-const-no-init.test.cnx`, `tests/adr-045/string-error-uncovered-forms.test.cnx`, `tests/adr-045/string-syntax-rules-*.test.cnx`                                                   |
 | E0863 | A string, or a string field, at file scope is initialized by other than a literal | `tests/adr-045/string-error-init-global.test.cnx`, `tests/adr-045/string-imported-global-error.test.cnx`, `tests/adr-045/string-syntax-rules-*.test.cnx`                                                     |
 | E0864 | A value written into a `string<N>` may not fit its capacity                       | `tests/adr-045/string-error-overflow.test.cnx`, `tests/adr-045/string-error-in-scope.test.cnx`, `tests/adr-045/string-fit-rules-imported-*.test.cnx`, `tests/adr-045/string-fit-rules-for-header-*.test.cnx` |
+| E0927 | A value that is not a character is written into one character of a `string<N>`    | `tests/bugs/issue-1748-string-char-write/char-write-not-character-error.test.cnx`                                                                                                                            |
 | E0865 | A substring's bounds exceed its source's capacity                                 | `tests/adr-045/string-error-substring-bounds.test.cnx`, `tests/adr-045/string-fit-rules-*.test.cnx`                                                                                                          |
 
 ### No Silent Truncation
