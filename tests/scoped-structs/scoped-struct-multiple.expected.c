@@ -7,6 +7,19 @@
 
 #include <stdint.h>
 
+// ADR-044: Overflow helper functions
+#include <limits.h>
+
+/* ADR-044 / Issue #94: the second parameter is the WIDER type, not the value type.
+   Narrowing it first would let an out-of-range operand truncate INTO range and defeat
+   the check: cnx_clamp_add_u8(0, 256) must saturate to 255, but (uint8_t)256 is 0, so a
+   uint8_t parameter would return 0 -- the opposite of saturation. */
+
+static inline uint32_t cnx_clamp_mul_u32(uint32_t a, uint64_t b) {
+    if (b != 0 && a > UINT32_MAX / b) return UINT32_MAX;
+    return (uint32_t)(a * (uint32_t)b);
+}
+
 // test-execution
 // Tests: Multiple scoped structs in the same scope
 /* Scope: DataManager */
@@ -32,7 +45,7 @@ void DataManager__setViewport(const int16_t x, const int16_t y, const uint16_t w
 }
 
 uint32_t DataManager__getViewportArea(void) {
-    return (uint32_t)DataManager__viewport.dimensions.width * (uint32_t)DataManager__viewport.dimensions.height;
+    return cnx_clamp_mul_u32((uint32_t)DataManager__viewport.dimensions.width, (uint32_t)DataManager__viewport.dimensions.height);
 }
 
 int main(void) {

@@ -67,6 +67,7 @@ describe("ConflictDetector", () => {
           visibility: "public",
         }),
         returnType: TTypeUtils.createPrimitive("void"),
+        returnOverflowBehavior: "clamp",
         parameters: [],
         visibility: "public",
       } as IFunctionSymbol);
@@ -258,6 +259,7 @@ describe("ConflictDetector", () => {
           visibility: "public",
         }),
         returnType: TTypeUtils.createPrimitive("void"),
+        returnOverflowBehavior: "clamp",
         parameters: [],
         visibility: "public",
       } as IFunctionSymbol);
@@ -274,6 +276,7 @@ describe("ConflictDetector", () => {
           visibility: "public",
         }),
         returnType: TTypeUtils.createPrimitive("void"),
+        returnOverflowBehavior: "clamp",
         parameters: [],
         visibility: "public",
       } as IFunctionSymbol);
@@ -453,6 +456,7 @@ describe("ConflictDetector", () => {
           visibility: "public",
         }),
         returnType: TTypeUtils.createPrimitive("u8"),
+        returnOverflowBehavior: "clamp",
         parameters: [],
         visibility: "public",
       } as IFunctionSymbol);
@@ -492,6 +496,7 @@ describe("ConflictDetector", () => {
           visibility: "public",
         }),
         returnType: TTypeUtils.createPrimitive("u8"),
+        returnOverflowBehavior: "clamp",
         parameters: [],
         visibility: "public",
       } as IFunctionSymbol);

@@ -27,8 +27,9 @@ class PlanTyping {
    * expression is left alone.
    *
    * A leaf counts when it is a declared value: a named variable, a struct
-   * field (its own modifier, #1411) or an array element (its array's, #1887).
-   * A call result has no declared behavior (#1703 stays out). A parameter
+   * field (its own modifier, #1411), an array element (its array's, #1887),
+   * a call result (its return type's, #1703) or a cast (its own modifier, else
+   * its operand's, #1703). A parameter
    * (#1681) and a `for` variable (#1667) count by their declarations like any
    * local: a parameter has no modifier in the grammar, so it clamps.
    */

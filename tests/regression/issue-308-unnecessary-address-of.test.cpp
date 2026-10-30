@@ -22,6 +22,11 @@
    the check: cnx_clamp_add_u8(0, 256) must saturate to 255, but (uint8_t)256 is 0, so a
    uint8_t parameter would return 0 -- the opposite of saturation. */
 
+static inline uint32_t cnx_clamp_add_u32(uint32_t a, uint64_t b) {
+    if (b > (uint64_t)(UINT32_MAX - a)) return UINT32_MAX;
+    return (uint32_t)(a + (uint32_t)b);
+}
+
 static inline uint8_t cnx_clamp_add_u8(uint8_t a, uint32_t b) {
     if (b > (uint32_t)(UINT8_MAX - a)) return UINT8_MAX;
     return (uint8_t)(a + (uint8_t)b);
@@ -40,7 +45,7 @@ static inline uint8_t cnx_clamp_add_u8(uint8_t a, uint32_t b) {
 // Included to validate this continues to work correctly
 // ============================================================
 uint32_t sumFourBytes(const uint8_t b0, const uint8_t b1, const uint8_t b2, const uint8_t b3) {
-    return static_cast<uint32_t>(b0) + static_cast<uint32_t>(b1) + static_cast<uint32_t>(b2) + static_cast<uint32_t>(b3);
+    return cnx_clamp_add_u32(cnx_clamp_add_u32(cnx_clamp_add_u32(static_cast<uint32_t>(b0), static_cast<uint32_t>(b1)), static_cast<uint32_t>(b2)), static_cast<uint32_t>(b3));
 }
 
 // ============================================================

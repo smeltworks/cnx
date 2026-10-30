@@ -1,0 +1,143 @@
+// test-execution
+// test-adr: 044
+// Issue #1703: a call result never got ADR-044's clamp. `u8 get() + 1` with
+// get() returning 255 emitted `get() + 1U` and wrapped to 0.
+//
+// Owner rulings 2026-10-29: a function's return type takes `clamp` or `wrap`
+// like a variable (`wrap u8 get()`), and a call result without one clamps,
+// the default. A cast keeps its operand's behavior; `(clamp u16)w` or
+// `(wrap u16)w` writes its own.
+//
+// Every value starts at its type's maximum (or 0 for `-`): clamp gives the
+// maximum (or 0) back, wrap gives 0 (or the maximum), so the two can't be
+// confused. The `wrap` cases are negative controls: a fix that clamped every
+// call or cast regardless of its modifier would pass the clamp cases alone.
+
+#include "declarations.cnx"
+
+u8 full() {
+    return 255;
+}
+
+u8 empty() {
+    return 0;
+}
+
+wrap u8 fullRing() {
+    return 255;
+}
+
+scope Gauge {
+    public u8 top() {
+        return 255;
+    }
+
+    public wrap u8 peak() {
+        return 255;
+    }
+
+    public u8 peakViaThis() {
+        u8 next <- this.peak() + 1;
+        return next;
+    }
+}
+
+u32 main() {
+    // A call result without a modifier clamps under +, - and *
+    u8 sum <- full() + 1;
+    if (sum != 255) {
+        return 1;
+    }
+    u8 diff <- empty() - 1;
+    if (diff != 0) {
+        return 2;
+    }
+    u8 product <- full() * 2;
+    if (product != 255) {
+        return 3;
+    }
+    u8 both <- full() + full();
+    if (both != 255) {
+        return 4;
+    }
+
+    // A `wrap` return type wraps, alone or beside another wrapping value
+    u8 ringSum <- fullRing() + 1;
+    if (ringSum != 0) {
+        return 5;
+    }
+    mut wrap u8 ring <- 0;
+    ring <- 255;
+    u8 ringPair <- ring + fullRing();
+    if (ringPair != 254) {
+        return 6;
+    }
+    u8 ringAlone <- ring + 1;
+    if (ringAlone != 0) {
+        return 7;
+    }
+
+    // A mix saturates: a clamping call beside a wrap variable clamps
+    u8 mixed <- ring + full();
+    if (mixed != 255) {
+        return 8;
+    }
+
+    // Scope methods carry their return type's modifier
+    u8 scopeTop <- Gauge.top() + 1;
+    if (scopeTop != 255) {
+        return 9;
+    }
+    u8 scopePeak <- Gauge.peak() + 1;
+    if (scopePeak != 0) {
+        return 10;
+    }
+    u8 viaThis <- Gauge.peakViaThis();
+    if (viaThis != 0) {
+        return 11;
+    }
+
+    // Across a file boundary
+    u8 importedSum <- importedFull() + 1;
+    if (importedSum != 255) {
+        return 12;
+    }
+    u8 importedRingSum <- importedRing() + 1;
+    if (importedRingSum != 0) {
+        return 13;
+    }
+
+    // A cast keeps its operand's behavior
+    mut u16 wide <- 0;
+    wide <- 65535;
+    mut wrap u16 wideRing <- 0;
+    wideRing <- 65535;
+    u16 castClamp <- (u16)wide + 1;
+    if (castClamp != 65535) {
+        return 14;
+    }
+    u16 castWrap <- (u16)wideRing + 1;
+    if (castWrap != 0) {
+        return 15;
+    }
+    u8 castCall <- (u8)full() + 1;
+    if (castCall != 255) {
+        return 16;
+    }
+    u8 castRingCall <- (u8)fullRing() + 1;
+    if (castRingCall != 0) {
+        return 17;
+    }
+
+    // A cast's own modifier replaces its operand's
+    u16 toClamp <- (clamp u16)wideRing + 1;
+    if (toClamp != 65535) {
+        return 18;
+    }
+    u16 toWrap <- (wrap u16)wide + 1;
+    if (toWrap != 0) {
+        return 19;
+    }
+
+    return 0;
+}

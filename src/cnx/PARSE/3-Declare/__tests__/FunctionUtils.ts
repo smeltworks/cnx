@@ -47,6 +47,7 @@ class FunctionUtils {
       }),
       parameters: options.parameters,
       returnType: options.returnType,
+      returnOverflowBehavior: "clamp",
       visibility: options.visibility,
       sourceFile: options.sourceFile,
       span: options.span,

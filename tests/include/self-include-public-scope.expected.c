@@ -41,7 +41,7 @@ uint32_t Calculator__add(const uint32_t a, const uint32_t b) {
 }
 
 uint32_t Calculator__multiply(const uint32_t a, const uint32_t b) {
-    return Calculator__square(a) + Calculator__square(b);
+    return cnx_clamp_add_u32(Calculator__square(a), Calculator__square(b));
 }
 
 int main(void) {

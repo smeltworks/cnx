@@ -15,6 +15,11 @@
    the check: cnx_clamp_add_u8(0, 256) must saturate to 255, but (uint8_t)256 is 0, so a
    uint8_t parameter would return 0 -- the opposite of saturation. */
 
+static inline uint32_t cnx_clamp_add_u32(uint32_t a, uint64_t b) {
+    if (b > (uint64_t)(UINT32_MAX - a)) return UINT32_MAX;
+    return (uint32_t)(a + (uint32_t)b);
+}
+
 static inline uint32_t cnx_clamp_mul_u32(uint32_t a, uint64_t b) {
     if (b != 0 && a > UINT32_MAX / b) return UINT32_MAX;
     return (uint32_t)(a * (uint32_t)b);
@@ -42,7 +47,7 @@ uint32_t Calculator__computeCube(const uint32_t n) {
 }
 
 uint32_t Calculator__sumOfSquareAndCube(const uint32_t n) {
-    return Calculator__square(n) + Calculator__cube(n);
+    return cnx_clamp_add_u32(Calculator__square(n), Calculator__cube(n));
 }
 
 int main(void) {

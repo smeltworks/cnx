@@ -16,6 +16,7 @@ import ScopeUtils from "../../../../utils/ScopeUtils";
 import TVisibility from "../../../../types/TVisibility";
 import DimensionResolver from "../utils/DimensionResolver";
 import type IDeclareTypeFacts from "../../types/IDeclareTypeFacts";
+import OverflowBehaviorUtils from "../../../../utils/OverflowBehaviorUtils";
 
 class FunctionCollector {
   /**
@@ -67,6 +68,9 @@ class FunctionCollector {
       ...ScopeUtils.identityOf({ name, scopePath }),
       parameters,
       returnType,
+      returnOverflowBehavior: OverflowBehaviorUtils.fromModifier(
+        syntax.returnOverflow,
+      ),
       visibility,
       sourceFile,
       span,

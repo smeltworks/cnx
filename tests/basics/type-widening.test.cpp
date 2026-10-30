@@ -15,6 +15,11 @@
    the check: cnx_clamp_add_u8(0, 256) must saturate to 255, but (uint8_t)256 is 0, so a
    uint8_t parameter would return 0 -- the opposite of saturation. */
 
+static inline uint16_t cnx_clamp_add_u16(uint16_t a, uint32_t b) {
+    if (b > (uint32_t)(UINT16_MAX - a)) return UINT16_MAX;
+    return (uint16_t)(a + (uint16_t)b);
+}
+
 static inline uint8_t cnx_clamp_add_u8(uint8_t a, uint32_t b) {
     if (b > (uint32_t)(UINT8_MAX - a)) return UINT8_MAX;
     return (uint8_t)(a + (uint8_t)b);
@@ -74,7 +79,7 @@ int main(void) {
     if (clamped != 255) {
         return 9U;
     }
-    const uint16_t sum = static_cast<uint16_t>(a) + static_cast<uint16_t>(b);
+    const uint16_t sum = cnx_clamp_add_u16(static_cast<uint16_t>(a), static_cast<uint16_t>(b));
     if (sum != 400) {
         return 10U;
     }

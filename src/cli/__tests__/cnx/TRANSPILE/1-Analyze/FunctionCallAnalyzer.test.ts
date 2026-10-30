@@ -674,6 +674,7 @@ describe("FunctionCallAnalyzer", () => {
           visibility: "public",
         }),
         returnType: TTypeUtils.createPrimitive("void"),
+        returnOverflowBehavior: "clamp",
         parameters: [],
         visibility: "public",
       } as IFunctionSymbol);

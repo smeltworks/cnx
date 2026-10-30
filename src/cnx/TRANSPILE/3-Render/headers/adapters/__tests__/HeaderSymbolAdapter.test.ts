@@ -194,6 +194,7 @@ describe("HeaderSymbolAdapter", () => {
         }),
         parameters: [],
         returnType: TTypeUtils.createPrimitive("void"),
+        returnOverflowBehavior: "clamp",
         visibility: "public",
       };
 
@@ -227,6 +228,7 @@ describe("HeaderSymbolAdapter", () => {
           },
         ],
         returnType: TTypeUtils.createPrimitive("void"),
+        returnOverflowBehavior: "clamp",
         visibility: "public",
       };
 
@@ -263,6 +265,7 @@ describe("HeaderSymbolAdapter", () => {
           },
         ],
         returnType: TTypeUtils.createPrimitive("i32"),
+        returnOverflowBehavior: "clamp",
         visibility: "public",
       };
 
@@ -324,6 +327,7 @@ describe("HeaderSymbolAdapter", () => {
           },
         ],
         returnType: TTypeUtils.createPrimitive("void"),
+        returnOverflowBehavior: "clamp",
         visibility: "public",
       };
 

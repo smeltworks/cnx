@@ -4,6 +4,7 @@ import type TBinaryOperator from "./TBinaryOperator";
 import type TLiteralKind from "./TLiteralKind";
 import type TPostfixOpSyntax from "./TPostfixOpSyntax";
 import type TTypeSyntax from "./TTypeSyntax";
+import type TOverflowBehavior from "../TOverflowBehavior";
 import type IFieldInitializerSyntax from "./IFieldInitializerSyntax";
 
 /**
@@ -63,6 +64,8 @@ type TExpression = ISyntaxNode &
     | {
         readonly kind: "cast";
         readonly type: TTypeSyntax;
+        /** ADR-044: `(clamp u16)w`'s written modifier; null when none is written */
+        readonly overflow: TOverflowBehavior | null;
         readonly operand: TExpression;
       }
     /**

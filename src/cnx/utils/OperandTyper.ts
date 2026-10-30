@@ -36,6 +36,7 @@ import type THeaderMacro from "../types/THeaderMacro";
 import type IChainStep from "../types/IChainStep";
 import type IChainTyping from "../types/IChainTyping";
 import type IOperandType from "../types/IOperandType";
+import type TOverflowBehavior from "../types/TOverflowBehavior";
 import type ITargetDescription from "../types/ITargetDescription";
 import type ITypingContext from "../types/ITypingContext";
 import type TEssentialCategory from "../types/TEssentialCategory";
@@ -76,6 +77,7 @@ type TChainValue =
       readonly k: "function";
       readonly cName: string;
       readonly returnType: TType;
+      readonly returnOverflow: TOverflowBehavior;
     }
   /**
    * An unresolved name path: a C/C++ namespace, class or function. `owner` is
@@ -1005,7 +1007,8 @@ class OperandTyper {
     if (target === null) return null;
     return {
       ...target,
-      overflow: null,
+      // ADR-044: a cast keeps its operand's behavior unless it writes its own
+      overflow: expr.overflow ?? inner?.overflow ?? null,
       binding: null,
       hasSideEffect: inner?.hasSideEffect ?? false,
       form: { kind: "cast" },
@@ -1346,6 +1349,7 @@ class OperandTyper {
             k: "function",
             cName: fn.fullyQualifiedCName,
             returnType: fn.returnType,
+            returnOverflow: fn.returnOverflowBehavior,
           },
           ops,
         };
@@ -1526,6 +1530,7 @@ class OperandTyper {
           k: "function",
           cName: symbol.fullyQualifiedCName,
           returnType: symbol.returnType,
+          returnOverflow: symbol.returnOverflowBehavior,
         };
       case "enum":
         return { k: "enumType", name: symbol.fullyQualifiedCName };
@@ -2071,6 +2076,7 @@ class OperandTyper {
         registerMember: null,
         t: {
           ...OperandTyper.fromType(current.returnType, [], ctx),
+          overflow: current.returnOverflow,
           hasSideEffect: true,
           form: call,
         },
@@ -2085,6 +2091,7 @@ class OperandTyper {
           registerMember: null,
           t: {
             ...OperandTyper.fromType(definer.returnType, [], ctx),
+            overflow: definer.returnOverflowBehavior,
             hasSideEffect: true,
             form: call,
           },

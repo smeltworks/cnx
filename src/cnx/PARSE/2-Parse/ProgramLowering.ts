@@ -238,6 +238,7 @@ class ProgramLowering {
   ): IFunctionDeclarationSyntax {
     return {
       returnType: SyntaxLowering.type(ctx.type()),
+      returnOverflow: SyntaxLowering.overflow(ctx.overflowModifier()),
       name: ctx.IDENTIFIER().getText(),
       nameSpan: ParserUtils.getSpan({
         start: ctx.IDENTIFIER().symbol,

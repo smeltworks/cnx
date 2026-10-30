@@ -21,6 +21,11 @@ static inline uint16_t cnx_clamp_add_u16(uint16_t a, uint32_t b) {
     return (uint16_t)(a + (uint16_t)b);
 }
 
+static inline uint16_t cnx_clamp_mul_u16(uint16_t a, uint32_t b) {
+    if (b != 0 && a > UINT16_MAX / b) return UINT16_MAX;
+    return (uint16_t)(a * (uint16_t)b);
+}
+
 // test-execution
 // Tests: Scope-level const values should be inlined, not created as local variables
 // Issue #282: Const declarations were incorrectly being generated as mutable locals
@@ -70,8 +75,8 @@ uint32_t ConstTest__getHexAddr(void) {
 
 uint16_t ConstTest__multipleRefs(void) {
     const uint16_t a = 255U;
-    const uint16_t b = static_cast<uint16_t>(255U) + 1U;
-    const uint16_t c = static_cast<uint16_t>(255U) * 2U;
+    const uint16_t b = cnx_clamp_add_u16(static_cast<uint16_t>(255U), 1U);
+    const uint16_t c = cnx_clamp_mul_u16(static_cast<uint16_t>(255U), 2U);
     return cnx_clamp_add_u16(cnx_clamp_add_u16(a, b), c);
 }
 

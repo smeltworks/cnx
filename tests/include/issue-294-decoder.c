@@ -25,13 +25,18 @@ static inline uint8_t cnx_clamp_add_u8(uint8_t a, uint32_t b) {
     return (uint8_t)(a + (uint8_t)b);
 }
 
+static inline uint16_t cnx_clamp_mul_u16(uint16_t a, uint32_t b) {
+    if (b != 0 && a > UINT16_MAX / b) return UINT16_MAX;
+    return (uint16_t)(a * (uint16_t)b);
+}
+
 // Issue #294: Helper scope for cross-file scope resolution test
 // This file defines a scope that will be included by another file
 /* Scope: decoder */
 
 uint16_t decoder__getSpn(const uint8_t data[8]) {
     uint16_t result = data[0U];
-    result = cnx_clamp_add_u16(result, ((uint16_t)data[1U] * 256U));
+    result = cnx_clamp_add_u16(result, (cnx_clamp_mul_u16((uint16_t)data[1U], 256U)));
     return result;
 }
 

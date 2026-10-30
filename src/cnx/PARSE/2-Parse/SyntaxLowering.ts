@@ -389,6 +389,7 @@ class SyntaxLowering {
       return {
         kind: "cast",
         type: SyntaxLowering.type(cast.type()),
+        overflow: SyntaxLowering.overflow(cast.overflowModifier()),
         operand: SyntaxLowering.unaryOrMissing(cast.unaryExpression(), cast),
         ...SyntaxLowering.node(cast),
       };

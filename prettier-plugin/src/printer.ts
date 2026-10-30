@@ -84,13 +84,13 @@ const CONCATENATED_RULES: ReadonlySet<number> = new Set([
   CnxParser.RULE_globalType,
   CnxParser.RULE_qualifiedType,
   CnxParser.RULE_stringType,
-  // Also just their children run together: `sizeof(T)`, `(T)x`, `a.b[i]`,
-  // `(expr)`, `[N]`. Each had its own function with an identical body; the
-  // duplication was five copies of one decision.
+  // Also just their children run together: `sizeof(T)`, `a.b[i]`, `(expr)`,
+  // `[N]`. Each had its own function with an identical body; the duplication
+  // was copies of one decision. A cast is not one: `(clamp T)x` spaces its
+  // modifier (ADR-044).
   CnxParser.RULE_assignmentTarget,
   CnxParser.RULE_primaryExpression,
   CnxParser.RULE_sizeofExpression,
-  CnxParser.RULE_castExpression,
   CnxParser.RULE_arrayDimension,
   CnxParser.RULE_arrayTypeDimension,
 ]);
@@ -484,13 +484,40 @@ function printBitmapDeclaration(cursor: ChildCursor): Doc {
 }
 
 function printFunctionDeclaration(cursor: ChildCursor): Doc {
+  const modifier = cursor.takeIfRule(CnxParser.RULE_overflowModifier);
   const type = cursor.take();
   const name = cursor.take();
   const open = cursor.take();
   const parameters = cursor.takeIfRule(CnxParser.RULE_parameterList);
   const close = cursor.take();
   const body = cursor.take();
-  return [type, " ", name, open, parameters ?? "", close, " ", body];
+  return [
+    ...(modifier === null ? [] : [modifier, " "]),
+    type,
+    " ",
+    name,
+    open,
+    parameters ?? "",
+    close,
+    " ",
+    body,
+  ];
+}
+
+/** `(T)x`, or `(clamp T)x` with ADR-044's modifier spaced from the type */
+function printCastExpression(cursor: ChildCursor): Doc {
+  const open = cursor.take();
+  const modifier = cursor.takeIfRule(CnxParser.RULE_overflowModifier);
+  const type = cursor.take();
+  const close = cursor.take();
+  const operand = cursor.take();
+  return [
+    open,
+    ...(modifier === null ? [] : [modifier, " "]),
+    type,
+    close,
+    operand,
+  ];
 }
 
 function printParameter(cursor: ChildCursor): Doc {
@@ -862,6 +889,7 @@ const RULE_LAYOUTS: ReadonlyMap<number, (cursor: ChildCursor) => Doc> = new Map(
     [CnxParser.RULE_enumMember, printEnumMember],
     [CnxParser.RULE_bitmapDeclaration, printBitmapDeclaration],
     [CnxParser.RULE_functionDeclaration, printFunctionDeclaration],
+    [CnxParser.RULE_castExpression, printCastExpression],
     [CnxParser.RULE_parameter, printParameter],
     [CnxParser.RULE_variableDeclaration, printVariableDeclaration],
     [CnxParser.RULE_block, printBlock],

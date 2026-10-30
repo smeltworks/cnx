@@ -702,6 +702,7 @@ describe("TSymbolInfoAdapter", () => {
             visibility: "public",
           }),
           returnType: TypeResolver.resolve("void"),
+          returnOverflowBehavior: "clamp",
           visibility: "public",
           parameters: [],
         } as IFunctionSymbol,
