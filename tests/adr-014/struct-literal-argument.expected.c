@@ -64,7 +64,7 @@ int main(void) {
     if (w != 34) {
         return 3U;
     }
-    const uint32_t t = sum(&(Point){ .x = 20U, .y = 22U }) + 1U;
+    const uint32_t t = cnx_clamp_add_u32(sum(&(Point){ .x = 20U, .y = 22U }), 1U);
     if (t != 43) {
         return 4U;
     }

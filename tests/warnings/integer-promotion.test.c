@@ -25,6 +25,11 @@ static inline uint8_t cnx_clamp_add_u8(uint8_t a, uint32_t b) {
     return (uint8_t)(a + (uint8_t)b);
 }
 
+static inline uint32_t cnx_clamp_mul_u32(uint32_t a, uint64_t b) {
+    if (b != 0 && a > UINT32_MAX / b) return UINT32_MAX;
+    return (uint32_t)(a * (uint32_t)b);
+}
+
 static inline uint8_t cnx_clamp_mul_u8(uint8_t a, uint32_t b) {
     if (b != 0 && a > UINT8_MAX / b) return UINT8_MAX;
     return (uint8_t)(a * (uint8_t)b);
@@ -54,7 +59,7 @@ int main(void) {
     if (clampedProduct != 255) {
         return 2U;
     }
-    const uint32_t product = (uint32_t)c * (uint32_t)d;
+    const uint32_t product = cnx_clamp_mul_u32((uint32_t)c, (uint32_t)d);
     if (product != 400) {
         return 3U;
     }
