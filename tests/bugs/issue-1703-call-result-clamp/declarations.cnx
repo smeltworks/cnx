@@ -1,0 +1,11 @@
+// Helper (not a test): the functions the cross-file half of the #1703 fixture
+// calls. A return type's modifier travels with the function's symbol, so a
+// call one file away clamps or wraps the same as a call in the same file.
+
+u8 importedFull() {
+    return 255;
+}
+
+wrap u8 importedRing() {
+    return 255;
+}

@@ -158,7 +158,7 @@ bitmapMember
 // Functions
 // ----------------------------------------------------------------------------
 functionDeclaration
-    : type IDENTIFIER '(' parameterList? ')' block
+    : overflowModifier? type IDENTIFIER '(' parameterList? ')' block   // ADR-044: the result's clamp/wrap
     ;
 
 parameterList
@@ -444,7 +444,7 @@ sizeofExpression
 
 // ADR-017: Cast expression for enum to integer conversion
 castExpression
-    : '(' type ')' unaryExpression
+    : '(' overflowModifier? type ')' unaryExpression   // ADR-044: `(clamp u16)w` sets the result's clamp/wrap
     ;
 
 // Struct initializer: Point { x: 10, y: 20 } or inferred { x: 10, y: 20 }

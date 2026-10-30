@@ -19,6 +19,7 @@ const fn = (name: string, sourceFile = "a.cnx"): IFunctionSymbol => ({
   visibility: "public",
   parameters: [],
   returnType: TTypeUtils.createPrimitive("void"),
+  returnOverflowBehavior: "clamp",
 });
 
 describe("ScopeFunctions.adopt", () => {

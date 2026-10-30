@@ -299,6 +299,7 @@ describe("SymbolTable", () => {
           visibility: "public",
         }),
         returnType: TTypeUtils.createPrimitive("void"),
+        returnOverflowBehavior: "clamp",
         parameters: [],
         visibility: "public",
       } as IFunctionSymbol);
@@ -812,6 +813,7 @@ describe("SymbolTable", () => {
         sourceLanguage: ESourceLanguage.Cpp,
         visibility: "public",
         returnType: "void",
+        returnOverflowBehavior: "clamp",
         parameters: [],
       } as unknown as TCppSymbol);
 

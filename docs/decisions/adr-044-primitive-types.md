@@ -408,6 +408,38 @@ The field's modifier is its own: it does not come from the struct variable it
 is reached through. A clamping compound assignment evaluates its target once,
 so `levels[next()] +<- 10` calls `next()` once, as `+=` does in C.
 
+#### Call results and casts
+
+A function's return type takes `clamp` or `wrap` like a variable, and a call
+result has that behavior; without one it clamps, the default _(owner ruling,
+2026-10-29, #1703)_. A scope method is declared the same way, and the
+modifier travels with the function, so a call from another file behaves the
+same.
+
+A cast keeps its operand's behavior: `(u16)w` of a `wrap` value wraps. To
+choose another, write it in the cast: `(clamp u16)w` clamps and `(wrap u16)a`
+wraps _(owner ruling, 2026-10-29, #1703)_. A cast of a literal is a literal,
+and counts no more than one does.
+
+```cnx
+u8 full() {
+    return 255;
+}
+
+wrap u8 ring() {
+    return 255;
+}
+
+u8 a <- full() + 1; // 255
+u8 b <- ring() + 1; // 0
+u8 c <- (u8)ring() + 1; // 0 -- the cast keeps `wrap`
+u8 d <- (clamp u8)ring() + 1; // 255
+```
+
+The modifier changes what the call's result does in its caller's arithmetic.
+It does not change the function's own `return` expression, which follows its
+own operands.
+
 #### Scope: expressions, not just compound assignment
 
 The modifier governs **every arithmetic operation on the value**, not only

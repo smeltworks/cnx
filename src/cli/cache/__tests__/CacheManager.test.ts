@@ -1115,6 +1115,7 @@ describe("CacheManager", () => {
           span: TestSourceSpan.at(2),
         }),
         returnType: TTypeUtils.createPrimitive("void"),
+        returnOverflowBehavior: "clamp",
         parameters: [],
         visibility: "public",
       } as IFunctionSymbol);

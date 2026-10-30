@@ -58,6 +58,24 @@ describe("cnx Prettier Plugin", () => {
       expect(await format(input)).toBe(expected);
     });
 
+    it("should space an ADR-044 modifier on a return type", async () => {
+      const input = "wrap u8 ring(){return 255;}";
+      const expected = `wrap u8 ring() {
+    return 255;
+}
+`;
+      expect(await format(input)).toBe(expected);
+    });
+
+    it("should space an ADR-044 modifier inside a cast", async () => {
+      const input = "void f(){u16 r<-(clamp u16)w+(u16)w;}";
+      const expected = `void f() {
+    u16 r <- (clamp u16)w + (u16)w;
+}
+`;
+      expect(await format(input)).toBe(expected);
+    });
+
     it("should format function parameters", async () => {
       const input = "u32 add(u32 a,u32 b){return a+b;}";
       const expected = `u32 add(u32 a, u32 b) {
