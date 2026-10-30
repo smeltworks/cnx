@@ -33,7 +33,6 @@ interface IBuildContextInput {
   currentScopePath: string;
   /** How the root is held (`memberAccessChain.rootHolding`) */
   holding: IRootHolding;
-  isCppAccess: boolean;
 }
 
 /**
@@ -56,14 +55,7 @@ class MemberSeparatorResolver {
     input: IBuildContextInput,
     deps: IMemberSeparatorDeps,
   ): ISeparatorContext {
-    const {
-      firstId,
-      hasGlobal,
-      hasThis,
-      currentScopePath,
-      holding,
-      isCppAccess,
-    } = input;
+    const { firstId, hasGlobal, hasThis, currentScopePath, holding } = input;
     const isCrossScope =
       hasGlobal &&
       (deps.isKnownScope(firstId) || deps.isKnownRegister(firstId));
@@ -79,7 +71,6 @@ class MemberSeparatorResolver {
     return {
       isCrossScope,
       holding,
-      isCppAccess,
       isScopedRegister,
     };
   }
@@ -93,11 +84,6 @@ class MemberSeparatorResolver {
     ctx: ISeparatorContext,
     deps: IMemberSeparatorDeps,
   ): TMemberStep {
-    // C++ namespace/class access
-    if (ctx.isCppAccess) {
-      return MemberSeparatorResolver.ACCESS_CPP;
-    }
-
     // A struct parameter uses -> in C mode, . in C++ mode, and a callback-
     // promoted parameter or a local #895 made a pointer takes -> in both --
     // decided by the one helper the read path asks too (#1760 review)
@@ -200,6 +186,9 @@ class MemberSeparatorResolver {
     ctx: ISeparatorContext,
     deps: IMemberSeparatorDeps,
   ): TMemberStep {
+    if (MemberSeparatorResolver.continuesCppPath(owner, deps)) {
+      return MemberSeparatorResolver.ACCESS_CPP;
+    }
     if (isFirstOp) {
       return MemberSeparatorResolver.firstStep(
         identifierChain,
@@ -209,6 +198,20 @@ class MemberSeparatorResolver {
       );
     }
     return MemberSeparatorResolver.subsequentStep(identifierChain, owner, deps);
+  }
+
+  /**
+   * Whether a member of `owner`, the C the chain has rendered so far, joins it
+   * with `::`: while `owner` names a C++ namespace, class or enum, the chain is
+   * still a qualified path. A call's result or a variable is a value, and its
+   * members take `.` (#1695: `Dev::read().value`, `NS::nps.pf`). The read path
+   * and the write path both ask this, so the boundary is decided here only.
+   */
+  static continuesCppPath(
+    owner: string,
+    deps: Pick<IMemberSeparatorDeps, "isCppScopeSymbol">,
+  ): boolean {
+    return deps.isCppScopeSymbol(owner);
   }
 
   /**

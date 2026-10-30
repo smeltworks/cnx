@@ -1,0 +1,75 @@
+// test-cpp-only
+// Tests: Issue #1695 - a member read off a C++ namespace function's result, or
+// off a namespace variable, joins with `.`: the `::` path ends where the value
+// begins. g++ compiles this fixture, so a `::value` join fails it.
+#include "dev_api.hpp"
+
+// A member of a namespace function's result, in a return
+u32 viaReturn() {
+    return Dev.read().value;
+}
+
+// The same, in a declaration
+u32 viaDeclaration() {
+    u32 v <- Dev.read().value;
+    return v;
+}
+
+// The same, reached through `global.` inside a scope; and a write to a
+// namespace variable's member through `global.`
+scope Probe {
+    public u32 viaGlobal() {
+        return global.Dev.read().value;
+    }
+
+    public void writeViaGlobal() {
+        global.Dev.cfg.value <- 6;
+    }
+}
+
+// A member of a namespace variable
+u32 viaVariable() {
+    return Dev.cfg.value;
+}
+
+// A member of a variable in a nested namespace
+u32 viaNestedVariable() {
+    return Dev.Inner.deep.value;
+}
+
+// A member of a class's static member
+u32 viaClassStatic() {
+    return Dev.Box.shared.value;
+}
+
+// Writes to the same members
+void writeMembers() {
+    Dev.cfg.value <- 5;
+    Dev.Inner.deep.value <- 7;
+    Dev.Box.shared.value <- 8;
+}
+
+// Control: the call and the namespace type keep `::`
+u32 viaLocal() {
+    Dev.Reading r <- Dev.read();
+    return r.value;
+}
+
+// Control: a namespace enum's member keeps `::`
+bool isB() {
+    Dev.Mode m <- Dev.Mode.B;
+    return m = Dev.Mode.B;
+}
+
+void main() {
+    u32 a <- viaReturn();
+    u32 b <- viaDeclaration();
+    u32 c <- Probe.viaGlobal();
+    u32 d <- viaVariable();
+    u32 e <- viaNestedVariable();
+    u32 f <- viaClassStatic();
+    u32 g <- viaLocal();
+    bool h <- isB();
+    writeMembers();
+    Probe.writeViaGlobal();
+}
