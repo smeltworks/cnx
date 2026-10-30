@@ -374,6 +374,21 @@ pkt.checksum +<- 10;            // 4
 mut u8[2] levels <- [250, 250];
 levels[0] +<- 10;               // 255
 
+// A function's return type takes a modifier too, and its call result has it.
+// A cast keeps its operand's modifier unless the cast writes its own
+wrap u8 ring() {
+    return 255;
+}
+u8 full() {                     // clamp (default)
+    return 255;
+}
+void results() {
+    u8 a <- full() + 1;         // 255
+    u8 b <- ring() + 1;         // 0
+    u8 c <- (u8)ring() + 1;     // 0 - the cast keeps wrap
+    u8 d <- (clamp u8)ring() + 1; // 255
+}
+
 // Outside any function (at file scope or in a scope), an initializer is fixed
 // at compile time, C and C++ alike: written as its value, never clamped or wrapped
 mut u32 uptime <- 0;
