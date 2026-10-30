@@ -1,0 +1,6 @@
+24:8 error[E0426]: type 'global.Nope' is not defined
+25:8 error[E0426]: type 'this.Nope' is not defined
+26:8 error[E0426]: type 'global.count' is not defined
+27:8 error[E0426]: type 'this.level' is not defined
+33:4 error[E0426]: type 'Board.Nope' is not defined
+34:4 error[E0426]: type 'Board.level' is not defined

@@ -1,0 +1,43 @@
+// test-error
+// #1458: a register named through `global.`, `this.` or `Scope.` in a type
+// position is E0429, as the bare spelling is (#1336). Before the fix all three
+// exit 0 and emit a C type name nothing defines.
+//
+// The `Point` lines are live negative controls: the analyzer reports every
+// type-position error in one walk, so rejecting a real type in any spelling
+// would add a line to the .expected.error.
+register Control @ 0x40000000 {
+    DR: u32 rw @ 0x00,
+}
+
+struct Point {
+    u32 x;
+}
+
+scope Board {
+    register Pins @ 0x40001000 {
+        DR: u32 rw @ 0x00,
+    }
+
+    public struct Point {
+        u32 y;
+    }
+
+    public register Leds @ 0x40002000 {
+        DR: u32 rw @ 0x00,
+    }
+
+    public void go() {
+        global.Point gp <- { x: 1 };
+        this.Point tp <- { y: 2 };
+        global.Control gc;
+        this.Pins tc;
+    }
+}
+
+u32 main() {
+    Board.Point sp <- { y: 3 };
+    Board.Leds sc;
+    Board.go();
+    return sp.y;
+}
