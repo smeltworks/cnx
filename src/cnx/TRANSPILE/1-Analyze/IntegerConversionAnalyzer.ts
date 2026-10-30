@@ -67,6 +67,7 @@ import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import StatementNodes from "../../utils/StatementNodes";
 import OperandTyper from "../../utils/OperandTyper";
+import CharacterWrite from "../../utils/CharacterWrite";
 import ExpressionShape from "../../utils/ExpressionShape";
 import type IVariableDeclarationSyntax from "../../types/syntax/IVariableDeclarationSyntax";
 import TYPE_WIDTH from "../../types/TYPE_WIDTH";
@@ -406,11 +407,7 @@ class IntegerConversionCheck {
    */
   private checkCharacterAt(site: IAssignmentSyntax): boolean {
     if (site.operator !== "<-") return false;
-    const write = OperandTyper.characterWrite(
-      site.target,
-      site.value,
-      this.context,
-    );
+    const write = CharacterWrite.of(site.target, site.value, this.context);
     if (write !== "other") return false;
     this.found.push({
       code: "E0927",

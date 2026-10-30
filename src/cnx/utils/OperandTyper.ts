@@ -670,30 +670,15 @@ class OperandTyper {
   }
 
   /**
-   * #1748: what an assignment writes into one character of a scalar
-   * `string<N>` -- `s[i]`, `gp.name[0]` -- or null when its target is not
-   * one. ADR-045 makes `s[i]` a `string<1>`: a character is written as it
-   * is, a string is a `string<1>` write, and any other value is no character
-   * (MISRA C:2012 Rule 10.3). 2.1's E0927 and E0864 and 2.2's lowering all
-   * read this one answer.
+   * #1748: whether an assignment target writes one character of a scalar
+   * `string<N>` -- `s[i]`, `gp.name[0]` -- as `CharacterWrite` asks it
    */
-  static characterWrite(
-    target: TExpression,
-    value: TExpression,
-    ctx: ITypingContext,
-  ): "character" | "string" | "other" | null {
+  static writesCharacter(target: TExpression, ctx: ITypingContext): boolean {
     const step = OperandTyper.walkChain(target, ctx).typing.steps.at(-1);
-    if (
-      step === undefined ||
-      step.subscript !== "array_element" ||
-      OperandTyper.scalarStringCapacity(step.before) === null
-    ) {
-      return null;
-    }
-    if (OperandTyper.typeOf(value, ctx)?.category === "character") {
-      return "character";
-    }
-    return OperandTyper.isStringValue(value, ctx) === true ? "string" : "other";
+    return (
+      step?.subscript === "array_element" &&
+      OperandTyper.scalarStringCapacity(step.before) !== null
+    );
   }
 
   /**

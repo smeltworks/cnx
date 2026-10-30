@@ -446,6 +446,11 @@ describe("IntegerConversionAnalyzer -- on 1.2's syntax", () => {
       ).toEqual([]);
     });
 
+    it("accepts MISRA's exempt character + integer pair, a character (#2375)", () => {
+      expect(codesOf("    s[0] <- 'a' + n;\n    s[1] <- n + 'a';")).toEqual([]);
+      expect(codesOf("    s[0] <- n + n;")).toEqual(["E0927"]);
+    });
+
     it("leaves a compound assignment and a whole-string write to other rules", () => {
       expect(codesOf("    s[0] +<- 1;")).not.toContain("E0927");
       expect(codesOf('    s <- "abc";')).toEqual([]);

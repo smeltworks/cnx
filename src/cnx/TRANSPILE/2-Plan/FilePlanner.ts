@@ -39,6 +39,7 @@ import type ILengthName from "../../utils/types/ILengthName";
 import type TLengthRule from "../../utils/types/TLengthRule";
 import LengthSubject from "../../utils/LengthSubject";
 import OperandTyper from "../../utils/OperandTyper";
+import CharacterWrite from "../../utils/CharacterWrite";
 import StringValueForm from "../../utils/StringValueForm";
 import StringUtils from "../../utils/StringUtils";
 import type TStringValueForm from "../../types/TStringValueForm";
@@ -2104,7 +2105,7 @@ class FilePlanner {
 
   /**
    * #1748: each `<-` that writes a string into one character of a
-   * `string<N>`, by the value's form, as `OperandTyper.characterWrite` --
+   * `string<N>`, by the value's form, as `CharacterWrite` --
    * which 2.1's E0927 and E0864 read -- decides it. A concatenation is not
    * lowered here (#2374).
    */
@@ -2115,11 +2116,7 @@ class FilePlanner {
     const typing = this.state.typingContext();
     for (const site of FilePlanner.assignmentSites(program)) {
       if (site.operator !== "<-") continue;
-      const write = OperandTyper.characterWrite(
-        site.target,
-        site.value,
-        typing,
-      );
+      const write = CharacterWrite.of(site.target, site.value, typing);
       if (write !== "string") continue;
       const form = StringValueForm.of(site.value, typing);
       if (form.kind !== "concat") writes.set(site, form);

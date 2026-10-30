@@ -4,6 +4,7 @@ import StringUtils from "../../utils/StringUtils";
 import StringValueForm from "../../utils/StringValueForm";
 import StatementNodes from "../../utils/StatementNodes";
 import OperandTyper from "../../utils/OperandTyper";
+import CharacterWrite from "../../utils/CharacterWrite";
 import IStringDeclarationError from "./types/IStringDeclarationError";
 import ConstantExpression from "./helpers/ConstantExpression";
 import type IAnalysisContext from "./types/IAnalysisContext";
@@ -83,10 +84,7 @@ class StringDeclarationCheck {
   public assignment(site: IAssignmentSyntax): void {
     if (site.operator !== "<-") return;
     // #1748: ADR-045 makes one character `s[i]` a `string<1>`
-    if (
-      OperandTyper.characterWrite(site.target, site.value, this.context) ===
-      "string"
-    ) {
+    if (CharacterWrite.of(site.target, site.value, this.context) === "string") {
       this.checkFit(site.value, 1, "character");
       return;
     }
