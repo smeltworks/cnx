@@ -61,9 +61,10 @@ class NameExistence {
    * `symbols.functionReturnTypes`, which is the per-file view of the same
    * ADR-029 fact and is correct here.
    *
-   * Only the bare `userType()` branch belongs here. `this.T`, `global.T` and
-   * `Scope.T` state their scope in the syntax and are resolved by their own
-   * branches; once a name is a string those answers are indistinguishable from
+   * A qualifier is resolved before this is asked, never here. `this.T`,
+   * `global.T` and `Scope.T` state their scope in the syntax, so their callers
+   * resolve it to the member it names and ask this of that member's spelling
+   * (#1458); once a name is a string those answers are indistinguishable from
    * a bare one, which is the same reason `TypeNameLadder` keeps them separate.
    *
    * ## A register is not a type (#1336)
