@@ -73,7 +73,7 @@ describe("FixtureOccupancy.build", () => {
         "}\n",
     );
 
-    const occupancy = await occupancyFor("057", [fixture]);
+    const occupancy = await occupancyFor("057 binds-scope", [fixture]);
     expect([...occupancy!.cells.keys()]).toEqual([
       MatrixCell.key("scope-method", "same-file"),
     ]);
@@ -90,9 +90,34 @@ describe("FixtureOccupancy.build", () => {
       "// test-adr: 057\nu8 plain <- 1;\nvoid go() {\n    u8 local <- 2;\n}\n",
     );
 
-    const occupancy = await occupancyFor("057", [fixture]);
-    expect(occupancy!.cells.size).toBe(0);
-    expect(occupancy!.fixturesWithoutContext).toEqual(["no-capture.test.cnx"]);
+    const all = await FixtureOccupancy.build([fixture], dir);
+    for (const rule of ["binds-local", "binds-scope", "binds-global"]) {
+      expect(all.get(`057 ${rule}`)).toBeUndefined();
+    }
+    expect(all.get("057")!.cells.size).toBe(0);
+    expect(all.get("057")!.fixturesWithoutContext).toEqual([
+      "no-capture.test.cnx",
+    ]);
+  });
+
+  it("credits a global bound from a scope member to binds-global only", async () => {
+    // #1187: the one table ADR-057 had placed by where a name is written, so a
+    // scope member reading a global sat in the cell scope-member reads already
+    // filled, and a broken global binding there was invisible
+    const fixture = write(
+      "global-arg.test.cnx",
+      "// test-adr: 057\n" +
+        "u8 PIN <- 10;\n" +
+        "scope Fails {\n" +
+        "    public u8 copy <- PIN;\n" +
+        "}\n",
+    );
+
+    const all = await FixtureOccupancy.build([fixture], dir);
+    expect([...all.get("057 binds-global")!.cells.keys()]).toEqual([
+      MatrixCell.key("scope-member", "same-file"),
+    ]);
+    expect(all.get("057 binds-scope")).toBeUndefined();
   });
 
   it("uses the include graph for the relationship, not just the context", async () => {

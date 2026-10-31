@@ -1508,21 +1508,18 @@ cell is declared by the ADR that owns it.
 
 | Context            | same file | direct | transitive | from 1 away | thru chain |
 | ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
-| global variable    | warn      | warn   | warn       | n/a         | n/a        |
-| top-level function | ok        | ok     | ok         | n/a         | n/a        |
-| scope member       | ok        | ok     | ok         | n/a         | n/a        |
-| scope method       | ok        | ok     | ok         | n/a         | n/a        |
+| global variable    | -         | -      | -          | n/a         | n/a        |
+| top-level function | -         | -      | -          | n/a         | n/a        |
+| scope member       | -         | -      | -          | n/a         | n/a        |
+| scope method       | -         | -      | -          | n/a         | n/a        |
 | for header         | -         | -      | -          | n/a         | n/a        |
 
-15 linked fixtures with no derivable context:
+12 linked fixtures with no derivable context:
 
 - `adr-057/local-shadows-scope.test.cnx`
 - `adr-057/scope-variable-does-not-capture-type.test.cnx`
 - `adr-057/shadowing-all-levels.test.cnx`
 - `bugs/issue-1472-global-qualifier-register-capture/global-vs-scoped-bitmap.test.cnx`
-- `bugs/issue-1629-case-label-undeclared/case-label-imported-direct.test.cnx`
-- `bugs/issue-1629-case-label-undeclared/case-label-rooted-resolves.test.cnx`
-- `bugs/issue-1643-self-referential-initializer/member-above-global.test.cnx`
 - `bugs/issue-1650-strlen-cache-scope-member/strlen-cache-array-element.test.cnx`
 - `bugs/issue-1724-sibling-scope-type-not-included/frames-see-own-closure-error.test.cnx`
 - `bugs/issue-1724-sibling-scope-type-not-included/motor-uses-ext-alone.test.cnx`
@@ -1560,6 +1557,36 @@ cell is declared by the ADR that owns it.
 | top-level function | ok        | -      | -          | n/a         | n/a        |
 | scope member       | -         | -      | -          | n/a         | n/a        |
 | scope method       | -         | -      | -          | n/a         | n/a        |
+| for header         | -         | -      | -          | n/a         | n/a        |
+
+## ADR-057 binds-global
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | warn      | warn   | warn       | n/a         | n/a        |
+| top-level function | ok        | ok     | ok         | n/a         | n/a        |
+| scope member       | ok        | warn   | warn       | n/a         | n/a        |
+| scope method       | ok        | warn   | warn       | n/a         | n/a        |
+| for header         | -         | -      | -          | n/a         | n/a        |
+
+## ADR-057 binds-local
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | n/a         | n/a        |
+| top-level function | ok        | ok     | ok         | n/a         | n/a        |
+| scope member       | -         | -      | -          | n/a         | n/a        |
+| scope method       | ok        | ok     | warn       | n/a         | n/a        |
+| for header         | -         | -      | -          | n/a         | n/a        |
+
+## ADR-057 binds-scope
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | n/a         | n/a        |
+| top-level function | -         | -      | -          | n/a         | n/a        |
+| scope member       | ok        | ok     | ok         | n/a         | n/a        |
+| scope method       | ok        | ok     | ok         | n/a         | n/a        |
 | for header         | -         | -      | -          | n/a         | n/a        |
 
 ## ADR-058

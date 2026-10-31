@@ -123,6 +123,33 @@ beforeEach(() => {
 });
 
 describe("CodeGenWalker Coverage Tests", () => {
+  describe("a scope's constructor argument (#1187)", () => {
+    const generateCpp = (scope: string) =>
+      setupGenerator(["u8 PIN <- 10;", "u8 pin <- 3;", scope].join("\n"), {
+        cppMode: true,
+        cppConstructors: ["Widget"],
+      }).code;
+
+    it("emits a global argument under the global's own name", () => {
+      const code = generateCpp("scope S {\n    public Widget device(PIN);\n}");
+      expect(code).toContain("Widget S__device(PIN);");
+    });
+
+    it("emits a member that shadows a global under the member's name", () => {
+      const code = generateCpp(
+        "scope S {\n    public u8 pin <- 7;\n    public Widget device(pin);\n}",
+      );
+      expect(code).toContain("Widget S__device(S__pin);");
+    });
+
+    it("passes a name the binder does not know through as written", () => {
+      const code = generateCpp(
+        "scope S {\n    public Widget device(EXTERNAL_PIN);\n}",
+      );
+      expect(code).toContain("Widget S__device(EXTERNAL_PIN);");
+    });
+  });
+
   // ==========================================================================
   // #1534: a C++ class initializer fills the object it builds
   // ==========================================================================

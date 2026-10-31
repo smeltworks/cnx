@@ -2066,8 +2066,16 @@ class CodeGenWalker {
         kind: "constructor",
         fullName,
         isPrivate,
-        args: decl.arguments.map((arg) =>
-          this.declaredCName(declaringScopePath, arg.name),
+        // #1187: an argument is a bare name like any other, bound local ->
+        // scope -> global (ADR-057), not looked up among the scope's members
+        args: decl.arguments.map(
+          (arg) =>
+            TypeValidator.resolveBareIdentifier(
+              arg.name,
+              arg.span,
+              (name: string) => this.host.isKnownStruct(name),
+              this.host.state,
+            ) ?? arg.name,
         ),
         renderType: () => this.renderType(decl.type),
       };
