@@ -1,0 +1,6 @@
+21:18 error[E0927]: A value that is not a character cannot be assigned to a string's character: '65'
+       help: One character of a string<N> takes a character (ADR-045): a character literal, another string's character, or a one-character string
+22:12 error[E0927]: A value that is not a character cannot be assigned to a string's character: 'n'
+       help: One character of a string<N> takes a character (ADR-045): a character literal, another string's character, or a one-character string
+23:12 error[E0927]: A value that is not a character cannot be assigned to a string's character: 'true'
+       help: One character of a string<N> takes a character (ADR-045): a character literal, another string's character, or a one-character string

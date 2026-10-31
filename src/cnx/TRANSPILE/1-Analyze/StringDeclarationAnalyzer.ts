@@ -4,6 +4,7 @@ import StringUtils from "../../utils/StringUtils";
 import StringValueForm from "../../utils/StringValueForm";
 import StatementNodes from "../../utils/StatementNodes";
 import OperandTyper from "../../utils/OperandTyper";
+import CharacterWrite from "../../utils/CharacterWrite";
 import IStringDeclarationError from "./types/IStringDeclarationError";
 import ConstantExpression from "./helpers/ConstantExpression";
 import type IAnalysisContext from "./types/IAnalysisContext";
@@ -14,6 +15,7 @@ import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TStringPart from "../../types/TStringPart";
 import type IValuePositions from "../../types/IValuePositions";
+import invariant from "../../utils/invariant";
 import StringWriteSites from "./helpers/StringWriteSites";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import ProgramExpressions from "../../utils/ProgramExpressions";
@@ -49,7 +51,13 @@ import ProgramExpressions from "../../utils/ProgramExpressions";
  */
 
 /** Whether a write declares its string or assigns an existing one */
-type TWrite = "declaration" | "assignment" | "argument" | "field";
+type TWrite =
+  | "declaration"
+  | "assignment"
+  | "argument"
+  | "field"
+  | "character"
+  | "range";
 
 /** The declarations and assignments 1.2 returned, each whole-string value checked against its capacity */
 class StringDeclarationCheck {
@@ -82,6 +90,18 @@ class StringDeclarationCheck {
    */
   public assignment(site: IAssignmentSyntax): void {
     if (site.operator !== "<-") return;
+    // #1748, #2373: one character `s[i]` is a `string<1>`, and a range
+    // `s[i, n]` a `string<n>`, when a string is written into it (ADR-045)
+    if (CharacterWrite.of(site.target, site.value, this.context) === "string") {
+      const span = OperandTyper.characterSpan(site.target, this.context);
+      invariant(span !== null, "a character write has a span");
+      this.checkFit(
+        site.value,
+        span.count,
+        span.range && span.count > 1 ? "range" : "character",
+      );
+      return;
+    }
     const capacity = OperandTyper.stringCopyCapacity(site.target, this.context);
     if (capacity === null) return;
     this.checkFit(site.value, capacity, "assignment");
@@ -179,7 +199,11 @@ class StringDeclarationCheck {
       code: "E0864",
       span: value.span,
       message: `String literal (${length} chars) exceeds string<${capacity}> capacity`,
-      helpText: `Widen ${StringDeclarationCheck.whose(write)} to string<${length}>, or shorten the literal.`,
+      helpText: StringDeclarationCheck.help(
+        write,
+        length,
+        "shorten the literal",
+      ),
     });
   }
 
@@ -219,7 +243,11 @@ class StringDeclarationCheck {
       code: "E0864",
       span: value.span,
       message: `Substring length ${length} exceeds destination string<${capacity}> capacity`,
-      helpText: `Widen ${StringDeclarationCheck.whose(write)} to string<${length}>, or take fewer characters.`,
+      helpText: StringDeclarationCheck.help(
+        write,
+        length,
+        "take fewer characters",
+      ),
     });
   }
 
@@ -240,7 +268,11 @@ class StringDeclarationCheck {
       code: "E0864",
       span: value.span,
       message: `String concatenation requires ${least}capacity ${required}, but ${where} is string<${capacity}>`,
-      helpText: `Widen ${where} to string<${required}>, or shorten the operands.`,
+      helpText: StringDeclarationCheck.help(
+        write,
+        required,
+        "shorten the operands",
+      ),
     });
   }
 
@@ -260,7 +292,11 @@ class StringDeclarationCheck {
         sourceCapacity,
         capacity,
       ),
-      helpText: `Widen ${StringDeclarationCheck.whose(write)} to string<${sourceCapacity}>, or extract a substring of the source.`,
+      helpText: StringDeclarationCheck.help(
+        write,
+        sourceCapacity,
+        "extract a substring of the source",
+      ),
     });
   }
 
@@ -286,6 +322,17 @@ class StringDeclarationCheck {
     return part.length === null ? 1 : this.constantOf(part.length);
   }
 
+  /** How to make a value fit: widen what it lands in, or `fix` the value */
+  private static help(write: TWrite, required: number, fix: string): string {
+    if (write === "character") {
+      return `One character of a string<N> is a string<1> (ADR-045): ${fix}.`;
+    }
+    if (write === "range") {
+      return `A range of a string<N> holds as many characters as its length (ADR-045): ${fix}.`;
+    }
+    return `Widen ${StringDeclarationCheck.whose(write)} to string<${required}>, or ${fix}.`;
+  }
+
   private static whose(write: TWrite): string {
     switch (write) {
       case "declaration":
@@ -296,6 +343,10 @@ class StringDeclarationCheck {
         return "the parameter";
       case "field":
         return "the field";
+      case "character":
+        return "the character";
+      case "range":
+        return "the range";
     }
   }
 
@@ -313,6 +364,10 @@ class StringDeclarationCheck {
         return `Cannot pass string<${source}> to a string<${capacity}> parameter -- the source may not fit`;
       case "field":
         return `Cannot initialize a string<${capacity}> field from string<${source}> -- the source may not fit`;
+      case "character":
+        return `Cannot write string<${source}> into one character, a string<${capacity}> -- the source may not fit`;
+      case "range":
+        return `Cannot write string<${source}> into a ${capacity}-character range -- the source may not fit`;
     }
   }
 

@@ -122,3 +122,29 @@ describe("StringUtils.literalLength", () => {
     expect(StringUtils.literalLength('"line1\\nline2"')).toBe(11);
   });
 });
+
+describe("StringUtils.characterAt", () => {
+  it("is the C character literal of a one-character string literal", () => {
+    expect(StringUtils.characterAt('"x"', 0)).toBe("'x'");
+    expect(StringUtils.characterAt('"\\n"', 0)).toBe("'\\n'");
+    expect(StringUtils.characterAt('"\\""', 0)).toBe("'\\\"'");
+  });
+
+  it("escapes a single quote", () => {
+    expect(StringUtils.characterAt('"\'"', 0)).toBe("'\\''");
+  });
+
+  it("is the terminator for an empty literal", () => {
+    expect(StringUtils.characterAt('""', 0)).toBe("'\\0'");
+  });
+
+  it("is each character of a literal, an escape counted as one", () => {
+    expect(StringUtils.characterAt('"AB"', 1)).toBe("'B'");
+    expect(StringUtils.characterAt('"a\\nb"', 1)).toBe("'\\n'");
+    expect(StringUtils.characterAt('"a\\nb"', 2)).toBe("'b'");
+  });
+
+  it("is the terminator past the literal's end", () => {
+    expect(StringUtils.characterAt('"A"', 1)).toBe("'\\0'");
+  });
+});

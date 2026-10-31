@@ -120,6 +120,24 @@ class StringUtils {
   }
 
   /**
+   * #1748, #2373: the C character literal for a string literal's character `k`,
+   * an escape sequence counted as one; past its end, the terminator
+   */
+  static characterAt(literal: string, k: number): string {
+    const content = literal.slice(literal.indexOf('"') + 1, -1);
+    const characters: string[] = [];
+    let i = 0;
+    while (i < content.length) {
+      const width = content[i] === "\\" && i + 1 < content.length ? 2 : 1;
+      characters.push(content.slice(i, i + width));
+      i += width;
+    }
+    const character = characters[k];
+    if (character === undefined) return String.raw`'\0'`;
+    return character === "'" ? String.raw`'\''` : `'${character}'`;
+  }
+
+  /**
    * Get the actual character length of a string literal,
    * accounting for escape sequences like \n, \t, \\, etc.
    *

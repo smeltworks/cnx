@@ -39,9 +39,11 @@ import type ILengthName from "../../utils/types/ILengthName";
 import type TLengthRule from "../../utils/types/TLengthRule";
 import LengthSubject from "../../utils/LengthSubject";
 import OperandTyper from "../../utils/OperandTyper";
+import CharacterWrite from "../../utils/CharacterWrite";
 import StringValueForm from "../../utils/StringValueForm";
 import StringUtils from "../../utils/StringUtils";
 import type TStringValueForm from "../../types/TStringValueForm";
+import type IPlannedCharacterWrite from "./types/IPlannedCharacterWrite";
 import headerCType from "../../utils/headerCType";
 import HeaderTypeNames from "./HeaderTypeNames";
 import PublicInterface from "./PublicInterface";
@@ -1325,6 +1327,7 @@ class FilePlanner {
       clampOps: clamps.ops,
       sliceSources,
       stringCopies: stringCopies.copies,
+      characterWrites: this.planCharacterWrites(program),
       stringValueForms: stringCopies.forms,
       substringCounts: this.planSubstringCounts(stringCopies.forms),
       stringFields: stringCopies.fields,
@@ -1980,6 +1983,10 @@ class FilePlanner {
     for (const site of sites) {
       const last = OperandTyper.chainOf(site.target, typing).steps.at(-1);
       if (last?.subscript === "array_slice") {
+        // #2373: a string copied into a string's range is no slice source
+        if (CharacterWrite.of(site.target, site.value, typing) === "string") {
+          continue;
+        }
         const element = last.before?.typeName ?? null;
         invariant(element !== null, "a sliced buffer names its element type");
         // A string's bytes are cast through uint8_t (MISRA 10.8)
@@ -2099,6 +2106,52 @@ class FilePlanner {
     return program.members.flatMap((entry) =>
       StatementNodes.assignments(entry.declaration),
     );
+  }
+
+  /**
+   * #1748: each `<-` that writes a string into one character of a
+   * `string<N>`, by the value's form, as `CharacterWrite` --
+   * which 2.1's E0927 and E0864 read -- decides it. A concatenation is not
+   * lowered here (#2374).
+   */
+  private planCharacterWrites(
+    program: IProgramSyntax,
+  ): ReadonlyMap<IAssignmentSyntax, IPlannedCharacterWrite> {
+    const writes = new Map<IAssignmentSyntax, IPlannedCharacterWrite>();
+    const typing = this.state.typingContext();
+    for (const site of FilePlanner.assignmentSites(program)) {
+      if (site.operator !== "<-") continue;
+      const write = CharacterWrite.of(site.target, site.value, typing);
+      const span = OperandTyper.characterSpan(site.target, typing);
+      if (write !== "string" || span === null) continue;
+      const form = StringValueForm.of(site.value, typing);
+      if (form.kind === "concat") continue;
+      const count = span.range
+        ? Math.min(span.count, this.characterCount(form, span.count))
+        : 1;
+      writes.set(site, { form, count, range: span.range });
+    }
+    return writes;
+  }
+
+  /** #2373: how many characters a string's form holds; E0864 made it fit */
+  private characterCount(form: TStringValueForm, fallback: number): number {
+    switch (form.kind) {
+      case "literal":
+        return StringUtils.literalLength(form.literal.written);
+      case "substring": {
+        const length = form.part.length;
+        return length === null ? 1 : (this.constantOf(length) ?? fallback);
+      }
+      case "copy":
+        return (
+          OperandTyper.scalarStringCapacity(
+            OperandTyper.typeOf(form.value, this.state.typingContext()),
+          ) ?? fallback
+        );
+      case "concat":
+        return fallback;
+    }
   }
 
   /**

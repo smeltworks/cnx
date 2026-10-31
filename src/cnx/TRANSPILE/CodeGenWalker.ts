@@ -40,6 +40,7 @@ import userCType from "../utils/userCType";
 import type IChainStep from "../types/IChainStep";
 import type TRenderedStringPart from "../types/TRenderedStringPart";
 import type TStringValueForm from "../types/TStringValueForm";
+import type IPlannedCharacterWrite from "./2-Plan/types/IPlannedCharacterWrite";
 import { basename } from "node:path";
 import CommentFormatter from "./3-Render/codegen/CommentFormatter";
 import PrivateConstValue from "./3-Render/codegen/PrivateConstValue";
@@ -3061,6 +3062,73 @@ class CodeGenWalker {
   }
 
   /** A concatenation's or a substring's parts as generated C (ADR-045) */
+  /**
+   * #1748, #2373: character `k` of a string written into one character or a
+   * range of a `string<N>` -- ADR-045's `string<n>` write. E0864 made it fit.
+   */
+  private renderCharacterAt(form: TStringValueForm, k: number): string {
+    const plus = k === 0 ? "" : ` + ${k}U`;
+    switch (form.kind) {
+      case "literal":
+        return StringUtils.characterAt(form.literal.written, k);
+      case "substring": {
+        const part = form.part;
+        const source = this.generateAssignmentTarget(
+          part.chain,
+          AssignmentTarget.parts(part.chain).ops.length - 1,
+        );
+        return `${source}[${this.renderExpression(part.start)}${plus}]`;
+      }
+      case "copy": {
+        const code = this.renderExpression(form.value);
+        const bare =
+          form.value.kind === "identifier" || form.value.kind === "postfix";
+        return bare ? `${code}[${k}]` : `(${code})[${k}]`;
+      }
+      case "concat":
+        invariant(
+          false,
+          "2.2 plans no concatenation as a character write (#2374)",
+        );
+    }
+  }
+
+  /**
+   * #2373: a string copied into a range `s[i, n]`, one character at a time.
+   * A literal is written directly; any other source is read whole into a
+   * temporary first, because it can be the range written (review).
+   */
+  private renderRangeCopy(
+    site: IAssignmentSyntax,
+    write: IPlannedCharacterWrite,
+  ): string {
+    const target = site.target;
+    const last = target.kind === "postfix" ? target.ops.at(-1) : undefined;
+    invariant(last?.kind === "subscript", "a range write ends in a subscript");
+    const offset = this.planner.constantOf(last.indexes[0]);
+    invariant(offset !== undefined, "E0859 folds a range write's offset");
+    const base = this.generateAssignmentTarget(
+      target,
+      AssignmentTarget.parts(target).ops.length - 1,
+    );
+    const characters: string[] = [];
+    for (let k = 0; k < write.count; k += 1) {
+      characters.push(this.renderCharacterAt(write.form, k));
+    }
+    const at = (k: number): string => `${base}[${offset + k}]`;
+    if (write.form.kind === "literal") {
+      return characters.map((c, k) => `${at(k)} = ${c};`).join("\n");
+    }
+    const temp = this.host.state.getNextTempVarName();
+    return [
+      ComplianceAnnotations.render(ComplianceAnnotations.RANGE_READ_APART),
+      "{",
+      `    const char ${temp}[${write.count}] = {${characters.join(", ")}};`,
+      ...characters.map((_, k) => `    ${at(k)} = ${temp}[${k}];`),
+      "}",
+    ].join("\n");
+  }
+
   private renderStringParts(
     form: TStringValueForm,
   ): readonly TRenderedStringPart[] {
@@ -3232,7 +3300,14 @@ class CodeGenWalker {
     const builtApart =
       stringForm !== undefined &&
       (stringForm.kind === "concat" || stringForm.kind === "substring");
-    const value = builtApart ? "" : this.renderExpression(site.value);
+    const character = this.filePlan.characterWrites.get(site);
+    if (character?.range === true) return this.renderRangeCopy(site, character);
+    const value =
+      character !== undefined
+        ? this.renderCharacterAt(character.form, 0)
+        : builtApart
+          ? ""
+          : this.renderExpression(site.value);
 
     // #1322: the operator was mapped to its C form here and used for nothing
     // but the `isCompound` flag that `AssignmentValidator` took. ADR-065's
