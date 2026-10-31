@@ -287,6 +287,9 @@ A range write `s[i, n] <- value` takes a string or an integer (owner ruling,
 character by character: `s[0, 2] <- "AB"` writes `'A'` and `'B'`. An integer is
 split into bytes, as ADR-007's slice write does: `s[0, 2] <- 0x4241` writes the
 same two characters.
+A string source other than a literal is read whole before any character is
+written (MISRA C:2012 Rule 19.1), so a source that overlaps the range copies
+correctly: in `"abcdefgh"`, `s[1, 3] <- s[0, 3]` leaves `"aabcefgh"`.
 
 ### Character Operands (MISRA C:2012 Rule 10.1)
 

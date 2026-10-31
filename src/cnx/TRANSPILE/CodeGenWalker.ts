@@ -3085,7 +3085,11 @@ class CodeGenWalker {
     }
   }
 
-  /** #2373: a string copied into a range `s[i, n]`, one character at a time */
+  /**
+   * #2373: a string copied into a range `s[i, n]`, one character at a time.
+   * A literal is written directly; any other source is read whole into a
+   * temporary first, because it can be the range written (review).
+   */
   private renderRangeCopy(
     site: IAssignmentSyntax,
     write: IPlannedCharacterWrite,
@@ -3099,13 +3103,22 @@ class CodeGenWalker {
       target,
       AssignmentTarget.parts(target).ops.length - 1,
     );
-    const writes: string[] = [];
+    const characters: string[] = [];
     for (let k = 0; k < write.count; k += 1) {
-      writes.push(
-        `${base}[${offset + k}] = ${this.renderCharacterAt(write.form, k)};`,
-      );
+      characters.push(this.renderCharacterAt(write.form, k));
     }
-    return writes.join("\n");
+    const at = (k: number): string => `${base}[${offset + k}]`;
+    if (write.form.kind === "literal") {
+      return characters.map((c, k) => `${at(k)} = ${c};`).join("\n");
+    }
+    const temp = this.host.state.getNextTempVarName();
+    return [
+      ComplianceAnnotations.render(ComplianceAnnotations.RANGE_READ_APART),
+      "{",
+      `    const char ${temp}[${write.count}] = {${characters.join(", ")}};`,
+      ...characters.map((_, k) => `    ${at(k)} = ${temp}[${k}];`),
+      "}",
+    ].join("\n");
   }
 
   private renderStringParts(

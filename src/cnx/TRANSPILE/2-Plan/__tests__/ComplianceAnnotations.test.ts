@@ -81,6 +81,7 @@ describe("ComplianceAnnotations", () => {
       "MISRA C:2012 Rule 14.3",
       "MISRA C:2012 Rule 19.1",
       "MISRA C:2012 Rule 19.1",
+      "MISRA C:2012 Rule 19.1",
       "MISRA C:2012 Rule 21.15",
       "MISRA C:2012 Rule 21.15",
       "MISRA C:2012 Rule 8.4",

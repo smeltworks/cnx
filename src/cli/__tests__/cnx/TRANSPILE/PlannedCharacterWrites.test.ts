@@ -65,9 +65,30 @@ describe("2.2 plans every string written into one character", () => {
       ].join("\n"),
     );
     expect(code).toContain("s[0] = 'A';\n    s[1] = 'B';");
-    expect(code).toContain("s[2] = t[1U];\n    s[3] = t[1U + 1U];");
-    expect(code).toContain("s[4] = w[0];\n    s[5] = w[1];");
+    expect(code).toContain(
+      "const char cnx_tmp0[2] = {t[1U], t[1U + 1U]};\n        s[2] = cnx_tmp0[0];\n        s[3] = cnx_tmp0[1];",
+    );
+    expect(code).toContain(
+      "const char cnx_tmp1[2] = {w[0], w[1]};\n        s[4] = cnx_tmp1[0];\n        s[5] = cnx_tmp1[1];",
+    );
     expect(code).toContain("s[6] = 'Z';");
     expect(code).not.toContain("s[7] =");
+  });
+
+  it("reads an overlapping range source whole before writing (#2373)", async () => {
+    const code = await generate(
+      [
+        "#pragma target host",
+        'mut string<8> s <- "abcdefgh";',
+        "void f() {",
+        "    s[1, 3] <- s[0, 3];",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    expect(code).toContain(
+      "const char cnx_tmp0[3] = {s[0U], s[0U + 1U], s[0U + 2U]};\n        s[1] = cnx_tmp0[0];",
+    );
+    expect(code).not.toContain("s[2] = s[");
   });
 });
