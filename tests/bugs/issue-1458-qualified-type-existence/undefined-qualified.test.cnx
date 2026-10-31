@@ -1,0 +1,37 @@
+// test-error
+// #1458: a name that denotes nothing, or a variable, written through `global.`,
+// `this.` or `Scope.` in a type position is E0426, as the bare spelling is
+// (#1312). Before the fix every one exits 0 and emits a C type name nothing
+// defines.
+//
+// The `Point` lines are live negative controls, as in register-qualified.
+struct Point {
+    u32 x;
+}
+
+u32 count <- 0;
+
+scope Board {
+    public struct Point {
+        u32 y;
+    }
+
+    public u32 level <- 0;
+
+    public void go() {
+        global.Point gp <- { x: 1 };
+        this.Point tp <- { y: 2 };
+        global.Nope gn;
+        this.Nope tn;
+        global.count gv;
+        this.level tv;
+    }
+}
+
+u32 main() {
+    Board.Point sp <- { y: 3 };
+    Board.Nope sn;
+    Board.level sv;
+    Board.go();
+    return sp.y;
+}

@@ -206,9 +206,9 @@ describe("UndeclaredTypeAnalyzer", () => {
     // state the program cannot enter: `Analyze._inputsOf` is the
     // single producer and it returns `ICodeGenSymbols` or throws, so 2.1 never
     // runs without a view. What the test actually held up was a defensive
-    // guard in `isVisibleType`, reachable only from the test itself -- the
-    // #1418 shape, where a unit test is the sole caller keeping a branch
-    // alive.
+    // guard in `isVisibleType` (`denotesType` since #1458), reachable only
+    // from the test itself -- the #1418 shape, where a unit test is the sole
+    // caller keeping a branch alive.
     //
     // `IAnalysisContext.symbols` is non-nullable now, so the state is
     // unrepresentable rather than guarded, and six `if (!symbols)` branches
@@ -222,6 +222,93 @@ describe("UndeclaredTypeAnalyzer", () => {
       // Rejecting valid interop code is a regression; not diagnosing is the
       // status quo -- so the analyzer declines rather than guesses.
       const tree = parse(`u32 main() { Nowhere c; return 0; }`);
+      state.symbols = TSymbolInfoAdapter.convert(
+        CnxResolver.resolve(
+          ProgramLowering.program(tree, null),
+          "test.cnx",
+          registry,
+        ).symbols,
+      );
+      expect(
+        new UndeclaredTypeAnalyzer(
+          testAnalysisContext(state, { reachesForeignHeader: true }),
+        ).analyze(ProgramLowering.program(tree, null)),
+      ).toHaveLength(0);
+    });
+  });
+
+  describe("a qualified type form (#1458)", () => {
+    it("rejects a register named by global., this. or Scope. as E0429", () => {
+      const errors = analyze(`
+        register Control @ 0x40000000 { DR: u32 rw @ 0x00, }
+        scope Board {
+            register Pins @ 0x40001000 { DR: u32 rw @ 0x00, }
+            public register Leds @ 0x40002000 { DR: u32 rw @ 0x00, }
+            public void go() {
+                global.Control gc;
+                this.Pins tc;
+            }
+        }
+        u32 main() {
+            Board.Leds sc;
+            return 0;
+        }
+      `);
+      expect(errors.map((e) => `${e.code} ${e.typeName}`)).toEqual([
+        "E0429 global.Control",
+        "E0429 this.Pins",
+        "E0429 Board.Leds",
+      ]);
+    });
+
+    it("rejects a name that is nothing, or a variable, as E0426", () => {
+      const errors = analyze(`
+        u32 count <- 0;
+        scope Board {
+            public u32 level <- 0;
+            public void go() {
+                global.Nope gn;
+                this.Nope tn;
+                global.count gv;
+                this.level tv;
+            }
+        }
+        u32 main() {
+            Board.Nope sn;
+            return 0;
+        }
+      `);
+      expect(errors.map((e) => `${e.code} ${e.typeName}`)).toEqual([
+        "E0426 global.Nope",
+        "E0426 this.Nope",
+        "E0426 global.count",
+        "E0426 this.level",
+        "E0426 Board.Nope",
+      ]);
+      expect(errors[0].message).toBe("type 'global.Nope' is not defined");
+    });
+
+    it("accepts a type named through each qualifier", () => {
+      expect(
+        analyze(`
+          struct Point { u32 x; }
+          scope Board {
+              public struct Point { u32 y; }
+              public void go() {
+                  global.Point gp <- { x: 1 };
+                  this.Point tp <- { y: 2 };
+              }
+          }
+          u32 main() {
+              Board.Point sp <- { y: 3 };
+              return sp.y;
+          }
+        `),
+      ).toHaveLength(0);
+    });
+
+    it("stays silent when the file can reach a foreign header (#985)", () => {
+      const tree = parse(`u32 main() { global.Nowhere c; return 0; }`);
       state.symbols = TSymbolInfoAdapter.convert(
         CnxResolver.resolve(
           ProgramLowering.program(tree, null),

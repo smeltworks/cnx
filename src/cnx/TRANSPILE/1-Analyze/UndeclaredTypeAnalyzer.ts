@@ -31,19 +31,18 @@
  * to update this file.
  *
  * `this.T`, `global.T` and `Scope.T` are separate grammar branches that state
- * their scope outright. They are checked for define-before-use only (#1332:
+ * their scope outright. They resolve to the one member the qualifier names and
+ * then take the same checks as a bare name (#1458): define-before-use (#1332:
  * the header defines types in source order, so a qualified use above its
- * definition is unknown to gcc); whether they name a type at all is #1458.
+ * definition is unknown to gcc), then type, register or nothing. Only the
+ * spellings tried differ, so there is one path for every written form.
  */
 
 import BUILTIN_TYPE_NAMES from "./BUILTIN_TYPE_NAMES";
-import ICodeGenSymbols from "../../types/ICodeGenSymbols";
 import IUndeclaredTypeError from "./types/IUndeclaredTypeError";
 import NameExistence from "../../PARSE/3-Declare/NameExistence";
-import type IResolvedSymbols from "../../types/IResolvedSymbols";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionChildren from "../../utils/ExpressionChildren";
-import type IProgram from "../../types/IProgram";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
@@ -82,7 +81,7 @@ class UndeclaredTypeWalk {
         this.analyzer.checkScopedUse(type.text, type.name, scope, type.span);
         return;
       case "global":
-        this.analyzer.checkQualifiedUse(type.text, type.name, type.span);
+        this.analyzer.checkScopedUse(type.text, type.name, "", type.span);
         return;
       case "qualified":
         // #2116: the member the path names, by identity, read for the
@@ -112,7 +111,7 @@ class UndeclaredTypeAnalyzer {
   /**
    * #1456: what the program declares, handed in rather than read off
    * `CodeGenState`. Constructor rather than a parameter on `analyze`, because
-   * `isVisibleType` and `isRegister` are called by the walk and need it
+   * `denotesType` and `denotesRegister` are called by the walk and need it
    * too -- a parameter would have to reach them through it.
    */
   constructor(private readonly context: IAnalysisContext) {}
@@ -150,29 +149,23 @@ class UndeclaredTypeAnalyzer {
     return this.errors;
   }
 
-  /** One written type name: before its definition, unknown, or a register */
+  /** One written bare type name: before its definition, unknown, or a register */
   checkUse(typeName: string, scope: string, span: ISourceSpan): void {
     if (BUILTIN_TYPE_NAMES.has(typeName)) {
       return;
     }
-    const definition = this.definitionAfter(
-      this.boundName(typeName, scope),
-      span,
-    );
-    if (definition !== null) {
-      this.addUsedBeforeDefinitionError(typeName, span, definition);
-      return;
-    }
-    if (!this.knowsEveryName || this.isVisibleType(typeName, scope)) {
-      return;
-    }
-    if (this.isRegister(typeName, scope)) {
-      this.addRegisterInTypePositionError(typeName, span);
-      return;
-    }
-    this.addError(typeName, span);
+    // ADR-057: inside a scope a bare `T` may name a scope-declared type,
+    // recorded under its qualified name. The bare spelling stays acceptable
+    // because a scope may also reference a global type.
+    const member = scope
+      ? this.context.program.memberOf(scope, typeName)
+      : undefined;
+    const spellings =
+      member === undefined
+        ? [typeName]
+        : [member.fullyQualifiedCName, typeName];
+    this.checkNamed(typeName, this.boundName(typeName, scope), spellings, span);
   }
-
   /**
    * The `cnxScopedName` a bare `T` written in `scope` binds to. #2341: ADR-057
    * binds it to the scope's own `T` wherever that is declared, an include
@@ -187,8 +180,10 @@ class UndeclaredTypeAnalyzer {
   }
 
   /**
-   * A `this.T` use: the scope's own `T`, by the `cnxScopedName` 3-Declare gave
-   * it. A `T` the scope does not declare has no definition to come after.
+   * A `this.T`, `global.T` or `Scope.T` use (`scope` is "" for `global.`): the
+   * member the qualifier names, by the identity 3-Declare gave it. The
+   * qualifier states the scope, so that member's is the only spelling to try;
+   * a path that names no member denotes nothing (#1458).
    */
   checkScopedUse(
     written: string,
@@ -197,24 +192,46 @@ class UndeclaredTypeAnalyzer {
     span: ISourceSpan,
   ): void {
     const member = this.context.program.memberOf(scope, name);
-    if (member !== undefined) {
-      this.checkQualifiedUse(written, member.cnxScopedName, span);
-    }
+    this.checkNamed(
+      written,
+      member?.cnxScopedName,
+      member === undefined ? [] : [member.fullyQualifiedCName],
+      span,
+    );
   }
 
   /**
-   * A `this.T`, `global.T` or `Scope.T` use: `scopedName` is the type's
-   * `cnxScopedName` as the qualifier states it, so there is one spelling to try.
+   * Every written form ends here, so a bare and a qualified type name are held
+   * to one rule. `scopedName` is the type definition the use binds to, when
+   * there is one; `spellings` are the names that may denote it in the per-file
+   * symbol view.
+   *
+   * A spelling that is neither a type nor a register falls through to E0426.
+   * Both questions are asked of the SAME spellings: a scoped register that only
+   * the qualified spelling finds would otherwise fail the type test and then
+   * fail the register test too, and be reported as undefined rather than as a
+   * register.
    */
-  checkQualifiedUse(
+  private checkNamed(
     written: string,
-    scopedName: string,
+    scopedName: string | undefined,
+    spellings: ReadonlyArray<string>,
     span: ISourceSpan,
   ): void {
-    const definition = this.definitionAfter(scopedName, span);
+    const definition =
+      scopedName === undefined ? null : this.definitionAfter(scopedName, span);
     if (definition !== null) {
       this.addUsedBeforeDefinitionError(written, span, definition);
+      return;
     }
+    if (!this.knowsEveryName || this.denotesType(spellings)) {
+      return;
+    }
+    if (this.denotesRegister(spellings)) {
+      this.addRegisterInTypePositionError(written, span);
+      return;
+    }
+    this.addError(written, span);
   }
 
   /**
@@ -245,26 +262,20 @@ class UndeclaredTypeAnalyzer {
     return closesAfter ? span : null;
   }
 
-  /**
-   * ADR-057: inside a scope a bare `T` may name a scope-declared type, which is
-   * recorded under its qualified name. The bare spelling is still accepted,
-   * because a scope may also reference a global type.
-   */
-  isVisibleType(typeName: string, scope: string): boolean {
-    return UndeclaredTypeAnalyzer._eitherSpelling(
-      typeName,
-      scope,
-      this.context.program,
-      this.context.symbols,
-      this.context.symbolTable,
-      (name, fileSymbols, table) =>
-        NameExistence.isTypeName(name, fileSymbols, table),
+  /** Whether any spelling names a type this file can see */
+  denotesType(spellings: ReadonlyArray<string>): boolean {
+    return spellings.some((name) =>
+      NameExistence.isTypeName(
+        name,
+        this.context.symbols,
+        this.context.symbolTable,
+      ),
     );
   }
 
   /**
-   * Whether the name denotes a register (ADR-004). Asked only after
-   * `isVisibleType` has already answered no, to tell E0429 from E0426.
+   * Whether any spelling denotes a register (ADR-004). Asked only after
+   * `denotesType` has already answered no, to tell E0429 from E0426.
    *
    * Cross-file this answers no, and the name falls through to E0426. That is
    * currently TRUE rather than a gap: a register declared in an included file is
@@ -275,54 +286,18 @@ class UndeclaredTypeAnalyzer {
    * change here.
    *
    * ADR-111: retire this with E0429 when a register becomes a type -- at which
-   * point `isVisibleType` answers yes and this is never reached.
+   * point `denotesType` answers yes and this is never reached.
    */
-  isRegister(typeName: string, scope: string): boolean {
-    return UndeclaredTypeAnalyzer._eitherSpelling(
-      typeName,
-      scope,
-      this.context.program,
-      // Reached only after `isVisibleType` returned false, which requires a
-      // symbol view -- see its guard.
-      this.context.symbols,
-      this.context.symbolTable,
-      (name, fileSymbols) => NameExistence.isRegisterName(name, fileSymbols),
+  denotesRegister(spellings: ReadonlyArray<string>): boolean {
+    return spellings.some((name) =>
+      NameExistence.isRegisterName(name, this.context.symbols),
     );
   }
 
   /**
-   * ADR-057: inside a scope a bare `T` may name a scope-declared type, recorded
-   * under its qualified name. The bare spelling stays acceptable because a
-   * scope may also reference a global type.
-   *
-   * Both questions must accept the SAME pair of spellings. A scoped register
-   * that only the qualified spelling finds would otherwise fail the type test
-   * and then fail the register test too, and be reported as undefined rather
-   * than as a register -- so the walk lives here once and is asked twice.
+   * E0426: the written name denotes nothing this file can see, or something
+   * that is not a type.
    */
-  private static _eitherSpelling(
-    typeName: string,
-    scope: string,
-    program: Pick<IProgram, "memberOf">,
-    symbols: ICodeGenSymbols,
-    symbolTable: IResolvedSymbols,
-    test: (
-      name: string,
-      symbols: ICodeGenSymbols,
-      symbolTable: IResolvedSymbols,
-    ) => boolean,
-  ): boolean {
-    const member = scope ? program.memberOf(scope, typeName) : undefined;
-    if (
-      member !== undefined &&
-      test(member.fullyQualifiedCName, symbols, symbolTable)
-    ) {
-      return true;
-    }
-
-    return test(typeName, symbols, symbolTable);
-  }
-
   addError(typeName: string, span: ISourceSpan): void {
     this._push("E0426", typeName, span, `type '${typeName}' is not defined`);
   }

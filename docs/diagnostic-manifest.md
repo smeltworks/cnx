@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-942 fixture(s) assert a diagnostic; 928 carry a code.
+944 fixture(s) assert a diagnostic; 930 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -681,6 +681,8 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1458-qualified-define-before-use/this-forward.test.cnx                                   | E0426                             |
 | tests/bugs/issue-1458-qualified-define-before-use/this-mutual.test.cnx                                    | E0426                             |
 | tests/bugs/issue-1458-qualified-define-before-use/this-self.test.cnx                                      | E0426                             |
+| tests/bugs/issue-1458-qualified-type-existence/register-qualified.test.cnx                                | E0429                             |
+| tests/bugs/issue-1458-qualified-type-existence/undefined-qualified.test.cnx                               | E0426                             |
 | tests/bugs/issue-1472-scope-function-as-type/undefined-still-rejected.test.cnx                            | E0422                             |
 | tests/bugs/issue-1514-cross-file-bitmap-register/cross-file-bitmap-register-bracket-error.test.cnx        | E0883                             |
 | tests/bugs/issue-1514-cross-file-bitmap-register/cross-file-bitmap-register-out-of-closure-error.test.cnx | E0426                             |
