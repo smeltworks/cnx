@@ -218,7 +218,7 @@ class TranspileState {
   localCName(declaration: ILocalDeclaration, at: ISourcePosition): string {
     const emitted = emittedLocalName(declaration);
     if (emitted !== declaration.name) {
-      AdrProvenance.record("057", at.line);
+      AdrProvenance.record("057", at.line, "binds-local");
     }
     return emitted;
   }

@@ -6,12 +6,13 @@
  * reference, so each case is a real declared program and a position in it
  * rather than a flag saying whether the name is local.
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { ParseTreeWalker } from "antlr4ng";
 import { CnxListener } from "../../../../../cnx/PARSE/2-Parse/grammar/CnxListener";
 import * as Parser from "../../../../../cnx/PARSE/2-Parse/grammar/CnxParser";
 import TypeValidator from "../../../../../cnx/TRANSPILE/2-Plan/TypeValidator";
 import TranspileState from "../../../../../cnx/TRANSPILE/TranspileState";
+import AdrProvenance from "../../../../../cnx/instrumentation/AdrProvenance";
 import ParserUtils from "../../../../../cnx/utils/ParserUtils";
 import enterScope from "../../../../../cnx/TRANSPILE/__tests__/enterScope";
 import testAnalysisContextFor from "../1-Analyze/testAnalysisContextFor";
@@ -145,6 +146,29 @@ scope S {
       // tests/adr-057/shadow-sibling-block, which runs the program: the old
       // per-function set of local names needs a real walk to populate.
       expect(resolve("globalCounter", "Motor", 13)).toBe("globalCounter");
+    });
+  });
+
+  describe("ADR-057 provenance names the tier that bound the name (#1187)", () => {
+    afterEach(() => AdrProvenance.reset());
+
+    const rulesFor = (name: string): (string | undefined)[] => {
+      AdrProvenance.reset();
+      AdrProvenance.beginFile("test.cnx");
+      resolve(name, "Motor", 9);
+      return AdrProvenance.collect().map((site) => site.rule);
+    };
+
+    it("records binds-global for a global read inside a scope", () => {
+      expect(rulesFor("globalCounter")).toEqual(["binds-global"]);
+    });
+
+    it("records binds-scope for a scope member", () => {
+      expect(rulesFor("speed")).toEqual(["binds-scope"]);
+    });
+
+    it("records nothing for a name nothing declares", () => {
+      expect(rulesFor("unknownName")).toEqual([]);
     });
   });
 

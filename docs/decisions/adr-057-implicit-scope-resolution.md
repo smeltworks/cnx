@@ -172,22 +172,61 @@ Severity follows the eslint model: `off` records that a cell **cannot exist** fo
 this feature, `warn` that it should be covered and is not, `error` that it must
 be. Undeclared cells are `off`.
 
-Nine cells are `error` and three are `warn`. All twelve began as `warn`,
-deliberately and as a first step: this ADR had no matrix since it was written in
-January, which per [`README.md`](README.md) is indistinguishable from claiming
-the feature cannot occur anywhere — a claim that is plainly false for a rule
-governing every bare identifier in the language. Declaring twelve `warn` cells
-converted that silence into a visible, non-blocking backlog, and #1241 then made
-nine of them occupiable, so they were promoted.
+**The matrix is split by the tier a name binds to (#1187).** It was one table,
+placed by where a name is written, and that could not see which tier answered: a
+scope member reading a global sat in the "scope member" cell that scope members
+reading each other already filled, so a constructor argument naming a global
+(`scope S { Driver d(PIN); }`) reached `main` emitted as `S__PIN` and then as an
+internal error, while the cell read `error` and occupied. Each table is filled only
+by the tier it names, recorded where that tier answers: `binds-local` where a local
+that shadows a file-scope name is given its own C name, `binds-scope` where the
+enclosing scope captures a name, `binds-global` where nothing nearer did.
 
-`warn` is a statement about coverage, not about possibility. The `off` claims
-have not been made here because `off` is a claim about the grammar and must be
-argued by trying to _write_ the program that would occupy the cell. That work
-belongs with the fixtures (#1285), not ahead of them. Cells will be promoted to
-`error` as fixtures reach them, and any cell that stays `warn` will carry its
-reason and a filed follow-up.
+`off` cells are the ones the grammar rules out: a local exists only in a function
+body, so `binds-local` cannot occur in a declaration's initializer; with no
+enclosing scope there is no scope tier, so `binds-scope` cannot occur outside one.
 
-<!-- MATRIX-SEVERITY -->
+<!-- MATRIX-SEVERITY rule: binds-local -->
+
+| Context            | Relationship        | Severity |
+| ------------------ | ------------------- | -------- |
+| global variable    | same file           | off      |
+| top-level function | same file           | error    |
+| scope member       | same file           | off      |
+| scope method       | same file           | error    |
+| global variable    | imported direct     | off      |
+| top-level function | imported direct     | error    |
+| scope member       | imported direct     | off      |
+| scope method       | imported direct     | error    |
+| global variable    | imported transitive | off      |
+| top-level function | imported transitive | error    |
+| scope member       | imported transitive | off      |
+| scope method       | imported transitive | warn     |
+
+off: a local is declared only in a function body, so a file-scope or scope
+member's initializer has none to bind.
+
+<!-- MATRIX-SEVERITY rule: binds-scope -->
+
+| Context            | Relationship        | Severity |
+| ------------------ | ------------------- | -------- |
+| global variable    | same file           | off      |
+| top-level function | same file           | off      |
+| scope member       | same file           | error    |
+| scope method       | same file           | error    |
+| global variable    | imported direct     | off      |
+| top-level function | imported direct     | off      |
+| scope member       | imported direct     | error    |
+| scope method       | imported direct     | error    |
+| global variable    | imported transitive | off      |
+| top-level function | imported transitive | off      |
+| scope member       | imported transitive | error    |
+| scope method       | imported transitive | error    |
+
+off: the scope tier is the enclosing scope's, and a global's initializer or a
+top-level function has none.
+
+<!-- MATRIX-SEVERITY rule: binds-global -->
 
 | Context            | Relationship        | Severity |
 | ------------------ | ------------------- | -------- |
@@ -197,37 +236,23 @@ reason and a filed follow-up.
 | scope method       | same file           | error    |
 | global variable    | imported direct     | warn     |
 | top-level function | imported direct     | error    |
-| scope member       | imported direct     | error    |
-| scope method       | imported direct     | error    |
+| scope member       | imported direct     | warn     |
+| scope method       | imported direct     | warn     |
 | global variable    | imported transitive | warn     |
 | top-level function | imported transitive | error    |
-| scope member       | imported transitive | error    |
-| scope method       | imported transitive | error    |
+| scope member       | imported transitive | warn     |
+| scope method       | imported transitive | warn     |
 
-**ADR-057 raises no diagnostic of its own** — it is a resolution and codegen-shape
-rule throughout — so while a cell's context could only come from an
-`.expected.error` position, all twelve rows were unoccupiable and stood at `warn`
-recording an obligation nothing could meet. #1241 (2026-08-29) is that
-resolution: occupancy now also derives from where the rule fired, recorded at each
-of this ADR's four decision points.
+The `warn` cells are coverage, not possibility. The three `global variable` rows
+need a recording site for a file-scope declaration's initializer, which is never
+rendered through the identifier resolution the other cells record at (#1407). The
+imported `scope member` and `scope method` rows of `binds-global`, and the transitive
+`scope method` row of `binds-local`, want fixtures with the binding in an included
+file (#2378).
 
-Nine cells are occupied and are now `error`. The three `global variable` rows stay
-`warn`, and **a fixture alone cannot green them** — worth stating, because that is
-the obvious next move and it does not work. The `global-variable`
-context is derived only at a file-scope declaration, and all four of this ADR's
-recording sites are gated on being inside a scope or on a local — one on the
-variable being local, two on there being a current scope, and one that returns
-unchanged when there is no scope at all. None can fire where the cell is derived.
-With no diagnostic either, there is no `.expected.error` route.
-
-The cells are therefore `warn` because the feature **cannot reach them**, not
-because a fixture is missing — which is exactly the distinction `off` versus `warn`
-is for, and the reason a fixture written against them would pass while proving
-nothing.
-
-So these three want a **fifth recording site** for file-scope resolution, not more
-fixtures. Tracked as #1407. `off` would be the wrong claim: a bare name resolving
-to a file-scope variable is squarely this ADR's rule, so the cell can exist.
+**ADR-057 raises no diagnostic of its own** -- it is a resolution and codegen-shape
+rule throughout -- so occupancy comes only from where the rule fired (#1241), never
+from an `.expected.error` position.
 
 The axes still cannot see syntactic form: a bare `read()` and a
 qualified `this.read()` inside the same scope method derive the same cell, which

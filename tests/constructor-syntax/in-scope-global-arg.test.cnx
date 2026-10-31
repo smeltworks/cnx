@@ -1,0 +1,26 @@
+// test-cpp-only
+// Issue #1187: a constructor inside a scope takes a global read-only argument
+// test-adr: 057
+#include "constructor-stubs.h"
+
+u8 SENSOR_CHIP_SELECT_PIN <- 10;
+u8 pin <- 3;
+
+scope Fails {
+    public Adafruit_MAX31856 device(SENSOR_CHIP_SELECT_PIN);
+
+    public void init() {}
+}
+
+// A scope member of the same name still wins over the global
+scope Shadowed {
+    public u8 pin <- 7;
+    public Adafruit_MAX31856 device(pin);
+
+    public void init() {}
+}
+
+void main() {
+    Fails.init();
+    Shadowed.init();
+}
