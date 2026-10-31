@@ -1,0 +1,11 @@
+// test-error
+// Issue #2373: a string copied into a range of a string<N> must fit the
+// range (owner ruling, 2026-10-30).
+// NEGATIVE CONTROL -- a two-character literal fits a two-character range.
+
+mut string<8> s;
+
+void main() {
+    s[0, 2] <- "AB";
+    s[0, 2] <- "ABC";
+}

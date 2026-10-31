@@ -47,4 +47,27 @@ describe("2.2 plans every string written into one character", () => {
     expect(code).toMatch(/s\[5\] = \(.*"a".*"b".*\)\[0\];/);
     expect(code).toContain("s[6] = t[0U];");
   });
+
+  it("copies a string into a range, one character at a time (#2373)", async () => {
+    const code = await generate(
+      [
+        "#pragma target host",
+        'mut string<8> s <- "hello";',
+        'string<8> t <- "QRS";',
+        'string<2> w <- "ab";',
+        "void f() {",
+        '    s[0, 2] <- "AB";',
+        "    s[2, 2] <- t[1, 2];",
+        "    s[4, 2] <- w;",
+        '    s[6, 2] <- "Z";',
+        "}",
+        "",
+      ].join("\n"),
+    );
+    expect(code).toContain("s[0] = 'A';\n    s[1] = 'B';");
+    expect(code).toContain("s[2] = t[1U];\n    s[3] = t[1U + 1U];");
+    expect(code).toContain("s[4] = w[0];\n    s[5] = w[1];");
+    expect(code).toContain("s[6] = 'Z';");
+    expect(code).not.toContain("s[7] =");
+  });
 });

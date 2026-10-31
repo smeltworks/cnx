@@ -670,15 +670,29 @@ class OperandTyper {
   }
 
   /**
-   * #1748: whether an assignment target writes one character of a scalar
-   * `string<N>` -- `s[i]`, `gp.name[0]` -- as `CharacterWrite` asks it
+   * #1748, #2373: the characters an assignment target writes in a scalar
+   * `string<N>` -- one for `s[i]`, `n` for a range `s[i, n]` whose length
+   * folds -- or null when it writes none, as `CharacterWrite` asks it
    */
-  static writesCharacter(target: TExpression, ctx: ITypingContext): boolean {
+  static characterSpan(
+    target: TExpression,
+    ctx: ITypingContext,
+  ): { readonly count: number; readonly range: boolean } | null {
     const step = OperandTyper.walkChain(target, ctx).typing.steps.at(-1);
-    return (
-      step?.subscript === "array_element" &&
-      OperandTyper.scalarStringCapacity(step.before) !== null
-    );
+    if (
+      step === undefined ||
+      OperandTyper.scalarStringCapacity(step.before) === null
+    ) {
+      return null;
+    }
+    if (step.subscript === "array_element") return { count: 1, range: false };
+    if (step.subscript !== "array_slice" || target.kind !== "postfix") {
+      return null;
+    }
+    const last = target.ops.at(-1);
+    if (last?.kind !== "subscript") return null;
+    const count = OperandTyper.foldedWidth(last.indexes[1], ctx);
+    return count === null ? null : { count, range: true };
   }
 
   /**

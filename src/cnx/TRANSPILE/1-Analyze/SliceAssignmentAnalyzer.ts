@@ -39,6 +39,7 @@ import type TExpression from "../../types/syntax/TExpression";
 import StatementNodes from "../../utils/StatementNodes";
 import TYPE_WIDTH from "../../types/TYPE_WIDTH";
 import OperandTyper from "../../utils/OperandTyper";
+import CharacterWrite from "../../utils/CharacterWrite";
 import LiteralUtils from "../../utils/LiteralUtils";
 import ISliceAssignmentError from "./types/ISliceAssignmentError";
 import ConstantExpression from "./helpers/ConstantExpression";
@@ -244,6 +245,11 @@ class SliceAssignmentListener {
     length: number,
   ): void {
     const value = site.value;
+    // #2373: a string written into a range of a string<N> is copied in
+    // character by character, and E0864 judges its fit
+    if (CharacterWrite.of(site.target, value, this.context) === "string") {
+      return;
+    }
 
     // The same split 2.2's SliceSource plans: a named binding keeps its type
     // even when it folds, so its width is checked below, not its value.

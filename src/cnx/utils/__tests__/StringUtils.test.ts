@@ -138,3 +138,15 @@ describe("StringUtils.firstCharacter", () => {
     expect(StringUtils.firstCharacter('""')).toBe("'\\0'");
   });
 });
+
+describe("StringUtils.characterAt", () => {
+  it("is each character of a literal, an escape counted as one", () => {
+    expect(StringUtils.characterAt('"AB"', 1)).toBe("'B'");
+    expect(StringUtils.characterAt('"a\\nb"', 1)).toBe("'\\n'");
+    expect(StringUtils.characterAt('"a\\nb"', 2)).toBe("'b'");
+  });
+
+  it("is the terminator past the literal's end", () => {
+    expect(StringUtils.characterAt('"A"', 1)).toBe("'\\0'");
+  });
+});

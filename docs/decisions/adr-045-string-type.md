@@ -282,10 +282,11 @@ s[0] <- "jy";     // E0864: "jy" does not fit a string<1>
 s[0] <- 65;       // E0927: an integer is not a character (MISRA C:2012 Rule 10.3)
 ```
 
-This ruling covers the single-index spelling `s[i]` only. A range write
-`s[i, n] <- value`, `n` of 1 included, is still ADR-007's slice write, which
-takes an integer source. Whether a string's range write is that or a substring
-write is not decided yet, and is tracked by #2373.
+A range write `s[i, n] <- value` takes a string or an integer (owner ruling,
+2026-10-30, #2373). A string must fit `n` characters (E0864) and is copied in
+character by character: `s[0, 2] <- "AB"` writes `'A'` and `'B'`. An integer is
+split into bytes, as ADR-007's slice write does: `s[0, 2] <- 0x4241` writes the
+same two characters.
 
 ### Character Operands (MISRA C:2012 Rule 10.1)
 

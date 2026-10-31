@@ -1,3 +1,4 @@
+import type IPlannedCharacterWrite from "./IPlannedCharacterWrite";
 import type TStringValueForm from "../../../types/TStringValueForm";
 import type IPlannedArgument from "./IPlannedArgument";
 import type IPlannedFunctionParameter from "./IPlannedFunctionParameter";
@@ -108,7 +109,10 @@ interface IFilePlan {
    * the value's form. ADR-045 makes `s[i]` a `string<1>`, so the string's
    * first character is what is written.
    */
-  readonly characterWrites: ReadonlyMap<IAssignmentSyntax, TStringValueForm>;
+  readonly characterWrites: ReadonlyMap<
+    IAssignmentSyntax,
+    IPlannedCharacterWrite
+  >;
   /**
    * ADR-045: the form of each value written whole into a `string<N>` -- a
    * function's string initializer, and the value of each assignment in

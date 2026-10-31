@@ -1,0 +1,48 @@
+// test-execution
+// Issue #2373: a range write into a string<N> takes a string or an integer
+// (owner ruling, 2026-10-30). A string is copied in character by character;
+// an integer is split into bytes, as ADR-007's slice write does. Each result
+// is checked with its own return code.
+
+mut string<8> s;
+mut string<8> b;
+string<8> t <- "QRS";
+
+u32 main() {
+    s <- "hello";
+    s[0, 2] <- "AB";
+    s[2, 1] <- "x";
+    s[3, 2] <- t[0, 2];
+    // NEGATIVE CONTROL -- an integer is still split into bytes
+    b <- "hello";
+    b[0, 2] <- 0x4241;
+
+    if (s[0] != 'A') {
+        return 1;
+    }
+    if (s[1] != 'B') {
+        return 2;
+    }
+    if (s[2] != 'x') {
+        return 3;
+    }
+    if (s[3] != 'Q') {
+        return 4;
+    }
+    if (s[4] != 'R') {
+        return 5;
+    }
+    if (s.value_char_count != 5) {
+        return 6;
+    }
+    if (b[0] != 'A') {
+        return 7;
+    }
+    if (b[1] != 'B') {
+        return 8;
+    }
+    if (b[2] != 'l') {
+        return 9;
+    }
+    return 0;
+}

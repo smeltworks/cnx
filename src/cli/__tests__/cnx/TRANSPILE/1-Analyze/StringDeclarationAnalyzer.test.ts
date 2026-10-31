@@ -194,4 +194,26 @@ describe("StringDeclarationAnalyzer", () => {
       ).toEqual([]);
     });
   });
+
+  describe("E0864 -- a string copied into a range must fit it (#2373)", () => {
+    const inF = (body: string): string =>
+      `mut string<8> s;\nstring<4> w <- "abc";\nvoid f() {\n${body}\n}`;
+
+    it("rejects a longer literal and a wider string, with a range's help", () => {
+      const found = errors(inF('    s[0, 2] <- "ABC";\n    s[0, 2] <- w;'));
+      expect(found.map((e) => e.code)).toEqual(["E0864", "E0864"]);
+      expect(found[0].helpText).toBe(
+        "A range of a string<N> holds as many characters as its length (ADR-045): shorten the literal.",
+      );
+      expect(found[1].message).toBe(
+        "Cannot write string<4> into a 2-character range -- the source may not fit",
+      );
+    });
+
+    it("accepts a string that fits, and leaves an integer to the slice rules", () => {
+      expect(
+        codes(inF('    s[0, 2] <- "AB";\n    s[0, 2] <- 0x4241;')),
+      ).toEqual([]);
+    });
+  });
 });

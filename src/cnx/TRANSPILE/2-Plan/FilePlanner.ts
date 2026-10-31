@@ -43,6 +43,7 @@ import CharacterWrite from "../../utils/CharacterWrite";
 import StringValueForm from "../../utils/StringValueForm";
 import StringUtils from "../../utils/StringUtils";
 import type TStringValueForm from "../../types/TStringValueForm";
+import type IPlannedCharacterWrite from "./types/IPlannedCharacterWrite";
 import headerCType from "../../utils/headerCType";
 import HeaderTypeNames from "./HeaderTypeNames";
 import PublicInterface from "./PublicInterface";
@@ -1982,6 +1983,10 @@ class FilePlanner {
     for (const site of sites) {
       const last = OperandTyper.chainOf(site.target, typing).steps.at(-1);
       if (last?.subscript === "array_slice") {
+        // #2373: a string copied into a string's range is no slice source
+        if (CharacterWrite.of(site.target, site.value, typing) === "string") {
+          continue;
+        }
         const element = last.before?.typeName ?? null;
         invariant(element !== null, "a sliced buffer names its element type");
         // A string's bytes are cast through uint8_t (MISRA 10.8)
@@ -2111,17 +2116,42 @@ class FilePlanner {
    */
   private planCharacterWrites(
     program: IProgramSyntax,
-  ): ReadonlyMap<IAssignmentSyntax, TStringValueForm> {
-    const writes = new Map<IAssignmentSyntax, TStringValueForm>();
+  ): ReadonlyMap<IAssignmentSyntax, IPlannedCharacterWrite> {
+    const writes = new Map<IAssignmentSyntax, IPlannedCharacterWrite>();
     const typing = this.state.typingContext();
     for (const site of FilePlanner.assignmentSites(program)) {
       if (site.operator !== "<-") continue;
       const write = CharacterWrite.of(site.target, site.value, typing);
-      if (write !== "string") continue;
+      const span = OperandTyper.characterSpan(site.target, typing);
+      if (write !== "string" || span === null) continue;
       const form = StringValueForm.of(site.value, typing);
-      if (form.kind !== "concat") writes.set(site, form);
+      if (form.kind === "concat") continue;
+      const count = span.range
+        ? Math.min(span.count, this.characterCount(form, span.count))
+        : 1;
+      writes.set(site, { form, count, range: span.range });
     }
     return writes;
+  }
+
+  /** #2373: how many characters a string's form holds; E0864 made it fit */
+  private characterCount(form: TStringValueForm, fallback: number): number {
+    switch (form.kind) {
+      case "literal":
+        return StringUtils.literalLength(form.literal.written);
+      case "substring": {
+        const length = form.part.length;
+        return length === null ? 1 : (this.constantOf(length) ?? fallback);
+      }
+      case "copy":
+        return (
+          OperandTyper.scalarStringCapacity(
+            OperandTyper.typeOf(form.value, this.state.typingContext()),
+          ) ?? fallback
+        );
+      case "concat":
+        return fallback;
+    }
   }
 
   /**

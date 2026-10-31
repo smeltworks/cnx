@@ -131,9 +131,25 @@ class StringUtils {
    * holds -- `"x"` is `'x'`, `"\n"` is `'\n'`, and `""` is its terminator.
    */
   static firstCharacter(literal: string): string {
-    const body = literal.slice(literal.indexOf('"') + 1, -1);
-    if (body === "") return String.raw`'\0'`;
-    return body === "'" ? String.raw`'\''` : `'${body}'`;
+    return StringUtils.characterAt(literal, 0);
+  }
+
+  /**
+   * #2373: the C character literal for a string literal's character `k`,
+   * an escape sequence counted as one; past its end, the terminator
+   */
+  static characterAt(literal: string, k: number): string {
+    const content = literal.slice(literal.indexOf('"') + 1, -1);
+    const characters: string[] = [];
+    let i = 0;
+    while (i < content.length) {
+      const width = content[i] === "\\" && i + 1 < content.length ? 2 : 1;
+      characters.push(content.slice(i, i + width));
+      i += width;
+    }
+    const character = characters[k];
+    if (character === undefined) return String.raw`'\0'`;
+    return character === "'" ? String.raw`'\''` : `'${character}'`;
   }
 
   static literalLength(literal: string): number {
