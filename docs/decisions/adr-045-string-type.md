@@ -289,7 +289,8 @@ split into bytes, as ADR-007's slice write does: `s[0, 2] <- 0x4241` writes the
 same two characters.
 A string source other than a literal is read whole before any character is
 written (MISRA C:2012 Rule 19.1), so a source that overlaps the range copies
-correctly: in `"abcdefgh"`, `s[1, 3] <- s[0, 3]` leaves `"aabcefgh"`.
+correctly: in `"abcdefgh"`, `s[1, 3] <- s[0, 3]` writes `'a'`, `'b'`, `'c'`
+into positions 1 to 3, though each write overwrites a character a later one reads.
 
 ### Character Operands (MISRA C:2012 Rule 10.1)
 
