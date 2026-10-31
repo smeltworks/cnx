@@ -282,6 +282,11 @@ s[0] <- "jy";     // E0864: "jy" does not fit a string<1>
 s[0] <- 65;       // E0927: an integer is not a character (MISRA C:2012 Rule 10.3)
 ```
 
+This ruling covers the single-index spelling `s[i]` only. A range write
+`s[i, n] <- value`, `n` of 1 included, is still ADR-007's slice write, which
+takes an integer source. Whether a string's range write is that or a substring
+write is not decided yet, and is tracked by #2373.
+
 ### Character Operands (MISRA C:2012 Rule 10.1)
 
 A character -- a string element, a char literal, a C `char` -- takes only binary `+` and `-` and the comparisons. Under `*`, `/`, `%`, `&`, `|`, `^`, `<<`, `>>`, a prefix `-` or `~`, or the compound form of one of these, it is E0925; a cast to an integer type is the fix (#2347 review, owner ruling 2026-10-25: "MISRA always wins, so cast required as per 10.1").
