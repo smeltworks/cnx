@@ -161,4 +161,37 @@ describe("StringDeclarationAnalyzer", () => {
       "A substring's length must be a compile-time constant, not 'n'",
     ]);
   });
+
+  describe("E0864 -- a string written into one character is a string<1> (#1748)", () => {
+    const inF = (body: string): string =>
+      `mut string<8> s;\nstring<4> w <- "ab";\nstring<8> t <- "QRS";\nvoid f() {\n${body}\n}`;
+
+    it("rejects a literal longer than one character, with a character's help", () => {
+      const [found] = errors(inF('    s[2] <- "xy";'));
+      expect(found.code).toBe("E0864");
+      expect(found.message).toBe(
+        "String literal (2 chars) exceeds string<1> capacity",
+      );
+      expect(found.helpText).toBe(
+        "One character of a string<N> is a string<1> (ADR-045): shorten the literal.",
+      );
+    });
+
+    it("rejects a wider string, a longer substring and a longer concatenation", () => {
+      const found = errors(
+        inF('    s[0] <- w;\n    s[1] <- t[0, 2];\n    s[2] <- "a" + "b";'),
+      );
+      expect(found.map((e) => e.code)).toEqual(["E0864", "E0864", "E0864"]);
+      expect(found[0].message).toBe(
+        "Cannot write string<4> into one character, a string<1> -- the source may not fit",
+      );
+      expect(found[2].message).toContain("but the character is string<1>");
+    });
+
+    it("accepts a one-character literal, a character and an empty literal", () => {
+      expect(
+        codes(inF('    s[0] <- "x";\n    s[1] <- t[0];\n    s[2] <- "";')),
+      ).toEqual([]);
+    });
+  });
 });

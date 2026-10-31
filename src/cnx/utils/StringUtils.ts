@@ -126,6 +126,16 @@ class StringUtils {
    * @param literal - The string literal including quotes (e.g., "hello\n")
    * @returns The character count (escape sequences count as 1)
    */
+  /**
+   * #1748: the C character literal for the one character a string literal
+   * holds -- `"x"` is `'x'`, `"\n"` is `'\n'`, and `""` is its terminator.
+   */
+  static firstCharacter(literal: string): string {
+    const body = literal.slice(literal.indexOf('"') + 1, -1);
+    if (body === "") return String.raw`'\0'`;
+    return body === "'" ? String.raw`'\''` : `'${body}'`;
+  }
+
   static literalLength(literal: string): number {
     // Remove surrounding quotes
     const content = literal.slice(1, -1);

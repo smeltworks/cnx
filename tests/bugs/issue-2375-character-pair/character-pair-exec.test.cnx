@@ -1,0 +1,36 @@
+// test-execution
+// Issue #2375: ADR-024 makes MISRA's exempt character + integer pair
+// essentially character (owner ruling, 2026-09-28; MISRA C:2012 D.7), so it
+// is a character written into one character of a string<N> (#1748), in
+// either operand order. Each result is checked with its own return code.
+
+mut string<8> s;
+mut u8 n <- 1;
+
+u32 main() {
+    s <- "hello";
+    s[1] <- 'a' + n;
+    s[2] <- n + 'a';
+    // NEGATIVE CONTROL -- a plain character literal beside the pairs
+    s[3] <- 'z';
+
+    if (s[0] != 'h') {
+        return 1;
+    }
+    if (s[1] != 'b') {
+        return 2;
+    }
+    if (s[2] != 'b') {
+        return 3;
+    }
+    if (s[3] != 'z') {
+        return 4;
+    }
+    if (s[4] != 'o') {
+        return 5;
+    }
+    if (s.value_char_count != 5) {
+        return 6;
+    }
+    return 0;
+}

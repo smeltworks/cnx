@@ -122,3 +122,19 @@ describe("StringUtils.literalLength", () => {
     expect(StringUtils.literalLength('"line1\\nline2"')).toBe(11);
   });
 });
+
+describe("StringUtils.firstCharacter", () => {
+  it("is the C character literal of a one-character string literal", () => {
+    expect(StringUtils.firstCharacter('"x"')).toBe("'x'");
+    expect(StringUtils.firstCharacter('"\\n"')).toBe("'\\n'");
+    expect(StringUtils.firstCharacter('"\\""')).toBe("'\\\"'");
+  });
+
+  it("escapes a single quote", () => {
+    expect(StringUtils.firstCharacter('"\'"')).toBe("'\\''");
+  });
+
+  it("is the terminator for an empty literal", () => {
+    expect(StringUtils.firstCharacter('""')).toBe("'\\0'");
+  });
+});

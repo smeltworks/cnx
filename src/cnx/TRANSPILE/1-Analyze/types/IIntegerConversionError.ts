@@ -8,6 +8,7 @@
  * - E0910: a value known at compile time overflows (#1618)
  * - E0914: a string value landing in an integer, float or bool
  * - E0923: a value that is not a string landing in a string<N>
+ * - E0927: a value that is not a character landing in a string's character
  */
 import IBaseAnalysisError from "./IBaseAnalysisError";
 

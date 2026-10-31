@@ -104,6 +104,12 @@ interface IFilePlan {
   /** #1731: each assignment that writes one whole `string<N>`, and its capacity */
   readonly stringCopies: ReadonlyMap<IAssignmentSyntax, number>;
   /**
+   * #1748: each `<-` of a string into one character of a `string<N>`, and
+   * the value's form. ADR-045 makes `s[i]` a `string<1>`, so the string's
+   * first character is what is written.
+   */
+  readonly characterWrites: ReadonlyMap<IAssignmentSyntax, TStringValueForm>;
+  /**
    * ADR-045: the form of each value written whole into a `string<N>` -- a
    * function's string initializer, and the value of each assignment in
    * `stringCopies` -- as `StringValueForm` decides it (#1257)

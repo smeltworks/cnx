@@ -1,0 +1,24 @@
+// test-error
+// Issue #1748: one character of a string<N> takes a character. An integer or a
+// bool is another essential type category, so writing one there is the
+// conversion MISRA C:2012 Rule 10.3 forbids.
+// NEGATIVE CONTROL -- a character literal and another string's character
+// are characters, and are accepted beside the errors.
+
+struct Pkt {
+    u8 bits;
+    string<8> name;
+}
+
+mut Pkt gp;
+mut string<8> s;
+string<8> t <- "QRS";
+mut u8 n <- 66;
+
+void main() {
+    gp.name[1] <- 'A';
+    s[0] <- t[0];
+    gp.name[0] <- 65;
+    s[1] <- n;
+    s[2] <- true;
+}

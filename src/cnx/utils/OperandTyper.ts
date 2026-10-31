@@ -670,6 +670,18 @@ class OperandTyper {
   }
 
   /**
+   * #1748: whether an assignment target writes one character of a scalar
+   * `string<N>` -- `s[i]`, `gp.name[0]` -- as `CharacterWrite` asks it
+   */
+  static writesCharacter(target: TExpression, ctx: ITypingContext): boolean {
+    const step = OperandTyper.walkChain(target, ctx).typing.steps.at(-1);
+    return (
+      step?.subscript === "array_element" &&
+      OperandTyper.scalarStringCapacity(step.before) !== null
+    );
+  }
+
+  /**
    * The type an assignment target writes, which ADR-044's clamp and the
    * string copy both decide from (#1731 review)
    */

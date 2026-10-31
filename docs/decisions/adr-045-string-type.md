@@ -270,6 +270,23 @@ string<1> ch <- source[0];    // Sugar for source[0, 1] -> "H"
 
 **`s[0]` is equivalent to `s[0, 1]`** - both return a `string<1>` containing the character at that position.
 
+Writing one character is a `string<1>` write (owner ruling, 2026-10-30, #1748). It
+takes a character -- a char literal or another string's character -- or a string
+that fits one character, which writes that string's character:
+
+```cnx
+mut string<8> s <- "hello";
+s[0] <- 'j';      // OK: s is "jello"
+s[0] <- "j";      // OK: the same write
+s[0] <- "jy";     // E0864: "jy" does not fit a string<1>
+s[0] <- 65;       // E0927: an integer is not a character (MISRA C:2012 Rule 10.3)
+```
+
+This ruling covers the single-index spelling `s[i]` only. A range write
+`s[i, n] <- value`, `n` of 1 included, is still ADR-007's slice write, which
+takes an integer source. Whether a string's range write is that or a substring
+write is not decided yet, and is tracked by #2373.
+
 ### Character Operands (MISRA C:2012 Rule 10.1)
 
 A character -- a string element, a char literal, a C `char` -- takes only binary `+` and `-` and the comparisons. Under `*`, `/`, `%`, `&`, `|`, `^`, `<<`, `>>`, a prefix `-` or `~`, or the compound form of one of these, it is E0925; a cast to an integer type is the fix (#2347 review, owner ruling 2026-10-25: "MISRA always wins, so cast required as per 10.1").

@@ -20,8 +20,8 @@ codes that already have a fixture.
 | E06xx     | Sizeof Expressions                                                                                                                                                                                 | 3       |
 | E07xx     | Control Flow                                                                                                                                                                                       | 15      |
 | E08xx     | Arithmetic/Array Safety                                                                                                                                                                            | 61      |
-| E09xx     | NULL Safety, Compile-Time Values, Literal Form, String Conversions, Interrupt Masking, `mut` Arguments, `for` Arrays, Config File Names, Environment Variables, Operator Operands, Parameter Lists | 27      |
-| **Total** |                                                                                                                                                                                                    | **153** |
+| E09xx     | NULL Safety, Compile-Time Values, Literal Form, String Conversions, Interrupt Masking, `mut` Arguments, `for` Arrays, Config File Names, Environment Variables, Operator Operands, Parameter Lists | 28      |
+| **Total** |                                                                                                                                                                                                    | **154** |
 
 ---
 
@@ -496,6 +496,12 @@ base: bare, `this.` and `global.`.
 | E0926 | 'void' is not a valid parameter type | cnx has no C-style (void) parameter -- declare a zero-parameter function as foo(), or remove the void parameter if other parameters remain | `PARSE/2-Parse/CnxSourceParser.ts` |
 
 ---
+
+## E0927 — Something Other Than a Character Into a String's Character (ADR-045)
+
+| Code  | Message                                                                                                                                                                                                                                                                                                                           | Help                                                                                                                         | Source                                             |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| E0927 | A value that is not a character (an integer, a float, a bool, an enum or any other value that is neither a character nor a string) is assigned to one character of a `string<N>` -- `s[i] <- 65` -- which MISRA C:2012 Rule 10.3 forbids (#1748). A one-character string is a `string<1>` write instead, and E0864 judges its fit | One character of a `string<N>` takes a character: a character literal, another string's character, or a one-character string | `TRANSPILE/1-Analyze/IntegerConversionAnalyzer.ts` |
 
 ## Adding New Error Codes
 
