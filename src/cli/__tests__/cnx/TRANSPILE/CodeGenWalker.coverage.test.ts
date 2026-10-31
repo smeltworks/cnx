@@ -141,6 +141,13 @@ describe("CodeGenWalker Coverage Tests", () => {
       );
       expect(code).toContain("Widget S__device(S__pin);");
     });
+
+    it("passes a name the binder does not know through as written", () => {
+      const code = generateCpp(
+        "scope S {\n    public Widget device(EXTERNAL_PIN);\n}",
+      );
+      expect(code).toContain("Widget S__device(EXTERNAL_PIN);");
+    });
   });
 
   // ==========================================================================

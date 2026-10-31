@@ -11,6 +11,7 @@ import type IFunctionSymbol from "../../../../../cnx/types/symbols/IFunctionSymb
 import TestSymbolUtils from "../../../../../cnx/PARSE/3-Declare/cnx/__tests__/testSymbolUtils";
 import TestSourceSpan from "../../../../../cnx/types/__testUtils__/testSourceSpan";
 import testAnalysisContextFor from "./testAnalysisContextFor";
+import AdrProvenance from "../../../../../cnx/instrumentation/AdrProvenance";
 
 /**
  * The analyzer over `source`, with the real 2.1 context production builds for
@@ -685,6 +686,29 @@ describe("FunctionCallAnalyzer", () => {
       // Issue #786: Cross-file cnx functions from includes are now allowed
       // without E0422 since they're defined in an included file
       expect(errors).toHaveLength(0);
+    });
+  });
+
+  describe("a bare call to its scope's member declared in an included file", () => {
+    it("allows the call and records ADR-057 binding it to the scope", () => {
+      const analysis = testAnalysisContextFor(
+        "scope Test {\n    void run() {\n        helper();\n    }\n}\n",
+        {
+          helpers: {
+            "module.cnx": "scope Test {\n    public void helper() { }\n}\n",
+          },
+          cppMode: false,
+        },
+      );
+      AdrProvenance.beginFile("test.cnx");
+      const errors = new FunctionCallAnalyzer(analysis.context).analyze(
+        analysis.syntax,
+      );
+
+      expect(errors).toHaveLength(0);
+      expect(
+        AdrProvenance.collect().map((site) => [site.adr, site.line, site.rule]),
+      ).toEqual([["057", 3, "binds-scope"]]);
     });
   });
 

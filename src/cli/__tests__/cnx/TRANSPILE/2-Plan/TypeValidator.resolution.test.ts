@@ -167,6 +167,29 @@ scope S {
       expect(rulesFor("speed")).toEqual(["binds-scope"]);
     });
 
+    it("records binds-local for a local that shadows a file-scope name", () => {
+      const { state, at } = setUp(
+        "Motor",
+        `u32 globalCounter <- 0;
+scope Motor {
+    public void inside() {
+        mut u32 globalCounter <- 0;
+        globalCounter <- 1;
+    }
+}`,
+      );
+      AdrProvenance.beginFile("test.cnx");
+      TypeValidator.resolveBareIdentifier(
+        "globalCounter",
+        at(5),
+        () => false,
+        state,
+      );
+      expect(AdrProvenance.collect().map((site) => site.rule)).toEqual([
+        "binds-local",
+      ]);
+    });
+
     it("records nothing for a name nothing declares", () => {
       expect(rulesFor("unknownName")).toEqual([]);
     });
