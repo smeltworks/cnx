@@ -120,22 +120,7 @@ class StringUtils {
   }
 
   /**
-   * Get the actual character length of a string literal,
-   * accounting for escape sequences like \n, \t, \\, etc.
-   *
-   * @param literal - The string literal including quotes (e.g., "hello\n")
-   * @returns The character count (escape sequences count as 1)
-   */
-  /**
-   * #1748: the C character literal for the one character a string literal
-   * holds -- `"x"` is `'x'`, `"\n"` is `'\n'`, and `""` is its terminator.
-   */
-  static firstCharacter(literal: string): string {
-    return StringUtils.characterAt(literal, 0);
-  }
-
-  /**
-   * #2373: the C character literal for a string literal's character `k`,
+   * #1748, #2373: the C character literal for a string literal's character `k`,
    * an escape sequence counted as one; past its end, the terminator
    */
   static characterAt(literal: string, k: number): string {
@@ -152,6 +137,13 @@ class StringUtils {
     return character === "'" ? String.raw`'\''` : `'${character}'`;
   }
 
+  /**
+   * Get the actual character length of a string literal,
+   * accounting for escape sequences like \n, \t, \\, etc.
+   *
+   * @param literal - The string literal including quotes (e.g., "hello\n")
+   * @returns The character count (escape sequences count as 1)
+   */
   static literalLength(literal: string): number {
     // Remove surrounding quotes
     const content = literal.slice(1, -1);
