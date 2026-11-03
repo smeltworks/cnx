@@ -1514,8 +1514,9 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | n/a         | n/a        |
 | for header         | -         | -      | -          | n/a         | n/a        |
 
-12 linked fixtures with no derivable context:
+13 linked fixtures with no derivable context:
 
+- `adr-057/global-var-same-as-scope.test.cnx`
 - `adr-057/local-shadows-scope.test.cnx`
 - `adr-057/scope-variable-does-not-capture-type.test.cnx`
 - `adr-057/shadowing-all-levels.test.cnx`
@@ -1550,6 +1551,16 @@ cell is declared by the ADR that owns it.
 | for header         | -         | -      | -          | n/a         | n/a        |
 
 ## ADR-057 E0425
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | n/a         | n/a        |
+| top-level function | ok        | -      | -          | n/a         | n/a        |
+| scope member       | -         | -      | -          | n/a         | n/a        |
+| scope method       | -         | -      | -          | n/a         | n/a        |
+| for header         | -         | -      | -          | n/a         | n/a        |
+
+## ADR-057 E0927
 
 | Context            | same file | direct | transitive | from 1 away | thru chain |
 | ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
