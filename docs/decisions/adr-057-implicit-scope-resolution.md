@@ -39,13 +39,6 @@ Implement implicit resolution with priority: **local → scope → global**.
 - `this.x` — forces scope-level resolution
 - `global.x` — forces global-level resolution
 
-### Context-Aware Member Access
-
-When an identifier appears before `.` (member access), scope names are prioritized:
-
-- `LED.on()` — if `LED` is a known scope, resolves as scope access
-- Even if a global variable `LED` exists, `LED.on()` calls the scope function
-
 ### Shadowing
 
 Silent shadowing is allowed (matching C behavior):

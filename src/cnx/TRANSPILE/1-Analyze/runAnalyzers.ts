@@ -73,6 +73,7 @@ import type IFileAnalysis from "./types/IFileAnalysis";
 import type IValuePositions from "../../types/IValuePositions";
 import LengthPropertyAnalyzer from "./LengthPropertyAnalyzer";
 import TypeNameValueAnalyzer from "./TypeNameValueAnalyzer";
+import MemberAccessAnalyzer from "./MemberAccessAnalyzer";
 import StringDeclarationAnalyzer from "./StringDeclarationAnalyzer";
 import SwitchStatementAnalyzer from "./SwitchStatementAnalyzer";
 import NestedTernaryAnalyzer from "./NestedTernaryAnalyzer";
@@ -522,6 +523,10 @@ function runAnalyzers(
           parsed.program,
           positions(),
         ),
+    },
+    {
+      label: "a member of a value with no members (ADR-057, E0927)",
+      run: () => new MemberAccessAnalyzer(context).analyze(parsed.program),
     },
     {
       // Last, and does not halt: comment findings are reported alongside
