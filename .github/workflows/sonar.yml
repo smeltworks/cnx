@@ -65,7 +65,17 @@ jobs:
           matches=$(gh api --paginate --method GET "repos/$REPO/pulls" \
             -f state=open -f "head=$HEAD_OWNER:$HEAD_BRANCH" -F per_page=100 \
             --jq '.[] | select(.head.sha == env.HEAD_SHA) | {number, base: .base.ref, branch: .head.ref} | @json')
-          if [ "$(printf '%s\n' "$matches" | grep -c .)" -ne 1 ]; then
+          count=$(printf '%s\n' "$matches" | grep -c .)
+          if [ "$count" -eq 0 ]; then
+            # The PR this run belongs to merged or closed between PR Quality
+            # Checks finishing and this workflow_run firing: nothing left to
+            # scan, and not this job's failure.
+            echo "::notice::no open PR at $HEAD_SHA; it was likely merged or closed before this scan ran"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "reason=PR merged or closed before scan ran" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$count" -ne 1 ]; then
             echo "::error::expected one open PR at $HEAD_SHA, found: $matches"
             exit 1
           fi
@@ -82,7 +92,28 @@ jobs:
           }')
           echo "params=$params" >> "$GITHUB_OUTPUT"
 
+      # PR Quality Checks can finish without ever uploading coverage-report
+      # (it failed before that step, or didn't run), and that run's own
+      # conclusion already carries the failure -- downloading an artifact that
+      # was never produced must not also fail this job.
+      - name: Check coverage artifact exists
+        id: artifact
+        if: steps.target.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          count=$(gh api --paginate "repos/$REPO/actions/runs/$RUN_ID/artifacts" \
+            --jq '[.artifacts[] | select(.name == "coverage-report")] | length')
+          if [ "$count" -eq 0 ]; then
+            echo "::notice::no coverage-report artifact on run $RUN_ID; PR Quality Checks produced none to scan"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "reason=PR Quality Checks produced no coverage-report artifact" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout the analyzed commit
+        if: steps.target.outputs.skip != 'true' && steps.artifact.outputs.skip != 'true'
         uses: actions/checkout@v4
         with:
           ref: ${{ steps.target.outputs.ref }}
@@ -95,6 +126,7 @@ jobs:
           allow-unsafe-pr-checkout: true
 
       - name: Assert checkout matches the analyzed run
+        if: steps.target.outputs.skip != 'true' && steps.artifact.outputs.skip != 'true'
         env:
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
@@ -105,6 +137,7 @@ jobs:
           fi
 
       - name: Checkout trusted Sonar settings
+        if: steps.target.outputs.skip != 'true' && steps.artifact.outputs.skip != 'true'
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.repository.default_branch }}
@@ -114,6 +147,7 @@ jobs:
           persist-credentials: false
 
       - name: Download coverage artifact
+        if: steps.target.outputs.skip != 'true' && steps.artifact.outputs.skip != 'true'
         uses: actions/download-artifact@v4
         with:
           name: coverage-report
@@ -122,6 +156,7 @@ jobs:
           github-token: ${{ github.token }}
 
       - name: SonarCloud Scan
+        if: steps.target.outputs.skip != 'true' && steps.artifact.outputs.skip != 'true'
         uses: SonarSource/sonarqube-scan-action@ba9859eae8dd6bd29e412f25ddbbef3d032000f4 # v8.2.2
         with:
           args: -Dproject.settings=.sonar-trusted/sonar-project.properties
@@ -143,8 +178,25 @@ jobs:
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           JOB_STATUS: ${{ job.status }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          TARGET_SKIP: ${{ steps.target.outputs.skip }}
+          TARGET_REASON: ${{ steps.target.outputs.reason }}
+          ARTIFACT_SKIP: ${{ steps.artifact.outputs.skip }}
+          ARTIFACT_REASON: ${{ steps.artifact.outputs.reason }}
         run: |
-          case "$JOB_STATUS" in success) state=success ;; *) state=failure ;; esac
+          # A skip is not this job's failure -- the PR already merged, or the
+          # run it would have scanned already reported its own problem -- so
+          # it reports success with the reason, rather than a red status with
+          # nothing behind it to investigate.
+          if [ "$TARGET_SKIP" = "true" ]; then
+            state=success
+            description="Sonar scan: skipped -- $TARGET_REASON"
+          elif [ "$ARTIFACT_SKIP" = "true" ]; then
+            state=success
+            description="Sonar scan: skipped -- $ARTIFACT_REASON"
+          else
+            case "$JOB_STATUS" in success) state=success ;; *) state=failure ;; esac
+            description="Sonar scan: $JOB_STATUS"
+          fi
           gh api --method POST "repos/$REPO/statuses/$HEAD_SHA" \
             -f state="$state" -f context="SonarCloud scan (sonar.yml)" \
-            -f description="Sonar scan: $JOB_STATUS" -f target_url="$RUN_URL" > /dev/null
+            -f description="$description" -f target_url="$RUN_URL" > /dev/null
