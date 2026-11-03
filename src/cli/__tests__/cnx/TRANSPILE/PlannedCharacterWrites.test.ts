@@ -97,7 +97,7 @@ describe("2.2 plans every string written into one character", () => {
       [
         "#pragma target host",
         'mut string<8> s <- "abcdefgh";',
-        'string<8> t <- "QRST";',
+        'string<8> t <- "QRS";',
         "u32 next() {",
         "    return 1;",
         "}",
