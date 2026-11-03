@@ -1,0 +1,15 @@
+// test-error
+// test-adr: 016
+// #2380: one level holds one name, whatever kind declares it.
+scope Motor {
+    public u32 get() {
+        return 7;
+    }
+}
+struct Motor {
+    u8 a;
+}
+
+u32 main() {
+    return global.Motor.get();
+}

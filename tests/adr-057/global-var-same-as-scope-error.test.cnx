@@ -1,6 +1,6 @@
-// Test global variable with same name as scope
-// Both can coexist - scope becomes prefix, variable stays as-is
-// test-execution
+// test-error
+// A global variable and a scope with the same name are two file-level
+// definitions of one name: E0425, like `u8 LED <- 5;` declared twice (#1805).
 // test-adr: 057
 
 u8 LED <- 5; // Global variable named same as scope

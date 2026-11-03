@@ -56,6 +56,8 @@ scope Counter {
 }
 ```
 
+Shadowing is between levels. One level holds one name, whatever kind declares it: a file-level `u8 LED` and a file-level `scope LED` (or struct, enum, function) are two definitions of `LED` and raise E0425, exactly as two `u8 LED` would (#1805, #2380). Only a second `scope LED` block is not a redefinition; it reopens the scope (#1333).
+
 ### Type positions
 
 The rules above are the **value** side. Type positions take the same rule: inside

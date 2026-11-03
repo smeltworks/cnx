@@ -1,0 +1,42 @@
+// test-execution
+// test-adr: 057
+// #2380 negative control: a scope member, a local and a parameter that share
+// a file-level name are at different levels, so they shadow it silently.
+u8 Motor <- 1;
+
+scope Ctl {
+    u8 Motor <- 2;
+
+    public u32 own() {
+        return this.Motor;
+    }
+}
+
+u32 viaParam(u8 Motor) {
+    return Motor;
+}
+
+u32 viaLocal() {
+    u8 Motor <- 4;
+    return Motor;
+}
+
+u32 main() {
+    u32 a <- Ctl.own();
+    if (a != 2) {
+        return 1;
+    }
+    u32 b <- viaParam(3);
+    if (b != 3) {
+        return 2;
+    }
+    u32 c <- viaLocal();
+    if (c != 4) {
+        return 3;
+    }
+    u32 d <- global.Motor;
+    if (d != 1) {
+        return 4;
+    }
+    return 0;
+}

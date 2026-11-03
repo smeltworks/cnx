@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-945 fixture(s) assert a diagnostic; 931 carry a code.
+951 fixture(s) assert a diagnostic; 937 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -403,6 +403,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-051/safe-division-shape-error.test.cnx                                                          | E0884, E0885                      |
 | tests/adr-051/safe-division-shape-imported-direct.test.cnx                                                | E0884, E0885                      |
 | tests/adr-051/safe-division-shape-imported-transitive.test.cnx                                            | E0884, E0885                      |
+| tests/adr-057/global-var-same-as-scope-error.test.cnx                                                     | E0425                             |
 | tests/adr-058/for-header-length-imported-direct-error.test.cnx                                            | E0867, E0886                      |
 | tests/adr-058/for-header-length-imported-transitive-error.test.cnx                                        | E0867, E0886                      |
 | tests/adr-058/for-header-length-same-file-error.test.cnx                                                  | E0867, E0886                      |
@@ -877,6 +878,11 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-2341-included-scope-type-bare-use/no-scope-type.test.cnx                                 | E0426                             |
 | tests/bugs/issue-2354-bool-bit-index/bool-bit-index-error.test.cnx                                        | E0856                             |
 | tests/bugs/issue-2366-void-param-diagnostic/void-param.test.cnx                                           | E0926                             |
+| tests/bugs/issue-2380-same-level-names/enum-beside-scope-error.test.cnx                                   | E0425                             |
+| tests/bugs/issue-2380-same-level-names/function-beside-scope-error.test.cnx                               | E0425                             |
+| tests/bugs/issue-2380-same-level-names/struct-beside-scope-error.test.cnx                                 | E0425                             |
+| tests/bugs/issue-2380-same-level-names/variable-beside-scope-error.test.cnx                               | E0425                             |
+| tests/bugs/issue-2380-same-level-names/variable-beside-struct-error.test.cnx                              | E0425                             |
 | tests/bugs/issue-847-misra-17-7-lowering/bare-intra-scope-discard.test.cnx                                | E0708                             |
 | tests/bugs/issue-847-misra-17-7-lowering/cross-file-scope-discard.test.cnx                                | E0708                             |
 | tests/bugs/issue-847-misra-17-7-lowering/external-c-discard.test.cnx                                      | E0708                             |

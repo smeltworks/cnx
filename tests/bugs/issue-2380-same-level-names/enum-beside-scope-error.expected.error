@@ -1,0 +1,3 @@
+4:0 error[E0425]: Symbol conflict: 'Motor' is defined multiple times in cnx:
+  tests/bugs/issue-2380-same-level-names/enum-beside-scope-error.test.cnx:4
+  tests/bugs/issue-2380-same-level-names/enum-beside-scope-error.test.cnx:9
