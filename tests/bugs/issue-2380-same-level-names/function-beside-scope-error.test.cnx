@@ -6,8 +6,7 @@ scope Motor {
         return 7;
     }
 }
-void Motor() {
-}
+void Motor() {}
 
 u32 main() {
     return global.Motor.get();
