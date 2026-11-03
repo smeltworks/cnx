@@ -40,17 +40,18 @@ int main(void) {
     s[0] = 'A';
     s[1] = 'B';
     s[2] = 'x';
-    /* MISRA C:2012 Rule 19.1: string range read into a temporary, then written (writing a character at a time would overwrite characters a later write still reads when the source overlaps the range). */
+    /* MISRA C:2012 Rule 19.1: string range source evaluated once and read into a temporary, then written (writing a character at a time would overwrite characters a later write still reads when the source overlaps the range). */
     {
-        const char cnx_tmp0[2] = {t[0U], t[0U + 1U]};
-        s[3] = cnx_tmp0[0];
-        s[4] = cnx_tmp0[1];
+        const char* const cnx_tmp0 = &t[0U];
+        const char cnx_tmp1[2] = {cnx_tmp0[0], cnx_tmp0[1]};
+        s[3] = cnx_tmp1[0];
+        s[4] = cnx_tmp1[1];
     }
     cnx_string_copy(b, "hello", 8U);
     /* MISRA C:2012 Rule 21.15: slice copy unrolled to per-element writes (memcpy would pass incompatible pointer types: char* vs uint16_t*). */
-    const uint16_t cnx_tmp1 = (uint16_t)(0x4241);
-    b[0] = (char)(uint8_t)(cnx_tmp1);
-    b[1] = (char)(uint8_t)(cnx_tmp1 >> 8U);
+    const uint16_t cnx_tmp2 = (uint16_t)(0x4241);
+    b[0] = (char)(uint8_t)(cnx_tmp2);
+    b[1] = (char)(uint8_t)(cnx_tmp2 >> 8U);
     if (s[0U] != 'A') {
         return 1U;
     }

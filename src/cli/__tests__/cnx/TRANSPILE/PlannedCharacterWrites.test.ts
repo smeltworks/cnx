@@ -66,10 +66,10 @@ describe("2.2 plans every string written into one character", () => {
     );
     expect(code).toContain("s[0] = 'A';\n    s[1] = 'B';");
     expect(code).toContain(
-      "const char cnx_tmp0[2] = {t[1U], t[1U + 1U]};\n        s[2] = cnx_tmp0[0];\n        s[3] = cnx_tmp0[1];",
+      "const char* const cnx_tmp0 = &t[1U];\n        const char cnx_tmp1[2] = {cnx_tmp0[0], cnx_tmp0[1]};\n        s[2] = cnx_tmp1[0];\n        s[3] = cnx_tmp1[1];",
     );
     expect(code).toContain(
-      "const char cnx_tmp1[2] = {w[0], w[1]};\n        s[4] = cnx_tmp1[0];\n        s[5] = cnx_tmp1[1];",
+      "const char* const cnx_tmp2 = w;\n        const char cnx_tmp3[2] = {cnx_tmp2[0], cnx_tmp2[1]};\n        s[4] = cnx_tmp3[0];\n        s[5] = cnx_tmp3[1];",
     );
     expect(code).toContain("s[6] = 'Z';");
     expect(code).not.toContain("s[7] =");
@@ -87,8 +87,27 @@ describe("2.2 plans every string written into one character", () => {
       ].join("\n"),
     );
     expect(code).toContain(
-      "const char cnx_tmp0[3] = {s[0U], s[0U + 1U], s[0U + 2U]};\n        s[1] = cnx_tmp0[0];",
+      "const char* const cnx_tmp0 = &s[0U];\n        const char cnx_tmp1[3] = {cnx_tmp0[0], cnx_tmp0[1], cnx_tmp0[2]};\n        s[1] = cnx_tmp1[0];",
     );
     expect(code).not.toContain("s[2] = s[");
+  });
+
+  it("evaluates a range source once, not once per character (#2373)", async () => {
+    const code = await generate(
+      [
+        "#pragma target host",
+        'mut string<8> s <- "abcdefgh";',
+        'string<8> t <- "QRST";',
+        "u32 next() {",
+        "    return 1;",
+        "}",
+        "void f() {",
+        "    s[0, 3] <- t[next(), 3];",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    expect(code).toContain("const char* const cnx_tmp0 = &t[next()];");
+    expect(code.match(/next\(\)/g)).toHaveLength(1);
   });
 });

@@ -62,11 +62,11 @@ class ComplianceAnnotations {
   /**
    * #2373 review: a string copied into a range `s[i, n]` reads every source
    * character into a temporary before it writes one, because the source can
-   * be the target (`s[1, 3] <- s[0, 3]`).
+   * be the target (`s[1, 3] <- s[0, 3]`). The source is evaluated once.
    */
   static readonly RANGE_READ_APART: IComplianceAnnotation = {
     citation: `${ComplianceAnnotations.MISRA} 19.1`,
-    what: "string range read into a temporary, then written",
+    what: "string range source evaluated once and read into a temporary, then written",
     why: "writing a character at a time would overwrite characters a later write still reads when the source overlaps the range",
   };
 

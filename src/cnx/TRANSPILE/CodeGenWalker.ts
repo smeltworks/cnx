@@ -39,6 +39,7 @@ import userCType from "../utils/userCType";
  */
 import type IChainStep from "../types/IChainStep";
 import type TRenderedStringPart from "../types/TRenderedStringPart";
+import type TStringPart from "../types/TStringPart";
 import type TStringValueForm from "../types/TStringValueForm";
 import type IPlannedCharacterWrite from "./2-Plan/types/IPlannedCharacterWrite";
 import { basename } from "node:path";
@@ -3053,30 +3054,18 @@ class CodeGenWalker {
     return count;
   }
 
-  /** A concatenation's or a substring's parts as generated C (ADR-045) */
   /**
-   * #1748, #2373: character `k` of a string written into one character or a
-   * range of a `string<N>` -- ADR-045's `string<n>` write. E0864 made it fit.
+   * #1748: the character a string written into one character of a
+   * `string<N>` writes -- ADR-045's `string<1>` write. E0864 made it fit.
    */
-  private renderCharacterAt(form: TStringValueForm, k: number): string {
-    const plus = k === 0 ? "" : ` + ${k}U`;
+  private renderCharacterAt(form: TStringValueForm): string {
     switch (form.kind) {
       case "literal":
-        return StringUtils.characterAt(form.literal.written, k);
-      case "substring": {
-        const part = form.part;
-        const source = this.generateAssignmentTarget(
-          part.chain,
-          AssignmentTarget.parts(part.chain).ops.length - 1,
-        );
-        return `${source}[${this.renderExpression(part.start)}${plus}]`;
-      }
-      case "copy": {
-        const code = this.renderExpression(form.value);
-        const bare =
-          form.value.kind === "identifier" || form.value.kind === "postfix";
-        return bare ? `${code}[${k}]` : `(${code})[${k}]`;
-      }
+        return StringUtils.characterAt(form.literal.written, 0);
+      case "substring":
+        return this.renderSubstringStart(form.part);
+      case "copy":
+        return `${this.renderSourcePointer(form)}[0]`;
       case "concat":
         invariant(
           false,
@@ -3085,10 +3074,41 @@ class CodeGenWalker {
     }
   }
 
+  /** A substring's first character, `t[i]` */
+  private renderSubstringStart(
+    part: Extract<TStringPart, { kind: "substring" }>,
+  ): string {
+    const source = this.generateAssignmentTarget(
+      part.chain,
+      AssignmentTarget.parts(part.chain).ops.length - 1,
+    );
+    return `${source}[${this.renderExpression(part.start)}]`;
+  }
+
+  /** #2373: a pointer to a written string other than a literal, evaluated once */
+  private renderSourcePointer(form: TStringValueForm): string {
+    switch (form.kind) {
+      case "substring":
+        return `&${this.renderSubstringStart(form.part)}`;
+      case "copy": {
+        const code = this.renderExpression(form.value);
+        const bare =
+          form.value.kind === "identifier" || form.value.kind === "postfix";
+        return bare ? code : `(${code})`;
+      }
+      case "literal":
+      case "concat":
+        invariant(
+          false,
+          "a literal is written by its characters, and 2.2 plans no concatenation as a character write (#2374)",
+        );
+    }
+  }
+
   /**
    * #2373: a string copied into a range `s[i, n]`, one character at a time.
-   * A literal is written directly; any other source is read whole into a
-   * temporary first, because it can be the range written (review).
+   * A literal is written directly. Any other source is evaluated once and read
+   * whole into a temporary first, because it can be the range written (review).
    */
   private renderRangeCopy(
     site: IAssignmentSyntax,
@@ -3103,24 +3123,31 @@ class CodeGenWalker {
       target,
       AssignmentTarget.parts(target).ops.length - 1,
     );
-    const characters: string[] = [];
-    for (let k = 0; k < write.count; k += 1) {
-      characters.push(this.renderCharacterAt(write.form, k));
-    }
+    const indexes = Array.from({ length: write.count }, (_, k) => k);
     const at = (k: number): string => `${base}[${offset + k}]`;
-    if (write.form.kind === "literal") {
-      return characters.map((c, k) => `${at(k)} = ${c};`).join("\n");
+    const form = write.form;
+    if (form.kind === "literal") {
+      return indexes
+        .map(
+          (k) =>
+            `${at(k)} = ${StringUtils.characterAt(form.literal.written, k)};`,
+        )
+        .join("\n");
     }
-    const temp = this.host.state.getNextTempVarName();
+    const source = this.host.state.getNextTempVarName();
+    const read = this.host.state.getNextTempVarName();
+    const characters = indexes.map((k) => `${source}[${k}]`).join(", ");
     return [
       ComplianceAnnotations.render(ComplianceAnnotations.RANGE_READ_APART),
       "{",
-      `    const char ${temp}[${write.count}] = {${characters.join(", ")}};`,
-      ...characters.map((_, k) => `    ${at(k)} = ${temp}[${k}];`),
+      `    const char* const ${source} = ${this.renderSourcePointer(form)};`,
+      `    const char ${read}[${write.count}] = {${characters}};`,
+      ...indexes.map((k) => `    ${at(k)} = ${read}[${k}];`),
       "}",
     ].join("\n");
   }
 
+  /** A concatenation's or a substring's parts as generated C (ADR-045) */
   private renderStringParts(
     form: TStringValueForm,
   ): readonly TRenderedStringPart[] {
@@ -3296,7 +3323,7 @@ class CodeGenWalker {
     if (character?.range === true) return this.renderRangeCopy(site, character);
     const value =
       character !== undefined
-        ? this.renderCharacterAt(character.form, 0)
+        ? this.renderCharacterAt(character.form)
         : builtApart
           ? ""
           : this.renderExpression(site.value);

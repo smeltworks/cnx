@@ -6,6 +6,8 @@
  * Header file for cross-language interoperability
  */
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -13,6 +15,12 @@ extern "C" {
 /* External variables */
 extern char s[9];
 extern char b[9];
+extern char c[9];
+extern const char t[9];
+extern uint32_t calls;
+
+/* Function prototypes */
+uint32_t nextStart(void);
 
 #ifdef __cplusplus
 }

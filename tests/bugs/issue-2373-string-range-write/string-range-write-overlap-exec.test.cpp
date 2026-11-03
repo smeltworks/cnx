@@ -8,6 +8,19 @@
 #include <stdint.h>
 #include <string.h>
 
+// ADR-044: Overflow helper functions
+#include <limits.h>
+
+/* ADR-044 / Issue #94: the second parameter is the WIDER type, not the value type.
+   Narrowing it first would let an out-of-range operand truncate INTO range and defeat
+   the check: cnx_clamp_add_u8(0, 256) must saturate to 255, but (uint8_t)256 is 0, so a
+   uint8_t parameter would return 0 -- the opposite of saturation. */
+
+static inline uint32_t cnx_clamp_add_u32(uint32_t a, uint64_t b) {
+    if (b > (uint64_t)(UINT32_MAX - a)) return UINT32_MAX;
+    return (uint32_t)(a + (uint32_t)b);
+}
+
 /* MISRA C:2012 Rule 19.1: string copied a character at a time by `cnx_string_copy` (`strncpy` would be passed overlapping arguments when a string is written from itself). */
 static inline void cnx_string_copy(char* target, const char* source, uint32_t capacity) {
     const char* next = source;
@@ -28,27 +41,51 @@ static inline void cnx_string_copy(char* target, const char* source, uint32_t ca
 // Issue #2373 review: a range write whose source is a range of the same
 // string reads every source character before it writes any. Copying forward
 // over itself, s[1, 3] <- s[0, 3], must leave "aabcefgh", not "aaaaefgh".
+// The source is evaluated once: a substring start that calls a function
+// calls it once, not once per character.
 // Each result is checked with its own return code.
 char s[9] = "";
 
 char b[9] = "";
 
+char c[9] = "";
+
+extern const char t[9] = "QRST";
+
+uint32_t calls = 0U;
+
+uint32_t nextStart(void) {
+    calls = cnx_clamp_add_u32(calls, 1U);
+    return 1U;
+}
+
 int main(void) {
     cnx_string_copy(s, "abcdefgh", 8U);
-    /* MISRA C:2012 Rule 19.1: string range read into a temporary, then written (writing a character at a time would overwrite characters a later write still reads when the source overlaps the range). */
+    /* MISRA C:2012 Rule 19.1: string range source evaluated once and read into a temporary, then written (writing a character at a time would overwrite characters a later write still reads when the source overlaps the range). */
     {
-        const char cnx_tmp0[3] = {s[0U], s[0U + 1U], s[0U + 2U]};
-        s[1] = cnx_tmp0[0];
-        s[2] = cnx_tmp0[1];
-        s[3] = cnx_tmp0[2];
+        const char* const cnx_tmp0 = &s[0U];
+        const char cnx_tmp1[3] = {cnx_tmp0[0], cnx_tmp0[1], cnx_tmp0[2]};
+        s[1] = cnx_tmp1[0];
+        s[2] = cnx_tmp1[1];
+        s[3] = cnx_tmp1[2];
     }
     cnx_string_copy(b, "abcdefgh", 8U);
-    /* MISRA C:2012 Rule 19.1: string range read into a temporary, then written (writing a character at a time would overwrite characters a later write still reads when the source overlaps the range). */
+    /* MISRA C:2012 Rule 19.1: string range source evaluated once and read into a temporary, then written (writing a character at a time would overwrite characters a later write still reads when the source overlaps the range). */
     {
-        const char cnx_tmp1[3] = {b[1U], b[1U + 1U], b[1U + 2U]};
-        b[0] = cnx_tmp1[0];
-        b[1] = cnx_tmp1[1];
-        b[2] = cnx_tmp1[2];
+        const char* const cnx_tmp2 = &b[1U];
+        const char cnx_tmp3[3] = {cnx_tmp2[0], cnx_tmp2[1], cnx_tmp2[2]};
+        b[0] = cnx_tmp3[0];
+        b[1] = cnx_tmp3[1];
+        b[2] = cnx_tmp3[2];
+    }
+    cnx_string_copy(c, "abcdefgh", 8U);
+    /* MISRA C:2012 Rule 19.1: string range source evaluated once and read into a temporary, then written (writing a character at a time would overwrite characters a later write still reads when the source overlaps the range). */
+    {
+        const char* const cnx_tmp4 = &t[nextStart()];
+        const char cnx_tmp5[3] = {cnx_tmp4[0], cnx_tmp4[1], cnx_tmp4[2]};
+        c[0] = cnx_tmp5[0];
+        c[1] = cnx_tmp5[1];
+        c[2] = cnx_tmp5[2];
     }
     if (s[0U] != 'a') {
         return 1U;
@@ -76,6 +113,21 @@ int main(void) {
     }
     if (b[3U] != 'd') {
         return 9U;
+    }
+    if (calls != 1) {
+        return 10U;
+    }
+    if (c[0U] != 'R') {
+        return 11U;
+    }
+    if (c[1U] != 'S') {
+        return 12U;
+    }
+    if (c[2U] != 'T') {
+        return 13U;
+    }
+    if (c[3U] != 'd') {
+        return 14U;
     }
     return 0U;
 }
