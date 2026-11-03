@@ -196,11 +196,25 @@ describe("sonar.yml — scans every pull request and push from a trusted context
     expect(artifactCheck?.name).toBe("Check coverage artifact exists");
     expect(artifactCheck?.if).toBe("steps.target.outputs.skip != 'true'");
     expect(artifactCheck?.run).toContain(
-      "repos/$REPO/actions/runs/$RUN_ID/artifacts",
+      "repos/$REPO/actions/runs/$RUN_ID/artifacts?name=coverage-report",
     );
     expect(artifactCheck?.run).toMatch(
       /if \[ "\$count" -eq 0 \][\s\S]*echo "skip=true" >> "\$GITHUB_OUTPUT"/,
     );
+  });
+
+  /**
+   * CLAUDE.md documents this exact footgun: an aggregate --jq 'length' over
+   * a --paginate'd collection prints once PER PAGE, not once total, so
+   * `[ "$count" -eq 0 ]` breaks the moment a run has more than one page of
+   * artifacts. The server-side `name` filter and `.total_count` sidestep
+   * pagination entirely (review on #2382).
+   */
+  it("counts the coverage-report artifact with a server-side filter, not --paginate plus an aggregate jq", () => {
+    const artifactCheck = steps.find((step) => step.id === "artifact");
+    expect(artifactCheck?.run).toContain(".total_count");
+    expect(artifactCheck?.run).not.toContain("--paginate");
+    expect(artifactCheck?.run).not.toMatch(/--jq\s+'\[.*\]\s*\|\s*length'/);
   });
 
   it("gates every step after resolution on neither skip output being set", () => {

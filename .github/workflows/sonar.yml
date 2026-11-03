@@ -104,8 +104,11 @@ jobs:
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
-          count=$(gh api --paginate "repos/$REPO/actions/runs/$RUN_ID/artifacts" \
-            --jq '[.artifacts[] | select(.name == "coverage-report")] | length')
+          # The server-side name filter sidesteps pagination entirely: an
+          # aggregate jq 'length' over a paginated list prints once per
+          # page, not once total (CLAUDE.md's documented footgun).
+          count=$(gh api "repos/$REPO/actions/runs/$RUN_ID/artifacts?name=coverage-report" \
+            --jq '.total_count')
           if [ "$count" -eq 0 ]; then
             echo "::notice::no coverage-report artifact on run $RUN_ID; PR Quality Checks produced none to scan"
             echo "skip=true" >> "$GITHUB_OUTPUT"
