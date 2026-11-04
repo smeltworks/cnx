@@ -10,18 +10,18 @@ codes that already have a fixture.
 
 ## Error Code Ranges
 
-| Range     | Category                                                                                                                                                                                           | Count   |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| E00xx     | Reserved/Test                                                                                                                                                                                      | 1       |
-| E02xx     | Identifier/Param Naming                                                                                                                                                                            | 5       |
-| E03xx     | Struct Fields/Init                                                                                                                                                                                 | 6       |
-| E04xx     | Symbol Resolution                                                                                                                                                                                  | 16      |
-| E05xx     | Include/Preprocessor                                                                                                                                                                               | 19      |
-| E06xx     | Sizeof Expressions                                                                                                                                                                                 | 3       |
-| E07xx     | Control Flow                                                                                                                                                                                       | 15      |
-| E08xx     | Arithmetic/Array Safety                                                                                                                                                                            | 61      |
-| E09xx     | NULL Safety, Compile-Time Values, Literal Form, String Conversions, Interrupt Masking, `mut` Arguments, `for` Arrays, Config File Names, Environment Variables, Operator Operands, Parameter Lists | 28      |
-| **Total** |                                                                                                                                                                                                    | **154** |
+| Range     | Category                                                                                                                                                                                                          | Count   |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| E00xx     | Reserved/Test                                                                                                                                                                                                     | 1       |
+| E02xx     | Identifier/Param Naming                                                                                                                                                                                           | 5       |
+| E03xx     | Struct Fields/Init                                                                                                                                                                                                | 6       |
+| E04xx     | Symbol Resolution                                                                                                                                                                                                 | 16      |
+| E05xx     | Include/Preprocessor                                                                                                                                                                                              | 19      |
+| E06xx     | Sizeof Expressions                                                                                                                                                                                                | 3       |
+| E07xx     | Control Flow                                                                                                                                                                                                      | 15      |
+| E08xx     | Arithmetic/Array Safety                                                                                                                                                                                           | 61      |
+| E09xx     | NULL Safety, Compile-Time Values, Literal Form, String Conversions, Interrupt Masking, `mut` Arguments, `for` Arrays, Config File Names, Environment Variables, Operator Operands, Parameter Lists, Member Access | 29      |
+| **Total** |                                                                                                                                                                                                                   | **155** |
 
 ---
 
@@ -495,13 +495,19 @@ base: bare, `this.` and `global.`.
 | ----- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
 | E0926 | 'void' is not a valid parameter type | cnx has no C-style (void) parameter -- declare a zero-parameter function as foo(), or remove the void parameter if other parameters remain | `PARSE/2-Parse/CnxSourceParser.ts` |
 
----
+## E0927 — A Member of a Value With No Members (#1805)
 
-## E0927 — Something Other Than a Character Into a String's Character (ADR-045)
+| Code  | Message                                                                                                                                                                                                                                                                                                                                                                                                                                         | Help                                                                                                                                                | Source                                        |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| E0927 | A `.name` is applied to a value whose type has no members, and the name is no length property the type answers: anything but a struct, a bitmap, a scope, a register or a header struct or union (an integer, a float, a bool, an enum value, a string, an array). A local or parameter named like a scope shadows it before a `.` as everywhere (ADR-057), so `Motor.get()` on a `u8 Motor` is one. A field a struct does not declare is #2061 | Use a struct, bitmap, scope or register member, or one of the type's length properties (ADR-058); reach a shadowed scope with `global.Scope.member` | `TRANSPILE/1-Analyze/MemberAccessAnalyzer.ts` |
+
+## E0928 — Something Other Than a Character Into a String's Character (ADR-045)
 
 | Code  | Message                                                                                                                                                                                                                                                                                                                           | Help                                                                                                                         | Source                                             |
 | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| E0927 | A value that is not a character (an integer, a float, a bool, an enum or any other value that is neither a character nor a string) is assigned to one character of a `string<N>` -- `s[i] <- 65` -- which MISRA C:2012 Rule 10.3 forbids (#1748). A one-character string is a `string<1>` write instead, and E0864 judges its fit | One character of a `string<N>` takes a character: a character literal, another string's character, or a one-character string | `TRANSPILE/1-Analyze/IntegerConversionAnalyzer.ts` |
+| E0928 | A value that is not a character (an integer, a float, a bool, an enum or any other value that is neither a character nor a string) is assigned to one character of a `string<N>` -- `s[i] <- 65` -- which MISRA C:2012 Rule 10.3 forbids (#1748). A one-character string is a `string<1>` write instead, and E0864 judges its fit | One character of a `string<N>` takes a character: a character literal, another string's character, or a one-character string | `TRANSPILE/1-Analyze/IntegerConversionAnalyzer.ts` |
+
+---
 
 ## Adding New Error Codes
 

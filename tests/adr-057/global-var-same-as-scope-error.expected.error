@@ -1,0 +1,3 @@
+6:0 error[E0425]: Symbol conflict: 'LED' is defined multiple times in cnx:
+  tests/adr-057/global-var-same-as-scope-error.test.cnx:6
+  tests/adr-057/global-var-same-as-scope-error.test.cnx:8

@@ -128,7 +128,7 @@ class TypeValidator {
       (binding?.kind === "variable" || binding?.kind === "function") &&
       binding.symbol.scopePath !== ""
     ) {
-      AdrProvenance.record("057", at.line);
+      AdrProvenance.record("057", at.line, "binds-scope");
       return binding.symbol.fullyQualifiedCName;
     }
 
@@ -146,7 +146,7 @@ class TypeValidator {
         state,
       );
       if (scopeResolved) {
-        AdrProvenance.record("057", at.line);
+        AdrProvenance.record("057", at.line, "binds-scope");
         return scopeResolved;
       }
     }
@@ -155,6 +155,8 @@ class TypeValidator {
       binding?.kind === "variable" ||
       binding?.kind === "function" ||
       binding?.kind === "foreign";
+    // The binder's last tier: nothing local or in the scope took the name
+    if (isGlobalValue) AdrProvenance.record("057", at.line, "binds-global");
     if (
       isGlobalValue ||
       TypeValidator._isKnownGlobalIdentifier(

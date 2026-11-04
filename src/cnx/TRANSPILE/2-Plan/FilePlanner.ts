@@ -2113,7 +2113,7 @@ class FilePlanner {
   /**
    * #1748: each `<-` that writes a string into one character of a
    * `string<N>`, by the value's form, as `CharacterWrite` --
-   * which 2.1's E0927 and E0864 read -- decides it. A concatenation is
+   * which 2.1's E0928 and E0864 read -- decides it. A concatenation is
    * lowered into a range (#2373), not into one character (#2374).
    */
   private planCharacterWrites(

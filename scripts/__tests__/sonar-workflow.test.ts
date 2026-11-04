@@ -5,9 +5,13 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import YAML from "yaml";
 
+import GhPagination from "../gh-pagination/GhPagination";
+
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const sonarYamlPath = join(repoRoot, ".github", "workflows", "sonar.yml");
 
 interface IStep {
+  id?: string;
   name?: string;
   if?: string;
   uses?: string;
@@ -165,6 +169,95 @@ describe("sonar.yml — scans every pull request and push from a trusted context
   it("pins the scan action to a full commit SHA, not a movable tag", () => {
     const scan = stepUsing("SonarSource/sonarqube-scan-action")[0];
     expect(scan.uses).toMatch(/@[0-9a-f]{40}$/);
+  });
+
+  /**
+   * By the time this workflow_run fires, the PR it targets may have already
+   * merged or closed -- the "exactly one open PR" query then finds zero, which
+   * is a race, not a defect. Only more than one match is still a real error.
+   */
+  it("skips without failing when the resolved PR has already been merged or closed", () => {
+    const resolve = steps.find(
+      (step) => step.name === "Resolve what to analyze",
+    );
+    expect(resolve?.run).toMatch(
+      /if \[ "\$count" -eq 0 \][\s\S]*echo "skip=true" >> "\$GITHUB_OUTPUT"[\s\S]*exit 0/,
+    );
+    expect(resolve?.run).toMatch(
+      /if \[ "\$count" -ne 1 \][\s\S]*::error::expected one open PR/,
+    );
+  });
+
+  /**
+   * PR Quality Checks can finish without ever uploading coverage-report (it
+   * failed before that step, or was skipped) -- that run's own conclusion
+   * already reports the problem, so downloading an artifact that was never
+   * produced must not also fail this job.
+   */
+  it("skips without failing when PR Quality Checks produced no coverage-report artifact", () => {
+    const artifactCheck = steps.find((step) => step.id === "artifact");
+    expect(artifactCheck?.name).toBe("Check coverage artifact exists");
+    expect(artifactCheck?.if).toBe("steps.target.outputs.skip != 'true'");
+    expect(artifactCheck?.run).toContain(
+      "repos/$REPO/actions/runs/$RUN_ID/artifacts?name=coverage-report",
+    );
+    expect(artifactCheck?.run).toMatch(
+      /if \[ "\$count" -eq 0 \][\s\S]*echo "skip=true" >> "\$GITHUB_OUTPUT"/,
+    );
+  });
+
+  /**
+   * CLAUDE.md documents this exact footgun: an aggregate --jq '... | length'
+   * over a --paginate'd collection prints once PER PAGE, not once total, so
+   * `[ "$count" -eq 0 ]` breaks the moment a run has more than one page of
+   * artifacts. `gh:pagination:check` requires `--paginate` on any REST
+   * collection path (review on #2382 found it still applies to the
+   * server-side `name` filter, since the gate treats any query string, and
+   * the bare `artifacts` segment, as a collection) -- so the fix pairs
+   * `--paginate` with a PER-ITEM jq filter counted by `wc -l`, the safe shape
+   * this file's own header documents, not an aggregate.
+   */
+  it("counts the coverage-report artifact the way gh:pagination:check requires: --paginate plus a per-item jq, not an aggregate", () => {
+    const artifactCheck = steps.find((step) => step.id === "artifact");
+    expect(artifactCheck?.run).toContain("--paginate");
+    expect(artifactCheck?.run).not.toMatch(/--jq\s+'\[.*\]\s*\|\s*length'/);
+    expect(artifactCheck?.run).not.toContain(".total_count");
+
+    const violations = GhPagination.scanFile(
+      "sonar.yml",
+      readFileSync(sonarYamlPath, "utf-8"),
+    );
+    expect(violations).toEqual([]);
+  });
+
+  it("gates every step after resolution on neither skip output being set", () => {
+    const expectedIf =
+      "steps.target.outputs.skip != 'true' && steps.artifact.outputs.skip != 'true'";
+    const gated = [
+      "Checkout the analyzed commit",
+      "Assert checkout matches the analyzed run",
+      "Checkout trusted Sonar settings",
+      "Download coverage artifact",
+      "SonarCloud Scan",
+    ];
+    for (const name of gated) {
+      const step = steps.find((candidate) => candidate.name === name);
+      expect(step?.if).toBe(expectedIf);
+    }
+  });
+
+  it("reports success with a reason instead of failing the status check when skipped", () => {
+    const report = steps[steps.length - 1];
+    expect(report.env?.TARGET_SKIP).toBe("${{ steps.target.outputs.skip }}");
+    expect(report.env?.ARTIFACT_SKIP).toBe(
+      "${{ steps.artifact.outputs.skip }}",
+    );
+    expect(report.run).toMatch(
+      /\$TARGET_SKIP"\s*=\s*"true"[\s\S]*state=success/,
+    );
+    expect(report.run).toMatch(
+      /\$ARTIFACT_SKIP"\s*=\s*"true"[\s\S]*state=success/,
+    );
   });
 });
 

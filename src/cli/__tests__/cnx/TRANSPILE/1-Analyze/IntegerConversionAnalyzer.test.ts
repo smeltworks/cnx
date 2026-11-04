@@ -416,7 +416,7 @@ describe("IntegerConversionAnalyzer -- on 1.2's syntax", () => {
     ).toEqual([]);
   });
 
-  describe("E0927 -- one character of a string<N> takes a character (#1748)", () => {
+  describe("E0928 -- one character of a string<N> takes a character (#1748)", () => {
     const inF = (body: string): string =>
       `mut string<8> s;\nstring<8> t <- "QRS";\nmut u8 n <- 66;\nmut f32 x <- 1.5;\nvoid f() {\n${body}\n}`;
     const codesOf = (body: string): string[] =>
@@ -427,7 +427,7 @@ describe("IntegerConversionAnalyzer -- on 1.2's syntax", () => {
         codesOf(
           "    s[0] <- 65;\n    s[1] <- n;\n    s[2] <- true;\n    s[3] <- x;",
         ),
-      ).toEqual(["E0927", "E0927", "E0927", "E0927"]);
+      ).toEqual(["E0928", "E0928", "E0928", "E0928"]);
     });
 
     it("names the value, at the value's position", () => {
@@ -448,11 +448,11 @@ describe("IntegerConversionAnalyzer -- on 1.2's syntax", () => {
 
     it("accepts MISRA's exempt character + integer pair, a character (#2375)", () => {
       expect(codesOf("    s[0] <- 'a' + n;\n    s[1] <- n + 'a';")).toEqual([]);
-      expect(codesOf("    s[0] <- n + n;")).toEqual(["E0927"]);
+      expect(codesOf("    s[0] <- n + n;")).toEqual(["E0928"]);
     });
 
     it("leaves a compound assignment and a whole-string write to other rules", () => {
-      expect(codesOf("    s[0] +<- 1;")).not.toContain("E0927");
+      expect(codesOf("    s[0] +<- 1;")).not.toContain("E0928");
       expect(codesOf('    s <- "abc";')).toEqual([]);
     });
   });

@@ -133,7 +133,7 @@ class TypeGenerationHelper {
       // firing, observably, at a position. Recorded so a codegen-only fixture
       // can occupy a matrix cell; without it ADR-057's eleven fixtures were
       // invisible because they assert generated C and emit no diagnostic.
-      AdrProvenance.record("057", line);
+      AdrProvenance.record("057", line, "binds-scope");
       return named.name;
     }
 

@@ -9,7 +9,7 @@ import type TExpression from "../types/syntax/TExpression";
  * ADR-045 makes `s[i]` a `string<1>`: a character is written as it is, a
  * string is a `string<1>` write, and any other value is no character (MISRA
  * C:2012 Rule 10.3). A value is a character by its Rule 10.4 category, so
- * MISRA's exempt `'a' + n` is one (ADR-024 D.7, #2375). 2.1's E0927 and E0864
+ * MISRA's exempt `'a' + n` is one (ADR-024 D.7, #2375). 2.1's E0928 and E0864
  * and 2.2's lowering all read this one answer. A range `s[i, n]` takes a
  * string too, copied in character by character (owner ruling, 2026-10-30,
  * #2373); any other value there is ADR-007's slice write.

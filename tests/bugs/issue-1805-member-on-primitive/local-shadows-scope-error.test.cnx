@@ -1,0 +1,15 @@
+// test-error
+// test-adr: 057
+// #1805: a local named like a scope shadows it, before a `.` as everywhere
+// (ADR-057 local, scope, global). Motor.get() is a member of a u8.
+scope Motor {
+    public u32 get() {
+        return 7;
+    }
+}
+
+u32 main() {
+    u8 Motor <- 1;
+    u32 a <- Motor.get();
+    return a;
+}

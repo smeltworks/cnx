@@ -1,0 +1,9 @@
+// test-error
+// #1805: an integer has no members, so neither a call nor a field read on one
+// is a member access.
+u32 main() {
+    u32 v <- 5;
+    u32 a <- v.get();
+    u32 b <- v.bar;
+    return a + b;
+}

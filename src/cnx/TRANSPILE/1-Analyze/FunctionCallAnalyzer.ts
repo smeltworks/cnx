@@ -421,7 +421,7 @@ class FunctionCallAnalyzer {
         // CONFIRMED, not at `scopeQualifiedCandidate`, which only proposes one:
         // recording the proposal would credit a cell for a name that went on to
         // resolve somewhere else entirely.
-        AdrProvenance.record("057", line);
+        AdrProvenance.record("057", line, "binds-scope");
         return true;
       }
     }
@@ -598,7 +598,7 @@ class FunctionCallAnalyzer {
         return false;
       }
       if (this.namesExternalFunction(scoped)) {
-        AdrProvenance.record("057", line);
+        AdrProvenance.record("057", line, "binds-scope");
         return true;
       }
     }

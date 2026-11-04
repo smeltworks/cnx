@@ -1,0 +1,26 @@
+// test-execution
+// test-adr: 057
+// #1805 negative control: with no shadow, Motor.get() is the scope's call;
+// with one, global.Motor.get() reaches past the shadow to the scope.
+scope Motor {
+    public u32 get() {
+        return 7;
+    }
+}
+
+u32 readShadowed() {
+    u8 Motor <- 1;
+    return global.Motor.get() + Motor;
+}
+
+u32 main() {
+    u32 direct <- Motor.get();
+    if (direct != 7) {
+        return 1;
+    }
+    u32 shadowed <- readShadowed();
+    if (shadowed != 8) {
+        return 2;
+    }
+    return 0;
+}

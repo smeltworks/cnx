@@ -279,7 +279,7 @@ mut string<8> s <- "hello";
 s[0] <- 'j';      // OK: s is "jello"
 s[0] <- "j";      // OK: the same write
 s[0] <- "jy";     // E0864: "jy" does not fit a string<1>
-s[0] <- 65;       // E0927: an integer is not a character (MISRA C:2012 Rule 10.3)
+s[0] <- 65;       // E0928: an integer is not a character (MISRA C:2012 Rule 10.3)
 ```
 
 A range write `s[i, n] <- value` takes a string or an integer (owner ruling,

@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-944 fixture(s) assert a diagnostic; 930 carry a code.
+954 fixture(s) assert a diagnostic; 940 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -403,6 +403,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-051/safe-division-shape-error.test.cnx                                                          | E0884, E0885                      |
 | tests/adr-051/safe-division-shape-imported-direct.test.cnx                                                | E0884, E0885                      |
 | tests/adr-051/safe-division-shape-imported-transitive.test.cnx                                            | E0884, E0885                      |
+| tests/adr-057/global-var-same-as-scope-error.test.cnx                                                     | E0425                             |
 | tests/adr-058/for-header-length-imported-direct-error.test.cnx                                            | E0867, E0886                      |
 | tests/adr-058/for-header-length-imported-transitive-error.test.cnx                                        | E0867, E0886                      |
 | tests/adr-058/for-header-length-same-file-error.test.cnx                                                  | E0867, E0886                      |
@@ -788,7 +789,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1745-include-directive-agreement/commented-out-header-error.test.cnx                     | E0422                             |
 | tests/bugs/issue-1745-include-directive-agreement/commented-out-include-error.test.cnx                    | E0426                             |
 | tests/bugs/issue-1748-string-char-write/char-write-capacity-error.test.cnx                                | E0864                             |
-| tests/bugs/issue-1748-string-char-write/char-write-not-character-error.test.cnx                           | E0927                             |
+| tests/bugs/issue-1748-string-char-write/char-write-not-character-error.test.cnx                           | E0928                             |
 | tests/bugs/issue-1755-system-headers/fgets-read-only-cortex-m7-error.test.cnx                             | E0896, E0900                      |
 | tests/bugs/issue-1755-system-headers/fgets-read-only-error.test.cnx                                       | E0896, E0900                      |
 | tests/bugs/issue-1755-system-headers/strlen-narrow-error.test.cnx                                         | E0869                             |
@@ -810,6 +811,10 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1802-struct-initializer-target/non-struct-targets.test.cnx                               | E0358                             |
 | tests/bugs/issue-1802-struct-initializer-target/pointer-and-function-types.test.cnx                       | E0358                             |
 | tests/bugs/issue-1802-struct-initializer-target/whole-array-positions.test.cnx                            | E0866                             |
+| tests/bugs/issue-1805-member-on-primitive/local-shadows-scope-error.test.cnx                              | E0927                             |
+| tests/bugs/issue-1805-member-on-primitive/parameter-shadows-scope-error.test.cnx                          | E0927                             |
+| tests/bugs/issue-1805-member-on-primitive/primitive-member-error.test.cnx                                 | E0927                             |
+| tests/bugs/issue-1805-member-on-primitive/string-unknown-member-error.test.cnx                            | E0927                             |
 | tests/bugs/issue-1808-bit-index-width/bit-index-width-error.test.cnx                                      | E0920                             |
 | tests/bugs/issue-1833-miscased-cnx-extension/miscased-include-error.test.cnx                              | E0518                             |
 | tests/bugs/issue-1866-scope-member-is-not-external/bare-call-outside-scope.test.cnx                       | E0422                             |
@@ -876,6 +881,11 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-2354-bool-bit-index/bool-bit-index-error.test.cnx                                        | E0856                             |
 | tests/bugs/issue-2366-void-param-diagnostic/void-param.test.cnx                                           | E0926                             |
 | tests/bugs/issue-2373-string-range-write/string-range-write-capacity-error.test.cnx                       | E0864                             |
+| tests/bugs/issue-2380-same-level-names/enum-beside-scope-error.test.cnx                                   | E0425                             |
+| tests/bugs/issue-2380-same-level-names/function-beside-scope-error.test.cnx                               | E0425                             |
+| tests/bugs/issue-2380-same-level-names/struct-beside-scope-error.test.cnx                                 | E0425                             |
+| tests/bugs/issue-2380-same-level-names/variable-beside-scope-error.test.cnx                               | E0425                             |
+| tests/bugs/issue-2380-same-level-names/variable-beside-struct-error.test.cnx                              | E0425                             |
 | tests/bugs/issue-847-misra-17-7-lowering/bare-intra-scope-discard.test.cnx                                | E0708                             |
 | tests/bugs/issue-847-misra-17-7-lowering/cross-file-scope-discard.test.cnx                                | E0708                             |
 | tests/bugs/issue-847-misra-17-7-lowering/external-c-discard.test.cnx                                      | E0708                             |

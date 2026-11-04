@@ -338,12 +338,12 @@ class ConflictDetector {
   }
 
   /**
-   * Two definitions of the same cnx symbol in the same scope = ERROR.
+   * Two cnx declarations of one name at one level = ERROR, whatever kinds
+   * declare it (#1805 owner ruling: `u8 LED` claims `LED` at file level, so a
+   * `scope LED` beside it redefines it like a second `u8 LED` would).
    *
-   * Issue #817: grouped by scope AND kind — symbols in different scopes do not
-   * conflict (`Foo.enabled` and `Bar.enabled` generate distinct C names), and
-   * symbols of different kinds do not either (a variable `LED` and a scope `LED`
-   * are distinct).
+   * Issue #817: grouped by level -- symbols in different scopes do not
+   * conflict (`Foo.enabled` and `Bar.enabled` generate distinct C names).
    *
    * Extracted from detectConflict so that method stays under SonarCloud's
    * cognitive-complexity limit; the #1333 scope-reopening branch pushed it over.
@@ -356,10 +356,9 @@ class ConflictDetector {
       return null;
     }
 
-    const byScopeAndKind =
-      ConflictDetector.groupCnxSymbolsByScopeAndKind(cnxDefs);
+    const byLevel = ConflictDetector.groupCnxSymbolsByLevel(cnxDefs);
 
-    for (const symbols of byScopeAndKind.values()) {
+    for (const symbols of byLevel.values()) {
       if (symbols.length <= 1) {
         continue;
       }
@@ -374,8 +373,9 @@ class ConflictDetector {
       //
       // Members still conflict normally: they are grouped by the scope's own
       // identity, so two `Lib.useIt` definitions collide whichever block they
-      // were written in.
-      if (symbols[0].kind === "scope") {
+      // were written in. Only scope blocks reopen; any other declaration of
+      // the name beside them is a second definition.
+      if (symbols.every((symbol) => symbol.kind === "scope")) {
         continue;
       }
 
@@ -416,19 +416,19 @@ class ConflictDetector {
   }
 
   /**
-   * Issue #817: Group cnx symbols by scope name and kind.
+   * Issue #817: Group cnx symbols by the level that declares them.
    *
    * Symbols in different scopes don't conflict (Foo.enabled vs Bar.enabled
-   * generate Foo_enabled and Bar_enabled). Symbols with different kinds also
-   * don't conflict (variable LED vs scope LED are distinct).
+   * generate Foo_enabled and Bar_enabled). One level holds one name, whatever
+   * kind declares it (#1805).
    *
    * @param symbols cnx symbols to group (must all be TSymbol)
-   * @returns Map from "scopeName:kind" key to array of symbols
+   * @returns Map from scope path to array of symbols
    */
-  private static groupCnxSymbolsByScopeAndKind(
+  private static groupCnxSymbolsByLevel(
     symbols: TAnySymbol[],
   ): Map<string, TSymbol[]> {
-    const byScopeAndKind = new Map<string, TSymbol[]>();
+    const byLevel = new Map<string, TSymbol[]>();
 
     for (const def of symbols) {
       const tSymbol = def as TSymbol;
@@ -437,16 +437,15 @@ class ConflictDetector {
       // the leaf grouped their members together -- reporting a conflict between
       // symbols that never shared a scope. #1298: the path IS that identity, and
       // is injective for the same reason the C name was.
-      const key = `${tSymbol.scopePath}:${tSymbol.kind}`;
-      const existing = byScopeAndKind.get(key);
+      const existing = byLevel.get(tSymbol.scopePath);
       if (existing) {
         existing.push(tSymbol);
       } else {
-        byScopeAndKind.set(key, [tSymbol]);
+        byLevel.set(tSymbol.scopePath, [tSymbol]);
       }
     }
 
-    return byScopeAndKind;
+    return byLevel;
   }
 }
 
