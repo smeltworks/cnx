@@ -1,0 +1,4 @@
+6:14 error[E0927]: 'v' is a u32 and has no member 'get'
+       help: Only a struct, a bitmap, a scope, a register or a header struct or union has members; any other value answers only its length properties (ADR-058). A local or parameter named like a scope shadows it: reach the scope with global.Scope.member (ADR-057).
+7:14 error[E0927]: 'v' is a u32 and has no member 'bar'
+       help: Only a struct, a bitmap, a scope, a register or a header struct or union has members; any other value answers only its length properties (ADR-058). A local or parameter named like a scope shadows it: reach the scope with global.Scope.member (ADR-057).

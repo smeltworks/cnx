@@ -1,0 +1,11 @@
+// test-error
+// test-adr: 016
+// #2380: a variable and a struct at file level share one namespace.
+u8 X <- 1;
+struct X {
+    u8 a;
+}
+
+u32 main() {
+    return 0;
+}

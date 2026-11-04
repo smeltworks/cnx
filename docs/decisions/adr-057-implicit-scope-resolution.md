@@ -39,13 +39,6 @@ Implement implicit resolution with priority: **local → scope → global**.
 - `this.x` — forces scope-level resolution
 - `global.x` — forces global-level resolution
 
-### Context-Aware Member Access
-
-When an identifier appears before `.` (member access), scope names are prioritized:
-
-- `LED.on()` — if `LED` is a known scope, resolves as scope access
-- Even if a global variable `LED` exists, `LED.on()` calls the scope function
-
 ### Shadowing
 
 Silent shadowing is allowed (matching C behavior):
@@ -62,6 +55,8 @@ scope Counter {
     }
 }
 ```
+
+Shadowing is between levels. One level holds one name, whatever kind declares it: a file-level `u8 LED` and a file-level `scope LED` (or struct, enum, function) are two definitions of `LED` and raise E0425, exactly as two `u8 LED` would (#1805, #2380). Only a second `scope LED` block is not a redefinition; it reopens the scope (#1333).
 
 ### Type positions
 

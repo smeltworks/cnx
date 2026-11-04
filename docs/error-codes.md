@@ -10,18 +10,18 @@ codes that already have a fixture.
 
 ## Error Code Ranges
 
-| Range     | Category                                                                                                                                                                                           | Count   |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| E00xx     | Reserved/Test                                                                                                                                                                                      | 1       |
-| E02xx     | Identifier/Param Naming                                                                                                                                                                            | 5       |
-| E03xx     | Struct Fields/Init                                                                                                                                                                                 | 6       |
-| E04xx     | Symbol Resolution                                                                                                                                                                                  | 16      |
-| E05xx     | Include/Preprocessor                                                                                                                                                                               | 19      |
-| E06xx     | Sizeof Expressions                                                                                                                                                                                 | 3       |
-| E07xx     | Control Flow                                                                                                                                                                                       | 15      |
-| E08xx     | Arithmetic/Array Safety                                                                                                                                                                            | 61      |
-| E09xx     | NULL Safety, Compile-Time Values, Literal Form, String Conversions, Interrupt Masking, `mut` Arguments, `for` Arrays, Config File Names, Environment Variables, Operator Operands, Parameter Lists | 27      |
-| **Total** |                                                                                                                                                                                                    | **153** |
+| Range     | Category                                                                                                                                                                                                          | Count   |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| E00xx     | Reserved/Test                                                                                                                                                                                                     | 1       |
+| E02xx     | Identifier/Param Naming                                                                                                                                                                                           | 5       |
+| E03xx     | Struct Fields/Init                                                                                                                                                                                                | 6       |
+| E04xx     | Symbol Resolution                                                                                                                                                                                                 | 16      |
+| E05xx     | Include/Preprocessor                                                                                                                                                                                              | 19      |
+| E06xx     | Sizeof Expressions                                                                                                                                                                                                | 3       |
+| E07xx     | Control Flow                                                                                                                                                                                                      | 15      |
+| E08xx     | Arithmetic/Array Safety                                                                                                                                                                                           | 61      |
+| E09xx     | NULL Safety, Compile-Time Values, Literal Form, String Conversions, Interrupt Masking, `mut` Arguments, `for` Arrays, Config File Names, Environment Variables, Operator Operands, Parameter Lists, Member Access | 28      |
+| **Total** |                                                                                                                                                                                                                   | **154** |
 
 ---
 
@@ -494,6 +494,12 @@ base: bare, `this.` and `global.`.
 | Code  | Message                              | Help                                                                                                                                       | Source                             |
 | ----- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
 | E0926 | 'void' is not a valid parameter type | cnx has no C-style (void) parameter -- declare a zero-parameter function as foo(), or remove the void parameter if other parameters remain | `PARSE/2-Parse/CnxSourceParser.ts` |
+
+## E0927 — A Member of a Value With No Members (#1805)
+
+| Code  | Message                                                                                                                                                                                                                                                                                                                                                                                                                                         | Help                                                                                                                                                | Source                                        |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| E0927 | A `.name` is applied to a value whose type has no members, and the name is no length property the type answers: anything but a struct, a bitmap, a scope, a register or a header struct or union (an integer, a float, a bool, an enum value, a string, an array). A local or parameter named like a scope shadows it before a `.` as everywhere (ADR-057), so `Motor.get()` on a `u8 Motor` is one. A field a struct does not declare is #2061 | Use a struct, bitmap, scope or register member, or one of the type's length properties (ADR-058); reach a shadowed scope with `global.Scope.member` | `TRANSPILE/1-Analyze/MemberAccessAnalyzer.ts` |
 
 ---
 

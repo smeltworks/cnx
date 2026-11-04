@@ -1,0 +1,2 @@
+13:18 error[E0927]: 'Motor' is a u8 and has no member 'get'
+       help: Only a struct, a bitmap, a scope, a register or a header struct or union has members; any other value answers only its length properties (ADR-058). A local or parameter named like a scope shadows it: reach the scope with global.Scope.member (ADR-057).

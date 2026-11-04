@@ -1,0 +1,16 @@
+// test-error
+// test-adr: 057
+// #1805: a parameter named like a scope shadows it the same way a local does.
+scope Motor {
+    public u32 get() {
+        return 7;
+    }
+}
+
+u32 read(u8 Motor) {
+    return Motor.get();
+}
+
+u32 main() {
+    return read(1);
+}

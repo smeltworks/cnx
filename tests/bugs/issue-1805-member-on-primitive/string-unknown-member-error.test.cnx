@@ -1,0 +1,7 @@
+// test-error
+// #1805: a string has members (its length properties), but not this one.
+u32 main() {
+    string<16> s <- "hello";
+    u32 d <- s.foo;
+    return d;
+}

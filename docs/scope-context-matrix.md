@@ -390,12 +390,16 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | ok     | ok         | n/a         | n/a        |
 | for header         | -         | -      | -          | n/a         | n/a        |
 
-5 linked fixtures with no derivable context:
+9 linked fixtures with no derivable context:
 
 - `adr-016/global-outside-scope-imported-error.test.cnx`
 - `adr-016/this-outside-scope-imported-error.test.cnx`
 - `bugs/issue-1306-nested-scope-diagnostic/cross-file-nested.test.cnx`
 - `bugs/issue-1334-scope-declaration-sites/conflict-across-files.test.cnx`
+- `bugs/issue-2380-same-level-names/enum-beside-scope-error.test.cnx`
+- `bugs/issue-2380-same-level-names/function-beside-scope-error.test.cnx`
+- `bugs/issue-2380-same-level-names/struct-beside-scope-error.test.cnx`
+- `bugs/issue-2380-same-level-names/variable-beside-scope-error.test.cnx`
 - `scope/nested-scope-error.test.cnx`
 
 ## ADR-016 E0381
@@ -1550,6 +1554,16 @@ cell is declared by the ADR that owns it.
 | for header         | -         | -      | -          | n/a         | n/a        |
 
 ## ADR-057 E0425
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | ok        | -      | -          | n/a         | n/a        |
+| top-level function | ok        | -      | -          | n/a         | n/a        |
+| scope member       | -         | -      | -          | n/a         | n/a        |
+| scope method       | -         | -      | -          | n/a         | n/a        |
+| for header         | -         | -      | -          | n/a         | n/a        |
+
+## ADR-057 E0927
 
 | Context            | same file | direct | transitive | from 1 away | thru chain |
 | ------------------ | --------- | ------ | ---------- | ----------- | ---------- |

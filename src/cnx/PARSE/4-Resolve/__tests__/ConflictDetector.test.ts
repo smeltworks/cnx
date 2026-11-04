@@ -172,6 +172,45 @@ describe("ConflictDetector", () => {
       expect(hasConflict("Lib")).toBe(false);
     });
 
+    // #1805: one level holds one name, whatever kind declares it. A variable
+    // `LED` at file level claims `LED`, so a `scope LED` beside it -- even one
+    // reopened in a second block -- is a second definition, not a reopening.
+    it("should detect conflict for a variable beside a same-named scope", () => {
+      cnx.push({
+        ...TestSymbolUtils.base({
+          kind: "variable",
+          name: "LED",
+          scopePath: "",
+          sourceFile: "test.cnx",
+          span: TestSourceSpan.at(1),
+          sourceLanguage: ESourceLanguage.Cnx,
+          visibility: "public",
+        }),
+        type: TTypeUtils.createPrimitive("u8"),
+        isArray: false,
+        isConst: false,
+        isAtomic: false,
+        isVolatile: false,
+        overflowBehavior: "clamp",
+      });
+      for (const line of [3, 10]) {
+        cnx.push({
+          ...TestSymbolUtils.base({
+            kind: "scope",
+            name: "LED",
+            scopePath: "",
+            sourceFile: "test.cnx",
+            span: TestSourceSpan.at(line),
+            sourceLanguage: ESourceLanguage.Cnx,
+            visibility: "public",
+          }),
+          members: [],
+        } as unknown as TSymbol);
+      }
+
+      expect(hasConflict("LED")).toBe(true);
+    });
+
     // The negative control: reopening composes a scope, it does not relax member
     // uniqueness. Two definitions of the same member collide whichever block they
     // were written in, because members group by the scope's own identity.
