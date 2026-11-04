@@ -3062,8 +3062,6 @@ class CodeGenWalker {
    */
   private renderCharacterAt(form: TStringValueForm): string {
     switch (form.kind) {
-      case "literal":
-        invariant(false, "2.3 writes a literal's characters directly");
       case "substring":
         return this.renderSubstringStart(form.part);
       case "copy": {
@@ -3072,10 +3070,11 @@ class CodeGenWalker {
           form.value.kind === "identifier" || form.value.kind === "postfix";
         return bare ? `${code}[0]` : `(${code})[0]`;
       }
+      case "literal":
       case "concat":
         invariant(
           false,
-          "2.2 stages every concatenation written into characters (#2374)",
+          "2.3 writes a literal's characters directly, and 2.2 stages every concatenation written into characters (#2374)",
         );
     }
   }
