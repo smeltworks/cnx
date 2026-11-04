@@ -66,7 +66,7 @@ class ComplianceAnnotations {
    */
   static readonly RANGE_READ_APART: IComplianceAnnotation = {
     citation: `${ComplianceAnnotations.MISRA} 19.1`,
-    what: "string range source evaluated once and read into a temporary, then written",
+    what: "string range source built in a temporary, then its characters written",
     why: "writing a character at a time would overwrite characters a later write still reads when the source overlaps the range",
   };
 

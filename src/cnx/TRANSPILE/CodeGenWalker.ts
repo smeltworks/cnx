@@ -2478,14 +2478,7 @@ class CodeGenWalker {
         capacity !== undefined && form !== undefined,
         "2.2 planned each string field it copies",
       );
-      const target = `${temp}.${field.name}`;
-      if (form.kind === "copy" || form.kind === "literal") {
-        const whole = form.kind === "copy" ? form.value : form.literal;
-        return [
-          StringUtils.copy(target, this.renderExpression(whole), capacity),
-        ];
-      }
-      return StringUtils.build(target, capacity, this.renderStringParts(form));
+      return this.renderFill(`${temp}.${field.name}`, capacity, form);
     });
     const inits = fields.map((f) => `.${f.fieldName} = ${f.value}`);
     this.host.state.pendingTempDeclarations.push(
@@ -3064,8 +3057,12 @@ class CodeGenWalker {
         return StringUtils.characterAt(form.literal.written, 0);
       case "substring":
         return this.renderSubstringStart(form.part);
-      case "copy":
-        return `${this.renderSourcePointer(form)}[0]`;
+      case "copy": {
+        const code = this.renderExpression(form.value);
+        const bare =
+          form.value.kind === "identifier" || form.value.kind === "postfix";
+        return bare ? `${code}[0]` : `(${code})[0]`;
+      }
       case "concat":
         invariant(
           false,
@@ -3085,30 +3082,12 @@ class CodeGenWalker {
     return `${source}[${this.renderExpression(part.start)}]`;
   }
 
-  /** #2373: a pointer to a written string other than a literal, evaluated once */
-  private renderSourcePointer(form: TStringValueForm): string {
-    switch (form.kind) {
-      case "substring":
-        return `&${this.renderSubstringStart(form.part)}`;
-      case "copy": {
-        const code = this.renderExpression(form.value);
-        const bare =
-          form.value.kind === "identifier" || form.value.kind === "postfix";
-        return bare ? code : `(${code})`;
-      }
-      case "literal":
-      case "concat":
-        invariant(
-          false,
-          "a literal is written by its characters, and 2.2 plans no concatenation as a character write (#2374)",
-        );
-    }
-  }
-
   /**
-   * #2373: a string copied into a range `s[i, n]`, one character at a time.
-   * A literal is written directly. Any other source is evaluated once and read
-   * whole into a temporary first, because it can be the range written (review).
+   * #2373: a string copied into a range `s[i, n]`, one character at a time,
+   * only as many as it holds: the rest of the range is left as it was. A
+   * literal is written directly. Any other source is built whole into a
+   * temporary first, as any string is, because it can be the range written
+   * and is evaluated once (review).
    */
   private renderRangeCopy(
     site: IAssignmentSyntax,
@@ -3134,17 +3113,36 @@ class CodeGenWalker {
         )
         .join("\n");
     }
-    const source = this.host.state.getNextTempVarName();
-    const read = this.host.state.getNextTempVarName();
-    const characters = indexes.map((k) => `${source}[${k}]`).join(", ");
+    const buffer = this.host.state.getNextTempVarName();
+    const length = this.host.state.getNextTempVarName();
+    const k = this.host.state.getNextTempVarName();
+    const position = offset === 0 ? k : `${offset}U + ${k}`;
     return [
       ComplianceAnnotations.render(ComplianceAnnotations.RANGE_READ_APART),
       "{",
-      `    const char* const ${source} = ${this.renderSourcePointer(form)};`,
-      `    const char ${read}[${write.count}] = {${characters}};`,
-      ...indexes.map((k) => `    ${at(k)} = ${read}[${k}];`),
+      `    char ${buffer}[${write.count + 1}] = "";`,
+      ...this.renderFill(buffer, write.count, form).map(
+        (line) => `    ${line}`,
+      ),
+      `    const uint32_t ${length} = (uint32_t) strlen(${buffer});`,
+      `    for (uint32_t ${k} = 0U; ${k} < ${length}; ${k}++) {`,
+      `        ${base}[${position}] = ${buffer}[${k}];`,
+      "    }",
       "}",
     ].join("\n");
+  }
+
+  /** A string written into `buffer` at `capacity`: copied whole, or built from its parts */
+  private renderFill(
+    buffer: string,
+    capacity: number,
+    form: TStringValueForm,
+  ): string[] {
+    if (form.kind === "copy" || form.kind === "literal") {
+      const whole = form.kind === "copy" ? form.value : form.literal;
+      return [StringUtils.copy(buffer, this.renderExpression(whole), capacity)];
+    }
+    return StringUtils.build(buffer, capacity, this.renderStringParts(form));
   }
 
   /** A concatenation's or a substring's parts as generated C (ADR-045) */

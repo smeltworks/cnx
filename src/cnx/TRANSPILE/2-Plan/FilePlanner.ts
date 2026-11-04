@@ -1145,9 +1145,11 @@ class FilePlanner {
       selfIncludeAdded,
     );
     const decidedCTypes = new Set<string>();
+    const characterWrites = this.planCharacterWrites(program);
     const stringCopies = this.planStringCopies(
       program,
       valuePositions,
+      characterWrites,
       decidedCTypes,
     );
     const inlinedConsts = this.planInlinedConsts(program, decidedCTypes);
@@ -1327,7 +1329,7 @@ class FilePlanner {
       clampOps: clamps.ops,
       sliceSources,
       stringCopies: stringCopies.copies,
-      characterWrites: this.planCharacterWrites(program),
+      characterWrites,
       stringValueForms: stringCopies.forms,
       substringCounts: this.planSubstringCounts(stringCopies.forms),
       stringFields: stringCopies.fields,
@@ -2111,8 +2113,8 @@ class FilePlanner {
   /**
    * #1748: each `<-` that writes a string into one character of a
    * `string<N>`, by the value's form, as `CharacterWrite` --
-   * which 2.1's E0927 and E0864 read -- decides it. A concatenation is not
-   * lowered here (#2374).
+   * which 2.1's E0927 and E0864 read -- decides it. A concatenation is
+   * lowered into a range (#2373), not into one character (#2374).
    */
   private planCharacterWrites(
     program: IProgramSyntax,
@@ -2125,7 +2127,7 @@ class FilePlanner {
       const span = OperandTyper.characterSpan(site.target, typing);
       if (write !== "string" || span === null) continue;
       const form = StringValueForm.of(site.value, typing);
-      if (form.kind === "concat") continue;
+      if (form.kind === "concat" && !span.range) continue;
       const count = span.range
         ? Math.min(span.count, this.characterCount(form, span.count))
         : 1;
@@ -2167,6 +2169,7 @@ class FilePlanner {
   private planStringCopies(
     program: IProgramSyntax,
     valuePositions: IValuePositions | null,
+    characterWrites: ReadonlyMap<IAssignmentSyntax, IPlannedCharacterWrite>,
     cTypes: Set<string>,
   ): {
     readonly copies: ReadonlyMap<IAssignmentSyntax, number>;
@@ -2184,6 +2187,13 @@ class FilePlanner {
       AdrProvenance.record("045", site.operatorSpan.line, "string-copy");
       copies.set(site, capacity);
       forms.set(site.value, StringValueForm.of(site.value, typing));
+    }
+    // #2373: a string other than a literal is built apart before it is
+    // written into a range, and its length counted in `uint32_t`
+    for (const [site, write] of characterWrites) {
+      if (!write.range || write.form.kind === "literal") continue;
+      forms.set(site.value, write.form);
+      cTypes.add("uint32_t");
     }
     FilePlanner.planStringInits(program, typing, forms);
     const builtArguments = FilePlanner.planStringArguments(

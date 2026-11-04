@@ -1,0 +1,68 @@
+// test-execution
+// Issue #2373 review: a string shorter than its range writes only its own
+// characters and leaves the rest of the range as it was (owner ruling,
+// 2026-11-04), whether it is a variable, a substring, a concatenation or a
+// literal. A concatenation that fills its range is copied in too. Each
+// result is checked with its own return code.
+
+mut string<8> v;
+mut string<8> u;
+mut string<8> c;
+mut string<8> l;
+mut string<8> f;
+string<4> t <- "je";
+string<4> one <- "j";
+
+u32 main() {
+    v <- "hello";
+    v[0, 4] <- t;
+    u <- "hello";
+    u[0, 2] <- one[0, 2];
+    c <- "hello";
+    c[0, 4] <- "j" + "e";
+    l <- "hello";
+    l[0, 4] <- "je";
+    f <- "hello";
+    f[0, 2] <- "j" + "e";
+
+    if (v[1] != 'e') {
+        return 1;
+    }
+    if (v[2] != 'l') {
+        return 2;
+    }
+    if (v[3] != 'l') {
+        return 3;
+    }
+    if (v.value_char_count != 5) {
+        return 4;
+    }
+    if (u[0] != 'j') {
+        return 5;
+    }
+    if (u[1] != 'e') {
+        return 6;
+    }
+    if (c[2] != 'l') {
+        return 7;
+    }
+    if (c[3] != 'l') {
+        return 8;
+    }
+    if (c.value_char_count != 5) {
+        return 9;
+    }
+    if (l[2] != 'l') {
+        return 10;
+    }
+    if (f[0] != 'j') {
+        return 11;
+    }
+    if (f[1] != 'e') {
+        return 12;
+    }
+    if (f.value_char_count != 5) {
+        return 13;
+    }
+    return 0;
+}

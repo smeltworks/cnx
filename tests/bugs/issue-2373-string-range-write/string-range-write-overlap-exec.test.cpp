@@ -61,31 +61,34 @@ uint32_t nextStart(void) {
 
 int main(void) {
     cnx_string_copy(s, "abcdefgh", 8U);
-    /* MISRA C:2012 Rule 19.1: string range source evaluated once and read into a temporary, then written (writing a character at a time would overwrite characters a later write still reads when the source overlaps the range). */
+    /* MISRA C:2012 Rule 19.1: string range source built in a temporary, then its characters written (writing a character at a time would overwrite characters a later write still reads when the source overlaps the range). */
     {
-        const char* const cnx_tmp0 = &s[0U];
-        const char cnx_tmp1[3] = {cnx_tmp0[0], cnx_tmp0[1], cnx_tmp0[2]};
-        s[1] = cnx_tmp1[0];
-        s[2] = cnx_tmp1[1];
-        s[3] = cnx_tmp1[2];
+        char cnx_tmp0[4] = "";
+        cnx_string_copy(cnx_tmp0, s + 0U, 3U);
+        const uint32_t cnx_tmp1 = (uint32_t) strlen(cnx_tmp0);
+        for (uint32_t cnx_tmp2 = 0U; cnx_tmp2 < cnx_tmp1; cnx_tmp2++) {
+            s[1U + cnx_tmp2] = cnx_tmp0[cnx_tmp2];
+        }
     }
     cnx_string_copy(b, "abcdefgh", 8U);
-    /* MISRA C:2012 Rule 19.1: string range source evaluated once and read into a temporary, then written (writing a character at a time would overwrite characters a later write still reads when the source overlaps the range). */
+    /* MISRA C:2012 Rule 19.1: string range source built in a temporary, then its characters written (writing a character at a time would overwrite characters a later write still reads when the source overlaps the range). */
     {
-        const char* const cnx_tmp2 = &b[1U];
-        const char cnx_tmp3[3] = {cnx_tmp2[0], cnx_tmp2[1], cnx_tmp2[2]};
-        b[0] = cnx_tmp3[0];
-        b[1] = cnx_tmp3[1];
-        b[2] = cnx_tmp3[2];
+        char cnx_tmp3[4] = "";
+        cnx_string_copy(cnx_tmp3, b + 1U, 3U);
+        const uint32_t cnx_tmp4 = (uint32_t) strlen(cnx_tmp3);
+        for (uint32_t cnx_tmp5 = 0U; cnx_tmp5 < cnx_tmp4; cnx_tmp5++) {
+            b[cnx_tmp5] = cnx_tmp3[cnx_tmp5];
+        }
     }
     cnx_string_copy(c, "abcdefgh", 8U);
-    /* MISRA C:2012 Rule 19.1: string range source evaluated once and read into a temporary, then written (writing a character at a time would overwrite characters a later write still reads when the source overlaps the range). */
+    /* MISRA C:2012 Rule 19.1: string range source built in a temporary, then its characters written (writing a character at a time would overwrite characters a later write still reads when the source overlaps the range). */
     {
-        const char* const cnx_tmp4 = &t[nextStart()];
-        const char cnx_tmp5[3] = {cnx_tmp4[0], cnx_tmp4[1], cnx_tmp4[2]};
-        c[0] = cnx_tmp5[0];
-        c[1] = cnx_tmp5[1];
-        c[2] = cnx_tmp5[2];
+        char cnx_tmp6[4] = "";
+        cnx_string_copy(cnx_tmp6, t + nextStart(), 3U);
+        const uint32_t cnx_tmp7 = (uint32_t) strlen(cnx_tmp6);
+        for (uint32_t cnx_tmp8 = 0U; cnx_tmp8 < cnx_tmp7; cnx_tmp8++) {
+            c[cnx_tmp8] = cnx_tmp6[cnx_tmp8];
+        }
     }
     if (s[0U] != 'a') {
         return 1U;
