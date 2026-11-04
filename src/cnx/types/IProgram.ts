@@ -190,7 +190,7 @@ interface IProgram {
    * does -- or null when none does. A header naming the macro carries that
    * file's C includes, since C sees a `.cnx`'s headers only through them.
    */
-  headerMacroIncluder(sourceFile: string, name: string): string | null;
+  headerMacroIncludingFile(sourceFile: string, name: string): string | null;
 
   /**
    * #1619: the C type the run's header compiler gives a `<stdint.h>` or

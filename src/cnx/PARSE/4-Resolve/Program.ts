@@ -312,7 +312,10 @@ class Program {
         foreign.macros.get(sourceFile)?.get(name) ?? null,
       headerMacrosUnread: (sourceFile: string): boolean =>
         foreign.macrosUnread.has(sourceFile),
-      headerMacroIncluder: (sourceFile: string, name: string): string | null =>
+      headerMacroIncludingFile: (
+        sourceFile: string,
+        name: string,
+      ): string | null =>
         // The closure lists the file itself first, then its includes
         // depth-first, so the nearest definer wins
         [...(visibleFiles.get(sourceFile) ?? [sourceFile])].find(

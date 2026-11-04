@@ -55,16 +55,16 @@ function array(
 /** A program where each macro is defined by the named file's includes */
 const definedBy = (macros: Record<string, string>): IProgram =>
   ({
-    headerMacroIncluder: (_sourceFile: string, macro: string) =>
+    headerMacroIncludingFile: (_sourceFile: string, macro: string) =>
       macros[macro] ?? null,
   }) as unknown as IProgram;
 
-describe("HeaderUserIncludes.macroIncluders", () => {
+describe("HeaderUserIncludes.macroIncludingFiles", () => {
   it("names the file that reached a macro the dimension spells", () => {
     const x = array(["BUF_SIZE + 1"], [plusOne(name("BUF_SIZE"))]);
 
     expect(
-      HeaderUserIncludes.macroIncluders(
+      HeaderUserIncludes.macroIncludingFiles(
         [x],
         definedBy({ BUF_SIZE: "mid.cnx" }),
         "main.cnx",
@@ -79,7 +79,7 @@ describe("HeaderUserIncludes.macroIncluders", () => {
     );
 
     expect(
-      HeaderUserIncludes.macroIncluders(
+      HeaderUserIncludes.macroIncludingFiles(
         [x],
         definedBy({ ROWS: "mid.cnx", COLS: "mid.cnx" }),
         "main.cnx",
@@ -91,7 +91,7 @@ describe("HeaderUserIncludes.macroIncluders", () => {
     const x = array(["BUF_SIZE"], [name("BUF_SIZE")]);
 
     expect(
-      HeaderUserIncludes.macroIncluders(
+      HeaderUserIncludes.macroIncludingFiles(
         [x],
         definedBy({ BUF_SIZE: "main.cnx" }),
         "main.cnx",
@@ -103,7 +103,7 @@ describe("HeaderUserIncludes.macroIncluders", () => {
     const x = array([8], [name("BUF_SIZE")]);
 
     expect(
-      HeaderUserIncludes.macroIncluders(
+      HeaderUserIncludes.macroIncludingFiles(
         [x],
         definedBy({ BUF_SIZE: "mid.cnx" }),
         "main.cnx",

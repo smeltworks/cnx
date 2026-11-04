@@ -1228,7 +1228,7 @@ scope Gauge {
 
     it("is a file the include reaches, however many hops away", () => {
       expect(
-        program({ "mid.cnx": ["BUF_SIZE"] }).headerMacroIncluder(
+        program({ "mid.cnx": ["BUF_SIZE"] }).headerMacroIncludingFile(
           "main.cnx",
           "BUF_SIZE",
         ),
@@ -1240,7 +1240,7 @@ scope Gauge {
         program({
           "main.cnx": ["BUF_SIZE"],
           "mid.cnx": ["BUF_SIZE"],
-        }).headerMacroIncluder("main.cnx", "BUF_SIZE"),
+        }).headerMacroIncludingFile("main.cnx", "BUF_SIZE"),
       ).toBe("main.cnx");
     });
 
@@ -1249,15 +1249,15 @@ scope Gauge {
         program({
           "outer.cnx": ["BUF_SIZE"],
           "mid.cnx": ["BUF_SIZE"],
-        }).headerMacroIncluder("main.cnx", "BUF_SIZE"),
+        }).headerMacroIncludingFile("main.cnx", "BUF_SIZE"),
       ).toBe("outer.cnx");
     });
 
     it("is none when no file the include reaches defines it", () => {
       const built = program({ "main.cnx": ["OTHER"] });
-      expect(built.headerMacroIncluder("main.cnx", "BUF_SIZE")).toBeNull();
+      expect(built.headerMacroIncludingFile("main.cnx", "BUF_SIZE")).toBeNull();
       // An include runs one way: mid does not see what main includes
-      expect(built.headerMacroIncluder("mid.cnx", "OTHER")).toBeNull();
+      expect(built.headerMacroIncludingFile("mid.cnx", "OTHER")).toBeNull();
     });
   });
 
@@ -1329,7 +1329,7 @@ scope Gauge {
         "functionParamLists",
         "headerIntegerType",
         "headerMacro",
-        "headerMacroIncluder",
+        "headerMacroIncludingFile",
         "headerMacrosUnread",
         "isOpaqueType",
         "isScopeTypeVisibleFrom",

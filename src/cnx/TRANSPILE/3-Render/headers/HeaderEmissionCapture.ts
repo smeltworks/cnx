@@ -99,13 +99,13 @@ class HeaderEmissionCapture {
       ...new Set([
         ...includes.userIncludes,
         ...(cHeadersIncluded ? includes.cHeaderIncludes : []),
-        ...HeaderUserIncludes.macroIncluders(
+        ...HeaderUserIncludes.macroIncludingFiles(
           exportedSymbols,
           program,
           sourcePath,
-        ).flatMap((includer) =>
+        ).flatMap((includingFile) =>
           HeaderEmissionCapture.cHeadersSpelledHere(
-            request.includes.get(includer),
+            request.includes.get(includingFile),
             spelled,
           ),
         ),
@@ -281,17 +281,17 @@ class HeaderEmissionCapture {
    * find is kept as written. In source order.
    */
   private static cHeadersSpelledHere(
-    includer: IFileIncludes | undefined,
+    includingFile: IFileIncludes | undefined,
     spelled: ReadonlyMap<string, string>,
   ): string[] {
     invariant(
-      includer !== undefined,
+      includingFile !== undefined,
       "1.1 Discover records the includes of every file in a closure",
     );
     const directives: string[] = [];
-    for (const [directive, kind] of includer.kinds) {
+    for (const [directive, kind] of includingFile.kinds) {
       if (kind !== EFileType.CHeader && kind !== EFileType.CppHeader) continue;
-      const header = includer.resolutions.get(directive) ?? null;
+      const header = includingFile.resolutions.get(directive) ?? null;
       directives.push(
         header === null ? directive : (spelled.get(header) ?? directive),
       );

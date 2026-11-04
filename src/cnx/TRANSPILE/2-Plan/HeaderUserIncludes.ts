@@ -98,26 +98,26 @@ class HeaderUserIncludes {
    * Nearest file first; the source itself is never one, since `needed` already
    * carries its own includes.
    */
-  static macroIncluders(
+  static macroIncludingFiles(
     symbols: readonly TSymbol[],
     program: IProgram,
     sourceFile: string,
   ): string[] {
-    const includers = new Set<string>();
+    const includingFiles = new Set<string>();
     for (const symbol of symbols) {
       for (const expr of HeaderUserIncludes.macroDimensionExprs(symbol)) {
         for (const name of ConstExprNames.bare(expr)) {
-          const includer = program.headerMacroIncluder(
+          const includingFile = program.headerMacroIncludingFile(
             sourceFile,
             name.path[0],
           );
-          if (includer !== null && includer !== sourceFile) {
-            includers.add(includer);
+          if (includingFile !== null && includingFile !== sourceFile) {
+            includingFiles.add(includingFile);
           }
         }
       }
     }
-    return [...includers];
+    return [...includingFiles];
   }
 
   /**
