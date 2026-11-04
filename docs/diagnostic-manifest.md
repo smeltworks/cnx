@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-954 fixture(s) assert a diagnostic; 940 carry a code.
+955 fixture(s) assert a diagnostic; 941 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -886,6 +886,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-2380-same-level-names/struct-beside-scope-error.test.cnx                                 | E0425                             |
 | tests/bugs/issue-2380-same-level-names/variable-beside-scope-error.test.cnx                               | E0425                             |
 | tests/bugs/issue-2380-same-level-names/variable-beside-struct-error.test.cnx                              | E0425                             |
+| tests/bugs/issue-2385-string-span-write/span-write-bounds-error.test.cnx                                  | E0860, E0861                      |
 | tests/bugs/issue-847-misra-17-7-lowering/bare-intra-scope-discard.test.cnx                                | E0708                             |
 | tests/bugs/issue-847-misra-17-7-lowering/cross-file-scope-discard.test.cnx                                | E0708                             |
 | tests/bugs/issue-847-misra-17-7-lowering/external-c-discard.test.cnx                                      | E0708                             |

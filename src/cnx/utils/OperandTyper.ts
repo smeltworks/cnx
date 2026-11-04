@@ -38,6 +38,7 @@ import type IChainTyping from "../types/IChainTyping";
 import type IOperandType from "../types/IOperandType";
 import type TOverflowBehavior from "../types/TOverflowBehavior";
 import type ITargetDescription from "../types/ITargetDescription";
+import type ICharacterSpan from "../types/ICharacterSpan";
 import type ITypingContext from "../types/ITypingContext";
 import type TEssentialCategory from "../types/TEssentialCategory";
 import type TType from "../types/TType";
@@ -670,29 +671,32 @@ class OperandTyper {
   }
 
   /**
-   * #1748, #2373: the characters an assignment target writes in a scalar
-   * `string<N>` -- one for `s[i]`, `n` for a range `s[i, n]` whose length
-   * folds -- or null when it writes none, as `CharacterWrite` asks it
+   * #1748, #2373, #2385: the characters an assignment target writes in a
+   * scalar `string<N>`, or null when it writes none. `s[i]` is `s[i, 1]`
+   * (owner ruling, 2026-11-05), so both are one span: where it starts, how
+   * many characters it holds (a range's length must fold), and the capacity
+   * of the string it is in. Every later decision reads the span, never the
+   * subscript's spelling.
    */
   static characterSpan(
     target: TExpression,
     ctx: ITypingContext,
-  ): { readonly count: number; readonly range: boolean } | null {
+  ): ICharacterSpan | null {
     const step = OperandTyper.walkChain(target, ctx).typing.steps.at(-1);
-    if (
-      step === undefined ||
-      OperandTyper.scalarStringCapacity(step.before) === null
-    ) {
-      return null;
-    }
-    if (step.subscript === "array_element") return { count: 1, range: false };
-    if (step.subscript !== "array_slice" || target.kind !== "postfix") {
-      return null;
-    }
+    const capacity =
+      step === undefined
+        ? null
+        : OperandTyper.scalarStringCapacity(step.before);
+    if (capacity === null || target.kind !== "postfix") return null;
     const last = target.ops.at(-1);
     if (last?.kind !== "subscript") return null;
+    const start = last.indexes[0];
+    if (step?.subscript === "array_element") {
+      return { start, count: 1, capacity };
+    }
+    if (step?.subscript !== "array_slice") return null;
     const count = OperandTyper.foldedWidth(last.indexes[1], ctx);
-    return count === null ? null : { count, range: true };
+    return count === null ? null : { start, count, capacity };
   }
 
   /**

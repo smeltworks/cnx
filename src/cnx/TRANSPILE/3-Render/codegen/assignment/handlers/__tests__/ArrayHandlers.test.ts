@@ -489,44 +489,6 @@ describe("ArrayHandlers", () => {
       expect(result).toBe("arrI[0] = (int32_t)(uint32_t)(value);");
     });
 
-    it("generates double-cast char writes for a string slice (MISRA 10.8)", () => {
-      mockGetExpressionType.mockReturnValue("u16");
-      HandlerTestUtils.declareTypes(state, [
-        [
-          "str",
-          {
-            isString: true,
-            stringCapacity: 32,
-            isArray: false,
-            baseType: "string",
-          },
-        ],
-      ]);
-      HandlerTestUtils.setupMockGenerator(state, {
-        tryEvaluateConstant: vi
-          .fn()
-          .mockReturnValueOnce(5)
-          .mockReturnValueOnce(2),
-      });
-      const ctx = createMockContext({
-        identifiers: ["str"],
-        ...HandlerTestUtils.subscriptsOf([
-          { mockValue: "5", start: { line: 1 } } as never,
-          { mockValue: "2", start: { line: 1 } } as never,
-        ]),
-        generatedValue: "data",
-      });
-
-      const result = getHandler()!(ctx);
-
-      expect(result).toBe(
-        `${sliceComment("char", "uint16_t")}\n` +
-          "const uint16_t cnx_tmp0 = (uint16_t)(data);\n" +
-          "str[5] = (char)(uint8_t)(cnx_tmp0);\n" +
-          "str[6] = (char)(uint8_t)(cnx_tmp0 >> 8U);",
-      );
-    });
-
     it("sizes the temp to the slice length for an unresolved source type", () => {
       mockGetExpressionType.mockReturnValue(null); // e.g. a computed expression
       HandlerTestUtils.declareTypes(state, [
@@ -697,7 +659,7 @@ describe("ArrayHandlers", () => {
       });
 
       expect(() => getHandler()!(ctx)).toThrow(
-        "a sliced buffer has an integer or string element type",
+        "a sliced array has an integer element type",
       );
     });
 

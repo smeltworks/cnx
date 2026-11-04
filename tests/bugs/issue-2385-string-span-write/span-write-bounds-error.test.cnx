@@ -1,0 +1,14 @@
+// test-error
+// Issue #2385: s[i] is s[i, 1] (owner ruling, 2026-11-05), so one character
+// is bounds-checked as a range is (E0860), and an integer split into it must
+// fit its byte (E0861). A string<8> is char[9]: index 8 is its terminator.
+// NEGATIVE CONTROL -- the last index and a byte that fits are accepted.
+
+mut string<8> s;
+
+void main() {
+    s[8] <- 'x';
+    s[0] <- 255;
+    s[9] <- 'x';
+    s[0] <- 300;
+}

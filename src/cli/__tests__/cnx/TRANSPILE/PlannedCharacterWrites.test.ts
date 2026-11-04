@@ -41,11 +41,69 @@ describe("2.2 plans every string written into one character", () => {
     );
     expect(code).toContain("s[0] = 'x';");
     expect(code).toContain("s[1] = '\\n';");
-    expect(code).toContain("s[2] = '\\0';");
-    expect(code).toContain("s[3] = one[0];");
-    expect(code).toContain("s[4] = t[1U];");
-    expect(code).toMatch(/s\[5\] = \(.*"a".*"b".*\)\[0\];/);
+    // #2385: an empty string holds no character, so it writes none
+    expect(code).not.toContain("s[2] =");
+    expect(code).toContain(
+      "const char cnx_tmp0 = one[0];\n        if (cnx_tmp0 != '\\0') {\n            s[3] = cnx_tmp0;",
+    );
+    expect(code).toContain("const char cnx_tmp1 = t[1U];");
+    expect(code).toContain("s[4] = cnx_tmp1;");
+    expect(code).toMatch(/const char cnx_tmp2 = \(.*"a".*"b".*\)\[0\];/);
     expect(code).toContain("s[6] = t[0U];");
+  });
+
+  it("writes s[i] as s[i, 1], for every kind of value (#2385)", async () => {
+    const code = await generate(
+      [
+        "#pragma target host",
+        'mut string<8> s <- "hello";',
+        'string<1> e <- "";',
+        "void f() {",
+        "    s[0] <- 65;",
+        "    s[1, 1] <- 65;",
+        "    s[2, 1] <- 'x';",
+        '    s[3] <- "";',
+        '    s[4, 1] <- "";',
+        "    s[5] <- e;",
+        "    s[6, 1] <- e;",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    expect(code).toContain("s[0] = (char)(uint8_t)(65);");
+    expect(code).toContain("s[1] = (char)(uint8_t)(65);");
+    expect(code).toContain("s[2] = 'x';");
+    expect(code).not.toContain("s[3] =");
+    expect(code).not.toContain("s[4] =");
+    expect(code).toContain("s[5] = cnx_tmp0;");
+    expect(code).toContain("s[6] = cnx_tmp1;");
+  });
+
+  it("reads a runtime start once when more than one character lands from it (#2385)", async () => {
+    const code = await generate(
+      [
+        "#pragma target host",
+        'mut string<8> s <- "hello";',
+        "u32 at() {",
+        "    return 1;",
+        "}",
+        "void f(u32 i) {",
+        "    s[i] <- 'x';",
+        '    s[at(), 2] <- "ab";',
+        "    s[i, 2] <- 0x4241;",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    expect(code).toContain("s[i] = 'x';");
+    expect(code).toContain(
+      "const uint32_t cnx_tmp0 = at();\n        s[cnx_tmp0] = 'a';\n        s[cnx_tmp0 + 1U] = 'b';",
+    );
+    expect(code.match(/at\(\)/g)).toHaveLength(1);
+    expect(code).toContain("s[cnx_tmp1] = (char)(uint8_t)(cnx_tmp2);");
+    expect(code).toContain(
+      "s[cnx_tmp1 + 1U] = (char)(uint8_t)(cnx_tmp2 >> 8U);",
+    );
   });
 
   it("copies a string into a range, one character at a time (#2373)", async () => {

@@ -525,6 +525,8 @@ The compile-time-constant requirement is a deliberate safety design choice. An e
 
 Runtime-dependent offsets or lengths are intentionally rejected, because the element-span bound cannot be proven at compile time.
 
+The characters of a `string<N>` are the exception (owner ruling, 2026-11-05, #2385): `s[i]` is `s[i, 1]` there, and one character has always taken a runtime index, so a string range takes a runtime offset too. Its length must still be a compile-time constant, and an integer written into it is still split into bytes as above.
+
 **Named Compile-Time Offsets**
 
 When a struct layout is fixed, the offsets are known at compile time. Use read-only bindings (no `mut`, ADR-071) to keep the writes readable while preserving compile-time safety:

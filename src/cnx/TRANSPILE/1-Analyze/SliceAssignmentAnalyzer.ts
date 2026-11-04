@@ -40,6 +40,8 @@ import StatementNodes from "../../utils/StatementNodes";
 import TYPE_WIDTH from "../../types/TYPE_WIDTH";
 import OperandTyper from "../../utils/OperandTyper";
 import CharacterWrite from "../../utils/CharacterWrite";
+import AssignmentTarget from "../../utils/AssignmentTarget";
+import type ICharacterSpan from "../../types/ICharacterSpan";
 import LiteralUtils from "../../utils/LiteralUtils";
 import ISliceAssignmentError from "./types/ISliceAssignmentError";
 import ConstantExpression from "./helpers/ConstantExpression";
@@ -67,6 +69,11 @@ class SliceAssignmentListener {
   /** `buf[offset, length] <- value`, in a statement or a `for` header */
   public checkSite(site: IAssignmentSyntax): void {
     if (site.operator !== "<-") return;
+    const span = OperandTyper.characterSpan(site.target, this.context);
+    if (span !== null) {
+      this.checkSpan(site, span);
+      return;
+    }
     const target = site.target;
     if (target.kind !== "postfix") return;
     // `this.buf[...]` and `global.buf[...]` name the buffer after the root
@@ -238,6 +245,44 @@ class SliceAssignmentListener {
     return { elementBytes: bits / 8, capacity };
   }
 
+  /**
+   * #2385: the characters of a `string<N>` written -- `s[i]` is `s[i, 1]`
+   * (owner ruling, 2026-11-05) -- fit the string, and an integer split into
+   * them fits as a slice's does. A runtime start is not checked here, as one
+   * character's never was (owner ruling, 2026-11-05).
+   */
+  private checkSpan(site: IAssignmentSyntax, span: ICharacterSpan): void {
+    const name = AssignmentTarget.parts(site.target).identifier ?? "";
+    const offset = this.constantOf(span.start);
+    if (offset !== undefined && offset < 0) {
+      this.found.push({
+        code: "E0860",
+        span: span.start.span,
+        message: `Slice assignment offset cannot be negative: ${offset}`,
+        helpText:
+          "An offset is an element index into the buffer, counted from zero.",
+      });
+      return;
+    }
+    // A string buffer is `char[N + 1]`; the terminator is part of it
+    const capacity = span.capacity + STRING_TERMINATOR_BYTES;
+    if (offset !== undefined && offset + span.count > capacity) {
+      this.found.push({
+        code: "E0860",
+        span: span.start.span,
+        message: `Slice assignment out of bounds: offset(${offset}) + ${span.count} element(s) = ${offset + span.count} exceeds buffer capacity(${capacity}) for '${name}'`,
+        helpText:
+          "The offset is an element index and the capacity an element count, so the span is compared in elements, not bytes.",
+      });
+      return;
+    }
+    if (
+      CharacterWrite.of(site.target, site.value, this.context) === "integer"
+    ) {
+      this.checkSource(site, name, span.count);
+    }
+  }
+
   /** The source value has to fit the slice it is written into. */
   private checkSource(
     site: IAssignmentSyntax,
@@ -245,11 +290,6 @@ class SliceAssignmentListener {
     length: number,
   ): void {
     const value = site.value;
-    // #2373: a string written into a range of a string<N> is copied in
-    // character by character, and E0864 judges its fit
-    if (CharacterWrite.of(site.target, value, this.context) === "string") {
-      return;
-    }
 
     // The same split 2.2's SliceSource plans: a named binding keeps its type
     // even when it folds, so its width is checked below, not its value.

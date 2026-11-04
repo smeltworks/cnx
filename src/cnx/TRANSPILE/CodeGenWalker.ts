@@ -42,6 +42,7 @@ import type TRenderedStringPart from "../types/TRenderedStringPart";
 import type TStringPart from "../types/TStringPart";
 import type TStringValueForm from "../types/TStringValueForm";
 import type IPlannedCharacterWrite from "./2-Plan/types/IPlannedCharacterWrite";
+import SliceWrites from "./3-Render/codegen/assignment/SliceWrites";
 import { basename } from "node:path";
 import CommentFormatter from "./3-Render/codegen/CommentFormatter";
 import PrivateConstValue from "./3-Render/codegen/PrivateConstValue";
@@ -3056,13 +3057,13 @@ class CodeGenWalker {
   }
 
   /**
-   * #1748: the character a string written into one character of a
-   * `string<N>` writes -- ADR-045's `string<1>` write. E0864 made it fit.
+   * #1748: the one character of a string that is not staged -- a substring's
+   * first, or a string's first. E0864 made it fit.
    */
   private renderCharacterAt(form: TStringValueForm): string {
     switch (form.kind) {
       case "literal":
-        return StringUtils.characterAt(form.literal.written, 0);
+        invariant(false, "2.3 writes a literal's characters directly");
       case "substring":
         return this.renderSubstringStart(form.part);
       case "copy": {
@@ -3074,7 +3075,7 @@ class CodeGenWalker {
       case "concat":
         invariant(
           false,
-          "2.2 plans no concatenation as a character write (#2374)",
+          "2.2 stages every concatenation written into characters (#2374)",
         );
     }
   }
@@ -3091,40 +3092,100 @@ class CodeGenWalker {
   }
 
   /**
-   * #2373: a string copied into a range `s[i, n]`, one character at a time,
-   * only as many as it holds: the rest of the range is left as it was. A
-   * literal is written directly. Any other source is built whole into a
-   * temporary first, as any string is, because it can be the range written
-   * and is evaluated once (review).
+   * #1748, #2373, #2385: a write into the characters of a `string<N>`, as
+   * 2.2 planned it -- `s[i]` is `s[i, 1]` (owner ruling, 2026-11-05), so one
+   * path writes both. A character is written as it is; an integer is split
+   * into bytes as a slice's is (ADR-007); a string writes only as many
+   * characters as it holds, the rest of the span left as it was. A runtime
+   * start that several characters are written from is read once.
    */
-  private renderRangeCopy(
+  private renderCharacterWrite(
     site: IAssignmentSyntax,
     write: IPlannedCharacterWrite,
   ): string {
     const target = site.target;
     const last = target.kind === "postfix" ? target.ops.at(-1) : undefined;
-    invariant(last?.kind === "subscript", "a range write ends in a subscript");
-    const offset = this.planner.constantOf(last.indexes[0]);
-    invariant(offset !== undefined, "E0859 folds a range write's offset");
+    invariant(
+      last?.kind === "subscript",
+      "a character write ends in a subscript",
+    );
     const base = this.generateAssignmentTarget(
       target,
       AssignmentTarget.parts(target).ops.length - 1,
     );
+    const start = last.indexes[0];
+    const lines: string[] = [];
+    let from: string | null = null;
+    if (write.startCType !== null) {
+      from = this.host.state.getNextTempVarName();
+      lines.push(
+        `const ${write.startCType} ${from} = ${this.renderExpression(start)};`,
+      );
+    }
+    // Where character `k` lands, `k` a number or a loop counter
+    const position = (k: number | string): string => {
+      if (write.offset !== null) {
+        if (typeof k === "number") return `${write.offset + k}`;
+        return write.offset === 0 ? k : `${write.offset}U + ${k}`;
+      }
+      const first = from ?? this.renderExpression(start);
+      return k === 0
+        ? first
+        : `${first} + ${typeof k === "number" ? `${k}U` : k}`;
+    };
+    // One character lands where the target spells it, as any element write's
+    const at = (k: number | string): string =>
+      write.count === 1 && k === 0
+        ? `${base}[${this.renderExpression(start)}]`
+        : `${base}[${position(k)}]`;
+    lines.push(...this.renderCharacterValue(site, write, at));
+    if (from === null) return lines.join("\n");
+    return ["{", ...lines.map((line) => `    ${line}`), "}"].join("\n");
+  }
+
+  /** The writes of a character write's value, character `k` at `at(k)` */
+  private renderCharacterValue(
+    site: IAssignmentSyntax,
+    write: IPlannedCharacterWrite,
+    at: (k: number | string) => string,
+  ): string[] {
+    const value = write.value;
     const indexes = Array.from({ length: write.count }, (_, k) => k);
-    const at = (k: number): string => `${base}[${offset + k}]`;
-    const form = write.form;
+    switch (value.kind) {
+      case "character":
+        return [`${at(0)} = ${this.renderExpression(site.value)};`];
+      case "integer": {
+        const source = this.filePlan.sliceSources.get(site);
+        invariant(
+          source !== undefined,
+          "2.2 planned every slice source 2.3 writes",
+        );
+        return SliceWrites.render({
+          element: SliceWrites.STRING_ELEMENT,
+          source,
+          value: this.renderExpression(site.value),
+          lengthValue: write.count,
+          elementCount: write.count,
+          state: this.host.state,
+          at,
+        });
+      }
+      case "string":
+        break;
+    }
+    const form = value.form;
     if (form.kind === "literal") {
-      return indexes
-        .map(
-          (k) =>
-            `${at(k)} = ${StringUtils.characterAt(form.literal.written, k)};`,
-        )
-        .join("\n");
+      return indexes.map(
+        (k) =>
+          `${at(k)} = ${StringUtils.characterAt(form.literal.written, k)};`,
+      );
+    }
+    if (!value.staged) {
+      return indexes.length === 0 ? [] : this.renderOneCharacter(form, at(0));
     }
     const buffer = this.host.state.getNextTempVarName();
     const length = this.host.state.getNextTempVarName();
     const k = this.host.state.getNextTempVarName();
-    const position = offset === 0 ? k : `${offset}U + ${k}`;
     return [
       ComplianceAnnotations.render(ComplianceAnnotations.RANGE_READ_APART),
       "{",
@@ -3134,10 +3195,27 @@ class CodeGenWalker {
       ),
       `    const uint32_t ${length} = (uint32_t) strlen(${buffer});`,
       `    for (uint32_t ${k} = 0U; ${k} < ${length}; ${k}++) {`,
-      `        ${base}[${position}] = ${buffer}[${k}];`,
+      `        ${at(k)} = ${buffer}[${k}];`,
       "    }",
       "}",
-    ].join("\n");
+    ];
+  }
+
+  /**
+   * #2385: a string's one character, read once, and written only if the
+   * string holds one -- an empty string writes nothing, as it writes nothing
+   * into a longer span
+   */
+  private renderOneCharacter(form: TStringValueForm, target: string): string[] {
+    const character = this.host.state.getNextTempVarName();
+    return [
+      "{",
+      `    const char ${character} = ${this.renderCharacterAt(form)};`,
+      `    if (${character} != '\\0') {`,
+      `        ${target} = ${character};`,
+      "    }",
+      "}",
+    ];
   }
 
   /** A string written into `buffer` at `capacity`: copied whole, or built from its parts */
@@ -3326,13 +3404,10 @@ class CodeGenWalker {
       stringForm !== undefined &&
       (stringForm.kind === "concat" || stringForm.kind === "substring");
     const character = this.filePlan.characterWrites.get(site);
-    if (character?.range === true) return this.renderRangeCopy(site, character);
-    const value =
-      character !== undefined
-        ? this.renderCharacterAt(character.form)
-        : builtApart
-          ? ""
-          : this.renderExpression(site.value);
+    if (character !== undefined) {
+      return this.renderCharacterWrite(site, character);
+    }
+    const value = builtApart ? "" : this.renderExpression(site.value);
 
     // #1322: the operator was mapped to its C form here and used for nothing
     // but the `isCompound` flag that `AssignmentValidator` took. ADR-065's

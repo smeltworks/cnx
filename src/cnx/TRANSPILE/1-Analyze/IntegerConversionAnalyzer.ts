@@ -401,9 +401,10 @@ class IntegerConversionCheck {
   }
 
   /**
-   * E0928: one character of a `string<N>` takes a character, or a string
-   * E0864 fits into it (ADR-045, #1748). Any other value is MISRA C:2012
-   * Rule 10.3's write across essential type categories. True when reported.
+   * E0928: the characters of a `string<N>` take a character, a string E0864
+   * fits into them, or an integer split into bytes (ADR-045, #1748, #2373,
+   * #2385). Any other value is MISRA C:2012 Rule 10.3's write across
+   * essential type categories. True when reported.
    */
   private checkCharacterAt(site: IAssignmentSyntax): boolean {
     if (site.operator !== "<-") return false;
@@ -412,9 +413,9 @@ class IntegerConversionCheck {
     this.found.push({
       code: "E0928",
       span: site.value.span,
-      message: `A value that is not a character cannot be assigned to a string's character: '${site.value.written}'`,
+      message: `A value that is not a character, a string or an integer cannot be written into a string's characters: '${site.value.written}'`,
       helpText:
-        "One character of a string<N> takes a character (ADR-045): a character literal, another string's character, or a one-character string",
+        "The characters of a string<N> take a character, a string that fits them, or an integer split into bytes (ADR-045)",
     });
     return true;
   }

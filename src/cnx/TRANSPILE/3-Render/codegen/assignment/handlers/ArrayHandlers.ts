@@ -6,30 +6,14 @@
  * - MULTI_DIM_ARRAY_ELEMENT: matrix[i][j] <- value
  * - ARRAY_SLICE: buffer[0, 10] <- source
  */
-import ComplianceAnnotations from "../../../../2-Plan/ComplianceAnnotations";
 import AssignmentKind from "../../../../../types/AssignmentKind";
 import IAssignmentContext from "../../../../2-Plan/types/IAssignmentContext";
 import TAssignmentHandler from "./TAssignmentHandler";
 import type TTypeInfo from "../../../../../types/TTypeInfo";
 import CNX_TO_C_TYPE_MAP from "../../../../../utils/constants/TypeMappings";
 import invariant from "../../../../../utils/invariant";
-import type TranspileState from "../../../../TranspileState";
 import SliceSource from "../../../../2-Plan/SliceSource";
-import type IPlannedSliceSource from "../../../../2-Plan/types/IPlannedSliceSource";
-
-/**
- * Comment emitted above an unrolled slice copy so the generated C is
- * self-documenting (Issue #1081). The caller emits it ONLY when an equivalent
- * `memcpy` would actually violate MISRA C:2012 Rule 21.15 — the source type is
- * known and differs from the destination element type, so the two `memcpy`
- * pointer arguments would be incompatible. When the types match (`u32[] <- u32`),
- * the source type is unknown, or a single element is written, no rule is cited.
- */
-function sliceUnrollComment(destCType: string, srcCType: string): string {
-  return ComplianceAnnotations.render(
-    ComplianceAnnotations.sliceUnroll(destCType, srcCType),
-  );
-}
+import SliceWrites from "../SliceWrites";
 
 /**
  * Handle simple array element: arr[i] <- value
@@ -77,15 +61,6 @@ function resolveSliceElement(
   typeInfo: TTypeInfo | undefined,
   rawName: string,
 ): { bytes: number; cType: string; wrap: (chunk: string) => string } {
-  if (typeInfo?.isString) {
-    // string buffers are char[]; cast through uint8_t to satisfy MISRA 10.8.
-    return {
-      bytes: 1,
-      cType: "char",
-      wrap: (chunk) => `(char)(uint8_t)${chunk}`,
-    };
-  }
-
   const baseType = typeInfo?.baseType ?? "";
   const bytes = SliceSource.elementBytes(typeInfo);
 
@@ -102,7 +77,7 @@ function resolveSliceElement(
 
   invariant(
     false,
-    `a sliced buffer has an integer or string element type -- E0858 rejects ` +
+    `a sliced array has an integer element type -- E0858 rejects ` +
       `'${baseType}' on '${rawName}' in pass 2.1, before this runs`,
   );
 }
@@ -154,41 +129,6 @@ function validateSliceSpan(
   return elementCount;
 }
 
-/**
- * Materialize a slice source into a single unsigned temp that the unrolled
- * writes shift to extract each element. The source is read exactly once and
- * every shift operates on a known-width unsigned value (MISRA Rule 10.1).
- *
- * A *composite signed* source (e.g. `a + b` of signed operands) is split into
- * two steps — bind it to its own signed type, then reinterpret that simple
- * identifier to unsigned — so the unsigned cast never applies to the composite
- * expression (MISRA Rule 10.8). Every other source keeps the single same-or-
- * length-sized cast it had before: a same-category cast (resolved unsigned) or
- * a non-composite cast (simple source / function call) does not trip Rule 10.8.
- */
-function materializeSliceSource(
-  writes: string[],
-  src: IPlannedSliceSource,
-  value: string,
-  lengthValue: number,
-  state: TranspileState,
-): string {
-  if (SliceSource.splits(src)) {
-    const signedName = state.getNextTempVarName();
-    writes.push(`const ${src.cType} ${signedName} = ${value};`);
-    const unsignedName = state.getNextTempVarName();
-    writes.push(
-      `const ${src.unsignedCType} ${unsignedName} = (${src.unsignedCType})${signedName};`,
-    );
-    return unsignedName;
-  }
-
-  const tempType = SliceSource.tempTypeOf(src, lengthValue);
-  const tempName = state.getNextTempVarName();
-  writes.push(`const ${tempType} ${tempName} = (${tempType})(${value});`);
-  return tempName;
-}
-
 /** Validated, constant-folded geometry of a slice-assignment destination. */
 interface ISliceGeometry {
   offsetValue: number;
@@ -227,44 +167,15 @@ function buildSliceWrites(
     rawName,
   );
 
-  const writes: string[] = [];
-  // Self-document the codegen ONLY when an equivalent memcpy would genuinely
-  // have violated Rule 21.15: the source type is KNOWN and differs from the
-  // destination element type (incompatible pointer types) AND more than one
-  // element is written (a real unroll). A same-type, single-element, or
-  // unresolved-type source does not warrant the citation (Issue #1085 review:
-  // the comment must not assert "incompatible pointer types" it cannot prove,
-  // nor label a single write as "unrolled").
-  if (src.cType !== null && src.cType !== dest.cType && elementCount > 1) {
-    writes.push(sliceUnrollComment(dest.cType, src.cType));
-  }
-
-  // Evaluate the source once. Shifting a single unsigned temp keeps every chunk
-  // MISRA Rule 10.1-clean and reads the source exactly once — needed when the
-  // source feeds more than one element, or whenever it is a composite (so the
-  // unsigned cast lands on the temp, never on the composite: MISRA Rule 10.8).
-  // Residual: an *unresolved* composite (e.g. a struct-field or function-call
-  // expression TypeResolver cannot type) is still sized to the slice length and
-  // cast directly — see issue #1089.
-  let sourceExpr = ctx.generatedValue;
-  if (SliceSource.materializes(src, elementCount)) {
-    sourceExpr = materializeSliceSource(
-      writes,
-      src,
-      ctx.generatedValue,
-      geometry.lengthValue,
-      ctx.state,
-    );
-  }
-
-  for (let k = 0; k < elementCount; k += 1) {
-    const shiftBits = k * dest.bytes * 8;
-    const chunk =
-      shiftBits === 0 ? `(${sourceExpr})` : `(${sourceExpr} >> ${shiftBits}U)`;
-    writes.push(`${name}[${geometry.offsetValue + k}] = ${dest.wrap(chunk)};`);
-  }
-
-  return writes.join("\n");
+  return SliceWrites.render({
+    element: dest,
+    source: src,
+    value: ctx.generatedValue,
+    lengthValue: geometry.lengthValue,
+    elementCount,
+    state: ctx.state,
+    at: (k) => `${name}[${geometry.offsetValue + k}]`,
+  }).join("\n");
 }
 
 /**
@@ -313,9 +224,8 @@ function handleArraySlice(ctx: IAssignmentContext): string {
 
   // Determine buffer capacity
   let capacity: number;
-  if (typeInfo?.isString && typeInfo.stringCapacity && !typeInfo.isArray) {
-    capacity = typeInfo.stringCapacity + 1;
-  } else if (typeInfo?.arrayDimensions?.[0]) {
+  // #2385: a string's characters are written by 2.3's character write, not here
+  if (typeInfo?.arrayDimensions?.[0]) {
     capacity = typeInfo.arrayDimensions[0];
   } else {
     // Use raw identifier in error message for clarity

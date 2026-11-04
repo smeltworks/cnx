@@ -270,23 +270,31 @@ string<1> ch <- source[0];    // Sugar for source[0, 1] -> "H"
 
 **`s[0]` is equivalent to `s[0, 1]`** - both return a `string<1>` containing the character at that position.
 
-Writing one character is a `string<1>` write (owner ruling, 2026-10-30, #1748). It
-takes a character -- a char literal or another string's character -- or a string
-that fits one character, which writes that string's character:
+Writing one character is a `string<1>` write (owner ruling, 2026-10-30, #1748):
+`s[i] <-` is read as `s[i, 1] <-`, so every rule for a range write below holds for
+it unchanged (owner ruling, 2026-11-05, #2385). It takes a character -- a char
+literal or another string's character -- a string that fits one character, or an
+integer split into a byte:
 
 ```cnx
 mut string<8> s <- "hello";
 s[0] <- 'j';      // OK: s is "jello"
 s[0] <- "j";      // OK: the same write
+s[0] <- "";       // OK: an empty string writes no character; s is unchanged
 s[0] <- "jy";     // E0864: "jy" does not fit a string<1>
-s[0] <- 65;       // E0928: an integer is not a character (MISRA C:2012 Rule 10.3)
+s[0] <- 106;      // OK: the byte 106, 'j', as s[0, 1] <- 106 writes it
+s[0] <- true;     // E0928: a bool is none of these (MISRA C:2012 Rule 10.3)
 ```
 
-A range write `s[i, n] <- value` takes a string or an integer (owner ruling,
-2026-10-30, #2373). A string must fit `n` characters (E0864) and is copied in
+A range write `s[i, n] <- value` takes a character, a string or an integer (owner
+ruling, 2026-10-30, #2373). A character is written into the range's first
+character. A string must fit `n` characters (E0864) and is copied in
 character by character: `s[0, 2] <- "AB"` writes `'A'` and `'B'`. An integer is
 split into bytes, as ADR-007's slice write does: `s[0, 2] <- 0x4241` writes the
-same two characters.
+same two characters. Any other value is E0928.
+Its start may be a runtime value, as one character's always could (owner ruling,
+2026-11-05), and is read once; its length must fold. A start that folds is
+bounds-checked against the string's `char[N + 1]` (E0860), one character's too.
 A string shorter than the range writes only its own characters, and the rest of
 the range is left as it was (owner ruling, 2026-11-04): in `"hello"`, `s[0, 4] <- t`
 with `t` holding `"je"` gives `"jello"`. A concatenation is copied the same way:

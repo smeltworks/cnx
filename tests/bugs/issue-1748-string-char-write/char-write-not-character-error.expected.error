@@ -1,6 +1,6 @@
-21:18 error[E0928]: A value that is not a character cannot be assigned to a string's character: '65'
-       help: One character of a string<N> takes a character (ADR-045): a character literal, another string's character, or a one-character string
-22:12 error[E0928]: A value that is not a character cannot be assigned to a string's character: 'n'
-       help: One character of a string<N> takes a character (ADR-045): a character literal, another string's character, or a one-character string
-23:12 error[E0928]: A value that is not a character cannot be assigned to a string's character: 'true'
-       help: One character of a string<N> takes a character (ADR-045): a character literal, another string's character, or a one-character string
+23:18 error[E0928]: A value that is not a character, a string or an integer cannot be written into a string's characters: 'x'
+       help: The characters of a string<N> take a character, a string that fits them, or an integer split into bytes (ADR-045)
+24:12 error[E0928]: A value that is not a character, a string or an integer cannot be written into a string's characters: 'true'
+       help: The characters of a string<N> take a character, a string that fits them, or an integer split into bytes (ADR-045)
+25:15 error[E0928]: A value that is not a character, a string or an integer cannot be written into a string's characters: 'true'
+       help: The characters of a string<N> take a character, a string that fits them, or an integer split into bytes (ADR-045)
