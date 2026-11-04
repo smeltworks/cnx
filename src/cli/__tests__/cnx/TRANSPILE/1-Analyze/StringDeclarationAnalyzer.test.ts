@@ -162,18 +162,18 @@ describe("StringDeclarationAnalyzer", () => {
     ]);
   });
 
-  describe("E0864 -- a string written into one character is a string<1> (#1748)", () => {
+  describe("E0864 -- a string written into one character is a string<1>, s[i] as s[i, 1] (#1748, #2385)", () => {
     const inF = (body: string): string =>
       `mut string<8> s;\nstring<4> w <- "ab";\nstring<8> t <- "QRS";\nvoid f() {\n${body}\n}`;
 
-    it("rejects a literal longer than one character, with a character's help", () => {
+    it("rejects a literal longer than one character, with a range's help", () => {
       const [found] = errors(inF('    s[2] <- "xy";'));
       expect(found.code).toBe("E0864");
       expect(found.message).toBe(
         "String literal (2 chars) exceeds string<1> capacity",
       );
       expect(found.helpText).toBe(
-        "One character of a string<N> is a string<1> (ADR-045): shorten the literal.",
+        "A range of a string<N> holds as many characters as its length (ADR-045): shorten the literal.",
       );
     });
 
@@ -183,9 +183,9 @@ describe("StringDeclarationAnalyzer", () => {
       );
       expect(found.map((e) => e.code)).toEqual(["E0864", "E0864", "E0864"]);
       expect(found[0].message).toBe(
-        "Cannot write string<4> into one character, a string<1> -- the source may not fit",
+        "Cannot write string<4> into a 1-character range -- the source may not fit",
       );
-      expect(found[2].message).toContain("but the character is string<1>");
+      expect(found[2].message).toContain("but the range is string<1>");
     });
 
     it("accepts a one-character literal, a character and an empty literal", () => {
