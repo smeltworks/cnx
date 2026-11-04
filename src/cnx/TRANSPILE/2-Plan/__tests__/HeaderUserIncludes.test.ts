@@ -12,6 +12,7 @@ import TTypeUtils from "../../../utils/TTypeUtils";
 import TestSourceSpan from "../../../types/__testUtils__/testSourceSpan";
 import TestSymbolUtils from "../../../PARSE/3-Declare/cnx/__tests__/testSymbolUtils";
 import type IProgram from "../../../types/IProgram";
+import type IResolvedSymbols from "../../../types/IResolvedSymbols";
 import type IVariableSymbol from "../../../types/symbols/IVariableSymbol";
 import type TConstExpr from "../../../types/TConstExpr";
 
@@ -61,6 +62,15 @@ const definedBy = (macros: Record<string, string>): IProgram =>
       macros[macro] ?? null,
   }) as unknown as IProgram;
 
+/** A symbol table whose files declare only the given public symbols */
+const declaring = (
+  byFile: Record<string, readonly IVariableSymbol[]>,
+): IResolvedSymbols =>
+  ({
+    getTSymbolsByFile: (file: string) => [...(byFile[file] ?? [])],
+  }) as unknown as IResolvedSymbols;
+const NO_PUBLIC_SYMBOLS = declaring({});
+
 describe("HeaderUserIncludes.macroIncludingFiles", () => {
   it("names the file that reached a macro the dimension spells", () => {
     const x = array(["BUF_SIZE + 1"], [plusOne(name("BUF_SIZE"))]);
@@ -68,6 +78,7 @@ describe("HeaderUserIncludes.macroIncludingFiles", () => {
     expect(
       HeaderUserIncludes.macroIncludingFiles(
         [x],
+        NO_PUBLIC_SYMBOLS,
         definedBy({ BUF_SIZE: "mid.cnx" }),
         "main.cnx",
       ),
@@ -83,6 +94,7 @@ describe("HeaderUserIncludes.macroIncludingFiles", () => {
     expect(
       HeaderUserIncludes.macroIncludingFiles(
         [x],
+        NO_PUBLIC_SYMBOLS,
         definedBy({ ROWS: "mid.cnx", COLS: "mid.cnx" }),
         "main.cnx",
       ),
@@ -95,6 +107,7 @@ describe("HeaderUserIncludes.macroIncludingFiles", () => {
     expect(
       HeaderUserIncludes.macroIncludingFiles(
         [x],
+        NO_PUBLIC_SYMBOLS,
         definedBy({ BUF_SIZE: "main.cnx" }),
         "main.cnx",
       ),
@@ -107,6 +120,20 @@ describe("HeaderUserIncludes.macroIncludingFiles", () => {
     expect(
       HeaderUserIncludes.macroIncludingFiles(
         [x],
+        NO_PUBLIC_SYMBOLS,
+        definedBy({ BUF_SIZE: "mid.cnx" }),
+        "main.cnx",
+      ),
+    ).toEqual([]);
+  });
+
+  it("names no file whose own header already carries the macro's include", () => {
+    const x = array(["BUF_SIZE"], [name("BUF_SIZE")]);
+
+    expect(
+      HeaderUserIncludes.macroIncludingFiles(
+        [x],
+        declaring({ "mid.cnx": [array(["BUF_SIZE"], [name("BUF_SIZE")])] }),
         definedBy({ BUF_SIZE: "mid.cnx" }),
         "main.cnx",
       ),
@@ -137,6 +164,7 @@ describe("HeaderUserIncludes.macroCHeaders", () => {
     expect(
       HeaderUserIncludes.macroCHeaders(
         [x],
+        NO_PUBLIC_SYMBOLS,
         definedBy({ BUF_SIZE: "lib/mid.cnx" }),
         "main.cnx",
         includes,
@@ -160,6 +188,7 @@ describe("HeaderUserIncludes.macroCHeaders", () => {
     expect(
       HeaderUserIncludes.macroCHeaders(
         [x],
+        NO_PUBLIC_SYMBOLS,
         definedBy({ BUF_SIZE: "mid.cnx" }),
         "main.cnx",
         includes,
@@ -172,6 +201,7 @@ describe("HeaderUserIncludes.macroCHeaders", () => {
     expect(() =>
       HeaderUserIncludes.macroCHeaders(
         [x],
+        NO_PUBLIC_SYMBOLS,
         definedBy({ BUF_SIZE: "mid.cnx" }),
         "main.cnx",
         new Map(),

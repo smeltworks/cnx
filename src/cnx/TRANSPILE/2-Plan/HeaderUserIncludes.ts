@@ -7,6 +7,7 @@ import type TSymbol from "../../types/symbols/TSymbol";
 import ConstExprNames from "../../utils/ConstExprNames";
 import invariant from "../../utils/invariant";
 import HeaderTypeNames from "./HeaderTypeNames";
+import PublicInterface from "./PublicInterface";
 
 /**
  * Whether a generated header carries its source's own C/C++ includes -- a 2.2
@@ -101,6 +102,7 @@ class HeaderUserIncludes {
    */
   static macroCHeaders(
     symbols: readonly TSymbol[],
+    symbolTable: IResolvedSymbols,
     program: IProgram,
     sourceFile: string,
     includes: ReadonlyMap<string, IFileIncludes>,
@@ -109,6 +111,7 @@ class HeaderUserIncludes {
     const directives: string[] = [];
     for (const file of HeaderUserIncludes.macroIncludingFiles(
       symbols,
+      symbolTable,
       program,
       sourceFile,
     )) {
@@ -133,11 +136,13 @@ class HeaderUserIncludes {
    * #1881: the other files whose C includes the header must carry, because it
    * names a macro only they define -- a `.cnx` it includes reached the macro's
    * header, and C sees that header only through the `.cnx`'s own includes.
-   * Nearest file first; the source itself is never one, since `needed` already
-   * carries its own includes.
+   * Nearest file first. Neither the source nor a file whose own header carries
+   * its C includes is one: `needed` already carries the source's, and the
+   * header includes that file's header, which brings the macro with it.
    */
   static macroIncludingFiles(
     symbols: readonly TSymbol[],
+    symbolTable: IResolvedSymbols,
     program: IProgram,
     sourceFile: string,
   ): string[] {
@@ -149,7 +154,15 @@ class HeaderUserIncludes {
             sourceFile,
             name.path[0],
           );
-          if (includingFile !== null && includingFile !== sourceFile) {
+          if (
+            includingFile !== null &&
+            includingFile !== sourceFile &&
+            !HeaderUserIncludes.needed(
+              PublicInterface.forFile(symbolTable, includingFile),
+              symbolTable,
+              program,
+            )
+          ) {
             includingFiles.add(includingFile);
           }
         }

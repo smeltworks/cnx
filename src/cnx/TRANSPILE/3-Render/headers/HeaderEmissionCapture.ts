@@ -98,6 +98,7 @@ class HeaderEmissionCapture {
         ...(cHeadersIncluded ? includes.cHeaderIncludes : []),
         ...HeaderUserIncludes.macroCHeaders(
           exportedSymbols,
+          state.symbolTable,
           program,
           sourcePath,
           request.includes,

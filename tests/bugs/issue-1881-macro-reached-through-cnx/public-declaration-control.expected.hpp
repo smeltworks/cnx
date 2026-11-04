@@ -8,7 +8,6 @@
 
 #include <stdint.h>
 #include "lib/mid-public.hpp"
-#include "lib/buf-size.h"
 
 #ifdef __cplusplus
 extern "C" {
