@@ -1203,6 +1203,64 @@ scope Gauge {
     });
   });
 
+  describe("the file whose C includes define a macro (#1881)", () => {
+    const integer = { kind: "integer" as const, valueByIntBits: new Map() };
+    const program = (macros: Record<string, string[]>) =>
+      Program.build(
+        [
+          declare("u32 a <- 0;", "main.cnx"),
+          declare("u32 b <- 0;", "outer.cnx"),
+          declare("u32 c <- 0;", "mid.cnx"),
+        ],
+        {
+          ...including({ "main.cnx": ["outer.cnx"], "outer.cnx": ["mid.cnx"] }),
+          foreign: {
+            ...noForeign,
+            macros: new Map(
+              Object.entries(macros).map(([file, names]) => [
+                file,
+                new Map(names.map((name) => [name, integer])),
+              ]),
+            ),
+          },
+        },
+      );
+
+    it("is a file the include reaches, however many hops away", () => {
+      expect(
+        program({ "mid.cnx": ["BUF_SIZE"] }).headerMacroIncluder(
+          "main.cnx",
+          "BUF_SIZE",
+        ),
+      ).toBe("mid.cnx");
+    });
+
+    it("is the file itself when its own includes define it", () => {
+      expect(
+        program({
+          "main.cnx": ["BUF_SIZE"],
+          "mid.cnx": ["BUF_SIZE"],
+        }).headerMacroIncluder("main.cnx", "BUF_SIZE"),
+      ).toBe("main.cnx");
+    });
+
+    it("is the nearest file when several define it", () => {
+      expect(
+        program({
+          "outer.cnx": ["BUF_SIZE"],
+          "mid.cnx": ["BUF_SIZE"],
+        }).headerMacroIncluder("main.cnx", "BUF_SIZE"),
+      ).toBe("outer.cnx");
+    });
+
+    it("is none when no file the include reaches defines it", () => {
+      const built = program({ "main.cnx": ["OTHER"] });
+      expect(built.headerMacroIncluder("main.cnx", "BUF_SIZE")).toBeNull();
+      // An include runs one way: mid does not see what main includes
+      expect(built.headerMacroIncluder("mid.cnx", "OTHER")).toBeNull();
+    });
+  });
+
   describe("the query surface", () => {
     it("answers by canonical C name, by file, and lists its files", () => {
       const lib = declare(
@@ -1271,6 +1329,7 @@ scope Gauge {
         "functionParamLists",
         "headerIntegerType",
         "headerMacro",
+        "headerMacroIncluder",
         "headerMacrosUnread",
         "isOpaqueType",
         "isScopeTypeVisibleFrom",

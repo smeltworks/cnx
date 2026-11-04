@@ -1,0 +1,18 @@
+// test-execution
+// Issue #1881 negative control: lib/mid-public.cnx names BUF_SIZE in a public
+// declaration, so its header includes buf-size.h and main's gets it from there.
+#include "lib/mid-public.cnx"
+
+mut u8[BUF_SIZE] x;
+
+u32 main() {
+    x[0] <- 1;
+    staging[0] <- 3;
+    if (x[0] != 1) {
+        return 1;
+    }
+    if (staging[0] != 3) {
+        return 2;
+    }
+    return 0;
+}

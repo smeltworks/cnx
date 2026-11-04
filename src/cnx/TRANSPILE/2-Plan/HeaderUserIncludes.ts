@@ -1,6 +1,8 @@
 import type IResolvedSymbols from "../../types/IResolvedSymbols";
 import type IProgram from "../../types/IProgram";
+import type TConstExpr from "../../types/TConstExpr";
 import type TSymbol from "../../types/symbols/TSymbol";
+import ConstExprNames from "../../utils/ConstExprNames";
 import HeaderTypeNames from "./HeaderTypeNames";
 
 /**
@@ -90,27 +92,74 @@ class HeaderUserIncludes {
   }
 
   /**
+   * #1881: the other files whose C includes the header must carry, because it
+   * names a macro only they define -- a `.cnx` it includes reached the macro's
+   * header, and C sees that header only through the `.cnx`'s own includes.
+   * Nearest file first; the source itself is never one, since `needed` already
+   * carries its own includes.
+   */
+  static macroIncluders(
+    symbols: readonly TSymbol[],
+    program: IProgram,
+    sourceFile: string,
+  ): string[] {
+    const includers = new Set<string>();
+    for (const symbol of symbols) {
+      for (const expr of HeaderUserIncludes.macroDimensionExprs(symbol)) {
+        for (const name of ConstExprNames.bare(expr)) {
+          const includer = program.headerMacroIncluder(
+            sourceFile,
+            name.path[0],
+          );
+          if (includer !== null && includer !== sourceFile) {
+            includers.add(includer);
+          }
+        }
+      }
+    }
+    return [...includers];
+  }
+
+  /**
    * Issue #424: an array dimension that is still an identifier is a macro the
    * header names and does not define -- wherever the header spells one: a
    * variable, a struct field (#1970) or a parameter.
    */
   private static namesMacroDimension(symbol: TSymbol): boolean {
-    return HeaderUserIncludes.dimensionsOf(symbol).some(
-      (dimension) => typeof dimension === "string",
+    return HeaderUserIncludes.dimensionPairsOf(symbol).some(
+      (pair) => typeof pair.dimension === "string",
     );
   }
 
-  private static dimensionsOf(symbol: TSymbol): ReadonlyArray<number | string> {
+  /** The written form of each dimension the header spells as C, not a number */
+  private static macroDimensionExprs(symbol: TSymbol): TConstExpr[] {
+    return HeaderUserIncludes.dimensionPairsOf(symbol).flatMap((pair) =>
+      typeof pair.dimension === "string" && pair.expr ? [pair.expr] : [],
+    );
+  }
+
+  private static dimensionPairsOf(symbol: TSymbol): Array<{
+    dimension: number | string;
+    expr: TConstExpr | null | undefined;
+  }> {
+    const pairs = (
+      dimensions: ReadonlyArray<number | string> | undefined,
+      exprs: ReadonlyArray<TConstExpr | null> | undefined,
+    ) =>
+      (dimensions ?? []).map((dimension, i) => ({
+        dimension,
+        expr: exprs?.[i],
+      }));
     switch (symbol.kind) {
       case "variable":
-        return symbol.arrayDimensions ?? [];
+        return pairs(symbol.arrayDimensions, symbol.arrayDimensionExprs);
       case "struct":
-        return [...symbol.fields.values()].flatMap(
-          (field) => field.dimensions ?? [],
+        return [...symbol.fields.values()].flatMap((field) =>
+          pairs(field.dimensions, field.dimensionExprs),
         );
       case "function":
-        return symbol.parameters.flatMap(
-          (parameter) => parameter.arrayDimensions ?? [],
+        return symbol.parameters.flatMap((parameter) =>
+          pairs(parameter.arrayDimensions, parameter.arrayDimensionExprs),
         );
       default:
         return [];

@@ -1,0 +1,5 @@
+// Issue #1881 control: BUF_SIZE in a public declaration, so this file's own
+// header includes buf-size.h and every header including it gets the macro.
+#include "buf-size.h"
+
+mut u8[BUF_SIZE] staging;

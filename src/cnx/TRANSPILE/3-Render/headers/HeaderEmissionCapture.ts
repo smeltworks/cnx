@@ -1,9 +1,12 @@
 import { basename } from "node:path";
 
+import EFileType from "../../../PARSE/1-Discover/types/EFileType";
+import type IFileIncludes from "../../../PARSE/1-Discover/types/IFileIncludes";
 import type IHeaderCallbackType from "../../../types/IHeaderCallbackType";
 import type TSymbol from "../../../types/symbols/TSymbol";
 import CnxSourcePath from "../../../utils/CnxSourcePath";
 import IncludePath from "../../../utils/IncludePath";
+import invariant from "../../../utils/invariant";
 import HeaderIncludes from "../../2-Plan/HeaderIncludes";
 import HeaderUserIncludes from "../../2-Plan/HeaderUserIncludes";
 import ParameterPassing from "../../2-Plan/ParameterPassing";
@@ -91,9 +94,23 @@ class HeaderEmissionCapture {
       state.symbolTable,
       state.program,
     );
-    const userIncludes = cHeadersIncluded
-      ? [...includes.userIncludes, ...includes.cHeaderIncludes]
-      : [...includes.userIncludes];
+    const spelled = HeaderEmissionCapture.includeDirectivesSpelledBy(request);
+    const userIncludes = [
+      ...new Set([
+        ...includes.userIncludes,
+        ...(cHeadersIncluded ? includes.cHeaderIncludes : []),
+        ...HeaderUserIncludes.macroIncluders(
+          exportedSymbols,
+          program,
+          sourcePath,
+        ).flatMap((includer) =>
+          HeaderEmissionCapture.cHeadersSpelledHere(
+            request.includes.get(includer),
+            spelled,
+          ),
+        ),
+      ]),
+    ];
 
     // #1447: read from the artifact, not accumulated from the files transpiled
     // so far. The old form was correct only because `_sortFilesByDependency`
@@ -105,12 +122,9 @@ class HeaderEmissionCapture {
     // #1511: which types a header declares comes from the artifact. The
     // include ORDER stays here -- it decides which header wins, and that is not
     // a symbol fact.
-    const externalTypeHeaders = ExternalTypeHeaderBuilder.build(
-      HeaderEmissionCapture.includeDirectivesSpelledBy(request),
-      {
-        typesDeclaredIn: (file: string) => program.typesDeclaredIn(file),
-      },
-    );
+    const externalTypeHeaders = ExternalTypeHeaderBuilder.build(spelled, {
+      typesDeclaredIn: (file: string) => program.typesDeclaredIn(file),
+    });
 
     // ADR-029: Convert callback types to header format
     const callbackTypesForHeader =
@@ -261,6 +275,30 @@ class HeaderEmissionCapture {
    * `ExternalTypeHeaderBuilder` lets the first header declaring a type win,
    * and `Map.set` on a key already present keeps its position.
    */
+  /**
+   * #1881: another file's C includes, as this header spells them -- a header
+   * it found is named from this header's directory (#1725), one it did not
+   * find is kept as written. In source order.
+   */
+  private static cHeadersSpelledHere(
+    includer: IFileIncludes | undefined,
+    spelled: ReadonlyMap<string, string>,
+  ): string[] {
+    invariant(
+      includer !== undefined,
+      "1.1 Discover records the includes of every file in a closure",
+    );
+    const directives: string[] = [];
+    for (const [directive, kind] of includer.kinds) {
+      if (kind !== EFileType.CHeader && kind !== EFileType.CppHeader) continue;
+      const header = includer.resolutions.get(directive) ?? null;
+      directives.push(
+        header === null ? directive : (spelled.get(header) ?? directive),
+      );
+    }
+    return directives;
+  }
+
   private static includeDirectivesSpelledBy(
     request: IHeaderEmissionRequest,
   ): ReadonlyMap<string, string> {

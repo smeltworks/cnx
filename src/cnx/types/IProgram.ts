@@ -185,6 +185,14 @@ interface IProgram {
   headerMacrosUnread(sourceFile: string): boolean;
 
   /**
+   * #1881: the file whose own C includes define the macro `name` for
+   * `sourceFile` -- itself, else the first file of its include closure that
+   * does -- or null when none does. A header naming the macro carries that
+   * file's C includes, since C sees a `.cnx`'s headers only through them.
+   */
+  headerMacroIncluder(sourceFile: string, name: string): string | null;
+
+  /**
    * #1619: the C type the run's header compiler gives a `<stdint.h>` or
    * `<stddef.h>` integer name (`uint32_t`, `size_t`), from its predefined
    * macros, or null for any other name or when no compiler read the run's
