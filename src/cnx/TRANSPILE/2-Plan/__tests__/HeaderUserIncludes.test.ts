@@ -5,6 +5,8 @@
 import { describe, expect, it } from "vitest";
 
 import HeaderUserIncludes from "../HeaderUserIncludes";
+import EFileType from "../../../PARSE/1-Discover/types/EFileType";
+import type IFileIncludes from "../../../PARSE/1-Discover/types/IFileIncludes";
 import ESourceLanguage from "../../../utils/types/ESourceLanguage";
 import TTypeUtils from "../../../utils/TTypeUtils";
 import TestSourceSpan from "../../../types/__testUtils__/testSourceSpan";
@@ -109,5 +111,72 @@ describe("HeaderUserIncludes.macroIncludingFiles", () => {
         "main.cnx",
       ),
     ).toEqual([]);
+  });
+});
+
+/** A file's includes: each directive's kind, and the file it resolved to */
+const includesOf = (
+  directives: ReadonlyArray<[string, EFileType, string | null]>,
+): IFileIncludes =>
+  ({
+    kinds: new Map(directives.map((d) => [d[0], d[1]])),
+    resolutions: new Map(directives.map((d) => [d[0], d[2]])),
+  }) as unknown as IFileIncludes;
+
+describe("HeaderUserIncludes.macroCHeaders", () => {
+  const x = array(["BUF_SIZE"], [name("BUF_SIZE")]);
+
+  it("spells a found C header from the generated header's directory", () => {
+    const includes = new Map([
+      [
+        "lib/mid.cnx",
+        includesOf([["buf-size.h", EFileType.CHeader, "/p/lib/buf-size.h"]]),
+      ],
+    ]);
+
+    expect(
+      HeaderUserIncludes.macroCHeaders(
+        [x],
+        definedBy({ BUF_SIZE: "lib/mid.cnx" }),
+        "main.cnx",
+        includes,
+        new Map([["/p/lib/buf-size.h", '"lib/buf-size.h"']]),
+      ),
+    ).toEqual(['"lib/buf-size.h"']);
+  });
+
+  it("keeps C and C++ headers in source order and skips .cnx includes", () => {
+    const includes = new Map([
+      [
+        "mid.cnx",
+        includesOf([
+          ["sys.h", EFileType.CHeader, null],
+          ["other.cnx", EFileType.Cnx, "/p/other.cnx"],
+          ["dev.hpp", EFileType.CppHeader, "/p/dev.hpp"],
+        ]),
+      ],
+    ]);
+
+    expect(
+      HeaderUserIncludes.macroCHeaders(
+        [x],
+        definedBy({ BUF_SIZE: "mid.cnx" }),
+        "main.cnx",
+        includes,
+        new Map(),
+      ),
+    ).toEqual(["sys.h", "dev.hpp"]);
+  });
+
+  it("fails loudly when Discover recorded no includes for the file", () => {
+    expect(() =>
+      HeaderUserIncludes.macroCHeaders(
+        [x],
+        definedBy({ BUF_SIZE: "mid.cnx" }),
+        "main.cnx",
+        new Map(),
+        new Map(),
+      ),
+    ).toThrow("1.1 Discover records the includes of every file in a closure");
   });
 });

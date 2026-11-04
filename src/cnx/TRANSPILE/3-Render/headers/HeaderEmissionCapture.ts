@@ -1,12 +1,9 @@
 import { basename } from "node:path";
 
-import EFileType from "../../../PARSE/1-Discover/types/EFileType";
-import type IFileIncludes from "../../../PARSE/1-Discover/types/IFileIncludes";
 import type IHeaderCallbackType from "../../../types/IHeaderCallbackType";
 import type TSymbol from "../../../types/symbols/TSymbol";
 import CnxSourcePath from "../../../utils/CnxSourcePath";
 import IncludePath from "../../../utils/IncludePath";
-import invariant from "../../../utils/invariant";
 import HeaderIncludes from "../../2-Plan/HeaderIncludes";
 import HeaderUserIncludes from "../../2-Plan/HeaderUserIncludes";
 import ParameterPassing from "../../2-Plan/ParameterPassing";
@@ -99,15 +96,12 @@ class HeaderEmissionCapture {
       ...new Set([
         ...includes.userIncludes,
         ...(cHeadersIncluded ? includes.cHeaderIncludes : []),
-        ...HeaderUserIncludes.macroIncludingFiles(
+        ...HeaderUserIncludes.macroCHeaders(
           exportedSymbols,
           program,
           sourcePath,
-        ).flatMap((includingFile) =>
-          HeaderEmissionCapture.cHeadersSpelledHere(
-            request.includes.get(includingFile),
-            spelled,
-          ),
+          request.includes,
+          spelled,
         ),
       ]),
     ];
@@ -275,30 +269,6 @@ class HeaderEmissionCapture {
    * `ExternalTypeHeaderBuilder` lets the first header declaring a type win,
    * and `Map.set` on a key already present keeps its position.
    */
-  /**
-   * #1881: another file's C includes, as this header spells them -- a header
-   * it found is named from this header's directory (#1725), one it did not
-   * find is kept as written. In source order.
-   */
-  private static cHeadersSpelledHere(
-    includingFile: IFileIncludes | undefined,
-    spelled: ReadonlyMap<string, string>,
-  ): string[] {
-    invariant(
-      includingFile !== undefined,
-      "1.1 Discover records the includes of every file in a closure",
-    );
-    const directives: string[] = [];
-    for (const [directive, kind] of includingFile.kinds) {
-      if (kind !== EFileType.CHeader && kind !== EFileType.CppHeader) continue;
-      const header = includingFile.resolutions.get(directive) ?? null;
-      directives.push(
-        header === null ? directive : (spelled.get(header) ?? directive),
-      );
-    }
-    return directives;
-  }
-
   private static includeDirectivesSpelledBy(
     request: IHeaderEmissionRequest,
   ): ReadonlyMap<string, string> {

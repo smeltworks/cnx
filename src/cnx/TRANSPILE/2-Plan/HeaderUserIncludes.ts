@@ -1,8 +1,11 @@
+import EFileType from "../../PARSE/1-Discover/types/EFileType";
+import type IFileIncludes from "../../PARSE/1-Discover/types/IFileIncludes";
 import type IResolvedSymbols from "../../types/IResolvedSymbols";
 import type IProgram from "../../types/IProgram";
 import type TConstExpr from "../../types/TConstExpr";
 import type TSymbol from "../../types/symbols/TSymbol";
 import ConstExprNames from "../../utils/ConstExprNames";
+import invariant from "../../utils/invariant";
 import HeaderTypeNames from "./HeaderTypeNames";
 
 /**
@@ -89,6 +92,41 @@ class HeaderUserIncludes {
 
     // #1511: the artifact's verdict, not the table's.
     return !(program?.isOpaqueType(typeName) ?? false);
+  }
+
+  /**
+   * #1881: the C includes of every file `macroIncludingFiles` names, as this
+   * header spells them -- a header the run found is named from this header's
+   * directory (#1725), one it did not find is kept as written. In source order.
+   */
+  static macroCHeaders(
+    symbols: readonly TSymbol[],
+    program: IProgram,
+    sourceFile: string,
+    includes: ReadonlyMap<string, IFileIncludes>,
+    spelled: ReadonlyMap<string, string>,
+  ): string[] {
+    const directives: string[] = [];
+    for (const file of HeaderUserIncludes.macroIncludingFiles(
+      symbols,
+      program,
+      sourceFile,
+    )) {
+      const fileIncludes = includes.get(file);
+      invariant(
+        fileIncludes !== undefined,
+        "1.1 Discover records the includes of every file in a closure",
+      );
+      for (const [directive, kind] of fileIncludes.kinds) {
+        if (kind !== EFileType.CHeader && kind !== EFileType.CppHeader)
+          continue;
+        const header = fileIncludes.resolutions.get(directive) ?? null;
+        directives.push(
+          header === null ? directive : (spelled.get(header) ?? directive),
+        );
+      }
+    }
+    return directives;
   }
 
   /**
