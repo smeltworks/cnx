@@ -5,7 +5,10 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import YAML from "yaml";
 
+import GhPagination from "../gh-pagination/GhPagination";
+
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const sonarYamlPath = join(repoRoot, ".github", "workflows", "sonar.yml");
 
 interface IStep {
   id?: string;
@@ -204,17 +207,27 @@ describe("sonar.yml — scans every pull request and push from a trusted context
   });
 
   /**
-   * CLAUDE.md documents this exact footgun: an aggregate --jq 'length' over
-   * a --paginate'd collection prints once PER PAGE, not once total, so
+   * CLAUDE.md documents this exact footgun: an aggregate --jq '... | length'
+   * over a --paginate'd collection prints once PER PAGE, not once total, so
    * `[ "$count" -eq 0 ]` breaks the moment a run has more than one page of
-   * artifacts. The server-side `name` filter and `.total_count` sidestep
-   * pagination entirely (review on #2382).
+   * artifacts. `gh:pagination:check` requires `--paginate` on any REST
+   * collection path (review on #2382 found it still applies to the
+   * server-side `name` filter, since the gate treats any query string, and
+   * the bare `artifacts` segment, as a collection) -- so the fix pairs
+   * `--paginate` with a PER-ITEM jq filter counted by `wc -l`, the safe shape
+   * this file's own header documents, not an aggregate.
    */
-  it("counts the coverage-report artifact with a server-side filter, not --paginate plus an aggregate jq", () => {
+  it("counts the coverage-report artifact the way gh:pagination:check requires: --paginate plus a per-item jq, not an aggregate", () => {
     const artifactCheck = steps.find((step) => step.id === "artifact");
-    expect(artifactCheck?.run).toContain(".total_count");
-    expect(artifactCheck?.run).not.toContain("--paginate");
+    expect(artifactCheck?.run).toContain("--paginate");
     expect(artifactCheck?.run).not.toMatch(/--jq\s+'\[.*\]\s*\|\s*length'/);
+    expect(artifactCheck?.run).not.toContain(".total_count");
+
+    const violations = GhPagination.scanFile(
+      "sonar.yml",
+      readFileSync(sonarYamlPath, "utf-8"),
+    );
+    expect(violations).toEqual([]);
   });
 
   it("gates every step after resolution on neither skip output being set", () => {

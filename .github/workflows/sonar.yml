@@ -104,11 +104,13 @@ jobs:
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
-          # The server-side name filter sidesteps pagination entirely: an
-          # aggregate jq 'length' over a paginated list prints once per
-          # page, not once total (CLAUDE.md's documented footgun).
-          count=$(gh api "repos/$REPO/actions/runs/$RUN_ID/artifacts?name=coverage-report" \
-            --jq '.total_count')
+          # The server-side name filter narrows the page; --paginate and a
+          # per-item jq filter (one name per line, counted by wc) keep the
+          # count correct even so -- an aggregate jq 'length' over a
+          # paginated list prints once per page, not once total
+          # (CLAUDE.md's documented footgun).
+          count=$(gh api --paginate "repos/$REPO/actions/runs/$RUN_ID/artifacts?name=coverage-report" \
+            --jq '.artifacts[].name' | wc -l)
           if [ "$count" -eq 0 ]; then
             echo "::notice::no coverage-report artifact on run $RUN_ID; PR Quality Checks produced none to scan"
             echo "skip=true" >> "$GITHUB_OUTPUT"
