@@ -67,6 +67,7 @@ import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import StatementNodes from "../../utils/StatementNodes";
 import OperandTyper from "../../utils/OperandTyper";
+import CharacterWrite from "../../utils/CharacterWrite";
 import ExpressionShape from "../../utils/ExpressionShape";
 import type IVariableDeclarationSyntax from "../../types/syntax/IVariableDeclarationSyntax";
 import TYPE_WIDTH from "../../types/TYPE_WIDTH";
@@ -167,6 +168,7 @@ class IntegerConversionCheck {
 
   /** An assignment statement, or a `for` loop's init or update */
   public checkSite(site: IAssignmentSyntax): void {
+    if (this.checkCharacterAt(site)) return;
     if (this.checkStringAt(site.value)) return;
     if (this.writesWholeString(site) && this.checkNonStringAt(site.value)) {
       return;
@@ -396,6 +398,26 @@ class IntegerConversionCheck {
       this.context,
       role === "value" ? target : null,
     );
+  }
+
+  /**
+   * E0928: the characters of a `string<N>` take a character, a string E0864
+   * fits into them, or an integer split into bytes (ADR-045, #1748, #2373,
+   * #2385). Any other value is MISRA C:2012 Rule 10.3's write across
+   * essential type categories. True when reported.
+   */
+  private checkCharacterAt(site: IAssignmentSyntax): boolean {
+    if (site.operator !== "<-") return false;
+    const write = CharacterWrite.of(site.target, site.value, this.context);
+    if (write !== "other") return false;
+    this.found.push({
+      code: "E0928",
+      span: site.value.span,
+      message: `A value that is not a character, a string or an integer cannot be written into a string's characters: '${site.value.written}'`,
+      helpText:
+        "The characters of a string<N> take a character, a string that fits them, or an integer split into bytes (ADR-045)",
+    });
+    return true;
   }
 
   /** E0914, then E0923: a string lands only in a string, and only a string does */

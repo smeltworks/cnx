@@ -1,0 +1,82 @@
+// test-execution
+// Issue #1748: a write into one character of a string<N>, and the string
+// writes beside it. ADR-045: s[i] is s[i, 1], a string<1>, so a one-character
+// string literal written into it lands as that character (owner ruling,
+// 2026-10-30). Each result is checked with its own return code.
+
+struct Pkt {
+    u8 bits;
+    string<8> name;
+}
+
+mut Pkt gp;
+mut Pkt[2] parr;
+mut string<8>[2] names;
+mut string<8> s;
+string<8> t <- "QRS";
+
+u32 main() {
+    // NEGATIVE CONTROL -- whole-string writes, by field and by element
+    gp.name <- "abc";
+    names[1] <- "abc";
+    // The array subscript belongs on parr, not on .name
+    parr[1].name <- "abc";
+    s <- "hello";
+
+    // A one-character string into one character
+    gp.name[0] <- "J";
+    s[2] <- "x";
+    // NEGATIVE CONTROL -- a character literal, and another string's character
+    gp.name[1] <- 'K';
+    s[4] <- t[0];
+
+    if (gp.name[0] != 'J') {
+        return 1;
+    }
+    if (gp.name[1] != 'K') {
+        return 2;
+    }
+    if (gp.name[2] != 'c') {
+        return 3;
+    }
+    if (gp.name.value_char_count != 3) {
+        return 4;
+    }
+    if (s[0] != 'h') {
+        return 5;
+    }
+    if (s[1] != 'e') {
+        return 6;
+    }
+    if (s[2] != 'x') {
+        return 7;
+    }
+    if (s[3] != 'l') {
+        return 8;
+    }
+    if (s[4] != 'Q') {
+        return 9;
+    }
+    if (s.value_char_count != 5) {
+        return 10;
+    }
+    if (names[1][0] != 'a') {
+        return 11;
+    }
+    if (names[1][2] != 'c') {
+        return 12;
+    }
+    if (names[1].value_char_count != 3) {
+        return 13;
+    }
+    if (parr[1].name[0] != 'a') {
+        return 14;
+    }
+    if (parr[1].name.value_char_count != 3) {
+        return 15;
+    }
+    if (parr[0].name.value_char_count != 0) {
+        return 16;
+    }
+    return 0;
+}

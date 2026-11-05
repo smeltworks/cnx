@@ -1,0 +1,26 @@
+// test-error
+// Issue #1748: the characters of a string<N> take a character, a string or an
+// integer (split into bytes, #2385). A float or a bool is none of these, so
+// writing one there is the conversion MISRA C:2012 Rule 10.3 forbids, into one
+// character or a range alike: s[i] is s[i, 1] (owner ruling, 2026-11-05).
+// NEGATIVE CONTROL -- a character literal, another string's character and an
+// integer are accepted beside the errors.
+
+struct Pkt {
+    u8 bits;
+    string<8> name;
+}
+
+mut Pkt gp;
+mut string<8> s;
+string<8> t <- "QRS";
+mut f32 x <- 1.5;
+
+void main() {
+    gp.name[1] <- 'A';
+    s[0] <- t[0];
+    gp.name[0] <- 65;
+    gp.name[2] <- x;
+    s[1] <- true;
+    s[2, 2] <- true;
+}

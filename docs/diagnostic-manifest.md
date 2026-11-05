@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-951 fixture(s) assert a diagnostic; 937 carry a code.
+955 fixture(s) assert a diagnostic; 941 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -788,6 +788,8 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1740-reopened-scope-this-call/this-call-undeclared.test.cnx                              | E0422                             |
 | tests/bugs/issue-1745-include-directive-agreement/commented-out-header-error.test.cnx                     | E0422                             |
 | tests/bugs/issue-1745-include-directive-agreement/commented-out-include-error.test.cnx                    | E0426                             |
+| tests/bugs/issue-1748-string-char-write/char-write-capacity-error.test.cnx                                | E0864                             |
+| tests/bugs/issue-1748-string-char-write/char-write-not-character-error.test.cnx                           | E0928                             |
 | tests/bugs/issue-1755-system-headers/fgets-read-only-cortex-m7-error.test.cnx                             | E0896, E0900                      |
 | tests/bugs/issue-1755-system-headers/fgets-read-only-error.test.cnx                                       | E0896, E0900                      |
 | tests/bugs/issue-1755-system-headers/strlen-narrow-error.test.cnx                                         | E0869                             |
@@ -878,11 +880,13 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-2341-included-scope-type-bare-use/no-scope-type.test.cnx                                 | E0426                             |
 | tests/bugs/issue-2354-bool-bit-index/bool-bit-index-error.test.cnx                                        | E0856                             |
 | tests/bugs/issue-2366-void-param-diagnostic/void-param.test.cnx                                           | E0926                             |
+| tests/bugs/issue-2373-string-range-write/string-range-write-capacity-error.test.cnx                       | E0864                             |
 | tests/bugs/issue-2380-same-level-names/enum-beside-scope-error.test.cnx                                   | E0425                             |
 | tests/bugs/issue-2380-same-level-names/function-beside-scope-error.test.cnx                               | E0425                             |
 | tests/bugs/issue-2380-same-level-names/struct-beside-scope-error.test.cnx                                 | E0425                             |
 | tests/bugs/issue-2380-same-level-names/variable-beside-scope-error.test.cnx                               | E0425                             |
 | tests/bugs/issue-2380-same-level-names/variable-beside-struct-error.test.cnx                              | E0425                             |
+| tests/bugs/issue-2385-string-span-write/span-write-bounds-error.test.cnx                                  | E0860, E0861                      |
 | tests/bugs/issue-847-misra-17-7-lowering/bare-intra-scope-discard.test.cnx                                | E0708                             |
 | tests/bugs/issue-847-misra-17-7-lowering/cross-file-scope-discard.test.cnx                                | E0708                             |
 | tests/bugs/issue-847-misra-17-7-lowering/external-c-discard.test.cnx                                      | E0708                             |

@@ -39,7 +39,10 @@ import userCType from "../utils/userCType";
  */
 import type IChainStep from "../types/IChainStep";
 import type TRenderedStringPart from "../types/TRenderedStringPart";
+import type TStringPart from "../types/TStringPart";
 import type TStringValueForm from "../types/TStringValueForm";
+import type IPlannedCharacterWrite from "./2-Plan/types/IPlannedCharacterWrite";
+import SliceWrites from "./3-Render/codegen/assignment/SliceWrites";
 import { basename } from "node:path";
 import CommentFormatter from "./3-Render/codegen/CommentFormatter";
 import PrivateConstValue from "./3-Render/codegen/PrivateConstValue";
@@ -2484,14 +2487,7 @@ class CodeGenWalker {
         capacity !== undefined && form !== undefined,
         "2.2 planned each string field it copies",
       );
-      const target = `${temp}.${field.name}`;
-      if (form.kind === "copy" || form.kind === "literal") {
-        const whole = form.kind === "copy" ? form.value : form.literal;
-        return [
-          StringUtils.copy(target, this.renderExpression(whole), capacity),
-        ];
-      }
-      return StringUtils.build(target, capacity, this.renderStringParts(form));
+      return this.renderFill(`${temp}.${field.name}`, capacity, form);
     });
     const inits = fields.map((f) => `.${f.fieldName} = ${f.value}`);
     this.host.state.pendingTempDeclarations.push(
@@ -3060,6 +3056,180 @@ class CodeGenWalker {
     return count;
   }
 
+  /**
+   * #1748: the one character of a string that is not staged -- a substring's
+   * first, or a string's first. E0864 made it fit.
+   */
+  private renderCharacterAt(form: TStringValueForm): string {
+    switch (form.kind) {
+      case "substring":
+        return this.renderSubstringStart(form.part);
+      case "copy": {
+        const code = this.renderExpression(form.value);
+        const bare =
+          form.value.kind === "identifier" || form.value.kind === "postfix";
+        return bare ? `${code}[0]` : `(${code})[0]`;
+      }
+      case "literal":
+      case "concat":
+        invariant(
+          false,
+          "2.3 writes a literal's characters directly, and 2.2 stages every concatenation written into characters (#2374)",
+        );
+    }
+  }
+
+  /** A substring's first character, `t[i]` */
+  private renderSubstringStart(
+    part: Extract<TStringPart, { kind: "substring" }>,
+  ): string {
+    const source = this.generateAssignmentTarget(
+      part.chain,
+      AssignmentTarget.parts(part.chain).ops.length - 1,
+    );
+    return `${source}[${this.renderExpression(part.start)}]`;
+  }
+
+  /**
+   * #1748, #2373, #2385: a write into the characters of a `string<N>`, as
+   * 2.2 planned it -- `s[i]` is `s[i, 1]` (owner ruling, 2026-11-05), so one
+   * path writes both. A character is written as it is; an integer is split
+   * into bytes as a slice's is (ADR-007); a string writes only as many
+   * characters as it holds, the rest of the span left as it was. A runtime
+   * start that several characters are written from is read once.
+   */
+  private renderCharacterWrite(
+    site: IAssignmentSyntax,
+    write: IPlannedCharacterWrite,
+  ): string {
+    const target = site.target;
+    const last = target.kind === "postfix" ? target.ops.at(-1) : undefined;
+    invariant(
+      last?.kind === "subscript",
+      "a character write ends in a subscript",
+    );
+    const base = this.generateAssignmentTarget(
+      target,
+      AssignmentTarget.parts(target).ops.length - 1,
+    );
+    const start = last.indexes[0];
+    const lines: string[] = [];
+    let from: string | null = null;
+    if (write.startCType !== null) {
+      from = this.host.state.getNextTempVarName();
+      lines.push(
+        `const ${write.startCType} ${from} = ${this.renderExpression(start)};`,
+      );
+    }
+    // Where character `k` lands, `k` a number or a loop counter
+    const position = (k: number | string): string => {
+      if (write.offset !== null) {
+        if (typeof k === "number") return `${write.offset + k}`;
+        return write.offset === 0 ? k : `${write.offset}U + ${k}`;
+      }
+      const first = from ?? this.renderExpression(start);
+      return k === 0
+        ? first
+        : `${first} + ${typeof k === "number" ? `${k}U` : k}`;
+    };
+    // One character lands where the target spells it, as any element write's
+    const at = (k: number | string): string =>
+      write.count === 1 && k === 0
+        ? `${base}[${this.renderExpression(start)}]`
+        : `${base}[${position(k)}]`;
+    lines.push(...this.renderCharacterValue(site, write, at));
+    if (from === null) return lines.join("\n");
+    return ["{", ...lines.map((line) => `    ${line}`), "}"].join("\n");
+  }
+
+  /** The writes of a character write's value, character `k` at `at(k)` */
+  private renderCharacterValue(
+    site: IAssignmentSyntax,
+    write: IPlannedCharacterWrite,
+    at: (k: number | string) => string,
+  ): string[] {
+    const value = write.value;
+    const indexes = Array.from({ length: write.count }, (_, k) => k);
+    switch (value.kind) {
+      case "character":
+        return [`${at(0)} = ${this.renderExpression(site.value)};`];
+      case "integer": {
+        const source = this.filePlan.sliceSources.get(site);
+        invariant(
+          source !== undefined,
+          "2.2 planned every slice source 2.3 writes",
+        );
+        return SliceWrites.render({
+          element: SliceWrites.STRING_ELEMENT,
+          source,
+          value: this.renderExpression(site.value),
+          lengthValue: write.count,
+          elementCount: write.count,
+          state: this.host.state,
+          at,
+        });
+      }
+      case "string":
+        break;
+    }
+    const form = value.form;
+    if (form.kind === "literal") {
+      return indexes.map(
+        (k) =>
+          `${at(k)} = ${StringUtils.characterAt(form.literal.written, k)};`,
+      );
+    }
+    if (!value.staged) {
+      return indexes.length === 0 ? [] : this.renderOneCharacter(form, at(0));
+    }
+    const buffer = this.host.state.getNextTempVarName();
+    const length = this.host.state.getNextTempVarName();
+    const k = this.host.state.getNextTempVarName();
+    return [
+      ComplianceAnnotations.render(ComplianceAnnotations.RANGE_READ_APART),
+      "{",
+      `    char ${buffer}[${write.count + 1}] = "";`,
+      ...this.renderFill(buffer, write.count, form).map(
+        (line) => `    ${line}`,
+      ),
+      `    const uint32_t ${length} = (uint32_t) strlen(${buffer});`,
+      `    for (uint32_t ${k} = 0U; ${k} < ${length}; ${k}++) {`,
+      `        ${at(k)} = ${buffer}[${k}];`,
+      "    }",
+      "}",
+    ];
+  }
+
+  /**
+   * #2385: a string's one character, read once, and written only if the
+   * string holds one -- an empty string writes nothing, as it writes nothing
+   * into a longer span
+   */
+  private renderOneCharacter(form: TStringValueForm, target: string): string[] {
+    const character = this.host.state.getNextTempVarName();
+    return [
+      "{",
+      `    const char ${character} = ${this.renderCharacterAt(form)};`,
+      `    if (${character} != '\\0') {`,
+      `        ${target} = ${character};`,
+      "    }",
+      "}",
+    ];
+  }
+
+  /** A string written into `buffer` at `capacity`: copied whole, or built from its parts */
+  private renderFill(
+    buffer: string,
+    capacity: number,
+    form: TStringValueForm,
+  ): string[] {
+    if (form.kind === "copy" || form.kind === "literal") {
+      const whole = form.kind === "copy" ? form.value : form.literal;
+      return [StringUtils.copy(buffer, this.renderExpression(whole), capacity)];
+    }
+    return StringUtils.build(buffer, capacity, this.renderStringParts(form));
+  }
+
   /** A concatenation's or a substring's parts as generated C (ADR-045) */
   private renderStringParts(
     form: TStringValueForm,
@@ -3232,6 +3402,10 @@ class CodeGenWalker {
     const builtApart =
       stringForm !== undefined &&
       (stringForm.kind === "concat" || stringForm.kind === "substring");
+    const character = this.filePlan.characterWrites.get(site);
+    if (character !== undefined) {
+      return this.renderCharacterWrite(site, character);
+    }
     const value = builtApart ? "" : this.renderExpression(site.value);
 
     // #1322: the operator was mapped to its C form here and used for nothing

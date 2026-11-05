@@ -39,9 +39,11 @@ import type ILengthName from "../../utils/types/ILengthName";
 import type TLengthRule from "../../utils/types/TLengthRule";
 import LengthSubject from "../../utils/LengthSubject";
 import OperandTyper from "../../utils/OperandTyper";
+import CharacterWrite from "../../utils/CharacterWrite";
 import StringValueForm from "../../utils/StringValueForm";
 import StringUtils from "../../utils/StringUtils";
 import type TStringValueForm from "../../types/TStringValueForm";
+import type IPlannedCharacterWrite from "./types/IPlannedCharacterWrite";
 import headerCType from "../../utils/headerCType";
 import HeaderTypeNames from "./HeaderTypeNames";
 import PublicInterface from "./PublicInterface";
@@ -1143,9 +1145,11 @@ class FilePlanner {
       selfIncludeAdded,
     );
     const decidedCTypes = new Set<string>();
+    const characterWrites = this.planCharacterWrites(program, decidedCTypes);
     const stringCopies = this.planStringCopies(
       program,
       valuePositions,
+      characterWrites,
       decidedCTypes,
     );
     const inlinedConsts = this.planInlinedConsts(program, decidedCTypes);
@@ -1325,6 +1329,7 @@ class FilePlanner {
       clampOps: clamps.ops,
       sliceSources,
       stringCopies: stringCopies.copies,
+      characterWrites,
       stringValueForms: stringCopies.forms,
       substringCounts: this.planSubstringCounts(stringCopies.forms),
       stringFields: stringCopies.fields,
@@ -1978,13 +1983,46 @@ class FilePlanner {
     const typing = this.state.typingContext();
     const sites = FilePlanner.assignmentSites(program);
     for (const site of sites) {
+      // #2385: an integer written into a string's characters is split into
+      // bytes as a slice's is, `s[i]` as `s[i, 1]`; any other value written
+      // into them is no slice source
+      const write =
+        site.operator === "<-"
+          ? CharacterWrite.of(site.target, site.value, typing)
+          : null;
+      if (write !== null) {
+        const span = OperandTyper.characterSpan(site.target, typing);
+        if (write === "integer" && span !== null) {
+          // A string's bytes are cast through uint8_t (MISRA 10.8)
+          cTypes.add("uint8_t");
+          this.planSliceSource(site, span.count, 1, sliceSources, cTypes);
+        }
+        continue;
+      }
       const last = OperandTyper.chainOf(site.target, typing).steps.at(-1);
       if (last?.subscript === "array_slice") {
         const element = last.before?.typeName ?? null;
         invariant(element !== null, "a sliced buffer names its element type");
-        // A string's bytes are cast through uint8_t (MISRA 10.8)
         cTypes.add(TYPE_MAP[element] ?? "uint8_t");
-        this.planSliceSource(site, sliceSources, cTypes);
+        const slice = AssignmentTarget.parts(site.target).ops.at(-1);
+        invariant(
+          slice?.kind === "subscript" && slice.indexes.length === 2,
+          "a slice write ends in a two-index subscript",
+        );
+        const lengthValue = this.tryEvaluateConstant(slice.indexes[1]);
+        invariant(
+          lengthValue !== undefined,
+          "2.1 folded the slice length (E0859)",
+        );
+        this.planSliceSource(
+          site,
+          lengthValue,
+          SliceSource.elementBytes(
+            this.targetDeclaration(site.target).typeInfo,
+          ),
+          sliceSources,
+          cTypes,
+        );
         continue;
       }
       if (site.operator === "<-" || (atomicForms.get(site) ?? null) !== null) {
@@ -2102,6 +2140,75 @@ class FilePlanner {
   }
 
   /**
+   * #1748, #2373, #2385: each `<-` that writes into the characters of a
+   * `string<N>`, as `CharacterWrite` -- which 2.1's E0928, E0864 and
+   * E0860/E0861 read -- decides it. `s[i]` is `s[i, 1]` (owner ruling,
+   * 2026-11-05), so the span is all that is read, never its spelling.
+   */
+  private planCharacterWrites(
+    program: IProgramSyntax,
+    cTypes: Set<string>,
+  ): ReadonlyMap<IAssignmentSyntax, IPlannedCharacterWrite> {
+    const writes = new Map<IAssignmentSyntax, IPlannedCharacterWrite>();
+    const typing = this.state.typingContext();
+    for (const site of FilePlanner.assignmentSites(program)) {
+      if (site.operator !== "<-") continue;
+      const write = CharacterWrite.of(site.target, site.value, typing);
+      const span = OperandTyper.characterSpan(site.target, typing);
+      if (write === null || write === "other" || span === null) continue;
+      let value: IPlannedCharacterWrite["value"];
+      let count: number;
+      if (write === "string") {
+        const form = StringValueForm.of(site.value, typing);
+        count = Math.min(span.count, this.characterCount(form, span.count));
+        const staged =
+          form.kind === "concat" || (form.kind !== "literal" && count > 1);
+        value = { kind: "string", form, staged };
+      } else {
+        value = { kind: write };
+        count = write === "character" ? 1 : span.count;
+      }
+      const offset = this.constantOf(span.start) ?? null;
+      const startCType =
+        offset === null && count > 1
+          ? FilePlanner.startCTypeOf(span.start, typing)
+          : null;
+      if (startCType !== null) cTypes.add(startCType);
+      writes.set(site, { value, count, offset, startCType });
+    }
+    return writes;
+  }
+
+  /** The C type a runtime span start is bound to: its own, as E0850 made it unsigned */
+  private static startCTypeOf(
+    start: TExpression,
+    typing: ITypingContext,
+  ): string | null {
+    const typeName = OperandTyper.typeOf(start, typing)?.typeName ?? null;
+    return typeName === null ? null : (TYPE_MAP[typeName] ?? null);
+  }
+
+  /** #2373: how many characters a string's form holds; E0864 made it fit */
+  private characterCount(form: TStringValueForm, fallback: number): number {
+    switch (form.kind) {
+      case "literal":
+        return StringUtils.literalLength(form.literal.written);
+      case "substring": {
+        const length = form.part.length;
+        return length === null ? 1 : (this.constantOf(length) ?? fallback);
+      }
+      case "copy":
+        return (
+          OperandTyper.scalarStringCapacity(
+            OperandTyper.typeOf(form.value, this.state.typingContext()),
+          ) ?? fallback
+        );
+      case "concat":
+        return fallback;
+    }
+  }
+
+  /**
    * #1731: the capacity of each write of one whole `string<N>`, which is one
    * `cnx_string_copy` (#2207) whatever spells its target. ADR-045's copy,
    * recorded where it is decided. The typer's answer, asked as 2.1's E0715
@@ -2114,6 +2221,7 @@ class FilePlanner {
   private planStringCopies(
     program: IProgramSyntax,
     valuePositions: IValuePositions | null,
+    characterWrites: ReadonlyMap<IAssignmentSyntax, IPlannedCharacterWrite>,
     cTypes: Set<string>,
   ): {
     readonly copies: ReadonlyMap<IAssignmentSyntax, number>;
@@ -2131,6 +2239,13 @@ class FilePlanner {
       AdrProvenance.record("045", site.operatorSpan.line, "string-copy");
       copies.set(site, capacity);
       forms.set(site.value, StringValueForm.of(site.value, typing));
+    }
+    // #2373: a string other than a literal is built apart before it is
+    // written into a range, and its length counted in `uint32_t`
+    for (const [site, write] of characterWrites) {
+      if (write.value.kind !== "string" || !write.value.staged) continue;
+      forms.set(site.value, write.value.form);
+      cTypes.add("uint32_t");
     }
     FilePlanner.planStringInits(program, typing, forms);
     const builtArguments = FilePlanner.planStringArguments(
@@ -2438,17 +2553,12 @@ class FilePlanner {
    */
   private planSliceSource(
     site: IAssignmentSyntax,
+    lengthValue: number,
+    elementBytes: number,
     sliceSources: Map<IAssignmentSyntax, IPlannedSliceSource>,
     cTypes: Set<string>,
   ): void {
     const parts = AssignmentTarget.parts(site.target);
-    const slice = parts.ops.at(-1);
-    invariant(
-      slice?.kind === "subscript" && slice.indexes.length === 2,
-      "a slice write ends in a two-index subscript",
-    );
-    const lengthValue = this.tryEvaluateConstant(slice.indexes[1]);
-    invariant(lengthValue !== undefined, "2.1 folded the slice length (E0859)");
     const value = site.value;
     const hasValue = value.kind !== "missing";
     const source = SliceSource.of(
@@ -2465,9 +2575,6 @@ class FilePlanner {
     for (const cType of [source.cType, source.unsignedCType]) {
       if (cType !== null) cTypes.add(cType);
     }
-    const elementBytes = SliceSource.elementBytes(
-      this.targetDeclaration(site.target).typeInfo,
-    );
     const elementCount = lengthValue / elementBytes;
     if (
       SliceSource.materializes(source, elementCount) &&

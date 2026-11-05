@@ -1,0 +1,4 @@
+12:6 error[E0860]: Slice assignment out of bounds: offset(9) + 1 element(s) = 10 exceeds buffer capacity(9) for 's'
+       help: The offset is an element index and the capacity an element count, so the span is compared in elements, not bytes.
+13:12 error[E0861]: Slice assignment literal value (300) does not fit in the 1-byte slice for 's'
+       help: Narrow the value, or widen the slice.

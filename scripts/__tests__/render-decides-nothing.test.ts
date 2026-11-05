@@ -280,7 +280,7 @@ const PLAN_DECISIONS: Readonly<Record<string, readonly string[]>> = {
     // writes the planned one.
   ],
   ComplianceAnnotations: [
-    "codegen/assignment/handlers/ArrayHandlers.ts",
+    "codegen/assignment/SliceWrites.ts",
     "codegen/assignment/handlers/StringHandlers.ts",
     "codegen/generators/statements/ControlFlowGenerator.ts",
     // #2207: the MISRA 19.1 comment above the emitted `cnx_string_copy`

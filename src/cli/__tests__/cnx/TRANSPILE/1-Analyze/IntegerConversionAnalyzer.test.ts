@@ -415,4 +415,50 @@ describe("IntegerConversionAnalyzer -- on 1.2's syntax", () => {
       ),
     ).toEqual([]);
   });
+
+  describe("E0928 -- a string<N>'s characters take a character, a string or an integer (#1748, #2385)", () => {
+    const inF = (body: string): string =>
+      `mut string<8> s;\nstring<8> t <- "QRS";\nmut u8 n <- 66;\nmut f32 x <- 1.5;\nvoid f() {\n${body}\n}`;
+    const codesOf = (body: string): string[] =>
+      errors(inF(body)).map((e) => e.code);
+
+    it("rejects a bool and a float written into one character or a range", () => {
+      expect(
+        codesOf(
+          "    s[2] <- true;\n    s[3] <- x;\n    s[0, 2] <- true;\n    s[4, 1] <- x;",
+        ),
+      ).toEqual(["E0928", "E0928", "E0928", "E0928"]);
+    });
+
+    it("accepts an integer, split into bytes as a slice's is (#2385)", () => {
+      expect(
+        codesOf("    s[0] <- 65;\n    s[1] <- n;\n    s[2] <- n + n;"),
+      ).toEqual([]);
+    });
+
+    it("names the value, at the value's position", () => {
+      const [found] = errors(inF("    s[0] <- true;"));
+      expect(found.message).toBe(
+        "A value that is not a character, a string or an integer cannot be written into a string's characters: 'true'",
+      );
+      expect(found.span.line).toBe(6);
+    });
+
+    it("accepts a character, another string's character, and a string", () => {
+      expect(
+        codesOf(
+          "    s[0] <- 'a';\n    s[1] <- t[0];\n    s[2] <- \"x\";\n    s[3] <- (n > 0) ? 'a' : 'b';",
+        ),
+      ).toEqual([]);
+    });
+
+    it("accepts MISRA's exempt character + integer pair, a character (#2375)", () => {
+      expect(codesOf("    s[0] <- 'a' + n;\n    s[1] <- n + 'a';")).toEqual([]);
+    });
+
+    it("leaves a compound assignment and a whole-string write to other rules", () => {
+      expect(codesOf("    s[0] +<- 1;")).not.toContain("E0928");
+      expect(codesOf('    s <- "abc";')).toEqual([]);
+    });
+  });
 });
