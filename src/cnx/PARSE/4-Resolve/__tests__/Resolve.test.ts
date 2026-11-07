@@ -57,4 +57,36 @@ describe("Resolve.program", () => {
     expect(resolved.program.headerMacrosUnread("/p/a.cnx")).toBe(true);
     expect(resolved.program.headerMacrosUnread("/p/b.cnx")).toBe(false);
   });
+
+  it("keeps only the macros a file's own C includes define (#1881)", async () => {
+    const headerMacroDumps = new Map([
+      [
+        "/p/a.cnx",
+        {
+          dump: "#define OWN 1\n#define NESTED 2",
+          visible: new Set(["OWN"]),
+          complete: true,
+        },
+      ],
+    ]);
+    const parsed = await Parse.sources(
+      {
+        ...testSourceGraph([Discover.inMemoryFile("u32 a <- 0;", "/p/a.cnx")]),
+        headerMacroDumps,
+      },
+      noHeaderServices,
+    );
+    const { program } = Resolve.program(
+      Declare.sources({
+        ...parsed,
+        discovery: { ...parsed.discovery, headerMacroDumps },
+      }),
+    );
+
+    expect(program.headerMacro("/p/a.cnx", "OWN")).not.toBeNull();
+    expect(program.headerMacro("/p/a.cnx", "NESTED")).toBeNull();
+    expect(program.seesHeaderMacro("/p/a.cnx", "OWN")).toBe(true);
+    expect(program.seesHeaderMacro("/p/a.cnx", "NESTED")).toBe(false);
+    expect(program.hidesHeaderName("/p/a.cnx", "NESTED")).toBe(true);
+  });
 });
