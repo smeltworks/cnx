@@ -71,13 +71,28 @@ function isParseType(type: Type): boolean {
  * repository that genuinely holds every retained tree. The first version of this
  * scan did exactly that and returned 0 for its own control.
  */
+/**
+ * The text `reachesParseNode` keys its `seen` set on, printed once per type
+ * (#2094): printing a type is the walk's main cost, and the walk meets the
+ * same few thousand types again and again.
+ */
+const typeKeys = new Map<Type["compilerType"], string>();
+function typeKey(type: Type): string {
+  let key = typeKeys.get(type.compilerType);
+  if (key === undefined) {
+    key = type.getText().slice(0, 140);
+    typeKeys.set(type.compilerType, key);
+  }
+  return key;
+}
+
 function reachesParseNode(
   type: Type,
   depth = 0,
   seen = new Set<string>(),
 ): boolean {
   if (depth > 5) return false;
-  const key = `${type.getText().slice(0, 140)}|${depth}`;
+  const key = `${typeKey(type)}|${depth}`;
   if (seen.has(key)) return false;
   seen.add(key);
 
@@ -213,6 +228,21 @@ function matchingModules(pattern: RegExp): string[] {
     .map((path) => relative(repoRoot, path));
 }
 
+/**
+ * `reachesParseNode` for a field's type, answered once per type (#2094): the
+ * fields under `src/` share a few hundred types, and walking each field's type
+ * afresh took the all-of-`src/` assertion past its timeout under coverage.
+ */
+const fieldTypeCache = new Map<Type["compilerType"], boolean>();
+function fieldTypeReaches(type: Type): boolean {
+  let reaches = fieldTypeCache.get(type.compilerType);
+  if (reaches === undefined) {
+    reaches = reachesParseNode(type);
+    fieldTypeCache.set(type.compilerType, reaches);
+  }
+  return reaches;
+}
+
 function storedParseNodes(pattern: RegExp): string[] {
   const found: string[] = [];
   for (const sf of project.getSourceFiles()) {
@@ -221,7 +251,7 @@ function storedParseNodes(pattern: RegExp): string[] {
     for (const cls of sf.getClasses())
       for (const prop of declaredProperties(cls)) {
         try {
-          if (reachesParseNode(prop.getType()))
+          if (fieldTypeReaches(prop.getType()))
             found.push(
               `${relative(repoRoot, path)}:${prop.getStartLineNumber()} ${cls.getName()}.${prop.getName()}`,
             );
@@ -297,9 +327,17 @@ function containedTypes(type: Type, depth = 0): Type[] {
 }
 
 /** Whether `type`, a union member, or anything it contains is a parse type */
+const containsCache = new Map<Type["compilerType"], boolean>();
 function containsParseType(type: Type): boolean {
-  const members = type.isUnion() ? type.getUnionTypes() : [type];
-  return members.some((member) => containedTypes(member).some(isParseType));
+  let contains = containsCache.get(type.compilerType);
+  if (contains === undefined) {
+    const members = type.isUnion() ? type.getUnionTypes() : [type];
+    contains = members.some((member) =>
+      containedTypes(member).some(isParseType),
+    );
+    containsCache.set(type.compilerType, contains);
+  }
+  return contains;
 }
 
 /**
