@@ -69,13 +69,11 @@ describe("Resolve.program", () => {
         },
       ],
     ]);
-    const parsed = await Parse.sources(
-      {
-        ...testSourceGraph([Discover.inMemoryFile("u32 a <- 0;", "/p/a.cnx")]),
-        headerMacroDumps,
-      },
-      noHeaderServices,
-    );
+    const graph = {
+      ...testSourceGraph([Discover.inMemoryFile("u32 a <- 0;", "/p/a.cnx")]),
+      headerMacroDumps,
+    };
+    const parsed = await Parse.sources(graph, noHeaderServices);
     const { program } = Resolve.program(
       Declare.sources({
         ...parsed,
