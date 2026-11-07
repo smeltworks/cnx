@@ -282,7 +282,9 @@ class IncludeResolver {
         const spec = IncludeDirectiveText.spec(directive);
         if (spec !== null) result.cHeaderSpecs.push(spec);
         const path = result.resolutions.get(directive);
-        if (path !== null && path !== undefined) result.cHeaderPaths.add(path);
+        if (path !== null && path !== undefined) {
+          result.cHeaderPaths.add(resolve(path));
+        }
       }
     }
 
