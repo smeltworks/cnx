@@ -109,9 +109,10 @@ interface IFileIncludes {
   readonly cHeaderSpecs: readonly string[];
 
   /**
-   * #1881: the C/C++ headers this file names in its own `#include` lines, as
-   * resolved paths. Their names are the only header names the file sees: a
-   * header one of them includes, or one another `.cnx` includes, is not.
+   * #1881: the C/C++ headers this file's own `#include` lines bring in, as
+   * resolved paths: the ones it names and every header the walk found those
+   * include, as C inlines them. Their names are the header names the file
+   * sees; a header only another `.cnx` includes is not among them.
    */
   readonly cHeaderPaths: ReadonlySet<string>;
 }

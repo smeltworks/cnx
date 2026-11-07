@@ -152,7 +152,7 @@ describe("ExternalDeclarationOracle", () => {
   });
 });
 
-describe("ExternalDeclarationOracle.definitionsByFile (#1881)", () => {
+describe("ExternalDeclarationOracle.definesAndHeaders (#1881)", () => {
   const dump = [
     '# 0 "unit.c"',
     '# 0 "<built-in>"',
@@ -167,22 +167,19 @@ describe("ExternalDeclarationOracle.definitionsByFile (#1881)", () => {
     '# 1 "/p/pins.h" 1',
     "#define PIN 3",
     '# 2 "/p/board.h" 2',
-    '# 9 "/p/board.h"',
     "#define LED 13",
     "#define GONE 1",
     "#undef GONE",
     '# 2 "unit.c" 2',
   ].join("\n");
-  const read = ExternalDeclarationOracle.definitionsByFile(dump);
+  const read = ExternalDeclarationOracle.definesAndHeaders(dump);
 
-  it("sees a macro the included header defines itself, and a -D", () => {
-    expect([...read.visible].sort()).toEqual(["FROM_FLAG", "LED"]);
-  });
-
-  it("hides a nested header's macro, builtins, and stdc-predef's", () => {
-    for (const name of ["PIN", "__GNUC__", "_STDC_PREDEF_H"]) {
-      expect(read.visible.has(name)).toBe(false);
-    }
+  it("names every header entered, nested ones too, but not the unit", () => {
+    expect([...read.headerFiles].sort()).toEqual([
+      "/p/board.h",
+      "/p/pins.h",
+      "/usr/include/stdc-predef.h",
+    ]);
   });
 
   it("lists every macro still defined at the end, as -dM would", () => {

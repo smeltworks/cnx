@@ -190,6 +190,26 @@ describe("Discover", () => {
     expect(app?.includeRewrites.get("lib.cnx")).toBe("lib.h");
   });
 
+  // #1881: C includes are textual, so a header a file includes brings in the
+  // headers it includes; another `.cnx` file's headers are not brought in
+  it("keeps the headers a file's own C includes bring in, nested ones too", async () => {
+    const { graph } = await discover(
+      project()
+        .addFile("/proj/src/board.h", '#include "pins.h"\n#define LED 13\n')
+        .addFile("/proj/src/pins.h", "typedef unsigned pin_t;\n")
+        .addFile("/proj/src/lib.cnx", '#include "hw.h"\nu32 one <- 1;\n')
+        .addFile("/proj/src/hw.h", "void hw(void);\n"),
+    );
+
+    const reached = (path: string) =>
+      [...(graph.includes.c.get(path)?.cHeaderPaths ?? [])].sort();
+    expect(reached("/proj/src/app.cnx")).toEqual([
+      "/proj/src/board.h",
+      "/proj/src/pins.h",
+    ]);
+    expect(reached("/proj/src/lib.cnx")).toEqual(["/proj/src/hw.h"]);
+  });
+
   it("carries the anchor's facts", async () => {
     const { graph } = await discover(project());
 

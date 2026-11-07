@@ -1,7 +1,7 @@
 /**
  * #1688: each cnx file's header macros, as the preprocessor's dump of that
- * file's own C includes, and no other file's. #1881: of those the file sees
- * only the ones its own includes define themselves.
+ * file's own C includes -- so a file sees the macros C sees for it, system
+ * headers and compiler builtins included, and no other file's (#1881).
  *
  * #1713: run in 1.2, with the compiler of the run's target, once 1.2 has
  * chosen it (owner ruling 2026-10-16: running the compiler over the headers
@@ -38,7 +38,7 @@ class HeaderMacroDumps {
       return new Map(
         withIncludes.map(({ file }) => [
           file.path,
-          { dump: null, visible: new Set<string>(), complete: false },
+          { dump: null, headerFiles: new Set<string>(), complete: false },
         ]),
       );
     }
@@ -57,7 +57,7 @@ class HeaderMacroDumps {
         );
         const dump: IHeaderMacroDump = {
           dump: read?.dump ?? null,
-          visible: read?.visible ?? new Set<string>(),
+          headerFiles: read?.headerFiles ?? new Set<string>(),
           complete: read?.complete === true,
         };
         return [file.path, dump] as const;

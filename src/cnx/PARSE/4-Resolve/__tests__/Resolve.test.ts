@@ -35,7 +35,7 @@ describe("Resolve.program", () => {
           "/p/a.cnx",
           {
             dump: "#define SCALE_F 2.5f",
-            visible: new Set(["SCALE_F"]),
+            headerFiles: new Set<string>(),
             complete: false,
           },
         ],
@@ -58,19 +58,21 @@ describe("Resolve.program", () => {
     expect(resolved.program.headerMacrosUnread("/p/b.cnx")).toBe(false);
   });
 
-  it("keeps only the macros a file's own C includes define (#1881)", async () => {
+  it("gives each file only its own C includes' macros (#1881)", async () => {
+    const own = (dump: string) => ({
+      dump,
+      headerFiles: new Set<string>(),
+      complete: true,
+    });
     const headerMacroDumps = new Map([
-      [
-        "/p/a.cnx",
-        {
-          dump: "#define OWN 1\n#define NESTED 2",
-          visible: new Set(["OWN"]),
-          complete: true,
-        },
-      ],
+      ["/p/a.cnx", own("#define OWN 1\n#define NESTED 2")],
+      ["/p/b.cnx", own("#define OTHER 3")],
     ]);
     const graph = {
-      ...testSourceGraph([Discover.inMemoryFile("u32 a <- 0;", "/p/a.cnx")]),
+      ...testSourceGraph([
+        Discover.inMemoryFile("u32 a <- 0;", "/p/a.cnx"),
+        Discover.inMemoryFile("u32 b <- 0;", "/p/b.cnx"),
+      ]),
       headerMacroDumps,
     };
     const parsed = await Parse.sources(graph, noHeaderServices);
@@ -81,10 +83,10 @@ describe("Resolve.program", () => {
       }),
     );
 
-    expect(program.headerMacro("/p/a.cnx", "OWN")).not.toBeNull();
-    expect(program.headerMacro("/p/a.cnx", "NESTED")).toBeNull();
+    expect(program.headerMacro("/p/a.cnx", "NESTED")).not.toBeNull();
     expect(program.seesHeaderMacro("/p/a.cnx", "OWN")).toBe(true);
-    expect(program.seesHeaderMacro("/p/a.cnx", "NESTED")).toBe(false);
-    expect(program.hidesHeaderName("/p/a.cnx", "NESTED")).toBe(true);
+    expect(program.seesHeaderMacro("/p/a.cnx", "OTHER")).toBe(false);
+    expect(program.hidesHeaderName("/p/a.cnx", "OTHER")).toBe(true);
+    expect(program.hidesHeaderName("/p/b.cnx", "OTHER")).toBe(false);
   });
 });

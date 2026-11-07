@@ -1,11 +1,17 @@
-// test-error
-// Issue #1881: only a header main names in its own #include lines counts.
-// LED is lib/board.h's own, so it is defined here; PIN is lib/pins.h's,
-// which board.h includes, so it is not.
+// test-execution
+// Issue #1881: C includes are textual, so a header main includes brings in
+// the headers it includes. LED is lib/board.h's own; PIN is lib/pins.h's,
+// which board.h includes, as is its pin_t. All are defined here.
 #include "lib/board.h"
 
 u32 main() {
     u32 led <- LED;
-    u32 pin <- PIN;
+    pin_t pin <- PIN;
+    if (led != 13) {
+        return 1;
+    }
+    if (pin != 3) {
+        return 2;
+    }
     return 0;
 }

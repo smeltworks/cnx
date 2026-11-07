@@ -31,6 +31,8 @@
  * Requires a toolchain that can preprocess the target's headers; for cross
  * targets (ESP32/xtensa) set CNX_CROSS_COMPILER.
  */
+import { resolve } from "node:path";
+
 import type IHeaderPreprocessor from "./types/IHeaderPreprocessor";
 import STDIN_MARKER from "./STDIN_MARKER";
 import RegExpUtils from "../../../utils/RegExpUtils";
@@ -45,8 +47,6 @@ const LINE_MARKER = /^#\s+(\d+)\s+"([^"]+)"(.*)$/;
 const TU_NAME = "cnx-external-decl-oracle.c";
 /** #1881: a `-dD` dump's `#define NAME ...` or `#undef NAME` */
 const DEFINE_OR_UNDEF = /^#(define|undef)\s+([A-Za-z_]\w*)/;
-/** #1881: the file a `-D` define is reported in */
-const COMMAND_LINE = "<command-line>";
 
 interface IExternalRecovery {
   /**
@@ -123,11 +123,10 @@ class ExternalDeclarationOracle {
    * cannot be preprocessed is dropped, as for recovery, and `complete` says
    * whether any was; null when none can be preprocessed.
    *
-   * #1881: `visible` is the macros a cnx file may name -- those its own
-   * includes define themselves, plus `-D` defines. A macro a header reaches
-   * through its own `#include`, or a compiler builtin, C sees but the file
-   * does not. So the dump is taken with `-dD` and its line markers, which say
-   * which file each `#define` is in.
+   * #1881: and every header the TU entered. C includes are textual, so a
+   * file that includes `<stdio.h>` sees what the headers `stdio.h` includes
+   * declare. So the dump is taken with `-dD` and its line markers, which name
+   * each header the preprocessor entered.
    */
   static async macroDump(
     includeDirectives: readonly string[],
@@ -135,7 +134,7 @@ class ExternalDeclarationOracle {
     options: IPreprocessOptions,
   ): Promise<{
     dump: string;
-    visible: ReadonlySet<string>;
+    headerFiles: ReadonlySet<string>;
     complete: boolean;
   } | null> {
     const working = await ExternalDeclarationOracle.preprocessLargestWorkingTu(
@@ -145,38 +144,30 @@ class ExternalDeclarationOracle {
     );
     if (!working) return null;
     return {
-      ...ExternalDeclarationOracle.definitionsByFile(working.content),
+      ...ExternalDeclarationOracle.definesAndHeaders(working.content),
       complete: working.directives.length === includeDirectives.length,
     };
   }
 
   /**
    * #1881: a `-dD` dump with line markers, reduced to the `#define`s still in
-   * force at its end and the names among them a file including the TU's
-   * headers may use: one defined in a header the TU includes itself, or on
-   * the command line. A marker's flag 1 enters an include and flag 2 returns
-   * from one; a marker with neither restarts at its file.
+   * force at its end and the headers its markers name, as resolved paths.
+   * The unit itself, `<built-in>` and `<command-line>` are not headers.
    */
-  static definitionsByFile(content: string): {
+  static definesAndHeaders(content: string): {
     dump: string;
-    visible: ReadonlySet<string>;
+    headerFiles: ReadonlySet<string>;
   } {
     const defines = new Map<string, string>();
-    const visible = new Set<string>();
+    const headerFiles = new Set<string>();
     let unit: string | null = null;
-    let stack: string[] = [];
     for (const line of content.split("\n")) {
       const marker = LINE_MARKER.exec(line);
       if (marker !== null) {
         const file = marker[2];
-        const flags = marker[3].trim().split(/\s+/);
-        if (flags.includes("1")) {
-          stack.push(file);
-        } else if (flags.includes("2")) {
-          while (stack.length > 1 && stack.at(-1) !== file) stack.pop();
-        } else {
-          unit ??= file;
-          stack[Math.max(stack.length - 1, 0)] = file;
+        unit ??= file;
+        if (file !== unit && !ExternalDeclarationOracle.isSynthetic(file)) {
+          headerFiles.add(resolve(file));
         }
         continue;
       }
@@ -184,14 +175,9 @@ class ExternalDeclarationOracle {
       if (directive === null) continue;
       const name = directive[2];
       defines.delete(name);
-      visible.delete(name);
-      if (directive[1] === "undef") continue;
-      defines.set(name, line);
-      const direct = stack.length === 2 && stack[0] === unit;
-      const commandLine = stack.length === 1 && stack[0] === COMMAND_LINE;
-      if (direct || commandLine) visible.add(name);
+      if (directive[1] === "define") defines.set(name, line);
     }
-    return { dump: [...defines.values()].join("\n"), visible };
+    return { dump: [...defines.values()].join("\n"), headerFiles };
   }
 
   /**

@@ -6,12 +6,7 @@
 #include "test.test.hpp"
 
 // test-transpile-only
-// widget_t is declared in widget_types.h and completed in widget_private.h,
-// which fake_lib.h includes. A header's names are visible only in a file
-// that includes it itself (#1881), so this file includes both.
 #include "fake_lib.h"
-#include "widget_types.h"
-#include "widget_private.h"
 
 #include <stdint.h>
 

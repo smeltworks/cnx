@@ -6,10 +6,10 @@
 interface IHeaderMacroDump {
   readonly dump: string | null;
   /**
-   * #1881: the dump's macros the file may name -- those its own includes
-   * define themselves, or `-D` defines; a header's own includes' are not.
+   * #1881: every header the file's own C includes brought in, nested ones
+   * included, as resolved paths: the headers whose names the file sees.
    */
-  readonly visible: ReadonlySet<string>;
+  readonly headerFiles: ReadonlySet<string>;
   readonly complete: boolean;
 }
 
