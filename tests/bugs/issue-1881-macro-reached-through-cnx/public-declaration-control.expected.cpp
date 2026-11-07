@@ -3,25 +3,18 @@
  * A safer C for embedded systems
  */
 
-#include "public-declaration-control.test.hpp"
-
 // test-execution
-// Issue #1881 negative control: lib/mid-public.cnx names BUF_SIZE in a public
-// declaration, so its header includes buf-size.h and main's gets it from there.
+// Issue #1881 control: lib/mid-public.cnx names BUF_SIZE in a public
+// declaration, which its own include makes visible there. main uses that
+// declaration without naming the macro, so it needs no include of its own.
 #include "lib/mid-public.hpp"
 
 #include <stdint.h>
 
-uint8_t x[BUF_SIZE] = {};
-
 int main(void) {
-    x[0] = 1U;
     staging[0] = 3U;
-    if (x[0U] != 1) {
-        return 1U;
-    }
     if (staging[0U] != 3) {
-        return 2U;
+        return 1U;
     }
     return 0U;
 }

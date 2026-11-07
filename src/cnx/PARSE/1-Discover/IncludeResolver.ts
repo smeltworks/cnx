@@ -86,6 +86,7 @@ interface IResolvedIncludes {
    */
   cHeaderIncludes: string[];
   cHeaderSpecs: string[];
+  cHeaderPaths: Set<string>;
 
   /**
    * #1844: every file this resolver categorized, in the order it met them.
@@ -248,6 +249,7 @@ class IncludeResolver {
       kinds: new Map<string, EFileType>(),
       cHeaderIncludes: [],
       cHeaderSpecs: [],
+      cHeaderPaths: new Set(),
       hasForeignInclude: false,
       included: [],
       cnxDirectives: [],
@@ -279,6 +281,8 @@ class IncludeResolver {
         result.cHeaderIncludes.push(directive);
         const spec = IncludeDirectiveText.spec(directive);
         if (spec !== null) result.cHeaderSpecs.push(spec);
+        const path = result.resolutions.get(directive);
+        if (path !== null && path !== undefined) result.cHeaderPaths.add(path);
       }
     }
 

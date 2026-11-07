@@ -10,7 +10,9 @@
 //
 // Control: a function NOT registered with the typedef keeps ADR-006 reference
 // semantics, so in C++ its parameter is a `const Full&` and a whole-value use
-// stays the bare name.
+// stays the bare name. Full is full.h's, which full_cb.h includes; it is
+// visible here only because this file includes full.h itself (#1881).
+#include "full.h"
 #include "full_cb.h"
 
 void onFull(mut Full f) {

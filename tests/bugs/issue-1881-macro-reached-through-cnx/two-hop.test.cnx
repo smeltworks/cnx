@@ -1,21 +1,10 @@
-// test-execution
+// test-error
 // Issue #1881: two hops -- main includes lib/outer.cnx, which includes
-// lib/mid.cnx, which includes buf-size.h. main's header names BUF_SIZE.
+// lib/mid.cnx, which includes buf-size.h. BUF_SIZE is not defined here.
 #include "lib/outer.cnx"
 
 mut u8[BUF_SIZE] x;
 
 u32 main() {
-    x[0] <- 1;
-    if (x[0] != 1) {
-        return 1;
-    }
-    if (x.type_element_count != 8) {
-        return 2;
-    }
-    u32 got <- twice();
-    if (got != 16) {
-        return 3;
-    }
-    return 0;
+    return twice();
 }

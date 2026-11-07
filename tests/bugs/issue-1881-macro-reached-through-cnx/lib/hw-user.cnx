@@ -1,0 +1,7 @@
+// Issue #1881: includes hw.h itself, so its function, variable and type are
+// visible here -- and only here.
+#include "hw.h"
+
+void resetAll() {
+    hw_reset();
+}

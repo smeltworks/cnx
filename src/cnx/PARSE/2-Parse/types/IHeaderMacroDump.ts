@@ -5,6 +5,11 @@
  */
 interface IHeaderMacroDump {
   readonly dump: string | null;
+  /**
+   * #1881: the dump's macros the file may name -- those its own includes
+   * define themselves, or `-D` defines; a header's own includes' are not.
+   */
+  readonly visible: ReadonlySet<string>;
   readonly complete: boolean;
 }
 

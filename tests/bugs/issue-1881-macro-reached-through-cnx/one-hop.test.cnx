@@ -1,31 +1,12 @@
-// test-execution
-// Issue #1881: main reaches buf-size.h only through lib/mid.cnx, whose own
-// header does not need it. main's header spells BUF_SIZE in x's dimension,
-// so it must include buf-size.h -- it did not, and neither main.h nor main.c
-// compiled (exit 0).
+// test-error
+// Issue #1881: main reaches buf-size.h only through lib/mid.cnx. A header's
+// names are visible only in a file that includes it itself, so BUF_SIZE is
+// not defined here. It used to be accepted, and main.h, which names it, did
+// not compile (exit 0).
 #include "lib/mid.cnx"
 
 mut u8[BUF_SIZE] x;
-mut u8[BUF_SIZE + 1] y;
 
 u32 main() {
-    x[0] <- 1;
-    y[BUF_SIZE] <- 2;
-    if (x[0] != 1) {
-        return 1;
-    }
-    if (y[8] != 2) {
-        return 2;
-    }
-    if (x.type_element_count != 8) {
-        return 3;
-    }
-    if (y.type_element_count != 9) {
-        return 4;
-    }
-    u32 got <- count();
-    if (got != 8) {
-        return 5;
-    }
-    return 0;
+    return count();
 }

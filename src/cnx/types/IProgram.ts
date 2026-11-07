@@ -18,6 +18,7 @@ import type IConflict from "./IConflict";
 import type ICodeGenSymbols from "./ICodeGenSymbols";
 import type THeaderMacro from "./THeaderMacro";
 import type IResolvedSymbols from "./IResolvedSymbols";
+import type IForeignOrigin from "./IForeignOrigin";
 
 /**
  * `Program` — the artifact 1.4 Resolve emits, and the only place a cross-file
@@ -179,18 +180,30 @@ interface IProgram {
   headerMacro(sourceFile: string, name: string): THeaderMacro | null;
 
   /**
+   * #1881: whether `sourceFile` may name the macro `name`, object-like or
+   * function-like: one of its own C includes defines it, or a `-D` does.
+   */
+  seesHeaderMacro(sourceFile: string, name: string): boolean;
+
+  /**
+   * #1881: whether `sourceFile` sees a symbol: any cnx one, and a C/C++ one
+   * only when a header the file includes itself declares it.
+   */
+  seesForeignSymbol(sourceFile: string, symbol: IForeignOrigin): boolean;
+
+  /**
+   * #1881: whether `name` is a header's macro or C/C++ declaration that
+   * `sourceFile` cannot see: no header the file includes itself supplies it,
+   * yet some header in the run does. A file that includes headers may name
+   * something no parse recorded, but not this.
+   */
+  hidesHeaderName(sourceFile: string, name: string): boolean;
+
+  /**
    * #1688: whether some of the file's C includes' macros could not be read,
    * so a name `headerMacro` does not know may still be one.
    */
   headerMacrosUnread(sourceFile: string): boolean;
-
-  /**
-   * #1881: the file whose own C includes define the macro `name` for
-   * `sourceFile` -- itself, else the first file of its include closure that
-   * does -- or null when none does. A header naming the macro carries that
-   * file's C includes, since C sees a `.cnx`'s headers only through them.
-   */
-  headerMacroIncludingFile(sourceFile: string, name: string): string | null;
 
   /**
    * #1619: the C type the run's header compiler gives a `<stdint.h>` or
@@ -282,7 +295,7 @@ interface IProgram {
 
   /**
    * ADR-030 / #2019: whether a spelling nothing binds at `at` may be a
-   * header's `#define`: the file reaches a C or C++ header, and no
+   * header's `#define`: the file includes a C or C++ header itself (#1881), and no
    * declaration of its own would bind the spelling there once closed
    */
   mayBeHeaderName(

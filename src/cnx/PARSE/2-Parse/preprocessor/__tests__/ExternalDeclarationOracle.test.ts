@@ -151,3 +151,47 @@ describe("ExternalDeclarationOracle", () => {
     expect(recovery).toBeNull();
   });
 });
+
+describe("ExternalDeclarationOracle.definitionsByFile (#1881)", () => {
+  const dump = [
+    '# 0 "unit.c"',
+    '# 0 "<built-in>"',
+    "#define __GNUC__ 11",
+    '# 0 "<command-line>"',
+    "#define FROM_FLAG 1",
+    '# 1 "/usr/include/stdc-predef.h" 1 3 4',
+    "#define _STDC_PREDEF_H 1",
+    '# 0 "<command-line>" 2',
+    '# 1 "unit.c"',
+    '# 1 "/p/board.h" 1',
+    '# 1 "/p/pins.h" 1',
+    "#define PIN 3",
+    '# 2 "/p/board.h" 2',
+    '# 9 "/p/board.h"',
+    "#define LED 13",
+    "#define GONE 1",
+    "#undef GONE",
+    '# 2 "unit.c" 2',
+  ].join("\n");
+  const read = ExternalDeclarationOracle.definitionsByFile(dump);
+
+  it("sees a macro the included header defines itself, and a -D", () => {
+    expect([...read.visible].sort()).toEqual(["FROM_FLAG", "LED"]);
+  });
+
+  it("hides a nested header's macro, builtins, and stdc-predef's", () => {
+    for (const name of ["PIN", "__GNUC__", "_STDC_PREDEF_H"]) {
+      expect(read.visible.has(name)).toBe(false);
+    }
+  });
+
+  it("lists every macro still defined at the end, as -dM would", () => {
+    expect(read.dump.split("\n").map((line) => line.split(" ")[1])).toEqual([
+      "__GNUC__",
+      "FROM_FLAG",
+      "_STDC_PREDEF_H",
+      "PIN",
+      "LED",
+    ]);
+  });
+});

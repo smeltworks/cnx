@@ -43,6 +43,10 @@ const LINE_MARKER = /^#\s+(\d+)\s+"([^"]+)"(.*)$/;
 // Synthetic TU filename (appears in preprocessor errors, keyed on to locate a
 // failing include by its line number).
 const TU_NAME = "cnx-external-decl-oracle.c";
+/** #1881: a `-dD` dump's `#define NAME ...` or `#undef NAME` */
+const DEFINE_OR_UNDEF = /^#(define|undef)\s+([A-Za-z_]\w*)/;
+/** #1881: the file a `-D` define is reported in */
+const COMMAND_LINE = "<command-line>";
 
 interface IExternalRecovery {
   /**
@@ -114,26 +118,80 @@ class ExternalDeclarationOracle {
   }
 
   /**
-   * #1688: the macro dump (`-dM`) of `includeDirectives` as one TU: every
-   * macro C sees after them, builtins included. A header that cannot be
-   * preprocessed is dropped, as for recovery, and `complete` says whether
-   * any was; null when none can be preprocessed.
+   * #1688: the macro dump of `includeDirectives` as one TU: every macro C
+   * sees after them, builtins included, as `-dM` would list it. A header that
+   * cannot be preprocessed is dropped, as for recovery, and `complete` says
+   * whether any was; null when none can be preprocessed.
+   *
+   * #1881: `visible` is the macros a cnx file may name -- those its own
+   * includes define themselves, plus `-D` defines. A macro a header reaches
+   * through its own `#include`, or a compiler builtin, C sees but the file
+   * does not. So the dump is taken with `-dD` and its line markers, which say
+   * which file each `#define` is in.
    */
   static async macroDump(
     includeDirectives: readonly string[],
     preprocessor: IHeaderPreprocessor,
     options: IPreprocessOptions,
-  ): Promise<{ dump: string; complete: boolean } | null> {
+  ): Promise<{
+    dump: string;
+    visible: ReadonlySet<string>;
+    complete: boolean;
+  } | null> {
     const working = await ExternalDeclarationOracle.preprocessLargestWorkingTu(
       [...includeDirectives],
       preprocessor,
-      { ...options, keepLineDirectives: false, dumpMacros: true },
+      { ...options, keepLineDirectives: true, dumpDefines: true },
     );
     if (!working) return null;
     return {
-      dump: working.content,
+      ...ExternalDeclarationOracle.definitionsByFile(working.content),
       complete: working.directives.length === includeDirectives.length,
     };
+  }
+
+  /**
+   * #1881: a `-dD` dump with line markers, reduced to the `#define`s still in
+   * force at its end and the names among them a file including the TU's
+   * headers may use: one defined in a header the TU includes itself, or on
+   * the command line. A marker's flag 1 enters an include and flag 2 returns
+   * from one; a marker with neither restarts at its file.
+   */
+  static definitionsByFile(content: string): {
+    dump: string;
+    visible: ReadonlySet<string>;
+  } {
+    const defines = new Map<string, string>();
+    const visible = new Set<string>();
+    let unit: string | null = null;
+    let stack: string[] = [];
+    for (const line of content.split("\n")) {
+      const marker = LINE_MARKER.exec(line);
+      if (marker !== null) {
+        const file = marker[2];
+        const flags = marker[3].trim().split(/\s+/);
+        if (flags.includes("1")) {
+          stack.push(file);
+        } else if (flags.includes("2")) {
+          while (stack.length > 1 && stack.at(-1) !== file) stack.pop();
+        } else {
+          unit ??= file;
+          stack[Math.max(stack.length - 1, 0)] = file;
+        }
+        continue;
+      }
+      const directive = DEFINE_OR_UNDEF.exec(line);
+      if (directive === null) continue;
+      const name = directive[2];
+      defines.delete(name);
+      visible.delete(name);
+      if (directive[1] === "undef") continue;
+      defines.set(name, line);
+      const direct = stack.length === 2 && stack[0] === unit;
+      const commandLine = stack.length === 1 && stack[0] === COMMAND_LINE;
+      if (direct || commandLine) visible.add(name);
+    }
+    return { dump: [...defines.values()].join("\n"), visible };
   }
 
   /**

@@ -40,6 +40,8 @@ interface ISettledFiles {
   readonly visibleFiles: ReadonlyMap<string, ReadonlySet<string>>;
   /** Every name a C or C++ header declares */
   readonly foreignNames: ReadonlySet<string>;
+  /** #1881: each file's foreign names, by its own header includes */
+  readonly foreignNamesByFile: ReadonlyMap<string, ReadonlySet<string>>;
   /** The values the headers' constants and macros carry */
   readonly foreignValues: ReadonlyMap<string, IForeignValue>;
   /** What the C and C++ headers contributed, or none */

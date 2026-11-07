@@ -7,6 +7,7 @@
  */
 
 #include <stdint.h>
+#include "full.h"
 #include "full_cb.h"
 
 #ifdef __cplusplus

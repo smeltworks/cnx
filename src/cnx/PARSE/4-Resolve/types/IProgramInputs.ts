@@ -70,11 +70,16 @@ interface IProgramInputs {
    */
   readonly cppMode: boolean;
   /**
-   * #1175: the files that include a C or C++ header, directly or
-   * transitively. A `#define` never reaches the symbol model, so in these a
+   * #1881: the C/C++ headers each file includes itself, keyed by the file's
+   * path. A header's names are visible only there. Absent, no file includes
+   * one.
+   */
+  readonly headerPathsByFile?: ReadonlyMap<string, ReadonlySet<string>>;
+  /**
+   * #1175: the files that include a C or C++ header themselves (#1881). A `#define` never reaches the symbol model, so in these a
    * name nothing binds may be a macro. Absent, no file does.
    */
-  readonly filesReachingForeignHeaders?: ReadonlySet<string>;
+  readonly filesIncludingForeignHeaders?: ReadonlySet<string>;
 }
 
 export default IProgramInputs;

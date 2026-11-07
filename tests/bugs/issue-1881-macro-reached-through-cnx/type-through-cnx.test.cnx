@@ -1,0 +1,9 @@
+// test-error
+// Issue #1881: hw_dev_t is declared in lib/hw.h, which main reaches only
+// through lib/hw-user.cnx. It is not defined here.
+#include "lib/hw-user.cnx"
+
+u32 main() {
+    hw_dev_t dev <- { id: 1 };
+    return 0;
+}

@@ -38,10 +38,12 @@ interface IConstantNameFacts {
   /** A local as settled; undefined when it has not settled (yet) */
   settledLocal(declaration: ILocalDeclaration): ILocalDeclaration | undefined;
   /**
-   * Whether this file includes a C or C++ header, directly or transitively:
-   * a name nothing binds may then be a macro, which only C can evaluate
+   * Whether this file includes a C or C++ header itself (#1881): a name
+   * nothing binds may then be a macro, which only C can evaluate
    */
-  readonly reachesForeignHeader: boolean;
+  readonly includesForeignHeader: boolean;
+  /** `IProgram.hidesHeaderName`, for this file */
+  hidesHeaderName(name: string): boolean;
   /** `IProgram.mayBeHeaderName`, for this file */
   mayBeHeaderName(root: TChainRoot, name: string, at: ISourcePosition): boolean;
   /** A header's variable or function the binder bound `name` to; null otherwise */

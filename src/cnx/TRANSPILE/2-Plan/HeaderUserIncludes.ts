@@ -1,13 +1,7 @@
-import EFileType from "../../PARSE/1-Discover/types/EFileType";
-import type IFileIncludes from "../../PARSE/1-Discover/types/IFileIncludes";
 import type IResolvedSymbols from "../../types/IResolvedSymbols";
 import type IProgram from "../../types/IProgram";
-import type TConstExpr from "../../types/TConstExpr";
 import type TSymbol from "../../types/symbols/TSymbol";
-import ConstExprNames from "../../utils/ConstExprNames";
-import invariant from "../../utils/invariant";
 import HeaderTypeNames from "./HeaderTypeNames";
-import PublicInterface from "./PublicInterface";
 
 /**
  * Whether a generated header carries its source's own C/C++ includes -- a 2.2
@@ -96,121 +90,27 @@ class HeaderUserIncludes {
   }
 
   /**
-   * #1881: the C includes of every file `macroIncludingFiles` names, as this
-   * header spells them -- a header the run found is named from this header's
-   * directory (#1725), one it did not find is kept as written. In source order.
-   */
-  static macroCHeaders(
-    symbols: readonly TSymbol[],
-    symbolTable: IResolvedSymbols,
-    program: IProgram,
-    sourceFile: string,
-    includes: ReadonlyMap<string, IFileIncludes>,
-    spelled: ReadonlyMap<string, string>,
-  ): string[] {
-    const directives: string[] = [];
-    for (const file of HeaderUserIncludes.macroIncludingFiles(
-      symbols,
-      symbolTable,
-      program,
-      sourceFile,
-    )) {
-      const fileIncludes = includes.get(file);
-      invariant(
-        fileIncludes !== undefined,
-        "1.1 Discover records the includes of every file in a closure",
-      );
-      for (const [directive, kind] of fileIncludes.kinds) {
-        if (kind !== EFileType.CHeader && kind !== EFileType.CppHeader)
-          continue;
-        const header = fileIncludes.resolutions.get(directive) ?? null;
-        directives.push(
-          header === null ? directive : (spelled.get(header) ?? directive),
-        );
-      }
-    }
-    return directives;
-  }
-
-  /**
-   * #1881: the other files whose C includes the header must carry, because it
-   * names a macro only they define -- a `.cnx` it includes reached the macro's
-   * header, and C sees that header only through the `.cnx`'s own includes.
-   * Nearest file first. Neither the source nor a file whose own header carries
-   * its C includes is one: `needed` already carries the source's, and the
-   * header includes that file's header, which brings the macro with it.
-   */
-  static macroIncludingFiles(
-    symbols: readonly TSymbol[],
-    symbolTable: IResolvedSymbols,
-    program: IProgram,
-    sourceFile: string,
-  ): string[] {
-    const includingFiles = new Set<string>();
-    for (const symbol of symbols) {
-      for (const expr of HeaderUserIncludes.macroDimensionExprs(symbol)) {
-        for (const name of ConstExprNames.bare(expr)) {
-          const includingFile = program.headerMacroIncludingFile(
-            sourceFile,
-            name.path[0],
-          );
-          if (
-            includingFile !== null &&
-            includingFile !== sourceFile &&
-            !HeaderUserIncludes.needed(
-              PublicInterface.forFile(symbolTable, includingFile),
-              symbolTable,
-              program,
-            )
-          ) {
-            includingFiles.add(includingFile);
-          }
-        }
-      }
-    }
-    return [...includingFiles];
-  }
-
-  /**
    * Issue #424: an array dimension that is still an identifier is a macro the
    * header names and does not define -- wherever the header spells one: a
    * variable, a struct field (#1970) or a parameter.
    */
   private static namesMacroDimension(symbol: TSymbol): boolean {
-    return HeaderUserIncludes.dimensionPairsOf(symbol).some(
-      (pair) => typeof pair.dimension === "string",
+    return HeaderUserIncludes.dimensionsOf(symbol).some(
+      (dimension) => typeof dimension === "string",
     );
   }
 
-  /** The written form of each dimension the header spells as C, not a number */
-  private static macroDimensionExprs(symbol: TSymbol): TConstExpr[] {
-    return HeaderUserIncludes.dimensionPairsOf(symbol).flatMap((pair) =>
-      typeof pair.dimension === "string" && pair.expr ? [pair.expr] : [],
-    );
-  }
-
-  private static dimensionPairsOf(symbol: TSymbol): Array<{
-    dimension: number | string;
-    expr: TConstExpr | null | undefined;
-  }> {
-    const pairs = (
-      dimensions: ReadonlyArray<number | string> | undefined,
-      exprs: ReadonlyArray<TConstExpr | null> | undefined,
-    ) =>
-      (dimensions ?? []).map((dimension, i) => ({
-        dimension,
-        expr: exprs?.[i],
-      }));
+  private static dimensionsOf(symbol: TSymbol): ReadonlyArray<number | string> {
     switch (symbol.kind) {
       case "variable":
-        return pairs(symbol.arrayDimensions, symbol.arrayDimensionExprs);
+        return symbol.arrayDimensions ?? [];
       case "struct":
-        return [...symbol.fields.values()].flatMap((field) =>
-          pairs(field.dimensions, field.dimensionExprs),
+        return [...symbol.fields.values()].flatMap(
+          (field) => field.dimensions ?? [],
         );
       case "function":
-        return symbol.parameters.flatMap((parameter) =>
-          pairs(parameter.arrayDimensions, parameter.arrayDimensionExprs),
+        return symbol.parameters.flatMap(
+          (parameter) => parameter.arrayDimensions ?? [],
         );
       default:
         return [];

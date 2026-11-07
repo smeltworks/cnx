@@ -386,6 +386,9 @@ class Preprocessor implements IHeaderPreprocessor {
     if (options.dumpMacros) {
       args.push("-dM");
     }
+    if (options.dumpDefines) {
+      args.push("-dD");
+    }
     if (options.directivesOnly) {
       args.push("-fdirectives-only");
     }

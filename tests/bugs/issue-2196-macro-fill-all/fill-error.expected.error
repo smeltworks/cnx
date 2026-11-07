@@ -1,8 +1,8 @@
-20:22 error[E0866]: A fill-all [6*] other than zero needs a size cnx can fold, and 'NDIM' does not
+22:22 error[E0866]: A fill-all [6*] other than zero needs a size cnx can fold, and 'NDIM' does not
        help: Write the elements out, fill with zero, or size the array with a cnx constant (ADR-035).
-39:10 error[E0866]: A fill-all [7*] other than zero needs a size cnx can fold, and 'NDIM' does not
+41:10 error[E0866]: A fill-all [7*] other than zero needs a size cnx can fold, and 'NDIM' does not
        help: Write the elements out, fill with zero, or size the array with a cnx constant (ADR-035).
-41:25 error[E0866]: A fill-all [7*] other than zero needs a size cnx can fold, and 'NDIM' does not
+43:25 error[E0866]: A fill-all [7*] other than zero needs a size cnx can fold, and 'NDIM' does not
        help: Write the elements out, fill with zero, or size the array with a cnx constant (ADR-035).
-43:18 error[E0866]: A fill-all [9*] other than zero needs a size cnx can fold, and 'NDIM' does not
+45:18 error[E0866]: A fill-all [9*] other than zero needs a size cnx can fold, and 'NDIM' does not
        help: Write the elements out, fill with zero, or size the array with a cnx constant (ADR-035).

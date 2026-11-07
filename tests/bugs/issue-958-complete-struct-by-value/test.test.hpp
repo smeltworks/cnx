@@ -7,6 +7,8 @@
  */
 
 #include "fake_lib.h"
+#include "widget_types.h"
+#include "widget_private.h"
 
 #ifdef __cplusplus
 extern "C" {

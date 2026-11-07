@@ -56,6 +56,7 @@ describe("header macros a file's preprocessing could not read (#1688)", () => {
   it("asks for a cast when the file's unit cannot be preprocessed", async () => {
     vi.spyOn(ExternalDeclarationOracle, "macroDump").mockResolvedValue({
       dump: "",
+      visible: new Set<string>(),
       complete: false,
     });
     expect(await codesOf("SCALE_F")).toEqual(["E0811"]);
@@ -69,6 +70,7 @@ describe("header macros a file's preprocessing could not read (#1688)", () => {
   it("control: a name the header declares keeps its type", async () => {
     vi.spyOn(ExternalDeclarationOracle, "macroDump").mockResolvedValue({
       dump: "",
+      visible: new Set<string>(),
       complete: false,
     });
     expect(await codesOf("gain")).toEqual(["E0810"]);

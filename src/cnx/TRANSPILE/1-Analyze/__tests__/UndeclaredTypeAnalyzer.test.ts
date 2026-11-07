@@ -51,7 +51,7 @@ function analyze(source: string) {
   // transpiler knows the file's whole name universe. These sources include
   // nothing, so the diagnostic is in scope.
   return new UndeclaredTypeAnalyzer(
-    testAnalysisContext(state, { reachesForeignHeader: false }),
+    testAnalysisContext(state, { includesForeignHeader: false }),
   ).analyze(ProgramLowering.program(tree, null));
 }
 
@@ -231,7 +231,7 @@ describe("UndeclaredTypeAnalyzer", () => {
       );
       expect(
         new UndeclaredTypeAnalyzer(
-          testAnalysisContext(state, { reachesForeignHeader: true }),
+          testAnalysisContext(state, { includesForeignHeader: true }),
         ).analyze(ProgramLowering.program(tree, null)),
       ).toHaveLength(0);
     });
@@ -318,7 +318,7 @@ describe("UndeclaredTypeAnalyzer", () => {
       );
       expect(
         new UndeclaredTypeAnalyzer(
-          testAnalysisContext(state, { reachesForeignHeader: true }),
+          testAnalysisContext(state, { includesForeignHeader: true }),
         ).analyze(ProgramLowering.program(tree, null)),
       ).toHaveLength(0);
     });

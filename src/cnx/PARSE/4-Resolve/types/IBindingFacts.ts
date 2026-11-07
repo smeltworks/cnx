@@ -21,6 +21,11 @@ interface IBindingFacts {
   readonly registry: SymbolRegistry | null;
   readonly foreignNames: ReadonlySet<string>;
   /**
+   * #1881: each file's `foreignNames` -- those a header it includes itself
+   * declares, the only ones a spelling there binds
+   */
+  readonly foreignNamesByFile: ReadonlyMap<string, ReadonlySet<string>>;
+  /**
    * #1175: the variables and functions among `foreignNames` -- what a
    * constant expression naming one is worth
    */

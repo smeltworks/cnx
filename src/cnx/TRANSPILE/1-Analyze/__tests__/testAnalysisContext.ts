@@ -36,7 +36,7 @@ const testAnalysisContext = (
   // direction -- a false positive stops valid interop code compiling, a false
   // negative is the status quo -- and a test that needs `false` passes it
   // through `overrides`, which is where the fact travels in production too.
-  reachesForeignHeader: true,
+  includesForeignHeader: true,
   sourceFile: "test.cnx",
   ...overrides,
 });

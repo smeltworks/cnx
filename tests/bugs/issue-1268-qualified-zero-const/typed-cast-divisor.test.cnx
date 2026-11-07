@@ -5,9 +5,9 @@
 // member, a comparison. Main accepted each and emitted `n / 0`.
 // unknown-type-cast-divisor.test.cnx holds the cast to an undeclared type.
 //
-// NEGATIVE CONTROLS: `(uint32_t)1`, `(u32)Mode.ON` and `(u32)(1 < 2)`, each 1.
+// NEGATIVE CONTROLS: `(c_word_t)1`, `(u32)Mode.ON` and `(u32)(1 < 2)`, each 1.
 
-#include <stdint.h>
+#include "c-word.h"
 
 enum Mode {
     OFF,
@@ -17,10 +17,10 @@ enum Mode {
 u32 sink;
 
 void divides(u32 n) {
-    sink <- n / (uint32_t)0;
+    sink <- n / (c_word_t)0;
     sink <- n / (u32)Mode.OFF;
     sink <- n / (u32)(1 < 0);
-    sink <- n / (uint32_t)1;
+    sink <- n / (c_word_t)1;
     sink <- n / (u32)Mode.ON;
     sink <- n / (u32)(1 < 2);
 }

@@ -91,21 +91,9 @@ class HeaderEmissionCapture {
       state.symbolTable,
       state.program,
     );
-    const spelled = HeaderEmissionCapture.includeDirectivesSpelledBy(request);
-    const userIncludes = [
-      ...new Set([
-        ...includes.userIncludes,
-        ...(cHeadersIncluded ? includes.cHeaderIncludes : []),
-        ...HeaderUserIncludes.macroCHeaders(
-          exportedSymbols,
-          state.symbolTable,
-          program,
-          sourcePath,
-          request.includes,
-          spelled,
-        ),
-      ]),
-    ];
+    const userIncludes = cHeadersIncluded
+      ? [...includes.userIncludes, ...includes.cHeaderIncludes]
+      : [...includes.userIncludes];
 
     // #1447: read from the artifact, not accumulated from the files transpiled
     // so far. The old form was correct only because `_sortFilesByDependency`
@@ -117,9 +105,12 @@ class HeaderEmissionCapture {
     // #1511: which types a header declares comes from the artifact. The
     // include ORDER stays here -- it decides which header wins, and that is not
     // a symbol fact.
-    const externalTypeHeaders = ExternalTypeHeaderBuilder.build(spelled, {
-      typesDeclaredIn: (file: string) => program.typesDeclaredIn(file),
-    });
+    const externalTypeHeaders = ExternalTypeHeaderBuilder.build(
+      HeaderEmissionCapture.includeDirectivesSpelledBy(request),
+      {
+        typesDeclaredIn: (file: string) => program.typesDeclaredIn(file),
+      },
+    );
 
     // ADR-029: Convert callback types to header format
     const callbackTypesForHeader =

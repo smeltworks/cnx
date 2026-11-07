@@ -129,7 +129,7 @@ class Discover {
       source,
       discoveredFile: { path, type: EFileType.Cnx },
       cnxIncludes: [],
-      reachesForeignHeader: false,
+      includesForeignHeader: false,
     };
   }
 
@@ -312,6 +312,7 @@ class Discover {
           userIncludes: Object.freeze(spelling.userIncludes),
           cHeaderIncludes: Object.freeze(spelling.cHeaderIncludes),
           cHeaderSpecs: Object.freeze(resolved.cHeaderSpecs),
+          cHeaderPaths: resolved.cHeaderPaths,
         }),
       );
     }
@@ -718,12 +719,6 @@ class Discover {
       );
     }
 
-    // Include visibility is transitive, so the precondition for E0426/E0427
-    // must be too.
-    const reachesForeign = depGraph.collectDependentsOf(
-      directForeignHeaderFiles,
-    );
-
     // Issue #580: Sort files topologically for correct cross-file const inference
     const sortedCnxFiles = this._sortFilesByDependency(depGraph, fileByPath);
 
@@ -749,7 +744,7 @@ class Discover {
         source,
         discoveredFile: f,
         cnxIncludes,
-        reachesForeignHeader: reachesForeign.has(resolve(f.path)),
+        includesForeignHeader: directForeignHeaderFiles.has(resolve(f.path)),
       };
     });
 

@@ -22,7 +22,6 @@ import type IProgramSyntax from "../../../types/syntax/IProgramSyntax";
 import type TMemberDeclaration from "../../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../../types/syntax/TExpression";
 import ConstExprLowering from "../../../utils/ConstExprLowering";
-import ConstExprNames from "../../../utils/ConstExprNames";
 import ConstExprPrinter from "../../../utils/ConstExprPrinter";
 import ConstantEvaluator from "../../../utils/ConstantEvaluator";
 import type IConstantEnvironment from "../../../utils/types/IConstantEnvironment";
@@ -207,11 +206,15 @@ class StaticInitializers {
     program: IProgram,
     sourceFile: string,
   ): { readonly binding: TValueBinding; readonly at: ISourcePosition }[] {
-    return ConstExprNames.of(ConstExprLowering.lower(value)).flatMap((name) => {
-      if (LengthProperty.isLength(name.path.at(-1) ?? "")) return [];
-      const target = program.constantTargetOf(sourceFile, name);
-      return target === null ? [] : [{ binding: target.binding, at: name.at }];
-    });
+    return StaticInitializers.names(ConstExprLowering.lower(value)).flatMap(
+      (name) => {
+        if (LengthProperty.isLength(name.path.at(-1) ?? "")) return [];
+        const target = program.constantTargetOf(sourceFile, name);
+        return target === null
+          ? []
+          : [{ binding: target.binding, at: name.at }];
+      },
+    );
   }
 
   /**
@@ -246,7 +249,30 @@ class StaticInitializers {
 
   /** Each bare name the value reads (`N`, not `this.N` or `S.N`) */
   static bareNames(value: TExpression): TConstName[] {
-    return ConstExprNames.bare(ConstExprLowering.lower(value));
+    return StaticInitializers.names(ConstExprLowering.lower(value)).filter(
+      (name) => name.root === null && name.path.length === 1,
+    );
+  }
+
+  private static names(expr: TConstExpr): TConstName[] {
+    switch (expr.kind) {
+      case "name":
+        return [expr];
+      case "cast":
+      case "unary":
+        return StaticInitializers.names(expr.operand);
+      case "binary":
+        return [
+          ...StaticInitializers.names(expr.left),
+          ...StaticInitializers.names(expr.right),
+        ];
+      case "ternary":
+        return [expr.condition, expr.whenTrue, expr.whenFalse].flatMap(
+          StaticInitializers.names,
+        );
+      default:
+        return [];
+    }
   }
 
   /** The file's file-scope and scope variables that have an initializer */

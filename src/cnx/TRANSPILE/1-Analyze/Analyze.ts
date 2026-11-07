@@ -79,7 +79,7 @@ class Analyze {
         symbols,
         program,
         symbolTable: program.symbolTable(),
-        reachesForeignHeader: file.reachesForeignHeader,
+        includesForeignHeader: file.includesForeignHeader,
         sourceFile: sourcePath,
       },
       includes: {

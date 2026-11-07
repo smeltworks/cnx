@@ -1,0 +1,9 @@
+// test-error
+// Issue #1881: hw_reset is declared in lib/hw.h, which main reaches only
+// through lib/hw-user.cnx. It is not defined here.
+#include "lib/hw-user.cnx"
+
+u32 main() {
+    hw_reset();
+    return 0;
+}

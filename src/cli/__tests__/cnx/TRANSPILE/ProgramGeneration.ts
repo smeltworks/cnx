@@ -122,7 +122,7 @@ class ProgramGeneration {
         symbols: options.symbolInfo,
         program: resolved,
         symbolTable: resolved.symbolTable(),
-        reachesForeignHeader: true,
+        includesForeignHeader: true,
         sourceFile: sourcePath,
       }),
     };

@@ -107,6 +107,13 @@ interface IFileIncludes {
    * this list, rather than each deriving it.
    */
   readonly cHeaderSpecs: readonly string[];
+
+  /**
+   * #1881: the C/C++ headers this file names in its own `#include` lines, as
+   * resolved paths. Their names are the only header names the file sees: a
+   * header one of them includes, or one another `.cnx` includes, is not.
+   */
+  readonly cHeaderPaths: ReadonlySet<string>;
 }
 
 export default IFileIncludes;

@@ -20,13 +20,25 @@ class Resolve {
     // 1.1 took of that file's own C includes. Unread is not "no macros".
     const macros = new Map<string, ReadonlyMap<string, THeaderMacro>>();
     const macrosUnread = new Set<string>();
+    // #1881: each file's macros it may name, of either kind, and every macro
+    // any file's C includes define
+    const visibleMacros = new Map<string, ReadonlySet<string>>();
+    const macroNames = new Set<string>();
     // #1619: one compiler reads every file's headers, so its predefined
     // `<stdint.h>` types are the same in each dump
     const integerTypes = new Map<string, string>();
     for (const [path, read] of input.discovery.headerMacroDumps) {
       if (!read.complete) macrosUnread.add(path);
       if (read.dump === null) continue;
-      macros.set(path, HeaderMacros.collect(read.dump));
+      // #1881: typed over the whole dump, as a macro's body may name one the
+      // file cannot, but only the file's own includes' are its macros
+      const typed = HeaderMacros.collect(read.dump);
+      macros.set(
+        path,
+        new Map([...typed].filter(([name]) => read.visible.has(name))),
+      );
+      visibleMacros.set(path, read.visible);
+      for (const name of HeaderMacros.names(read.dump)) macroNames.add(name);
       for (const [name, type] of HeaderMacros.integerTypes(read.dump)) {
         integerTypes.set(name, type);
       }
@@ -50,6 +62,8 @@ class Resolve {
           structTagsWithBodies: new Set(table.getAllStructTagsWithBodies()),
           macros,
           macrosUnread,
+          visibleMacros,
+          macroNames,
           integerTypes,
         },
         // #1825: ADR-006's and ADR-029's derivations look callees and typedefs
@@ -61,10 +75,18 @@ class Resolve {
         cppMode: input.discovery.cppMode,
         // #1175: where a name nothing binds may be a macro -- discovery's
         // one answer, the same 2.1's E0427 reads
-        filesReachingForeignHeaders: new Set(
+        filesIncludingForeignHeaders: new Set(
           declared
-            .filter((entry) => entry.file.reachesForeignHeader)
+            .filter((entry) => entry.file.includesForeignHeader)
             .map((entry) => entry.fileSymbols.sourceFile),
+        ),
+        // #1881: the headers each file includes itself, the only ones whose
+        // names it sees
+        headerPathsByFile: new Map(
+          [...input.discovery.includes].map(([path, own]) => [
+            path,
+            own.cHeaderPaths,
+          ]),
         ),
         visibility: {
           cnxIncludesByFile: new Map(

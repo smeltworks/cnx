@@ -5,8 +5,8 @@
 
 #include "mid-public.hpp"
 
-// Issue #1881 control: BUF_SIZE in a public declaration, so this file's own
-// header includes buf-size.h and every header including it gets the macro.
+// Issue #1881 control: BUF_SIZE in a public declaration, visible here because
+// this file includes buf-size.h itself.
 #include "buf-size.h"
 
 #include <stdint.h>

@@ -31,7 +31,14 @@ describe("Resolve.program", () => {
     const graph = {
       ...testSourceGraph([Discover.inMemoryFile("u32 a <- 0;", "/p/a.cnx")]),
       headerMacroDumps: new Map([
-        ["/p/a.cnx", { dump: "#define SCALE_F 2.5f", complete: false }],
+        [
+          "/p/a.cnx",
+          {
+            dump: "#define SCALE_F 2.5f",
+            visible: new Set(["SCALE_F"]),
+            complete: false,
+          },
+        ],
       ]),
     };
     const parsed = await Parse.sources(graph, noHeaderServices);

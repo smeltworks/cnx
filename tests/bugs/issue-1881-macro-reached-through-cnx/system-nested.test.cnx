@@ -1,0 +1,11 @@
+// test-error
+// Issue #1881: the rule holds for a system header too. EOF is defined in
+// stdio.h itself, so it is defined here; size_t is declared in the compiler's
+// stddef.h, which stdio.h includes, so it is not.
+#include <stdio.h>
+
+u32 main() {
+    i32 end <- EOF;
+    size_t count <- 0;
+    return 0;
+}

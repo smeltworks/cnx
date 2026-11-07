@@ -164,8 +164,8 @@ describe("Discover", () => {
     expect(lib.cnxIncludes).toEqual([]);
     expect(app.source).toContain('#include "lib.cnx"');
     // The header is the file's edge to C, which is what E0426/E0427 decline on
-    expect(app.reachesForeignHeader).toBe(true);
-    expect(lib.reachesForeignHeader).toBe(false);
+    expect(app.includesForeignHeader).toBe(true);
+    expect(lib.includesForeignHeader).toBe(false);
     expect(graph.headerFiles.map((header) => header.path)).toEqual([
       "/proj/src/board.h",
     ]);

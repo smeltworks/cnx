@@ -57,6 +57,8 @@ const noForeign = {
   typedefToTag: new Map<string, string>(),
   macros: new Map(),
   macrosUnread: new Set<string>(),
+  visibleMacros: new Map(),
+  macroNames: new Set<string>(),
   integerTypes: new Map<string, string>(),
   structTagsWithBodies: new Set<string>(),
 };
@@ -212,7 +214,7 @@ describe("Program", () => {
     const build = (source: string, reachesHeader = true) =>
       Program.build([declare(source, "a.cnx")], {
         cppMode: false,
-        filesReachingForeignHeaders: new Set(reachesHeader ? ["a.cnx"] : []),
+        filesIncludingForeignHeaders: new Set(reachesHeader ? ["a.cnx"] : []),
       });
 
     it("is not a global above its declaration, bare or through `global.`", () => {
@@ -669,7 +671,7 @@ describe("Program", () => {
       const use = declare(`u32[SOME_MACRO] buffer;\nu32[4] plain;`, "use.cnx");
       const program = Program.build([use], {
         cppMode: false,
-        filesReachingForeignHeaders: new Set(["use.cnx"]),
+        filesIncludingForeignHeaders: new Set(["use.cnx"]),
       });
 
       const rebuilt = find(program.symbolsInFile("use.cnx"), "buffer");
@@ -901,6 +903,8 @@ describe("Program", () => {
             ]),
             macros: new Map(),
             macrosUnread: new Set<string>(),
+            visibleMacros: new Map(),
+            macroNames: new Set<string>(),
             integerTypes: new Map<string, string>(),
             structTagsWithBodies: new Set(structTagsWithBodies),
           },
@@ -1008,6 +1012,8 @@ describe("Program", () => {
           typedefToTag: new Map(typedefToTag),
           macros: new Map(),
           macrosUnread: new Set<string>(),
+          visibleMacros: new Map(),
+          macroNames: new Set<string>(),
           integerTypes: new Map<string, string>(),
           structTagsWithBodies: new Set(structTagsWithBodies),
         },
@@ -1203,64 +1209,6 @@ scope Gauge {
     });
   });
 
-  describe("the file whose C includes define a macro (#1881)", () => {
-    const integer = { kind: "integer" as const, valueByIntBits: new Map() };
-    const program = (macros: Record<string, string[]>) =>
-      Program.build(
-        [
-          declare("u32 a <- 0;", "main.cnx"),
-          declare("u32 b <- 0;", "outer.cnx"),
-          declare("u32 c <- 0;", "mid.cnx"),
-        ],
-        {
-          ...including({ "main.cnx": ["outer.cnx"], "outer.cnx": ["mid.cnx"] }),
-          foreign: {
-            ...noForeign,
-            macros: new Map(
-              Object.entries(macros).map(([file, names]) => [
-                file,
-                new Map(names.map((name) => [name, integer])),
-              ]),
-            ),
-          },
-        },
-      );
-
-    it("is a file the include reaches, however many hops away", () => {
-      expect(
-        program({ "mid.cnx": ["BUF_SIZE"] }).headerMacroIncludingFile(
-          "main.cnx",
-          "BUF_SIZE",
-        ),
-      ).toBe("mid.cnx");
-    });
-
-    it("is the file itself when its own includes define it", () => {
-      expect(
-        program({
-          "main.cnx": ["BUF_SIZE"],
-          "mid.cnx": ["BUF_SIZE"],
-        }).headerMacroIncludingFile("main.cnx", "BUF_SIZE"),
-      ).toBe("main.cnx");
-    });
-
-    it("is the nearest file when several define it", () => {
-      expect(
-        program({
-          "outer.cnx": ["BUF_SIZE"],
-          "mid.cnx": ["BUF_SIZE"],
-        }).headerMacroIncludingFile("main.cnx", "BUF_SIZE"),
-      ).toBe("outer.cnx");
-    });
-
-    it("is none when no file the include reaches defines it", () => {
-      const built = program({ "main.cnx": ["OTHER"] });
-      expect(built.headerMacroIncludingFile("main.cnx", "BUF_SIZE")).toBeNull();
-      // An include runs one way: mid does not see what main includes
-      expect(built.headerMacroIncludingFile("mid.cnx", "OTHER")).toBeNull();
-    });
-  });
-
   describe("the query surface", () => {
     it("answers by canonical C name, by file, and lists its files", () => {
       const lib = declare(
@@ -1329,8 +1277,8 @@ scope Gauge {
         "functionParamLists",
         "headerIntegerType",
         "headerMacro",
-        "headerMacroIncludingFile",
         "headerMacrosUnread",
+        "hidesHeaderName",
         "isOpaqueType",
         "isScopeTypeVisibleFrom",
         "isTypeNameAt",
@@ -1346,6 +1294,8 @@ scope Gauge {
         "scope",
         "scopePathOf",
         "scopeTypeOf",
+        "seesForeignSymbol",
+        "seesHeaderMacro",
         "settledConstOf",
         "sourceFiles",
         "symbolByCName",
