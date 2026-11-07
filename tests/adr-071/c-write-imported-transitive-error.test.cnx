@@ -6,6 +6,8 @@
 // passed the same way, and each read-only binding passed to a const pointer.
 
 #include "imported-relay.cnx"
+// #1881: the C functions are named here, so their header is included here
+#include "c-writer.h"
 
 void f() {
     c_fill(LIBS);

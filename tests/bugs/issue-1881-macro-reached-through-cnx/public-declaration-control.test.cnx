@@ -1,0 +1,13 @@
+// test-execution
+// Issue #1881 control: lib/mid-public.cnx names BUF_SIZE in a public
+// declaration, which its own include makes visible there. main uses that
+// declaration without naming the macro, so it needs no include of its own.
+#include "lib/mid-public.cnx"
+
+u32 main() {
+    staging[0] <- 3;
+    if (staging[0] != 3) {
+        return 1;
+    }
+    return 0;
+}

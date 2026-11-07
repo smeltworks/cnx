@@ -9,10 +9,12 @@
 
 // test-execution
 // test-adr: 010
-// Issue #1725: main reaches lib/dev.h only through lib/a.cnx, and its public
-// signature names Dev, so its generated header must include dev.h. It copied
-// a.cnx's spelling "dev.h" -- relative to lib/ -- which names a file beside
-// main that does not exist, and the header failed to compile (exit 0).
+// Issue #1725: main's public signature names Dev, so its generated header must
+// include dev.h. It copied a.cnx's spelling "dev.h" -- relative to lib/ --
+// which names a file beside main that does not exist, and the header failed
+// to compile (exit 0). #1881: Dev is visible here only because main includes
+// lib/dev.h itself, so the header writes main's own spelling, relative to it.
+#include "lib/dev.h"
 #include "lib/a.hpp"
 
 #include <stdint.h>

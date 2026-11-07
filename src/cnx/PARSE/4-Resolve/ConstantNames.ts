@@ -196,7 +196,9 @@ class ConstantNames {
   ): boolean {
     const cName = ConstantNames.cTypeName(typeName, at, facts);
     const symbol = facts.visibleSymbol(cName);
-    if (symbol === undefined) return facts.reachesForeignHeader;
+    if (symbol === undefined) {
+      return facts.includesForeignHeader && !facts.hidesHeaderName(cName);
+    }
     return TYPE_KINDS.has(symbol.kind);
   }
 

@@ -609,8 +609,9 @@ class FunctionCallAnalyzer {
     // Issue #985 recovery: a function-like MACRO recovered by translation-unit
     // preprocessing (e.g. FreeRTOS pdMS_TO_TICKS). Recovered functions are
     // registered as full symbols (found above by C name); macros have no
-    // declaration to parse, so only their name is known.
-    if (this.context.symbolTable.hasExternalDeclaration(name)) {
+    // declaration to parse, so only their name is known. #1881: and only a
+    // header this file includes itself defines one it may call.
+    if (this.context.program.seesHeaderMacro(this.context.sourceFile, name)) {
       return true;
     }
 
@@ -621,12 +622,17 @@ class FunctionCallAnalyzer {
    * Whether the run-wide table holds a function with this C name. That table
    * holds C/C++ headers' functions, included .cnx files', and also this file's
    * own and its includer's: callers rule out this file's own first (#786), and
-   * whether an includer's member is reachable is #1865.
+   * whether an includer's member is reachable is #1865. #1881: a header's
+   * function counts only where its header is included itself.
    */
   private namesExternalFunction(cName: string): boolean {
     return this.context.symbolTable
       .getOverloadsByCName(cName)
-      .some((sym) => sym.kind === "function");
+      .some(
+        (sym) =>
+          sym.kind === "function" &&
+          this.context.program.seesForeignSymbol(this.context.sourceFile, sym),
+      );
   }
 }
 

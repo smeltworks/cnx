@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-955 fixture(s) assert a diagnostic; 941 carry a code.
+961 fixture(s) assert a diagnostic; 947 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -662,6 +662,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1334-scope-declaration-sites/conflict-across-files.test.cnx                              | E0425                             |
 | tests/bugs/issue-1334-scope-declaration-sites/cross-language-conflict.test.cnx                            | E0425                             |
 | tests/bugs/issue-1336-register-in-type-position/register-in-type-position.test.cnx                        | E0429                             |
+| tests/bugs/issue-1353-undeclared-value-position/macro-through-cnx-include.test.cnx                        | E0426                             |
 | tests/bugs/issue-1353-undeclared-value-position/undeclared-value-same-file.test.cnx                       | E0427                             |
 | tests/bugs/issue-1353-undeclared-value-position/undeclared-value-sibling-consumer-first.test.cnx          | E0427                             |
 | tests/bugs/issue-1353-undeclared-value-position/undeclared-value-sibling-source-first.test.cnx            | E0427                             |
@@ -825,6 +826,11 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1867-length-reads-no-value/element-read-uninit-error.test.cnx                            | E0381                             |
 | tests/bugs/issue-1874-dimension-range/dimension-range.test.cnx                                            | E0913                             |
 | tests/bugs/issue-1879-constant-expression-div0/div-constant-expression.test.cnx                           | E0800                             |
+| tests/bugs/issue-1881-macro-reached-through-cnx/function-through-cnx.test.cnx                             | E0422                             |
+| tests/bugs/issue-1881-macro-reached-through-cnx/one-hop.test.cnx                                          | E0427                             |
+| tests/bugs/issue-1881-macro-reached-through-cnx/two-hop.test.cnx                                          | E0427                             |
+| tests/bugs/issue-1881-macro-reached-through-cnx/type-through-cnx.test.cnx                                 | E0426                             |
+| tests/bugs/issue-1881-macro-reached-through-cnx/variable-through-cnx.test.cnx                             | E0427                             |
 | tests/bugs/issue-1963-define-before-use/global-and-local.test.cnx                                         | E0426                             |
 | tests/bugs/issue-1963-define-before-use/struct-field.test.cnx                                             | E0426                             |
 | tests/bugs/issue-1975-header-struct-byte-length/case-label-length-error.test.cnx                          | E0713, E0717                      |

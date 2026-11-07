@@ -5,6 +5,11 @@
  */
 interface IHeaderMacroDump {
   readonly dump: string | null;
+  /**
+   * #1881: every header the file's own C includes brought in, nested ones
+   * included, as resolved paths: the headers whose names the file sees.
+   */
+  readonly headerFiles: ReadonlySet<string>;
   readonly complete: boolean;
 }
 

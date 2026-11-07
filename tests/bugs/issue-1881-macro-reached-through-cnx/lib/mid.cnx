@@ -1,0 +1,7 @@
+// Issue #1881: uses BUF_SIZE only in a function body, so mid's own header
+// has no reason to include buf-size.h.
+#include "buf-size.h"
+
+u32 count() {
+    return BUF_SIZE;
+}

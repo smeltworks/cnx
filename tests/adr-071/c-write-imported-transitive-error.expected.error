@@ -1,22 +1,22 @@
-12:11 warning[E0896]: cnx cannot see how 'c_fill' uses parameter 1, so passing 'LIBS_M' to it is not memory safe
+14:11 warning[E0896]: cnx cannot see how 'c_fill' uses parameter 1, so passing 'LIBS_M' to it is not memory safe
        help: Consider converting 'c_fill' to cnx.
-13:11 warning[E0896]: cnx cannot see how 'c_show' uses parameter 1, so passing 'LIBS' to it is not memory safe
+15:11 warning[E0896]: cnx cannot see how 'c_show' uses parameter 1, so passing 'LIBS' to it is not memory safe
        help: Consider converting 'c_show' to cnx.
-15:17 warning[E0896]: cnx cannot see how 'c_fill_bytes' uses parameter 1, so passing 'LIBA_M' to it is not memory safe
+17:17 warning[E0896]: cnx cannot see how 'c_fill_bytes' uses parameter 1, so passing 'LIBA_M' to it is not memory safe
        help: Consider converting 'c_fill_bytes' to cnx.
-16:17 warning[E0896]: cnx cannot see how 'c_show_bytes' uses parameter 1, so passing 'LIBA' to it is not memory safe
+18:17 warning[E0896]: cnx cannot see how 'c_show_bytes' uses parameter 1, so passing 'LIBA' to it is not memory safe
        help: Consider converting 'c_show_bytes' to cnx.
-18:14 warning[E0896]: cnx cannot see how 'dev_close' uses parameter 1, so passing 'LIBH_M' to it is not memory safe
+20:14 warning[E0896]: cnx cannot see how 'dev_close' uses parameter 1, so passing 'LIBH_M' to it is not memory safe
        help: Consider converting 'dev_close' to cnx.
-11:11 error[E0900]: 'LIBS' is read-only char, and parameter 1 of 'c_fill' is a pointer 'c_fill' may write through
+13:11 error[E0900]: 'LIBS' is read-only char, and parameter 1 of 'c_fill' is a pointer 'c_fill' may write through
        help: Declare 'LIBS' `mut`, or declare the C parameter const char*.
-14:17 error[E0900]: 'LIBA' is read-only uint8_t, and parameter 1 of 'c_fill_bytes' is a pointer 'c_fill_bytes' may write through
+16:17 error[E0900]: 'LIBA' is read-only uint8_t, and parameter 1 of 'c_fill_bytes' is a pointer 'c_fill_bytes' may write through
        help: Declare 'LIBA' `mut`, or declare the C parameter const uint8_t*.
-17:14 error[E0900]: 'LIBH' is read-only Dev, and parameter 1 of 'dev_close' is a pointer 'dev_close' may write through
+19:14 error[E0900]: 'LIBH' is read-only Dev, and parameter 1 of 'dev_close' is a pointer 'dev_close' may write through
        help: Declare 'LIBH' `mut`, or declare the C parameter const Dev*.
-23:15 error[E0900]: 'global.LIBS' is read-only char, and parameter 1 of 'c_fill' is a pointer 'c_fill' may write through
+25:15 error[E0900]: 'global.LIBS' is read-only char, and parameter 1 of 'c_fill' is a pointer 'c_fill' may write through
        help: Declare 'global.LIBS' `mut`, or declare the C parameter const char*.
-24:21 error[E0900]: 'global.LIBA' is read-only uint8_t, and parameter 1 of 'c_fill_bytes' is a pointer 'c_fill_bytes' may write through
+26:21 error[E0900]: 'global.LIBA' is read-only uint8_t, and parameter 1 of 'c_fill_bytes' is a pointer 'c_fill_bytes' may write through
        help: Declare 'global.LIBA' `mut`, or declare the C parameter const uint8_t*.
-25:18 error[E0900]: 'global.LIBH' is read-only Dev, and parameter 1 of 'dev_close' is a pointer 'dev_close' may write through
+27:18 error[E0900]: 'global.LIBH' is read-only Dev, and parameter 1 of 'dev_close' is a pointer 'dev_close' may write through
        help: Declare 'global.LIBH' `mut`, or declare the C parameter const Dev*.

@@ -5,7 +5,9 @@
 // whole array is taken (ADR-014): an assignment target, a scope member through
 // this, a field and an argument, as well as a declaration
 // (fill-declaration-error.test.cnx). The struct and the callee are declared in
-// fill-readers.cnx, across an include.
+// fill-readers.cnx, across an include. NDIM is dims.h's, which this file
+// includes itself: a header's macro is visible only there (#1881).
+#include "dims.h"
 #include "fill-readers.cnx"
 
 u8 ZERO <- 0;

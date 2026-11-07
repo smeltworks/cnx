@@ -41,8 +41,11 @@ scope A {
 }
 `;
 
+// #1881: main names `Dev`, so it includes dev.h itself -- a header's names
+// are not visible through another `.cnx`'s include.
 function mainIncluding(aSpelling: string): string {
   return `#include "${aSpelling}"
+#include "${aSpelling.replace("a.cnx", "dev.h")}"
 
 scope M {
     public u32 use(Dev d) {

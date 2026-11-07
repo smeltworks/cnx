@@ -48,6 +48,15 @@ interface IForeignSymbols {
   readonly macrosUnread: ReadonlySet<string>;
 
   /**
+   * #1881: each cnx file's macros it may name, object-like or function-like:
+   * those its own C includes define themselves, or `-D` defines.
+   */
+  readonly visibleMacros: ReadonlyMap<string, ReadonlySet<string>>;
+
+  /** #1881: every macro some cnx file's C includes define, builtins included */
+  readonly macroNames: ReadonlySet<string>;
+
+  /**
    * #1619: the C type the run's header compiler gives each `<stdint.h>`/
    * `<stddef.h>` integer name its predefined macros define (`uint32_t` to
    * `long unsigned int`)

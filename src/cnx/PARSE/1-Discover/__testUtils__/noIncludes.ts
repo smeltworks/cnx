@@ -14,6 +14,7 @@ function noIncludes(): IFileIncludes {
     userIncludes: [],
     cHeaderIncludes: [],
     cHeaderSpecs: [],
+    cHeaderPaths: new Set<string>(),
   };
 }
 

@@ -31,12 +31,11 @@
  *
  *   - a **cnx** name is checked against the per-file sets, because cnx
  *     visibility is what the include graph governs;
- *   - a **C/C++** name is checked against the run-wide table, because external
- *     types arrive through header includes that are already resolved per file,
- *     and because the failure directions are not symmetric. Missing an external
- *     type means a diagnostic does not fire (the status quo). Wrongly rejecting
- *     one means valid code stops compiling. Only the second is a regression, so
- *     the external side is deliberately permissive.
+ *   - a **C/C++** name is checked against the run-wide table, filtered by
+ *     `sees`: #1881, a header's names are visible only in a file that
+ *     includes that header itself, never through a `.cnx` include or another
+ *     header's include. The table is run-wide, so the filter is what keeps a
+ *     name another file's header declared from answering here.
  *
  * `IProgram.scopeTypeOf()` cannot serve here either: it answers only
  * for a type declared inside a SCOPE that the file being generated can see
@@ -44,6 +43,10 @@
  */
 
 import ESourceLanguage from "../../utils/types/ESourceLanguage";
+import type IForeignOrigin from "../../types/IForeignOrigin";
+
+/** #1881: whether the asking file sees a C/C++ symbol (`IProgram.seesForeignSymbol`) */
+type TSeesForeign = (symbol: IForeignOrigin) => boolean;
 import ICodeGenSymbols from "../../types/ICodeGenSymbols";
 import type IResolvedSymbols from "../../types/IResolvedSymbols";
 
@@ -89,10 +92,11 @@ class NameExistence {
     typeName: string,
     symbols: ICodeGenSymbols,
     symbolTable: IResolvedSymbols,
+    sees: TSeesForeign,
   ): boolean {
     return (
       NameExistence._isKnownCnxType(typeName, symbols, symbolTable) ||
-      NameExistence._isKnownForeignName(typeName, symbolTable)
+      NameExistence._isKnownForeignName(typeName, symbolTable, sees)
     );
   }
 
@@ -121,9 +125,10 @@ class NameExistence {
     name: string,
     symbols: ICodeGenSymbols,
     symbolTable: IResolvedSymbols,
+    sees: TSeesForeign,
   ): boolean {
     return (
-      NameExistence.isTypeName(name, symbols, symbolTable) ||
+      NameExistence.isTypeName(name, symbols, symbolTable, sees) ||
       NameExistence.isRegisterName(name, symbols)
     );
   }
@@ -188,10 +193,14 @@ class NameExistence {
   private static _isKnownForeignName(
     name: string,
     symbolTable: IResolvedSymbols,
+    sees: TSeesForeign,
   ): boolean {
     return symbolTable
       .getOverloadsByCName(name)
-      .some((symbol) => symbol.sourceLanguage !== ESourceLanguage.Cnx);
+      .some(
+        (symbol) =>
+          symbol.sourceLanguage !== ESourceLanguage.Cnx && sees(symbol),
+      );
   }
 }
 

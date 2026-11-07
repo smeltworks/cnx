@@ -57,6 +57,8 @@ const noForeign = {
   typedefToTag: new Map<string, string>(),
   macros: new Map(),
   macrosUnread: new Set<string>(),
+  visibleMacros: new Map(),
+  macroNames: new Set<string>(),
   integerTypes: new Map<string, string>(),
   structTagsWithBodies: new Set<string>(),
 };
@@ -212,7 +214,7 @@ describe("Program", () => {
     const build = (source: string, reachesHeader = true) =>
       Program.build([declare(source, "a.cnx")], {
         cppMode: false,
-        filesReachingForeignHeaders: new Set(reachesHeader ? ["a.cnx"] : []),
+        filesIncludingForeignHeaders: new Set(reachesHeader ? ["a.cnx"] : []),
       });
 
     it("is not a global above its declaration, bare or through `global.`", () => {
@@ -669,7 +671,7 @@ describe("Program", () => {
       const use = declare(`u32[SOME_MACRO] buffer;\nu32[4] plain;`, "use.cnx");
       const program = Program.build([use], {
         cppMode: false,
-        filesReachingForeignHeaders: new Set(["use.cnx"]),
+        filesIncludingForeignHeaders: new Set(["use.cnx"]),
       });
 
       const rebuilt = find(program.symbolsInFile("use.cnx"), "buffer");
@@ -901,6 +903,8 @@ describe("Program", () => {
             ]),
             macros: new Map(),
             macrosUnread: new Set<string>(),
+            visibleMacros: new Map(),
+            macroNames: new Set<string>(),
             integerTypes: new Map<string, string>(),
             structTagsWithBodies: new Set(structTagsWithBodies),
           },
@@ -1008,6 +1012,8 @@ describe("Program", () => {
           typedefToTag: new Map(typedefToTag),
           macros: new Map(),
           macrosUnread: new Set<string>(),
+          visibleMacros: new Map(),
+          macroNames: new Set<string>(),
           integerTypes: new Map<string, string>(),
           structTagsWithBodies: new Set(structTagsWithBodies),
         },
@@ -1272,6 +1278,7 @@ scope Gauge {
         "headerIntegerType",
         "headerMacro",
         "headerMacrosUnread",
+        "hidesHeaderName",
         "isOpaqueType",
         "isScopeTypeVisibleFrom",
         "isTypeNameAt",
@@ -1287,6 +1294,8 @@ scope Gauge {
         "scope",
         "scopePathOf",
         "scopeTypeOf",
+        "seesForeignSymbol",
+        "seesHeaderMacro",
         "settledConstOf",
         "sourceFiles",
         "symbolByCName",

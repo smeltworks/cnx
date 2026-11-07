@@ -1,0 +1,17 @@
+// test-adr: 030
+// test-execution
+// #1881 NEGATIVE CONTROL: this file includes macro-header.h itself, so its
+// typedef and its macro are both visible here, beside the .cnx that also
+// includes it.
+#include "macro-header.h"
+#include <macro-bridge.cnx>
+
+shared_point_t sharedOrigin;
+
+u32 main() {
+    u32 limit <- SHARED_LIMIT_MACRO;
+    if (limit != 42) {
+        return 1;
+    }
+    return macroBridgeFn() - 1;
+}

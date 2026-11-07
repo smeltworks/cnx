@@ -1,0 +1,6 @@
+// Issue #1881: the second hop. Reaches buf-size.h only through mid.cnx.
+#include "mid.cnx"
+
+u32 twice() {
+    return count() * 2;
+}

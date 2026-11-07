@@ -1,15 +1,11 @@
 // test-adr: 030
-// NEGATIVE CONTROL for the #1399 review — this file must stay SILENT.
+// test-error
+// #1881: a header's names are visible only in a file that includes it itself.
 //
 // Both names come from a C header two hops away: this file includes only a
-// .cnx, and that file includes the header. The first precondition walked only
-// THIS file's #include lines, saw nothing foreign, kept E0427 enabled and
-// rejected SHARED_LIMIT_MACRO — code that main transpiles and gcc compiles.
-// Include visibility is transitive, so the precondition must be too.
-//
-// The typedef is the contrast that isolates the cause: shared_point_t was
-// never flagged, because a parsed header typedef does reach the run-wide
-// table. Only the macro has nothing to fall back on.
+// .cnx, and that file includes the header. The #1399 review made the
+// exemption transitive, so both were accepted. Neither is defined here: the
+// typedef is E0426, the macro E0427.
 #include <macro-bridge.cnx>
 
 shared_point_t sharedOrigin;

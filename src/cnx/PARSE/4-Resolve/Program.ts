@@ -45,6 +45,8 @@ import type IScopeSymbol from "../../types/symbols/IScopeSymbol";
 import type IFileSymbols from "../../types/IFileSymbols";
 import type IStructFieldInfo from "../../types/symbols/IStructFieldInfo";
 import type IResolvedSymbols from "../../types/IResolvedSymbols";
+import type IForeignOrigin from "../../types/IForeignOrigin";
+import ESourceLanguage from "../../utils/types/ESourceLanguage";
 import type IProgram from "../../types/IProgram";
 import type TSymbol from "../../types/symbols/TSymbol";
 import type IParameterInfo from "../../types/symbols/IParameterInfo";
@@ -122,6 +124,8 @@ const NO_FOREIGN: IForeignSymbols = {
   structTagsWithBodies: EMPTY_NAMES,
   macros: new Map(),
   macrosUnread: EMPTY_NAMES,
+  visibleMacros: new Map(),
+  macroNames: EMPTY_NAMES,
   integerTypes: new Map<string, string>(),
 };
 
@@ -143,7 +147,8 @@ type TSettleInputs = Pick<
   | "foreign"
   | "visibility"
   | "registry"
-  | "filesReachingForeignHeaders"
+  | "filesIncludingForeignHeaders"
+  | "headerPathsByFile"
   | "symbolTable"
   | "target"
 >;
@@ -200,6 +205,7 @@ class Program {
     const opaqueTypes = settled.opaqueTypes;
     const fileFacts = settled.fileFacts;
     const foreignNames = settled.foreignNames;
+    const foreignNamesByFile = settled.foreignNamesByFile;
     const foreignValues = settled.foreignValues;
     const constants = settled.constants;
     const framesByFile = settled.framesByFile;
@@ -212,6 +218,7 @@ class Program {
       symbolsByIdentity,
       registry,
       foreignNames,
+      foreignNamesByFile,
       foreignValues,
       visibleFiles,
     };
@@ -310,6 +317,9 @@ class Program {
       opaqueTypes: (): ReadonlySet<string> => opaqueTypes,
       headerMacro: (sourceFile: string, name: string): THeaderMacro | null =>
         foreign.macros.get(sourceFile)?.get(name) ?? null,
+      seesHeaderMacro: settled.fileFacts.seesHeaderMacro,
+      seesForeignSymbol: settled.fileFacts.seesForeignSymbol,
+      hidesHeaderName: settled.fileFacts.hidesHeaderName,
       headerMacrosUnread: (sourceFile: string): boolean =>
         foreign.macrosUnread.has(sourceFile),
       headerIntegerType: (name: string): string | null =>
@@ -480,6 +490,26 @@ class Program {
     const qualifiedTypeNames = new Map(
       files.map((file) => [file.sourceFile, file.qualifiedTypeNames]),
     );
+    const headerPathsByFile =
+      inputs.headerPathsByFile ?? new Map<string, ReadonlySet<string>>();
+    const seesHeaderMacro = (sourceFile: string, name: string): boolean =>
+      foreign.visibleMacros.get(sourceFile)?.has(name) ?? false;
+    const seesForeignSymbol = (
+      sourceFile: string,
+      symbol: IForeignOrigin,
+    ): boolean =>
+      symbol.sourceLanguage === ESourceLanguage.Cnx ||
+      (headerPathsByFile.get(sourceFile)?.has(symbol.sourceFile) ?? false);
+    const hidesHeaderName = (sourceFile: string, name: string): boolean => {
+      if (seesHeaderMacro(sourceFile, name)) return false;
+      const declared = (headers?.getOverloadsByCName(name) ?? []).filter(
+        (symbol) => symbol.sourceLanguage !== ESourceLanguage.Cnx,
+      );
+      if (declared.some((symbol) => seesForeignSymbol(sourceFile, symbol))) {
+        return false;
+      }
+      return declared.length > 0 || foreign.macroNames.has(name);
+    };
     // #1175: what a constant name's facts read of the files, beside the binder
     const fileFacts: IFileConstantFacts = {
       isScopeTypeVisibleFrom,
@@ -488,8 +518,11 @@ class Program {
           qualifiedTypeNames.get(sourceFile) ?? EMPTY_SPELLINGS,
           written,
         ),
-      reachesForeignHeader: (sourceFile) =>
-        (inputs.filesReachingForeignHeaders ?? EMPTY_NAMES).has(sourceFile),
+      includesForeignHeader: (sourceFile) =>
+        (inputs.filesIncludingForeignHeaders ?? EMPTY_NAMES).has(sourceFile),
+      seesHeaderMacro,
+      seesForeignSymbol,
+      hidesHeaderName,
       headerStructFields: (structName) => headers?.getStructFields(structName),
       headerTypeBits: (cType) =>
         headers === null
@@ -519,6 +552,10 @@ class Program {
       ...foreign.c.map((symbol) => symbol.name),
       ...foreign.cpp.map((symbol) => symbol.name),
     ]);
+    const foreignNamesByFile = Program.foreignNamesByFile(
+      foreign,
+      headerPathsByFile,
+    );
     const foreignValues = Program.foreignValues(foreign);
     // What a spelling means while the consts fold: the declarations as 1.3
     // recorded them, bound in the same order every later pass binds in.
@@ -530,6 +567,7 @@ class Program {
       symbolsByIdentity: Program.indexByIdentity(settledByFile),
       registry,
       foreignNames,
+      foreignNamesByFile,
       foreignValues,
       visibleFiles,
     };
@@ -609,6 +647,7 @@ class Program {
       opaqueTypes,
       visibleFiles,
       foreignNames,
+      foreignNamesByFile,
       foreignValues,
       foreign,
       visibility,
@@ -1151,9 +1190,10 @@ class Program {
           ? member
           : undefined;
       },
-      get reachesForeignHeader() {
-        return options.files.reachesForeignHeader(file());
+      get includesForeignHeader() {
+        return options.files.includesForeignHeader(file());
       },
+      hidesHeaderName: (name) => options.files.hidesHeaderName(file(), name),
       mayBeHeaderName: (root, name, at) =>
         Program.mayBeHeaderName(facts, options.files, file(), root, name, at),
       foreignValue: (name) => facts.foreignValues.get(name) ?? null,
@@ -1642,9 +1682,10 @@ class Program {
 
   /**
    * ADR-030 / #2019: whether a spelling nothing binds at `at` may be a
-   * header's `#define`, which reaches no symbol table: the file reaches a C
+   * header's `#define`, which reaches no symbol table: the file includes a C
    * or C++ header, and no declaration of the file would bind it there were
-   * it closed. One that would is cnx's, and not defined yet (E0427).
+   * it closed. One that would is cnx's, and not defined yet (E0427). #1881:
+   * nor may it be a header name the file cannot see.
    */
   private static mayBeHeaderName(
     facts: IBindingFacts,
@@ -1655,7 +1696,8 @@ class Program {
     at: TPosition,
   ): boolean {
     return (
-      files.reachesForeignHeader(sourceFile) &&
+      files.includesForeignHeader(sourceFile) &&
+      !files.hidesHeaderName(sourceFile, name) &&
       !Program.isUnclosedAt(facts, sourceFile, root, name, at)
     );
   }
@@ -1709,7 +1751,9 @@ class Program {
         ? { kind: "scope", scopePath: name }
         : null;
     const foreign = (): TValueBinding | null =>
-      facts.foreignNames.has(name) ? { kind: "foreign", name } : null;
+      (facts.foreignNamesByFile.get(sourceFile)?.has(name) ?? false)
+        ? { kind: "foreign", name }
+        : null;
 
     // #1760 review: ADR-057 puts a member the enclosing scope declares first,
     // whatever its kind. A type binds no value, but it still hides a global
@@ -1736,6 +1780,30 @@ class Program {
    * expression naming one is worth (a length property of an array; no value
    * otherwise)
    */
+  /**
+   * #1881: each file's C and C++ names -- those a header it includes itself
+   * declares. A header's names are visible nowhere else.
+   */
+  private static foreignNamesByFile(
+    foreign: IForeignSymbols,
+    headerPathsByFile: ReadonlyMap<string, ReadonlySet<string>>,
+  ): ReadonlyMap<string, ReadonlySet<string>> {
+    const byHeader = new Map<string, Set<string>>();
+    for (const symbol of [...foreign.c, ...foreign.cpp]) {
+      const names = byHeader.get(symbol.sourceFile) ?? new Set<string>();
+      names.add(symbol.name);
+      byHeader.set(symbol.sourceFile, names);
+    }
+    return new Map(
+      [...headerPathsByFile].map(([file, headers]) => [
+        file,
+        new Set(
+          [...headers].flatMap((header) => [...(byHeader.get(header) ?? [])]),
+        ),
+      ]),
+    );
+  }
+
   private static foreignValues(
     foreign: IForeignSymbols,
   ): ReadonlyMap<string, IForeignValue> {

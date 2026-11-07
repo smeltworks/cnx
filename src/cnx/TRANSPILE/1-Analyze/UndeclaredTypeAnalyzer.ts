@@ -135,12 +135,9 @@ class UndeclaredTypeAnalyzer {
     // status quo, so this declines rather than guesses.
     //
     // #1399 review: the answer is computed during discovery from the
-    // resolver's own categorization and is TRANSITIVE. An earlier version
-    // walked this file's own `#include` token text, which made a third
-    // spelling of "is this a cnx include?" (not the resolver's) and stopped
-    // at one hop -- so a macro reached through a `.cnx` include was REJECTED,
-    // code that main compiles.
-    this.knowsEveryName = !this.context.reachesForeignHeader;
+    // resolver's own categorization. #1881: it is the file's OWN includes, as
+    // a header's names are visible only where it is included itself.
+    this.knowsEveryName = !this.context.includesForeignHeader;
 
     const walk = new UndeclaredTypeWalk(this);
     for (const member of program.members) {
@@ -224,7 +221,9 @@ class UndeclaredTypeAnalyzer {
       this.addUsedBeforeDefinitionError(written, span, definition);
       return;
     }
-    if (!this.knowsEveryName || this.denotesType(spellings)) {
+    const mayBeHeaderType =
+      !this.knowsEveryName && !this.namesHiddenHeaderName(spellings);
+    if (mayBeHeaderType || this.denotesType(spellings)) {
       return;
     }
     if (this.denotesRegister(spellings)) {
@@ -269,7 +268,22 @@ class UndeclaredTypeAnalyzer {
         name,
         this.context.symbols,
         this.context.symbolTable,
+        (symbol) =>
+          this.context.program.seesForeignSymbol(
+            this.context.sourceFile,
+            symbol,
+          ),
       ),
+    );
+  }
+
+  /**
+   * #1881: whether a spelling is a header's name this file cannot see, which
+   * is undefined here even where the file's own headers might supply others
+   */
+  namesHiddenHeaderName(spellings: ReadonlyArray<string>): boolean {
+    return spellings.some((name) =>
+      this.context.program.hidesHeaderName(this.context.sourceFile, name),
     );
   }
 

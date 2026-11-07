@@ -50,17 +50,19 @@ interface IAnalysisContext {
   readonly symbolTable: IResolvedSymbols;
 
   /**
-   * Whether this file can see a C/C++ header, which is what decides if an
-   * unresolved name is a defect or a type the compiler will supply.
+   * Whether this file includes a C/C++ header itself, which is what decides
+   * if an unresolved name is a defect or a type the compiler will supply. A
+   * header reached only through a `.cnx` include supplies this file nothing
+   * (#1881).
    *
-   * 1.1 Discover decides it once per file (`IPipelineFile.reachesForeignHeader`,
+   * 1.1 Discover decides it once per file (`IPipelineFile.includesForeignHeader`,
    * required since the #1863 review, when 1.4 began reading it too and the
    * orchestrator had come to default it at two sites). #1430 had forced it into
    * a single site; discovery is that site, and this copies its answer. It travels on the context rather than on
    * the state for the same reason as the rest: 2.1 reads it, and 2.3 happens to
    * be where it was parked.
    */
-  readonly reachesForeignHeader: boolean;
+  readonly includesForeignHeader: boolean;
 
   /**
    * #1668: the file being analyzed. With it this context is the one

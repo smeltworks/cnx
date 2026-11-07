@@ -151,3 +151,44 @@ describe("ExternalDeclarationOracle", () => {
     expect(recovery).toBeNull();
   });
 });
+
+describe("ExternalDeclarationOracle.definesAndHeaders (#1881)", () => {
+  const dump = [
+    '# 0 "unit.c"',
+    '# 0 "<built-in>"',
+    "#define __GNUC__ 11",
+    '# 0 "<command-line>"',
+    "#define FROM_FLAG 1",
+    '# 1 "/usr/include/stdc-predef.h" 1 3 4',
+    "#define _STDC_PREDEF_H 1",
+    '# 0 "<command-line>" 2',
+    '# 1 "unit.c"',
+    '# 1 "/p/board.h" 1',
+    '# 1 "/p/pins.h" 1',
+    "#define PIN 3",
+    '# 2 "/p/board.h" 2',
+    "#define LED 13",
+    "#define GONE 1",
+    "#undef GONE",
+    '# 2 "unit.c" 2',
+  ].join("\n");
+  const read = ExternalDeclarationOracle.definesAndHeaders(dump);
+
+  it("names every header entered, nested ones too, but not the unit", () => {
+    expect([...read.headerFiles].sort()).toEqual([
+      "/p/board.h",
+      "/p/pins.h",
+      "/usr/include/stdc-predef.h",
+    ]);
+  });
+
+  it("lists every macro still defined at the end, as -dM would", () => {
+    expect(read.dump.split("\n").map((line) => line.split(" ")[1])).toEqual([
+      "__GNUC__",
+      "FROM_FLAG",
+      "_STDC_PREDEF_H",
+      "PIN",
+      "LED",
+    ]);
+  });
+});

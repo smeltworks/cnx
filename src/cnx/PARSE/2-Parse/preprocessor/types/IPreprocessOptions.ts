@@ -34,6 +34,12 @@ interface IPreprocessOptions {
   dumpMacros?: boolean;
 
   /**
+   * #1881: keep each `#define` and `#undef` in the output (gcc/clang `-dD`),
+   * so its line markers say which file each macro is defined in.
+   */
+  dumpDefines?: boolean;
+
+  /**
    * #2096: evaluate the conditionals and expand no macro (gcc
    * `-fdirectives-only`), so a header's text keeps its spelling and loses
    * only the branches a compile skips.

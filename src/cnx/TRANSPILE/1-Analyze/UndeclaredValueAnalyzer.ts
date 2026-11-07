@@ -52,6 +52,7 @@ import PositionFreeScopeMember from "../../utils/PositionFreeScopeMember";
 import OperandTyper from "../../utils/OperandTyper";
 import TChainRoot from "../../types/TChainRoot";
 import type IAnalysisContext from "./types/IAnalysisContext";
+import type IForeignOrigin from "../../types/IForeignOrigin";
 
 /**
  * #1991: walks 1.2's syntax, not the parse tree. A name is read at the head of
@@ -273,7 +274,12 @@ class UndeclaredValueAnalyzer {
     if (root === "global") {
       return (
         UndeclaredValueAnalyzer.binds(root, name, at, this.context) ||
-        NameExistence.isValueName(name, symbols, this.context.symbolTable)
+        NameExistence.isValueName(
+          name,
+          symbols,
+          this.context.symbolTable,
+          UndeclaredValueAnalyzer.seesForeign(this.context),
+        )
       );
     }
 
@@ -318,6 +324,7 @@ class UndeclaredValueAnalyzer {
         member.fullyQualifiedCName,
         context.symbols,
         context.symbolTable,
+        UndeclaredValueAnalyzer.seesForeign(context),
       )
     );
   }
@@ -407,7 +414,14 @@ class UndeclaredValueAnalyzer {
     // `scopeMemberVisibility`, written by the same `processScope`, ARE merged,
     // so the three disagree about what "visible" means. What actually answers
     // cross-file here is the run-wide `symbolTable` term below.
-    if (NameExistence.isValueName(name, symbols, symbolTable)) {
+    if (
+      NameExistence.isValueName(
+        name,
+        symbols,
+        symbolTable,
+        UndeclaredValueAnalyzer.seesForeign(context),
+      )
+    ) {
       return true;
     }
 
@@ -424,6 +438,14 @@ class UndeclaredValueAnalyzer {
       span,
       message: `'${identifier}' is not defined`,
     });
+  }
+
+  /** #1881: whether the analyzed file sees a C/C++ symbol */
+  private static seesForeign(
+    context: IAnalysisContext,
+  ): (symbol: IForeignOrigin) => boolean {
+    return (symbol) =>
+      context.program.seesForeignSymbol(context.sourceFile, symbol);
   }
 }
 

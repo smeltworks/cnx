@@ -357,7 +357,7 @@ This reaches serve, which builds its Transpiler with `input: ""` (`ServeCommand.
 - `IResolvedIncludes.hasForeignInclude` (set in `IncludeResolver._categorizeFile` and `_handleUnresolvedInclude`) becomes `firstForeignInclude: {line, column} | null`.
 - `IncludeDiscovery.extractCnxIncludes` carries the position of the `INCLUDE_DIRECTIVE` token. Since #1745, it is how `IncludeResolver.resolve` reads a `.cnx` file's directives. The text scan, `extractIncludesWithInfo`, now reads only C and C++ headers.
 - Its one reader, in `Transpiler._buildPipelineInput`, compares it with `!== null`.
-- `IPipelineFile` gains `firstForeignInclude`, which is direct. `IPipelineFile.reachesForeignHeader` is unchanged, so E0426 and E0427 are unchanged.
+- `IPipelineFile` gains `firstForeignInclude`, which is direct. `IPipelineFile.reachesForeignHeader` is unchanged, so E0426 and E0427 are unchanged. (#1881 later replaced it with the direct `includesForeignHeader`.)
 
 **Source-mode reach.**
 
