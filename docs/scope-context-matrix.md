@@ -892,7 +892,7 @@ cell is declared by the ADR that owns it.
 - `bugs/issue-1312-undefined-type-position/transitive-type-resolves.test.cnx`
 - `bugs/issue-1312-undefined-type-position/undefined-type-sibling.test.cnx`
 - `bugs/issue-1353-undeclared-value-position/declared-value-resolves.test.cnx`
-- `bugs/issue-1353-undeclared-value-position/macro-through-cnx-include.test.cnx`
+- `bugs/issue-1353-undeclared-value-position/macro-direct-include-control.test.cnx`
 - `bugs/issue-1353-undeclared-value-position/undeclared-value-sibling-consumer-first.test.cnx`
 - `bugs/issue-1353-undeclared-value-position/undeclared-value-sibling-source-first.test.cnx`
 - `bugs/issue-1430-e0427-order-dependence/consumer-first.test.cnx`
