@@ -8,6 +8,8 @@
 // Tests: cJSON object/array construction through ADR-061 C boundary layer
 // Issue #931: Real-world library integration tests
 #include "cjson_api.h"
+// #1881: cJSON is named here, so cJSON.h is included here
+#include "../../libs/cJSON/cJSON.h"
 
 #include <stdint.h>
 #include <stdbool.h>

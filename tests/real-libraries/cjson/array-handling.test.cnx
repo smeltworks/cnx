@@ -4,6 +4,8 @@
 // Issue #931: Real-world library integration tests
 
 #include "cjson_api.h"
+// #1881: cJSON is named here, so cJSON.h is included here
+#include "../../libs/cJSON/cJSON.h"
 
 u32 main() {
     string<64> payload <- "[10,20,30]";

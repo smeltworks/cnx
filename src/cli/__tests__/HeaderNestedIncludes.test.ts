@@ -25,11 +25,13 @@ import Transpiler from "../Transpiler";
 import Preprocessor from "../../cnx/PARSE/2-Parse/preprocessor/Preprocessor";
 import NodeFileSystem from "../../cnx/PARSE/1-Discover/NodeFileSystem";
 
+// #1881: main names only A.h's own function. B.h's names are not visible in
+// main, but A.h's declaration is written in B.h's type, so a B.h that is not
+// found loses a_init too.
 const MAIN = `#include <A.h>
 
 void setup() {
-    a_init();
-    b_init();
+    a_init(1);
 }
 `;
 
@@ -80,8 +82,8 @@ describe("a C header's own includes (#1723)", () => {
   }
 
   it("resolves a libdeps header's include of a sibling library's header", async () => {
-    writeFileSync(join(libA, "A.h"), '#include "B.h"\nvoid a_init(void);\n');
-    writeFileSync(join(libB, "B.h"), "void b_init(void);\n");
+    writeFileSync(join(libA, "A.h"), '#include "B.h"\nvoid a_init(b_t v);\n');
+    writeFileSync(join(libB, "B.h"), "typedef unsigned char b_t;\n");
 
     for (const result of await bothModes()) {
       expect(result.errors).toEqual([]);
@@ -90,8 +92,8 @@ describe("a C header's own includes (#1723)", () => {
   });
 
   it("control: the sibling header beside the header that includes it", async () => {
-    writeFileSync(join(libA, "A.h"), '#include "B.h"\nvoid a_init(void);\n');
-    writeFileSync(join(libA, "B.h"), "void b_init(void);\n");
+    writeFileSync(join(libA, "A.h"), '#include "B.h"\nvoid a_init(b_t v);\n');
+    writeFileSync(join(libA, "B.h"), "typedef unsigned char b_t;\n");
 
     for (const result of await bothModes()) {
       expect(result.errors).toEqual([]);
@@ -104,9 +106,9 @@ describe("a C header's own includes (#1723)", () => {
     // include path it is handed pins the list without needing a compiler.
     writeFileSync(
       join(libA, "A.h"),
-      '#define LIB_A 1\n#if LIB_A >= 1\n#include "B.h"\nvoid a_init(void);\n#endif\n',
+      '#define LIB_A 1\n#if LIB_A >= 1\n#include "B.h"\nvoid a_init(b_t v);\n#endif\n',
     );
-    writeFileSync(join(libB, "B.h"), "void b_init(void);\n");
+    writeFileSync(join(libB, "B.h"), "typedef unsigned char b_t;\n");
     const handed: string[][] = [];
     vi.spyOn(Preprocessor.prototype, "isAvailable").mockReturnValue(true);
     vi.spyOn(Preprocessor.prototype, "preprocess").mockImplementation(
