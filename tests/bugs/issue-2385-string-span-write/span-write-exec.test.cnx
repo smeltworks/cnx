@@ -1,0 +1,114 @@
+// test-execution
+// Issue #2385: s[i] is s[i, 1] (owner ruling, 2026-11-05), so both spellings
+// write the same characters for every value. An empty string writes nothing;
+// a character is written as it is, into a range too; an integer is split into
+// bytes (ADR-007), into one character too; a runtime start is allowed (owner
+// ruling, 2026-11-05). A concatenation written into one character is copied
+// like any string (#2374). Each result is checked with its own return code.
+
+struct Pkt {
+    u8 bits;
+    string<8> name;
+}
+
+mut Pkt gp;
+mut string<8> s;
+mut string<8> r;
+mut string<8> c;
+string<1> e <- "";
+string<1> o <- "z";
+mut u8 d <- 68;
+
+void put(u32 i) {
+    r[i] <- 'x';
+    r[i + 1, 2] <- "ab";
+    r[i + 3, 1] <- 67;
+    r[i + 4] <- o;
+    r[i + 5] <- e;
+}
+
+u32 main() {
+    s <- "hello";
+    s[0] <- "";
+    s[1] <- e;
+    s[2, 1] <- "";
+    s[3, 1] <- e;
+    if (s.value_char_count != 5) {
+        return 1;
+    }
+    if (s[0] != 'h') {
+        return 2;
+    }
+    if (s[1] != 'e') {
+        return 3;
+    }
+
+    s[0] <- 65;
+    s[1, 1] <- 66;
+    s[2, 1] <- 'x';
+    s[3, 2] <- 'y';
+    if (s[0] != 'A') {
+        return 4;
+    }
+    if (s[1] != 'B') {
+        return 5;
+    }
+    if (s[2] != 'x') {
+        return 6;
+    }
+    if (s[3] != 'y') {
+        return 7;
+    }
+    if (s[4] != 'o') {
+        return 8;
+    }
+
+    gp.name <- "hello";
+    gp.name[0, 2] <- 0x4241;
+    gp.name[2] <- 67;
+    gp.name[3] <- d;
+    if (gp.name[0] != 'A') {
+        return 9;
+    }
+    if (gp.name[1] != 'B') {
+        return 10;
+    }
+    if (gp.name[2] != 'C') {
+        return 11;
+    }
+    if (gp.name[3] != 'D') {
+        return 20;
+    }
+
+    r <- "--------";
+    put(1);
+    if (r[1] != 'x') {
+        return 12;
+    }
+    if (r[2] != 'a') {
+        return 13;
+    }
+    if (r[3] != 'b') {
+        return 14;
+    }
+    if (r[4] != 'C') {
+        return 15;
+    }
+    if (r[5] != 'z') {
+        return 16;
+    }
+    if (r[6] != '-') {
+        return 17;
+    }
+
+    c <- "hello";
+    c[0] <- "j" + "";
+    c[1] <- "" + "";
+    if (c[0] != 'j') {
+        return 18;
+    }
+    if (c[1] != 'e') {
+        return 19;
+    }
+    return 0;
+}

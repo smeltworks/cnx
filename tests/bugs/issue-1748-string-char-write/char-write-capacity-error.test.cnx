@@ -1,0 +1,11 @@
+// test-error
+// Issue #1748: ADR-045 makes s[i] a string<1>, so a string written into one
+// character must fit one character (owner ruling, 2026-10-30).
+// NEGATIVE CONTROL -- a one-character literal fits, beside the error.
+
+mut string<8> s;
+
+void main() {
+    s[3] <- "z";
+    s[2] <- "xy";
+}

@@ -1,0 +1,2 @@
+10:15 error[E0864]: String literal (3 chars) exceeds string<2> capacity
+       help: A range of a string<N> holds as many characters as its length (ADR-045): shorten the literal.

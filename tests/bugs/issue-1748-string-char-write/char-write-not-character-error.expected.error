@@ -1,0 +1,6 @@
+23:18 error[E0928]: A value that is not a character, a string or an integer cannot be written into a string's characters: 'x'
+       help: The characters of a string<N> take a character, a string that fits them, or an integer split into bytes (ADR-045)
+24:12 error[E0928]: A value that is not a character, a string or an integer cannot be written into a string's characters: 'true'
+       help: The characters of a string<N> take a character, a string that fits them, or an integer split into bytes (ADR-045)
+25:15 error[E0928]: A value that is not a character, a string or an integer cannot be written into a string's characters: 'true'
+       help: The characters of a string<N> take a character, a string that fits them, or an integer split into bytes (ADR-045)

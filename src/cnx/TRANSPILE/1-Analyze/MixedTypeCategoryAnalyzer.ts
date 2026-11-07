@@ -35,7 +35,7 @@
  * category in another function or a nested block never poisons the lookup
  * (Issue #1085 review) -- and types every shape of operand: fields, elements,
  * calls, casts, C and C++ operands. This analyzer applies Rule 10.4's policy
- * to the facts (`rule104Category`); the typer decides no policy.
+ * to the facts (`EssentialCategory`); the typer decides no policy.
  *
  * Note: shift operators (<< / >>) are intentionally NOT checked here — MISRA
  * Rule 10.4 only governs operators subject to the usual arithmetic conversions,
@@ -49,6 +49,7 @@ import IMixedTypeCategoryError from "./types/IMixedTypeCategoryError";
 import OperatorOperandAnalyzer from "./OperatorOperandAnalyzer";
 import EnumValueResolver from "./EnumValueResolver";
 import OperandTyper from "../../utils/OperandTyper";
+import EssentialCategory from "../../utils/EssentialCategory";
 import CompoundOperator from "../../utils/CompoundOperator";
 import CLAMP_HELPER_FOR_OPERATOR from "../../types/CLAMP_HELPER_FOR_OPERATOR";
 import type IAnalysisContext from "./types/IAnalysisContext";
@@ -72,20 +73,11 @@ type Category = string | null;
 type TOperatorSite = "binary" | "conditional" | "compound";
 
 /**
- * #1688 (ADR-024): a header macro cnx cannot type. Not a Rule 10.4
- * category -- it is rejected beside an integer only, as E0811 or E0812
- */
-const UNREADABLE_MACRO = "unreadable macro";
-
-/**
  * The compound arm's shifts, whose operands are not Rule 10.4 operands. The
  * binary walk skips the same operators by level (`level === "shift"`); #2049
  * makes the two one rule.
  */
 const NOT_RULE_10_4_OPERATORS: ReadonlySet<string> = new Set(["<<", ">>"]);
-
-/** The operators MISRA lets combine a character with an integer */
-const CHARACTER_ARITHMETIC: ReadonlySet<string> = new Set(["+"]);
 
 class MixedCategoryCheck {
   private readonly enums: EnumValueResolver;
@@ -114,24 +106,6 @@ class MixedCategoryCheck {
   }
 
   /**
-   * An operand's Rule 10.4 category, or null when it has none. The policy
-   * over the typer's facts, decided here and only here.
-   */
-  static rule104Category(t: IOperandType | null): Category {
-    if (t === null) return null;
-    // An array is not an arithmetic operand of any category (#1191)
-    if (t.dimensions.length > 0) return null;
-    // A subscript into a scalar is a bit index or range, not arithmetic
-    // on the scalar's category (ADR-024)
-    if (t.form.kind === "bitIndex" || t.form.kind === "bitRange") return null;
-    // Which overload a call selects is C++'s decision, not ours (C03)
-    if (t.form.kind === "foreign" && t.form.indeterminate) return null;
-    if (t.form.kind === "unreadableMacro") return UNREADABLE_MACRO;
-    if (t.category === "enum") return `enum:${t.enumTypeName ?? t.typeName}`;
-    return t.category === "none" ? null : t.category;
-  }
-
-  /**
    * One category for an operand. An operand that is itself an operator level
    * has the category that level folded to; any other has the category its
    * value leaves share, or null when they have none -- or disagree, which is
@@ -146,19 +120,9 @@ class MixedCategoryCheck {
     if (key !== null && this.levelCategories.has(key)) {
       return this.levelCategories.get(key) ?? null;
     }
-    let resolved: Category = null;
-    for (const leaf of OperandTyper.valueLeaves(operand, this.context)) {
-      const category = MixedCategoryCheck.rule104Category(
-        EnumMemberValue.operandType(leaf, enumBeingDeclared),
-      );
-      if (category === null) continue;
-      if (resolved === null) {
-        resolved = category;
-      } else if (resolved !== category) {
-        return null;
-      }
-    }
-    return resolved;
+    return EssentialCategory.of(operand, this.context, (leaf) =>
+      EnumMemberValue.operandType(leaf, enumBeingDeclared),
+    );
   }
 
   /**
@@ -189,7 +153,7 @@ class MixedCategoryCheck {
           enumBeingDeclared,
         )
       ) {
-        if (MixedCategoryCheck.differ(running, right, operator)) {
+        if (EssentialCategory.differ(running, right, operator)) {
           this.analyzer.addError(
             operands[i].span,
             running!,
@@ -205,7 +169,7 @@ class MixedCategoryCheck {
         // category an enclosing level could report again
         mixed = true;
       }
-      running = MixedCategoryCheck.fold(running, right, operator);
+      running = EssentialCategory.fold(running, right, operator);
     }
     this.levelCategories.set(
       MixedCategoryCheck.writtenAt(expr),
@@ -251,29 +215,6 @@ class MixedCategoryCheck {
         enumBeingDeclared,
       ),
     );
-  }
-
-  /**
-   * The category after `running operator right`: character for MISRA's
-   * exempt character + integer (D.7), the running one when `right` has
-   * none, and `right`'s otherwise. Owner ruling (2026-09-28, #1760 review):
-   * D.7 stands, so `u32 a + 'A' + i32 s` is legal here; computing its exact
-   * value into the destination is #1809.
-   */
-  private static fold(
-    running: Category,
-    right: Category,
-    operator: string,
-  ): Category {
-    if (right === null || right === UNREADABLE_MACRO) return running ?? right;
-    if (running === null || running === UNREADABLE_MACRO) return right;
-    if (
-      running !== right &&
-      !MixedCategoryCheck.differ(running, right, operator)
-    ) {
-      return "character";
-    }
-    return right;
   }
 
   /**
@@ -324,32 +265,13 @@ class MixedCategoryCheck {
     const right = this.operandCategory(expr.whenFalse, enumBeingDeclared);
     if (left === null || right === null || left === right) return;
     if (
-      (left === UNREADABLE_MACRO || right === UNREADABLE_MACRO) &&
-      !MixedCategoryCheck.differ(left, right, ":")
+      (left === EssentialCategory.UNREADABLE_MACRO ||
+        right === EssentialCategory.UNREADABLE_MACRO) &&
+      !EssentialCategory.differ(left, right, ":")
     ) {
       return;
     }
     this.analyzer.addError(expr.whenFalse.span, left, right, "conditional");
-  }
-
-  /** Whether two categories may not be combined by `operator` */
-  private static differ(
-    left: Category,
-    right: Category,
-    operator: string,
-  ): boolean {
-    if (left === null || right === null || left === right) return false;
-    const integer = (c: string) => c === "signed" || c === "unsigned";
-    // ADR-024 (#1688): an unreadable macro needs a cast beside an integer
-    // only; beside anything else it is C's to evaluate, as it always was
-    if (left === UNREADABLE_MACRO || right === UNREADABLE_MACRO) {
-      return integer(left) || integer(right);
-    }
-    const characterExempt =
-      CHARACTER_ARITHMETIC.has(operator) &&
-      ((left === "character" && integer(right)) ||
-        (right === "character" && integer(left)));
-    return !characterExempt;
   }
 
   public checkCompound(site: IAssignmentSyntax): void {
@@ -367,9 +289,9 @@ class MixedCategoryCheck {
     ) {
       return;
     }
-    const left = MixedCategoryCheck.rule104Category(target);
+    const left = EssentialCategory.ofType(target);
     const right = this.operandCategory(value, null);
-    if (MixedCategoryCheck.differ(left, right, operator)) {
+    if (EssentialCategory.differ(left, right, operator)) {
       this.analyzer.addError(value.span, left!, right!, "compound", operator);
     }
   }
@@ -451,7 +373,10 @@ class MixedTypeCategoryAnalyzer {
     operator?: string,
     castOnly = false,
   ): void {
-    if (left === UNREADABLE_MACRO || right === UNREADABLE_MACRO) {
+    if (
+      left === EssentialCategory.UNREADABLE_MACRO ||
+      right === EssentialCategory.UNREADABLE_MACRO
+    ) {
       this.addUnreadableMacroError(span, what, operator);
       return;
     }
