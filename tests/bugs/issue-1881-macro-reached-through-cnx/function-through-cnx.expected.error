@@ -1,1 +1,1 @@
-7:4 error[E0422]: function 'hw_reset' called before definition
+7:4 error[E0422]: 'hw_reset' is not declared in any included header

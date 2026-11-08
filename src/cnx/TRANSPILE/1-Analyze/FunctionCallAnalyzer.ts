@@ -27,6 +27,7 @@ import IncludeDirective from "./helpers/IncludeDirective";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import type TSymbol from "../../types/symbols/TSymbol";
 import invariant from "../../utils/invariant";
+import ESourceLanguage from "../../utils/types/ESourceLanguage";
 
 /**
  * cnx built-in functions
@@ -527,7 +528,8 @@ class FunctionCallAnalyzer {
       name ?? writtenName,
       writtenName,
       header,
-      isGlobalCall && !isLocalFunction,
+      (isGlobalCall && !isLocalFunction) ||
+        (name !== null && this.namesOtherFilesHeaderFunction(name)),
     );
 
     this.errors.push({
@@ -632,6 +634,23 @@ class FunctionCallAnalyzer {
         (sym) =>
           sym.kind === "function" &&
           this.context.program.seesForeignSymbol(this.context.sourceFile, sym),
+      );
+  }
+
+  /**
+   * #1881: whether a C/C++ header in the run declares this function, though
+   * none this file includes itself does. No reordering defines such a call, so
+   * it is worded as a missing include, not as a call before definition.
+   */
+  private namesOtherFilesHeaderFunction(cName: string): boolean {
+    if (this.allLocalFunctions.has(cName)) {
+      return false;
+    }
+    return this.context.symbolTable
+      .getOverloadsByCName(cName)
+      .some(
+        (sym) =>
+          sym.kind === "function" && sym.sourceLanguage !== ESourceLanguage.Cnx,
       );
   }
 }

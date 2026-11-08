@@ -501,9 +501,10 @@ own `#include` lines. A header supplies names through the preprocessor — a
 `#define` is not a declaration and appears in no symbol table — so cnx
 cannot enumerate what is in scope and does not claim a name is undefined on
 evidence it does not have. A header's names are visible only in a file that
-includes that header itself (#1881): not through a `.cnx` it includes, and
-not through another header's `#include`, system headers and compiler
-builtins included. A name some header in the run supplies, but none the file
+includes that header itself (#1881), never through a `.cnx` it includes.
+Within the file's own includes C's rule holds: an include is textual, so a
+header the named header includes is part of it, system headers included, and
+its names are visible too. A name some header in the run supplies, but none the file
 includes itself, is evidence cnx has, so it is E0427 (E0426 as a type, E0422
 as a call) in that file. The exemption is a promise about interop, and it
 covers every name the file does not itself declare, not only the names that
