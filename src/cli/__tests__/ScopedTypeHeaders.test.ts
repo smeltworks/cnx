@@ -83,6 +83,7 @@ describe("a scoped type in a generated header", () => {
         "mid.cnx": '#include "h.h"\n\nu8 midValue <- 1;\n',
         "main.cnx": `#include "x.cnx"
 #include "mid.cnx"
+#include "h.h"
 
 scope Manager {
     public Data getData() {

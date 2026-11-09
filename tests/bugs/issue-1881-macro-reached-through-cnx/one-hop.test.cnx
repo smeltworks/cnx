@@ -1,0 +1,12 @@
+// test-error
+// Issue #1881: main reaches buf-size.h only through lib/mid.cnx. A header's
+// names are visible only in a file that includes it itself, so BUF_SIZE is
+// not defined here. It used to be accepted, and main.h, which names it, did
+// not compile (exit 0).
+#include "lib/mid.cnx"
+
+mut u8[BUF_SIZE] x;
+
+u32 main() {
+    return count();
+}

@@ -1,3 +1,4 @@
+import type IForeignOrigin from "../../../types/IForeignOrigin";
 import type IStructFieldInfo from "../../../types/symbols/IStructFieldInfo";
 import type TType from "../../../types/TType";
 
@@ -11,7 +12,13 @@ interface IFileConstantFacts {
   /** `IProgram.qualifiedTypeName`: the spelling 1.3 gave a written `Scope.T` */
   qualifiedTypeName(sourceFile: string, written: string): string;
   /** Whether `sourceFile` includes a C or C++ header, so a name may be a macro */
-  reachesForeignHeader(sourceFile: string): boolean;
+  includesForeignHeader(sourceFile: string): boolean;
+  /** `IProgram.seesHeaderMacro` */
+  seesHeaderMacro(sourceFile: string, name: string): boolean;
+  /** `IProgram.seesForeignSymbol` */
+  seesForeignSymbol(sourceFile: string, symbol: IForeignOrigin): boolean;
+  /** `IProgram.hidesHeaderName` */
+  hidesHeaderName(sourceFile: string, name: string): boolean;
   /** #2076: a header struct's fields; undefined for a name no header's struct has */
   headerStructFields(
     structName: string,

@@ -5,8 +5,8 @@
 
 #include "macro-bridge.hpp"
 
-// Helper for the #1399 review regression. Includes the C header, so every
-// file that reaches THIS file can also see SHARED_LIMIT_MACRO.
+// Helper for the #1399 review regression. Includes the C header, whose names
+// are visible here and in no file that only includes this one (#1881).
 #include "macro-header.h"
 
 #include <stdint.h>

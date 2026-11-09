@@ -35,18 +35,19 @@ interface IPipelineFile {
   readonly cnxIncludes: ReadonlyArray<{ path: string }>;
 
   /**
-   * Whether this file can see a C/C++ header, directly or through any `.cnx`
-   * it includes.
+   * Whether this file names a C/C++ header in its own `#include` lines.
    *
    * #1399 review: E0426/E0427 may only fire where the transpiler knows the
-   * file's whole name universe. A header is not parsed into the symbol table
-   * and a `#define` never reaches it at all, so a file that can see one must
-   * decline to answer. Computed from the resolver's own categorization during
-   * discovery, which is the authoritative answer -- deriving it from `#include`
-   * token text in the analyzer made a third spelling of "is this a cnx
-   * include?", and that spelling disagreed with the resolver's.
+   * file's whole name universe, and a file that includes a header may name
+   * something no parse of it recorded. #1881: a header's names are visible
+   * only in a file that includes it itself, never through a `.cnx` include,
+   * so a file that includes none knows every name it can use. Computed from
+   * the resolver's own categorization during discovery, which is the
+   * authoritative answer -- deriving it from `#include` token text in the
+   * analyzer made a third spelling of "is this a cnx include?", and that
+   * spelling disagreed with the resolver's.
    */
-  readonly reachesForeignHeader: boolean;
+  readonly includesForeignHeader: boolean;
 }
 
 export default IPipelineFile;

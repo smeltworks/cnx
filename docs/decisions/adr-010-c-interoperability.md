@@ -277,6 +277,17 @@ axis. A cell left undeclared would read as `off`, which would be the claim that
 an included symbol cannot be used in that position -- the opposite of what this
 ADR decides.
 
+**A C or C++ header's names are not re-exported by a cnx include** (owner
+ruling on #1881). The promise above is for declarations a `.cnx` file makes. A
+macro, function, variable or type a C/C++ header declares is visible only in a
+`.cnx` whose own `#include` lines bring that header in -- not through another
+`.cnx` that includes it. Within a file's own C includes, C's rule holds: an
+include is textual, so the headers a named header includes are part of it, and
+`FILE` after `#include <stdio.h>` is visible though glibc declares it in a
+header `stdio.h` includes. Compiler builtins are visible in every file that
+includes a header, as C sees them. Named anywhere else a header name is not
+defined: E0427 for a value or macro, E0426 for a type, E0422 for a call.
+
 **Where an include fixture occupies is the use site, never the directive.** The
 Diagnostics section above records that the three include diagnostics occupy no
 cell, because an `#include` is grammatical only before the first declaration and

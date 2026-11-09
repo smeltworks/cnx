@@ -654,7 +654,7 @@ E0424 is a 2.1 Analyze diagnostic since #1322, and render asserts it never sees 
 - **Array dimensions**: `IVariableSymbol.arrayDimensions` is `(number | string)[]` — numbers for resolved constants, strings for C macros
 - **What an analyzer may read is `IAnalysisContext`, plus the 1.2 syntax it walks.** #1456
   made it a parameter: `symbols` (this file's view), `program` (1.4's artifact),
-  `symbolTable` (an `IResolvedSymbols`), `reachesForeignHeader`, and `sourceFile`. 2.1 builds it
+  `symbolTable` (an `IResolvedSymbols`), `includesForeignHeader`, and `sourceFile`. 2.1 builds it
   itself (`Analyze`) from what 1.4 returned (#1991); `runAnalyzers` also hands
   some analyzers `IValuePositions`, 2.1's own walk of 1.2's syntax. And
   `2-1-analyze-reads-no-later-pass` (`error`, `reachable: true`) makes an

@@ -43,7 +43,11 @@ function build(
     ],
     {
       cppMode: false,
-      filesReachingForeignHeaders: new Set(reachesHeader ? [FILE] : []),
+      filesIncludingForeignHeaders: new Set(reachesHeader ? [FILE] : []),
+      // #1881: the header's names are visible only where it is included
+      headerPathsByFile: new Map(
+        reachesHeader ? [[FILE, new Set(["header.h"])]] : [],
+      ),
       // Scope bindings are the registry's, as in a real run
       registry,
       foreign: {
@@ -53,6 +57,8 @@ function build(
         typedefToTag: new Map(),
         macros: new Map(),
         macrosUnread: new Set<string>(),
+        visibleMacros: new Map(),
+        macroNames: new Set<string>(),
         integerTypes: new Map<string, string>(),
         structTagsWithBodies: new Set(),
       },

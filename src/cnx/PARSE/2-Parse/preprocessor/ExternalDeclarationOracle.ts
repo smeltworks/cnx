@@ -31,6 +31,8 @@
  * Requires a toolchain that can preprocess the target's headers; for cross
  * targets (ESP32/xtensa) set CNX_CROSS_COMPILER.
  */
+import { resolve } from "node:path";
+
 import type IHeaderPreprocessor from "./types/IHeaderPreprocessor";
 import STDIN_MARKER from "./STDIN_MARKER";
 import RegExpUtils from "../../../utils/RegExpUtils";
@@ -43,6 +45,8 @@ const LINE_MARKER = /^#\s+(\d+)\s+"([^"]+)"(.*)$/;
 // Synthetic TU filename (appears in preprocessor errors, keyed on to locate a
 // failing include by its line number).
 const TU_NAME = "cnx-external-decl-oracle.c";
+/** #1881: a `-dD` dump's `#define NAME ...` or `#undef NAME` */
+const DEFINE_OR_UNDEF = /^#(define|undef)\s+([A-Za-z_]\w*)/;
 
 interface IExternalRecovery {
   /**
@@ -114,26 +118,66 @@ class ExternalDeclarationOracle {
   }
 
   /**
-   * #1688: the macro dump (`-dM`) of `includeDirectives` as one TU: every
-   * macro C sees after them, builtins included. A header that cannot be
-   * preprocessed is dropped, as for recovery, and `complete` says whether
-   * any was; null when none can be preprocessed.
+   * #1688: the macro dump of `includeDirectives` as one TU: every macro C
+   * sees after them, builtins included, as `-dM` would list it. A header that
+   * cannot be preprocessed is dropped, as for recovery, and `complete` says
+   * whether any was; null when none can be preprocessed.
+   *
+   * #1881: and every header the TU entered. C includes are textual, so a
+   * file that includes `<stdio.h>` sees what the headers `stdio.h` includes
+   * declare. So the dump is taken with `-dD` and its line markers, which name
+   * each header the preprocessor entered.
    */
   static async macroDump(
     includeDirectives: readonly string[],
     preprocessor: IHeaderPreprocessor,
     options: IPreprocessOptions,
-  ): Promise<{ dump: string; complete: boolean } | null> {
+  ): Promise<{
+    dump: string;
+    headerFiles: ReadonlySet<string>;
+    complete: boolean;
+  } | null> {
     const working = await ExternalDeclarationOracle.preprocessLargestWorkingTu(
       [...includeDirectives],
       preprocessor,
-      { ...options, keepLineDirectives: false, dumpMacros: true },
+      { ...options, keepLineDirectives: true, dumpDefines: true },
     );
     if (!working) return null;
     return {
-      dump: working.content,
+      ...ExternalDeclarationOracle.definesAndHeaders(working.content),
       complete: working.directives.length === includeDirectives.length,
     };
+  }
+
+  /**
+   * #1881: a `-dD` dump with line markers, reduced to the `#define`s still in
+   * force at its end and the headers its markers name, as resolved paths.
+   * The unit itself, `<built-in>` and `<command-line>` are not headers.
+   */
+  static definesAndHeaders(content: string): {
+    dump: string;
+    headerFiles: ReadonlySet<string>;
+  } {
+    const defines = new Map<string, string>();
+    const headerFiles = new Set<string>();
+    let unit: string | null = null;
+    for (const line of content.split("\n")) {
+      const marker = LINE_MARKER.exec(line);
+      if (marker !== null) {
+        const file = marker[2];
+        unit ??= file;
+        if (file !== unit && !ExternalDeclarationOracle.isSynthetic(file)) {
+          headerFiles.add(resolve(file));
+        }
+        continue;
+      }
+      const directive = DEFINE_OR_UNDEF.exec(line);
+      if (directive === null) continue;
+      const name = directive[2];
+      defines.delete(name);
+      if (directive[1] === "define") defines.set(name, line);
+    }
+    return { dump: [...defines.values()].join("\n"), headerFiles };
   }
 
   /**

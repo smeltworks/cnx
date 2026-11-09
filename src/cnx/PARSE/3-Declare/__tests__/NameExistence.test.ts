@@ -26,6 +26,7 @@ function tableWith(
 }
 
 const EMPTY_TABLE = tableWith([]);
+const SEES_ALL = (): boolean => true;
 
 describe("NameExistence.isTypeName", () => {
   it("accepts an opaque type, which the table answers for", () => {
@@ -38,6 +39,7 @@ describe("NameExistence.isTypeName", () => {
         "widget_t",
         createMockSymbols(),
         tableWith([], ["widget_t"]),
+        SEES_ALL,
       ),
     ).toBe(true);
   });
@@ -48,30 +50,37 @@ describe("NameExistence.isTypeName", () => {
     ["knownScopes", "Motor"],
   ] as const)("accepts a name present in %s", (field, name) => {
     const symbols = createMockSymbols({ [field]: new Set([name]) });
-    expect(NameExistence.isTypeName(name, symbols, EMPTY_TABLE)).toBe(true);
+    expect(NameExistence.isTypeName(name, symbols, EMPTY_TABLE, SEES_ALL)).toBe(
+      true,
+    );
   });
 
   it("accepts a function name, because ADR-029 makes it a callback type", () => {
     const symbols = createMockSymbols({
       functionReturnTypes: new Map([["onReceive", "void"]]),
     });
-    expect(NameExistence.isTypeName("onReceive", symbols, EMPTY_TABLE)).toBe(
-      true,
-    );
+    expect(
+      NameExistence.isTypeName("onReceive", symbols, EMPTY_TABLE, SEES_ALL),
+    ).toBe(true);
   });
 
   it("rejects a name that is nowhere", () => {
     expect(
-      NameExistence.isTypeName("Mode", createMockSymbols(), EMPTY_TABLE),
+      NameExistence.isTypeName(
+        "Mode",
+        createMockSymbols(),
+        EMPTY_TABLE,
+        SEES_ALL,
+      ),
     ).toBe(false);
   });
 
   describe("the cnx / foreign split (#1312)", () => {
     it("accepts a C symbol from the run-wide table", () => {
       const table = tableWith([{ name: "FILE", language: ESourceLanguage.C }]);
-      expect(NameExistence.isTypeName("FILE", createMockSymbols(), table)).toBe(
-        true,
-      );
+      expect(
+        NameExistence.isTypeName("FILE", createMockSymbols(), table, SEES_ALL),
+      ).toBe(true);
     });
 
     it("accepts a C++ symbol from the run-wide table", () => {
@@ -83,6 +92,7 @@ describe("NameExistence.isTypeName", () => {
           "Adafruit_MAX31856",
           createMockSymbols(),
           table,
+          SEES_ALL,
         ),
       ).toBe(true);
     });
@@ -94,9 +104,9 @@ describe("NameExistence.isTypeName", () => {
       const table = tableWith([
         { name: "Mode", language: ESourceLanguage.Cnx },
       ]);
-      expect(NameExistence.isTypeName("Mode", createMockSymbols(), table)).toBe(
-        false,
-      );
+      expect(
+        NameExistence.isTypeName("Mode", createMockSymbols(), table, SEES_ALL),
+      ).toBe(false);
     });
   });
 });
@@ -118,9 +128,9 @@ describe("the type / value position split (#1336)", () => {
    * reason means the two answers have drifted apart again.
    */
   it("does NOT accept a register in a type position", () => {
-    expect(NameExistence.isTypeName("GPIO", withRegister(), EMPTY_TABLE)).toBe(
-      false,
-    );
+    expect(
+      NameExistence.isTypeName("GPIO", withRegister(), EMPTY_TABLE, SEES_ALL),
+    ).toBe(false);
   });
 
   it("DOES accept a register in a value position", () => {
@@ -128,24 +138,34 @@ describe("the type / value position split (#1336)", () => {
     // that served both positions had to say yes here, and so wrongly said yes
     // above; removing registers outright instead broke ten register fixtures
     // with E0427.
-    expect(NameExistence.isValueName("GPIO", withRegister(), EMPTY_TABLE)).toBe(
-      true,
-    );
+    expect(
+      NameExistence.isValueName("GPIO", withRegister(), EMPTY_TABLE, SEES_ALL),
+    ).toBe(true);
   });
 
   it("accepts a type in a value position, as the base of Type.MEMBER", () => {
     const symbols = createMockSymbols({ knownEnums: new Set(["EColor"]) });
-    expect(NameExistence.isValueName("EColor", symbols, EMPTY_TABLE)).toBe(
-      true,
-    );
+    expect(
+      NameExistence.isValueName("EColor", symbols, EMPTY_TABLE, SEES_ALL),
+    ).toBe(true);
   });
 
   it("rejects a name that is neither, in either position", () => {
     expect(
-      NameExistence.isTypeName("Nowhere", createMockSymbols(), EMPTY_TABLE),
+      NameExistence.isTypeName(
+        "Nowhere",
+        createMockSymbols(),
+        EMPTY_TABLE,
+        SEES_ALL,
+      ),
     ).toBe(false);
     expect(
-      NameExistence.isValueName("Nowhere", createMockSymbols(), EMPTY_TABLE),
+      NameExistence.isValueName(
+        "Nowhere",
+        createMockSymbols(),
+        EMPTY_TABLE,
+        SEES_ALL,
+      ),
     ).toBe(false);
   });
 
@@ -180,5 +200,26 @@ describe("NameExistence.isKnownEnumMember", () => {
     expect(NameExistence.isKnownEnumMember("RED", createMockSymbols())).toBe(
       false,
     );
+  });
+});
+
+describe("NameExistence: a header's names are the including file's (#1881)", () => {
+  const table = tableWith([{ name: "dev_t", language: ESourceLanguage.C }]);
+
+  it("accepts a C name the file sees", () => {
+    expect(
+      NameExistence.isTypeName("dev_t", createMockSymbols(), table, SEES_ALL),
+    ).toBe(true);
+  });
+
+  it("rejects a C name whose header the file does not include itself", () => {
+    expect(
+      NameExistence.isTypeName(
+        "dev_t",
+        createMockSymbols(),
+        table,
+        () => false,
+      ),
+    ).toBe(false);
   });
 });

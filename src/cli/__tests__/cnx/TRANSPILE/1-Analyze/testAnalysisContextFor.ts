@@ -114,10 +114,28 @@ function testAnalysisContextFor(
           [TEST_SOURCE, new Map(Object.entries(options.macros ?? {}))],
         ]),
         macrosUnread: new Set<string>(),
+        visibleMacros: new Map([
+          [TEST_SOURCE, new Set(Object.keys(options.macros ?? {}))],
+        ]),
+        macroNames: new Set(Object.keys(options.macros ?? {})),
         integerTypes: new Map(Object.entries(options.integerTypes ?? {})),
         structTagsWithBodies: new Set(symbolTable.getAllStructTagsWithBodies()),
       },
-      filesReachingForeignHeaders: new Set(options.macros ? [TEST_SOURCE] : []),
+      // #1881: the test source includes every header its C/C++ symbols name
+      headerPathsByFile: new Map([
+        [
+          TEST_SOURCE,
+          new Set(
+            [
+              ...symbolTable.getAllCSymbols(),
+              ...symbolTable.getAllCppSymbols(),
+            ].map((symbol) => symbol.sourceFile),
+          ),
+        ],
+      ]),
+      filesIncludingForeignHeaders: new Set(
+        options.macros ? [TEST_SOURCE] : [],
+      ),
       headerStructFields: symbolTable.getAllStructFields(),
       symbolTable,
       target: RunTarget.resolve({
@@ -161,7 +179,7 @@ function testAnalysisContextFor(
       symbols,
       program,
       symbolTable,
-      reachesForeignHeader: true,
+      includesForeignHeader: true,
       sourceFile: TEST_SOURCE,
       ...options.overrides,
     },

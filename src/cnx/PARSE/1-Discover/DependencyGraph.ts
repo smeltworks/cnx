@@ -116,69 +116,6 @@ class DependencyGraph {
   getWarnings(): string[] {
     return [...this.warnings];
   }
-
-  /**
-   * Every file that transitively includes one of `seeds`, plus the seeds
-   * themselves.
-   *
-   * #1399 review: the undeclared-name diagnostics (E0426/E0427) may only fire
-   * where the transpiler knows the file's whole name universe. A C/C++ header
-   * is not parsed into the symbol table, and a `#define` in one never reaches
-   * it at all, so a file that can see such a header must decline to answer.
-   *
-   * "Can see" is transitive, and that is the whole point: the first attempt
-   * asked only the file's own `#include` lines, so `#include "pins.h"` in your
-   * own file disabled the check while reaching the same macro through
-   * `#include <board.cnx>` did not -- and that second case then REJECTED a
-   * macro `main` compiles. Include visibility does not stop at one hop, so
-   * neither can the precondition.
-   *
-   * Edges are `dependent -> dependencies`, so this walks each candidate's own
-   * include closure rather than inverting the graph.
-   */
-  collectDependentsOf(seeds: ReadonlySet<string>): Set<string> {
-    const reaching = new Set<string>();
-    const resolved = new Map<string, boolean>();
-
-    const walk = (file: string, visiting: Set<string>): boolean => {
-      const cached = resolved.get(file);
-      if (cached !== undefined) {
-        return cached;
-      }
-      // A cycle contributes nothing on its own: `false` is the identity for the
-      // OR below, and the real answer arrives from whichever branch actually
-      // reaches a seed. Include cycles are tolerated with a warning (#1167), so
-      // this must terminate rather than assume a DAG.
-      if (visiting.has(file)) {
-        return false;
-      }
-      visiting.add(file);
-
-      let result = seeds.has(file);
-      if (!result) {
-        for (const dep of this.dependencies.get(file) ?? []) {
-          if (walk(dep, visiting)) {
-            result = true;
-            break;
-          }
-        }
-      }
-
-      visiting.delete(file);
-      resolved.set(file, result);
-      return result;
-    };
-
-    for (const file of this.dependencies.keys()) {
-      if (walk(file, new Set())) {
-        reaching.add(file);
-      }
-    }
-    for (const seed of seeds) {
-      reaching.add(seed);
-    }
-    return reaching;
-  }
 }
 
 export default DependencyGraph;

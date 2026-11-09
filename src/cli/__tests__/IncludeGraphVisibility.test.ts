@@ -260,7 +260,8 @@ typedef struct Reading { int32_t raw; } Reading;
     });
 
     // A file that includes the wrapper and names a vendor type in its own
-    // signature needs the vendor header in its own header. Emission dropped
+    // signature needs the vendor header in its own header. It includes that
+    // header itself, as it must to name the type (#1881). Emission dropped
     // an external header whose basename matched one of the file's includes,
     // so `<driver/uart.h>` read as uart.cnx's "uart.h": exit 0, and a header
     // no compiler accepts. `serial.cnx` differs only by that basename.
@@ -275,7 +276,7 @@ typedef struct Reading { int32_t raw; } Reading;
 
         const { files, source } = await bothModes(
           "main.cnx",
-          `#include "${wrapper}"\n\nu32 baudOf(uart_config_t cfg) {\n    return cfg.baud;\n}\n`,
+          `#include "${wrapper}"\n#include <driver/uart.h>\n\nu32 baudOf(uart_config_t cfg) {\n    return cfg.baud;\n}\n`,
         );
 
         for (const result of [files, source]) {
@@ -485,12 +486,14 @@ void main() {
       },
     );
 
-    it("control: a C header reached through the included file still exempts it", async () => {
+    // #1881: a C header's names are visible only in a file that includes it
+    // itself, so one the included file includes does not exempt the root.
+    it("a C header reached only through the included file leaves E0426 on", async () => {
       writeFileSync(join(project, "real.h"), "#define REAL_MAX 3\n");
 
       const result = await preview('#include "real.h"');
 
-      expect(result.errors).toEqual([]);
+      expect(result.errors.map((e) => e.message).join("\n")).toContain("E0426");
     });
   });
 

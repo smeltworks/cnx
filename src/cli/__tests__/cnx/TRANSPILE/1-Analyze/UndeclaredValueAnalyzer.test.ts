@@ -16,7 +16,7 @@ function analyze(source: string) {
   // knows the file's whole name universe. These sources include nothing.
   const { syntax, context } = testAnalysisContextFor(source, {
     cppMode: false,
-    overrides: { reachesForeignHeader: false },
+    overrides: { includesForeignHeader: false },
   });
   return new UndeclaredValueAnalyzer(context).analyze(syntax);
 }

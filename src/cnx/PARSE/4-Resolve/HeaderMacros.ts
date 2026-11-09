@@ -24,6 +24,9 @@ type TMacroToken =
   | { readonly kind: "operator"; readonly text: string }
   | { readonly kind: "other" };
 
+/** #1881: `#define NAME`, of either kind */
+const ANY_DEFINE = /^[ \t]*#[ \t]*define[ \t]+([A-Za-z_]\w*)/gm;
+
 /** `#define NAME body`; a function-like macro's `(` follows its name directly */
 const OBJECT_LIKE_DEFINE =
   /^[ \t]*#[ \t]*define[ \t]+([A-Za-z_]\w*)(?:[ \t](.*))?$/gm;
@@ -113,6 +116,11 @@ class HeaderMacros {
       }
     }
     return null;
+  }
+
+  /** #1881: every macro a dump defines, object-like or function-like */
+  static names(dump: string): string[] {
+    return [...dump.matchAll(ANY_DEFINE)].map((match) => match[1]);
   }
 
   /** Every object-like macro a `-dM` dump defines, by name */

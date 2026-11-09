@@ -389,8 +389,8 @@ method's parameter, and `tests/bugs/issue-996-array-opaque-handles/` stores an
 array of them as a scope member.
 
 Everything else is `warn`. A global variable or a top-level function can hold an
-opaque handle, and the declaring C header can arrive through a cnx include
-chain, so `off` would be a false claim that they cannot exist. `error` would be
+opaque handle, and any file that includes the declaring C header itself can
+declare one, so `off` would be a false claim that they cannot exist. `error` would be
 an obligation the opaque-handle decision does not meet in those cells, so `warn`
 records the obligation without asserting an occupancy that is not there.
 
@@ -496,16 +496,22 @@ level is a different answer, not a fallback.** `this.x` asks the enclosing
 scope, `global.x` asks file scope, and a bare name searches outward. A name
 visible at one level is not thereby visible at another.
 
-**A file that reaches a C or C++ header is exempt**, directly or through any
-`.cnx` it includes. A header supplies names through the preprocessor — a
+**A file that includes a C or C++ header is exempt** — one it names in its
+own `#include` lines. A header supplies names through the preprocessor — a
 `#define` is not a declaration and appears in no symbol table — so cnx
 cannot enumerate what is in scope and does not claim a name is undefined on
-evidence it does not have. The exemption is a promise about interop, and it
+evidence it does not have. A header's names are visible only in a file that
+includes that header itself (#1881), never through a `.cnx` it includes.
+Within the file's own includes C's rule holds: an include is textual, so a
+header the named header includes is part of it, system headers included, and
+its names are visible too. A name some header in the run supplies, but none the file
+includes itself, is evidence cnx has, so it is E0427 (E0426 as a type, E0422
+as a call) in that file. The exemption is a promise about interop, and it
 covers every name the file does not itself declare, not only the names that
 came from the header. It does not cover a spelling that a declaration of the
 file would bind where it is written, once that declaration has closed: that is
 evidence cnx has, so above the declaration's end it is E0427 in a file that
-reaches a header as in any other (#2019). A declaration that could not bind
+includes a header as in any other (#2019). A declaration that could not bind
 there is no such evidence. Another function's local, or a scope's member under
 a bare name outside the scope, leaves the name to the header, as
 `global.REG_BYTE` beside a scope's own `REG_BYTE` names the header's macro

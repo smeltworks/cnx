@@ -129,7 +129,7 @@ class Discover {
       source,
       discoveredFile: { path, type: EFileType.Cnx },
       cnxIncludes: [],
-      reachesForeignHeader: false,
+      includesForeignHeader: false,
     };
   }
 
@@ -250,6 +250,7 @@ class Discover {
   private _spelledIncludes(
     headerExtension: THeaderExtension,
     outputs: ReadonlyMap<string, IOutputPaths>,
+    headerEdges: ReadonlyMap<string, readonly string[]>,
   ): ReadonlyMap<string, IFileIncludes> {
     const spelled = new Map<string, IFileIncludes>();
     const paths = this.anchor.pathResolver;
@@ -312,10 +313,42 @@ class Discover {
           userIncludes: Object.freeze(spelling.userIncludes),
           cHeaderIncludes: Object.freeze(spelling.cHeaderIncludes),
           cHeaderSpecs: Object.freeze(resolved.cHeaderSpecs),
+          cHeaderPaths: Discover._headerClosure(
+            resolved.cHeaderPaths,
+            headerEdges,
+          ),
         }),
       );
     }
     return spelled;
+  }
+
+  /**
+   * #1881: `roots` and every header the walk found them include, as resolved
+   * paths -- what a file's own C includes bring in, as C inlines them.
+   */
+  private static _headerClosure(
+    roots: ReadonlySet<string>,
+    headerEdges: ReadonlyMap<string, readonly string[]>,
+  ): ReadonlySet<string> {
+    const included = new Map<string, readonly string[]>();
+    for (const [header, nested] of headerEdges) {
+      included.set(resolve(header), nested);
+    }
+    const reached = new Set<string>();
+    const pending = [...roots];
+    for (
+      let header = pending.pop();
+      header !== undefined;
+      header = pending.pop()
+    ) {
+      if (reached.has(header)) continue;
+      reached.add(header);
+      for (const nested of included.get(header) ?? []) {
+        pending.push(resolve(nested));
+      }
+    }
+    return reached;
   }
 
   /**
@@ -382,10 +415,12 @@ class Discover {
         c: this._spelledIncludes(
           OutputExtensions.forCppMode(false).header,
           written(outputs.c),
+          files.headerEdges,
         ),
         cpp: this._spelledIncludes(
           OutputExtensions.forCppMode(true).header,
           written(outputs.cpp),
+          files.headerEdges,
         ),
       },
       anchor: {
@@ -718,12 +753,6 @@ class Discover {
       );
     }
 
-    // Include visibility is transitive, so the precondition for E0426/E0427
-    // must be too.
-    const reachesForeign = depGraph.collectDependentsOf(
-      directForeignHeaderFiles,
-    );
-
     // Issue #580: Sort files topologically for correct cross-file const inference
     const sortedCnxFiles = this._sortFilesByDependency(depGraph, fileByPath);
 
@@ -749,7 +778,7 @@ class Discover {
         source,
         discoveredFile: f,
         cnxIncludes,
-        reachesForeignHeader: reachesForeign.has(resolve(f.path)),
+        includesForeignHeader: directForeignHeaderFiles.has(resolve(f.path)),
       };
     });
 

@@ -164,8 +164,8 @@ describe("Discover", () => {
     expect(lib.cnxIncludes).toEqual([]);
     expect(app.source).toContain('#include "lib.cnx"');
     // The header is the file's edge to C, which is what E0426/E0427 decline on
-    expect(app.reachesForeignHeader).toBe(true);
-    expect(lib.reachesForeignHeader).toBe(false);
+    expect(app.includesForeignHeader).toBe(true);
+    expect(lib.includesForeignHeader).toBe(false);
     expect(graph.headerFiles.map((header) => header.path)).toEqual([
       "/proj/src/board.h",
     ]);
@@ -188,6 +188,26 @@ describe("Discover", () => {
     );
     expect(app?.quotedIncludeDirectory).toBe("/proj/src");
     expect(app?.includeRewrites.get("lib.cnx")).toBe("lib.h");
+  });
+
+  // #1881: C includes are textual, so a header a file includes brings in the
+  // headers it includes; another `.cnx` file's headers are not brought in
+  it("keeps the headers a file's own C includes bring in, nested ones too", async () => {
+    const { graph } = await discover(
+      project()
+        .addFile("/proj/src/board.h", '#include "pins.h"\n#define LED 13\n')
+        .addFile("/proj/src/pins.h", "typedef unsigned pin_t;\n")
+        .addFile("/proj/src/lib.cnx", '#include "hw.h"\nu32 one <- 1;\n')
+        .addFile("/proj/src/hw.h", "void hw(void);\n"),
+    );
+
+    const reached = (path: string) =>
+      [...(graph.includes.c.get(path)?.cHeaderPaths ?? [])].sort();
+    expect(reached("/proj/src/app.cnx")).toEqual([
+      "/proj/src/board.h",
+      "/proj/src/pins.h",
+    ]);
+    expect(reached("/proj/src/lib.cnx")).toEqual(["/proj/src/hw.h"]);
   });
 
   it("carries the anchor's facts", async () => {

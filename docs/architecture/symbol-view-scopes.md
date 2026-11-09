@@ -175,6 +175,13 @@ The only surviving trace is `reachesForeignHeader` — one bit per file meaning 
 _any_ foreign header". So "can this file see `CAN_message_t`?" is not an unwritten query; it is
 unanswerable from what the transpiler keeps.
 
+> **#1881 update.** That bit is now `includesForeignHeader`, and it is direct: a header's names
+> are visible only in a file whose own C includes bring that header in, nested headers included
+> as C inlines them, and never through another `.cnx`'s include. `IFileIncludes.cHeaderPaths`
+> keeps the headers the walk found, and `IHeaderMacroDump.headerFiles` the ones the preprocessor
+> entered, so "can this file see `CAN_message_t`?" is answered by `IProgram.seesForeignSymbol`,
+> and a macro by `IProgram.seesHeaderMacro`.
+
 That sharpens #1398. It is not only that the edges exist and nobody joined them — for foreign
 types **the edge does not exist in either graph**, so the join has nothing to join.
 
