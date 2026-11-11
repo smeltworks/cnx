@@ -3,6 +3,8 @@
  * A safer C for embedded systems
  */
 
+#include "chain-control.test.hpp"
+
 // test-execution
 // test-adr: 045
 // #1373 controls: a two-operand string comparison, and a chain whose operands are all bool, stay legal
@@ -11,13 +13,18 @@
 #include <stdbool.h>
 #include <string.h>
 
+bool allSame(const bool p, const bool q, const bool r) {
+    return p == q == r;
+}
+
+bool apartChain(const bool p, const bool q, const bool r) {
+    return p != q != r;
+}
+
 int main(void) {
     const char a[9] = "x";
     const char b[9] = "x";
     const char c[9] = "y";
-    const bool p = true;
-    const bool q = false;
-    const bool r = false;
     if (strcmp(a, b) != 0) {
         return 1;
     }
@@ -28,11 +35,11 @@ int main(void) {
     if (differ != true) {
         return 3;
     }
-    const bool same = p == q == r;
+    const bool same = allSame(true, false, false);
     if (same != true) {
         return 4;
     }
-    const bool apart = p != q != r;
+    const bool apart = apartChain(true, false, false);
     if (apart != true) {
         return 5;
     }
