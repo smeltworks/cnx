@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-967 fixture(s) assert a diagnostic; 953 carry a code.
+970 fixture(s) assert a diagnostic; 956 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -673,9 +673,12 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1360-read-path-bounds/read-path-multidim.test.cnx                                        | E0854                             |
 | tests/bugs/issue-1360-read-path-bounds/read-path-negative-index.test.cnx                                  | E0854                             |
 | tests/bugs/issue-1360-read-path-bounds/read-path-scope-member.test.cnx                                    | E0854                             |
+| tests/bugs/issue-1373-string-comparison-chain/c-string-error.test.cnx                                     | E0929                             |
+| tests/bugs/issue-1373-string-comparison-chain/contexts-error.test.cnx                                     | E0929                             |
 | tests/bugs/issue-1373-string-comparison-chain/integer-equality-chain.test.cnx                             | E0810                             |
 | tests/bugs/issue-1373-string-comparison-chain/integer-not-equal-chain.test.cnx                            | E0810                             |
 | tests/bugs/issue-1373-string-comparison-chain/integer-relational-chain.test.cnx                           | E0807                             |
+| tests/bugs/issue-1373-string-comparison-chain/string-chain-bool-operand.test.cnx                          | E0929                             |
 | tests/bugs/issue-1373-string-comparison-chain/string-equality-chain.test.cnx                              | E0929                             |
 | tests/bugs/issue-1373-string-comparison-chain/string-not-equal-chain.test.cnx                             | E0929                             |
 | tests/bugs/issue-1430-e0427-order-dependence/consumer-first.test.cnx                                      | E0427                             |

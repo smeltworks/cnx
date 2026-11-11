@@ -178,19 +178,13 @@ const renderComparison = (
   if (plan.strcmp) {
     // ADR-045: string comparison lowers to strcmp. 2.2 required <string.h>
     // when it planned the comparison, which 2.3 then renders (#1991).
-    // #1373: `a = b = c` is `(a = b) = c`. 2.1 rejects a string past the
-    // first pair (E0929), so what follows it is a bool, compared with the
-    // strcmp before it
+    // #1373: 2.1 gives a string comparison exactly two operands (E0929)
     const operandCodes = renderOperands(plan.renderOperands, effects);
-    let code = BinaryExprUtils.generateStrcmpCode(
+    const code = BinaryExprUtils.generateStrcmpCode(
       operandCodes[0],
       operandCodes[1],
       plan.strcmp.isNotEqual,
     );
-    for (let i = 2; i < operandCodes.length; i += 1) {
-      const operator = plan.operators[i - 1];
-      code = `(${code}) ${plan.mapOperator?.(operator) ?? operator} ${operandCodes[i]}`;
-    }
 
     return { code, effects };
   }

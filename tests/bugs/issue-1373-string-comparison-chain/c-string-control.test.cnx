@@ -1,0 +1,25 @@
+// test-execution
+// test-adr: 045
+// #1373 control: a string compares with a C char array and a cstring, which strcmp takes
+#include <stdio.h>
+#include "c-strings.h"
+#pragma target host
+
+i32 main() {
+    string<8> a <- "x";
+    string<8> b <- "y";
+    mut string<16> buffer <- "";
+    if (a != name) {
+        return 1;
+    }
+    if (b = name) {
+        return 2;
+    }
+    cstring c_line <- fgets(buffer, buffer.size, stdin);
+    if (c_line != NULL) {
+        if (a = c_line) {
+            return 3;
+        }
+    }
+    return 0;
+}

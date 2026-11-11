@@ -1,32 +1,40 @@
 /**
- * E0929: `=` / `!=` compares a string only with a string (ADR-045).
+ * E0929: `=` / `!=` compares a string only with a string, and a string
+ * comparison has exactly two operands (ADR-045).
  *
  * A string comparison is written as `strcmp`, so a non-string operand beside
  * a string reached C as a `strcmp` argument: `x = "abc"` with `x: u32` emitted
  * `strcmp(x, "abc") == 0`, which gcc rejects (#2017).
  *
- * A comparison's result is a bool, and `a = b = c` is `(a = b) = c` (ADR-001,
- * ADR-024), so a string past a chain's first pair is compared with that bool
- * (#1373). It had emitted `strcmp(a, b) == 0` and dropped `= c`.
+ * `a = b = c` is `(a = b) = c` (ADR-001, ADR-024), so past the first pair the
+ * left operand is that pair's bool. A string there is compared with a bool,
+ * and a string pair is not chained at all (#1373): `a = b = c` had emitted
+ * `strcmp(a, b) == 0` and dropped `= c`. Both are reported at the comparison
+ * before the operand, where `(a = b) = c` reports.
  *
- * An operand whose type cnx cannot read is admitted, so the C compiler judges
- * it, as Rule 10.1's check does; so are a C `char` array and a C char pointer,
- * which `strcmp` takes.
+ * A string is a `string<N>`, a string literal, a C `char` array or a C char
+ * pointer (`cstring`): what `strcmp` takes. An operand whose type cnx cannot
+ * read is left to the C compiler, as Rule 10.1's check leaves it.
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import type TBinaryExpression from "../../types/syntax/TBinaryExpression";
+import type ISourceSpan from "../../types/ISourceSpan";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import ExpressionChildren from "../../utils/ExpressionChildren";
 import OperandTyper from "../../utils/OperandTyper";
 import ProgramExpressions from "../../utils/ProgramExpressions";
 import SourceOrder from "../../utils/SourceOrder";
+import SourceSpanRange from "../../utils/SourceSpanRange";
 import StringOperand from "../../utils/StringOperand";
 import IStringComparisonError from "./types/IStringComparisonError";
 
 const HELP =
   "ADR-045: '=' and '!=' compare a string only with another string, through strcmp.";
+
+const CHAIN_HELP =
+  "A comparison is a bool, so compare each pair on its own and join them with && or ||, e.g. (a = b) && (b = c).";
 
 class StringComparisonAnalyzer {
   private readonly found: IStringComparisonError[] = [];
@@ -52,33 +60,54 @@ class StringComparisonAnalyzer {
   /** `operators[i]` joins operand `i` to `i + 1` */
   private level(level: TBinaryExpression): void {
     const operands = level.operands;
-    const left = operands[0];
-    const right = operands[1];
-    const leftIsString = StringOperand.is(left, this.context);
-    if (leftIsString !== StringOperand.is(right, this.context)) {
-      const other = leftIsString ? right : left;
-      if (!this.mayMeetAString(other)) this.report(other, other.written);
+    const leftIsString = this.isString(operands[0]);
+    const rightIsString = this.isString(operands[1]);
+    if (leftIsString !== rightIsString) {
+      const other = leftIsString ? operands[1] : operands[0];
+      if (!this.isUntypeable(other)) {
+        this.report(
+          other.span,
+          StringComparisonAnalyzer.notAString(other.written),
+        );
+        return;
+      }
     }
+    const pairIsString = leftIsString || rightIsString;
     for (let i = 2; i < operands.length; i += 1) {
-      if (!StringOperand.is(operands[i], this.context)) continue;
-      // Past the first pair the left operand is the comparison before it
-      this.report(operands[0], StringComparisonAnalyzer.written(level, i), [
-        "A comparison is a bool, so compare each pair on its own and join them with && or ||, e.g. (a = b) && (b = c).",
-      ]);
+      if (!pairIsString && !this.isString(operands[i])) continue;
+      const comparison = SourceSpanRange.between(
+        operands[0].span,
+        operands[i - 1].span,
+      );
+      const message = pairIsString
+        ? `A string comparison takes exactly two operands: '${StringComparisonAnalyzer.written(level, i + 1)}'`
+        : StringComparisonAnalyzer.notAString(
+            StringComparisonAnalyzer.written(level, i),
+          );
+      this.report(comparison, message, [CHAIN_HELP]);
+      return;
     }
   }
 
-  /** What strcmp takes beside a string, or what cnx cannot type */
-  private mayMeetAString(operand: TExpression): boolean {
-    if (OperandTyper.isStringValue(operand, this.context) !== false) {
-      return true;
-    }
+  /** What `strcmp` takes: a string, a C `char` array or a C char pointer */
+  private isString(operand: TExpression): boolean {
+    if (StringOperand.is(operand, this.context)) return true;
     const type = OperandTyper.typeOf(operand, this.context);
-    if (type === null) return true;
-    const form = type.form;
-    if (form.kind === "unreadableMacro") return true;
-    if (form.kind === "foreign" && form.indeterminate) return true;
+    if (type === null) return false;
+    if (type.typeName === "char") return type.dimensions.length === 1;
     return type.typeName === "cstring";
+  }
+
+  /** What cnx cannot type, which the C compiler judges instead */
+  private isUntypeable(operand: TExpression): boolean {
+    if (OperandTyper.isStringValue(operand, this.context) === null) return true;
+    const form = OperandTyper.typeOf(operand, this.context)?.form;
+    if (form?.kind === "unreadableMacro") return true;
+    return form?.kind === "foreign" && form.indeterminate;
+  }
+
+  private static notAString(written: string): string {
+    return `A string cannot be compared with a value that is not a string: '${written}'`;
   }
 
   /** The chain before operand `end`, as written */
@@ -90,11 +119,15 @@ class StringComparisonAnalyzer {
     return text;
   }
 
-  private report(at: TExpression, written: string, more: string[] = []): void {
+  private report(
+    span: ISourceSpan,
+    message: string,
+    more: string[] = [],
+  ): void {
     this.found.push({
       code: "E0929",
-      span: at.span,
-      message: `A string cannot be compared with a value that is not a string: '${written}'`,
+      span,
+      message,
       helpText: [HELP, ...more].join(" "),
     });
   }

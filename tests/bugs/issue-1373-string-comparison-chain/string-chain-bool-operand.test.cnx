@@ -1,6 +1,6 @@
-// test-execution
+// test-error
 // test-adr: 045
-// #1373: a bool past a string chain's first pair is compared with that pair's result, (a = b) = true, and is not dropped
+// #1373: a string comparison takes exactly two operands, so a bool past its first pair is E0929 too; (a = b) = true says it outright
 #pragma target host
 
 i32 main() {
@@ -8,16 +8,15 @@ i32 main() {
     string<8> b <- "x";
     string<8> c <- "y";
     bool same <- a = b = true;
-    if (same != true) {
+    bool apart <- a = c != false;
+    bool flip <- a != b = false;
+    bool p <- true;
+    bool twice <- p = a = b;
+    if (same = apart) {
         return 1;
     }
-    bool apart <- a = c != false;
-    if (apart != false) {
+    if (flip = twice) {
         return 2;
-    }
-    bool flip <- a != b = false;
-    if (flip != true) {
-        return 3;
     }
     return 0;
 }

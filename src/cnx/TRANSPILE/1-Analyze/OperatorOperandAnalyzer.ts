@@ -40,7 +40,9 @@ import ExpressionShape from "../../utils/ExpressionShape";
 import ForeignTypeFacts from "../../utils/ForeignTypeFacts";
 import ProgramAccesses from "../../utils/ProgramAccesses";
 import SourceOrder from "../../utils/SourceOrder";
+import SourceSpanRange from "../../utils/SourceSpanRange";
 import type IAnalysisContext from "./types/IAnalysisContext";
+import type ISourceSpan from "../../types/ISourceSpan";
 import type IOperandType from "../../types/IOperandType";
 import type TEssentialCategory from "../../types/TEssentialCategory";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
@@ -179,7 +181,12 @@ class OperatorOperandCheck {
       const left = level.operands[i];
       const right = level.operands[i + 1];
       if (level.level === "relational" && i > 0) {
-        this.analyzer.addError(level.operands[0], operator, "bool");
+        // One error per chain: addError keeps the first at a position
+        const comparison = SourceSpanRange.between(
+          level.operands[0].span,
+          left.span,
+        );
+        this.analyzer.addError({ span: comparison }, operator, "bool");
         return;
       }
       const leftRejection = this.rejection(
@@ -422,7 +429,7 @@ class OperatorOperandAnalyzer {
   }
 
   public addError(
-    at: TExpression,
+    at: { readonly span: ISourceSpan },
     operator: string,
     rejection: TRejection,
     isTarget = false,
