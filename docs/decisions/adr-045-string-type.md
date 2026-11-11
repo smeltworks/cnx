@@ -482,13 +482,23 @@ String comparison uses standard `strcmp`:
 string<32> a <- "Hello";
 string<64> b <- "Hello";
 
-if (a == b) {      // strcmp(a, b) == 0
+if (a = b) {       // strcmp(a, b) == 0
     // Equal content
 }
 
 if (a != b) {      // strcmp(a, b) != 0
     // Different content
 }
+```
+
+**A string is compared only with a string** (#1373, #2017; consequences of ADR-001's `=`, ADR-024's Rule 10.4 categories and the `strcmp` lowering above, not a new decision). Either side of `=` or `!=` may be a `string<N>`, a string literal, a C `char` array or a C char pointer. Anything else beside a string is E0929, because it would be handed to `strcmp`: with `u32 x`, `x = "abc"` had emitted `strcmp(x, "abc") == 0`, which the C compiler rejects.
+
+A comparison is a Boolean, and `a = b = c` is `(a = b) = c`, so the third operand of a string chain is compared with a bool. A string there is E0929, as `(a = b) = c` is; `a = b = c` had emitted `strcmp(a, b) == 0` and dropped `c`. Compare each pair on its own and join them with `&&` or `||`. A bool there compares with the first pair's result:
+
+```cnx
+if ((a = b) && (b = c)) { }   // strcmp(a, b) == 0 && strcmp(b, c) == 0
+bool same <- a = b = true;    // (strcmp(a, b) == 0) == true
+if (a = b = c) { }            // E0929: 'a = b' is a bool
 ```
 
 ---

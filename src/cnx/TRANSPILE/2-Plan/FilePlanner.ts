@@ -68,6 +68,7 @@ import AssignmentTarget from "../../utils/AssignmentTarget";
 import TypeCheckUtils from "../../utils/TypeCheckUtils";
 import TypeText from "../../utils/TypeText";
 import ExpressionShape from "../../utils/ExpressionShape";
+import StringOperand from "../../utils/StringOperand";
 import VariableDeclarations from "../../utils/VariableDeclarations";
 import MutArgument from "../1-Analyze/helpers/MutArgument";
 import StringWriteSites from "../1-Analyze/helpers/StringWriteSites";
@@ -273,13 +274,7 @@ class FilePlanner {
    * Issue #1030: Extended to handle struct member access (e.g., person.name)
    */
   private isStringExpression(expr: TExpression): boolean {
-    if (ExpressionShape.isStringLiteral(expr)) {
-      return true;
-    }
-
-    return OperandTyper.isString(
-      OperandTyper.typeOf(expr, this.state.typingContext()),
-    );
+    return StringOperand.is(expr, this.state.typingContext());
   }
 
   static positionOf(expr: TExpression): ISourcePosition {

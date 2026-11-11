@@ -132,6 +132,11 @@ class MixedCategoryCheck {
    * category-less operand now adopts the running category; an exempt
    * character + integer gives character (MISRA C:2012 D.7); after a pair
    * that differs -- reported there -- the right operand's category runs on.
+   *
+   * A comparison's result is a Boolean (#1373): `a = b = c` is
+   * `(a = b) = c`, so past the first pair a comparison level's left operand
+   * is a Boolean, as the parenthesized form's is. Under a relational
+   * operator that Boolean is Rule 10.1's (E0807), not this rule's.
    */
   public checkLevel(
     expr: TBinaryExpression,
@@ -141,10 +146,13 @@ class MixedCategoryCheck {
     const operands = expr.operands;
     let running = this.operandCategory(operands[0], enumBeingDeclared);
     let mixed = false;
+    const comparison = level === "equality" || level === "relational";
     for (let i = 1; i < operands.length; i += 1) {
       const right = this.operandCategory(operands[i], enumBeingDeclared);
       const operator = expr.operators[i - 1];
-      if (
+      if (level === "relational" && i > 1) {
+        mixed = true;
+      } else if (
         this.reportsPair(
           operands[i - 1],
           operands[i],
@@ -169,7 +177,9 @@ class MixedCategoryCheck {
         // category an enclosing level could report again
         mixed = true;
       }
-      running = EssentialCategory.fold(running, right, operator);
+      running = comparison
+        ? "boolean"
+        : EssentialCategory.fold(running, right, operator);
     }
     this.levelCategories.set(
       MixedCategoryCheck.writtenAt(expr),

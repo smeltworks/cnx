@@ -1,0 +1,21 @@
+// test-error
+// test-adr: 045
+// #2017: an integer compared with a string literal, on each side of = and !=, emitted strcmp(x, "abc")
+#pragma target host
+
+i32 main() {
+    u32 x <- 5;
+    if (x = "abc") {
+        return 1;
+    }
+    if ("abc" = x) {
+        return 2;
+    }
+    if (x != "abc") {
+        return 3;
+    }
+    if ("abc" != x) {
+        return 4;
+    }
+    return 0;
+}

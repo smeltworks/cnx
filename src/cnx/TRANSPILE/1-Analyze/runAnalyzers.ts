@@ -36,6 +36,7 @@ import ArrayIndexTypeAnalyzer from "./ArrayIndexTypeAnalyzer";
 import ShiftAnalyzer from "./ShiftAnalyzer";
 import OperatorOperandAnalyzer from "./OperatorOperandAnalyzer";
 import MixedTypeCategoryAnalyzer from "./MixedTypeCategoryAnalyzer";
+import StringComparisonAnalyzer from "./StringComparisonAnalyzer";
 import ReturnPathAnalyzer from "./ReturnPathAnalyzer";
 import ReturnValueUseAnalyzer from "./ReturnValueUseAnalyzer";
 import CompoundAssignmentAnalyzer from "./CompoundAssignmentAnalyzer";
@@ -328,6 +329,10 @@ function runAnalyzers(
       label:
         "mixed essential type category (MISRA C:2012 Rule 10.4, ADR-024 / Issue #1091)",
       run: () => new MixedTypeCategoryAnalyzer(context).analyze(parsed.program),
+    },
+    {
+      label: "string compared with a non-string (ADR-045, E0929)",
+      run: () => new StringComparisonAnalyzer(context).analyze(parsed.program),
     },
     {
       label: "return paths (ADR-067: non-void must return on all paths)",

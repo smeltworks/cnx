@@ -1,0 +1,23 @@
+// test-execution
+// test-adr: 045
+// #1373: a bool past a string chain's first pair is compared with that pair's result, (a = b) = true, and is not dropped
+#pragma target host
+
+i32 main() {
+    string<8> a <- "x";
+    string<8> b <- "x";
+    string<8> c <- "y";
+    bool same <- a = b = true;
+    if (same != true) {
+        return 1;
+    }
+    bool apart <- a = c != false;
+    if (apart != false) {
+        return 2;
+    }
+    bool flip <- a != b = false;
+    if (flip != true) {
+        return 3;
+    }
+    return 0;
+}

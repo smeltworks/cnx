@@ -1,0 +1,2 @@
+10:16 error[E0810]: Binary operator combines operands of different essential type categories (Boolean and signed)
+       help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Convert one operand explicitly, e.g. with a cast (ADR-024).

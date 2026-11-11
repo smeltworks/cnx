@@ -280,6 +280,7 @@ A subscript into a scalar is a bit index and has no declared type, so the bit-in
 **What is an operand of the operator, for this rule** (consequences of the rulings above, #1668; none is a new decision):
 
 - A comparison or a `!` is one Boolean operand, whatever it compares. Its own operands are not operands of the enclosing operator, so with `u32 a, b` and `i32 c, d`, `(a < b) = (c < d)` compares two Booleans and is not a signed/unsigned mix.
+- A chain of comparisons is that, left to right, whether or not it is parenthesized (#1373): `a = b = c` is `(a = b) = c`, so with `u32 a, b` and `i32 c` it compares a Boolean with a signed value and is E0810. Under `<`, `>`, `<=` or `>=` the Boolean is Rule 10.1's, so `a < b < c` is E0807 as `(a < b) < c` is. A chain of Booleans, `p = q = r`, is legal.
 - A shift's count is not an operand of the shift. `a << s` has `a`'s category whatever `s`'s is, because Rule 10.4 does not govern a shift (the count is promoted on its own).
 - A register member has its declared category, as a variable does. A bitmap field wider than one bit is unsigned, and a one-bit field is Boolean.
 - A call to a C++ overload set whose candidates return different categories is not classified, because which candidate C++ chooses is not decided here. It is never taken into integer saturating arithmetic either, so `u * choose(y)` is computed in the category of the candidate C++ picks.

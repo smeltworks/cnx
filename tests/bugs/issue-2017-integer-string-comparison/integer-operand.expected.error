@@ -1,0 +1,8 @@
+8:8 error[E0929]: A string cannot be compared with a value that is not a string: 'x'
+       help: ADR-045: '=' and '!=' compare a string only with another string, through strcmp.
+11:16 error[E0929]: A string cannot be compared with a value that is not a string: 'x'
+       help: ADR-045: '=' and '!=' compare a string only with another string, through strcmp.
+14:8 error[E0929]: A string cannot be compared with a value that is not a string: 'x'
+       help: ADR-045: '=' and '!=' compare a string only with another string, through strcmp.
+17:17 error[E0929]: A string cannot be compared with a value that is not a string: 'x'
+       help: ADR-045: '=' and '!=' compare a string only with another string, through strcmp.

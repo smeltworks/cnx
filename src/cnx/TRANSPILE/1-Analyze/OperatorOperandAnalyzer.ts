@@ -157,7 +157,9 @@ class OperatorOperandCheck {
   /**
    * One error per operator whose left or right operand is outside its set,
    * reported at the offending operand -- `flag / other` is one mistake.
-   * `operators[i]` joins operand `i` to `i + 1`.
+   * `operators[i]` joins operand `i` to `i + 1`. Past the first pair, a
+   * relational level's left operand is the comparison before it, a bool
+   * (#1373): `a < b < c` is `(a < b) < c`, reported at that comparison.
    */
   public checkExpression(
     expr: TExpression,
@@ -176,6 +178,10 @@ class OperatorOperandCheck {
       if (admits === undefined) return;
       const left = level.operands[i];
       const right = level.operands[i + 1];
+      if (level.level === "relational" && i > 0) {
+        this.analyzer.addError(level.operands[0], operator, "bool");
+        return;
+      }
       const leftRejection = this.rejection(
         operator,
         admits,

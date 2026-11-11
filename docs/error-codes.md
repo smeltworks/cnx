@@ -509,6 +509,14 @@ base: bare, `this.` and `global.`.
 
 ---
 
+## E0929 — A String Compared With Something That Is Not a String (ADR-045)
+
+| Code  | Message                                                                                                                                                                                                                                                                                                                                                | Help                                                                                                                 | Source                                            |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| E0929 | `=` or `!=` compares a string with a value that is not a string, a C `char` array or a C char pointer, which would be handed to `strcmp` -- `x = "abc"` with `u32 x` (#2017). A comparison is a bool, so a string past a chain's first pair is one: `a = b = c` is `(a = b) = c` (#1373). A value whose type cnx cannot read is left to the C compiler | Compare a string only with another string; compare each pair of a chain on its own and join them with `&&` or `\|\|` | `TRANSPILE/1-Analyze/StringComparisonAnalyzer.ts` |
+
+---
+
 ## Adding New Error Codes
 
 1. Choose the next available code in the appropriate range

@@ -1,0 +1,14 @@
+// test-error
+// test-adr: 045
+// #1373: a = b = c is (a = b) = c, a bool compared with a string; it emitted strcmp(a, b) and dropped c
+#pragma target host
+
+i32 main() {
+    string<8> a <- "x";
+    string<8> b <- "x";
+    string<8> c <- "y";
+    if (a = b = c) {
+        return 1;
+    }
+    return 0;
+}
