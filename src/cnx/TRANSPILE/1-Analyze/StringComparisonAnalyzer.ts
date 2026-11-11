@@ -64,7 +64,7 @@ class StringComparisonAnalyzer {
     const rightIsString = this.isString(operands[1]);
     if (leftIsString !== rightIsString) {
       const other = leftIsString ? operands[1] : operands[0];
-      if (!this.isUntypeable(other)) {
+      if (!this.cannotType(other)) {
         this.report(
           other.span,
           StringComparisonAnalyzer.notAString(other.written),
@@ -99,7 +99,7 @@ class StringComparisonAnalyzer {
   }
 
   /** What cnx cannot type, which the C compiler judges instead */
-  private isUntypeable(operand: TExpression): boolean {
+  private cannotType(operand: TExpression): boolean {
     if (OperandTyper.isStringValue(operand, this.context) === null) return true;
     const form = OperandTyper.typeOf(operand, this.context)?.form;
     if (form?.kind === "unreadableMacro") return true;
