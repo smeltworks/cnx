@@ -30,8 +30,10 @@ import SourceSpanRange from "../../utils/SourceSpanRange";
 import StringOperand from "../../utils/StringOperand";
 import IStringComparisonError from "./types/IStringComparisonError";
 
-const HELP =
-  "ADR-045: '=' and '!=' compare a string only with another string, through strcmp.";
+const HELP = "ADR-045: '=' and '!=' compare a string only with another string.";
+
+const MIXED_HELP =
+  "Compare the string with a string<N>, a string literal, a C char array or a cstring.";
 
 const CHAIN_HELP =
   "A comparison is a bool, so compare each pair on its own and join them with && or ||, e.g. (a = b) && (b = c).";
@@ -68,6 +70,7 @@ class StringComparisonAnalyzer {
         this.report(
           other.span,
           StringComparisonAnalyzer.notAString(other.written),
+          [MIXED_HELP],
         );
         return;
       }
