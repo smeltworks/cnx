@@ -48,8 +48,10 @@ class CArgumentWrite {
     if (writes.kind === "literal") return writes.written.has(index);
     // E0930 rejects the call; a format cnx cannot read may fill any argument
     if (writes.kind === "format-not-literal") return true;
-    return OperandTyper.decaysToPointer(
-      OperandTyper.typeOf(callee.arguments[index], context),
+    const typed = OperandTyper.typeOf(callee.arguments[index], context);
+    return (
+      typed !== null &&
+      (typed.dimensions.length > 0 || typed.stringCapacity !== null)
     );
   }
 }
