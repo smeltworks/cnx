@@ -57,7 +57,7 @@ describe("ConstExprLowering", () => {
     ["1.5", "<float 1.5>"],
     ['"s"', '<string "s">'],
     ["'c'", "<character 'c'>"],
-    ["&x", "<address &x>"],
+    ["NULL", "<address NULL>"],
   ])("%s lowers to %s", (source, expected) => {
     expect(ConstExprShape.of(lowerOf(source))).toBe(expected);
   });

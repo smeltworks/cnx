@@ -34,7 +34,7 @@ const mockOrchestrator = { state } as unknown as IOrchestrator;
 
 /** The generator's whole input: an operator, the operand's code, 2.2's `~` cast. */
 function planned(
-  operator: "!" | "-" | "~" | "&" | null,
+  operator: "!" | "-" | "~" | null,
   operandCode: string,
   complementCast: string | null = null,
 ) {
@@ -47,7 +47,7 @@ function planned(
 }
 
 const run = (
-  operator: "!" | "-" | "~" | "&" | null,
+  operator: "!" | "-" | "~" | null,
   operandCode: string,
   complementCast: string | null = null,
 ) =>
@@ -112,7 +112,6 @@ describe("UnaryExprGenerator", () => {
     it.each([
       ["should generate logical NOT unchanged", "!", "flag", "!flag"],
       ["should generate negation unchanged", "-", "x", "-x"],
-      ["should generate address-of unchanged", "&", "x", "&x"],
     ] as const)("%s", (_label, operator, operandCode, expected) => {
       expect(run(operator, operandCode).code).toBe(expected);
     });

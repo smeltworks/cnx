@@ -1,0 +1,4 @@
+34:13 error[E0915]: cannot pass 'f.a' to `mut` parameter 'v' of function 'bumpBool': it is not a variable, so the write would be lost
+       help: A `mut` parameter writes its argument (ADR-006); assign the value to a `mut` variable and pass that.
+35:12 error[E0915]: cannot pass 'c.mode' to `mut` parameter 'v' of function 'bumpU32': it is not a variable, so the write would be lost
+       help: A `mut` parameter writes its argument (ADR-006); assign the value to a `mut` variable and pass that.

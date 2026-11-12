@@ -63,13 +63,6 @@ describe("CPointerArgumentAnalyzer on 1.2's syntax (#1991)", () => {
     ]);
   });
 
-  it("reaches the object `&x` hands the pointer (ADR-071)", () => {
-    expect(at(["u8 c <- 1;", "take(&c);", "peek(&c);"])).toEqual([
-      "E0900@3:9 '&c' is read-only uint8_t, and parameter 1 of 'take' is a pointer 'take' may write through",
-      "E0896@4:9 cnx cannot see how 'peek' uses parameter 1, so passing '&c' to it is not memory safe",
-    ]);
-  });
-
   it("rejects a read-only array only where the C array is not const (#986)", () => {
     expect(
       at([
@@ -118,5 +111,82 @@ describe("CPointerArgumentAnalyzer through `global.` (#2103)", () => {
     expect(at(["u8 c <- 1;", "global.take(c);"])).toEqual([
       "E0900@3:16 'c' is read-only uint8_t, and parameter 1 of 'take' is a pointer 'take' may write through",
     ]);
+  });
+});
+
+describe("CPointerArgumentAnalyzer on a variadic C callee (#2117)", () => {
+  // E0896 on the format, which cnx cannot see `stdio.h` read, is #1991's
+  const variadic = (body: string[]): string[] => {
+    const symbolTable = new SymbolTable();
+    for (const [name, parameters] of [
+      ["sscanf", ["s", "f"]],
+      ["printf", ["f"]],
+    ] as const) {
+      symbolTable.addCSymbol({
+        name,
+        kind: "function",
+        sourceLanguage: ESourceLanguage.C,
+        sourceFile: "stdio.h",
+        span: TestSourceSpan.at(1),
+        visibility: "public",
+        type: "int",
+        parameters: parameters.map((p) => ({
+          name: p,
+          type: "const char *",
+          isConst: true,
+          isArray: false,
+        })),
+        isVariadic: true,
+      });
+    }
+    const source = [
+      "void t() {",
+      ...body.map((line) => `    ${line}`),
+      "}",
+    ].join("\n");
+    const { syntax, context } = testAnalysisContextFor(source, {
+      symbolTable,
+      cppMode: false,
+    });
+    return new CPointerArgumentAnalyzer(context)
+      .analyze(syntax)
+      .filter((e) => e.code !== "E0896")
+      .map((e) => `${e.code}@${e.span.line}:${e.span.column}`);
+  };
+
+  it("accepts a mut variable a conversion fills", () => {
+    expect(
+      variadic(["mut i32 p <- 0;", 'global.sscanf("7", "%d", p);']),
+    ).toEqual([]);
+  });
+
+  it("rejects a read-only variable a conversion fills (E0900)", () => {
+    expect(variadic(["i32 p <- 0;", 'global.sscanf("7", "%d", p);'])).toEqual([
+      "E0900@3:29",
+    ]);
+  });
+
+  it("rejects a conversion's argument that is no variable (E0915)", () => {
+    expect(variadic(['global.sscanf("7", "%d", 5);'])).toEqual(["E0915@2:29"]);
+  });
+
+  it("rejects a format that is not a string literal (E0930)", () => {
+    expect(
+      variadic([
+        'string<4> f <- "%d";',
+        "mut i32 p <- 0;",
+        'global.sscanf("7", f, p);',
+      ]),
+    ).toEqual(["E0930@4:23"]);
+  });
+
+  it("takes a read-only array past printf's format as one it may write", () => {
+    expect(
+      variadic([
+        "u8[2] b <- [1, 2];",
+        "i32 v <- 1;",
+        'global.printf("%s", b, v);',
+      ]),
+    ).toEqual(["E0900@4:24"]);
   });
 });

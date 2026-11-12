@@ -1,0 +1,20 @@
+// test-error
+// test-adr: 071
+// #2117 (owner ruling 2026-11-12): a scanf-family call says which arguments it
+// writes only in a literal format, so a format that is not a string literal
+// does not compile.
+#include <stdio.h>
+
+string<4> format <- "%d";
+
+void parse() {
+    mut i32 parsed <- 0;
+    i32 count <- global.sscanf("7", format, parsed);
+}
+
+scope Reader {
+    public void parse() {
+        mut i32 parsed <- 0;
+        i32 count <- global.sscanf("7", format, parsed);
+    }
+}

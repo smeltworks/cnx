@@ -170,8 +170,8 @@ class CResolver {
       ctx.sourceFile,
       ctx.span,
     );
-    if (!enumResult) return;
-    ctx.symbols.push(enumResult.enum, ...enumResult.members);
+    if (enumResult.enum !== null) ctx.symbols.push(enumResult.enum);
+    ctx.symbols.push(...enumResult.members);
   }
 
   private static collectDeclarators(

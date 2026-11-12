@@ -19,9 +19,6 @@ class WrittenBinding {
     expr: TExpression,
     context: ITypingContext,
   ): IWrittenBinding | null {
-    if (expr.kind === "unary" && expr.operator === "&") {
-      return WrittenBinding.ofExpression(expr.operand, context);
-    }
     const view = WrittenBinding.nameChain(expr);
     if (view === null) return null;
     if (view.primary.kind === "identifier") {

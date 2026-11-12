@@ -99,8 +99,4 @@ void main() {
     movePoint(cursor, MOVE_DX, MOVE_DY);
     Console.printInt(cursor.x); // Prints 5
     Console.printInt(cursor.y); // Prints 10
-
-    // Address-of operator (read-only)
-    u32 addr <- &counter;
-    Console.printHex(addr); // Prints memory address
 }

@@ -305,7 +305,6 @@ class SyntaxLowering {
   ): TExpressionOf<"unary">["operator"] {
     if (ctx.MINUS()) return "-";
     if (ctx.BITNOT()) return "~";
-    if (ctx.BITAND()) return "&";
     invariant(ctx.NOT(), "a unary expression has an operator or is postfix");
     return "!";
   }

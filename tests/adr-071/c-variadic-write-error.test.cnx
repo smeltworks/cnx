@@ -1,19 +1,20 @@
 // test-error
 // test-adr: 071
 // ADR-071 Decision 2: past a variadic C function's declared parameters, C
-// says nothing about what an argument may write, so an argument passed as an
-// address -- `&x`, an array, a string -- is one the callee may write through.
-// A read-only one is E0900. CONTROL: `parsed` is `mut` and only `sscanf`
-// writes it, so it is no E0899; `count` is passed by value and stays
-// read-only.
+// says nothing about what an argument may write. A scanf-family call's literal
+// format says it (#2117): `%d` fills `x`, so a read-only `x` is E0900. Past
+// any other variadic function's parameters, an array or a string is passed as
+// an address the callee may write through, so a read-only `label` is E0900.
+// CONTROL: `parsed` is `mut` and only `sscanf` writes it, so it is no E0899;
+// `count` is passed by value and stays read-only.
 #include <stdio.h>
 
 string<16> label <- "n";
 
 void parse() {
     i32 x <- 0;
-    i32 n <- global.sscanf("5", "%d", &x);
+    i32 n <- global.sscanf("5", "%d", x);
     mut i32 parsed <- 0;
-    i32 count <- global.sscanf("7", "%d", &parsed);
+    i32 count <- global.sscanf("7", "%d", parsed);
     i32 printed <- global.printf("%s %d %d %d\n", label, n, count, parsed);
 }

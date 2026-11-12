@@ -1,6 +1,6 @@
 import OperandTyper from "../../../utils/OperandTyper";
 import CPointerParameter from "../../../utils/CPointerParameter";
-import type TExpression from "../../../types/syntax/TExpression";
+import ScanfFormat from "../../../utils/ScanfFormat";
 import type IAnalysisContext from "../types/IAnalysisContext";
 import CCallee from "./CCallee";
 import type ICCallee from "../types/ICCallee";
@@ -8,9 +8,10 @@ import type ICCallee from "../types/ICCallee";
 /**
  * Whether a C callee may write what one argument hands it (ADR-071 Decision
  * 2): a parameter it can write through, or -- past a variadic callee's
- * declared parameters, where C says nothing -- an argument passed as an
- * address: `&x`, or an array or string, which C passes as a pointer to its
- * first element. `sscanf("5", "%d", &x)` writes `x`. A C++ overload set
+ * declared parameters, where C says nothing -- an argument a scanf-family
+ * call's literal format fills (`ScanfFormat`, #2117): `sscanf("5", "%d", x)`
+ * writes `x`. Past any other variadic callee's parameters, an array or a
+ * string, which C passes as a pointer to its first element. A C++ overload set
  * writes it when every overload the call can reach does: a `const` one is
  * the one a read-only argument calls. E0899's write tracking and E0900's
  * check read this one answer.
@@ -22,7 +23,6 @@ class CArgumentWrite {
     context: IAnalysisContext,
   ): boolean {
     const reached = CCallee.reachable(callee);
-    const arg = callee.arguments[index];
     return (
       reached.length > 0 &&
       reached.every((signature) => {
@@ -31,22 +31,25 @@ class CArgumentWrite {
           return CPointerParameter.writesThrough(parameter);
         }
         return (
-          signature.isVariadic && CArgumentWrite.isPassedByAddress(arg, context)
+          signature.isVariadic &&
+          CArgumentWrite.variadicWrites(callee, index, context)
         );
       })
     );
   }
 
-  /** `&x`, an array or a string: C receives where the value lives */
-  static isPassedByAddress(
-    arg: TExpression,
+  /** What fills a variadic callee's `...` at `index` may be written */
+  private static variadicWrites(
+    callee: ICCallee,
+    index: number,
     context: IAnalysisContext,
   ): boolean {
-    if (arg.kind === "unary" && arg.operator === "&") return true;
-    const typed = OperandTyper.typeOf(arg, context);
-    return (
-      typed !== null &&
-      (typed.dimensions.length > 0 || typed.stringCapacity !== null)
+    const writes = ScanfFormat.writesOf(callee.name, callee.arguments);
+    if (writes.kind === "literal") return writes.written.has(index);
+    // E0930 rejects the call; a format cnx cannot read may fill any argument
+    if (writes.kind === "format-not-literal") return true;
+    return OperandTyper.isSizedBuffer(
+      OperandTyper.typeOf(callee.arguments[index], context),
     );
   }
 }

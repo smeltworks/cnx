@@ -216,7 +216,7 @@ When `pop` is called on an empty queue:
 
 ```cnx
 u32 value;
-if (queue.pop(&value)) {
+if (queue.pop(value)) {
     // Got item
 }
 ```
@@ -266,7 +266,7 @@ Should the compiler enforce which context can call which operations?
 ```cnx
 // Should this warn or error?
 interrupt CAN_RX {
-    queue.pop(&msg);   // Pop from ISR is unusual
+    queue.pop(msg);    // Pop from ISR is unusual
 }
 
 void main() {

@@ -408,7 +408,6 @@ unaryExpression
     : '!' unaryExpression
     | '-' unaryExpression
     | '~' unaryExpression
-    | '&' unaryExpression          // Address-of (read-only, ADR-006)
     | postfixExpression
     ;
 

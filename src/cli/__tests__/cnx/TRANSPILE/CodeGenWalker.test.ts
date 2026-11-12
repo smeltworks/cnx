@@ -2787,32 +2787,6 @@ describe("CodeGenWalker", () => {
     });
   });
 
-  describe("Address-of operator", () => {
-    it("should generate address-of expression", () => {
-      const source = `
-        u32 value <- 42;
-        void main() {
-          u32 addr <- &value;
-        }
-      `;
-      const { tree, program } = CnxSourceParser.parse(source);
-      // #1445 box 3: the walk and the render-side services are two objects now.
-      // The host is constructed here and injected, so assertions about the state
-      // the walk accumulates read the SAME instance the walk drove.
-      const host = new CodeGenerator();
-      const generator = new CodeGenWalker(host);
-      const tSymbols = declareAndResolve(tree);
-      const symbols = TSymbolInfoAdapter.convert(tSymbols);
-
-      const code = generateWithProgram(generator, tree, program, {
-        cppMode: false,
-        symbolInfo: symbols,
-        sourcePath: "test.cnx",
-      });
-
-      expect(code).toContain("&value");
-    });
-  });
   describe("Wrap modifier", () => {
     it("should allow wrap integer overflow without clamping", () => {
       const source = `

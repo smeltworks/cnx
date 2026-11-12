@@ -670,6 +670,21 @@ This applies to anything cnx can see the return type of, including the standard 
 If the return type cannot be resolved at all -- an external C function cnx never parsed --
 the rule cannot apply, because there is nothing to check against.
 
+## Out-Parameters Without `&`
+
+cnx has no `&`. A C function's pointer parameter takes its argument's address from the header,
+and a scanf-family call takes it from its literal format (ADR-071 Decision 2): each conversion
+writes the next argument, which must be a `mut` variable.
+
+```cnx
+#include <stdio.h>
+
+void parse() {
+    mut i32 parsed <- 0;
+    i32 count <- global.sscanf("7", "%d", parsed);   // sscanf("7", "%d", &parsed);
+}
+```
+
 ## Key Differences from C
 
 | C                | cnx            | Why                       |
