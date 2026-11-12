@@ -112,6 +112,8 @@ u32 main() {
         if (n != 4) {
             return 6;
         }
+    } else {
+        return 11;
     }
 
     other <- "ab";

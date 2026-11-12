@@ -131,6 +131,8 @@ int main(void) {
         if (n != 4) {
             return 6U;
         }
+    } else {
+        return 11U;
     }
     cnx_string_copy(other, "ab", 8U);
     const uint32_t viaRead = readsAlias(other);
