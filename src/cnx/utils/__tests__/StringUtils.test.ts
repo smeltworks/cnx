@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import StringUtils from "../StringUtils";
+import type TStringValueForm from "../../types/TStringValueForm";
+import type TRenderedStringPart from "../../types/TRenderedStringPart";
 
 // ========================================================================
 // copy
@@ -30,7 +32,10 @@ describe("StringUtils.build", () => {
       ]),
     ).toEqual([
       'cnx_string_copy(result, "Hello", 64U);',
-      '(void) strncat(result, " World", 64 - strlen(result));',
+      "{",
+      "    const uint32_t cnx_used = (uint32_t) strlen(result);",
+      '    cnx_string_copy(result + cnx_used, " World", 64U - cnx_used);',
+      "}",
     ]);
   });
 
@@ -43,8 +48,14 @@ describe("StringUtils.build", () => {
       ]),
     ).toEqual([
       "cnx_string_copy(buf, a, 12U);",
-      "(void) strncat(buf, b, 12 - strlen(buf));",
-      "(void) strncat(buf, c, 12 - strlen(buf));",
+      "{",
+      "    const uint32_t cnx_used = (uint32_t) strlen(buf);",
+      "    cnx_string_copy(buf + cnx_used, b, 12U - cnx_used);",
+      "}",
+      "{",
+      "    const uint32_t cnx_used = (uint32_t) strlen(buf);",
+      "    cnx_string_copy(buf + cnx_used, c, 12U - cnx_used);",
+      "}",
     ]);
   });
 
@@ -144,4 +155,60 @@ describe("StringUtils.characterAt", () => {
   it("is the terminator past the literal's end", () => {
     expect(StringUtils.characterAt('"A"', 1)).toBe("'\\0'");
   });
+});
+
+// ========================================================================
+// usesCopyHelper
+// ========================================================================
+describe("StringUtils.usesCopyHelper", () => {
+  const whole: TRenderedStringPart = { kind: "whole", code: "a" };
+  const substring: TRenderedStringPart = {
+    kind: "substring",
+    source: "s",
+    start: "0",
+    length: 2,
+  };
+  // Each form with the lines it lowers to: a declaration initializes from a
+  // literal, a copy is `copy`, and a substring or a concatenation is `build`
+  const cases: ReadonlyArray<{
+    form: TStringValueForm;
+    lowering: readonly string[];
+  }> = [
+    {
+      form: { kind: "literal" } as TStringValueForm,
+      lowering: ['char t[9] = "abc";'],
+    },
+    {
+      form: { kind: "copy" } as TStringValueForm,
+      lowering: [StringUtils.copy("t", "a", 8)],
+    },
+    {
+      form: { kind: "substring" } as TStringValueForm,
+      lowering: StringUtils.build("t", 8, [substring]),
+    },
+    {
+      form: {
+        kind: "concat",
+        parts: [{ kind: "whole" }, { kind: "whole" }],
+      } as unknown as TStringValueForm,
+      lowering: StringUtils.build("t", 8, [whole, whole]),
+    },
+    {
+      form: {
+        kind: "concat",
+        parts: [{ kind: "substring" }, { kind: "whole" }],
+      } as unknown as TStringValueForm,
+      lowering: StringUtils.build("t", 8, [substring, whole]),
+    },
+  ];
+
+  it.each(cases)(
+    "reports the helper exactly when the $form.kind lowering calls it (#1902)",
+    ({ form, lowering }) => {
+      const callsHelper = lowering.some((line) =>
+        line.includes(`${StringUtils.COPY_HELPER}(`),
+      );
+      expect(StringUtils.usesCopyHelper(form)).toBe(callsHelper);
+    },
+  );
 });

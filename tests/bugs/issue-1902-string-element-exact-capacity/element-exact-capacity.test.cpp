@@ -30,10 +30,12 @@ static inline void cnx_string_copy(char* target, const char* source, uint32_t ca
 // element of a string<8>[M] array -- local, global and struct field -- leaves
 // the element's byte 8 a terminator, and the C compiles under -O3 -Wall
 // -Wextra -Werror. Each kind takes a literal, a whole string, a substring and
-// a concatenation whose first part already fills the capacity. A scalar
-// string<8>, a declaration and an argument are built the same way as a
-// concatenation, so each takes one too.
+// a concatenation, with the part that fills the capacity first and then
+// last. A scalar string<8>, a declaration and an argument are built the same
+// way as a concatenation, so each takes both orders too.
 char globalNames[2][9] = {0};
+
+char globalSource[9] = "";
 
 uint32_t charCount(const char* value) {
     return strlen(value);
@@ -51,7 +53,7 @@ int main(void) {
     if (strcmp(localNames[1U], "eight ch") != 0) {
         return 2;
     }
-    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (`strncpy` and `strncat` would be passed overlapping arguments when a part reads the string written). */
+    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (copying the parts in place would overwrite characters a later part still reads when a part reads the string written). */
     {
         char cnx_tmp0[9] = "";
         cnx_string_copy(cnx_tmp0, full + 0U, 8U);
@@ -60,11 +62,14 @@ int main(void) {
     if (strcmp(localNames[0U], "eight ch") != 0) {
         return 3;
     }
-    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (`strncpy` and `strncat` would be passed overlapping arguments when a part reads the string written). */
+    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (copying the parts in place would overwrite characters a later part still reads when a part reads the string written). */
     {
         char cnx_tmp1[9] = "";
         cnx_string_copy(cnx_tmp1, full, 8U);
-        (void) strncat(cnx_tmp1, empty, 8 - strlen(cnx_tmp1));
+        {
+            const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp1);
+            cnx_string_copy(cnx_tmp1 + cnx_used, empty, 8U - cnx_used);
+        }
         cnx_string_copy(localNames[1], cnx_tmp1, 8U);
     }
     if (strcmp(localNames[1U], "eight ch") != 0) {
@@ -78,7 +83,7 @@ int main(void) {
     if (strcmp(globalNames[1U], "eight ch") != 0) {
         return 6;
     }
-    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (`strncpy` and `strncat` would be passed overlapping arguments when a part reads the string written). */
+    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (copying the parts in place would overwrite characters a later part still reads when a part reads the string written). */
     {
         char cnx_tmp2[9] = "";
         cnx_string_copy(cnx_tmp2, full + 0U, 8U);
@@ -87,11 +92,14 @@ int main(void) {
     if (strcmp(globalNames[0U], "eight ch") != 0) {
         return 7;
     }
-    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (`strncpy` and `strncat` would be passed overlapping arguments when a part reads the string written). */
+    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (copying the parts in place would overwrite characters a later part still reads when a part reads the string written). */
     {
         char cnx_tmp3[9] = "";
         cnx_string_copy(cnx_tmp3, "eight ch", 8U);
-        (void) strncat(cnx_tmp3, "", 8 - strlen(cnx_tmp3));
+        {
+            const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp3);
+            cnx_string_copy(cnx_tmp3 + cnx_used, "", 8U - cnx_used);
+        }
         cnx_string_copy(globalNames[1], cnx_tmp3, 8U);
     }
     if (strcmp(globalNames[1U], "eight ch") != 0) {
@@ -106,7 +114,7 @@ int main(void) {
     if (strcmp(cfg.items[1U], "eight ch") != 0) {
         return 10;
     }
-    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (`strncpy` and `strncat` would be passed overlapping arguments when a part reads the string written). */
+    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (copying the parts in place would overwrite characters a later part still reads when a part reads the string written). */
     {
         char cnx_tmp4[9] = "";
         cnx_string_copy(cnx_tmp4, full + 0U, 8U);
@@ -115,11 +123,14 @@ int main(void) {
     if (strcmp(cfg.items[0U], "eight ch") != 0) {
         return 11;
     }
-    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (`strncpy` and `strncat` would be passed overlapping arguments when a part reads the string written). */
+    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (copying the parts in place would overwrite characters a later part still reads when a part reads the string written). */
     {
         char cnx_tmp5[9] = "";
         cnx_string_copy(cnx_tmp5, full, 8U);
-        (void) strncat(cnx_tmp5, empty, 8 - strlen(cnx_tmp5));
+        {
+            const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp5);
+            cnx_string_copy(cnx_tmp5 + cnx_used, empty, 8U - cnx_used);
+        }
         cnx_string_copy(cfg.items[1], cnx_tmp5, 8U);
     }
     if (strcmp(cfg.items[1U], "eight ch") != 0) {
@@ -135,11 +146,14 @@ int main(void) {
         return 15;
     }
     char scalar[9] = "";
-    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (`strncpy` and `strncat` would be passed overlapping arguments when a part reads the string written). */
+    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (copying the parts in place would overwrite characters a later part still reads when a part reads the string written). */
     {
         char cnx_tmp6[9] = "";
         cnx_string_copy(cnx_tmp6, full, 8U);
-        (void) strncat(cnx_tmp6, empty, 8 - strlen(cnx_tmp6));
+        {
+            const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp6);
+            cnx_string_copy(cnx_tmp6 + cnx_used, empty, 8U - cnx_used);
+        }
         cnx_string_copy(scalar, cnx_tmp6, 8U);
     }
     if (strcmp(scalar, "eight ch") != 0) {
@@ -147,17 +161,105 @@ int main(void) {
     }
     char declared[9] = "";
     cnx_string_copy(declared, full, 8U);
-    (void) strncat(declared, empty, 8 - strlen(declared));
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(declared);
+        cnx_string_copy(declared + cnx_used, empty, 8U - cnx_used);
+    }
     if (strcmp(declared, "eight ch") != 0) {
         return 17;
     }
     /* ADR-045 / Issue #2239: a concatenation or a substring argument is built into a string<N> before the call. */
     char cnx_tmp7[9] = "";
     cnx_string_copy(cnx_tmp7, full, 8U);
-    (void) strncat(cnx_tmp7, empty, 8 - strlen(cnx_tmp7));
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp7);
+        cnx_string_copy(cnx_tmp7 + cnx_used, empty, 8U - cnx_used);
+    }
     const uint32_t argumentCount = charCount(cnx_tmp7);
     if (argumentCount != 8) {
         return 18;
+    }
+    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (copying the parts in place would overwrite characters a later part still reads when a part reads the string written). */
+    {
+        char cnx_tmp8[9] = "";
+        cnx_string_copy(cnx_tmp8, empty, 8U);
+        {
+            const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp8);
+            cnx_string_copy(cnx_tmp8 + cnx_used, full, 8U - cnx_used);
+        }
+        cnx_string_copy(localNames[0], cnx_tmp8, 8U);
+    }
+    if (strcmp(localNames[0U], "eight ch") != 0) {
+        return 19;
+    }
+    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (copying the parts in place would overwrite characters a later part still reads when a part reads the string written). */
+    {
+        char cnx_tmp9[9] = "";
+        cnx_string_copy(cnx_tmp9, "", 8U);
+        {
+            const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp9);
+            cnx_string_copy(cnx_tmp9 + cnx_used, "eight ch", 8U - cnx_used);
+        }
+        cnx_string_copy(globalNames[0], cnx_tmp9, 8U);
+    }
+    if (strcmp(globalNames[0U], "eight ch") != 0) {
+        return 20;
+    }
+    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (copying the parts in place would overwrite characters a later part still reads when a part reads the string written). */
+    {
+        char cnx_tmp10[9] = "";
+        cnx_string_copy(cnx_tmp10, empty, 8U);
+        {
+            const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp10);
+            cnx_string_copy(cnx_tmp10 + cnx_used, full, 8U - cnx_used);
+        }
+        cnx_string_copy(cfg.items[0], cnx_tmp10, 8U);
+    }
+    if (strcmp(cfg.items[0U], "eight ch") != 0) {
+        return 21;
+    }
+    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (copying the parts in place would overwrite characters a later part still reads when a part reads the string written). */
+    {
+        char cnx_tmp11[9] = "";
+        cnx_string_copy(cnx_tmp11, empty, 8U);
+        {
+            const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp11);
+            cnx_string_copy(cnx_tmp11 + cnx_used, full, 8U - cnx_used);
+        }
+        cnx_string_copy(scalar, cnx_tmp11, 8U);
+    }
+    if (strcmp(scalar, "eight ch") != 0) {
+        return 22;
+    }
+    char declaredReversed[9] = "";
+    cnx_string_copy(declaredReversed, empty, 8U);
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(declaredReversed);
+        cnx_string_copy(declaredReversed + cnx_used, full, 8U - cnx_used);
+    }
+    if (strcmp(declaredReversed, "eight ch") != 0) {
+        return 23;
+    }
+    /* ADR-045 / Issue #2239: a concatenation or a substring argument is built into a string<N> before the call. */
+    char cnx_tmp12[9] = "";
+    cnx_string_copy(cnx_tmp12, empty, 8U);
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp12);
+        cnx_string_copy(cnx_tmp12 + cnx_used, full, 8U - cnx_used);
+    }
+    const uint32_t reversedCount = charCount(cnx_tmp12);
+    if (reversedCount != 8) {
+        return 24;
+    }
+    cnx_string_copy(globalSource, full, 8U);
+    char fromGlobal[9] = "";
+    cnx_string_copy(fromGlobal, "", 8U);
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(fromGlobal);
+        cnx_string_copy(fromGlobal + cnx_used, globalSource, 8U - cnx_used);
+    }
+    if (strcmp(fromGlobal, "eight ch") != 0) {
+        return 25;
     }
     return 0;
 }

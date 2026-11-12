@@ -9882,7 +9882,9 @@ describe("CodeGenWalker", () => {
 
         // String concatenation copies its first part in, then appends (#1902)
         expect(code).toContain("cnx_string_copy(result, a, 64U);");
-        expect(code).toContain("strncat");
+        expect(code).toContain(
+          "cnx_string_copy(result + cnx_used, b, 64U - cnx_used);",
+        );
       });
     });
 

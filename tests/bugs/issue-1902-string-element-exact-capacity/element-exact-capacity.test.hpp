@@ -19,6 +19,7 @@ typedef struct Config {
 
 /* External variables */
 extern char globalNames[2][9];
+extern char globalSource[9];
 
 /* Function prototypes */
 uint32_t charCount(const char* value);

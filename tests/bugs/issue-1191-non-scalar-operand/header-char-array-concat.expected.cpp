@@ -29,11 +29,20 @@ static inline void cnx_string_copy(char* target, const char* source, uint32_t ca
 int main(void) {
     char r[33] = "";
     cnx_string_copy(r, cbuf, 32U);
-    (void) strncat(r, "x", 32 - strlen(r));
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(r);
+        cnx_string_copy(r + cnx_used, "x", 32U - cnx_used);
+    }
     char r2[33] = "";
     cnx_string_copy(r2, "x", 32U);
-    (void) strncat(r2, cbuf, 32 - strlen(r2));
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(r2);
+        cnx_string_copy(r2 + cnx_used, cbuf, 32U - cnx_used);
+    }
     char r3[33] = "";
     cnx_string_copy(r3, grec.name, 32U);
-    (void) strncat(r3, "x", 32 - strlen(r3));
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(r3);
+        cnx_string_copy(r3 + cnx_used, "x", 32U - cnx_used);
+    }
 }

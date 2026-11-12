@@ -5,13 +5,10 @@
  * Extracted from CodeGenerator.ts as part of ADR-065 decomposition.
  */
 /**
- * MISRA C:2012 Rule 17.7 (ADR-070 Case 1): every `strncpy`/`strncat` below is a
- * call the TRANSPILER emits to lower a cnx string operation -- the author
- * never wrote it, so its discarded return is cast to `(void)` here rather than
- * being reported to the author. Author-written discards are Case 2 (E0708).
- *
- * This class is the single source of truth for that lowering; callers must not
- * build these calls themselves, or the cast would have to be repeated.
+ * This class is the single source of truth for lowering a cnx string write:
+ * every copy, substring and concatenation part goes through `cnx_string_copy`
+ * (#2207, #1902), so no `strncpy`/`strncat` result is discarded (MISRA C:2012
+ * Rule 17.7). Callers must not build these calls themselves.
  */
 /** C null terminator character literal for generated code */
 import type TRenderedStringPart from "../types/TRenderedStringPart";
@@ -38,8 +35,7 @@ class StringUtils {
    * with `cnx_string_copy`, as every copy is, so a first part that fills the
    * capacity has its terminator written without gcc's `-Wstringop-truncation`
    * (#1902). Each later part is appended bounded by what is left, and every
-   * step terminates what it writes. The `(void)` casts are MISRA 17.7's
-   * (ADR-070 Case 1).
+   * step terminates what it writes.
    */
   static build(
     buffer: string,
@@ -52,35 +48,42 @@ class StringUtils {
         ? StringUtils.substring(buffer, first.source, first.start, first.length)
         : [StringUtils.copy(buffer, first.code, capacity)];
     for (const part of rest) {
-      if (part.kind === "substring") {
-        lines.push(...StringUtils.appendSubstring(buffer, capacity, part));
-      } else {
-        lines.push(
-          `(void) strncat(${buffer}, ${part.code}, ${capacity} - strlen(${buffer}));`,
-        );
-      }
+      lines.push(...StringUtils.append(buffer, capacity, part));
     }
     return lines;
   }
 
   /**
-   * A substring appended to what is built, bounded by the space left as
-   * `strncat` bounds a whole part: a part before it may be a C string or an
-   * unsized `string`, whose length 2.1 cannot measure (#2160 review)
+   * A part appended to what is built: copied in at its end by
+   * `cnx_string_copy`, bounded by the space left (and a substring by its
+   * length too). A part before it may be a C string or an unsized `string`,
+   * whose length 2.1 cannot measure (#2160 review), so the end is found with
+   * `strlen`. `strncat` is not used: when every earlier part is empty, gcc
+   * cannot fold its bound and rejects any part it can size that fills the
+   * capacity with `-Wstringop-truncation` (#1902).
    */
-  private static appendSubstring(
+  private static append(
     buffer: string,
     capacity: number,
-    part: Extract<TRenderedStringPart, { kind: "substring" }>,
+    part: TRenderedStringPart,
   ): string[] {
-    const count = StringUtils.count(part.length);
-    const left = `(${capacity}U - cnx_used)`;
+    const left = `${capacity}U - cnx_used`;
+    const source =
+      part.kind === "substring" ? `${part.source} + ${part.start}` : part.code;
+    const bound =
+      part.kind === "substring"
+        ? StringUtils.bounded(left, StringUtils.count(part.length))
+        : left;
     return [
       "{",
       `    const uint32_t cnx_used = (uint32_t) strlen(${buffer});`,
-      `    ${StringUtils.COPY_HELPER}(${buffer} + cnx_used, ${part.source} + ${part.start}, (${left} < ${count}) ? ${left} : ${count});`,
+      `    ${StringUtils.COPY_HELPER}(${buffer} + cnx_used, ${source}, ${bound});`,
       "}",
     ];
+  }
+
+  private static bounded(left: string, count: string): string {
+    return `((${left}) < ${count}) ? (${left}) : ${count}`;
   }
 
   private static count(length: number): string {

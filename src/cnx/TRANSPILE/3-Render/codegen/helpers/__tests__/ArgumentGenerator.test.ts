@@ -524,7 +524,10 @@ describe("ArgumentGenerator", () => {
         "/* ADR-045 / Issue #2239: a concatenation or a substring argument is built into a string<N> before the call. */",
         'char cnx_tmp0[9] = "";',
         "cnx_string_copy(cnx_tmp0, a, 8U);",
-        "(void) strncat(cnx_tmp0, b, 8 - strlen(cnx_tmp0));",
+        "{",
+        "    const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp0);",
+        "    cnx_string_copy(cnx_tmp0 + cnx_used, b, 8U - cnx_used);",
+        "}",
       ]);
     });
   });

@@ -162,7 +162,7 @@ describe("2.2 plans every string written into one character", () => {
       ].join("\n"),
     );
     expect(code).toContain(
-      'char cnx_tmp0[5] = "";\n        cnx_string_copy(cnx_tmp0, "a", 4U);\n        (void) strncat(cnx_tmp0, "b", 4 - strlen(cnx_tmp0));\n        const uint32_t cnx_tmp1 = (uint32_t) strlen(cnx_tmp0);\n        for (uint32_t cnx_tmp2 = 0U; cnx_tmp2 < cnx_tmp1; cnx_tmp2++) {\n            s[cnx_tmp2] = cnx_tmp0[cnx_tmp2];',
+      'char cnx_tmp0[5] = "";\n        cnx_string_copy(cnx_tmp0, "a", 4U);\n        {\n            const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp0);\n            cnx_string_copy(cnx_tmp0 + cnx_used, "b", 4U - cnx_used);\n        }\n        const uint32_t cnx_tmp1 = (uint32_t) strlen(cnx_tmp0);\n        for (uint32_t cnx_tmp2 = 0U; cnx_tmp2 < cnx_tmp1; cnx_tmp2++) {\n            s[cnx_tmp2] = cnx_tmp0[cnx_tmp2];',
     );
   });
 

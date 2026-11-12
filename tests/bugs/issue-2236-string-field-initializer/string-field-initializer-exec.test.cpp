@@ -60,7 +60,10 @@ int main(void) {
     /* ADR-045 / Issue #2236: a string<N> field is copied in like any string; C initializes a char[] only from a literal. */
     Cfg cnx_tmp3 = { .name = { 0 }, .id = 4U };
     cnx_string_copy(cnx_tmp3.name, m.name + 0U, 1U);
-    (void) strncat(cnx_tmp3.name, s, 8 - strlen(cnx_tmp3.name));
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp3.name);
+        cnx_string_copy(cnx_tmp3.name + cnx_used, s, 8U - cnx_used);
+    }
     m = cnx_tmp3;
     if (strcmp(m.name, "xab") != 0) {
         return 3U;

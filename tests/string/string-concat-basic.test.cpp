@@ -30,5 +30,8 @@ void test(void) {
     const char second[33] = " World";
     char result[65] = "";
     cnx_string_copy(result, first, 64U);
-    (void) strncat(result, second, 64 - strlen(result));
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(result);
+        cnx_string_copy(result + cnx_used, second, 64U - cnx_used);
+    }
 }

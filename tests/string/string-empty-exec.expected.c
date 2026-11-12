@@ -52,7 +52,10 @@ int main(void) {
     const char text[33] = "Hello";
     char concatEmpty[97] = "";
     cnx_string_copy(concatEmpty, text, 96U);
-    (void) strncat(concatEmpty, empty, 96 - strlen(concatEmpty));
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(concatEmpty);
+        cnx_string_copy(concatEmpty + cnx_used, empty, 96U - cnx_used);
+    }
     if (strlen(concatEmpty) != 5) {
         return 8;
     }
@@ -61,7 +64,10 @@ int main(void) {
     }
     char emptyPlusText[97] = "";
     cnx_string_copy(emptyPlusText, empty, 96U);
-    (void) strncat(emptyPlusText, text, 96 - strlen(emptyPlusText));
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(emptyPlusText);
+        cnx_string_copy(emptyPlusText + cnx_used, text, 96U - cnx_used);
+    }
     if (strlen(emptyPlusText) != 5) {
         return 10;
     }

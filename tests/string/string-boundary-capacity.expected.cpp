@@ -81,7 +81,10 @@ int main(void) {
     const char part2[4] = "DEF";
     char combined[7] = "";
     cnx_string_copy(combined, part1, 6U);
-    (void) strncat(combined, part2, 6 - strlen(combined));
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(combined);
+        cnx_string_copy(combined + cnx_used, part2, 6U - cnx_used);
+    }
     if (strlen(combined) != 6) {
         return 15;
     }

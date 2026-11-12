@@ -53,7 +53,7 @@ uint32_t joinAll(const char* p) {
         return 3U;
     }
     char e[9] = "";
-    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (`strncpy` and `strncat` would be passed overlapping arguments when a part reads the string written). */
+    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (copying the parts in place would overwrite characters a later part still reads when a part reads the string written). */
     {
         char cnx_tmp1[9] = "";
         cnx_string_copy(cnx_tmp1, p, 8U);
@@ -69,7 +69,10 @@ uint32_t joinAll(const char* p) {
     /* ADR-045 / Issue #2236: a string<N> field is copied in like any string; C initializes a char[] only from a literal. */
     Box cnx_tmp2 = { .t = { 0 }, .canary = 91U };
     cnx_string_copy(cnx_tmp2.t, p, 8U);
-    (void) strncat(cnx_tmp2.t, "xyz", 8 - strlen(cnx_tmp2.t));
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp2.t);
+        cnx_string_copy(cnx_tmp2.t + cnx_used, "xyz", 8U - cnx_used);
+    }
     const Box c = cnx_tmp2;
     if (c.canary != 91) {
         return 5U;

@@ -4,14 +4,15 @@
 // element of a string<8>[M] array -- local, global and struct field -- leaves
 // the element's byte 8 a terminator, and the C compiles under -O3 -Wall
 // -Wextra -Werror. Each kind takes a literal, a whole string, a substring and
-// a concatenation whose first part already fills the capacity. A scalar
-// string<8>, a declaration and an argument are built the same way as a
-// concatenation, so each takes one too.
+// a concatenation, with the part that fills the capacity first and then
+// last. A scalar string<8>, a declaration and an argument are built the same
+// way as a concatenation, so each takes both orders too.
 struct Config {
     string<8>[2] items;
 }
 
 mut string<8>[2] globalNames;
+mut string<8> globalSource;
 
 u32 charCount(string<8> value) {
     return value.value_char_count;
@@ -97,6 +98,38 @@ i32 main() {
     u32 argumentCount <- charCount(full + empty);
     if (argumentCount != 8) {
         return 18;
+    }
+
+    // The part that fills the capacity comes last, after an empty one
+    localNames[0] <- empty + full;
+    if (localNames[0] != "eight ch") {
+        return 19;
+    }
+    globalNames[0] <- "" + "eight ch";
+    if (globalNames[0] != "eight ch") {
+        return 20;
+    }
+    cfg.items[0] <- empty + full;
+    if (cfg.items[0] != "eight ch") {
+        return 21;
+    }
+    scalar <- empty + full;
+    if (scalar != "eight ch") {
+        return 22;
+    }
+    string<8> declaredReversed <- empty + full;
+    if (declaredReversed != "eight ch") {
+        return 23;
+    }
+    u32 reversedCount <- charCount(empty + full);
+    if (reversedCount != 8) {
+        return 24;
+    }
+    // gcc need only size the part that fills it, not know its characters
+    globalSource <- full;
+    string<8> fromGlobal <- "" + globalSource;
+    if (fromGlobal != "eight ch") {
+        return 25;
     }
     return 0;
 }
