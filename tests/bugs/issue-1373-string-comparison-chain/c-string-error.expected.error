@@ -1,0 +1,8 @@
+14:20 error[E0929]: 'a = b = name' compares the bool 'a = b' with the string 'name'
+       help: ADR-045: did you mean '(a = b) && (b = name)'?
+15:19 error[E0929]: '(a = b)' is a bool, not a string
+       help: ADR-045: '=' and '!=' compare a string only with another string.
+16:17 error[E0929]: 'p' is a bool, not a string
+       help: ADR-045: '=' and '!=' compare a string only with another string.
+17:17 error[E0929]: 'p' is a bool, not a string
+       help: ADR-045: '=' and '!=' compare a string only with another string.

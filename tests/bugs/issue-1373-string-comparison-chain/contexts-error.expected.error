@@ -1,0 +1,8 @@
+6:22 error[E0929]: '5' is an integer, not a string
+       help: ADR-045: '=' and '!=' compare a string only with another string.
+9:34 error[E0929]: '6' is an integer, not a string
+       help: ADR-045: '=' and '!=' compare a string only with another string.
+12:15 error[E0929]: 's = t = true' compares the bool 's = t' with 'true'
+       help: ADR-045: a string comparison takes two operands. Did you mean 's = t'?
+17:30 error[E0929]: '7' is an integer, not a string
+       help: ADR-045: '=' and '!=' compare a string only with another string.

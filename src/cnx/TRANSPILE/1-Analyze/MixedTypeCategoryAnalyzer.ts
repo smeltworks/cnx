@@ -50,6 +50,7 @@ import OperatorOperandAnalyzer from "./OperatorOperandAnalyzer";
 import EnumValueResolver from "./EnumValueResolver";
 import OperandTyper from "../../utils/OperandTyper";
 import EssentialCategory from "../../utils/EssentialCategory";
+import ComparisonChain from "../../utils/ComparisonChain";
 import CompoundOperator from "../../utils/CompoundOperator";
 import CLAMP_HELPER_FOR_OPERATOR from "../../types/CLAMP_HELPER_FOR_OPERATOR";
 import type IAnalysisContext from "./types/IAnalysisContext";
@@ -132,6 +133,11 @@ class MixedCategoryCheck {
    * category-less operand now adopts the running category; an exempt
    * character + integer gives character (MISRA C:2012 D.7); after a pair
    * that differs -- reported there -- the right operand's category runs on.
+   *
+   * A comparison's result is a Boolean (#1373): `a = b = c` is
+   * `(a = b) = c`, so past the first pair a comparison level's left operand
+   * is a Boolean, as the parenthesized form's is. Under a relational
+   * operator that Boolean is Rule 10.1's (E0807), not this rule's.
    */
   public checkLevel(
     expr: TBinaryExpression,
@@ -141,10 +147,13 @@ class MixedCategoryCheck {
     const operands = expr.operands;
     let running = this.operandCategory(operands[0], enumBeingDeclared);
     let mixed = false;
+    const comparison = level === "equality" || level === "relational";
     for (let i = 1; i < operands.length; i += 1) {
       const right = this.operandCategory(operands[i], enumBeingDeclared);
       const operator = expr.operators[i - 1];
-      if (
+      if (level === "relational" && i > 1) {
+        mixed = true;
+      } else if (
         this.reportsPair(
           operands[i - 1],
           operands[i],
@@ -154,14 +163,19 @@ class MixedCategoryCheck {
         )
       ) {
         if (EssentialCategory.differ(running, right, operator)) {
-          this.analyzer.addError(
-            operands[i].span,
-            running!,
-            right!,
-            "binary",
-            operator,
-            this.hasOwnEnumMember(operands, enumBeingDeclared),
-          );
+          if (comparison && i > 1) {
+            // One error per chain: past it, every operand meets a bool
+            if (!mixed) this.addChainError(expr, i);
+          } else {
+            this.analyzer.addError(
+              operands[i].span,
+              running!,
+              right!,
+              "binary",
+              operator,
+              this.hasOwnEnumMember(operands, enumBeingDeclared),
+            );
+          }
           mixed = true;
         }
       } else if (!this.enumComparison(operands[i - 1], operands[i], level)) {
@@ -169,11 +183,25 @@ class MixedCategoryCheck {
         // category an enclosing level could report again
         mixed = true;
       }
-      running = EssentialCategory.fold(running, right, operator);
+      running = comparison
+        ? "boolean"
+        : EssentialCategory.fold(running, right, operator);
     }
     this.levelCategories.set(
       MixedCategoryCheck.writtenAt(expr),
       mixed ? null : running,
+    );
+  }
+
+  /** E0810 for a comparison chain's bool beside operand `i` (#1373) */
+  private addChainError(expr: TBinaryExpression, i: number): void {
+    const pairs = ComparisonChain.pairs(expr, this.context);
+    this.analyzer.addChainError(
+      expr.operands[i].span,
+      ComparisonChain.message(expr, i),
+      pairs === null
+        ? "MISRA C:2012 Rule 10.4: both operands must share an essential type category."
+        : `MISRA C:2012 Rule 10.4: did you mean '${pairs}'?`,
     );
   }
 
@@ -408,6 +436,14 @@ class MixedTypeCategoryAnalyzer {
       message: MixedTypeCategoryAnalyzer.message(what, pair),
       helpText,
     });
+  }
+
+  public addChainError(
+    span: ISourceSpan,
+    message: string,
+    helpText: string,
+  ): void {
+    this.errors.push({ code: "E0810", span, message, helpText });
   }
 
   /** E0811 or E0812: an integer beside a header macro cnx cannot type (#1688, ADR-024) */

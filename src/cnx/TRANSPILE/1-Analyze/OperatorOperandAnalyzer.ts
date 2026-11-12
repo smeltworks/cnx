@@ -32,6 +32,7 @@
  */
 
 import IOperatorOperandError from "./types/IOperatorOperandError";
+import ComparisonChain from "../../utils/ComparisonChain";
 import OperandTyper from "../../utils/OperandTyper";
 import CompoundAssignmentAnalyzer from "./CompoundAssignmentAnalyzer";
 import CompoundOperator from "../../utils/CompoundOperator";
@@ -40,7 +41,9 @@ import ExpressionShape from "../../utils/ExpressionShape";
 import ForeignTypeFacts from "../../utils/ForeignTypeFacts";
 import ProgramAccesses from "../../utils/ProgramAccesses";
 import SourceOrder from "../../utils/SourceOrder";
+import SourceSpanRange from "../../utils/SourceSpanRange";
 import type IAnalysisContext from "./types/IAnalysisContext";
+import type ISourceSpan from "../../types/ISourceSpan";
 import type IOperandType from "../../types/IOperandType";
 import type TEssentialCategory from "../../types/TEssentialCategory";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
@@ -157,7 +160,9 @@ class OperatorOperandCheck {
   /**
    * One error per operator whose left or right operand is outside its set,
    * reported at the offending operand -- `flag / other` is one mistake.
-   * `operators[i]` joins operand `i` to `i + 1`.
+   * `operators[i]` joins operand `i` to `i + 1`. Past the first pair, a
+   * relational level's left operand is the comparison before it, a bool
+   * (#1373): `a < b < c` is `(a < b) < c`, reported at that comparison.
    */
   public checkExpression(
     expr: TExpression,
@@ -176,6 +181,22 @@ class OperatorOperandCheck {
       if (admits === undefined) return;
       const left = level.operands[i];
       const right = level.operands[i + 1];
+      if (level.level === "relational" && i > 0) {
+        // One error per chain: addError keeps the first at a position
+        const comparison = SourceSpanRange.between(
+          level.operands[0].span,
+          left.span,
+        );
+        const pairs = ComparisonChain.pairs(level, this.context);
+        this.analyzer.addChainError(
+          comparison,
+          ComparisonChain.message(level, i + 1),
+          pairs === null
+            ? "MISRA C:2012 Rule 10.1: a bool is not a number."
+            : `MISRA C:2012 Rule 10.1: did you mean '${pairs}'?`,
+        );
+        return;
+      }
       const leftRejection = this.rejection(
         operator,
         admits,
@@ -415,8 +436,20 @@ class OperatorOperandAnalyzer {
     return this.errors.sort(SourceOrder.bySpan);
   }
 
+  /** E0807 for a relational chain: its comparison's bool under the next operator (#1373) */
+  public addChainError(
+    span: ISourceSpan,
+    message: string,
+    helpText: string,
+  ): void {
+    const position = `${span.line}:${span.column}`;
+    if (this.reportedAt.has(position)) return;
+    this.reportedAt.add(position);
+    this.errors.push({ code: "E0807", span, message, helpText });
+  }
+
   public addError(
-    at: TExpression,
+    at: { readonly span: ISourceSpan },
     operator: string,
     rejection: TRejection,
     isTarget = false,

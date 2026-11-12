@@ -68,6 +68,7 @@ import AssignmentTarget from "../../utils/AssignmentTarget";
 import TypeCheckUtils from "../../utils/TypeCheckUtils";
 import TypeText from "../../utils/TypeText";
 import ExpressionShape from "../../utils/ExpressionShape";
+import StringOperand from "../../utils/StringOperand";
 import VariableDeclarations from "../../utils/VariableDeclarations";
 import MutArgument from "../1-Analyze/helpers/MutArgument";
 import StringWriteSites from "../1-Analyze/helpers/StringWriteSites";
@@ -266,22 +267,6 @@ class FilePlanner {
     );
   }
 
-  /**
-   * Check if an expression is a string type.
-   * ADR-045: Used to detect string comparisons and generate strcmp().
-   * Issue #137: Extended to handle array element access (e.g., names[0])
-   * Issue #1030: Extended to handle struct member access (e.g., person.name)
-   */
-  private isStringExpression(expr: TExpression): boolean {
-    if (ExpressionShape.isStringLiteral(expr)) {
-      return true;
-    }
-
-    return OperandTyper.isString(
-      OperandTyper.typeOf(expr, this.state.typingContext()),
-    );
-  }
-
   static positionOf(expr: TExpression): ISourcePosition {
     return { line: expr.span.line, column: expr.span.column };
   }
@@ -476,8 +461,11 @@ class FilePlanner {
       if (expression.kind === "binary" && expression.level === "equality") {
         planned.set(
           expression,
-          this.isStringExpression(expression.operands[0]) ||
-            this.isStringExpression(expression.operands[1]),
+          StringOperand.comparesContents(
+            expression.operands[0],
+            expression.operands[1],
+            this.state.typingContext(),
+          ),
         );
       }
     }

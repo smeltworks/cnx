@@ -1,0 +1,4 @@
+11:18 error[E0929]: 'a = b != c' compares the bool 'a = b' with the string 'c'
+       help: ADR-045: did you mean '(a = b) && (b != c)'?
+12:18 error[E0929]: 'a != b != c' compares the bool 'a != b' with the string 'c'
+       help: ADR-045: did you mean '(a != b) && (b != c) && (c != d)'?

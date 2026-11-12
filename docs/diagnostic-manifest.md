@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-961 fixture(s) assert a diagnostic; 947 carry a code.
+971 fixture(s) assert a diagnostic; 957 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -673,6 +673,15 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1360-read-path-bounds/read-path-multidim.test.cnx                                        | E0854                             |
 | tests/bugs/issue-1360-read-path-bounds/read-path-negative-index.test.cnx                                  | E0854                             |
 | tests/bugs/issue-1360-read-path-bounds/read-path-scope-member.test.cnx                                    | E0854                             |
+| tests/bugs/issue-1373-string-comparison-chain/c-string-error.test.cnx                                     | E0929                             |
+| tests/bugs/issue-1373-string-comparison-chain/contexts-error.test.cnx                                     | E0929                             |
+| tests/bugs/issue-1373-string-comparison-chain/integer-equality-chain.test.cnx                             | E0810                             |
+| tests/bugs/issue-1373-string-comparison-chain/integer-not-equal-chain.test.cnx                            | E0810                             |
+| tests/bugs/issue-1373-string-comparison-chain/integer-relational-chain.test.cnx                           | E0807                             |
+| tests/bugs/issue-1373-string-comparison-chain/string-chain-bool-operand.test.cnx                          | E0929                             |
+| tests/bugs/issue-1373-string-comparison-chain/string-equality-chain.test.cnx                              | E0929                             |
+| tests/bugs/issue-1373-string-comparison-chain/string-mixed-chain.test.cnx                                 | E0929                             |
+| tests/bugs/issue-1373-string-comparison-chain/string-not-equal-chain.test.cnx                             | E0929                             |
 | tests/bugs/issue-1430-e0427-order-dependence/consumer-first.test.cnx                                      | E0427                             |
 | tests/bugs/issue-1430-e0427-order-dependence/source-first.test.cnx                                        | E0427                             |
 | tests/bugs/issue-1458-qualified-define-before-use/global-forward.test.cnx                                 | E0426                             |
@@ -856,6 +865,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-2011-redeclaration-in-one-scope/local-redeclares-parameter.test.cnx                      | E0425                             |
 | tests/bugs/issue-2011-redeclaration-in-one-scope/local-redeclares-shadowing-parameter.test.cnx            | E0425                             |
 | tests/bugs/issue-2011-redeclaration-in-one-scope/two-locals-one-block.test.cnx                            | E0425                             |
+| tests/bugs/issue-2017-integer-string-comparison/integer-operand.test.cnx                                  | E0929                             |
 | tests/bugs/issue-2019-header-unclosed-name/clamp-forward.test.cnx                                         | E0427                             |
 | tests/bugs/issue-2019-header-unclosed-name/concatenation-self.test.cnx                                    | E0427                             |
 | tests/bugs/issue-2019-header-unclosed-name/self-local.test.cnx                                            | E0427                             |

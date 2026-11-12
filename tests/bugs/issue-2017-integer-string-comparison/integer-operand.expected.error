@@ -1,0 +1,8 @@
+8:8 error[E0929]: 'x' is a u32, not a string
+       help: ADR-045: '=' and '!=' compare a string only with another string.
+11:16 error[E0929]: 'x' is a u32, not a string
+       help: ADR-045: '=' and '!=' compare a string only with another string.
+14:8 error[E0929]: 'x' is a u32, not a string
+       help: ADR-045: '=' and '!=' compare a string only with another string.
+17:17 error[E0929]: 'x' is a u32, not a string
+       help: ADR-045: '=' and '!=' compare a string only with another string.

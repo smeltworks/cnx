@@ -178,24 +178,15 @@ const renderComparison = (
   if (plan.strcmp) {
     // ADR-045: string comparison lowers to strcmp. 2.2 required <string.h>
     // when it planned the comparison, which 2.3 then renders (#1991).
-    // #1649: only the FIRST TWO operands are rendered, and the code below is
-    // the entire result -- so `s = t = u` emits `strcmp(s, t) == 0` and drops
-    // `= u` silently. Pre-existing and preserved exactly: this slice's oracle
-    // is a byte-identical corpus, and the fix needs a language decision about
-    // chained comparison that #1649 records.
-    const [left, right] = renderOperands(
-      plan.renderOperands.slice(0, 2),
-      effects,
+    // #1373: 2.1 gives a string comparison exactly two operands (E0929)
+    const operandCodes = renderOperands(plan.renderOperands, effects);
+    const code = BinaryExprUtils.generateStrcmpCode(
+      operandCodes[0],
+      operandCodes[1],
+      plan.strcmp.isNotEqual,
     );
 
-    return {
-      code: BinaryExprUtils.generateStrcmpCode(
-        left,
-        right,
-        plan.strcmp.isNotEqual,
-      ),
-      effects,
-    };
+    return { code, effects };
   }
 
   // Issue #1032: 2.2 plans the operands with no expected type (#1991). MISRA 7.2's U

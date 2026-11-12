@@ -1,0 +1,8 @@
+10:17 error[E0929]: 'a = b = true' compares the bool 'a = b' with 'true'
+       help: ADR-045: a string comparison takes two operands. Did you mean 'a = b'?
+11:18 error[E0929]: 'a = c != false' compares the bool 'a = c' with 'false'
+       help: ADR-045: a string comparison takes two operands. Did you mean 'a = c'?
+12:17 error[E0929]: 'a != b = false' compares the bool 'a != b' with 'false'
+       help: ADR-045: a string comparison takes two operands. Did you mean 'a = b'?
+14:18 error[E0929]: 'p' is a bool, not a string
+       help: ADR-045: '=' and '!=' compare a string only with another string.
