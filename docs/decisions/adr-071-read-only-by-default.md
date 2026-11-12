@@ -114,7 +114,8 @@ an unwritten parameter, local, global and scope member as not written.
    written. With a literal format, each conversion writes the next argument, except `%%`
    and an assignment-suppressed `%*d` (C11 7.21.6.2); a `\x25` or `\045` escape is the `%` it
    spells, and a `\0` ends the format where C stops reading. That argument must be a `mut` variable (a literal or a call's result is E0915), and C
-   receives its address: `global.sscanf("7", "%d", parsed)` is `sscanf("7", "%d", &parsed)`.
+   receives its address. The address reaches `...` with no qualifier, so an `atomic` or `volatile`
+   argument, or a register member, is E0915 as well: scan into a `mut` local, then assign it (#2398). C receives its address: `global.sscanf("7", "%d", parsed)` is `sscanf("7", "%d", &parsed)`.
    An array or a `string<N>` is already passed as a pointer to its first element. A format that
    is not a string literal is E0930. cnx has no wide string literal yet, so the wide variants
    take a format only through a C header. Past any other variadic function's parameters, an

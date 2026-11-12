@@ -26,6 +26,7 @@
  */
 
 import OperandTyper from "../../utils/OperandTyper";
+import ExpressionShape from "../../utils/ExpressionShape";
 import CCallee from "./helpers/CCallee";
 import CArgumentWrite from "./helpers/CArgumentWrite";
 import WrittenBinding from "./helpers/WrittenBinding";
@@ -106,7 +107,8 @@ class CPointerArgumentCheck {
 
   /**
    * E0915: a conversion fills an argument that is no variable (`MutArgument`),
-   * so C would take its address and fail, or the write would be lost
+   * so C would take its address and fail, or the write would be lost; or one
+   * whose qualifier its address would drop (#2398)
    */
   private rejectsLostWrites(callee: ICCallee): ReadonlySet<number> {
     const lost = new Set<number>();
@@ -126,7 +128,45 @@ class CPointerArgumentCheck {
       });
       lost.add(index);
     }
+    for (const index of writes.written) {
+      const arg = callee.arguments[index];
+      const qualifier =
+        arg === undefined || lost.has(index) ? null : this.qualifierOf(arg);
+      if (qualifier === null) continue;
+      this.found.push({
+        code: "E0915",
+        span: arg.span,
+        message: `cannot pass '${arg.written}' as argument ${index + 1} of '${callee.name}', which its format writes: it is ${qualifier.is}, and '${callee.name}' would write it through a plain pointer, so the ${qualifier.write} write would be lost`,
+        helpText: `Scan into a \`mut\` local, then assign it to '${arg.written}' (ADR-071 Decision 2, #2398).`,
+        severity: "error",
+      });
+      lost.add(index);
+    }
     return lost;
+  }
+
+  /**
+   * #2398: what a conversion's argument declares that its address loses in
+   * `...` -- `atomic`, `volatile`, or a register member's volatile access --
+   * or null
+   */
+  private qualifierOf(
+    arg: TExpression,
+  ): { readonly is: string; readonly write: string } | null {
+    const chain = OperandTyper.chainOf(
+      ExpressionShape.unparenthesized(arg),
+      this.context,
+    );
+    if (chain.steps.some((step) => step.registerMember !== null)) {
+      return { is: "a register member", write: "volatile" };
+    }
+    const declaration = BoundDeclaration.of(chain.root);
+    if (declaration?.isAtomic === true)
+      return { is: "atomic", write: "atomic" };
+    if (declaration?.isVolatile === true) {
+      return { is: "volatile", write: "volatile" };
+    }
+    return null;
   }
 
   /**

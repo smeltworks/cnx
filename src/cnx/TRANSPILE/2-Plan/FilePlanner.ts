@@ -72,6 +72,7 @@ import ExpressionShape from "../../utils/ExpressionShape";
 import StringOperand from "../../utils/StringOperand";
 import VariableDeclarations from "../../utils/VariableDeclarations";
 import MutArgument from "../1-Analyze/helpers/MutArgument";
+import BoundDeclaration from "../1-Analyze/helpers/BoundDeclaration";
 import StringWriteSites from "../1-Analyze/helpers/StringWriteSites";
 import SafeDivision from "../../utils/SafeDivision";
 import StatementNodes from "../../utils/StatementNodes";
@@ -2518,13 +2519,8 @@ class FilePlanner {
    * call in its subscript is a side effect, not a qualifier
    */
   private static isVolatileTarget(binding: TValueBinding | null): boolean {
-    if (binding?.kind === "local") {
-      return binding.declaration.isVolatile || binding.declaration.isAtomic;
-    }
-    if (binding?.kind === "variable") {
-      return binding.symbol.isVolatile || binding.symbol.isAtomic;
-    }
-    return false;
+    const declaration = BoundDeclaration.of(binding);
+    return declaration?.isVolatile === true || declaration?.isAtomic === true;
   }
 
   /**

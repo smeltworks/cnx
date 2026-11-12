@@ -130,6 +130,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (ADR-006, Issues #2124, #2396). `bumpBool(f.a)` emitted `bumpBool(&((f >> 0) & 1))`, and a
   `typedef enum { C_MODE_A }` or `enum { ANON_LIMIT }` constant emitted `&C_MODE_A`, which gcc
   rejects. A scanf-family conversion's argument gets the same check.
+- **An `atomic`, `volatile` or register-member scanf-family target is E0915** (ADR-071,
+  Issue #2398). `global.sscanf("3", "%u", reading)` with a `volatile` `reading` emitted
+  `sscanf("3", "%u", &reading)`, and the write through `...` dropped the qualifier silently.
 
 ## [0.4.0] - 2026-10-17
 
