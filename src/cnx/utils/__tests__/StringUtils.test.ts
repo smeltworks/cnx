@@ -22,16 +22,15 @@ describe("StringUtils.copy", () => {
 // build
 // ========================================================================
 describe("StringUtils.build", () => {
-  it("copies the first part and appends the second, then terminates", () => {
+  it("copies the first part in and appends the second (#1902)", () => {
     expect(
       StringUtils.build("result", 64, [
         { kind: "whole", code: '"Hello"' },
         { kind: "whole", code: '" World"' },
       ]),
     ).toEqual([
-      '(void) strncpy(result, "Hello", 64);',
+      'cnx_string_copy(result, "Hello", 64U);',
       '(void) strncat(result, " World", 64 - strlen(result));',
-      "result[64] = '\\0';",
     ]);
   });
 
@@ -43,10 +42,9 @@ describe("StringUtils.build", () => {
         { kind: "whole", code: "c" },
       ]),
     ).toEqual([
-      "(void) strncpy(buf, a, 12);",
+      "cnx_string_copy(buf, a, 12U);",
       "(void) strncat(buf, b, 12 - strlen(buf));",
       "(void) strncat(buf, c, 12 - strlen(buf));",
-      "buf[12] = '\\0';",
     ]);
   });
 
@@ -70,7 +68,6 @@ describe("StringUtils.build", () => {
       "    const uint32_t cnx_used = (uint32_t) strlen(t);",
       "    cnx_string_copy(t + cnx_used, b + 1, ((8U - cnx_used) < 1U) ? (8U - cnx_used) : 1U);",
       "}",
-      "t[8] = '\\0';",
     ]);
   });
 });

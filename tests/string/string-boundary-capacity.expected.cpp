@@ -80,9 +80,8 @@ int main(void) {
     const char part1[4] = "ABC";
     const char part2[4] = "DEF";
     char combined[7] = "";
-    (void) strncpy(combined, part1, 6);
+    cnx_string_copy(combined, part1, 6U);
     (void) strncat(combined, part2, 6 - strlen(combined));
-    combined[6] = '\0';
     if (strlen(combined) != 6) {
         return 15;
     }

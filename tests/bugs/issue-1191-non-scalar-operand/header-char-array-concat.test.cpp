@@ -7,19 +7,33 @@
 // main, in either operand order and as a struct field
 #include "header-aggregates.h"
 
+#include <stdint.h>
 #include <string.h>
+
+/* MISRA C:2012 Rule 19.1: string copied a character at a time by `cnx_string_copy` (`strncpy` would be passed overlapping arguments when a string is written from itself). */
+static inline void cnx_string_copy(char* target, const char* source, uint32_t capacity) {
+    const char* next = source;
+    uint32_t i = 0U;
+    while ((i < capacity) && (*next != '\0')) {
+        target[i] = *next;
+        next++;
+        i++;
+    }
+    while (i < capacity) {
+        target[i] = '\0';
+        i++;
+    }
+    target[capacity] = '\0';
+}
 
 int main(void) {
     char r[33] = "";
-    (void) strncpy(r, cbuf, 32);
+    cnx_string_copy(r, cbuf, 32U);
     (void) strncat(r, "x", 32 - strlen(r));
-    r[32] = '\0';
     char r2[33] = "";
-    (void) strncpy(r2, "x", 32);
+    cnx_string_copy(r2, "x", 32U);
     (void) strncat(r2, cbuf, 32 - strlen(r2));
-    r2[32] = '\0';
     char r3[33] = "";
-    (void) strncpy(r3, grec.name, 32);
+    cnx_string_copy(r3, grec.name, 32U);
     (void) strncat(r3, "x", 32 - strlen(r3));
-    r3[32] = '\0';
 }

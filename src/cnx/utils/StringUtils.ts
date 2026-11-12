@@ -34,9 +34,12 @@ class StringUtils {
   /**
    * ADR-045: the lines that build a string into `buffer` from its parts --
    * one substring, or a concatenation of two or more parts, each a whole
-   * string or a substring (#1954). A concatenation copies its first part,
-   * appends each later one bounded by what is left, then terminates at the
-   * capacity. The `(void)` casts are MISRA 17.7's (ADR-070 Case 1).
+   * string or a substring (#1954). A concatenation copies its first part in
+   * with `cnx_string_copy`, as every copy is, so a first part that fills the
+   * capacity has its terminator written without gcc's `-Wstringop-truncation`
+   * (#1902). Each later part is appended bounded by what is left, and every
+   * step terminates what it writes. The `(void)` casts are MISRA 17.7's
+   * (ADR-070 Case 1).
    */
   static build(
     buffer: string,
@@ -47,8 +50,7 @@ class StringUtils {
     const lines =
       first.kind === "substring"
         ? StringUtils.substring(buffer, first.source, first.start, first.length)
-        : [`(void) strncpy(${buffer}, ${first.code}, ${capacity});`];
-    if (rest.length === 0 && first.kind === "substring") return lines;
+        : [StringUtils.copy(buffer, first.code, capacity)];
     for (const part of rest) {
       if (part.kind === "substring") {
         lines.push(...StringUtils.appendSubstring(buffer, capacity, part));
@@ -58,7 +60,6 @@ class StringUtils {
         );
       }
     }
-    lines.push(`${buffer}[${capacity}] = ${C_NULL_CHAR};`);
     return lines;
   }
 
@@ -107,16 +108,11 @@ class StringUtils {
 
   /**
    * Whether `build` calls `cnx_string_copy`, so 2.2 decides the helper by
-   * the rule that emits it: a copy does, and so does every substring, a
-   * concatenation's parts among them (an appended one is copied in at the
-   * end of what is built, without `strncat`'s `-Wstringop-truncation`)
+   * the rule that emits it: every form but a literal does -- a copy, a
+   * substring, and a concatenation, whose first part is copied in (#1902)
    */
   static usesCopyHelper(form: TStringValueForm): boolean {
-    if (form.kind === "copy" || form.kind === "substring") return true;
-    return (
-      form.kind === "concat" &&
-      form.parts.some((part) => part.kind === "substring")
-    );
+    return form.kind !== "literal";
   }
 
   /**
@@ -133,7 +129,7 @@ class StringUtils {
       i += width;
     }
     const character = characters[k];
-    if (character === undefined) return String.raw`'\0'`;
+    if (character === undefined) return C_NULL_CHAR;
     return character === "'" ? String.raw`'\''` : `'${character}'`;
   }
 

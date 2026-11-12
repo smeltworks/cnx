@@ -1,0 +1,102 @@
+// test-execution
+// test-no-warnings
+// #1902: a string<8> value exactly 8 characters long, written into one
+// element of a string<8>[M] array -- local, global and struct field -- leaves
+// the element's byte 8 a terminator, and the C compiles under -O3 -Wall
+// -Wextra -Werror. Each kind takes a literal, a whole string, a substring and
+// a concatenation whose first part already fills the capacity. A scalar
+// string<8>, a declaration and an argument are built the same way as a
+// concatenation, so each takes one too.
+struct Config {
+    string<8>[2] items;
+}
+
+mut string<8>[2] globalNames;
+
+u32 charCount(string<8> value) {
+    return value.value_char_count;
+}
+
+i32 main() {
+    string<8> full <- "eight ch";
+    string<0> empty <- "";
+
+    mut string<8>[2] localNames;
+    localNames[0] <- "eight ch";
+    if (localNames[0] != "eight ch") {
+        return 1;
+    }
+    localNames[1] <- full;
+    if (localNames[1] != "eight ch") {
+        return 2;
+    }
+    localNames[0] <- full[0, 8];
+    if (localNames[0] != "eight ch") {
+        return 3;
+    }
+    localNames[1] <- full + empty;
+    if (localNames[1] != "eight ch") {
+        return 4;
+    }
+
+    globalNames[0] <- "eight ch";
+    if (globalNames[0] != "eight ch") {
+        return 5;
+    }
+    globalNames[1] <- full;
+    if (globalNames[1] != "eight ch") {
+        return 6;
+    }
+    globalNames[0] <- full[0, 8];
+    if (globalNames[0] != "eight ch") {
+        return 7;
+    }
+    globalNames[1] <- "eight ch" + "";
+    if (globalNames[1] != "eight ch") {
+        return 8;
+    }
+
+    mut Config cfg;
+    cfg.items[0] <- "eight ch";
+    if (cfg.items[0] != "eight ch") {
+        return 9;
+    }
+    cfg.items[1] <- full;
+    if (cfg.items[1] != "eight ch") {
+        return 10;
+    }
+    cfg.items[0] <- full[0, 8];
+    if (cfg.items[0] != "eight ch") {
+        return 11;
+    }
+    cfg.items[1] <- full + empty;
+    if (cfg.items[1] != "eight ch") {
+        return 12;
+    }
+
+    // Every element reads back its full 8 characters
+    if (localNames[1].value_char_count != 8) {
+        return 13;
+    }
+    if (globalNames[1].value_char_count != 8) {
+        return 14;
+    }
+    if (cfg.items[1].value_char_count != 8) {
+        return 15;
+    }
+
+    mut string<8> scalar;
+    scalar <- full + empty;
+    if (scalar != "eight ch") {
+        return 16;
+    }
+    string<8> declared <- full + empty;
+    if (declared != "eight ch") {
+        return 17;
+    }
+    u32 argumentCount <- charCount(full + empty);
+    if (argumentCount != 8) {
+        return 18;
+    }
+    return 0;
+}
