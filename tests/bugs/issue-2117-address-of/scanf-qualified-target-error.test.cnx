@@ -1,0 +1,36 @@
+// test-error
+// test-adr: 071
+// #2398: a scanf-family conversion writes its argument through the address cnx
+// gives it, and that address goes into `...` with no qualifier. An atomic, a
+// volatile (or a field of one) and a register member would be written as an
+// ordinary object, so each is E0915: scan into a `mut` local, then assign it.
+// CONTROL: `parsed` is a plain `mut` local and compiles.
+#include <stdio.h>
+
+register GPIO @ 0x42000000 {
+    DR: u32 rw @ 0x00,
+}
+
+struct Sample {
+    u32 value;
+}
+
+atomic u32 shared;
+
+void parse() {
+    volatile mut u32 reading <- 0;
+    volatile mut Sample sample <- { value: 0 };
+    mut u32 parsed <- 0;
+    i32 a <- global.sscanf("3", "%u", shared);
+    i32 b <- global.sscanf("3", "%u", reading);
+    i32 c <- global.sscanf("3", "%u", GPIO.DR);
+    i32 d <- global.sscanf("3", "%u", sample.value);
+    i32 e <- global.sscanf("3", "%u", parsed);
+}
+
+scope Reader {
+    public void parse() {
+        volatile mut u32 reading <- 0;
+        i32 f <- global.sscanf("3", "%u", reading);
+    }
+}

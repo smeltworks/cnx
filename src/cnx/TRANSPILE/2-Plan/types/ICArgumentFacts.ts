@@ -5,8 +5,8 @@ import type TTypeInfo from "../../../types/TTypeInfo";
 interface ICArgumentFacts {
   /** The parameter it binds to, when the callee declares one */
   readonly param: IArgumentPassing["param"];
-  /** Written with `&` already, so it is the pointer the parameter takes */
-  readonly addressWritten: boolean;
+  /** #2117: an argument a scanf-family call's literal format fills (`ScanfFormat`) */
+  readonly filledByFormat: boolean;
   /** #937: a callback-promoted parameter of the function it is written in */
   readonly promotedHandle: boolean;
   /** Its type, or null when nothing names one */

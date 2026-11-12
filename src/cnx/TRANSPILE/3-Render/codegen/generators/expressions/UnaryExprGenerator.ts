@@ -52,7 +52,7 @@ interface IPlannedUnary {
    * the old code kept. They produced identical output before, so collapsing
    * them loses nothing -- stated because it looks like two cases becoming one.
    */
-  readonly operator: "!" | "-" | "~" | "&" | null;
+  readonly operator: "!" | "-" | "~" | null;
 
   /** The operand's generated C. */
   readonly operandCode: string;
@@ -97,7 +97,6 @@ const generateUnaryExpr: TGeneratorFn<IPlannedUnary> = (
     }
     return { code: `~${inner}`, effects: [] };
   }
-  if (unary.operator === "&") return { code: `&${inner}`, effects: [] };
 
   // No operator: the base case, and the grammar-impossible fallback.
   return { code: inner, effects: [] };

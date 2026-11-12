@@ -250,9 +250,9 @@ void testRefsAndPtrs() {
     global.modifyRef(val);
     global.readRef(val);
 
-    // Pass by pointer (using address-of)
-    global.modifyPtr(&val);
-    global.readPtr(&val);
+    // Pass by pointer: the header's pointer parameter takes its address (#1991)
+    global.modifyPtr(val);
+    global.readPtr(val);
 }
 
 // ============================================================================

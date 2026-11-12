@@ -36,6 +36,11 @@ static inline void draw_bitmap(void *handle, int32_t x1, int32_t y1, int32_t x2,
     last_data = data;
 }
 
+// #2117: whether the callback forwarded this widget, since cnx has no `&`
+static inline int32_t was_last_widget(const widget_t *w) {
+    return last_widget == w ? 1 : 0;
+}
+
 // Helper to invoke the registered callback
 static inline int32_t invoke_registered_cb(widget_t *w, const rect_t *area, uint8_t *buf) {
     if (registered_cb == 0) return 0;

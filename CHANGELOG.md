@@ -127,6 +127,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   output's requirements say so.
 - **A retry loop evaluates its value once** (Issue #1807). `w +<- f()` called `f()`
   again on every failed LDREX/STREX attempt.
+- **`&x` is a compile error** (ADR-006, Issue #2117). `&` was never cnx syntax, but it was
+  accepted and emitted as C's address-of: `u32 a <- &x;` became `uint32_t a = &x;`, which
+  gcc's `-Werror=int-conversion` rejects. It is now unknown syntax. A C function's pointer
+  parameter takes its `&` from the header (`bump(a)`), and a variadic out-parameter takes it
+  from a scanf-family call's literal format (ADR-071 Decision 2): `global.sscanf("7", "%d", parsed)` is
+  `sscanf("7", "%d", &parsed)`. A format that is not a string literal is E0930.
+- **A bitmap field or an untagged C enum constant passed to a `mut` parameter is E0915**
+  (ADR-006, Issues #2124, #2396). `bumpBool(f.a)` emitted `bumpBool(&((f >> 0) & 1))`, and a
+  `typedef enum { C_MODE_A }` or `enum { ANON_LIMIT }` constant emitted `&C_MODE_A`, which gcc
+  rejects. A scanf-family conversion's argument gets the same check.
+- **An `atomic`, `volatile` or register-member scanf-family target is E0915** (ADR-071,
+  Issue #2398). `global.sscanf("3", "%u", reading)` with a `volatile` `reading` emitted
+  `sscanf("3", "%u", &reading)`, and the write through `...` dropped the qualifier silently.
 
 ## [0.4.0] - 2026-10-17
 

@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-971 fixture(s) assert a diagnostic; 957 carry a code.
+977 fixture(s) assert a diagnostic; 962 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -877,6 +877,12 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-2073-for-header-forms/for-header-forms-error.test.cnx                                    | E0917                             |
 | tests/bugs/issue-2076-header-struct-dimension/header-pointer-dimension-error.test.cnx                     | E0909                             |
 | tests/bugs/issue-2096-inactive-header-branch/inactive-branch-error.test.cnx                               | E0422                             |
+| tests/bugs/issue-2117-address-of/address-of-error.test.cnx                                                | (uncoded)                         |
+| tests/bugs/issue-2117-address-of/scanf-format-not-literal-error.test.cnx                                  | E0896, E0930                      |
+| tests/bugs/issue-2117-address-of/scanf-not-variable-error.test.cnx                                        | E0896, E0915                      |
+| tests/bugs/issue-2117-address-of/scanf-qualified-target-error.test.cnx                                    | E0896, E0915                      |
+| tests/bugs/issue-2117-address-of/scanf-read-only-error.test.cnx                                           | E0896, E0900                      |
+| tests/bugs/issue-2124-bitmap-field-mut-argument/bitmap-field-error.test.cnx                               | E0915                             |
 | tests/bugs/issue-2157-array-parameter-list/non-array-argument-error.test.cnx                              | E0866                             |
 | tests/bugs/issue-2157-array-parameter-list/transitive-argument-error.test.cnx                             | E0866                             |
 | tests/bugs/issue-2186-bitmap-array-field/bitmap-array-field.test.cnx                                      | E0921                             |

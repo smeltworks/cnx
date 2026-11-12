@@ -1,7 +1,7 @@
 /**
  * What a value binding declares, for the rules that ask about the
  * declaration rather than the value: is it const, what does it initialize
- * to, is it a parameter (#1668).
+ * to, is it a parameter (#1668), is it volatile or atomic (#2398).
  *
  * Program's binder answers WHICH declaration a spelling means; this reads the
  * two kinds that carry one -- a local's declaration and a variable's symbol --
@@ -15,6 +15,8 @@ interface IBoundDeclaration {
   readonly isParameter: boolean;
   /** The initializer's text, or null */
   readonly initialValue: string | null;
+  readonly isVolatile: boolean;
+  readonly isAtomic: boolean;
 }
 
 class BoundDeclaration {
@@ -26,6 +28,8 @@ class BoundDeclaration {
         isConst: declaration.isConst,
         isParameter: declaration.kind === "parameter",
         initialValue: declaration.initialValue,
+        isVolatile: declaration.isVolatile,
+        isAtomic: declaration.isAtomic,
       };
     }
     if (binding?.kind === "variable") {
@@ -33,6 +37,8 @@ class BoundDeclaration {
         isConst: binding.symbol.isConst,
         isParameter: false,
         initialValue: binding.symbol.initialValue ?? null,
+        isVolatile: binding.symbol.isVolatile,
+        isAtomic: binding.symbol.isAtomic,
       };
     }
     return null;

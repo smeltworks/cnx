@@ -15,6 +15,10 @@
  * one `u8` or `n` of them -- so it accepts both, and warns that the call is not
  * memory safe.
  *
+ * E0930, #2117 (owner ruling 2026-11-12): a scanf-family call says which
+ * arguments it writes only in a literal format (`ScanfFormat`), so a format
+ * that is not a string literal is a compile error.
+ *
  * Asked only where both sides are known: a C function (a cnx function's
  * parameters are cnx's own), a parameter of exactly one pointer, and an
  * argument the typer types as a declared value. A literal or an expression is
@@ -22,12 +26,15 @@
  */
 
 import OperandTyper from "../../utils/OperandTyper";
+import ExpressionShape from "../../utils/ExpressionShape";
 import CCallee from "./helpers/CCallee";
 import CArgumentWrite from "./helpers/CArgumentWrite";
 import WrittenBinding from "./helpers/WrittenBinding";
 import BoundDeclaration from "./helpers/BoundDeclaration";
 import MutSite from "./helpers/MutSite";
+import MutArgument from "./helpers/MutArgument";
 import CPointerParameter from "../../utils/CPointerParameter";
+import ScanfFormat from "../../utils/ScanfFormat";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import CNX_TO_C_TYPE_MAP from "../../utils/constants/TypeMappings";
@@ -52,9 +59,12 @@ class CPointerArgumentCheck {
   public checkExpression(expr: TExpression): void {
     const callee = CCallee.of(expr, this.context);
     if (callee === null) return;
+    this.rejectsFormatNotLiteral(callee);
+    const lost = this.rejectsLostWrites(callee);
     const only =
       callee.signatures.length === 1 ? callee.signatures[0] : undefined;
     callee.arguments.forEach((arg, index) => {
+      if (lost.has(index)) return;
       const parameter = only?.parameters[index];
       const pointee =
         parameter === undefined
@@ -80,6 +90,83 @@ class CPointerArgumentCheck {
         severity: "warning",
       });
     });
+  }
+
+  /** E0930: a scanf-family format that is not a string literal */
+  private rejectsFormatNotLiteral(callee: ICCallee): void {
+    const writes = ScanfFormat.writesOf(callee.name, callee.arguments);
+    if (writes.kind !== "format-not-literal") return;
+    this.found.push({
+      code: "E0930",
+      span: writes.format.span,
+      message: `the format of '${callee.name}' is not a string literal, so cnx cannot tell which arguments '${callee.name}' writes`,
+      helpText: `Write the format as a string literal, e.g. ${callee.name}(..., "%d", value).`,
+      severity: "error",
+    });
+  }
+
+  /**
+   * E0915: a conversion fills an argument that is no variable (`MutArgument`),
+   * so C would take its address and fail, or the write would be lost; or one
+   * whose qualifier its address would drop (#2398)
+   */
+  private rejectsLostWrites(callee: ICCallee): ReadonlySet<number> {
+    const lost = new Set<number>();
+    const writes = ScanfFormat.writesOf(callee.name, callee.arguments);
+    if (writes.kind !== "literal") return lost;
+    for (const index of writes.written) {
+      const arg = callee.arguments[index];
+      if (arg === undefined || MutArgument.isWritable(arg, this.context)) {
+        continue;
+      }
+      this.found.push({
+        code: "E0915",
+        span: arg.span,
+        message: `cannot pass '${arg.written}' as argument ${index + 1} of '${callee.name}', which its format writes: it is not a variable, so the write would be lost`,
+        helpText: `A scanf-family conversion writes its argument (ADR-071 Decision 2); pass a \`mut\` variable.`,
+        severity: "error",
+      });
+      lost.add(index);
+    }
+    for (const index of writes.written) {
+      const arg = callee.arguments[index];
+      const qualifier =
+        arg === undefined || lost.has(index) ? null : this.qualifierOf(arg);
+      if (qualifier === null) continue;
+      this.found.push({
+        code: "E0915",
+        span: arg.span,
+        message: `cannot pass '${arg.written}' as argument ${index + 1} of '${callee.name}', which its format writes: it is ${qualifier.is}, and '${callee.name}' would write it through a plain pointer, so the ${qualifier.write} write would be lost`,
+        helpText: `Scan into a \`mut\` local, then assign it to '${arg.written}' (ADR-071 Decision 2, #2398).`,
+        severity: "error",
+      });
+      lost.add(index);
+    }
+    return lost;
+  }
+
+  /**
+   * #2398: what a conversion's argument declares that its address loses in
+   * `...` -- `atomic`, `volatile`, or a register member's volatile access --
+   * or null
+   */
+  private qualifierOf(
+    arg: TExpression,
+  ): { readonly is: string; readonly write: string } | null {
+    const chain = OperandTyper.chainOf(
+      ExpressionShape.unparenthesized(arg),
+      this.context,
+    );
+    if (chain.steps.some((step) => step.registerMember !== null)) {
+      return { is: "a register member", write: "volatile" };
+    }
+    const declaration = BoundDeclaration.of(chain.root);
+    if (declaration?.isAtomic === true)
+      return { is: "atomic", write: "atomic" };
+    if (declaration?.isVolatile === true) {
+      return { is: "volatile", write: "volatile" };
+    }
+    return null;
   }
 
   /**
@@ -129,10 +216,9 @@ class CPointerArgumentCheck {
       };
     }
     if (parameter === undefined) {
-      const object = arg.kind === "unary" ? arg.operand : arg;
       return {
-        message: `'${object.written}' is read-only, and argument ${index + 1} of '${name}' fills its '...', which '${name}' may write through`,
-        helpText: `Declare '${object.written}' \`mut\`.`,
+        message: `'${arg.written}' is read-only, and argument ${index + 1} of '${name}' fills its '...', which '${name}' may write through`,
+        helpText: `Declare '${arg.written}' \`mut\`.`,
       };
     }
     if (pointee !== null) {
@@ -149,17 +235,10 @@ class CPointerArgumentCheck {
     };
   }
 
-  /** The C type of what an argument hands over: `&x` hands over x */
+  /** The C type of what an argument hands over */
   private objectTypeOf(arg: TExpression): string | null {
-    return (
-      CPointerArgumentAnalyzer.cTypeOf(
-        OperandTyper.typeOf(arg, this.context),
-      ) ??
-      (arg.kind === "unary" && arg.operator === "&"
-        ? CPointerArgumentAnalyzer.cTypeOf(
-            OperandTyper.typeOf(arg.operand, this.context),
-          )
-        : null)
+    return CPointerArgumentAnalyzer.cTypeOf(
+      OperandTyper.typeOf(arg, this.context),
     );
   }
 

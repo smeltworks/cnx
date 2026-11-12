@@ -1801,7 +1801,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | n/a         | n/a        |
 | for header         | -         | -      | -          | n/a         | n/a        |
 
-11 linked fixtures with no derivable context:
+12 linked fixtures with no derivable context:
 
 - `adr-071/c-callback-mut-match.test.cnx`
 - `adr-071/callback-initializer-wiring.test.cnx`
@@ -1814,6 +1814,7 @@ cell is declared by the ADR that owns it.
 - `adr-071/mut-signature-follows-declaration.test.cnx`
 - `adr-071/opaque-handle-copy.test.cnx`
 - `adr-071/read-only-by-default.test.cnx`
+- `bugs/issue-2117-address-of/scanf-out-parameter.test.cnx`
 
 ## ADR-071 E0879
 
@@ -1864,6 +1865,26 @@ cell is declared by the ADR that owns it.
 | scope member       | ok        | ok     | ok         | n/a         | n/a        |
 | scope method       | ok        | ok     | ok         | n/a         | n/a        |
 | for header         | ok        | ok     | ok         | n/a         | n/a        |
+
+## ADR-071 E0915
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | n/a         | n/a        |
+| top-level function | ok        | -      | -          | n/a         | n/a        |
+| scope member       | -         | -      | -          | n/a         | n/a        |
+| scope method       | ok        | -      | -          | n/a         | n/a        |
+| for header         | -         | -      | -          | n/a         | n/a        |
+
+## ADR-071 E0930
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | n/a         | n/a        |
+| top-level function | ok        | warn   | warn       | n/a         | n/a        |
+| scope member       | -         | -      | -          | n/a         | n/a        |
+| scope method       | ok        | warn   | warn       | n/a         | n/a        |
+| for header         | warn      | warn   | warn       | n/a         | n/a        |
 
 ## Positions
 

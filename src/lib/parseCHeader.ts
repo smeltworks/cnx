@@ -55,7 +55,7 @@ function convertTCSymbolsToISymbolInfo(
         type = sym.type;
         break;
       case "enum_member":
-        parent = sym.parent;
+        parent = sym.parent ?? undefined;
         break;
       case "type":
         type = sym.type;

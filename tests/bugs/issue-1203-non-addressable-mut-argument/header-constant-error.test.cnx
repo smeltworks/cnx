@@ -8,7 +8,8 @@
 // not a value, so it gets E0915 with a message that says so. CONTROL: the
 // same `#define` and enum constant passed to a read-only parameter are
 // values copied in, so `readsOnly(LIMIT)` and `readsOnly(COLOR_GREEN)` stay
-// silent (#2141).
+// silent (#2141). An untagged enum's constant -- a typedef'd anonymous enum's
+// `C_MODE_A` or a bare anonymous enum's `ANON_LIMIT` -- is a constant too (#2396).
 
 #include "header-constants.h"
 
@@ -23,6 +24,8 @@ void readsOnly(u32 value) {
 void useAll() {
     modifies(LIMIT);
     modifies(COLOR_GREEN);
+    modifies(C_MODE_A);
+    modifies(ANON_LIMIT);
     modifies(headerCounter);
     modifies(counterAlias);
     modifies(STATUS_REG);

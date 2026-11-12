@@ -12,28 +12,33 @@ import type ISourceSpan from "../../../../types/ISourceSpan";
  * Result of collecting an enum - includes both the enum symbol and its members.
  */
 interface IEnumCollectorResult {
-  readonly enum: ICEnumSymbol;
+  /** Null for an anonymous enum, whose constants are still names a header declares */
+  readonly enum: ICEnumSymbol | null;
   readonly members: ReadonlyArray<ICEnumMemberSymbol>;
 }
 
 class EnumCollector {
-  /** A named enum and its members; null for an anonymous enum */
+  /** An enum and its members; an anonymous enum has only members (#2117) */
   static collect(
     enumSyntax: ICEnumSyntax,
     sourceFile: string,
     span: ISourceSpan,
-  ): IEnumCollectorResult | null {
-    const name = enumSyntax.name;
-    if (!name) return null;
-    const enumSymbol: ICEnumSymbol = {
-      kind: "enum",
-      name,
-      sourceFile,
-      span,
-      sourceLanguage: ESourceLanguage.C,
-      visibility: "public",
-      members: enumSyntax.members.map((member) => ({ name: member.name })),
-    };
+  ): IEnumCollectorResult {
+    const name = enumSyntax.name || null;
+    const enumSymbol: ICEnumSymbol | null =
+      name === null
+        ? null
+        : {
+            kind: "enum",
+            name,
+            sourceFile,
+            span,
+            sourceLanguage: ESourceLanguage.C,
+            visibility: "public",
+            members: enumSyntax.members.map((member) => ({
+              name: member.name,
+            })),
+          };
     return {
       enum: enumSymbol,
       members: enumSyntax.members.map(

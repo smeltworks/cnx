@@ -1,0 +1,34 @@
+24:27 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"3"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+24:32 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%u"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+25:27 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"3"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+25:32 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%u"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+26:27 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"3"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+26:32 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%u"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+27:27 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"3"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+27:32 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%u"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+28:27 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"3"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+28:32 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%u"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+34:31 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"3"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+34:36 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%u"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+24:38 error[E0915]: cannot pass 'shared' as argument 3 of 'sscanf', which its format writes: it is atomic, and 'sscanf' would write it through a plain pointer, so the atomic write would be lost
+       help: Scan into a `mut` local, then assign it to 'shared' (ADR-071 Decision 2, #2398).
+25:38 error[E0915]: cannot pass 'reading' as argument 3 of 'sscanf', which its format writes: it is volatile, and 'sscanf' would write it through a plain pointer, so the volatile write would be lost
+       help: Scan into a `mut` local, then assign it to 'reading' (ADR-071 Decision 2, #2398).
+26:38 error[E0915]: cannot pass 'GPIO.DR' as argument 3 of 'sscanf', which its format writes: it is a register member, and 'sscanf' would write it through a plain pointer, so the volatile write would be lost
+       help: Scan into a `mut` local, then assign it to 'GPIO.DR' (ADR-071 Decision 2, #2398).
+27:38 error[E0915]: cannot pass 'sample.value' as argument 3 of 'sscanf', which its format writes: it is volatile, and 'sscanf' would write it through a plain pointer, so the volatile write would be lost
+       help: Scan into a `mut` local, then assign it to 'sample.value' (ADR-071 Decision 2, #2398).
+34:42 error[E0915]: cannot pass 'reading' as argument 3 of 'sscanf', which its format writes: it is volatile, and 'sscanf' would write it through a plain pointer, so the volatile write would be lost
+       help: Scan into a `mut` local, then assign it to 'reading' (ADR-071 Decision 2, #2398).

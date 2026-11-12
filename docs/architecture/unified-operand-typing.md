@@ -393,7 +393,6 @@ The walker's three call sites pass the node's position. The emitted names are ex
 | `(e)`                            | Recurses into `e`. A parenthesized composite or ternary is typed, which fixes `ETR.ts:759-763` and the `(g+1)+1` clamp loss.                                                            |
 | `-x`, `~x`                       | The operand's type (2.2's answer, `ETR.ts:790-805`)                                                                                                                                     |
 | `!x`                             | Form `boolean`. This is 2.1's answer (`OperandTypeResolver.ts:439-442`) and fixes G10 in 2.2.                                                                                           |
-| `&x`                             | null, and never a leaf (#1152)                                                                                                                                                          |
 | `a << n`                         | `a`'s type. `n` is never a value leaf (C01).                                                                                                                                            |
 | Applied `\|\| && = != < > <= >=` | Form `boolean`. It is one leaf and is not descended (C00).                                                                                                                              |
 | ADR-058 properties               | null. Unchanged in both passes.                                                                                                                                                         |
@@ -432,7 +431,7 @@ A cnx declaration whose `TType` is `external` (`real_t k`) is typed through the 
 
 - **Descends** through arithmetic and bitwise levels, parentheses, ternary **value arms**, and unary `-` and `~`.
 - **Stops** at a postfix chain, a cast, a Boolean-valued level or `!` (one `boolean` leaf), and an ADR-058 property (one untyped leaf).
-- **Excludes** `&x` and a shift count.
+- **Excludes** a shift count.
 
 It replaces four collectors:
 

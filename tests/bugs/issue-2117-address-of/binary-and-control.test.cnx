@@ -1,0 +1,22 @@
+// test-execution
+// #2117 NEGATIVE CONTROL: removing unary `&` leaves binary `a & b`, `&<-`
+// and `&&` compiling.
+
+i32 main() {
+    u8 a <- 0x0C;
+    u8 b <- 0x0A;
+    u8 both <- a & b;
+    if (both != 0x08) {
+        return 1;
+    }
+    mut u8 masked <- 0x0F;
+    masked &<- 0x03;
+    if (masked != 0x03) {
+        return 2;
+    }
+    bool yes <- (a = 0x0C) && (b = 0x0A);
+    if (yes != true) {
+        return 3;
+    }
+    return 0;
+}

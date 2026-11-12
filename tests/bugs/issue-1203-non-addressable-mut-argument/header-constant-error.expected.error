@@ -1,8 +1,12 @@
-24:13 error[E0915]: cannot pass 'LIMIT' to `mut` parameter 'value' of function 'modifies': it is a `#define`, not a variable
+25:13 error[E0915]: cannot pass 'LIMIT' to `mut` parameter 'value' of function 'modifies': it is a `#define`, not a variable
        help: A `#define` is text replacement, not a value (ADR-006), so a `mut` parameter cannot take one; pass the variable it names, or a `mut` variable.
-25:13 error[E0915]: cannot pass 'COLOR_GREEN' to `mut` parameter 'value' of function 'modifies': it is not a variable, so the write would be lost
+26:13 error[E0915]: cannot pass 'COLOR_GREEN' to `mut` parameter 'value' of function 'modifies': it is not a variable, so the write would be lost
        help: A `mut` parameter writes its argument (ADR-006); assign the value to a `mut` variable and pass that.
-27:13 error[E0915]: cannot pass 'counterAlias' to `mut` parameter 'value' of function 'modifies': it is a `#define`, not a variable
+27:13 error[E0915]: cannot pass 'C_MODE_A' to `mut` parameter 'value' of function 'modifies': it is not a variable, so the write would be lost
+       help: A `mut` parameter writes its argument (ADR-006); assign the value to a `mut` variable and pass that.
+28:13 error[E0915]: cannot pass 'ANON_LIMIT' to `mut` parameter 'value' of function 'modifies': it is not a variable, so the write would be lost
+       help: A `mut` parameter writes its argument (ADR-006); assign the value to a `mut` variable and pass that.
+30:13 error[E0915]: cannot pass 'counterAlias' to `mut` parameter 'value' of function 'modifies': it is a `#define`, not a variable
        help: A `#define` is text replacement, not a value (ADR-006), so a `mut` parameter cannot take one; pass the variable it names, or a `mut` variable.
-28:13 error[E0915]: cannot pass 'STATUS_REG' to `mut` parameter 'value' of function 'modifies': it is a `#define`, not a variable
+31:13 error[E0915]: cannot pass 'STATUS_REG' to `mut` parameter 'value' of function 'modifies': it is a `#define`, not a variable
        help: A `#define` is text replacement, not a value (ADR-006), so a `mut` parameter cannot take one; pass the variable it names, or a `mut` variable.
