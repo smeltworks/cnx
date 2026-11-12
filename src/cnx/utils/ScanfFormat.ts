@@ -1,4 +1,5 @@
 import ExpressionShape from "./ExpressionShape";
+import StringUtils from "./StringUtils";
 import type TExpression from "../types/syntax/TExpression";
 import type TScanfWrites from "../types/TScanfWrites";
 
@@ -40,50 +41,11 @@ class ScanfFormat {
         : { kind: "format-not-literal", format };
     }
     const count = ScanfFormat.conversionCount(
-      ScanfFormat.decoded(format.text.slice(1, -1)),
+      StringUtils.decoded(format.text.slice(1, -1)),
     );
     const written = new Set<number>();
     for (let n = 1; n <= count; n++) written.add(index + n);
     return { kind: "literal", written };
-  }
-
-  /**
-   * The characters C reads from a literal's text, up to its first NUL: a
-   * `\x25` or `\045` escape is the `%` it spells, `\\` is one backslash
-   */
-  private static decoded(text: string): string {
-    let out = "";
-    let at = 0;
-    while (at < text.length) {
-      if (text[at] !== "\\" || at + 1 >= text.length) {
-        out += text[at++];
-        continue;
-      }
-      const escape = ScanfFormat.numericEscape(text, at + 1);
-      if (escape === null) {
-        out += text[at + 1];
-        at += 2;
-        continue;
-      }
-      if (escape.code === 0) break;
-      out += String.fromCodePoint(escape.code);
-      at = escape.end;
-    }
-    return out;
-  }
-
-  /** The `\x` hex or octal escape whose digits start at `from`; null for any other */
-  private static numericEscape(
-    text: string,
-    from: number,
-  ): { code: number; end: number } | null {
-    const hex = /^x([0-9a-fA-F]+)/.exec(text.slice(from));
-    if (hex !== null) {
-      return { code: Number.parseInt(hex[1], 16), end: from + hex[0].length };
-    }
-    const octal = /^[0-7]{1,3}/.exec(text.slice(from));
-    if (octal === null) return null;
-    return { code: Number.parseInt(octal[0], 8), end: from + octal[0].length };
   }
 
   /** How many arguments a format's conversions fill */

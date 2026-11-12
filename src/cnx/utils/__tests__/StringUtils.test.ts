@@ -148,3 +148,18 @@ describe("StringUtils.characterAt", () => {
     expect(StringUtils.characterAt('"A"', 1)).toBe("'\\0'");
   });
 });
+
+describe("StringUtils.decoded (#2117)", () => {
+  it.each([
+    ["plain text", "a%d", "a%d"],
+    ["a hex escape", String.raw`\x25i`, "%i"],
+    ["a hex escape whose digits run on", String.raw`\x41g`, "Ag"],
+    ["an octal escape of at most three digits", String.raw`\1011`, "A1"],
+    ["an escaped backslash", String.raw`\\x`, String.raw`\x`],
+    ["a simple escape", String.raw`\"q`, '"q'],
+    ["a NUL, where C stops reading", String.raw`a\0b`, "a"],
+    ["a trailing backslash", "a\\", "a\\"],
+  ])("decodes %s", (_label, text, expected) => {
+    expect(StringUtils.decoded(text)).toBe(expected);
+  });
+});
