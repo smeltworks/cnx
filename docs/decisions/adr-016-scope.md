@@ -306,7 +306,7 @@ This pattern is useful for:
 Instead of "classes," cnx embraces the C approach for instances:
 
 1. **Define data with structs** (ADR-014)
-2. **Define behavior with free functions** that take struct pointers
+2. **Define behavior with free functions** that take the struct as a parameter (passed by reference, ADR-006)
 
 ### Example: UART Implementation
 
@@ -319,17 +319,17 @@ struct UART {
 }
 
 // Free functions that operate on UART
-void UART_init(UART* self, u32 base, u32 baud) {
+void UART_init(mut UART self, u32 base, u32 baud) {
     self.baseAddress <- base;
     self.baudRate <- baud;
     self.initialized <- true;
 }
 
-void UART_send(UART* self, u8* data, u32 len) {
+void UART_send(UART self, u8[] data, u32 len) {
     // Implementation...
 }
 
-u32 UART_receive(UART* self, u8* buffer, u32 maxLen) {
+u32 UART_receive(UART self, mut u8[] buffer, u32 maxLen) {
     // Implementation...
 }
 
@@ -338,12 +338,12 @@ UART uart1;
 UART uart2;
 
 void init() {
-    UART_init(&uart1, UART1_BASE, 115200);
-    UART_init(&uart2, UART2_BASE, 9600);
+    UART_init(uart1, UART1_BASE, 115200);
+    UART_init(uart2, UART2_BASE, 9600);
 }
 
 void main_loop() {
-    UART_send(&uart1, data, len);
+    UART_send(uart1, data, len);
 }
 ```
 

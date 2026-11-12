@@ -1,0 +1,28 @@
+// test-error
+// test-adr: 071
+// #2117: a scanf-family conversion writes the argument it fills, so that
+// argument must be a variable. A literal, a call's result, an operator's
+// result and a bit range are not: C cannot take their address (E0915).
+// CONTROL: `parsed` is a variable and compiles.
+#include <stdio.h>
+
+i32 seven() {
+    return 7;
+}
+
+void parse() {
+    u8 flags <- 0;
+    i32 v <- 1;
+    mut i32 parsed <- 0;
+    i32 a <- global.sscanf("7", "%d", 5);
+    i32 b <- global.sscanf("7", "%d", seven());
+    i32 c <- global.sscanf("7", "%d", v + 1);
+    i32 d <- global.sscanf("7", "%hhu", flags[0, 4]);
+    i32 e <- global.sscanf("7", "%d", parsed);
+}
+
+scope Reader {
+    public void parse() {
+        i32 f <- global.sscanf("7", "%d", 5);
+    }
+}

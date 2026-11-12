@@ -72,6 +72,35 @@ describe("ScanfFormat.writesOf (#2117)", () => {
     ).toEqual({ kind: "format-not-literal", format });
   });
 
+  it("reads a parenthesized literal format", () => {
+    const format = {
+      kind: "parenthesized",
+      expression: literal('"%d"'),
+      written: '("%d")',
+      span,
+    } as unknown as TExpression;
+    const writes = ScanfFormat.writesOf("sscanf", [
+      literal('"7"'),
+      format,
+      name("a"),
+    ]);
+    expect(
+      writes.kind === "literal" ? [...writes.written] : writes.kind,
+    ).toEqual([2]);
+  });
+
+  it.each([String.raw`"\x25d"`, String.raw`"\045d"`])(
+    "is a format-not-literal for %s, whose numeric escape can spell a %%",
+    (text) => {
+      const writes = ScanfFormat.writesOf("sscanf", [
+        literal('"7"'),
+        literal(text),
+        name("a"),
+      ]);
+      expect(writes.kind).toBe("format-not-literal");
+    },
+  );
+
   it("is not-scanf for any other function, printf included", () => {
     expect(
       ScanfFormat.writesOf("printf", [literal('"%d"'), name("a")]),

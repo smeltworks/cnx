@@ -31,6 +31,7 @@ import CArgumentWrite from "./helpers/CArgumentWrite";
 import WrittenBinding from "./helpers/WrittenBinding";
 import BoundDeclaration from "./helpers/BoundDeclaration";
 import MutSite from "./helpers/MutSite";
+import MutArgument from "./helpers/MutArgument";
 import CPointerParameter from "../../utils/CPointerParameter";
 import ScanfFormat from "../../utils/ScanfFormat";
 import DeclarationParts from "../../utils/DeclarationParts";
@@ -58,9 +59,11 @@ class CPointerArgumentCheck {
     const callee = CCallee.of(expr, this.context);
     if (callee === null) return;
     this.rejectsFormatNotLiteral(callee);
+    const lost = this.rejectsLostWrites(callee);
     const only =
       callee.signatures.length === 1 ? callee.signatures[0] : undefined;
     callee.arguments.forEach((arg, index) => {
+      if (lost.has(index)) return;
       const parameter = only?.parameters[index];
       const pointee =
         parameter === undefined
@@ -99,6 +102,31 @@ class CPointerArgumentCheck {
       helpText: `Write the format as a string literal, e.g. ${callee.name}(..., "%d", value).`,
       severity: "error",
     });
+  }
+
+  /**
+   * E0915: a conversion fills an argument that is no variable (`MutArgument`),
+   * so C would take its address and fail, or the write would be lost
+   */
+  private rejectsLostWrites(callee: ICCallee): ReadonlySet<number> {
+    const lost = new Set<number>();
+    const writes = ScanfFormat.writesOf(callee.name, callee.arguments);
+    if (writes.kind !== "literal") return lost;
+    for (const index of writes.written) {
+      const arg = callee.arguments[index];
+      if (arg === undefined || MutArgument.isWritable(arg, this.context)) {
+        continue;
+      }
+      this.found.push({
+        code: "E0915",
+        span: arg.span,
+        message: `cannot pass '${arg.written}' as argument ${index + 1} of '${callee.name}', which its format writes: it is not a variable, so the write would be lost`,
+        helpText: `A scanf-family conversion writes its argument (ADR-071 Decision 2); pass a \`mut\` variable.`,
+        severity: "error",
+      });
+      lost.add(index);
+    }
+    return lost;
   }
 
   /**

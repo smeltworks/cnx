@@ -1,3 +1,4 @@
+import ExpressionShape from "./ExpressionShape";
 import type TExpression from "../types/syntax/TExpression";
 import type TScanfWrites from "../types/TScanfWrites";
 
@@ -28,8 +29,16 @@ class ScanfFormat {
   static writesOf(name: string, args: readonly TExpression[]): TScanfWrites {
     const index = FORMAT_INDEX.get(name);
     if (index === undefined) return { kind: "not-scanf" };
-    const format = args[index];
-    if (format?.kind !== "literal" || format.literalKind !== "string") {
+    const argument = args[index];
+    const format =
+      argument === undefined
+        ? undefined
+        : ExpressionShape.unparenthesized(argument);
+    if (
+      format?.kind !== "literal" ||
+      format.literalKind !== "string" ||
+      ScanfFormat.hasNumericEscape(format.text)
+    ) {
       return format === undefined
         ? { kind: "literal", written: new Set() }
         : { kind: "format-not-literal", format };
@@ -38,6 +47,14 @@ class ScanfFormat {
     const written = new Set<number>();
     for (let n = 1; n <= count; n++) written.add(index + n);
     return { kind: "literal", written };
+  }
+
+  /**
+   * A `\x25` or `\045` escape can spell a `%` the source text does not show,
+   * so a literal holding one says nothing cnx reads (E0930)
+   */
+  private static hasNumericEscape(text: string): boolean {
+    return /\\(x|[0-7])/.test(text);
   }
 
   /** How many arguments a format's conversions fill */
