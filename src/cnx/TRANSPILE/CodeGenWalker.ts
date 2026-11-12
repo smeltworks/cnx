@@ -3627,14 +3627,20 @@ class CodeGenWalker {
       condition,
       this.host.state,
     );
+    const at = { line: statement.span.line, column: statement.span.column };
     if (whenTrue.kind === "block") {
       StringLengthCounter.countBlockInto(
         whenTrue,
         lengthCounts,
         this.host.state,
       );
+      StringLengthCounter.dropWrittenIn(
+        whenTrue,
+        lengthCounts,
+        at,
+        this.host.state,
+      );
     }
-    const at = { line: statement.span.line, column: statement.span.column };
     return {
       lengthCounts,
       renderLengthOperand: (name) =>

@@ -1,0 +1,54 @@
+// test-execution
+// Issue #1958: a length read after the string is written in the same `if`
+// measures the string as written, not the length cached before the condition.
+
+mut string<8> greeting <- "ab";
+
+void grow() {
+    greeting <- "abcd";
+}
+
+void fill(mut string<8> s) {
+    s <- "abcd";
+}
+
+u32 main() {
+    mut string<8> label <- "ab";
+    if (label.value_char_count = 2) {
+        label <- "abcd";
+        u32 n <- label.value_char_count;
+        if (n != 4) {
+            return 1;
+        }
+    }
+
+    mut string<8> nested <- "ab";
+    if (nested.value_char_count = 2) {
+        {
+            nested <- "abc";
+        }
+        u32 n <- nested.value_char_count;
+        if (n != 3) {
+            return 2;
+        }
+    }
+
+    mut string<8> passed <- "ab";
+    if (passed.value_char_count = 2) {
+        fill(passed);
+        u32 n <- passed.value_char_count;
+        if (n != 4) {
+            return 3;
+        }
+    }
+
+    if (greeting.value_char_count = 2) {
+        grow();
+        u32 n <- greeting.value_char_count;
+        if (n != 4) {
+            return 4;
+        }
+    }
+
+    return 0;
+}

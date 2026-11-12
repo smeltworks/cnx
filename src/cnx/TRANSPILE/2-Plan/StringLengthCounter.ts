@@ -14,7 +14,13 @@ import type TExpressionOf from "../../types/syntax/TExpressionOf";
 import type TBlockSyntax from "../../types/syntax/TBlockSyntax";
 import type TStatement from "../../types/syntax/TStatement";
 import type TranspileState from "../TranspileState";
+import type ISourcePosition from "../../utils/types/ISourcePosition";
+import AssignmentTarget from "../../utils/AssignmentTarget";
+import DeclarationParts from "../../utils/DeclarationParts";
+import ExpressionNodes from "../../utils/ExpressionNodes";
+import ExpressionShape from "../../utils/ExpressionShape";
 import LengthProperty from "../../utils/LengthProperty";
+import StatementNodes from "../../utils/StatementNodes";
 
 /**
  * Counts .value_char_count accesses on string variables in an expression tree.
@@ -51,6 +57,55 @@ class StringLengthCounter {
    * Only identifier-rooted chains count, and only their subscript indexes are
    * searched further; call arguments are not.
    */
+  /**
+   * Issue #1958: drop each counted string the block may write, so a length
+   * read after the write measures the string as written. A string is written
+   * by an assignment to it, nested ones included, and by a call it is passed
+   * to; one that is not a local is written by any call, since the callee can
+   * reach it. A controlling expression holds neither (E0702), so the block is
+   * the whole region.
+   */
+  static dropWrittenIn(
+    block: Pick<TBlockSyntax, "statements">,
+    counts: Map<string, number>,
+    at: ISourcePosition,
+    state: TranspileState,
+  ): void {
+    const assigned = new Set(
+      StatementNodes.assignmentsIn(block.statements).map(
+        (assignment) => AssignmentTarget.parts(assignment.target).identifier,
+      ),
+    );
+    const calls = DeclarationParts.statements(block.statements)
+      .flatMap(ExpressionNodes.of)
+      .flatMap((node) => (node.kind === "postfix" ? node.ops : []))
+      .flatMap((op) => (op.kind === "call" ? [op] : []));
+    const passed = new Set(
+      calls.flatMap((call) => call.arguments.map(ExpressionShape.rootName)),
+    );
+    for (const name of [...counts.keys()]) {
+      if (
+        assigned.has(name) ||
+        passed.has(name) ||
+        (calls.length > 0 && !StringLengthCounter.isLocal(name, at, state))
+      ) {
+        counts.delete(name);
+      }
+    }
+  }
+
+  /** A local declared in the function body, which no callee can name */
+  private static isLocal(
+    name: string,
+    at: ISourcePosition,
+    state: TranspileState,
+  ): boolean {
+    const binding = state.bindingAt(null, name, at);
+    return (
+      binding?.kind === "local" && binding.declaration.kind !== "parameter"
+    );
+  }
+
   private static walkExpression(
     expr: TExpression,
     counts: Map<string, number>,

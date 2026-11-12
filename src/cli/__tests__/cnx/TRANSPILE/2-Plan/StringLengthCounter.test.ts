@@ -172,6 +172,62 @@ describe("StringLengthCounter", () => {
     });
   });
 
+  describe("dropWrittenIn (#1958)", () => {
+    /** The counts `test()`'s body keeps, `prelude` declared ahead of it */
+    function keptIn(prelude: string, body: string): string[] {
+      const { tree, state } = stateFor(`${prelude} void test() { ${body} }`);
+      const block = StatementLowering.block(
+        tree.declaration().at(-1)!.functionDeclaration()!.block()!,
+      );
+      const last = block.statements.at(-1)!.span;
+      const counts = new Map<string, number>([["label", 2]]);
+      StringLengthCounter.dropWrittenIn(
+        block,
+        counts,
+        { line: last.line, column: last.column },
+        state,
+      );
+      return [...counts.keys()];
+    }
+
+    it("keeps a string the block does not write", () => {
+      expect(
+        keptIn("", "mut string<8> label; u32 n <- label.value_char_count;"),
+      ).toEqual(["label"]);
+    });
+
+    it("drops a string the block assigns", () => {
+      expect(keptIn("", 'mut string<8> label; label <- "abcd";')).toEqual([]);
+    });
+
+    it("drops a string assigned in a nested statement", () => {
+      expect(keptIn("", 'mut string<8> label; { label[0] <- "x"; }')).toEqual(
+        [],
+      );
+    });
+
+    it("drops a string passed to a call", () => {
+      expect(
+        keptIn(
+          "void fill(mut string<8> s) { }",
+          "mut string<8> label; fill(label);",
+        ),
+      ).toEqual([]);
+    });
+
+    it("drops a global string on any call", () => {
+      expect(keptIn("mut string<8> label; void grow() { }", "grow();")).toEqual(
+        [],
+      );
+    });
+
+    it("keeps a local string across a call that is not passed it", () => {
+      expect(keptIn("void grow() { }", "mut string<8> label; grow();")).toEqual(
+        ["label"],
+      );
+    });
+  });
+
   describe("nested expressions", () => {
     it("counts .value_char_count in ternary expressions", () => {
       const { expr, state } = expressionIn(

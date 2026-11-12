@@ -1,0 +1,14 @@
+// test-execution
+// Issue #1958 negative control: with no write between the reads, the two
+// length reads share one cached strlen.
+
+u32 main() {
+    string<8> label <- "ab";
+    if (label.value_char_count = 2) {
+        u32 n <- label.value_char_count;
+        if (n != 2) {
+            return 1;
+        }
+    }
+    return 0;
+}
