@@ -4,18 +4,18 @@
  *
  * Extracted from CodeGenerator.ts as part of ADR-065 decomposition.
  */
+import type TRenderedStringPart from "../types/TRenderedStringPart";
+import type TStringValueForm from "../types/TStringValueForm";
+
+/** C null terminator character literal for generated code */
+const C_NULL_CHAR = String.raw`'\0'`;
+
 /**
  * This class is the single source of truth for lowering a cnx string write:
  * every copy, substring and concatenation part goes through `cnx_string_copy`
  * (#2207, #1902), so no `strncpy`/`strncat` result is discarded (MISRA C:2012
  * Rule 17.7). Callers must not build these calls themselves.
  */
-/** C null terminator character literal for generated code */
-import type TRenderedStringPart from "../types/TRenderedStringPart";
-import type TStringValueForm from "../types/TStringValueForm";
-
-const C_NULL_CHAR = String.raw`'\0'`;
-
 class StringUtils {
   /** #2207: the copy a string written from another string goes through */
   static readonly COPY_HELPER = "cnx_string_copy";
