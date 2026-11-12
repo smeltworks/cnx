@@ -64,10 +64,9 @@ int main(void) {
             return 3U;
         }
     }
-    size_t cnx_len_greeting = strlen(greeting);
-    if (cnx_len_greeting == 2) {
+    if (strlen(greeting) == 2) {
         grow();
-        const uint32_t n = cnx_len_greeting;
+        const uint32_t n = strlen(greeting);
         if (n != 4) {
             return 4U;
         }
