@@ -128,6 +128,22 @@ describe("OperatorOperandAnalyzer", () => {
       expect(errors).toHaveLength(2);
     });
 
+    it("names a relational chain's bool and suggests its adjacent pairs (#1373)", () => {
+      const errors = analyze(
+        inMain(
+          "u8 m <- 2;\n      u8 k <- 3;\n      bool c <- n < m <= k < n;\n      bool d <- n < m < a;",
+        ),
+      );
+      expect(errors.map((e) => e.message)).toEqual([
+        "'n < m <= k' compares the bool 'n < m' with 'k'",
+        "'n < m < a' compares the bool 'n < m' with 'a'",
+      ]);
+      expect(errors.map((e) => e.helpText)).toEqual([
+        "MISRA C:2012 Rule 10.1: did you mean '(n < m) && (m <= k) && (k < n)'?",
+        "MISRA C:2012 Rule 10.1: a bool is not a number.",
+      ]);
+    });
+
     it("reports the position of the offending operand", () => {
       const errors = analyze(inMain("bool c <- a / b;"));
       expect(errors[0].span.line).toBeGreaterThan(0);

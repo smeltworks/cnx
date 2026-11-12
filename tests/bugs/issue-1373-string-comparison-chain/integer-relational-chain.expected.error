@@ -1,4 +1,4 @@
-11:8 error[E0807]: Operator '<' is not valid on a bool
-       help: MISRA C:2012 Rule 10.1: a bool is not a number. Use the logical operators (&&, ||, !) to combine flags, or '=' / '!=' to compare them.
-14:8 error[E0807]: Operator '<' is not valid on a bool
-       help: MISRA C:2012 Rule 10.1: a bool is not a number. Use the logical operators (&&, ||, !) to combine flags, or '=' / '!=' to compare them.
+11:8 error[E0807]: 'a < b < c' compares the bool 'a < b' with 'c'
+       help: MISRA C:2012 Rule 10.1: did you mean '(a < b) && (b < c)'?
+14:8 error[E0807]: 'a < b < c' compares the bool 'a < b' with 'c'
+       help: MISRA C:2012 Rule 10.1: did you mean '(a < b) && (b < c) && (c < d)'?

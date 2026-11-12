@@ -22,6 +22,7 @@ import type TExpression from "../../types/syntax/TExpression";
 import type TBinaryExpression from "../../types/syntax/TBinaryExpression";
 import type ISourceSpan from "../../types/ISourceSpan";
 import type IAnalysisContext from "./types/IAnalysisContext";
+import ComparisonChain from "../../utils/ComparisonChain";
 import ExpressionChildren from "../../utils/ExpressionChildren";
 import OperandTyper from "../../utils/OperandTyper";
 import ProgramExpressions from "../../utils/ProgramExpressions";
@@ -30,10 +31,7 @@ import SourceSpanRange from "../../utils/SourceSpanRange";
 import StringOperand from "../../utils/StringOperand";
 import IStringComparisonError from "./types/IStringComparisonError";
 
-const HELP = "ADR-045: '=' and '!=' compare a string only with another string.";
-
-const MIXED_HELP =
-  "Compare the string with another string, a string<N> or a string literal.";
+const RULE = "ADR-045: '=' and '!=' compare a string only with another string.";
 
 class StringComparisonAnalyzer {
   private readonly found: IStringComparisonError[] = [];
@@ -59,72 +57,58 @@ class StringComparisonAnalyzer {
   /** `operators[i]` joins operand `i` to `i + 1` */
   private level(level: TBinaryExpression): void {
     const operands = level.operands;
-    const leftIsString = this.isString(operands[0]);
-    const rightIsString = this.isString(operands[1]);
+    const leftIsString = StringOperand.is(operands[0], this.context);
+    const rightIsString = StringOperand.is(operands[1], this.context);
     if (leftIsString !== rightIsString) {
       const other = leftIsString ? operands[1] : operands[0];
       if (!this.cannotType(other)) {
-        this.report(
-          other.span,
-          StringComparisonAnalyzer.notAString(other.written),
-          [MIXED_HELP],
-        );
+        this.report(other.span, this.notAString(other), RULE);
         return;
       }
     }
     const pairIsString = leftIsString || rightIsString;
     for (let i = 2; i < operands.length; i += 1) {
-      const isString = this.isString(operands[i]);
+      const isString = StringOperand.is(operands[i], this.context);
       if (!pairIsString && !isString) continue;
       const comparison = SourceSpanRange.between(
         operands[0].span,
         operands[i - 1].span,
       );
-      const bool = StringComparisonAnalyzer.written(level, 0, i);
-      const next = operands[i].written;
-      const versusString = `'${bool}' is a bool, and a bool cannot be compared with the string '${next}'.`;
-      if (!pairIsString) {
-        this.report(comparison, StringComparisonAnalyzer.notAString(bool), [
-          versusString,
-        ]);
-        return;
+      if (isString) {
+        const pairs = ComparisonChain.pairs(level, this.context);
+        this.report(
+          comparison,
+          ComparisonChain.message(level, i, "the string "),
+          pairs === null ? RULE : `ADR-045: did you mean '${pairs}'?`,
+        );
+      } else {
+        this.report(
+          comparison,
+          ComparisonChain.message(level, i),
+          `ADR-045: a string comparison takes two operands. Did you mean '${StringComparisonAnalyzer.intent(level, i)}'?`,
+        );
       }
-      const help = isString
-        ? `${versusString} Did you mean '${this.pairs(level, i)}'?`
-        : `'${bool}' is a bool. To compare that bool with '${next}', write '(${bool})${StringComparisonAnalyzer.after(level, i)}'.`;
-      this.report(
-        comparison,
-        `A string comparison takes exactly two operands: '${StringComparisonAnalyzer.written(level, 0, i + 1)}'`,
-        [help],
-      );
       return;
     }
   }
 
   /**
-   * Each operand before the string at `through` compared with it, joined with
-   * &&: `a = b = name` as `(a = name) && (b = name)`. An all-string chain is
-   * compared with its last operand, so no operand is left out.
+   * What a bool past a string pair likely meant: `a = b = true` and
+   * `a != b = false` are the pair itself, `a = b`; any other bool is compared
+   * with the pair's result outright, `(a = b) = p`.
    */
-  private pairs(level: TBinaryExpression, through: number): string {
-    const operands = level.operands;
-    const all = operands.every((operand) => this.isString(operand));
-    const last = all ? operands.length - 1 : through;
-    const operator = level.operators[last - 1];
-    const target = operands[last].written;
-    return operands
-      .slice(0, last)
-      .map((operand) => `(${operand.written} ${operator} ${target})`)
-      .join(" && ");
-  }
-
-  /** What `strcmp` takes: a string, a C `char` array or a C char pointer */
-  private isString(operand: TExpression): boolean {
-    if (StringOperand.is(operand, this.context)) return true;
-    const type = OperandTyper.typeOf(operand, this.context);
-    if (type === null) return false;
-    if (type.typeName === "char") return type.dimensions.length === 1;
-    return type.typeName === "cstring";
+  private static intent(level: TBinaryExpression, i: number): string {
+    const tail = level.operands[i].written;
+    const pair = ComparisonChain.written(level, 0, i);
+    const last = i === level.operands.length - 1;
+    if (i !== 2 || !last || (tail !== "true" && tail !== "false")) {
+      const rest = ComparisonChain.written(level, i, level.operands.length);
+      return `(${pair}) ${level.operators[i - 1]} ${rest}`;
+    }
+    const holds = (level.operators[1] === "=") === (tail === "true");
+    if (holds) return pair;
+    const flipped = level.operators[0] === "=" ? "!=" : "=";
+    return `${level.operands[0].written} ${flipped} ${level.operands[1].written}`;
   }
 
   /** What cnx cannot type, which the C compiler judges instead */
@@ -135,42 +119,29 @@ class StringComparisonAnalyzer {
     return form?.kind === "foreign" && form.indeterminate;
   }
 
-  private static notAString(written: string): string {
-    return `A string cannot be compared with a value that is not a string: '${written}'`;
+  /** `'x' is a u32, not a string` */
+  private notAString(operand: TExpression): string {
+    const name = this.typeText(operand);
+    const article = /^([aeio]|f\d)/.test(name) ? "an" : "a";
+    return `'${operand.written}' is ${article} ${name}, not a string`;
   }
 
-  /** Operands `start` up to `end` and the operators between, as written */
-  private static written(
-    level: TBinaryExpression,
-    start: number,
-    end: number,
-  ): string {
-    let text = level.operands[start].written;
-    for (let i = start + 1; i < end; i += 1) {
-      text += ` ${level.operators[i - 1]} ${level.operands[i].written}`;
+  /** The cnx type an operand has; an unsuffixed number has none but its kind */
+  private typeText(operand: TExpression): string {
+    if (operand.kind === "literal") {
+      const kind = operand.literalKind;
+      if (kind === "integer" || kind === "hex" || kind === "binary") {
+        return "integer";
+      }
+      if (kind === "float") return "floating-point number";
     }
-    return text;
+    const type = OperandTyper.typeOf(operand, this.context);
+    if (type === null) return "value";
+    return type.typeName + type.dimensions.map((d) => `[${d}]`).join("");
   }
 
-  /** The operators and operands from operand `start` on, as written */
-  private static after(level: TBinaryExpression, start: number): string {
-    return level.operators
-      .slice(start - 1)
-      .map((operator, k) => ` ${operator} ${level.operands[start + k].written}`)
-      .join("");
-  }
-
-  private report(
-    span: ISourceSpan,
-    message: string,
-    more: string[] = [],
-  ): void {
-    this.found.push({
-      code: "E0929",
-      span,
-      message,
-      helpText: [HELP, ...more].join(" "),
-    });
+  private report(span: ISourceSpan, message: string, helpText: string): void {
+    this.found.push({ code: "E0929", span, message, helpText });
   }
 }
 

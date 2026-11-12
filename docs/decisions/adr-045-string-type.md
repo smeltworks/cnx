@@ -491,15 +491,15 @@ if (a != b) {      // strcmp(a, b) != 0
 }
 ```
 
-**A string is compared only with a string** (#2017). Either side of `=` or `!=` may be a string: a `string<N>`, a string literal, or a C string (a `char*` or a `char[]`), which cnx treats as a string. Anything else beside a string is E0929, because it would be handed to `strcmp`: with `u32 x`, `x = "abc"` had emitted `strcmp(x, "abc") == 0`, which the C compiler rejects. A value whose type cnx cannot read, such as an unreadable header macro, is left to the C compiler.
+**A string is compared only with a string** (#2017). Either side of `=` or `!=` may be a string: a `string<N>`, a string literal, or a C string (a `char*` or a `char[]`), which cnx treats as a string. Two C strings compare by content too: `name != other` is `strcmp(name, other) != 0`, not an address comparison; a C string beside `NULL` stays a null check (ADR-046). Anything else beside a string is E0929, which names its type -- `'x' is a u32, not a string` -- because it would be handed to `strcmp`: with `u32 x`, `x = "abc"` had emitted `strcmp(x, "abc") == 0`, which the C compiler rejects. A value whose type cnx cannot read, such as an unreadable header macro, is left to the C compiler. No MISRA C:2012 rule governs comparing a string, so E0929 cites this ADR (CLAUDE.md: a standard is cited only where one of its rules directly applies).
 
-**A string comparison has exactly two operands** (#1373, owner-approved approach: reject the chain rather than generate it). `a = b = c` is `(a = b) = c` (ADR-001), so anything past a string pair would be compared with that pair's bool. It is E0929 whatever it is; `a = b = c` had emitted `strcmp(a, b) == 0` and dropped `c`. E0929's help names the bool and the operand it cannot be compared with, and suggests comparing each operand with the string on its own, joined with `&&`: for `a = b = c`, `(a = c) && (b = c)`. If the bool comparison is meant, write it out with parentheses:
+**A string comparison has exactly two operands** (#1373, owner-approved approach: reject the chain rather than generate it). `a = b = c` is `(a = b) = c` (ADR-001), so anything past a string pair would be compared with that pair's bool. It is E0929 whatever it is; `a = b = c` had emitted `strcmp(a, b) == 0` and dropped `c`. E0929 names the chain and the bool -- `'a = b = c' compares the bool 'a = b' with the string 'c'` -- and, where every operand is a string, suggests each adjacent pair as written, joined with `&&`: `(a = b) && (b = c)`, and `(a = b) && (b != c)` for `a = b != c`. E0810 and E0807 suggest the same pairs for an integer chain. A bool literal past a string pair suggests the pair it likely meant: `a = b = true` and `a != b = false` mean `a = b`. If the bool comparison is meant, write it out with parentheses:
 
 ```cnx
-if ((a = c) && (b = c)) { }   // strcmp(a, c) == 0 && strcmp(b, c) == 0
-bool same <- (a = b) = true;  // (strcmp(a, b) == 0) == true
-if (a = b = c) { }            // E0929: a string comparison takes exactly two operands
-if (a = b = true) { }         // E0929, as above
+if ((a = b) && (b = c)) { }   // strcmp(a, b) == 0 && strcmp(b, c) == 0
+bool same <- (a = b) = p;     // (strcmp(a, b) == 0) == p
+if (a = b = c) { }            // E0929: did you mean '(a = b) && (b = c)'?
+if (a = b = true) { }         // E0929: did you mean 'a = b'?
 ```
 
 The diagnostic is reported at the comparison before the extra operand, `a = b`, which is where `(a = b) = c` reports a string beside its bool.

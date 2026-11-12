@@ -107,6 +107,42 @@ describe("MixedTypeCategoryAnalyzer", () => {
     });
   });
 
+  describe("comparison chains (#1373)", () => {
+    it("names the chain's bool and suggests its adjacent pairs", () => {
+      const errors = analyze(`
+        void main() {
+          i32 a <- 1;
+          i32 b <- 1;
+          i32 c <- 0;
+          bool r <- a = b != c;
+          bool s <- a != b = c = a;
+        }
+      `);
+      expect(errors.map((e) => e.message)).toEqual([
+        "'a = b != c' compares the bool 'a = b' with 'c'",
+        "'a != b = c' compares the bool 'a != b' with 'c'",
+      ]);
+      expect(errors.map((e) => e.helpText)).toEqual([
+        "MISRA C:2012 Rule 10.4: did you mean '(a = b) && (b != c)'?",
+        "MISRA C:2012 Rule 10.4: did you mean '(a != b) && (b = c) && (c = a)'?",
+      ]);
+    });
+
+    it("suggests no pairs that would mix categories themselves", () => {
+      const errors = analyze(`
+        void main() {
+          u32 a <- 1;
+          u32 b <- 1;
+          i32 c <- 0;
+          bool r <- a = b = c;
+        }
+      `);
+      expect(errors.map((e) => e.helpText)).toEqual([
+        "MISRA C:2012 Rule 10.4: both operands must share an essential type category.",
+      ]);
+    });
+  });
+
   describe("same-category and exempt operands (accepted)", () => {
     it("accepts same category (u32 + u32)", () => {
       const errors = analyze(`

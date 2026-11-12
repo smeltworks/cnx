@@ -28,6 +28,14 @@ const header = () => {
     isArray: true,
     arrayDimensions: [8],
   });
+  symbolTable.addCSymbol({
+    ...at,
+    kind: "variable",
+    name: "other",
+    type: "char",
+    isArray: true,
+    arrayDimensions: [8],
+  });
   return symbolTable;
 };
 
@@ -44,6 +52,9 @@ const errors = (body: string) => {
 };
 
 const messages = (body: string) => errors(body).map((e) => e.message);
+const help = (body: string) => errors(body).map((e) => e.helpText);
+
+const RULE = "ADR-045: '=' and '!=' compare a string only with another string.";
 
 describe("StringComparisonAnalyzer", () => {
   it("admits two strings, and a string with a string literal", () => {
@@ -56,49 +67,77 @@ describe("StringComparisonAnalyzer", () => {
     );
   });
 
-  it("rejects an integer on either side of = and != (#2017)", () => {
+  it("names the type of a non-string beside a string (#2017)", () => {
     const found = errors(
-      '    bool r <- x = "abc";\n    bool s <- "abc" != x;\n    bool t <- p = a;',
+      '    bool r <- x = "abc";\n    bool s <- "abc" != x;\n    bool t <- p = a;\n    bool u <- a = (a = b);\n    bool v <- 5 = a;\n    bool w <- a != 1.5;',
     );
-    expect(found.map((e) => e.code)).toEqual(["E0929", "E0929", "E0929"]);
+    expect(found.map((e) => e.code)).toEqual([
+      "E0929",
+      "E0929",
+      "E0929",
+      "E0929",
+      "E0929",
+      "E0929",
+    ]);
     expect(found.map((e) => e.message)).toEqual([
-      "A string cannot be compared with a value that is not a string: 'x'",
-      "A string cannot be compared with a value that is not a string: 'x'",
-      "A string cannot be compared with a value that is not a string: 'p'",
+      "'x' is a u32, not a string",
+      "'x' is a u32, not a string",
+      "'p' is a bool, not a string",
+      "'(a = b)' is a bool, not a string",
+      "'5' is an integer, not a string",
+      "'1.5' is a floating-point number, not a string",
     ]);
+    expect(found[0].helpText).toBe(RULE);
   });
 
-  it("names the bool and suggests comparing each operand with the string", () => {
-    const help = (body: string) => errors(body).map((e) => e.helpText);
-    const rule =
-      "ADR-045: '=' and '!=' compare a string only with another string.";
-    expect(
-      help(
-        "    bool r <- a = b = name;\n    bool s <- a = b = c = name;\n    bool t <- a != b = true;\n    bool u <- p = a;",
-      ),
-    ).toEqual([
-      `${rule} 'a = b' is a bool, and a bool cannot be compared with the string 'name'. Did you mean '(a = name) && (b = name)'?`,
-      `${rule} 'a = b' is a bool, and a bool cannot be compared with the string 'c'. Did you mean '(a = name) && (b = name) && (c = name)'?`,
-      `${rule} 'a != b' is a bool. To compare that bool with 'true', write '(a != b) = true'.`,
-      `${rule} Compare the string with another string, a string<N> or a string literal.`,
-    ]);
-  });
-
-  it("rejects a string comparison with a third operand (#1373)", () => {
+  it("names the bool and the string a chain compares it with (#1373)", () => {
     expect(
       messages("    bool r <- a = b = c;\n    bool s <- a != b != c;"),
     ).toEqual([
-      "A string comparison takes exactly two operands: 'a = b = c'",
-      "A string comparison takes exactly two operands: 'a != b != c'",
+      "'a = b = c' compares the bool 'a = b' with the string 'c'",
+      "'a != b != c' compares the bool 'a != b' with the string 'c'",
     ]);
   });
 
-  it("rejects a bool past a string pair, which (a = b) = true writes out", () => {
+  it("suggests each adjacent pair, every operator kept", () => {
+    expect(
+      help(
+        "    bool r <- a = b != c;\n    bool s <- a != b != c != name;\n    bool t <- a = b = c = name;",
+      ),
+    ).toEqual([
+      "ADR-045: did you mean '(a = b) && (b != c)'?",
+      "ADR-045: did you mean '(a != b) && (b != c) && (c != name)'?",
+      "ADR-045: did you mean '(a = b) && (b = c) && (c = name)'?",
+    ]);
+  });
+
+  it("suggests no pairs for a chain that is not all strings", () => {
+    expect(help("    bool r <- p = p = a;\n    bool s <- x = x = a;")).toEqual([
+      RULE,
+      RULE,
+    ]);
+  });
+
+  it("suggests the plain pair for a bool literal past a string pair", () => {
+    const plain = (pair: string) =>
+      `ADR-045: a string comparison takes two operands. Did you mean '${pair}'?`;
+    expect(
+      help(
+        "    bool r <- a = b = true;\n    bool s <- a = c != false;\n    bool t <- a != b = false;\n    bool u <- a = b != true;\n    bool v <- a != c = p;\n    bool w <- a = b = true = p;",
+      ),
+    ).toEqual([
+      plain("a = b"),
+      plain("a = c"),
+      plain("a = b"),
+      plain("a != b"),
+      plain("(a != c) = p"),
+      plain("(a = b) = true = p"),
+    ]);
     expect(
       messages("    bool r <- a = b = true;\n    bool s <- a != c = p;"),
     ).toEqual([
-      "A string comparison takes exactly two operands: 'a = b = true'",
-      "A string comparison takes exactly two operands: 'a != c = p'",
+      "'a = b = true' compares the bool 'a = b' with 'true'",
+      "'a != c = p' compares the bool 'a != c' with 'p'",
     ]);
     expect(errors("    bool r <- (a = b) = true;")).toEqual([]);
   });
@@ -111,25 +150,27 @@ describe("StringComparisonAnalyzer", () => {
 
   it("names the whole chain before a string that meets its bool", () => {
     expect(messages("    bool r <- p = p = p = a;")).toEqual([
-      "A string cannot be compared with a value that is not a string: 'p = p = p'",
+      "'p = p = p = a' compares the bool 'p = p = p' with the string 'a'",
     ]);
   });
 
   it("reports a non-string first pair once, not again for the chain", () => {
     expect(messages("    bool r <- p = a = b;")).toEqual([
-      "A string cannot be compared with a value that is not a string: 'p'",
+      "'p' is a bool, not a string",
     ]);
   });
 
   it("takes a C char array as a string, at the first pair and past it", () => {
-    expect(errors("    bool r <- a = name;\n    bool s <- name != a;")).toEqual(
-      [],
-    );
+    expect(
+      errors(
+        "    bool r <- a = name;\n    bool s <- name != a;\n    bool t <- name != other;",
+      ),
+    ).toEqual([]);
     expect(
       messages("    bool r <- p = name;\n    bool s <- p = p = name;"),
     ).toEqual([
-      "A string cannot be compared with a value that is not a string: 'p'",
-      "A string cannot be compared with a value that is not a string: 'p = p'",
+      "'p' is a bool, not a string",
+      "'p = p = name' compares the bool 'p = p' with the string 'name'",
     ]);
   });
 
@@ -138,9 +179,7 @@ describe("StringComparisonAnalyzer", () => {
       messages(
         '    cstring c_s <- "x";\n    bool r <- a = c_s;\n    bool s <- x != c_s;',
       ),
-    ).toEqual([
-      "A string cannot be compared with a value that is not a string: 'x'",
-    ]);
+    ).toEqual(["'x' is a u32, not a string"]);
   });
 
   it("leaves an operand cnx cannot type to the C compiler", () => {

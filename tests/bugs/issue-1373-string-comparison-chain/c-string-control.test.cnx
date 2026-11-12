@@ -1,6 +1,6 @@
 // test-execution
 // test-adr: 045
-// #1373 control: a string compares with a C char array and a cstring, which strcmp takes
+// #1373 control: a string compares with a C char array and a cstring, and two C char arrays compare by content, not address
 #include <stdio.h>
 #include "c-strings.h"
 #pragma target host
@@ -14,6 +14,9 @@ i32 main() {
     }
     if (b = name) {
         return 2;
+    }
+    if (name != other) {
+        return 4;
     }
     cstring c_line <- fgets(buffer, buffer.size, stdin);
     if (c_line != NULL) {

@@ -1,0 +1,17 @@
+// test-error
+// test-adr: 045
+// #1373 review: a string chain's suggestion keeps every operator, each between the operands it was written between
+#pragma target host
+
+i32 main() {
+    string<8> a <- "x";
+    string<8> b <- "x";
+    string<8> c <- "y";
+    string<8> d <- "z";
+    bool mixed <- a = b != c;
+    bool apart <- a != b != c != d;
+    if (mixed = apart) {
+        return 1;
+    }
+    return 0;
+}

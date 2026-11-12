@@ -1,8 +1,8 @@
-14:20 error[E0929]: A string comparison takes exactly two operands: 'a = b = name'
-       help: ADR-045: '=' and '!=' compare a string only with another string. 'a = b' is a bool, and a bool cannot be compared with the string 'name'. Did you mean '(a = name) && (b = name)'?
-15:19 error[E0929]: A string cannot be compared with a value that is not a string: '(a = b)'
-       help: ADR-045: '=' and '!=' compare a string only with another string. Compare the string with another string, a string<N> or a string literal.
-16:17 error[E0929]: A string cannot be compared with a value that is not a string: 'p'
-       help: ADR-045: '=' and '!=' compare a string only with another string. Compare the string with another string, a string<N> or a string literal.
-17:17 error[E0929]: A string cannot be compared with a value that is not a string: 'p'
-       help: ADR-045: '=' and '!=' compare a string only with another string. Compare the string with another string, a string<N> or a string literal.
+14:20 error[E0929]: 'a = b = name' compares the bool 'a = b' with the string 'name'
+       help: ADR-045: did you mean '(a = b) && (b = name)'?
+15:19 error[E0929]: '(a = b)' is a bool, not a string
+       help: ADR-045: '=' and '!=' compare a string only with another string.
+16:17 error[E0929]: 'p' is a bool, not a string
+       help: ADR-045: '=' and '!=' compare a string only with another string.
+17:17 error[E0929]: 'p' is a bool, not a string
+       help: ADR-045: '=' and '!=' compare a string only with another string.

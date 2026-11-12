@@ -50,6 +50,7 @@ import OperatorOperandAnalyzer from "./OperatorOperandAnalyzer";
 import EnumValueResolver from "./EnumValueResolver";
 import OperandTyper from "../../utils/OperandTyper";
 import EssentialCategory from "../../utils/EssentialCategory";
+import ComparisonChain from "../../utils/ComparisonChain";
 import CompoundOperator from "../../utils/CompoundOperator";
 import CLAMP_HELPER_FOR_OPERATOR from "../../types/CLAMP_HELPER_FOR_OPERATOR";
 import type IAnalysisContext from "./types/IAnalysisContext";
@@ -162,14 +163,19 @@ class MixedCategoryCheck {
         )
       ) {
         if (EssentialCategory.differ(running, right, operator)) {
-          this.analyzer.addError(
-            operands[i].span,
-            running!,
-            right!,
-            "binary",
-            operator,
-            this.hasOwnEnumMember(operands, enumBeingDeclared),
-          );
+          if (comparison && i > 1) {
+            // One error per chain: past it, every operand meets a bool
+            if (!mixed) this.addChainError(expr, i);
+          } else {
+            this.analyzer.addError(
+              operands[i].span,
+              running!,
+              right!,
+              "binary",
+              operator,
+              this.hasOwnEnumMember(operands, enumBeingDeclared),
+            );
+          }
           mixed = true;
         }
       } else if (!this.enumComparison(operands[i - 1], operands[i], level)) {
@@ -184,6 +190,18 @@ class MixedCategoryCheck {
     this.levelCategories.set(
       MixedCategoryCheck.writtenAt(expr),
       mixed ? null : running,
+    );
+  }
+
+  /** E0810 for a comparison chain's bool beside operand `i` (#1373) */
+  private addChainError(expr: TBinaryExpression, i: number): void {
+    const pairs = ComparisonChain.pairs(expr, this.context);
+    this.analyzer.addChainError(
+      expr.operands[i].span,
+      ComparisonChain.message(expr, i),
+      pairs === null
+        ? "MISRA C:2012 Rule 10.4: both operands must share an essential type category."
+        : `MISRA C:2012 Rule 10.4: did you mean '${pairs}'?`,
     );
   }
 
@@ -418,6 +436,14 @@ class MixedTypeCategoryAnalyzer {
       message: MixedTypeCategoryAnalyzer.message(what, pair),
       helpText,
     });
+  }
+
+  public addChainError(
+    span: ISourceSpan,
+    message: string,
+    helpText: string,
+  ): void {
+    this.errors.push({ code: "E0810", span, message, helpText });
   }
 
   /** E0811 or E0812: an integer beside a header macro cnx cannot type (#1688, ADR-024) */

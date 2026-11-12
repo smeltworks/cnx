@@ -5,7 +5,7 @@
 
 // test-execution
 // test-adr: 045
-// #1373 control: a string compares with a C char array and a cstring, which strcmp takes
+// #1373 control: a string compares with a C char array and a cstring, and two C char arrays compare by content, not address
 // cppcheck-suppress misra-c2012-21.6
 #include <stdio.h>
 #include "c-strings.h"
@@ -24,6 +24,9 @@ int main(void) {
     }
     if (strcmp(b, name) == 0) {
         return 2;
+    }
+    if (strcmp(name, other) != 0) {
+        return 4;
     }
     const char* c_line = fgets(buffer, 17, stdin);
     if (c_line != NULL) {

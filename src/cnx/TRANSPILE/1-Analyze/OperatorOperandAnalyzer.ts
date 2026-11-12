@@ -32,6 +32,7 @@
  */
 
 import IOperatorOperandError from "./types/IOperatorOperandError";
+import ComparisonChain from "../../utils/ComparisonChain";
 import OperandTyper from "../../utils/OperandTyper";
 import CompoundAssignmentAnalyzer from "./CompoundAssignmentAnalyzer";
 import CompoundOperator from "../../utils/CompoundOperator";
@@ -186,7 +187,14 @@ class OperatorOperandCheck {
           level.operands[0].span,
           left.span,
         );
-        this.analyzer.addError({ span: comparison }, operator, "bool");
+        const pairs = ComparisonChain.pairs(level, this.context);
+        this.analyzer.addChainError(
+          comparison,
+          ComparisonChain.message(level, i + 1),
+          pairs === null
+            ? "MISRA C:2012 Rule 10.1: a bool is not a number."
+            : `MISRA C:2012 Rule 10.1: did you mean '${pairs}'?`,
+        );
         return;
       }
       const leftRejection = this.rejection(
@@ -426,6 +434,18 @@ class OperatorOperandAnalyzer {
     }
 
     return this.errors.sort(SourceOrder.bySpan);
+  }
+
+  /** E0807 for a relational chain: its comparison's bool under the next operator (#1373) */
+  public addChainError(
+    span: ISourceSpan,
+    message: string,
+    helpText: string,
+  ): void {
+    const position = `${span.line}:${span.column}`;
+    if (this.reportedAt.has(position)) return;
+    this.reportedAt.add(position);
+    this.errors.push({ code: "E0807", span, message, helpText });
   }
 
   public addError(

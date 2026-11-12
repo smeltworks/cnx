@@ -181,7 +181,7 @@ The transpiler converts:
 
 This is a simple token substitution with no semantic complexity.
 
-A chain of `=` / `!=` is left-associated, as in C (#1373): `a = b = c` is `(a = b) = c`, a Boolean compared with `c`, not "all three are equal". With integers that is E0810 (ADR-024, Rule 10.4); with strings it is E0929 (ADR-045), because a string comparison has exactly two operands. A chain of Booleans, `p = q = r`, compares as written.
+A chain of `=` / `!=` is left-associated, as in C (#1373): `a = b = c` is `(a = b) = c`, a Boolean compared with `c`, not "all three are equal". With integers that is E0810 (ADR-024, Rule 10.4); with strings it is E0929 (ADR-045), because a string comparison has exactly two operands. A chain of Booleans, `p = q = r`, compares as written. Each of those errors suggests the chain's adjacent pairs joined with `&&`, every operator kept: `(a = b) && (b != c)` for `a = b != c`.
 
 ## Scope-Context Matrix (#1219)
 
