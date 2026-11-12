@@ -6,9 +6,16 @@
 // -Wextra -Werror. Each kind takes a literal, a whole string, a substring and
 // a concatenation, with the part that fills the capacity first and then
 // last. A scalar string<8>, a declaration and an argument are built the same
-// way as a concatenation, so each takes both orders too.
+// way as a concatenation, so each takes both orders too, and so do a staged
+// range write (#2373) and a struct initializer's field (#2236). A three-part
+// concatenation fills the capacity with its middle part.
 struct Config {
     string<8>[2] items;
+}
+
+struct Named {
+    string<8> name;
+    u8 id;
 }
 
 mut string<8>[2] globalNames;
@@ -130,6 +137,45 @@ i32 main() {
     string<8> fromGlobal <- "" + globalSource;
     if (fromGlobal != "eight ch") {
         return 25;
+    }
+
+    localNames[1] <- empty + "eight ch" + empty;
+    if (localNames[1] != "eight ch") {
+        return 26;
+    }
+    mut string<8> ranged;
+    ranged[0, 8] <- full + "";
+    if (ranged != "eight ch") {
+        return 27;
+    }
+    ranged[0, 8] <- "" + full;
+    if (ranged != "eight ch") {
+        return 28;
+    }
+    Named first <- { name: full + "", id: 1 };
+    if (first.name != "eight ch") {
+        return 29;
+    }
+    Named last <- { name: "" + full, id: 2 };
+    if (last.name != "eight ch") {
+        return 30;
+    }
+    // gcc's truncation check sees a literal or a mutable global's 8 characters
+    ranged[0, 8] <- "eight ch" + "";
+    if (ranged != "eight ch") {
+        return 31;
+    }
+    ranged[0, 8] <- globalSource + "";
+    if (ranged != "eight ch") {
+        return 32;
+    }
+    Named literal <- { name: "eight ch" + "", id: 3 };
+    if (literal.name != "eight ch") {
+        return 33;
+    }
+    Named fromSource <- { name: globalSource + "", id: 4 };
+    if (fromSource.name != "eight ch") {
+        return 34;
     }
     return 0;
 }
