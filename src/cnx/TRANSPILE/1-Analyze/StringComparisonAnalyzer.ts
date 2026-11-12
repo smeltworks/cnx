@@ -12,8 +12,8 @@
  * `strcmp(a, b) == 0` and dropped `= c`. Both are reported at the comparison
  * before the operand, where `(a = b) = c` reports.
  *
- * A string is a `string<N>`, a string literal, a C `char` array or a C char
- * pointer (`cstring`): what `strcmp` takes. An operand whose type cnx cannot
+ * A string is a `string<N>`, a string literal, or a C string (a `char` array
+ * or a `char*`), which cnx treats as a string. An operand whose type cnx cannot
  * read is left to the C compiler, as Rule 10.1's check leaves it.
  */
 
@@ -33,10 +33,7 @@ import IStringComparisonError from "./types/IStringComparisonError";
 const HELP = "ADR-045: '=' and '!=' compare a string only with another string.";
 
 const MIXED_HELP =
-  "Compare the string with a string<N>, a string literal, a C char array or a cstring.";
-
-const CHAIN_HELP =
-  "A comparison is a bool, so compare each pair on its own and join them with && or ||, e.g. (a = b) && (b = c).";
+  "Compare the string with another string, a string<N> or a string literal.";
 
 class StringComparisonAnalyzer {
   private readonly found: IStringComparisonError[] = [];
@@ -77,19 +74,48 @@ class StringComparisonAnalyzer {
     }
     const pairIsString = leftIsString || rightIsString;
     for (let i = 2; i < operands.length; i += 1) {
-      if (!pairIsString && !this.isString(operands[i])) continue;
+      const isString = this.isString(operands[i]);
+      if (!pairIsString && !isString) continue;
       const comparison = SourceSpanRange.between(
         operands[0].span,
         operands[i - 1].span,
       );
-      const message = pairIsString
-        ? `A string comparison takes exactly two operands: '${StringComparisonAnalyzer.written(level, i + 1)}'`
-        : StringComparisonAnalyzer.notAString(
-            StringComparisonAnalyzer.written(level, i),
-          );
-      this.report(comparison, message, [CHAIN_HELP]);
+      const bool = StringComparisonAnalyzer.written(level, 0, i);
+      const next = operands[i].written;
+      const versusString = `'${bool}' is a bool, and a bool cannot be compared with the string '${next}'.`;
+      if (!pairIsString) {
+        this.report(comparison, StringComparisonAnalyzer.notAString(bool), [
+          versusString,
+        ]);
+        return;
+      }
+      const help = isString
+        ? `${versusString} Did you mean '${this.pairs(level, i)}'?`
+        : `'${bool}' is a bool. To compare that bool with '${next}', write '(${bool})${StringComparisonAnalyzer.after(level, i)}'.`;
+      this.report(
+        comparison,
+        `A string comparison takes exactly two operands: '${StringComparisonAnalyzer.written(level, 0, i + 1)}'`,
+        [help],
+      );
       return;
     }
+  }
+
+  /**
+   * Each operand before the string at `through` compared with it, joined with
+   * &&: `a = b = name` as `(a = name) && (b = name)`. An all-string chain is
+   * compared with its last operand, so no operand is left out.
+   */
+  private pairs(level: TBinaryExpression, through: number): string {
+    const operands = level.operands;
+    const all = operands.every((operand) => this.isString(operand));
+    const last = all ? operands.length - 1 : through;
+    const operator = level.operators[last - 1];
+    const target = operands[last].written;
+    return operands
+      .slice(0, last)
+      .map((operand) => `(${operand.written} ${operator} ${target})`)
+      .join(" && ");
   }
 
   /** What `strcmp` takes: a string, a C `char` array or a C char pointer */
@@ -113,13 +139,25 @@ class StringComparisonAnalyzer {
     return `A string cannot be compared with a value that is not a string: '${written}'`;
   }
 
-  /** The chain before operand `end`, as written */
-  private static written(level: TBinaryExpression, end: number): string {
-    let text = level.operands[0].written;
-    for (let i = 1; i < end; i += 1) {
+  /** Operands `start` up to `end` and the operators between, as written */
+  private static written(
+    level: TBinaryExpression,
+    start: number,
+    end: number,
+  ): string {
+    let text = level.operands[start].written;
+    for (let i = start + 1; i < end; i += 1) {
       text += ` ${level.operators[i - 1]} ${level.operands[i].written}`;
     }
     return text;
+  }
+
+  /** The operators and operands from operand `start` on, as written */
+  private static after(level: TBinaryExpression, start: number): string {
+    return level.operators
+      .slice(start - 1)
+      .map((operator, k) => ` ${operator} ${level.operands[start + k].written}`)
+      .join("");
   }
 
   private report(

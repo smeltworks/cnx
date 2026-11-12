@@ -1,2 +1,2 @@
 10:8 error[E0929]: A string comparison takes exactly two operands: 'a = b = c'
-       help: ADR-045: '=' and '!=' compare a string only with another string. A comparison is a bool, so compare each pair on its own and join them with && or ||, e.g. (a = b) && (b = c).
+       help: ADR-045: '=' and '!=' compare a string only with another string. 'a = b' is a bool, and a bool cannot be compared with the string 'c'. Did you mean '(a = c) && (b = c)'?

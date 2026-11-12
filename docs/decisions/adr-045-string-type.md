@@ -491,12 +491,12 @@ if (a != b) {      // strcmp(a, b) != 0
 }
 ```
 
-**A string is compared only with a string** (#2017). Either side of `=` or `!=` may be a `string<N>`, a string literal, a C `char` array or a `cstring`, which is what `strcmp` takes. Anything else beside a string is E0929, because it would be handed to `strcmp`: with `u32 x`, `x = "abc"` had emitted `strcmp(x, "abc") == 0`, which the C compiler rejects. A value whose type cnx cannot read, such as an unreadable header macro, is left to the C compiler.
+**A string is compared only with a string** (#2017). Either side of `=` or `!=` may be a string: a `string<N>`, a string literal, or a C string (a `char*` or a `char[]`), which cnx treats as a string. Anything else beside a string is E0929, because it would be handed to `strcmp`: with `u32 x`, `x = "abc"` had emitted `strcmp(x, "abc") == 0`, which the C compiler rejects. A value whose type cnx cannot read, such as an unreadable header macro, is left to the C compiler.
 
-**A string comparison has exactly two operands** (#1373, owner-approved approach: reject the chain rather than generate it). `a = b = c` is `(a = b) = c` (ADR-001), so anything past a string pair would be compared with that pair's bool. It is E0929 whatever it is; `a = b = c` had emitted `strcmp(a, b) == 0` and dropped `c`. Compare each pair on its own and join them with `&&` or `||`, or write the bool comparison out with parentheses if it is meant:
+**A string comparison has exactly two operands** (#1373, owner-approved approach: reject the chain rather than generate it). `a = b = c` is `(a = b) = c` (ADR-001), so anything past a string pair would be compared with that pair's bool. It is E0929 whatever it is; `a = b = c` had emitted `strcmp(a, b) == 0` and dropped `c`. E0929's help names the bool and the operand it cannot be compared with, and suggests comparing each operand with the string on its own, joined with `&&`: for `a = b = c`, `(a = c) && (b = c)`. If the bool comparison is meant, write it out with parentheses:
 
 ```cnx
-if ((a = b) && (b = c)) { }   // strcmp(a, b) == 0 && strcmp(b, c) == 0
+if ((a = c) && (b = c)) { }   // strcmp(a, c) == 0 && strcmp(b, c) == 0
 bool same <- (a = b) = true;  // (strcmp(a, b) == 0) == true
 if (a = b = c) { }            // E0929: a string comparison takes exactly two operands
 if (a = b = true) { }         // E0929, as above

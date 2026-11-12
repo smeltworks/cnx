@@ -1,8 +1,8 @@
 6:22 error[E0929]: A string cannot be compared with a value that is not a string: '5'
-       help: ADR-045: '=' and '!=' compare a string only with another string. Compare the string with a string<N>, a string literal, a C char array or a cstring.
+       help: ADR-045: '=' and '!=' compare a string only with another string. Compare the string with another string, a string<N> or a string literal.
 9:34 error[E0929]: A string cannot be compared with a value that is not a string: '6'
-       help: ADR-045: '=' and '!=' compare a string only with another string. Compare the string with a string<N>, a string literal, a C char array or a cstring.
+       help: ADR-045: '=' and '!=' compare a string only with another string. Compare the string with another string, a string<N> or a string literal.
 12:15 error[E0929]: A string comparison takes exactly two operands: 's = t = true'
-       help: ADR-045: '=' and '!=' compare a string only with another string. A comparison is a bool, so compare each pair on its own and join them with && or ||, e.g. (a = b) && (b = c).
+       help: ADR-045: '=' and '!=' compare a string only with another string. 's = t' is a bool. To compare that bool with 'true', write '(s = t) = true'.
 17:30 error[E0929]: A string cannot be compared with a value that is not a string: '7'
-       help: ADR-045: '=' and '!=' compare a string only with another string. Compare the string with a string<N>, a string literal, a C char array or a cstring.
+       help: ADR-045: '=' and '!=' compare a string only with another string. Compare the string with another string, a string<N> or a string literal.

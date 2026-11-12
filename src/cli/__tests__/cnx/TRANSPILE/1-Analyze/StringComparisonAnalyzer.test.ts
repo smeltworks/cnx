@@ -68,6 +68,22 @@ describe("StringComparisonAnalyzer", () => {
     ]);
   });
 
+  it("names the bool and suggests comparing each operand with the string", () => {
+    const help = (body: string) => errors(body).map((e) => e.helpText);
+    const rule =
+      "ADR-045: '=' and '!=' compare a string only with another string.";
+    expect(
+      help(
+        "    bool r <- a = b = name;\n    bool s <- a = b = c = name;\n    bool t <- a != b = true;\n    bool u <- p = a;",
+      ),
+    ).toEqual([
+      `${rule} 'a = b' is a bool, and a bool cannot be compared with the string 'name'. Did you mean '(a = name) && (b = name)'?`,
+      `${rule} 'a = b' is a bool, and a bool cannot be compared with the string 'c'. Did you mean '(a = name) && (b = name) && (c = name)'?`,
+      `${rule} 'a != b' is a bool. To compare that bool with 'true', write '(a != b) = true'.`,
+      `${rule} Compare the string with another string, a string<N> or a string literal.`,
+    ]);
+  });
+
   it("rejects a string comparison with a third operand (#1373)", () => {
     expect(
       messages("    bool r <- a = b = c;\n    bool s <- a != b != c;"),

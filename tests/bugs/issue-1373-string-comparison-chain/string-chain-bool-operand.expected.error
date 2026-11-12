@@ -1,8 +1,8 @@
 10:17 error[E0929]: A string comparison takes exactly two operands: 'a = b = true'
-       help: ADR-045: '=' and '!=' compare a string only with another string. A comparison is a bool, so compare each pair on its own and join them with && or ||, e.g. (a = b) && (b = c).
+       help: ADR-045: '=' and '!=' compare a string only with another string. 'a = b' is a bool. To compare that bool with 'true', write '(a = b) = true'.
 11:18 error[E0929]: A string comparison takes exactly two operands: 'a = c != false'
-       help: ADR-045: '=' and '!=' compare a string only with another string. A comparison is a bool, so compare each pair on its own and join them with && or ||, e.g. (a = b) && (b = c).
+       help: ADR-045: '=' and '!=' compare a string only with another string. 'a = c' is a bool. To compare that bool with 'false', write '(a = c) != false'.
 12:17 error[E0929]: A string comparison takes exactly two operands: 'a != b = false'
-       help: ADR-045: '=' and '!=' compare a string only with another string. A comparison is a bool, so compare each pair on its own and join them with && or ||, e.g. (a = b) && (b = c).
+       help: ADR-045: '=' and '!=' compare a string only with another string. 'a != b' is a bool. To compare that bool with 'false', write '(a != b) = false'.
 14:18 error[E0929]: A string cannot be compared with a value that is not a string: 'p'
-       help: ADR-045: '=' and '!=' compare a string only with another string. Compare the string with a string<N>, a string literal, a C char array or a cstring.
+       help: ADR-045: '=' and '!=' compare a string only with another string. Compare the string with another string, a string<N> or a string literal.
