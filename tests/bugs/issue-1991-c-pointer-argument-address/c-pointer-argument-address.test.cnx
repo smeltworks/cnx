@@ -16,16 +16,11 @@ i32 main() {
     if (t.total != 5) {
         return 2;
     }
-    // NEGATIVE CONTROL -- an address already written takes no second `&`
-    bump(&a);
-    if (a != 3) {
-        return 3;
-    }
     // NEGATIVE CONTROL -- an array decays by itself, no address taken
     u32[3] values <- [1, 2, 3];
     u32 all <- sum_all(values, values.type_element_count);
     if (all != 6) {
-        return 4;
+        return 3;
     }
     return 0;
 }

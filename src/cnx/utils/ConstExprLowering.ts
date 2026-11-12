@@ -70,9 +70,6 @@ class ConstExprLowering {
       case "binary":
         return ConstExprLowering.chain(expr);
       case "unary":
-        if (expr.operator === "&") {
-          return ConstExprLowering.other("address", expr);
-        }
         return {
           kind: "unary",
           op: expr.operator,

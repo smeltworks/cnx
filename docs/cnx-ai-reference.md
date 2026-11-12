@@ -1038,6 +1038,14 @@ global.lv_label_set_text_fmt(this.speed_label, "%d mph", speed);
 // generates: lv_label_set_text_fmt(GaugeSpeed_speed_label, "%d mph", *speed);
 ```
 
+A scanf-family call's literal format says which arguments it writes; pass the `mut` variable itself (cnx has no `&`, ADR-071 Decision 2):
+
+```cnx
+mut i32 parsed <- 0;
+i32 count <- global.sscanf("7", "%d", parsed);   // sscanf("7", "%d", &parsed);
+// WRONG: global.sscanf("7", "%d", &parsed);      -- `&` is not cnx syntax
+```
+
 ## Scope Variable References in Struct Initializers
 
 Scope variables can be referenced in struct initializers, including arrays that decay to pointers in C:

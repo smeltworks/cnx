@@ -197,7 +197,9 @@ This means **pointer reassignment serves no purpose** in cnx. If you can't reall
 2. **Function parameters receive the address** (pass-by-reference)
 3. **Assignment (`<-`) updates the value** at that address
 4. **Addresses cannot be reassigned** after initialization
-5. **`&` operator reads the address** (for debugging, hardware registers)
+
+There is no `&` operator: `&x` is not cnx (owner ruling, 2026-10-17, #2117; see
+[No `&`](#no-)).
 
 ### Syntax Examples
 
@@ -216,7 +218,6 @@ void doSomething(i8 x) {
 
 // After call: myVar is now 2
 Console.print(myVar);   // Prints "2" (the value)
-Console.print(&myVar);  // Prints "0x20001234" (the address)
 ```
 
 ### What This Eliminates
@@ -308,22 +309,23 @@ cursor.y <- 0;
 moveRight(cursor);  // cursor.x is now 1
 ```
 
-### The `&` Operator
+### No `&`
 
-`&` is only for **reading** the address, not creating a pointer:
+Owner ruling, 2026-10-17 (#2117): `&x` is not valid cnx anywhere, including as
+an argument to a C function. It is a compile error for unknown syntax. Rejecting
+it is a fix, not a breaking change, because `&x` was never cnx.
 
-```
-i32 value <- 42;
+An earlier draft of this ADR offered a read-only `&` (`u32 addr <- &value;`).
+The compiler parsed it and emitted `uint32_t addr = &value;`, which gcc's
+`-Werror=int-conversion` rejects. Nothing a cnx program needs takes it:
 
-// Print the address (for debugging)
-Console.printHex(&value);  // "0x20001000"
-
-// Hardware register access
-u32 registerAddr <- &GPIOA.DR;  // Get address of register
-
-// You CANNOT do:
-// &value <- 0x30000000;  // ERROR: Cannot reassign addresses
-```
+- **A C function's pointer parameter** takes its `&` from the header: `bump(a)`
+  for `void bump(uint32_t* x)` is `bump(&a)` in C (#1991).
+- **A variadic C out-parameter** (`sscanf`'s `%d` target) takes its `&` from the
+  literal format of a C standard scanf-family call (owner ruling, 2026-11-12,
+  #2117; [ADR-071](adr-071-read-only-by-default.md) Decision 2):
+  `global.sscanf("7", "%d", parsed)` is `sscanf("7", "%d", &parsed)` in C.
+- **A register's address** is the one its declaration writes (ADR-004).
 
 ### Small Types: Optimization Opportunity
 
@@ -552,7 +554,7 @@ register GPIOA @ 0x40020000 {
 }
 
 // Can we get the address?
-u32 addr <- &GPIOA.DR;  // Should this work?
+u32 addr <- &GPIOA.DR;  // No: `&` is not cnx (#2117)
 ```
 
 ---
@@ -645,13 +647,13 @@ The key insight: **If it looks like it modifies the variable, it does.** No hidd
 
 ## Summary
 
-| Feature              | C         | C++                 | Rust       | cnx                |
-| -------------------- | --------- | ------------------- | ---------- | ------------------ |
-| Pass by value        | Default   | Default             | Default    | Never              |
-| Pass by reference    | `*` + `&` | `&` in signature    | `&`/`&mut` | Default            |
-| Pointer reassignment | Allowed   | Allowed             | Allowed    | **Forbidden**      |
-| Dereference syntax   | `*ptr`    | `*ptr` or automatic | `*ptr`     | Automatic          |
-| Address-of operator  | `&var`    | `&var`              | `&var`     | `&var` (read-only) |
+| Feature              | C         | C++                 | Rust       | cnx           |
+| -------------------- | --------- | ------------------- | ---------- | ------------- |
+| Pass by value        | Default   | Default             | Default    | Never         |
+| Pass by reference    | `*` + `&` | `&` in signature    | `&`/`&mut` | Default       |
+| Pointer reassignment | Allowed   | Allowed             | Allowed    | **Forbidden** |
+| Dereference syntax   | `*ptr`    | `*ptr` or automatic | `*ptr`     | Automatic     |
+| Address-of operator  | `&var`    | `&var`              | `&var`     | None (#2117)  |
 
 **cnx's model:** Everything is a reference. Assignment updates values. Addresses are fixed. Simple.
 

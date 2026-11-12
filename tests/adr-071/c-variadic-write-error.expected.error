@@ -1,14 +1,14 @@
-15:27 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"5"' to it is not memory safe
+16:27 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"5"' to it is not memory safe
        help: Consider converting 'sscanf' to cnx.
-15:32 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%d"' to it is not memory safe
+16:32 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%d"' to it is not memory safe
        help: Consider converting 'sscanf' to cnx.
-17:31 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"7"' to it is not memory safe
+18:31 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"7"' to it is not memory safe
        help: Consider converting 'sscanf' to cnx.
-17:36 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%d"' to it is not memory safe
+18:36 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%d"' to it is not memory safe
        help: Consider converting 'sscanf' to cnx.
-18:33 warning[E0896]: cnx cannot see how 'printf' uses parameter 1, so passing '"%s %d %d %d\n"' to it is not memory safe
+19:33 warning[E0896]: cnx cannot see how 'printf' uses parameter 1, so passing '"%s %d %d %d\n"' to it is not memory safe
        help: Consider converting 'printf' to cnx.
-15:38 error[E0900]: 'x' is read-only, and argument 3 of 'sscanf' fills its '...', which 'sscanf' may write through
+16:38 error[E0900]: 'x' is read-only, and argument 3 of 'sscanf' fills its '...', which 'sscanf' may write through
        help: Declare 'x' `mut`.
-18:50 error[E0900]: 'label' is read-only, and argument 2 of 'printf' fills its '...', which 'printf' may write through
+19:50 error[E0900]: 'label' is read-only, and argument 2 of 'printf' fills its '...', which 'printf' may write through
        help: Declare 'label' `mut`.

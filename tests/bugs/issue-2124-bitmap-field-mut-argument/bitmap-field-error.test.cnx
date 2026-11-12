@@ -1,0 +1,37 @@
+// test-error
+// test-adr: 006
+// #2124: a `mut` parameter writes its argument, so the argument must be a
+// variable (E0915). A bitmap field is bits of its bitmap and a header
+// struct's C bit-field has no address, so C was `bumpBool(&((f >> 0) & 1))`,
+// which gcc rejects. CONTROL: the header struct's plain field `count` is a
+// variable, so `bumpU32(c.count)` stays silent.
+
+#include "header-bit-fields.h"
+
+bitmap8 Flags {
+    a,
+    b,
+    c,
+    d,
+    e,
+    f,
+    g,
+    h
+}
+
+void bumpBool(mut bool v) {
+    v <- true;
+}
+
+void bumpU32(mut u32 v) {
+    v +<- 1;
+}
+
+void useAll() {
+    mut Flags f <- 0;
+    f.b <- true;
+    mut Control c <- { mode: 0, count: 0 };
+    bumpBool(f.a);
+    bumpU32(c.mode);
+    bumpU32(c.count);
+}

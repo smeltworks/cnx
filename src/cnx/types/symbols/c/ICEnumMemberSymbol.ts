@@ -7,8 +7,8 @@ interface ICEnumMemberSymbol extends ICBaseSymbol {
   /** Discriminator narrowed to "enum_member" */
   readonly kind: "enum_member";
 
-  /** Parent enum name */
-  readonly parent: string;
+  /** Parent enum name; null for an anonymous enum's constant */
+  readonly parent: string | null;
 
   /** Optional explicit value */
   readonly value?: number;

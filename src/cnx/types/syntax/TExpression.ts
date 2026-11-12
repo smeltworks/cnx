@@ -42,7 +42,7 @@ type TExpression = ISyntaxNode &
       }
     | {
         readonly kind: "unary";
-        readonly operator: "!" | "-" | "~" | "&";
+        readonly operator: "!" | "-" | "~";
         readonly operand: TExpression;
       }
     | {

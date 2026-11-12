@@ -51,7 +51,8 @@ int main(void) {
     if (last_data != buffer) {
         return 6;
     }
-    if (last_widget != &dummy_widget) {
+    const int32_t forwarded = was_last_widget(&dummy_widget);
+    if (forwarded != 1) {
         return 7;
     }
     return 0;

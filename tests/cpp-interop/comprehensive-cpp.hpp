@@ -232,8 +232,8 @@ Result process(const char* str);
 // ============================================================================
 void modifyRef(int& ref);
 void readRef(const int& ref);
-void modifyPtr(int* ptr);
-void readPtr(const int* ptr);
+void modifyPtr(int32_t* ptr);
+void readPtr(const int32_t* ptr);
 
 // ============================================================================
 // SECTION 11: COMPLEX STRUCT MEMBERS

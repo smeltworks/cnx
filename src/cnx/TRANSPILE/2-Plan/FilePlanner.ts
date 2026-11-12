@@ -39,6 +39,7 @@ import type ILengthName from "../../utils/types/ILengthName";
 import type TLengthRule from "../../utils/types/TLengthRule";
 import LengthSubject from "../../utils/LengthSubject";
 import OperandTyper from "../../utils/OperandTyper";
+import ScanfFormat from "../../utils/ScanfFormat";
 import CharacterWrite from "../../utils/CharacterWrite";
 import StringValueForm from "../../utils/StringValueForm";
 import StringUtils from "../../utils/StringUtils";
@@ -71,6 +72,7 @@ import ExpressionShape from "../../utils/ExpressionShape";
 import StringOperand from "../../utils/StringOperand";
 import VariableDeclarations from "../../utils/VariableDeclarations";
 import MutArgument from "../1-Analyze/helpers/MutArgument";
+import BoundDeclaration from "../1-Analyze/helpers/BoundDeclaration";
 import StringWriteSites from "../1-Analyze/helpers/StringWriteSites";
 import SafeDivision from "../../utils/SafeDivision";
 import StatementNodes from "../../utils/StatementNodes";
@@ -1371,15 +1373,35 @@ class FilePlanner {
       : base;
   }
 
+  /** The step of the call at `site` in its chain */
+  private callStepAt(
+    site: Extract<TValueSite, { kind: "argument" }>,
+  ): IChainStep | null {
+    const head = ExpressionShape.headOf(site.call);
+    return (
+      OperandTyper.chainOf(site.call, this.state.typingContext()).steps[
+        site.op - head.opsConsumed
+      ] ?? null
+    );
+  }
+
+  /** #2117: the argument at `site` is one a scanf-family call's literal format fills */
+  private filledByFormat(
+    site: Extract<TValueSite, { kind: "argument" }>,
+  ): boolean {
+    const callee = this.callStepAt(site)?.callee ?? null;
+    const call = site.call.ops[site.op];
+    invariant(call?.kind === "call", "an argument site names a call");
+    if (callee === null) return false;
+    const writes = ScanfFormat.writesOf(callee, call.arguments);
+    return writes.kind === "literal" && writes.written.has(site.argument);
+  }
+
   /** How the call at `site` passes its argument (#1991) */
   private argumentPassing(
     site: Extract<TValueSite, { kind: "argument" }>,
   ): IArgumentPassing {
-    const head = ExpressionShape.headOf(site.call);
-    const step =
-      OperandTyper.chainOf(site.call, this.state.typingContext()).steps[
-        site.op - head.opsConsumed
-      ] ?? null;
+    const step = this.callStepAt(site);
     const input = this.state;
     const callbackTypeFunction = CallArgumentPassing.callbackFunction(
       step?.before?.typeName ?? null,
@@ -1402,6 +1424,7 @@ class FilePlanner {
   private cArgumentForm(
     expression: TExpression,
     param: IArgumentPassing["param"],
+    site: Extract<TValueSite, { kind: "argument" }>,
   ): TCArgumentForm {
     const object = ExpressionShape.unparenthesized(expression);
     const id = ExpressionShape.simpleIdentifier(object);
@@ -1413,7 +1436,7 @@ class FilePlanner {
     return CArgumentAddress.formOf(
       {
         param,
-        addressWritten: object.kind === "unary" && object.operator === "&",
+        filledByFormat: this.filledByFormat(site),
         promotedHandle: parameter?.forcePointerSemantics ?? false,
         argType:
           this.directTypeOf(object) ??
@@ -1544,7 +1567,7 @@ class FilePlanner {
             );
       const cForm =
         passing.mode === "c"
-          ? this.cArgumentForm(expression, passing.param)
+          ? this.cArgumentForm(expression, passing.param, site)
           : null;
       planned.set(expression, { passing, form, cForm, enumCast });
       const cType = form === null ? enumCast : ArgumentForm.cTypeOf(form);
@@ -2496,13 +2519,8 @@ class FilePlanner {
    * call in its subscript is a side effect, not a qualifier
    */
   private static isVolatileTarget(binding: TValueBinding | null): boolean {
-    if (binding?.kind === "local") {
-      return binding.declaration.isVolatile || binding.declaration.isAtomic;
-    }
-    if (binding?.kind === "variable") {
-      return binding.symbol.isVolatile || binding.symbol.isAtomic;
-    }
-    return false;
+    const declaration = BoundDeclaration.of(binding);
+    return declaration?.isVolatile === true || declaration?.isAtomic === true;
   }
 
   /**

@@ -200,7 +200,7 @@ class OperandTyper {
    * and bitwise levels, parentheses, a ternary's VALUE arms (never its
    * condition), and unary `-` and `~`; it stops at a postfix chain, a cast, a
    * Boolean-valued level or `!` (one Boolean leaf) and `sizeof`; it excludes
-   * `&x` and a shift count.
+   * a shift count.
    */
   static valueLeaves(
     expr: TExpression,
@@ -230,7 +230,6 @@ class OperandTyper {
         OperandTyper.valueLeafExpressions(arm, isLeaf),
       );
     }
-    if (expr.kind === "unary" && expr.operator === "&") return [];
     const operand = OperandTyper.wrappedOperand(expr);
     return operand === null
       ? [expr]
@@ -438,7 +437,7 @@ class OperandTyper {
       current = next;
     }
     return {
-      typing: { root: start.binding, steps },
+      typing: { root: start.binding, steps, endsOnBitField: bitField },
       last: current.k === "value" ? current.t : null,
     };
   }
@@ -746,6 +745,16 @@ class OperandTyper {
   }
 
   /**
+   * An array or a `string<N>`: a buffer of known size, which a variadic C
+   * callee outside the scanf family may write through (ADR-071 Decision 2).
+   * Unlike `decaysToPointer` it leaves out an unsized `string` -- `main`'s
+   * `args[0]` -- which cnx does not assume such a callee writes.
+   */
+  static isSizedBuffer(t: IOperandType | null): boolean {
+    return t !== null && (t.dimensions.length > 0 || t.stringCapacity !== null);
+  }
+
+  /**
    * ADR-057's scope-type predicate for the file being typed: the scope types
    * it declares or its include closure declares (#1724). The one answer 1.4
    * settled the file's symbols with and codegen qualifies with, so the typer
@@ -930,17 +939,13 @@ class OperandTyper {
         OperandTyper.typeOf(expr.operand, ctx)?.hasSideEffect ?? false,
       );
     }
-    if (expr.operator === "-" || expr.operator === "~") {
-      const t = OperandTyper.typeOf(expr.operand, ctx);
-      if (t === null) return null;
-      const form =
-        expr.operator === "-" && t.form.kind === "literal"
-          ? { ...t.form, negated: !t.form.negated }
-          : t.form;
-      return { ...t, form, overflow: null, binding: null };
-    }
-    // `&x` is an address, never a value operand (#1152)
-    return null;
+    const t = OperandTyper.typeOf(expr.operand, ctx);
+    if (t === null) return null;
+    const form =
+      expr.operator === "-" && t.form.kind === "literal"
+        ? { ...t.form, negated: !t.form.negated }
+        : t.form;
+    return { ...t, form, overflow: null, binding: null };
   }
 
   private static identifierType(

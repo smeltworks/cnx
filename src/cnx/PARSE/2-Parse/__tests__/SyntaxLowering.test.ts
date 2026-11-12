@@ -86,7 +86,6 @@ describe("SyntaxLowering", () => {
     ["(a < b) ? 1 : 2", "(relational(a < b) ? integer:1 : integer:2)"],
     ["-x", "-x"],
     ["~0", "~integer:0"],
-    ["&x", "&x"],
     ["!!x", "!!x"],
     ["1 - -1", "additive(integer:1 - -integer:1)"],
     ["this.n", "this.n"],
@@ -181,7 +180,7 @@ describe("SyntaxLowering", () => {
     ["( u8", "<missing>"],
     // a field recovered without a name initializes nothing
     ["{ a: 1, : 2 }", "{a: integer:1}"],
-    ["& {", "&{}"],
+    ["- {", "-{}"],
     ["{ a: 1, b }", "{a: integer:1, b: <missing>}"],
     ["a.", "a<missing op>"],
   ])(

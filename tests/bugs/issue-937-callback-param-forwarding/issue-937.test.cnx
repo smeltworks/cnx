@@ -30,7 +30,7 @@ i32 main() {
     mut widget_t dummy_widget <- { dummy: 42 };
 
     // Invoke the callback via helper - the callback should forward params correctly
-    i32 invoked <- global.invoke_registered_cb(&dummy_widget, &r, buffer);
+    i32 invoked <- global.invoke_registered_cb(dummy_widget, r, buffer);
     if (invoked = 0) {
         return 1;
     }
@@ -55,7 +55,8 @@ i32 main() {
     }
 
     // Verify w was forwarded correctly
-    if (last_widget != &dummy_widget) {
+    i32 forwarded <- global.was_last_widget(dummy_widget);
+    if (forwarded != 1) {
         return 7;
     }
 

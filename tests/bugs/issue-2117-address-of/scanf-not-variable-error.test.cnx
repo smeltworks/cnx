@@ -1,0 +1,41 @@
+// test-error
+// test-adr: 071
+// #2117: a scanf-family conversion writes the argument it fills, so that
+// argument must be a variable. A literal, a call's result, an operator's
+// result, a bit range, a bitmap field and a header's enum constant (a
+// tagged, a typedef'd or an anonymous enum's) are not: C cannot take their
+// address (E0915).
+// CONTROL: `parsed` is a variable and compiles.
+#include <stdio.h>
+#include "scanf-constants.h"
+
+bitmap8 Flags {
+    ready,
+    level[7]
+}
+
+i32 seven() {
+    return 7;
+}
+
+void parse() {
+    u8 flags <- 0;
+    i32 v <- 1;
+    mut i32 parsed <- 0;
+    i32 a <- global.sscanf("7", "%d", 5);
+    i32 b <- global.sscanf("7", "%d", seven());
+    i32 c <- global.sscanf("7", "%d", v + 1);
+    i32 d <- global.sscanf("7", "%hhu", flags[0, 4]);
+    mut Flags bits <- 0;
+    i32 e <- global.sscanf("7", "%d", parsed);
+    i32 g <- global.sscanf("1", "%hhu", bits.level);
+    i32 h <- global.sscanf("1", "%d", C_MODE_A);
+    i32 i <- global.sscanf("1", "%d", ANON_MODE);
+    i32 j <- global.sscanf("1", "%d", COLOR_GREEN);
+}
+
+scope Reader {
+    public void parse() {
+        i32 f <- global.sscanf("7", "%d", 5);
+    }
+}

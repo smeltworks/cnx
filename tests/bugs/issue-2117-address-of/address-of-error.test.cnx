@@ -1,0 +1,9 @@
+// test-error
+// #2117: `&` is not cnx syntax (owner ruling 2026-10-17), so `&counter` is
+// unknown syntax and the file does not compile.
+
+i32 counter <- 0;
+
+void main() {
+    u32 addr <- &counter;
+}
