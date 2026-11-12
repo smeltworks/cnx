@@ -740,6 +740,16 @@ class OperandTyper {
    * whose `char` buffer is an array though it is not one of `dimensions`.
    * Such an argument never takes `&` -- its address is a pointer to the ARRAY.
    */
+  /**
+   * An array or a `string<N>`: a buffer of known size, which a variadic C
+   * callee may write through (ADR-071 Decision 2). Unlike `decaysToPointer`
+   * it leaves out an unsized `string` -- `main`'s `args[0]` -- which cnx never
+   * hands C to write.
+   */
+  static isSizedBuffer(t: IOperandType | null): boolean {
+    return t !== null && (t.dimensions.length > 0 || t.stringCapacity !== null);
+  }
+
   static decaysToPointer(t: IOperandType | null): boolean {
     return t !== null && (t.dimensions.length > 0 || OperandTyper.isString(t));
   }
