@@ -46,7 +46,7 @@ class CArgumentWrite {
   ): boolean {
     const writes = ScanfFormat.writesOf(callee.name, callee.arguments);
     if (writes.kind === "literal") return writes.written.has(index);
-    // E0929 rejects the call; a format cnx cannot read may fill any argument
+    // E0930 rejects the call; a format cnx cannot read may fill any argument
     if (writes.kind === "format-not-literal") return true;
     return OperandTyper.decaysToPointer(
       OperandTyper.typeOf(callee.arguments[index], context),

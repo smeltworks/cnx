@@ -1,0 +1,25 @@
+// test-error
+// test-adr: 045
+// #1373: a C char array and a cstring are strings, at a chain's first pair and past it
+#include <stdio.h>
+#include "c-strings.h"
+#pragma target host
+
+i32 main() {
+    string<8> a <- "x";
+    string<8> b <- "x";
+    string<16> buffer <- "";
+    bool p <- true;
+    cstring c_line <- fgets(buffer, buffer.size, stdin);
+    bool chained <- a = b = name;
+    bool nested <- (a = b) = name;
+    bool flag <- p = name;
+    bool line <- p != c_line;
+    if (chained = nested) {
+        return 1;
+    }
+    if (flag = line) {
+        return 2;
+    }
+    return 0;
+}

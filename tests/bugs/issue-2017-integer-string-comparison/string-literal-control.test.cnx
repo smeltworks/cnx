@@ -1,0 +1,21 @@
+// test-execution
+// test-adr: 045
+// #2017 control: a string<N> compared with a string literal, on each side of = and !=, stays a strcmp
+#pragma target host
+
+i32 main() {
+    string<8> s <- "abc";
+    if (s != "abc") {
+        return 1;
+    }
+    if ("abc" != s) {
+        return 2;
+    }
+    if (s = "abd") {
+        return 3;
+    }
+    if ("abd" = s) {
+        return 4;
+    }
+    return 0;
+}

@@ -125,7 +125,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gcc's `-Werror=int-conversion` rejects. It is now unknown syntax. A C function's pointer
   parameter takes its `&` from the header (`bump(a)`), and a variadic out-parameter takes it
   from a scanf-family call's literal format (ADR-071 Decision 2): `global.sscanf("7", "%d", parsed)` is
-  `sscanf("7", "%d", &parsed)`. A format that is not a string literal is E0929.
+  `sscanf("7", "%d", &parsed)`. A format that is not a string literal is E0930.
 
 ## [0.4.0] - 2026-10-17
 

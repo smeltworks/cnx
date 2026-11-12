@@ -1,0 +1,2 @@
+10:18 error[E0810]: 'a != b != c' compares the bool 'a != b' with 'c'
+       help: MISRA C:2012 Rule 10.4: did you mean '(a != b) && (b != c)'?

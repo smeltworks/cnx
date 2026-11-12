@@ -658,6 +658,16 @@ cell is declared by the ADR that owns it.
 - `bugs/issue-1688-float-macro/per-file-macros.test.cnx`
 - `bugs/issue-1688-float-macro/unreadable-macro-cast.test.cnx`
 
+## ADR-024 E0807
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | n/a         | n/a        |
+| top-level function | ok        | -      | -          | n/a         | n/a        |
+| scope member       | -         | -      | -          | n/a         | n/a        |
+| scope method       | -         | -      | -          | n/a         | n/a        |
+| for header         | -         | -      | -          | n/a         | n/a        |
+
 ## ADR-024 E0810
 
 | Context            | same file | direct | transitive | from 1 away | thru chain |
@@ -1234,6 +1244,22 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | ok     | ok         | n/a         | n/a        |
 | for header         | ok        | ok     | ok         | n/a         | n/a        |
 
+## ADR-045
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | n/a         | n/a        |
+| top-level function | -         | -      | -          | n/a         | n/a        |
+| scope member       | -         | -      | -          | n/a         | n/a        |
+| scope method       | -         | -      | -          | n/a         | n/a        |
+| for header         | -         | -      | -          | n/a         | n/a        |
+
+3 linked fixtures with no derivable context:
+
+- `bugs/issue-1373-string-comparison-chain/c-string-control.test.cnx`
+- `bugs/issue-1373-string-comparison-chain/chain-control.test.cnx`
+- `bugs/issue-2017-integer-string-comparison/string-literal-control.test.cnx`
+
 ## ADR-045 E0427
 
 | Context            | same file | direct | transitive | from 1 away | thru chain |
@@ -1303,6 +1329,16 @@ cell is declared by the ADR that owns it.
 | scope member       | ok        | ok     | ok         | n/a         | n/a        |
 | scope method       | ok        | ok     | ok         | n/a         | n/a        |
 | for header         | ok        | ok     | ok         | n/a         | n/a        |
+
+## ADR-045 E0929
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | ok        | -      | -          | n/a         | n/a        |
+| top-level function | ok        | -      | -          | n/a         | n/a        |
+| scope member       | ok        | -      | -          | n/a         | n/a        |
+| scope method       | ok        | -      | -          | n/a         | n/a        |
+| for header         | ok        | -      | -          | n/a         | n/a        |
 
 ## ADR-045 string-copy
 
@@ -1830,7 +1866,7 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | ok     | ok         | n/a         | n/a        |
 | for header         | ok        | ok     | ok         | n/a         | n/a        |
 
-## ADR-071 E0929
+## ADR-071 E0930
 
 | Context            | same file | direct | transitive | from 1 away | thru chain |
 | ------------------ | --------- | ------ | ---------- | ----------- | ---------- |

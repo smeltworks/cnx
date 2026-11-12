@@ -1,0 +1,21 @@
+// test-error
+// test-adr: 045
+// #1373: E0929 is reported in every context a comparison is written in
+#pragma target host
+
+bool gSame <- "abc" = 5;
+
+scope Names {
+    public bool mSame <- "abc" != 6;
+
+    public bool chained(string<8> s, string<8> t) {
+        return s = t = true;
+    }
+}
+
+i32 main() {
+    for (bool done <- "abc" = 7; done = false; ) {
+        return 1;
+    }
+    return 0;
+}

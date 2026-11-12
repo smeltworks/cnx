@@ -1,0 +1,22 @@
+// test-error
+// test-adr: 045
+// #1373: a string comparison takes exactly two operands, so a bool past its first pair is E0929 too; (a = b) = true says it outright
+#pragma target host
+
+i32 main() {
+    string<8> a <- "x";
+    string<8> b <- "x";
+    string<8> c <- "y";
+    bool same <- a = b = true;
+    bool apart <- a = c != false;
+    bool flip <- a != b = false;
+    bool p <- true;
+    bool twice <- p = a = b;
+    if (same = apart) {
+        return 1;
+    }
+    if (flip = twice) {
+        return 2;
+    }
+    return 0;
+}

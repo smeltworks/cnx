@@ -15,7 +15,7 @@
  * one `u8` or `n` of them -- so it accepts both, and warns that the call is not
  * memory safe.
  *
- * E0929, #2117 (owner ruling 2026-11-12): a scanf-family call says which
+ * E0930, #2117 (owner ruling 2026-11-12): a scanf-family call says which
  * arguments it writes only in a literal format (`ScanfFormat`), so a format
  * that is not a string literal is a compile error.
  *
@@ -88,12 +88,12 @@ class CPointerArgumentCheck {
     });
   }
 
-  /** E0929: a scanf-family format that is not a string literal */
+  /** E0930: a scanf-family format that is not a string literal */
   private rejectsFormatNotLiteral(callee: ICCallee): void {
     const writes = ScanfFormat.writesOf(callee.name, callee.arguments);
     if (writes.kind !== "format-not-literal") return;
     this.found.push({
-      code: "E0929",
+      code: "E0930",
       span: writes.format.span,
       message: `the format of '${callee.name}' is not a string literal, so cnx cannot tell which arguments '${callee.name}' writes`,
       helpText: `Write the format as a string literal, e.g. ${callee.name}(..., "%d", value).`,

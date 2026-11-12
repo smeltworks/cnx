@@ -21,7 +21,7 @@ const LENGTH_MODIFIERS = new Set(["h", "l", "j", "z", "t", "L"]);
  * `%*d`, which fill none (C11 7.21.6.2). A format that is not a string
  * literal says nothing cnx can read.
  *
- * The one reader of a format: 2.1's write tracking (E0899, E0900), its E0929,
+ * The one reader of a format: 2.1's write tracking (E0899, E0900), its E0930,
  * and 2.2's `&` for an argument a conversion fills all read this answer.
  */
 class ScanfFormat {
