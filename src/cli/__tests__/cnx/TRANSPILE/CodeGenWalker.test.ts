@@ -9880,8 +9880,8 @@ describe("CodeGenWalker", () => {
           sourcePath: "test.cnx",
         });
 
-        // String concatenation uses strncpy and strncat
-        expect(code).toContain("strncpy");
+        // String concatenation copies its first part in, then appends (#1902)
+        expect(code).toContain("cnx_string_copy(result, a, 64U);");
         expect(code).toContain("strncat");
       });
     });
@@ -12167,8 +12167,8 @@ describe("CodeGenWalker", () => {
           sourcePath: "test.cnx",
         });
 
-        // String concat generates strncpy/strncat
-        expect(code).toContain("strncpy");
+        // String concat copies its first part in, then appends (#1902)
+        expect(code).toContain('cnx_string_copy(greeting, "Hello ", 32U);');
       });
 
       it("should handle substring operations", () => {

@@ -371,7 +371,7 @@ describe("StringDeclHelper", () => {
       );
 
       expect(code).toContain('char full[51] = "";');
-      expect(code).toContain("strncpy");
+      expect(code).toContain("cnx_string_copy(full, first, 50U);");
       expect(code).toContain("strncat");
     });
 
