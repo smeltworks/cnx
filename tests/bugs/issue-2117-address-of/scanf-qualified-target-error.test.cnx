@@ -19,7 +19,7 @@ atomic u32 shared;
 
 void parse() {
     volatile mut u32 reading <- 0;
-    volatile mut Sample sample <- {value: 0};
+    volatile mut Sample sample <- { value: 0 };
     mut u32 parsed <- 0;
     i32 a <- global.sscanf("3", "%u", shared);
     i32 b <- global.sscanf("3", "%u", reading);
