@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-975 fixture(s) assert a diagnostic; 960 carry a code.
+976 fixture(s) assert a diagnostic; 961 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -881,6 +881,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-2117-address-of/scanf-format-not-literal-error.test.cnx                                  | E0896, E0930                      |
 | tests/bugs/issue-2117-address-of/scanf-not-variable-error.test.cnx                                        | E0896, E0915                      |
 | tests/bugs/issue-2117-address-of/scanf-read-only-error.test.cnx                                           | E0896, E0900                      |
+| tests/bugs/issue-2124-bitmap-field-mut-argument/bitmap-field-error.test.cnx                               | E0915                             |
 | tests/bugs/issue-2157-array-parameter-list/non-array-argument-error.test.cnx                              | E0866                             |
 | tests/bugs/issue-2157-array-parameter-list/transitive-argument-error.test.cnx                             | E0866                             |
 | tests/bugs/issue-2186-bitmap-array-field/bitmap-array-field.test.cnx                                      | E0921                             |
