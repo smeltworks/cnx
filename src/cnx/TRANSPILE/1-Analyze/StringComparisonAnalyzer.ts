@@ -122,7 +122,8 @@ class StringComparisonAnalyzer {
   /** `'x' is a u32, not a string` */
   private notAString(operand: TExpression): string {
     const name = this.typeText(operand);
-    const article = /^([aeio]|f\d)/.test(name) ? "an" : "a";
+    const vowel = ["a", "e", "i", "o"].includes(name[0]) || /^f\d/.test(name);
+    const article = vowel ? "an" : "a";
     return `'${operand.written}' is ${article} ${name}, not a string`;
   }
 
