@@ -230,18 +230,34 @@ class LengthProperty {
             "Use .memory_byte_length for the memory a value takes.",
           );
     }
-    if (!scalar) return { kind: "spelling" };
-    if (subject.isString) return { kind: "string" };
-    if (subject.category === "floating") {
+    if (LengthProperty.countsCharsNow(subject)) {
+      return subject.isString
+        ? { kind: "string" }
+        : { kind: "decimal", signed: subject.category === "signed" };
+    }
+    if (scalar && subject.category === "floating") {
       return LengthProperty.error(
         `.value_char_count is not available on the float '${subject.spelling}'`,
         "A float prints in more than one correct way (0.1, 0.100000), and cnx fixes no format, so it has no character count.",
       );
     }
-    if (subject.category === "signed" || subject.category === "unsigned") {
-      return { kind: "decimal", signed: subject.category === "signed" };
-    }
     return { kind: "spelling" };
+  }
+
+  /**
+   * Whether `.value_char_count` counts the subject's characters as it runs --
+   * a string's, or an integer's in decimal -- rather than spelling its type,
+   * so the count is a `CHAR_COUNT_TYPE` value (#1742)
+   */
+  static countsCharsNow(
+    subject: Pick<ILengthSubject, "category" | "isString" | "isArray">,
+  ): boolean {
+    return (
+      !subject.isArray &&
+      (subject.isString ||
+        subject.category === "signed" ||
+        subject.category === "unsigned")
+    );
   }
 
   private static error(message: string, helpText: string): TLengthRule {

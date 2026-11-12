@@ -3619,7 +3619,8 @@ class CodeGenWalker {
    * That asymmetry is preserved rather than tidied: the cache declaration is
    * emitted in front of the whole statement, but widening the counts would
    * cache a length read only on a path the declaration's own value may not
-   * describe.
+   * describe. The cache is live through the else all the same, so a write
+   * anywhere in the statement drops it (#1958).
    */
   private planIf(statement: Extract<TStatement, { kind: "if" }>): IPlannedIf {
     const { condition, whenTrue, whenFalse } = statement;
@@ -3634,13 +3635,13 @@ class CodeGenWalker {
         lengthCounts,
         this.host.state,
       );
-      StringLengthCounter.dropWrittenIn(
-        whenTrue,
-        lengthCounts,
-        at,
-        this.host.state,
-      );
     }
+    StringLengthCounter.dropWrittenIn(
+      [statement],
+      lengthCounts,
+      at,
+      this.host.state,
+    );
     return {
       lengthCounts,
       renderLengthOperand: (name) =>

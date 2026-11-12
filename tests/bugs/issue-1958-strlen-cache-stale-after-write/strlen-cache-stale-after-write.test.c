@@ -37,6 +37,47 @@ void fill(char* s) {
     cnx_string_copy(s, "abcd", 8U);
 }
 
+char other[9] = "ab";
+
+void growOther(void) {
+    cnx_string_copy(other, "abcd", 8U);
+}
+
+// A parameter can be the global another name writes, with no call between.
+uint32_t readsAlias(const char* s) {
+    if ((uint32_t) strlen(s) == 2) {
+        cnx_string_copy(other, "abcd", 8U);
+        const uint32_t n = (uint32_t) strlen(s);
+        if (n != 4) {
+            return 7U;
+        }
+    }
+    return 0U;
+}
+
+uint32_t writesAlias(char* t) {
+    if ((uint32_t) strlen(other) == 2) {
+        cnx_string_copy(t, "abcd", 8U);
+        const uint32_t n = (uint32_t) strlen(other);
+        if (n != 4) {
+            return 8U;
+        }
+    }
+    return 0U;
+}
+
+// A read-only parameter is not a local: a callee can write what it names.
+uint32_t callsAlias(const char* s) {
+    if ((uint32_t) strlen(s) == 2) {
+        growOther();
+        const uint32_t n = (uint32_t) strlen(s);
+        if (n != 4) {
+            return 9U;
+        }
+    }
+    return 0U;
+}
+
 int main(void) {
     char label[9] = "ab";
     if ((uint32_t) strlen(label) == 2) {
@@ -71,5 +112,36 @@ int main(void) {
             return 4U;
         }
     }
-    return 0U;
+    char otherwise[9] = "ab";
+    if ((uint32_t) strlen(otherwise) == 5) {
+        return 10U;
+    } else {
+        cnx_string_copy(otherwise, "abcd", 8U);
+        const uint32_t n = (uint32_t) strlen(otherwise);
+        if (n != 4) {
+            return 5U;
+        }
+    }
+    char chained[9] = "ab";
+    if ((uint32_t) strlen(chained) == 5) {
+        return 10U;
+    } else if ((uint32_t) strlen(chained) == 2) {
+        cnx_string_copy(chained, "abcd", 8U);
+        const uint32_t n = (uint32_t) strlen(chained);
+        if (n != 4) {
+            return 6U;
+        }
+    }
+    cnx_string_copy(other, "ab", 8U);
+    const uint32_t viaRead = readsAlias(other);
+    if (viaRead != 0) {
+        return viaRead;
+    }
+    cnx_string_copy(other, "ab", 8U);
+    const uint32_t viaWrite = writesAlias(other);
+    if (viaWrite != 0) {
+        return viaWrite;
+    }
+    cnx_string_copy(other, "ab", 8U);
+    return callsAlias(other);
 }

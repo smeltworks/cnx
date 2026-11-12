@@ -182,7 +182,7 @@ describe("StringLengthCounter", () => {
       const last = block.statements.at(-1)!.span;
       const counts = new Map<string, number>([["label", 2]]);
       StringLengthCounter.dropWrittenIn(
-        block,
+        block.statements,
         counts,
         { line: last.line, column: last.column },
         state,
@@ -219,6 +219,30 @@ describe("StringLengthCounter", () => {
       expect(keptIn("mut string<8> label; void grow() { }", "grow();")).toEqual(
         [],
       );
+    });
+
+    it("drops a string parameter on any call", () => {
+      const { tree, state } = stateFor(
+        "void grow() { } void test(string<8> label) { grow(); }",
+      );
+      const block = StatementLowering.block(
+        tree.declaration().at(-1)!.functionDeclaration()!.block()!,
+      );
+      const last = block.statements.at(-1)!.span;
+      const counts = new Map<string, number>([["label", 2]]);
+      StringLengthCounter.dropWrittenIn(
+        block.statements,
+        counts,
+        { line: last.line, column: last.column },
+        state,
+      );
+      expect([...counts.keys()]).toEqual([]);
+    });
+
+    it("drops a global string when another non-local is written", () => {
+      expect(
+        keptIn("mut string<8> label; mut string<8> other;", 'other <- "x";'),
+      ).toEqual([]);
     });
 
     it("keeps a local string across a call that is not passed it", () => {

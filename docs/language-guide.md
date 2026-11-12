@@ -347,7 +347,7 @@ string<128> message; // Empty string, initialized to ""
 string VERSION <- "1.0.0"; // Read-only: auto-sized to string<5>
 
 // Properties
-u32 len <- name.value_char_count; // Runtime: strlen(name)
+u32 len <- name.value_char_count; // Runtime u32: (uint32_t) strlen(name)
 u32 cap <- name.capacity; // Compile-time: 64
 
 // Comparison - uses strcmp

@@ -13,11 +13,11 @@
  * This class is the single source of truth for that lowering; callers must not
  * build these calls themselves, or the cast would have to be repeated.
  */
-/** C null terminator character literal for generated code */
 import LengthProperty from "./LengthProperty";
 import type TRenderedStringPart from "../types/TRenderedStringPart";
 import type TStringValueForm from "../types/TStringValueForm";
 
+/** C null terminator character literal for generated code */
 const C_NULL_CHAR = String.raw`'\0'`;
 
 class StringUtils {

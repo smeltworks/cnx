@@ -53,30 +53,34 @@ class StringLengthCounter {
   }
 
   /**
-   * Walk an expression, counting `.value_char_count` reads on string identifiers.
-   * Only identifier-rooted chains count, and only their subscript indexes are
-   * searched further; call arguments are not.
-   */
-  /**
-   * Issue #1958: drop each counted string the block may write, so a length
+   * Issue #1958: drop each counted string the region may write, so a length
    * read after the write measures the string as written. A string is written
    * by an assignment to it, nested ones included, and by a call it is passed
-   * to; one that is not a local is written by any call, since the callee can
-   * reach it. A controlling expression holds neither (E0702), so the block is
-   * the whole region.
+   * to. One that is not a local is also written by any call, since the callee
+   * can reach it, and by any write to another non-local, which may name the
+   * same string (a parameter bound to a global).
    */
   static dropWrittenIn(
-    block: Pick<TBlockSyntax, "statements">,
+    region: readonly TStatement[],
     counts: Map<string, number>,
     at: ISourcePosition,
     state: TranspileState,
   ): void {
-    const assigned = new Set(
-      StatementNodes.assignmentsIn(block.statements).map(
-        (assignment) => AssignmentTarget.parts(assignment.target).identifier,
-      ),
+    const targets = StatementNodes.assignmentsIn(region).map((assignment) =>
+      AssignmentTarget.parts(assignment.target),
     );
-    const calls = DeclarationParts.statements(block.statements)
+    const assigned = new Set(targets.map((target) => target.identifier));
+    const writesNonLocal = targets.some(
+      (target) =>
+        target.root !== null ||
+        (target.identifier !== null &&
+          !StringLengthCounter.isLocal(
+            target.identifier,
+            target.position,
+            state,
+          )),
+    );
+    const calls = DeclarationParts.statements(region)
       .flatMap(ExpressionNodes.of)
       .flatMap((node) => (node.kind === "postfix" ? node.ops : []))
       .flatMap((op) => (op.kind === "call" ? [op] : []));
@@ -87,7 +91,8 @@ class StringLengthCounter {
       if (
         assigned.has(name) ||
         passed.has(name) ||
-        (calls.length > 0 && !StringLengthCounter.isLocal(name, at, state))
+        ((calls.length > 0 || writesNonLocal) &&
+          !StringLengthCounter.isLocal(name, at, state))
       ) {
         counts.delete(name);
       }
@@ -106,6 +111,11 @@ class StringLengthCounter {
     );
   }
 
+  /**
+   * Walk an expression, counting `.value_char_count` reads on string identifiers.
+   * Only identifier-rooted chains count, and only their subscript indexes are
+   * searched further; call arguments are not.
+   */
   private static walkExpression(
     expr: TExpression,
     counts: Map<string, number>,

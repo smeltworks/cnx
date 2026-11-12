@@ -159,7 +159,7 @@ u32 bytes <- buffer.type_byte_length;    // 256 (compile-time)
 
 ```cnx
 string<64> name <- "Hello";         // 64-char max capacity
-u32 len <- name.value_char_count;         // runtime: strlen → 5
+u32 len <- name.value_char_count;         // runtime u32: (uint32_t) strlen → 5
 u32 cap <- name.capacity;           // compile-time: 64
 u32 sz <- name.size;                // compile-time: 65 (capacity + null terminator)
 string<5> sub <- name[0, 5];        // substring
@@ -328,7 +328,7 @@ u32 n <- 5;
 string<8> s <- "ab";
 u32 v1 <- n.value_bit_length;        // 3: runtime, 5 is 101 (unsigned only)
 u32 v2 <- n.value_char_count;        // 1: runtime, "5"
-u32 v3 <- s.value_char_count;        // 2: runtime, strlen
+u32 v3 <- s.value_char_count;        // 2: runtime, (uint32_t) strlen
 u32 t1 <- Cfg.type_byte_length;      // 5: fields summed, no padding
 u32 t2 <- s.type_byte_length;        // 8: the capacity, no '\0'
 u32 m1 <- Cfg.memory_byte_length;    // sizeof(Cfg): the C compiler's answer, 8 on host
@@ -1325,7 +1325,7 @@ void encode(Msg m) { u8 id <- m.id; }                   // -> void encode(const 
 | `S.f()`                           | `S__f()`                                                  |
 | `u8[5] a <- [1,2,3,4,5]`          | `const uint8_t a[5] = {1,2,3,4,5}` (`mut` drops `const`)  |
 | `string<64> s <- "hi"`            | `const char s[65] = "hi"`                                 |
-| `s.value_char_count`              | `strlen(s)`                                               |
+| `s.value_char_count`              | `(uint32_t) strlen(s)`, a `u32` operand (#1742)           |
 | `s.capacity`                      | `64`                                                      |
 | `flags[3] <- true`                | bit-set expression                                        |
 | `val[0, 8]`                       | `(val >> 0) & 0xFF`                                       |

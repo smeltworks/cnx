@@ -208,6 +208,16 @@ describe("OperandTyper.typeOf: .value_char_count (#1742)", () => {
     });
   });
 
+  it.each([
+    ["a bool's", "bool f <- true;\nu8 r <- f.value_char_count;"],
+    ["an array's", "u8[3] a <- [1, 2, 3];\nu8 r <- a.value_char_count;"],
+  ])(
+    "leaves %s spelled count untyped, as .type_char_count is",
+    (_why, body) => {
+      expect(typeOf(inMain(body))?.typeName ?? null).toBeNull();
+    },
+  );
+
   it("leaves another length property untyped", () => {
     expect(
       typeOf(inMain("u16 w <- 7;\nu32 r <- w.value_bit_length;"))?.typeName ??

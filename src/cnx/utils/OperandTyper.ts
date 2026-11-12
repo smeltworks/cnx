@@ -1755,7 +1755,12 @@ class OperandTyper {
   ): TChainValue {
     // ADR-058/ADR-045 properties: typed by their own rules, never as a member
     if (OperandTyper.readsProperty(t, member, ctx)) {
-      return member === LengthProperty.VALUE_CHAR_COUNT_PROPERTY
+      return member === LengthProperty.VALUE_CHAR_COUNT_PROPERTY &&
+        LengthProperty.countsCharsNow({
+          category: t.category,
+          isString: OperandTyper.isString(t),
+          isArray: t.dimensions.length > 0,
+        })
         ? {
             k: "value",
             registerMember: null,

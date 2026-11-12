@@ -12,6 +12,47 @@ void fill(mut string<8> s) {
     s <- "abcd";
 }
 
+mut string<8> other <- "ab";
+
+void growOther() {
+    other <- "abcd";
+}
+
+// A parameter can be the global another name writes, with no call between.
+u32 readsAlias(string<8> s) {
+    if (s.value_char_count = 2) {
+        other <- "abcd";
+        u32 n <- s.value_char_count;
+        if (n != 4) {
+            return 7;
+        }
+    }
+    return 0;
+}
+
+u32 writesAlias(mut string<8> t) {
+    if (other.value_char_count = 2) {
+        t <- "abcd";
+        u32 n <- other.value_char_count;
+        if (n != 4) {
+            return 8;
+        }
+    }
+    return 0;
+}
+
+// A read-only parameter is not a local: a callee can write what it names.
+u32 callsAlias(string<8> s) {
+    if (s.value_char_count = 2) {
+        growOther();
+        u32 n <- s.value_char_count;
+        if (n != 4) {
+            return 9;
+        }
+    }
+    return 0;
+}
+
 u32 main() {
     mut string<8> label <- "ab";
     if (label.value_char_count = 2) {
@@ -50,5 +91,39 @@ u32 main() {
         }
     }
 
-    return 0;
+    // The cache is live through the else, and an else-if declares none.
+    mut string<8> otherwise <- "ab";
+    if (otherwise.value_char_count = 5) {
+        return 10;
+    } else {
+        otherwise <- "abcd";
+        u32 n <- otherwise.value_char_count;
+        if (n != 4) {
+            return 5;
+        }
+    }
+
+    mut string<8> chained <- "ab";
+    if (chained.value_char_count = 5) {
+        return 10;
+    } else if (chained.value_char_count = 2) {
+        chained <- "abcd";
+        u32 n <- chained.value_char_count;
+        if (n != 4) {
+            return 6;
+        }
+    }
+
+    other <- "ab";
+    u32 viaRead <- readsAlias(other);
+    if (viaRead != 0) {
+        return viaRead;
+    }
+    other <- "ab";
+    u32 viaWrite <- writesAlias(other);
+    if (viaWrite != 0) {
+        return viaWrite;
+    }
+    other <- "ab";
+    return callsAlias(other);
 }

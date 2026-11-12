@@ -445,10 +445,10 @@ operand, width from the widest — in every position except a cast, where writin
 **The source is typed as an operand is** (#1668). A call's result, an
 ADR-029 callback's result, and `-x` or `~x` (the type of `x`) are checked like
 a variable: with a `u32 get()` and a `u32 w`, `u8 n <- get();` and
-`u8 m <- ~w;` both narrow. A length property read at runtime is typed by
-ADR-058: `.value_char_count` is a `u32` operand (#1742), so
-`u8 n <- s.value_char_count;` narrows, and with a `u8 a`,
-`a + s.value_char_count` is a `u32` composite.
+`u8 m <- ~w;` both narrow. A `.value_char_count` read at runtime is a `u32`
+operand (ADR-058, #1742), so `u8 n <- s.value_char_count;` narrows, and with
+a `u8 a`, `a + s.value_char_count` is a `u32` composite. The other lengths read
+at runtime have no type yet (#2401).
 
 **A composite with a floating operand is not an integer composite** (#1668). It
 is floating arithmetic, so integer saturation (ADR-044) never applies to it, and

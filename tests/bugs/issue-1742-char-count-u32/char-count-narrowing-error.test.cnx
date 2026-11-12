@@ -2,6 +2,10 @@
 // Issue #1742: .value_char_count is a u32 (owner ruling), so storing it in a
 // narrower integer is a narrowing conversion (E0869).
 
+struct Cfg {
+    u8 a;
+}
+
 u32 main() {
     string<64> big <- "abc";
     u32 w <- 7;
@@ -9,6 +13,13 @@ u32 main() {
     // NEGATIVE CONTROLS -- the count's own width and a wider one.
     u32 same <- big.value_char_count;
     u64 wider <- big.value_char_count;
+
+    // A struct's or bool's count spells its type, a constant, as
+    // .type_char_count does: not a u32, so it narrows nothing.
+    Cfg cfg <- { a: 1 };
+    bool flag <- true;
+    u8 spelled <- cfg.value_char_count;
+    u8 truth <- flag.value_char_count;
 
     // ASSERTIONS
     u8 n <- big.value_char_count;
