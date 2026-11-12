@@ -101,11 +101,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **A concatenation that fills its `string<N>` compiles under `-Werror`** (ADR-045, Issue
-  #1902). Its first part was copied with `strncpy`, which gcc rejects with
-  `-Wstringop-truncation` when that part is exactly `N` characters, e.g.
-  `names[1] <- "eight ch" + "";` into a `string<8>[2]` element. The first part is now copied
-  with `cnx_string_copy`, as every other string copy is, so the terminator is written for an
-  element, a scalar, a declaration and an argument alike.
+  #1902). Its first part was copied with `strncpy` and each later part appended with `strncat`.
+  gcc rejected the generated C with `-Wstringop-truncation` when the first part was exactly
+  `N` characters long (`names[1] <- "eight ch" + "";` into a `string<8>[2]` element). Every
+  part is now copied in with `cnx_string_copy`, as every other string copy is, so an element, a
+  scalar, a declaration or an argument built from a concatenation compiles cleanly, whichever
+  part fills it.
 - **Narrowing, sign change and an out-of-range literal are rejected at every position a value
   lands in** (ADR-024, Issue #1618). E0868 and E0869 were checked at a declaration and an
   assignment only. They now apply to a compound assignment (`a +<- wide`), a return value, an

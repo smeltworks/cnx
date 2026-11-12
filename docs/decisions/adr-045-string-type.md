@@ -242,9 +242,11 @@ Transpiles to:
 
 ```c
 char result[65] = "";  // 64 + 1 for null
-strncpy(result, a, 64);
-strncat(result, b, 64 - strlen(result));
-result[64] = '\0';
+cnx_string_copy(result, a, 64U);
+{
+    const uint32_t cnx_used = (uint32_t) strlen(result);
+    cnx_string_copy(result + cnx_used, b, 64U - cnx_used);
+}
 ```
 
 ---
@@ -352,9 +354,8 @@ string<5> hello <- source[0, 5];
 Transpiles to:
 
 ```c
-char hello[6];
-strncpy(hello, source + 0, 5);
-hello[5] = '\0';
+char hello[6] = "";
+cnx_string_copy(hello, source + 0, 5U);
 ```
 
 ---
@@ -643,7 +644,7 @@ type
 1. Detect `string<N>` type declarations
 2. Generate `char name[N+1]` for declarations (add 1 for null)
 3. For a read-only `string` with a literal, infer N from literal length
-4. Generate `strncpy()` + null termination for assignments
+4. Generate `cnx_string_copy()`, which stops at the capacity and terminates there, for every copy, substring and concatenation part (#2207, #1902)
 5. Generate `strlen()` for the character count (ADR-058)
 6. Generate compile-time constant N for `.capacity`
 7. Validate concatenation: dest.capacity >= src1.capacity + src2.capacity
@@ -653,7 +654,7 @@ type
 ### Required C Headers
 
 ```c
-#include <string.h>   // For strlen, strncpy, strncat, strcmp
+#include <string.h>   // For strlen, strcmp
 ```
 
 ---
