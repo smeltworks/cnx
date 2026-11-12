@@ -59,7 +59,6 @@ int main(void) {
     Cfg cnx_tmp3 = { .name = { 0 }, .id = 4U };
     cnx_string_copy(cnx_tmp3.name, m.name + 0U, 1U);
     (void) strncat(cnx_tmp3.name, s, 8 - strlen(cnx_tmp3.name));
-    cnx_tmp3.name[8] = '\0';
     m = cnx_tmp3;
     if (strcmp(m.name, "xab") != 0) {
         return 3U;
