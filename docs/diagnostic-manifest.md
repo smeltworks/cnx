@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-971 fixture(s) assert a diagnostic; 957 carry a code.
+973 fixture(s) assert a diagnostic; 959 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -796,6 +796,8 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1735-static-initializer-arithmetic/static-overflow-arithmetic.test.cnx                   | E0910                             |
 | tests/bugs/issue-1735-static-initializer-arithmetic/static-overflow.test.cnx                              | E0910                             |
 | tests/bugs/issue-1740-reopened-scope-this-call/this-call-undeclared.test.cnx                              | E0422                             |
+| tests/bugs/issue-1742-char-count-u32/char-count-narrowing-error.test.cnx                                  | E0869                             |
+| tests/bugs/issue-1742-char-count-u32/char-count-signed-compare-error.test.cnx                             | E0810                             |
 | tests/bugs/issue-1745-include-directive-agreement/commented-out-header-error.test.cnx                     | E0422                             |
 | tests/bugs/issue-1745-include-directive-agreement/commented-out-include-error.test.cnx                    | E0426                             |
 | tests/bugs/issue-1748-string-char-write/char-write-capacity-error.test.cnx                                | E0864                             |
