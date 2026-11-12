@@ -15,7 +15,7 @@ const LENGTH_MODIFIERS = new Set(["h", "l", "j", "z", "t", "L"]);
 
 /**
  * Which arguments a call to a C standard scanf-family function writes, read
- * from its literal format (#2117, owner ruling 2026-11-12). Past the format,
+ * from its literal format (ADR-071 Decision 2, owner ruling 2026-11-12 on #2117). Past the format,
  * C declares only `...`, so the format is the one place that says it: each
  * conversion fills the next argument, except `%%` and an assignment-suppressed
  * `%*d`, which fill none (C11 7.21.6.2). A format that is not a string

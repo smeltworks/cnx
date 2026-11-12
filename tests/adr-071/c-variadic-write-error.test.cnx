@@ -1,5 +1,5 @@
 // test-error
-// test-adr: 071, 072
+// test-adr: 071
 // ADR-071 Decision 2: past a variadic C function's declared parameters, C
 // says nothing about what an argument may write. A scanf-family call's literal
 // format says it (#2117): `%d` fills `x`, so a read-only `x` is E0900. Past

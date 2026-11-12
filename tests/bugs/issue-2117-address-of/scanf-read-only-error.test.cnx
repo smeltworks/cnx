@@ -1,5 +1,5 @@
 // test-error
-// test-adr: 072
+// test-adr: 071
 // #2117 (owner ruling 2026-11-12): `%d` in a literal scanf format writes the
 // argument it matches, so a read-only `parsed` there does not compile.
 #include <stdio.h>

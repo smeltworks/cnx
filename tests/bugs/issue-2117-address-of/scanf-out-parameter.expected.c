@@ -6,7 +6,7 @@
 #include "scanf-out-parameter.test.h"
 
 // test-execution
-// test-adr: 072
+// test-adr: 071
 // #2117 (owner ruling 2026-11-12): a scanf-family call with a literal format
 // decides from that format which arguments it writes. `%d` writes argument 3,
 // so `parsed` is passed by address and is written. CONTROL: `printf` takes

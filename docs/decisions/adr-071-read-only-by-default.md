@@ -108,6 +108,17 @@ an unwritten parameter, local, global and scope member as not written.
    a parameter that is written — is declared **`mut`**. Writing a binding that is not `mut`
    is a compile error.
 
+   _(Clarified 2026-11-12, owner ruling on #2117: cnx has no `&`, so past a variadic C
+   function's declared parameters the format of a C standard scanf-family call --
+   `scanf`, `fscanf`, `sscanf`, `wscanf`, `fwscanf`, `swscanf` -- says which arguments are
+   written. With a literal format, each conversion writes the next argument, except `%%`
+   and an assignment-suppressed `%*d` (C11 7.21.6.2). That argument must be `mut`, and C
+   receives its address: `global.sscanf("7", "%d", parsed)` is `sscanf("7", "%d", &parsed)`.
+   An array or a string is already passed as a pointer to its first element. A format that
+   is not a string literal is E0929. Past any other variadic function's parameters, an
+   argument is passed as written, and an array or a string is one the callee may write
+   through.)_
+
    ```cnx
    u32 LIMIT <- 5;                       // read-only: no keyword
 
@@ -276,6 +287,7 @@ typedef's pointer constness. Both are fixed, and the script's `mut` for them is 
 | E0898 | `const` written on a declaration (Decision 5)                                                                                                                                                                                                                                                                                                   | `tests/adr-071/`                                                                                                                                                                                                                 |
 | E0899 | A `mut` binding nothing writes, outside the two exemptions (Decision 6)                                                                                                                                                                                                                                                                         | `tests/adr-071/`                                                                                                                                                                                                                 |
 | E0900 | A write to a binding not declared `mut`: an assignment to or through it, a `safe_div`/`safe_mod` output, an argument to a `mut` cnx parameter or a C/C++ pointer or array parameter that is not const (Decision 2), or an opaque handle (ADR-030) stored in a `mut` binding, which can then write what it refers to. It retires E0877 and E0878 | `tests/adr-013/const-*-error.test.cnx`, `tests/adr-051/safe-division-const-output-error.test.cnx`, `tests/bugs/issue-1977-struct-to-c-byte-pointer/`, `tests/bugs/issue-1722-opaque-param-forwarding/scope-this-callee.test.cnx` |
+| E0929 | A C standard scanf-family call whose format is not a string literal, so nothing says which arguments it writes (Decision 2, #2117)                                                                                                                                                                                                              | `tests/bugs/issue-2117-address-of/scanf-format-not-literal-error.test.cnx`                                                                                                                                                       |
 
 ## Scope-Context Matrix (#1219)
 
@@ -403,6 +415,29 @@ off: E0899 never fires on a global, which is exempt (Decision 6), and a global's
 | for header         | same file           | error    |
 | for header         | imported direct     | error    |
 | for header         | imported transitive | error    |
+
+<!-- MATRIX-SEVERITY code: E0929 -->
+
+| Context            | Relationship        | Severity |
+| ------------------ | ------------------- | -------- |
+| top-level function | same file           | error    |
+| scope method       | same file           | error    |
+| global variable    | same file           | off      |
+| scope member       | same file           | off      |
+| for header         | same file           | warn     |
+| top-level function | imported direct     | warn     |
+| scope method       | imported direct     | warn     |
+| global variable    | imported direct     | off      |
+| scope member       | imported direct     | off      |
+| for header         | imported direct     | warn     |
+| top-level function | imported transitive | warn     |
+| scope method       | imported transitive | warn     |
+| global variable    | imported transitive | off      |
+| scope member       | imported transitive | off      |
+| for header         | imported transitive | warn     |
+
+off: a global or scope member initializer cannot call a C function. warn: no fixture reaches
+a scanf-family call in an included file or a `for` header yet (#2391).
 
 ## Consequences
 

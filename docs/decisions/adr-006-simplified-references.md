@@ -323,7 +323,7 @@ The compiler parsed it and emitted `uint32_t addr = &value;`, which gcc's
   for `void bump(uint32_t* x)` is `bump(&a)` in C (#1991).
 - **A variadic C out-parameter** (`sscanf`'s `%d` target) takes its `&` from the
   literal format of a C standard scanf-family call (owner ruling, 2026-11-12,
-  #2117; [ADR-072](adr-072-scanf-family-out-parameters.md)):
+  #2117; [ADR-071](adr-071-read-only-by-default.md) Decision 2):
   `global.sscanf("7", "%d", parsed)` is `sscanf("7", "%d", &parsed)` in C.
 - **A register's address** is the one its declaration writes (ADR-004).
 

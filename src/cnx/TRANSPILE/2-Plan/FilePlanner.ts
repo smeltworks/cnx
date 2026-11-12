@@ -1405,12 +1405,7 @@ class FilePlanner {
     invariant(call?.kind === "call", "an argument site names a call");
     if (callee === null) return false;
     const writes = ScanfFormat.writesOf(callee, call.arguments);
-    const filled =
-      writes.kind === "literal" && writes.written.has(site.argument);
-    if (filled) {
-      AdrProvenance.record("072", call.arguments[site.argument].span.line);
-    }
-    return filled;
+    return writes.kind === "literal" && writes.written.has(site.argument);
   }
 
   /** How the call at `site` passes its argument (#1991) */

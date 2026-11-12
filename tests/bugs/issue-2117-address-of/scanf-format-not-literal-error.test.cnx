@@ -1,5 +1,5 @@
 // test-error
-// test-adr: 072
+// test-adr: 071
 // #2117 (owner ruling 2026-11-12): a scanf-family call says which arguments it
 // writes only in a literal format, so a format that is not a string literal
 // does not compile.

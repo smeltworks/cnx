@@ -79,15 +79,14 @@ v2 (so "Research (v2 Roadmap)" holds `1xx` ADRs).
 
 ## Research (v1 Roadmap)
 
-| ADR                                                         | Title                         | Description                                                |
-| ----------------------------------------------------------- | ----------------------------- | ---------------------------------------------------------- |
-| [ADR-008](decisions/adr-008-language-bug-prevention.md)     | Language-Level Bug Prevention | Top 15 embedded bugs and prevention                        |
-| [ADR-009](decisions/adr-009-isr-safety.md)                  | ISR Safety                    | Safe interrupts without `unsafe` blocks                    |
-| [ADR-054](decisions/adr-054-array-index-overflow.md)        | Array Index Overflow          | Overflow semantics for array index expressions             |
-| [ADR-056](decisions/adr-056-cast-overflow-behavior.md)      | Cast Overflow Behavior        | Consistent overflow semantics for type casts               |
-| [ADR-066](decisions/adr-066-do178c-compliance.md)           | DO-178C Compliance            | Safety-critical software certification framework           |
-| [ADR-069](decisions/adr-069-dead-code-reachability.md)      | Dead-Code / Reachability      | Reject unreachable code (MISRA 2.1/2.2, DO-178C)           |
-| [ADR-072](decisions/adr-072-scanf-family-out-parameters.md) | Scanf-Family Out-Parameters   | A literal scanf format decides which arguments are written |
+| ADR                                                     | Title                         | Description                                      |
+| ------------------------------------------------------- | ----------------------------- | ------------------------------------------------ |
+| [ADR-008](decisions/adr-008-language-bug-prevention.md) | Language-Level Bug Prevention | Top 15 embedded bugs and prevention              |
+| [ADR-009](decisions/adr-009-isr-safety.md)              | ISR Safety                    | Safe interrupts without `unsafe` blocks          |
+| [ADR-054](decisions/adr-054-array-index-overflow.md)    | Array Index Overflow          | Overflow semantics for array index expressions   |
+| [ADR-056](decisions/adr-056-cast-overflow-behavior.md)  | Cast Overflow Behavior        | Consistent overflow semantics for type casts     |
+| [ADR-066](decisions/adr-066-do178c-compliance.md)       | DO-178C Compliance            | Safety-critical software certification framework |
+| [ADR-069](decisions/adr-069-dead-code-reachability.md)  | Dead-Code / Reachability      | Reject unreachable code (MISRA 2.1/2.2, DO-178C) |
 
 ## Research (v2 Roadmap)
 
