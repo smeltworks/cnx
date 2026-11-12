@@ -1873,7 +1873,7 @@ cell is declared by the ADR that owns it.
 | global variable    | -         | -      | -          | n/a         | n/a        |
 | top-level function | ok        | -      | -          | n/a         | n/a        |
 | scope member       | -         | -      | -          | n/a         | n/a        |
-| scope method       | -         | -      | -          | n/a         | n/a        |
+| scope method       | ok        | -      | -          | n/a         | n/a        |
 | for header         | -         | -      | -          | n/a         | n/a        |
 
 ## ADR-071 E0930
