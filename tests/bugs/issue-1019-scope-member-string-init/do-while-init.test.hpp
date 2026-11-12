@@ -14,7 +14,7 @@ extern "C" {
 
 /* Function prototypes */
 void S__init(void);
-uint8_t S__len(void);
+uint32_t S__len(void);
 
 #ifdef __cplusplus
 }

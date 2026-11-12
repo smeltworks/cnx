@@ -109,17 +109,17 @@ int main(void) {
         return 13U;
     }
     char s[9] = "ab";
-    if (strlen(s) != 2) {
+    if ((uint32_t) strlen(s) != 2) {
         return 14U;
     }
-    if (strlen(s) != 2) {
+    if ((uint32_t) strlen(s) != 2) {
         return 15U;
     }
-    if (((uint32_t)strlen(s) * 8U) != 16) {
+    if (((uint32_t) strlen(s) * 8U) != 16) {
         return 16U;
     }
     cnx_string_copy(s, "abcde", 8U);
-    if (strlen(s) != 5) {
+    if ((uint32_t) strlen(s) != 5) {
         return 17U;
     }
     const float t = 1.5;

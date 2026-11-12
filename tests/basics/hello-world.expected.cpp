@@ -17,8 +17,8 @@ int main(int argc, char *argv[]) {
     static_cast<void>(printf("What is your name in 50 characters or less? "));
     const char* c_result = fgets(userName, 51, stdin);
     if (c_result != nullptr) {
-        if (strlen(userName) > 0 && userName[strlen(userName) - 1U] == '\n') {
-            userName[strlen(userName) - 1] = '\0';
+        if ((uint32_t) strlen(userName) > 0 && userName[(uint32_t) strlen(userName) - 1U] == '\n') {
+            userName[(uint32_t) strlen(userName) - 1] = '\0';
         }
     }
     const uint8_t whoAmIByte = argv[0U][0U];

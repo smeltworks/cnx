@@ -14,6 +14,7 @@
  * build these calls themselves, or the cast would have to be repeated.
  */
 /** C null terminator character literal for generated code */
+import LengthProperty from "./LengthProperty";
 import type TRenderedStringPart from "../types/TRenderedStringPart";
 import type TStringValueForm from "../types/TStringValueForm";
 
@@ -76,7 +77,7 @@ class StringUtils {
     const left = `(${capacity}U - cnx_used)`;
     return [
       "{",
-      `    const uint32_t cnx_used = (uint32_t) strlen(${buffer});`,
+      `    const ${LengthProperty.CHAR_COUNT_C_TYPE} cnx_used = ${LengthProperty.stringCharsC(buffer)};`,
       `    ${StringUtils.COPY_HELPER}(${buffer} + cnx_used, ${part.source} + ${part.start}, (${left} < ${count}) ? ${left} : ${count});`,
       "}",
     ];

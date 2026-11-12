@@ -16,7 +16,7 @@ extern "C" {
 extern const uint8_t _msg_len;
 
 /* Function prototypes */
-uint8_t count(void);
+uint32_t count(void);
 
 #ifdef __cplusplus
 }

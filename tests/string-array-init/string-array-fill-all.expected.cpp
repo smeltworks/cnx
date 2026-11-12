@@ -24,22 +24,22 @@ int main(void) {
     if (3 != 3) {
         return 1U;
     }
-    if (strlen(greetings[0U]) != 5) {
+    if ((uint32_t) strlen(greetings[0U]) != 5) {
         return 2U;
     }
-    if (strlen(greetings[1U]) != 5) {
+    if ((uint32_t) strlen(greetings[1U]) != 5) {
         return 3U;
     }
-    if (strlen(greetings[2U]) != 5) {
+    if ((uint32_t) strlen(greetings[2U]) != 5) {
         return 4U;
     }
     if (2 != 2) {
         return 5U;
     }
-    if (strlen(empty[0U]) != 0) {
+    if ((uint32_t) strlen(empty[0U]) != 0) {
         return 6U;
     }
-    if (strlen(empty[1U]) != 0) {
+    if ((uint32_t) strlen(empty[1U]) != 0) {
         return 7U;
     }
     return 0U;

@@ -1200,11 +1200,7 @@ class OperandTyper {
     const base = { ...OperandTyper.plain(typeName), dimensions };
     switch (type.kind) {
       case "primitive":
-        return {
-          ...base,
-          category: OperandTyper.categoryOf(typeName),
-          bitWidth: OperandTyper.widthOf(typeName),
-        };
+        return { ...OperandTyper.primitive(typeName), dimensions };
       case "string":
         return { ...base, stringCapacity: type.capacity };
       case "struct":
@@ -1746,18 +1742,23 @@ class OperandTyper {
     return ctx.symbolTable.getStructFieldInfo(t.typeName, member) !== undefined;
   }
 
-  /** A field of a struct, a bitmap field, or a property (untyped here) */
+  /** A field of a struct, a bitmap field, or a property */
   private static fieldOf(
     t: IOperandType,
     member: string,
     ctx: ITypingContext,
   ): TChainValue {
-    if (
-      // ADR-058/ADR-045 properties: typed by their own rules, never as a member
-      OperandTyper.readsProperty(t, member, ctx) ||
-      t.typeName === null ||
-      t.dimensions.length > 0
-    ) {
+    // ADR-058/ADR-045 properties: typed by their own rules, never as a member
+    if (OperandTyper.readsProperty(t, member, ctx)) {
+      return member === LengthProperty.VALUE_CHAR_COUNT_PROPERTY
+        ? {
+            k: "value",
+            registerMember: null,
+            t: OperandTyper.primitive(LengthProperty.CHAR_COUNT_TYPE),
+          }
+        : UNKNOWN;
+    }
+    if (t.typeName === null || t.dimensions.length > 0) {
       return UNKNOWN;
     }
     if (t.bitmapTypeName !== null) {
@@ -2189,6 +2190,15 @@ class OperandTyper {
       category: "boolean",
       hasSideEffect,
       form: { kind: "boolean" },
+    };
+  }
+
+  /** A value of a primitive type, as a declaration of it types one */
+  private static primitive(typeName: string): IOperandType {
+    return {
+      ...OperandTyper.plain(typeName),
+      category: OperandTyper.categoryOf(typeName),
+      bitWidth: OperandTyper.widthOf(typeName),
     };
   }
 

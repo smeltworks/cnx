@@ -44,15 +44,15 @@ void Logger__setCustom(void) {
 
 int main(void) {
     Logger__setMessage();
-    if (strlen(Logger__message) != 16) {
+    if ((uint32_t) strlen(Logger__message) != 16) {
         return 1U;
     }
     Logger__clear();
-    if (strlen(Logger__message) != 0) {
+    if ((uint32_t) strlen(Logger__message) != 0) {
         return 2U;
     }
     Logger__setCustom();
-    if (strlen(Logger__message) != 6) {
+    if ((uint32_t) strlen(Logger__message) != 6) {
         return 3U;
     }
     return 0U;

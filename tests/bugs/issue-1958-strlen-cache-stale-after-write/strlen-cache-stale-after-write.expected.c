@@ -39,34 +39,34 @@ void fill(char* s) {
 
 int main(void) {
     char label[9] = "ab";
-    if (strlen(label) == 2) {
+    if ((uint32_t) strlen(label) == 2) {
         cnx_string_copy(label, "abcd", 8U);
-        const uint32_t n = strlen(label);
+        const uint32_t n = (uint32_t) strlen(label);
         if (n != 4) {
             return 1U;
         }
     }
     char nested[9] = "ab";
-    if (strlen(nested) == 2) {
+    if ((uint32_t) strlen(nested) == 2) {
         {
             cnx_string_copy(nested, "abc", 8U);
         }
-        const uint32_t n = strlen(nested);
+        const uint32_t n = (uint32_t) strlen(nested);
         if (n != 3) {
             return 2U;
         }
     }
     char passed[9] = "ab";
-    if (strlen(passed) == 2) {
+    if ((uint32_t) strlen(passed) == 2) {
         fill(passed);
-        const uint32_t n = strlen(passed);
+        const uint32_t n = (uint32_t) strlen(passed);
         if (n != 4) {
             return 3U;
         }
     }
-    if (strlen(greeting) == 2) {
+    if ((uint32_t) strlen(greeting) == 2) {
         grow();
-        const uint32_t n = strlen(greeting);
+        const uint32_t n = (uint32_t) strlen(greeting);
         if (n != 4) {
             return 4U;
         }

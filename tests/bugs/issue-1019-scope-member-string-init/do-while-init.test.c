@@ -51,13 +51,13 @@ void S__init(void) {
     } while (i < 1);
 }
 
-uint8_t S__len(void) {
-    return strlen(S__buf);
+uint32_t S__len(void) {
+    return (uint32_t) strlen(S__buf);
 }
 
 int main(void) {
     S__init();
-    const uint8_t length = S__len();
+    const uint32_t length = S__len();
     if (length != 11) {
         return 1U;
     }

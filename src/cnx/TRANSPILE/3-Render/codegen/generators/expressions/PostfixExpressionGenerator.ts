@@ -623,7 +623,7 @@ const generateLengthProperty = (
       return `${rule.signed ? LengthProperty.VALUE_CHAR_COUNT_SIGNED : LengthProperty.VALUE_CHAR_COUNT}(${ctx.result})`;
     case "string": {
       const chars = stringChars(ctx, state);
-      return bits ? `((${LengthProperty.PRODUCT_C_TYPE})${chars} * 8U)` : chars;
+      return bits ? `(${chars} * 8U)` : chars;
     }
   }
 };
@@ -739,7 +739,7 @@ const stringChars = (ctx: IPropertyContext, state: IGeneratorState): string => {
 
   // Use ctx.result which contains the full expression including any subscripts
   // e.g., for arr[0].value_char_count, ctx.result is "arr[0]" not "arr"
-  return `strlen(${ctx.result})`;
+  return LengthProperty.stringCharsC(ctx.result);
 };
 
 // ========================================================================

@@ -40,7 +40,7 @@ int main(void) {
     if (strcmp(c.label, "field") != 0) {
         return 1U;
     }
-    const uint32_t n = strlen(c.label);
+    const uint32_t n = (uint32_t) strlen(c.label);
     if (n != 5) {
         return 2U;
     }

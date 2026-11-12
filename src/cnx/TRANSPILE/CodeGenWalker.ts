@@ -3192,7 +3192,7 @@ class CodeGenWalker {
       ...this.renderFill(buffer, write.count, form).map(
         (line) => `    ${line}`,
       ),
-      `    const uint32_t ${length} = (uint32_t) strlen(${buffer});`,
+      `    const ${LengthProperty.CHAR_COUNT_C_TYPE} ${length} = ${LengthProperty.stringCharsC(buffer)};`,
       `    for (uint32_t ${k} = 0U; ${k} < ${length}; ${k}++) {`,
       `        ${at(k)} = ${buffer}[${k}];`,
       "    }",

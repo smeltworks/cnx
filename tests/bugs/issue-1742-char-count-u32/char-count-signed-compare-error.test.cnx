@@ -1,0 +1,20 @@
+// test-error
+// Issue #1742: .value_char_count is a u32 (owner ruling), so comparing it with
+// a signed operand mixes essential type categories (E0810), for a string's
+// count and an integer's alike.
+
+u32 main() {
+    string<16> str <- "abc";
+    u32 w <- 7;
+    i32 s <- -5;
+    u32 limit <- 2;
+
+    // NEGATIVE CONTROLS -- an unsigned operand shares the count's category.
+    bool fits <- str.value_char_count > limit;
+    bool wide <- w.value_char_count > limit;
+
+    // ASSERTIONS -- a signed operand does not.
+    bool longer <- str.value_char_count > s;
+    bool digits <- w.value_char_count > s;
+    return 0;
+}

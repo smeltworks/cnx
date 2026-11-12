@@ -1,0 +1,17 @@
+// test-error
+// Issue #1742: .value_char_count is a u32 (owner ruling), so storing it in a
+// narrower integer is a narrowing conversion (E0869).
+
+u32 main() {
+    string<64> big <- "abc";
+    u32 w <- 7;
+
+    // NEGATIVE CONTROLS -- the count's own width and a wider one.
+    u32 same <- big.value_char_count;
+    u64 wider <- big.value_char_count;
+
+    // ASSERTIONS
+    u8 n <- big.value_char_count;
+    u16 m <- w.value_char_count;
+    return 0;
+}

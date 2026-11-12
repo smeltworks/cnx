@@ -10,7 +10,7 @@
 // ADR-045: Validate empty string behavior at runtime
 int main(void) {
     const char empty[65] = "";
-    if (strlen(empty) != 0) {
+    if ((uint32_t) strlen(empty) != 0) {
         return 1;
     }
     if (64 != 64) {
@@ -27,7 +27,7 @@ int main(void) {
         return 5;
     }
     const char explicitEmpty[33] = "";
-    if (strlen(explicitEmpty) != 0) {
+    if ((uint32_t) strlen(explicitEmpty) != 0) {
         return 6;
     }
     if (strcmp(explicitEmpty, "") != 0) {
@@ -38,7 +38,7 @@ int main(void) {
     (void) strncpy(concatEmpty, text, 96);
     (void) strncat(concatEmpty, empty, 96 - strlen(concatEmpty));
     concatEmpty[96] = '\0';
-    if (strlen(concatEmpty) != 5) {
+    if ((uint32_t) strlen(concatEmpty) != 5) {
         return 8;
     }
     if (strcmp(concatEmpty, "Hello") != 0) {
@@ -48,7 +48,7 @@ int main(void) {
     (void) strncpy(emptyPlusText, empty, 96);
     (void) strncat(emptyPlusText, text, 96 - strlen(emptyPlusText));
     emptyPlusText[96] = '\0';
-    if (strlen(emptyPlusText) != 5) {
+    if ((uint32_t) strlen(emptyPlusText) != 5) {
         return 10;
     }
     if (strcmp(emptyPlusText, "Hello") != 0) {

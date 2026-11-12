@@ -19,7 +19,7 @@ const char EMPTY_CONST[1] = "";
 const char LONG_CONST[45] = "This is a longer constant string for testing";
 
 int main(void) {
-    if (strlen(VERSION) != 5) {
+    if ((uint32_t) strlen(VERSION) != 5) {
         return 1;
     }
     if (strcmp(VERSION, "1.0.0") != 0) {
@@ -28,7 +28,7 @@ int main(void) {
     if (5 != 5) {
         return 3;
     }
-    if (strlen(APP_NAME) != 7) {
+    if ((uint32_t) strlen(APP_NAME) != 7) {
         return 4;
     }
     if (strcmp(APP_NAME, "TestApp") != 0) {
@@ -37,7 +37,7 @@ int main(void) {
     if (7 != 7) {
         return 6;
     }
-    if (strlen(EMPTY_CONST) != 0) {
+    if ((uint32_t) strlen(EMPTY_CONST) != 0) {
         return 7;
     }
     if (strcmp(EMPTY_CONST, "") != 0) {
@@ -46,7 +46,7 @@ int main(void) {
     if (0 != 0) {
         return 9;
     }
-    if (strlen(LONG_CONST) != 44) {
+    if ((uint32_t) strlen(LONG_CONST) != 44) {
         return 10;
     }
     if (44 != 44) {

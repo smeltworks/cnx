@@ -192,6 +192,30 @@ void f() {
   });
 });
 
+describe("OperandTyper.typeOf: .value_char_count (#1742)", () => {
+  it.each([
+    [
+      "a string's",
+      inMain('string<8> s <- "ab";\nu32 r <- s.value_char_count;'),
+    ],
+    ["an integer's", inMain("u16 w <- 7;\nu32 r <- w.value_char_count;")],
+  ])("types %s count as a u32", (_why, source) => {
+    expect(facts(typeOf(source))).toEqual({
+      typeName: "u32",
+      category: "unsigned",
+      bitWidth: 32,
+      form: "declared",
+    });
+  });
+
+  it("leaves another length property untyped", () => {
+    expect(
+      typeOf(inMain("u16 w <- 7;\nu32 r <- w.value_bit_length;"))?.typeName ??
+        null,
+    ).toBeNull();
+  });
+});
+
 describe("OperandTyper.typeOfWritten (#1668)", () => {
   it.each([
     ["this.T inside its scope", "this.EMode", ["Motor", "EMode"]],

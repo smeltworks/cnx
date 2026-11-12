@@ -33,25 +33,25 @@ void clearMessage(void) {
 }
 
 int main(void) {
-    if (strlen(msg) != 7) {
+    if ((uint32_t) strlen(msg) != 7) {
         return 1U;
     }
     clearMessage();
-    if (strlen(msg) != 0) {
+    if ((uint32_t) strlen(msg) != 0) {
         return 2U;
     }
     cnx_string_copy(msg, "", 32U);
-    if (strlen(msg) != 0) {
+    if ((uint32_t) strlen(msg) != 0) {
         return 3U;
     }
     cnx_string_copy(msg, "Back", 32U);
-    if (strlen(msg) != 4) {
+    if ((uint32_t) strlen(msg) != 4) {
         return 4U;
     }
     cnx_string_copy(msg, "", 32U);
     cnx_string_copy(msg, "", 32U);
     cnx_string_copy(msg, "", 32U);
-    if (strlen(msg) != 0) {
+    if ((uint32_t) strlen(msg) != 0) {
         return 5U;
     }
     return 0U;

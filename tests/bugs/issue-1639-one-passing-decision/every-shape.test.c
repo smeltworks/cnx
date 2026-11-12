@@ -72,7 +72,7 @@ void setPair(Pair* p) {
 }
 
 uint32_t lengthOf(const char* s) {
-    return strlen(s);
+    return (uint32_t) strlen(s);
 }
 
 uint32_t firstOf(const uint8_t arr[4]) {

@@ -27,7 +27,7 @@ static inline void cnx_string_copy(char* target, const char* source, uint32_t ca
 // Validates: exact capacity, minimum sizes, edge cases
 int main(void) {
     const char exact[6] = "Hello";
-    if (strlen(exact) != 5) {
+    if ((uint32_t) strlen(exact) != 5) {
         return 1;
     }
     if (5 != 5) {
@@ -37,7 +37,7 @@ int main(void) {
         return 3;
     }
     const char single[2] = "X";
-    if (strlen(single) != 1) {
+    if ((uint32_t) strlen(single) != 1) {
         return 4;
     }
     if (1 != 1) {
@@ -47,7 +47,7 @@ int main(void) {
         return 6;
     }
     const char emptyWithCap[11] = "";
-    if (strlen(emptyWithCap) != 0) {
+    if ((uint32_t) strlen(emptyWithCap) != 0) {
         return 7;
     }
     if (10 != 10) {
@@ -57,7 +57,7 @@ int main(void) {
         return 9;
     }
     const char largeBuffer[1025] = "Tiny";
-    if (strlen(largeBuffer) != 4) {
+    if ((uint32_t) strlen(largeBuffer) != 4) {
         return 10;
     }
     if (1024 != 1024) {
@@ -83,7 +83,7 @@ int main(void) {
     (void) strncpy(combined, part1, 6);
     (void) strncat(combined, part2, 6 - strlen(combined));
     combined[6] = '\0';
-    if (strlen(combined) != 6) {
+    if ((uint32_t) strlen(combined) != 6) {
         return 15;
     }
     if (strcmp(combined, "ABCDEF") != 0) {
@@ -92,13 +92,13 @@ int main(void) {
     const char a[3] = "AB";
     const char b[3] = "CD";
     const char c[3] = "EF";
-    if (strlen(a) != 2) {
+    if ((uint32_t) strlen(a) != 2) {
         return 17;
     }
-    if (strlen(b) != 2) {
+    if ((uint32_t) strlen(b) != 2) {
         return 18;
     }
-    if (strlen(c) != 2) {
+    if ((uint32_t) strlen(c) != 2) {
         return 19;
     }
     return 0;

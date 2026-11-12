@@ -27,19 +27,19 @@ static inline void cnx_string_copy(char* target, const char* source, uint32_t ca
 // Issue #139: Test local string variable reassignment in function body
 int main(void) {
     char local[33] = "Initial";
-    if (strlen(local) != 7) {
+    if ((uint32_t) strlen(local) != 7) {
         return 1U;
     }
     cnx_string_copy(local, "Updated", 32U);
-    if (strlen(local) != 7) {
+    if ((uint32_t) strlen(local) != 7) {
         return 2U;
     }
     cnx_string_copy(local, "Short", 32U);
-    if (strlen(local) != 5) {
+    if ((uint32_t) strlen(local) != 5) {
         return 3U;
     }
     cnx_string_copy(local, "This is a longer string", 32U);
-    if (strlen(local) != 23) {
+    if ((uint32_t) strlen(local) != 23) {
         return 4U;
     }
     return 0U;

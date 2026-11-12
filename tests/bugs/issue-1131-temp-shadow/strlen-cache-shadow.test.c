@@ -16,9 +16,9 @@
    the check: cnx_clamp_add_u8(0, 256) must saturate to 255, but (uint8_t)256 is 0, so a
    uint8_t parameter would return 0 -- the opposite of saturation. */
 
-static inline uint8_t cnx_clamp_add_u8(uint8_t a, uint32_t b) {
-    if (b > (uint32_t)(UINT8_MAX - a)) return UINT8_MAX;
-    return (uint8_t)(a + (uint8_t)b);
+static inline uint32_t cnx_clamp_add_u32(uint32_t a, uint64_t b) {
+    if (b > (uint64_t)(UINT32_MAX - a)) return UINT32_MAX;
+    return (uint32_t)(a + (uint32_t)b);
 }
 
 // test-execution
@@ -36,18 +36,18 @@ static inline uint8_t cnx_clamp_add_u8(uint8_t a, uint32_t b) {
 // forbids the user from declaring, so the collision is unrepresentable.
 const uint8_t _msg_len = 42U;
 
-uint8_t count(void) {
+uint32_t count(void) {
     const char msg[17] = "hello";
-    uint8_t total = 0U;
-    size_t cnx_len_msg = strlen(msg);
+    uint32_t total = 0U;
+    uint32_t cnx_len_msg = (uint32_t) strlen(msg);
     if (cnx_len_msg > 2) {
-        total = cnx_clamp_add_u8(cnx_len_msg, _msg_len);
+        total = cnx_clamp_add_u32(cnx_len_msg, _msg_len);
     }
     return total;
 }
 
 int main(void) {
-    const uint8_t total = count();
+    const uint32_t total = count();
     if (total != 47) {
         return 1U;
     }

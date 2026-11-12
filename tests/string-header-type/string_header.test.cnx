@@ -7,5 +7,5 @@ string<16>[3] labels <- ["one", "two", "three"];
 
 void main() {
     // Access globals to ensure they're included in output
-    u8 len <- greeting.value_char_count;
+    u32 len <- greeting.value_char_count;
 }

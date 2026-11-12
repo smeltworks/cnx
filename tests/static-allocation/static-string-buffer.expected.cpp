@@ -34,11 +34,11 @@ char messageBuffer[65] = "Initial";
 extern const char logBuffer[129] = "Log entry one";
 
 uint32_t getMessageLength(void) {
-    return strlen(messageBuffer);
+    return (uint32_t) strlen(messageBuffer);
 }
 
 uint32_t getLogLength(void) {
-    return strlen(logBuffer);
+    return (uint32_t) strlen(logBuffer);
 }
 
 // Issue #138 fixed: assignment from const parameter now generates valid C
@@ -52,10 +52,10 @@ void setDefaultMessage(void) {
 }
 
 int main(void) {
-    if (strlen(messageBuffer) != 7) {
+    if ((uint32_t) strlen(messageBuffer) != 7) {
         return 1U;
     }
-    if (strlen(logBuffer) != 13) {
+    if ((uint32_t) strlen(logBuffer) != 13) {
         return 2U;
     }
     if (strcmp(messageBuffer, "Initial") != 0) {
@@ -85,7 +85,7 @@ int main(void) {
         return 10U;
     }
     cnx_string_copy(messageBuffer, "Modified", 64U);
-    if (strlen(messageBuffer) != 8) {
+    if ((uint32_t) strlen(messageBuffer) != 8) {
         return 11U;
     }
     if (strcmp(messageBuffer, "Modified") != 0) {
@@ -93,14 +93,14 @@ int main(void) {
     }
     const char source[65] = "FromParam";
     copyMessage(source);
-    if (strlen(messageBuffer) != 9) {
+    if ((uint32_t) strlen(messageBuffer) != 9) {
         return 13U;
     }
     if (strcmp(messageBuffer, "FromParam") != 0) {
         return 14U;
     }
     setDefaultMessage();
-    if (strlen(messageBuffer) != 12) {
+    if ((uint32_t) strlen(messageBuffer) != 12) {
         return 15U;
     }
     if (strcmp(messageBuffer, "DefaultValue") != 0) {

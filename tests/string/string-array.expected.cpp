@@ -55,7 +55,7 @@ uint32_t getArrayLength(const char arr[5][33]) {
 
 // Issue #136 fixed: arr[index].value_char_count now correctly returns strlen
 uint32_t getElementLength(const char arr[5][33], const uint32_t index) {
-    return strlen(arr[index]);
+    return (uint32_t) strlen(arr[index]);
 }
 
 int main(void) {
@@ -67,19 +67,19 @@ int main(void) {
     if (5 != 5) {
         return 1;
     }
-    if (strlen(globalNames[0U]) != 5) {
+    if ((uint32_t) strlen(globalNames[0U]) != 5) {
         return 2;
     }
-    if (strlen(globalNames[1U]) != 3) {
+    if ((uint32_t) strlen(globalNames[1U]) != 3) {
         return 3;
     }
-    if (strlen(globalNames[2U]) != 7) {
+    if ((uint32_t) strlen(globalNames[2U]) != 7) {
         return 4;
     }
-    if (strlen(globalNames[3U]) != 5) {
+    if ((uint32_t) strlen(globalNames[3U]) != 5) {
         return 5;
     }
-    if (strlen(globalNames[4U]) != 3) {
+    if ((uint32_t) strlen(globalNames[4U]) != 3) {
         return 6;
     }
     if (32 != 32) {
@@ -111,13 +111,13 @@ int main(void) {
     if (3 != 3) {
         return 13;
     }
-    if (strlen(colors[0U]) != 3) {
+    if ((uint32_t) strlen(colors[0U]) != 3) {
         return 14;
     }
-    if (strlen(colors[1U]) != 5) {
+    if ((uint32_t) strlen(colors[1U]) != 5) {
         return 15;
     }
-    if (strlen(colors[2U]) != 4) {
+    if ((uint32_t) strlen(colors[2U]) != 4) {
         return 16;
     }
     const uint32_t arrLen = getArrayLength(globalNames);
@@ -147,14 +147,14 @@ int main(void) {
     uint32_t totalLength = 0U;
     uint32_t i = 0U;
     while (i < 5) {
-        totalLength = cnx_clamp_add_u32(totalLength, strlen(globalNames[i]));
+        totalLength = cnx_clamp_add_u32(totalLength, (uint32_t) strlen(globalNames[i]));
         i = cnx_clamp_add_u32(i, 1U);
     }
     if (totalLength != 23) {
         return 23;
     }
     cnx_string_copy(globalNames[1], "Benjamin", 32U);
-    if (strlen(globalNames[1U]) != 8) {
+    if ((uint32_t) strlen(globalNames[1U]) != 8) {
         return 24;
     }
     if (strcmp(globalNames[1U], "Benjamin") != 0) {
@@ -162,13 +162,13 @@ int main(void) {
     }
     char sparse[3][33] = {0};
     cnx_string_copy(sparse[1], "Middle", 32U);
-    if (strlen(sparse[0U]) != 0) {
+    if ((uint32_t) strlen(sparse[0U]) != 0) {
         return 26;
     }
-    if (strlen(sparse[1U]) != 6) {
+    if ((uint32_t) strlen(sparse[1U]) != 6) {
         return 27;
     }
-    if (strlen(sparse[2U]) != 0) {
+    if ((uint32_t) strlen(sparse[2U]) != 0) {
         return 28;
     }
     return 0;

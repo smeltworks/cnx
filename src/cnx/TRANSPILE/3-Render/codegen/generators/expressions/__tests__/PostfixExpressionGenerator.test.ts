@@ -2435,7 +2435,7 @@ describe("PostfixExpressionGenerator", () => {
       });
 
       const result = runPostfix(ctx, input, state, orchestrator);
-      expect(result.code).toBe("strlen(str)");
+      expect(result.code).toBe("(uint32_t) strlen(str)");
     });
 
     it("throws error for a float, which prints in more than one way", () => {
@@ -2797,7 +2797,7 @@ describe("PostfixExpressionGenerator", () => {
       });
 
       const result = runPostfix(ctx, input, state, orchestrator);
-      expect(result.code).toBe("strlen(obj.name)");
+      expect(result.code).toBe("(uint32_t) strlen(obj.name)");
     });
 
     it("throws for struct field char_count on non-string member", () => {

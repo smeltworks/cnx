@@ -55,13 +55,13 @@ int main(void) {
     if (strcmp(longSmall, longLarge) != 0) {
         return 12;
     }
-    if (strlen(longSmall) != strlen(longLarge)) {
+    if ((uint32_t) strlen(longSmall) != (uint32_t) strlen(longLarge)) {
         return 13;
     }
-    if (strlen(small) != strlen(medium)) {
+    if ((uint32_t) strlen(small) != (uint32_t) strlen(medium)) {
         return 14;
     }
-    if (strlen(medium) != strlen(large)) {
+    if ((uint32_t) strlen(medium) != (uint32_t) strlen(large)) {
         return 15;
     }
     return 0;

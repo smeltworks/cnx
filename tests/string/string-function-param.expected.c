@@ -12,7 +12,7 @@
 // test-no-warnings
 // Tests: passing bounded string to function
 void printMessage(const char* msg) {
-    const uint32_t len = strlen(msg);
+    const uint32_t len = (uint32_t) strlen(msg);
 }
 
 int main(void) {

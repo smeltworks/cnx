@@ -14153,7 +14153,9 @@ describe("CodeGenWalker", () => {
           (name) => `test__${name}`,
         );
 
-        expect(decls).toBe("size_t cnx_len_label = strlen(test__label);\n");
+        expect(decls).toBe(
+          "uint32_t cnx_len_label = (uint32_t) strlen(test__label);\n",
+        );
         expect(host.state.lengthCache).toEqual(
           new Map([["test__label", "cnx_len_label"]]),
         );

@@ -11,7 +11,7 @@
 // length reads share one cached strlen.
 int main(void) {
     const char label[9] = "ab";
-    size_t cnx_len_label = strlen(label);
+    uint32_t cnx_len_label = (uint32_t) strlen(label);
     if (cnx_len_label == 2) {
         const uint32_t n = cnx_len_label;
         if (n != 2) {

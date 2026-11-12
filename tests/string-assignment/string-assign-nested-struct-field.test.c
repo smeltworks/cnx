@@ -40,7 +40,7 @@ int main(void) {
     if (strcmp(g.inner.name, "glob") != 0) {
         return 2U;
     }
-    const uint32_t n = strlen(g.inner.name);
+    const uint32_t n = (uint32_t) strlen(g.inner.name);
     if (n != 4) {
         return 3U;
     }

@@ -18,5 +18,5 @@ const char greeting[33] = "Hello";
 const char labels[3][17] = {"one", "two", "three"};
 
 int main(void) {
-    const uint8_t len = strlen(greeting);
+    const uint32_t len = (uint32_t) strlen(greeting);
 }

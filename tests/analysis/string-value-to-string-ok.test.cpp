@@ -28,7 +28,7 @@ static inline void cnx_string_copy(char* target, const char* source, uint32_t ca
 // Tests: E0914's controls -- a string lands in a string, a u8 array takes a
 // string literal whole, and a character literal is a u8
 uint32_t lengthOf(const char* s) {
-    return strlen(s);
+    return (uint32_t) strlen(s);
 }
 
 int main(void) {
@@ -39,7 +39,7 @@ int main(void) {
     const uint8_t bytes[4] = "abc";
     const uint8_t c = static_cast<uint8_t>('A');
     const uint32_t n = lengthOf("four");
-    if (strlen(b) != 2) {
+    if ((uint32_t) strlen(b) != 2) {
         return 1U;
     }
     if (4 != 4) {

@@ -69,7 +69,7 @@ int main(void) {
     if (s[4U] != 'R') {
         return 5U;
     }
-    if (strlen(s) != 5) {
+    if ((uint32_t) strlen(s) != 5) {
         return 6U;
     }
     if (b[0U] != 'A') {

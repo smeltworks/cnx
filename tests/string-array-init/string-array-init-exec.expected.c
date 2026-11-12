@@ -49,13 +49,13 @@ int main(void) {
     if (strcmp(LABELS[2U], "Three") != 0) {
         return 5U;
     }
-    if (strlen(LABELS[0U]) != 3) {
+    if ((uint32_t) strlen(LABELS[0U]) != 3) {
         return 6U;
     }
-    if (strlen(LABELS[1U]) != 3) {
+    if ((uint32_t) strlen(LABELS[1U]) != 3) {
         return 7U;
     }
-    if (strlen(LABELS[2U]) != 5) {
+    if ((uint32_t) strlen(LABELS[2U]) != 5) {
         return 8U;
     }
     if (strcmp(colors[0U], "Red") != 0) {
@@ -70,16 +70,16 @@ int main(void) {
     if (strcmp(colors[3U], "Yellow") != 0) {
         return 12U;
     }
-    if (strlen(colors[0U]) != 3) {
+    if ((uint32_t) strlen(colors[0U]) != 3) {
         return 13U;
     }
-    if (strlen(colors[1U]) != 5) {
+    if ((uint32_t) strlen(colors[1U]) != 5) {
         return 14U;
     }
-    if (strlen(colors[2U]) != 4) {
+    if ((uint32_t) strlen(colors[2U]) != 4) {
         return 15U;
     }
-    if (strlen(colors[3U]) != 6) {
+    if ((uint32_t) strlen(colors[3U]) != 6) {
         return 16U;
     }
     if (10 != 10) {
@@ -91,7 +91,7 @@ int main(void) {
     uint32_t totalLen = 0U;
     uint32_t i = 0U;
     while (i < 3) {
-        totalLen = cnx_clamp_add_u32(totalLen, strlen(LABELS[i]));
+        totalLen = cnx_clamp_add_u32(totalLen, (uint32_t) strlen(LABELS[i]));
         i = cnx_clamp_add_u32(i, 1U);
     }
     if (totalLen != 11) {
