@@ -1829,6 +1829,46 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | ok     | ok         | n/a         | n/a        |
 | for header         | ok        | ok     | ok         | n/a         | n/a        |
 
+## ADR-072
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | n/a         | n/a        |
+| top-level function | ok        | warn   | warn       | n/a         | n/a        |
+| scope member       | -         | -      | -          | n/a         | n/a        |
+| scope method       | ok        | warn   | warn       | n/a         | n/a        |
+| for header         | -         | -      | -          | n/a         | n/a        |
+
+## ADR-072 E0896
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | n/a         | n/a        |
+| top-level function | ok        | -      | -          | n/a         | n/a        |
+| scope member       | -         | -      | -          | n/a         | n/a        |
+| scope method       | ok        | -      | -          | n/a         | n/a        |
+| for header         | -         | -      | -          | n/a         | n/a        |
+
+## ADR-072 E0900
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | n/a         | n/a        |
+| top-level function | ok        | warn   | warn       | n/a         | n/a        |
+| scope member       | -         | -      | -          | n/a         | n/a        |
+| scope method       | ok        | warn   | warn       | n/a         | n/a        |
+| for header         | warn      | warn   | warn       | n/a         | n/a        |
+
+## ADR-072 E0929
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | n/a         | n/a        |
+| top-level function | ok        | warn   | warn       | n/a         | n/a        |
+| scope member       | -         | -      | -          | n/a         | n/a        |
+| scope method       | ok        | warn   | warn       | n/a         | n/a        |
+| for header         | warn      | warn   | warn       | n/a         | n/a        |
+
 ## Positions
 
 Which part of its statement each code's diagnostics land in, for a code whose

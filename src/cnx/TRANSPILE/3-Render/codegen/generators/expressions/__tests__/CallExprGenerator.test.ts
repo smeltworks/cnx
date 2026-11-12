@@ -111,7 +111,7 @@ function cArgumentFacts(
     bracket > 0 ? declaredTypes.get(text.slice(0, bracket)) : undefined;
   return {
     param,
-    addressWritten: text.startsWith("&"),
+    filledByFormat: false,
     promotedHandle:
       orchestrator.getParameter(expression)?.forcePointerSemantics ?? false,
     argType:
@@ -435,42 +435,6 @@ describe("CallExprGenerator", () => {
       const state = createMockState();
       const orchestrator = createMockOrchestrator({
         isCnxFunction: vi.fn(() => false),
-        getExpressionType: vi.fn(() => "MyStruct"),
-        isKnownStruct: vi.fn(() => true),
-      });
-
-      const result = generateFunctionCall(
-        "c_func",
-        planArguments(orchestrator, argExpressions, "c_func", input),
-        state,
-      );
-
-      expect(result.code).toBe("c_func(&myStruct)");
-    });
-
-    it("does not add & if argument already has & prefix", () => {
-      const argExpressions = [createMockExpressionContext("&myStruct")];
-      const sigs = new Map([
-        [
-          "c_func",
-          {
-            name: "c_func",
-            parameters: [
-              {
-                name: "p",
-                baseType: "MyStruct*",
-                isConst: false,
-                isArray: false,
-              },
-            ],
-          },
-        ],
-      ]);
-      const input = createMockInput({ functionSignatures: sigs });
-      const state = createMockState();
-      const orchestrator = createMockOrchestrator({
-        isCnxFunction: vi.fn(() => false),
-        generateExpression: vi.fn(() => "&myStruct"),
         getExpressionType: vi.fn(() => "MyStruct"),
         isKnownStruct: vi.fn(() => true),
       });

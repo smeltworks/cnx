@@ -15,6 +15,10 @@
  * one `u8` or `n` of them -- so it accepts both, and warns that the call is not
  * memory safe.
  *
+ * E0929, #2117 (owner ruling 2026-11-12): a scanf-family call says which
+ * arguments it writes only in a literal format (`ScanfFormat`), so a format
+ * that is not a string literal is a compile error.
+ *
  * Asked only where both sides are known: a C function (a cnx function's
  * parameters are cnx's own), a parameter of exactly one pointer, and an
  * argument the typer types as a declared value. A literal or an expression is
@@ -28,6 +32,7 @@ import WrittenBinding from "./helpers/WrittenBinding";
 import BoundDeclaration from "./helpers/BoundDeclaration";
 import MutSite from "./helpers/MutSite";
 import CPointerParameter from "../../utils/CPointerParameter";
+import ScanfFormat from "../../utils/ScanfFormat";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import CNX_TO_C_TYPE_MAP from "../../utils/constants/TypeMappings";
@@ -52,6 +57,7 @@ class CPointerArgumentCheck {
   public checkExpression(expr: TExpression): void {
     const callee = CCallee.of(expr, this.context);
     if (callee === null) return;
+    this.rejectsFormatNotLiteral(callee);
     const only =
       callee.signatures.length === 1 ? callee.signatures[0] : undefined;
     callee.arguments.forEach((arg, index) => {
@@ -79,6 +85,19 @@ class CPointerArgumentCheck {
         helpText: `Consider converting '${callee.name}' to cnx.`,
         severity: "warning",
       });
+    });
+  }
+
+  /** E0929: a scanf-family format that is not a string literal */
+  private rejectsFormatNotLiteral(callee: ICCallee): void {
+    const writes = ScanfFormat.writesOf(callee.name, callee.arguments);
+    if (writes.kind !== "format-not-literal") return;
+    this.found.push({
+      code: "E0929",
+      span: writes.format.span,
+      message: `the format of '${callee.name}' is not a string literal, so cnx cannot tell which arguments '${callee.name}' writes`,
+      helpText: `Write the format as a string literal, e.g. ${callee.name}(..., "%d", value).`,
+      severity: "error",
     });
   }
 
@@ -129,10 +148,9 @@ class CPointerArgumentCheck {
       };
     }
     if (parameter === undefined) {
-      const object = arg.kind === "unary" ? arg.operand : arg;
       return {
-        message: `'${object.written}' is read-only, and argument ${index + 1} of '${name}' fills its '...', which '${name}' may write through`,
-        helpText: `Declare '${object.written}' \`mut\`.`,
+        message: `'${arg.written}' is read-only, and argument ${index + 1} of '${name}' fills its '...', which '${name}' may write through`,
+        helpText: `Declare '${arg.written}' \`mut\`.`,
       };
     }
     if (pointee !== null) {
@@ -149,17 +167,10 @@ class CPointerArgumentCheck {
     };
   }
 
-  /** The C type of what an argument hands over: `&x` hands over x */
+  /** The C type of what an argument hands over */
   private objectTypeOf(arg: TExpression): string | null {
-    return (
-      CPointerArgumentAnalyzer.cTypeOf(
-        OperandTyper.typeOf(arg, this.context),
-      ) ??
-      (arg.kind === "unary" && arg.operator === "&"
-        ? CPointerArgumentAnalyzer.cTypeOf(
-            OperandTyper.typeOf(arg.operand, this.context),
-          )
-        : null)
+    return CPointerArgumentAnalyzer.cTypeOf(
+      OperandTyper.typeOf(arg, this.context),
     );
   }
 

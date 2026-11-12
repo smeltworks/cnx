@@ -200,7 +200,7 @@ class OperandTyper {
    * and bitwise levels, parentheses, a ternary's VALUE arms (never its
    * condition), and unary `-` and `~`; it stops at a postfix chain, a cast, a
    * Boolean-valued level or `!` (one Boolean leaf) and `sizeof`; it excludes
-   * `&x` and a shift count.
+   * a shift count.
    */
   static valueLeaves(
     expr: TExpression,
@@ -230,7 +230,6 @@ class OperandTyper {
         OperandTyper.valueLeafExpressions(arm, isLeaf),
       );
     }
-    if (expr.kind === "unary" && expr.operator === "&") return [];
     const operand = OperandTyper.wrappedOperand(expr);
     return operand === null
       ? [expr]
@@ -930,17 +929,13 @@ class OperandTyper {
         OperandTyper.typeOf(expr.operand, ctx)?.hasSideEffect ?? false,
       );
     }
-    if (expr.operator === "-" || expr.operator === "~") {
-      const t = OperandTyper.typeOf(expr.operand, ctx);
-      if (t === null) return null;
-      const form =
-        expr.operator === "-" && t.form.kind === "literal"
-          ? { ...t.form, negated: !t.form.negated }
-          : t.form;
-      return { ...t, form, overflow: null, binding: null };
-    }
-    // `&x` is an address, never a value operand (#1152)
-    return null;
+    const t = OperandTyper.typeOf(expr.operand, ctx);
+    if (t === null) return null;
+    const form =
+      expr.operator === "-" && t.form.kind === "literal"
+        ? { ...t.form, negated: !t.form.negated }
+        : t.form;
+    return { ...t, form, overflow: null, binding: null };
   }
 
   private static identifierType(

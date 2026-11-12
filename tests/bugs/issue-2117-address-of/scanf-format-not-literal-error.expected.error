@@ -1,0 +1,12 @@
+12:31 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"7"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+12:36 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing 'format' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+18:35 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"7"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+18:40 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing 'format' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+12:36 error[E0929]: the format of 'sscanf' is not a string literal, so cnx cannot tell which arguments 'sscanf' writes
+       help: Write the format as a string literal, e.g. sscanf(..., "%d", value).
+18:40 error[E0929]: the format of 'sscanf' is not a string literal, so cnx cannot tell which arguments 'sscanf' writes
+       help: Write the format as a string literal, e.g. sscanf(..., "%d", value).

@@ -70,14 +70,6 @@ describe("conversion rules on composite expressions", () => {
       expect(result.errors).toEqual([]);
     });
 
-    it("does not type an address-of by its operand", async () => {
-      // `&x` yields an address, not x's value (ADR-006).
-      const result = await transpile(
-        `u32 main() { i32 counter <- 5; u32 addr <- &counter; return 0; }`,
-      );
-      expect(result.errors).toEqual([]);
-    });
-
     it("accepts a same-width composite", async () => {
       const result = await transpile(
         `u8 f(u8 a, u8 b) { u8 c <- a + b; return c; } u32 main() { return 0; }`,

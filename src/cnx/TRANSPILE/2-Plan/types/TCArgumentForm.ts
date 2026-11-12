@@ -5,7 +5,10 @@
 type TCArgumentForm =
   /** #937: a callback-promoted parameter, already the pointer it takes */
   | "promoted-handle"
-  /** Its address, for a pointer parameter one level deeper than the value */
+  /**
+   * Its address, for a pointer parameter one level deeper than the value, or
+   * for a scanf-family conversion that fills it (#2117)
+   */
   | "address-of"
   /** As it is written */
   | "as-written";

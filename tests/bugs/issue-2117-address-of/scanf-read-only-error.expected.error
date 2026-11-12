@@ -1,0 +1,12 @@
+9:31 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"7"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+9:36 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%d"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+15:35 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"7"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+15:40 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%d"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+9:42 error[E0900]: 'parsed' is read-only, and argument 3 of 'sscanf' fills its '...', which 'sscanf' may write through
+       help: Declare 'parsed' `mut`.
+15:46 error[E0900]: 'parsed' is read-only, and argument 3 of 'sscanf' fills its '...', which 'sscanf' may write through
+       help: Declare 'parsed' `mut`.

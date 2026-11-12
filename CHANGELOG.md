@@ -120,6 +120,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   output's requirements say so.
 - **A retry loop evaluates its value once** (Issue #1807). `w +<- f()` called `f()`
   again on every failed LDREX/STREX attempt.
+- **`&x` is a compile error** (ADR-006, Issue #2117). `&` was never cnx syntax, but it was
+  accepted and emitted as C's address-of: `u32 a <- &x;` became `uint32_t a = &x;`, which
+  gcc's `-Werror=int-conversion` rejects. It is now unknown syntax. A C function's pointer
+  parameter takes its `&` from the header (`bump(a)`), and a variadic out-parameter takes it
+  from a scanf-family call's literal format (ADR-072): `global.sscanf("7", "%d", parsed)` is
+  `sscanf("7", "%d", &parsed)`. A format that is not a string literal is E0929.
 
 ## [0.4.0] - 2026-10-17
 

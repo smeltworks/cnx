@@ -63,13 +63,6 @@ describe("CPointerArgumentAnalyzer on 1.2's syntax (#1991)", () => {
     ]);
   });
 
-  it("reaches the object `&x` hands the pointer (ADR-071)", () => {
-    expect(at(["u8 c <- 1;", "take(&c);", "peek(&c);"])).toEqual([
-      "E0900@3:9 '&c' is read-only uint8_t, and parameter 1 of 'take' is a pointer 'take' may write through",
-      "E0896@4:9 cnx cannot see how 'peek' uses parameter 1, so passing '&c' to it is not memory safe",
-    ]);
-  });
-
   it("rejects a read-only array only where the C array is not const (#986)", () => {
     expect(
       at([

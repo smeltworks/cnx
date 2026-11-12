@@ -1,0 +1,17 @@
+// test-error
+// test-adr: 072
+// #2117 (owner ruling 2026-11-12): `%d` in a literal scanf format writes the
+// argument it matches, so a read-only `parsed` there does not compile.
+#include <stdio.h>
+
+void parse() {
+    i32 parsed <- 0;
+    i32 count <- global.sscanf("7", "%d", parsed);
+}
+
+scope Reader {
+    public void parse() {
+        i32 parsed <- 0;
+        i32 count <- global.sscanf("7", "%d", parsed);
+    }
+}

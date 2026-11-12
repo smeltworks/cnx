@@ -14,17 +14,23 @@ type TTypeQueries = Pick<
 
 /**
  * How an argument to a C or C++ function is written: whether it takes `&` to
- * match the pointer parameter the callee declares (#1991). 2.2 decides it once
- * per argument and 2.3 writes the answer.
+ * match the pointer parameter the callee declares (#1991), or the conversion
+ * of a scanf-family call's literal format that fills it (#2117). 2.2 decides
+ * it once per argument and 2.3 writes the answer.
  */
 class CArgumentAddress {
   static formOf(facts: ICArgumentFacts, queries: TTypeQueries): TCArgumentForm {
     const param = facts.param;
-    if (!param?.baseType.endsWith("*")) return "as-written";
+    if (param === undefined) {
+      // A whole array or a string is already where the conversion writes
+      return facts.filledByFormat && !facts.isArray
+        ? "address-of"
+        : "as-written";
+    }
+    if (!param.baseType.endsWith("*")) return "as-written";
     // Issue #937: a callback-promoted parameter is already the pointer the
     // callback's typedef takes, so it is passed as its own name
     if (facts.promotedHandle) return "promoted-handle";
-    if (facts.addressWritten) return "as-written";
     return CArgumentAddress.needsAddressOf(param, facts, queries)
       ? "address-of"
       : "as-written";

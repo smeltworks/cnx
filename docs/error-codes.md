@@ -507,6 +507,12 @@ base: bare, `this.` and `global.`.
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
 | E0928 | A value that is not a character, a string or an integer (a float, a bool, an enum or any other value) is written into the characters of a `string<N>` -- `s[i] <- true` or `s[i, n] <- 1.5` -- which MISRA C:2012 Rule 10.3 forbids (#1748, #2385). `s[i]` is `s[i, 1]`: a character is written as it is, a string is copied in and E0864 judges its fit, and an integer is split into bytes as ADR-007's slice write splits it | The characters of a `string<N>` take a character, a string that fits them, or an integer split into bytes | `TRANSPILE/1-Analyze/IntegerConversionAnalyzer.ts` |
 
+## E0929 — A Scanf-Family Format That Is Not a String Literal (ADR-072)
+
+| Code  | Message                                                                                                                                                                                                                                                                                          | Help                                 | Source                                            |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------ | ------------------------------------------------- |
+| E0929 | The format of a call to a C standard scanf-family function (`scanf`, `fscanf`, `sscanf`, `wscanf`, `fwscanf`, `swscanf`) is not a string literal, so cnx cannot tell which arguments the call writes (#2117). Its literal format is the one place that says which argument each conversion fills | Write the format as a string literal | `TRANSPILE/1-Analyze/CPointerArgumentAnalyzer.ts` |
+
 ---
 
 ## Adding New Error Codes
