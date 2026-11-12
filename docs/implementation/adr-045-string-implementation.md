@@ -251,7 +251,7 @@ if (destCapacity < src1Capacity + src2Capacity) {
 // cnx_string_copy(dest, src1, NU);
 // {
 //     const uint32_t cnx_used = (uint32_t) strlen(dest);
-//     cnx_string_copy(dest + cnx_used, src2, NU - cnx_used);
+//     cnx_string_copy(&dest[cnx_used], src2, NU - cnx_used);
 // }
 ```
 
@@ -379,7 +379,7 @@ char result[65] = "";
 cnx_string_copy(result, a, 64U);
 {
     const uint32_t cnx_used = (uint32_t) strlen(result);
-    cnx_string_copy(result + cnx_used, b, 64U - cnx_used);
+    cnx_string_copy(&result[cnx_used], b, 64U - cnx_used);
 }
 ```
 

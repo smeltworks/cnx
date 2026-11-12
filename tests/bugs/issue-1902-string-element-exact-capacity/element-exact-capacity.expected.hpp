@@ -16,6 +16,10 @@ extern "C" {
 typedef struct Config {
     char items[2][9];
 } Config;
+typedef struct Named {
+    char name[9];
+    uint8_t id;
+} Named;
 
 /* External variables */
 extern char globalNames[2][9];

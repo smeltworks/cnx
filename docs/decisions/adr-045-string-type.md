@@ -245,7 +245,7 @@ char result[65] = "";  // 64 + 1 for null
 cnx_string_copy(result, a, 64U);
 {
     const uint32_t cnx_used = (uint32_t) strlen(result);
-    cnx_string_copy(result + cnx_used, b, 64U - cnx_used);
+    cnx_string_copy(&result[cnx_used], b, 64U - cnx_used);
 }
 ```
 

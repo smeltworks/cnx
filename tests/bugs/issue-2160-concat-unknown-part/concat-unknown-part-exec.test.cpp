@@ -36,7 +36,7 @@ uint32_t joinAll(const char* p) {
     cnx_string_copy(cnx_tmp0.t, p, 8U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp0.t);
-        cnx_string_copy(cnx_tmp0.t + cnx_used, s + 0U, ((8U - cnx_used) < 4U) ? (8U - cnx_used) : 4U);
+        cnx_string_copy(&cnx_tmp0.t[cnx_used], s + 0U, ((8U - cnx_used) < 4U) ? (8U - cnx_used) : 4U);
     }
     const Box b = cnx_tmp0;
     if (b.canary != 90) {
@@ -49,7 +49,7 @@ uint32_t joinAll(const char* p) {
     cnx_string_copy(d, p, 8U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(d);
-        cnx_string_copy(d + cnx_used, s + 0, ((8U - cnx_used) < 4U) ? (8U - cnx_used) : 4U);
+        cnx_string_copy(&d[cnx_used], s + 0, ((8U - cnx_used) < 4U) ? (8U - cnx_used) : 4U);
     }
     if (strcmp(d, "12345678") != 0) {
         return 3U;
@@ -61,7 +61,7 @@ uint32_t joinAll(const char* p) {
         cnx_string_copy(cnx_tmp1, p, 8U);
         {
             const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp1);
-            cnx_string_copy(cnx_tmp1 + cnx_used, s + 0U, ((8U - cnx_used) < 4U) ? (8U - cnx_used) : 4U);
+            cnx_string_copy(&cnx_tmp1[cnx_used], s + 0U, ((8U - cnx_used) < 4U) ? (8U - cnx_used) : 4U);
         }
         cnx_string_copy(e, cnx_tmp1, 8U);
     }
@@ -73,7 +73,7 @@ uint32_t joinAll(const char* p) {
     cnx_string_copy(cnx_tmp2.t, p, 8U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp2.t);
-        cnx_string_copy(cnx_tmp2.t + cnx_used, "xyz", 8U - cnx_used);
+        cnx_string_copy(&cnx_tmp2.t[cnx_used], "xyz", 8U - cnx_used);
     }
     const Box c = cnx_tmp2;
     if (c.canary != 91) {

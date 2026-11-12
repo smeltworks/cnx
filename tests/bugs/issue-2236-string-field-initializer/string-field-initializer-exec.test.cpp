@@ -62,7 +62,7 @@ int main(void) {
     cnx_string_copy(cnx_tmp3.name, m.name + 0U, 1U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp3.name);
-        cnx_string_copy(cnx_tmp3.name + cnx_used, s, 8U - cnx_used);
+        cnx_string_copy(&cnx_tmp3.name[cnx_used], s, 8U - cnx_used);
     }
     m = cnx_tmp3;
     if (strcmp(m.name, "xab") != 0) {

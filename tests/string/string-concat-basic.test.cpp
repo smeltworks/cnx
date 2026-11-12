@@ -32,6 +32,6 @@ void test(void) {
     cnx_string_copy(result, first, 64U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(result);
-        cnx_string_copy(result + cnx_used, second, 64U - cnx_used);
+        cnx_string_copy(&result[cnx_used], second, 64U - cnx_used);
     }
 }

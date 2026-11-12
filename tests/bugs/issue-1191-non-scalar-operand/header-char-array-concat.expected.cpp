@@ -31,18 +31,18 @@ int main(void) {
     cnx_string_copy(r, cbuf, 32U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(r);
-        cnx_string_copy(r + cnx_used, "x", 32U - cnx_used);
+        cnx_string_copy(&r[cnx_used], "x", 32U - cnx_used);
     }
     char r2[33] = "";
     cnx_string_copy(r2, "x", 32U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(r2);
-        cnx_string_copy(r2 + cnx_used, cbuf, 32U - cnx_used);
+        cnx_string_copy(&r2[cnx_used], cbuf, 32U - cnx_used);
     }
     char r3[33] = "";
     cnx_string_copy(r3, grec.name, 32U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(r3);
-        cnx_string_copy(r3 + cnx_used, "x", 32U - cnx_used);
+        cnx_string_copy(&r3[cnx_used], "x", 32U - cnx_used);
     }
 }

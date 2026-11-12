@@ -31,7 +31,7 @@ int main(void) {
     cnx_string_copy(result, first, 64U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(result);
-        cnx_string_copy(result + cnx_used, second, 64U - cnx_used);
+        cnx_string_copy(&result[cnx_used], second, 64U - cnx_used);
     }
     if (strlen(result) != 11) {
         return 1;
@@ -46,7 +46,7 @@ int main(void) {
     cnx_string_copy(withLit, first, 64U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(withLit);
-        cnx_string_copy(withLit + cnx_used, "!", 64U - cnx_used);
+        cnx_string_copy(&withLit[cnx_used], "!", 64U - cnx_used);
     }
     if (strlen(withLit) != 6) {
         return 4;
@@ -60,7 +60,7 @@ int main(void) {
     cnx_string_copy(ab, a, 16U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(ab);
-        cnx_string_copy(ab + cnx_used, b, 16U - cnx_used);
+        cnx_string_copy(&ab[cnx_used], b, 16U - cnx_used);
     }
     if (strlen(ab) != 4) {
         return 6;
@@ -74,7 +74,7 @@ int main(void) {
     cnx_string_copy(sentence, part1, 64U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(sentence);
-        cnx_string_copy(sentence + cnx_used, part2, 64U - cnx_used);
+        cnx_string_copy(&sentence[cnx_used], part2, 64U - cnx_used);
     }
     if (strlen(sentence) != 19) {
         return 8;
@@ -88,7 +88,7 @@ int main(void) {
     cnx_string_copy(withEmpty, nonEmpty, 64U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(withEmpty);
-        cnx_string_copy(withEmpty + cnx_used, empty, 64U - cnx_used);
+        cnx_string_copy(&withEmpty[cnx_used], empty, 64U - cnx_used);
     }
     if (strlen(withEmpty) != 4) {
         return 10;
@@ -100,7 +100,7 @@ int main(void) {
     cnx_string_copy(emptyFirst, empty, 64U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(emptyFirst);
-        cnx_string_copy(emptyFirst + cnx_used, nonEmpty, 64U - cnx_used);
+        cnx_string_copy(&emptyFirst[cnx_used], nonEmpty, 64U - cnx_used);
     }
     if (strcmp(emptyFirst, "Text") != 0) {
         return 12;
@@ -109,7 +109,7 @@ int main(void) {
     cnx_string_copy(litConcat, "Hello", 11U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(litConcat);
-        cnx_string_copy(litConcat + cnx_used, " World", 11U - cnx_used);
+        cnx_string_copy(&litConcat[cnx_used], " World", 11U - cnx_used);
     }
     if (strlen(litConcat) != 11) {
         return 13;

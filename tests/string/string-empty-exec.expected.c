@@ -54,7 +54,7 @@ int main(void) {
     cnx_string_copy(concatEmpty, text, 96U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(concatEmpty);
-        cnx_string_copy(concatEmpty + cnx_used, empty, 96U - cnx_used);
+        cnx_string_copy(&concatEmpty[cnx_used], empty, 96U - cnx_used);
     }
     if (strlen(concatEmpty) != 5) {
         return 8;
@@ -66,7 +66,7 @@ int main(void) {
     cnx_string_copy(emptyPlusText, empty, 96U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(emptyPlusText);
-        cnx_string_copy(emptyPlusText + cnx_used, text, 96U - cnx_used);
+        cnx_string_copy(&emptyPlusText[cnx_used], text, 96U - cnx_used);
     }
     if (strlen(emptyPlusText) != 5) {
         return 10;

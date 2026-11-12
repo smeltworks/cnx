@@ -83,7 +83,7 @@ int main(void) {
     cnx_string_copy(combined, part1, 6U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(combined);
-        cnx_string_copy(combined + cnx_used, part2, 6U - cnx_used);
+        cnx_string_copy(&combined[cnx_used], part2, 6U - cnx_used);
     }
     if (strlen(combined) != 6) {
         return 15;

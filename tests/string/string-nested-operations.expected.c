@@ -32,7 +32,7 @@ int main(void) {
     cnx_string_copy(concat, a, 64U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(concat);
-        cnx_string_copy(concat + cnx_used, b, 64U - cnx_used);
+        cnx_string_copy(&concat[cnx_used], b, 64U - cnx_used);
     }
     if (strlen(concat) != 11) {
         return 1;
@@ -61,7 +61,7 @@ int main(void) {
     cnx_string_copy(combined, first, 64U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(combined);
-        cnx_string_copy(combined + cnx_used, second, 64U - cnx_used);
+        cnx_string_copy(&combined[cnx_used], second, 64U - cnx_used);
     }
     if (strcmp(combined, "ABCD") != 0) {
         return 7;
@@ -99,7 +99,7 @@ int main(void) {
     cnx_string_copy(word, prefix, 32U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(word);
-        cnx_string_copy(word + cnx_used, suffix, 32U - cnx_used);
+        cnx_string_copy(&word[cnx_used], suffix, 32U - cnx_used);
     }
     if (strcmp(word, "prefix") != 0) {
         return 14;

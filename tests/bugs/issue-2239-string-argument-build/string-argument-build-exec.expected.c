@@ -51,7 +51,7 @@ uint32_t S__run(void) {
     cnx_string_copy(cnx_tmp0, a, 8U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp0);
-        cnx_string_copy(cnx_tmp0 + cnx_used, b, 8U - cnx_used);
+        cnx_string_copy(&cnx_tmp0[cnx_used], b, 8U - cnx_used);
     }
     const uint32_t r1 = S__take(cnx_tmp0);
     if (r1 != 1) {
@@ -69,7 +69,7 @@ uint32_t S__run(void) {
     cnx_string_copy(cnx_tmp2, S__m, 8U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp2);
-        cnx_string_copy(cnx_tmp2 + cnx_used, a, 8U - cnx_used);
+        cnx_string_copy(&cnx_tmp2[cnx_used], a, 8U - cnx_used);
     }
     const uint32_t r3 = S__take(cnx_tmp2);
     if (r3 != 3) {

@@ -526,7 +526,7 @@ describe("ArgumentGenerator", () => {
         "cnx_string_copy(cnx_tmp0, a, 8U);",
         "{",
         "    const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp0);",
-        "    cnx_string_copy(cnx_tmp0 + cnx_used, b, 8U - cnx_used);",
+        "    cnx_string_copy(&cnx_tmp0[cnx_used], b, 8U - cnx_used);",
         "}",
       ]);
     });

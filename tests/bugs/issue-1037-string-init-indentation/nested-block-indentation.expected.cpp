@@ -38,7 +38,7 @@ int main(void) {
         cnx_string_copy(joined, base, 32U);
         {
             const uint32_t cnx_used = (uint32_t) strlen(joined);
-            cnx_string_copy(joined + cnx_used, base, 32U - cnx_used);
+            cnx_string_copy(&joined[cnx_used], base, 32U - cnx_used);
         }
         char part[9] = "";
         cnx_string_copy(part, base + 0, 3U);

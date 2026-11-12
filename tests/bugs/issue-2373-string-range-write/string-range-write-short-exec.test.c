@@ -72,7 +72,7 @@ int main(void) {
         cnx_string_copy(cnx_tmp6, "j", 4U);
         {
             const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp6);
-            cnx_string_copy(cnx_tmp6 + cnx_used, "e", 4U - cnx_used);
+            cnx_string_copy(&cnx_tmp6[cnx_used], "e", 4U - cnx_used);
         }
         const uint32_t cnx_tmp7 = (uint32_t) strlen(cnx_tmp6);
         for (uint32_t cnx_tmp8 = 0U; cnx_tmp8 < cnx_tmp7; cnx_tmp8++) {
@@ -89,7 +89,7 @@ int main(void) {
         cnx_string_copy(cnx_tmp9, "j", 2U);
         {
             const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp9);
-            cnx_string_copy(cnx_tmp9 + cnx_used, "e", 2U - cnx_used);
+            cnx_string_copy(&cnx_tmp9[cnx_used], "e", 2U - cnx_used);
         }
         const uint32_t cnx_tmp10 = (uint32_t) strlen(cnx_tmp9);
         for (uint32_t cnx_tmp11 = 0U; cnx_tmp11 < cnx_tmp10; cnx_tmp11++) {

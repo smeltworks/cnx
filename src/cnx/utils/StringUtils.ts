@@ -77,7 +77,7 @@ class StringUtils {
     return [
       "{",
       `    const uint32_t cnx_used = (uint32_t) strlen(${buffer});`,
-      `    ${StringUtils.COPY_HELPER}(${buffer} + cnx_used, ${source}, ${bound});`,
+      `    ${StringUtils.COPY_HELPER}(&${buffer}[cnx_used], ${source}, ${bound});`,
       "}",
     ];
   }

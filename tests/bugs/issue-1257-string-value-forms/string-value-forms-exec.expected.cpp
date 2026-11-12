@@ -43,7 +43,7 @@ uint32_t S__run(void) {
     cnx_string_copy(d0, a, 40U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(d0);
-        cnx_string_copy(d0 + cnx_used, b, 40U - cnx_used);
+        cnx_string_copy(&d0[cnx_used], b, 40U - cnx_used);
     }
     if (strcmp(d0, "abcd") != 0) {
         return 13U;
@@ -57,7 +57,7 @@ uint32_t S__run(void) {
     cnx_string_copy(d1, c.name, 40U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(d1);
-        cnx_string_copy(d1 + cnx_used, "z", 40U - cnx_used);
+        cnx_string_copy(&d1[cnx_used], "z", 40U - cnx_used);
     }
     if (strcmp(d1, "xyz") != 0) {
         return 1U;
@@ -66,7 +66,7 @@ uint32_t S__run(void) {
     cnx_string_copy(d2, arr[1], 40U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(d2);
-        cnx_string_copy(d2 + cnx_used, S__m, 40U - cnx_used);
+        cnx_string_copy(&d2[cnx_used], S__m, 40U - cnx_used);
     }
     if (strcmp(d2, "e1mm") != 0) {
         return 2U;
@@ -75,11 +75,11 @@ uint32_t S__run(void) {
     cnx_string_copy(d3, S__m + 0, 1U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(d3);
-        cnx_string_copy(d3 + cnx_used, c.name + 1, ((40U - cnx_used) < 1U) ? (40U - cnx_used) : 1U);
+        cnx_string_copy(&d3[cnx_used], c.name + 1, ((40U - cnx_used) < 1U) ? (40U - cnx_used) : 1U);
     }
     {
         const uint32_t cnx_used = (uint32_t) strlen(d3);
-        cnx_string_copy(d3 + cnx_used, arr[2] + 1, ((40U - cnx_used) < 1U) ? (40U - cnx_used) : 1U);
+        cnx_string_copy(&d3[cnx_used], arr[2] + 1, ((40U - cnx_used) < 1U) ? (40U - cnx_used) : 1U);
     }
     if (strcmp(d3, "my2") != 0) {
         return 3U;
@@ -88,11 +88,11 @@ uint32_t S__run(void) {
     cnx_string_copy(d4, a, 40U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(d4);
-        cnx_string_copy(d4 + cnx_used, b, 40U - cnx_used);
+        cnx_string_copy(&d4[cnx_used], b, 40U - cnx_used);
     }
     {
         const uint32_t cnx_used = (uint32_t) strlen(d4);
-        cnx_string_copy(d4 + cnx_used, "z", 40U - cnx_used);
+        cnx_string_copy(&d4[cnx_used], "z", 40U - cnx_used);
     }
     if (strcmp(d4, "abcdz") != 0) {
         return 4U;
@@ -108,7 +108,7 @@ uint32_t S__run(void) {
         cnx_string_copy(cnx_tmp0, a, 40U);
         {
             const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp0);
-            cnx_string_copy(cnx_tmp0 + cnx_used, b, 40U - cnx_used);
+            cnx_string_copy(&cnx_tmp0[cnx_used], b, 40U - cnx_used);
         }
         cnx_string_copy(t, cnx_tmp0, 40U);
     }
@@ -131,7 +131,7 @@ uint32_t S__run(void) {
         cnx_string_copy(cnx_tmp2, c.name, 40U);
         {
             const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp2);
-            cnx_string_copy(cnx_tmp2 + cnx_used, arr[0U], 40U - cnx_used);
+            cnx_string_copy(&cnx_tmp2[cnx_used], arr[0U], 40U - cnx_used);
         }
         cnx_string_copy(x.name, cnx_tmp2, 40U);
     }
@@ -147,7 +147,7 @@ uint32_t S__run(void) {
         cnx_string_copy(cnx_tmp3, "z", 40U);
         {
             const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp3);
-            cnx_string_copy(cnx_tmp3 + cnx_used, S__m + 0U, ((40U - cnx_used) < 1U) ? (40U - cnx_used) : 1U);
+            cnx_string_copy(&cnx_tmp3[cnx_used], S__m + 0U, ((40U - cnx_used) < 1U) ? (40U - cnx_used) : 1U);
         }
         cnx_string_copy(o[1], cnx_tmp3, 40U);
     }
@@ -161,7 +161,7 @@ uint32_t S__run(void) {
         cnx_string_copy(cnx_tmp4, "z", 8U);
         {
             const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp4);
-            cnx_string_copy(cnx_tmp4 + cnx_used, s + 0U, ((8U - cnx_used) < 2U) ? (8U - cnx_used) : 2U);
+            cnx_string_copy(&cnx_tmp4[cnx_used], s + 0U, ((8U - cnx_used) < 2U) ? (8U - cnx_used) : 2U);
         }
         cnx_string_copy(s, cnx_tmp4, 8U);
     }
