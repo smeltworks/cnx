@@ -437,7 +437,7 @@ class OperandTyper {
       current = next;
     }
     return {
-      typing: { root: start.binding, steps },
+      typing: { root: start.binding, steps, endsOnBitField: bitField },
       last: current.k === "value" ? current.t : null,
     };
   }
@@ -740,18 +740,18 @@ class OperandTyper {
    * whose `char` buffer is an array though it is not one of `dimensions`.
    * Such an argument never takes `&` -- its address is a pointer to the ARRAY.
    */
+  static decaysToPointer(t: IOperandType | null): boolean {
+    return t !== null && (t.dimensions.length > 0 || OperandTyper.isString(t));
+  }
+
   /**
    * An array or a `string<N>`: a buffer of known size, which a variadic C
-   * callee may write through (ADR-071 Decision 2). Unlike `decaysToPointer`
-   * it leaves out an unsized `string` -- `main`'s `args[0]` -- which cnx never
-   * hands C to write.
+   * callee outside the scanf family may write through (ADR-071 Decision 2).
+   * Unlike `decaysToPointer` it leaves out an unsized `string` -- `main`'s
+   * `args[0]` -- which cnx does not assume such a callee writes.
    */
   static isSizedBuffer(t: IOperandType | null): boolean {
     return t !== null && (t.dimensions.length > 0 || t.stringCapacity !== null);
-  }
-
-  static decaysToPointer(t: IOperandType | null): boolean {
-    return t !== null && (t.dimensions.length > 0 || OperandTyper.isString(t));
   }
 
   /**

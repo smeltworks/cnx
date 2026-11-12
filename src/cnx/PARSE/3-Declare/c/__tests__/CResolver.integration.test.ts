@@ -522,6 +522,17 @@ describe("CResolver - Enums", () => {
     const enumSym = result.symbols.find((s) => s.kind === "enum");
     expect(enumSym).toBeUndefined();
   });
+
+  it("collects an anonymous enum's constants, with no parent (#2396)", () => {
+    const tree = TestHelpers.parseC(`enum { OPTION_A, OPTION_B };`);
+    const result = CResolver.resolve(tree!, "test.h");
+
+    const members = result.symbols.filter((s) => s.kind === "enum_member");
+    expect(members.map((m) => [m.name, m.parent])).toEqual([
+      ["OPTION_A", null],
+      ["OPTION_B", null],
+    ]);
+  });
 });
 
 describe("CResolver - Complex Declarators", () => {

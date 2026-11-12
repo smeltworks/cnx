@@ -8,6 +8,8 @@ import type TValueBinding from "./TValueBinding";
 interface IChainTyping {
   readonly root: TValueBinding | null;
   readonly steps: ReadonlyArray<IChainStep>;
+  /** ADR-058: the chain ends on a bitmap field or a header bit-field, which has no address */
+  readonly endsOnBitField: boolean;
 }
 
 export default IChainTyping;

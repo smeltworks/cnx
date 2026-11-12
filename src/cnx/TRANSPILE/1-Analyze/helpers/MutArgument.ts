@@ -2,7 +2,7 @@
  * Whether a call argument is an object a `mut` parameter can write (ADR-006,
  * #1203): a variable, a field or an element, through any brackets. Not a
  * literal, an operator's or a call's result, a cast, a struct literal, an
- * enum member, a bit of a scalar, a length property, a function's name, or a
+ * enum member, a bit of a scalar, a bitmap field or a C bit-field, a length property, a function's name, or a
  * header's macro or enum constant -- C would take the write into a compound literal and lose
  * it, or not compile. 2.1's E0915 and 2.2's argument form both ask this one
  * function, so an argument 2.1 accepts is never passed as a temporary.
@@ -26,6 +26,7 @@ class MutArgument {
       ExpressionShape.unparenthesized(arg),
       context,
     );
+    if (chain.endsOnBitField) return false;
     if (chain.steps.some((step) => step.property !== null)) return false;
     const form = OperandTyper.typeOf(arg, context)?.form.kind;
     return form !== "enumMember" && form !== "bitIndex" && form !== "bitRange";

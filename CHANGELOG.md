@@ -126,6 +126,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   parameter takes its `&` from the header (`bump(a)`), and a variadic out-parameter takes it
   from a scanf-family call's literal format (ADR-071 Decision 2): `global.sscanf("7", "%d", parsed)` is
   `sscanf("7", "%d", &parsed)`. A format that is not a string literal is E0930.
+- **A bitmap field or an untagged C enum constant passed to a `mut` parameter is E0915**
+  (ADR-006, Issues #2124, #2396). `bumpBool(f.a)` emitted `bumpBool(&((f >> 0) & 1))`, and a
+  `typedef enum { C_MODE_A }` or `enum { ANON_LIMIT }` constant emitted `&C_MODE_A`, which gcc
+  rejects. A scanf-family conversion's argument gets the same check.
 
 ## [0.4.0] - 2026-10-17
 

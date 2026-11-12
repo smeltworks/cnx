@@ -45,6 +45,17 @@ describe("ScanfFormat.writesOf (#2117)", () => {
     ["a string conversion", "%15s", [2]],
     ["no conversion", "plain", []],
     ["a trailing `%`", "%d %", [2]],
+    ["a hex escape that spells `%`", String.raw`\x25i`, [2]],
+    [
+      "a hex escape whose digits run on: `\\x25d` is one character",
+      String.raw`\x25d`,
+      [],
+    ],
+    ["an octal escape that spells `%`", String.raw`\045d`, [2]],
+    ["an escaped backslash before `x`", String.raw`\\x %d`, [2]],
+    ["an escaped backslash before `0`", String.raw`\\0 %d`, [2]],
+    ["an escaped quote", String.raw`\"%d`, [2]],
+    ["a NUL escape, where C stops reading", String.raw`%d\0%d`, [2]],
   ])("%s", (_label, format, expected) => {
     expect(written(format)).toEqual(expected);
   });
@@ -88,18 +99,6 @@ describe("ScanfFormat.writesOf (#2117)", () => {
       writes.kind === "literal" ? [...writes.written] : writes.kind,
     ).toEqual([2]);
   });
-
-  it.each([String.raw`"\x25d"`, String.raw`"\045d"`])(
-    "is a format-not-literal for %s, whose numeric escape can spell a %%",
-    (text) => {
-      const writes = ScanfFormat.writesOf("sscanf", [
-        literal('"7"'),
-        literal(text),
-        name("a"),
-      ]);
-      expect(writes.kind).toBe("format-not-literal");
-    },
-  );
 
   it("is not-scanf for any other function, printf included", () => {
     expect(

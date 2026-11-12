@@ -1,34 +1,58 @@
-17:27 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"7"' to it is not memory safe
+22:27 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"7"' to it is not memory safe
        help: Consider converting 'sscanf' to cnx.
-17:32 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%d"' to it is not memory safe
+22:32 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%d"' to it is not memory safe
        help: Consider converting 'sscanf' to cnx.
-18:27 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"7"' to it is not memory safe
+23:27 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"7"' to it is not memory safe
        help: Consider converting 'sscanf' to cnx.
-18:32 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%d"' to it is not memory safe
+23:32 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%d"' to it is not memory safe
        help: Consider converting 'sscanf' to cnx.
-19:27 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"7"' to it is not memory safe
+24:27 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"7"' to it is not memory safe
        help: Consider converting 'sscanf' to cnx.
-19:32 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%d"' to it is not memory safe
+24:32 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%d"' to it is not memory safe
        help: Consider converting 'sscanf' to cnx.
-20:27 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"7"' to it is not memory safe
+25:27 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"7"' to it is not memory safe
        help: Consider converting 'sscanf' to cnx.
-20:32 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%hhu"' to it is not memory safe
+25:32 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%hhu"' to it is not memory safe
        help: Consider converting 'sscanf' to cnx.
-21:27 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"7"' to it is not memory safe
+27:27 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"7"' to it is not memory safe
        help: Consider converting 'sscanf' to cnx.
-21:32 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%d"' to it is not memory safe
+27:32 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%d"' to it is not memory safe
        help: Consider converting 'sscanf' to cnx.
-26:31 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"7"' to it is not memory safe
+28:27 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"1"' to it is not memory safe
        help: Consider converting 'sscanf' to cnx.
-26:36 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%d"' to it is not memory safe
+28:32 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%hhu"' to it is not memory safe
        help: Consider converting 'sscanf' to cnx.
-17:38 error[E0915]: cannot pass '5' as argument 3 of 'sscanf', which its format writes: it is not a variable, so the write would be lost
+29:27 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"1"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+29:32 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%d"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+30:27 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"1"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+30:32 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%d"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+31:27 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"1"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+31:32 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%d"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+36:31 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 1, so passing '"7"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+36:36 warning[E0896]: cnx cannot see how 'sscanf' uses parameter 2, so passing '"%d"' to it is not memory safe
+       help: Consider converting 'sscanf' to cnx.
+22:38 error[E0915]: cannot pass '5' as argument 3 of 'sscanf', which its format writes: it is not a variable, so the write would be lost
        help: A scanf-family conversion writes its argument (ADR-071 Decision 2); pass a `mut` variable.
-18:38 error[E0915]: cannot pass 'seven()' as argument 3 of 'sscanf', which its format writes: it is not a variable, so the write would be lost
+23:38 error[E0915]: cannot pass 'seven()' as argument 3 of 'sscanf', which its format writes: it is not a variable, so the write would be lost
        help: A scanf-family conversion writes its argument (ADR-071 Decision 2); pass a `mut` variable.
-19:38 error[E0915]: cannot pass 'v + 1' as argument 3 of 'sscanf', which its format writes: it is not a variable, so the write would be lost
+24:38 error[E0915]: cannot pass 'v + 1' as argument 3 of 'sscanf', which its format writes: it is not a variable, so the write would be lost
        help: A scanf-family conversion writes its argument (ADR-071 Decision 2); pass a `mut` variable.
-20:40 error[E0915]: cannot pass 'flags[0, 4]' as argument 3 of 'sscanf', which its format writes: it is not a variable, so the write would be lost
+25:40 error[E0915]: cannot pass 'flags[0, 4]' as argument 3 of 'sscanf', which its format writes: it is not a variable, so the write would be lost
        help: A scanf-family conversion writes its argument (ADR-071 Decision 2); pass a `mut` variable.
-26:42 error[E0915]: cannot pass '5' as argument 3 of 'sscanf', which its format writes: it is not a variable, so the write would be lost
+28:40 error[E0915]: cannot pass 'bits.level' as argument 3 of 'sscanf', which its format writes: it is not a variable, so the write would be lost
+       help: A scanf-family conversion writes its argument (ADR-071 Decision 2); pass a `mut` variable.
+29:38 error[E0915]: cannot pass 'C_MODE_A' as argument 3 of 'sscanf', which its format writes: it is not a variable, so the write would be lost
+       help: A scanf-family conversion writes its argument (ADR-071 Decision 2); pass a `mut` variable.
+30:38 error[E0915]: cannot pass 'ANON_MODE' as argument 3 of 'sscanf', which its format writes: it is not a variable, so the write would be lost
+       help: A scanf-family conversion writes its argument (ADR-071 Decision 2); pass a `mut` variable.
+31:38 error[E0915]: cannot pass 'COLOR_GREEN' as argument 3 of 'sscanf', which its format writes: it is not a variable, so the write would be lost
+       help: A scanf-family conversion writes its argument (ADR-071 Decision 2); pass a `mut` variable.
+36:42 error[E0915]: cannot pass '5' as argument 3 of 'sscanf', which its format writes: it is not a variable, so the write would be lost
        help: A scanf-family conversion writes its argument (ADR-071 Decision 2); pass a `mut` variable.
