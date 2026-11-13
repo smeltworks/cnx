@@ -101,9 +101,13 @@ describe("2.2 plans a caller-supplied return buffer (#1209)", () => {
     expect(code).toMatch(
       /Store__data\((cnx_tmp\d+)\);\s+const uint8_t d = \1\[1U\];/,
     );
-    expect(code).toMatch(
-      /char (cnx_tmp\d+)\[17\] = \{0\};\s+Store__name\(\1\);/,
-    );
+  });
+
+  it("fills a declaration of the return type in place", async () => {
+    const { code } = await run(returns);
+    expect(code).toMatch(/char g\[17\] = "";\s+greet\(g\);/);
+    expect(code).toMatch(/uint8_t m\[4\] = \{0\};\s+make\(m\);/);
+    expect(code).toMatch(/char n\[17\] = "";\s+Store__name\(n\);/);
   });
 
   it("copies another array of the same shape in, element by element", async () => {
