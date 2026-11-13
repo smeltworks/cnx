@@ -14,12 +14,15 @@ extern "C" {
 
 /* External variables */
 extern const uint8_t table[4];
+extern const uint32_t SIZE;
 
 /* Function prototypes */
 void make(uint8_t cnx_return[4]);
 void getTable(uint8_t cnx_return[4]);
 void constant(uint8_t cnx_return[4]);
 void pair(char cnx_return[2][9]);
+void sized(uint8_t cnx_return[4]);
+void grid(uint8_t cnx_return[2][3]);
 
 #ifdef __cplusplus
 }

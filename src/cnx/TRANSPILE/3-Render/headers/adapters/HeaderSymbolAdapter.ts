@@ -86,14 +86,21 @@ class HeaderSymbolAdapter {
     const paramTypes = parameters.map((p) => p.type);
     const signature = `${qualifiedReturn} ${cName}(${paramTypes.join(", ")})`;
 
-    // #1209: a `string<N>` or array return fills a buffer the caller passes
+    // #1209: a `string<N>` or array return fills a buffer the caller passes,
+    // and the function returns `void`; what the header needs is the buffer's
+    // element type -- the whole `u8[2][3]` was taken for an external type
     const returnBuffer =
       ReturnBuffer.parameterFor(func.returnType) ?? undefined;
+    const returned = func.returnType;
+    const headerType =
+      returnBuffer !== undefined && returned.kind === "array"
+        ? TypeResolver.getTypeName(returned.elementType)
+        : qualifiedReturn;
 
     return {
       name: cName,
       kind: "function",
-      type: qualifiedReturn,
+      type: headerType,
       returnBuffer,
       parameters,
       signature,

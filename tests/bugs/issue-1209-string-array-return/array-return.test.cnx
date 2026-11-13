@@ -3,6 +3,7 @@
 // supplies, so a returned local is memory safe.
 
 u8[4] table <- [5, 6, 7, 8];
+u32 SIZE <- 4;
 
 u8[4] make() {
     u8[4] a <- [1, 2, 3, 4];
@@ -21,6 +22,18 @@ u8[4] constant() {
 string<8>[2] pair() {
     string<8>[2] p <- ["a", "bc"];
     return p;
+}
+
+// A const's name sizes a return as it sizes a variable
+u8[SIZE] sized() {
+    u8[SIZE] a <- [1, 2, 3, 4];
+    return a;
+}
+
+// Every dimension of a two-dimensional return is the buffer's
+u8[2][3] grid() {
+    u8[2][3] g <- [[1, 2, 3], [4, 5, 6]];
+    return g;
 }
 
 u32 main() {
@@ -46,6 +59,18 @@ u32 main() {
     string<8>[2] names <- pair();
     if (names[1] != "bc") {
         return 6;
+    }
+    u8 last <- sized()[3];
+    if (last != 4) {
+        return 7;
+    }
+    u8[SIZE] s <- sized();
+    if (s[0] != 1) {
+        return 8;
+    }
+    u8[2][3] g <- grid();
+    if (g[1][2] != 6) {
+        return 9;
     }
     return 0;
 }

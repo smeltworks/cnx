@@ -1,0 +1,19 @@
+// Issue #1209: a two-dimensional return fills a `uint8_t[2][3]` buffer. The
+// header declares nothing else, so it includes <stdint.h> for the buffer's
+// element type alone -- the whole `u8[2][3]` named no external type.
+u8[2][3] grid() {
+    u8[2][3] g <- [[1, 2, 3], [4, 5, 6]];
+    return g;
+}
+
+u32 main() {
+    u8[2][3] g <- grid();
+    if (g[1][2] != 6) {
+        return 1;
+    }
+    u8 second <- grid()[0][1];
+    if (second != 2) {
+        return 2;
+    }
+    return 0;
+}

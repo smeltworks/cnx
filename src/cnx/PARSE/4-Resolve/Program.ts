@@ -39,6 +39,7 @@ import type TRunTarget from "../../types/TRunTarget";
 import invariant from "../../utils/invariant";
 import emittedLocalName from "../../utils/emittedLocalName";
 import type IFunctionSymbol from "../../types/symbols/IFunctionSymbol";
+import type TType from "../../types/TType";
 import type TDefinedAt from "../../utils/types/TDefinedAt";
 import DefinitionPoint from "../../utils/DefinitionPoint";
 import type IScopeSymbol from "../../types/symbols/IScopeSymbol";
@@ -438,11 +439,20 @@ class Program {
       resolveFunction: (
         name: string,
         fromScopePath: string,
-      ): IFunctionSymbol | null =>
-        registry?.resolveFunction(
-          name,
-          registry.getScope(fromScopePath) ?? registry.getGlobalScope(),
-        ) ?? null,
+      ): IFunctionSymbol | null => {
+        const found =
+          registry?.resolveFunction(
+            name,
+            registry.getScope(fromScopePath) ?? registry.getGlobalScope(),
+          ) ?? null;
+        if (found === null) return null;
+        // #1209: the registry holds 1.3's function; the program answers with
+        // the one 1.4 settled, whose `u8[SIZE]` return is sized
+        const settled = symbolsByIdentity.get(
+          Program.identityKey(found.scopePath, found.name),
+        );
+        return settled?.kind === "function" ? settled : found;
+      },
     });
   }
 
@@ -2009,7 +2019,10 @@ class Program {
         changed = true;
         return { ...parameter, arrayDimensions: dimensions };
       });
-      return changed ? { ...symbol, parameters } : symbol;
+      const returnType = Program.withResolvedReturn(symbol, env);
+      return changed || returnType !== symbol.returnType
+        ? { ...symbol, parameters, returnType }
+        : symbol;
     }
     if (symbol.kind === "struct") {
       let changed = false;
@@ -2029,6 +2042,21 @@ class Program {
       return changed ? { ...symbol, fields } : symbol;
     }
     return symbol;
+  }
+
+  /** #1209: an array return's dimensions, settled as a variable's are */
+  private static withResolvedReturn(
+    symbol: IFunctionSymbol,
+    env: IConstantEnvironment,
+  ): TType {
+    const type = symbol.returnType;
+    if (type.kind !== "array") return type;
+    const dimensions = Program.resolvedDimensions(
+      type.dimensions,
+      symbol.returnDimensionExprs,
+      env,
+    );
+    return dimensions === type.dimensions ? type : { ...type, dimensions };
   }
 
   /**

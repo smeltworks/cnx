@@ -1,0 +1,4 @@
+17:11 error[E0864]: String literal (7 chars) exceeds string<4> capacity
+       help: Widen the return type to string<7>, or shorten the literal.
+23:11 error[E0864]: Cannot return string<16> as string<4> -- the source may not fit
+       help: Widen the return type to string<16>, or extract a substring of the source.

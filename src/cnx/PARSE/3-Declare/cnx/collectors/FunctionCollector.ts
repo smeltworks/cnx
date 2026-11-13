@@ -16,6 +16,7 @@ import SymbolRegistry from "../../SymbolRegistry";
 import ScopeUtils from "../../../../utils/ScopeUtils";
 import TVisibility from "../../../../types/TVisibility";
 import DimensionResolver from "../utils/DimensionResolver";
+import type IDeclaredDimension from "../types/IDeclaredDimension";
 import type IDeclareTypeFacts from "../../types/IDeclareTypeFacts";
 import OverflowBehaviorUtils from "../../../../utils/OverflowBehaviorUtils";
 
@@ -48,8 +49,9 @@ class FunctionCollector {
     // #1472: `resolveType` defers a bare name this file cannot settle instead
     // of guessing it, so 1.4 Resolve can apply ADR-057 with the whole-program
     // scope-type set. Everything it can settle resolves exactly as before.
+    const returnDimensions = FunctionCollector.returnDimensions(syntax);
     const returnType = FunctionCollector.withReturnDimensions(
-      syntax,
+      returnDimensions,
       TypeUtils.resolveType(syntax.returnType, scopePath, typeFacts),
     );
 
@@ -68,6 +70,9 @@ class FunctionCollector {
       ...ScopeUtils.identityOf({ name, scopePath }),
       parameters,
       returnType,
+      ...(returnDimensions.some((dimension) => dimension.expr !== null)
+        ? { returnDimensionExprs: returnDimensions.map((d) => d.expr) }
+        : {}),
       returnOverflowBehavior: OverflowBehaviorUtils.fromModifier(
         syntax.returnOverflow,
       ),
@@ -181,18 +186,31 @@ class FunctionCollector {
    * typed as a scalar: `make()[1]` read a bit of it.
    */
   private static withReturnDimensions(
-    syntax: IFunctionDeclarationSyntax,
+    dimensions: ReadonlyArray<IDeclaredDimension>,
     element: TType,
   ): TType {
-    const written = syntax.returnType;
-    if (written?.kind !== "array") return element;
+    if (dimensions.length === 0) return element;
     return {
       kind: "array",
       elementType: element,
-      dimensions: written.dimensions.map((size) =>
-        size === null ? "" : DimensionResolver.resolve(size).size,
-      ),
+      dimensions: dimensions.map((dimension) => dimension.size),
     };
+  }
+
+  /**
+   * An array return's dimensions as 1.3 records a variable's (#1175): one a
+   * name sizes is kept as written, for 1.4 to settle where it is declared
+   */
+  private static returnDimensions(
+    syntax: IFunctionDeclarationSyntax,
+  ): IDeclaredDimension[] {
+    const written = syntax.returnType;
+    if (written.kind !== "array") return [];
+    return written.dimensions.map((size) =>
+      size === null
+        ? { size: "", expr: null }
+        : DimensionResolver.resolve(size),
+    );
   }
 }
 

@@ -51,7 +51,13 @@ import ProgramExpressions from "../../utils/ProgramExpressions";
  */
 
 /** Whether a write declares its string or assigns an existing one */
-type TWrite = "declaration" | "assignment" | "argument" | "field" | "range";
+type TWrite =
+  | "declaration"
+  | "assignment"
+  | "argument"
+  | "field"
+  | "return"
+  | "range";
 
 /** The declarations and assignments 1.2 returned, each whole-string value checked against its capacity */
 class StringDeclarationCheck {
@@ -104,6 +110,14 @@ class StringDeclarationCheck {
    */
   public argument(value: TExpression, capacity: number): void {
     this.checkFit(value, capacity, "argument");
+  }
+
+  /**
+   * #1209: a returned value is copied into the caller's `string<N>` buffer,
+   * so it must fit the return type as a declaration's initializer must
+   */
+  public returned(value: TExpression, capacity: number): void {
+    this.checkFit(value, capacity, "return");
   }
 
   /**
@@ -330,6 +344,8 @@ class StringDeclarationCheck {
         return "the parameter";
       case "field":
         return "the field";
+      case "return":
+        return "the return type";
       case "range":
         return "the range";
     }
@@ -349,6 +365,8 @@ class StringDeclarationCheck {
         return `Cannot pass string<${source}> to a string<${capacity}> parameter -- the source may not fit`;
       case "field":
         return `Cannot initialize a string<${capacity}> field from string<${source}> -- the source may not fit`;
+      case "return":
+        return `Cannot return string<${source}> as string<${capacity}> -- the source may not fit`;
       case "range":
         return `Cannot write string<${source}> into a ${capacity}-character range -- the source may not fit`;
     }
@@ -383,6 +401,8 @@ class StringDeclarationAnalyzer {
     for (const { value, write, capacity } of StringWriteSites.of(positions)) {
       if (write === "field") {
         check.field(value, capacity, fileScope.has(value));
+      } else if (write === "return") {
+        check.returned(value, capacity);
       } else {
         check.argument(value, capacity);
       }

@@ -1,0 +1,8 @@
+18:11 error[E0866]: An array of shape [2] is copied into a return type of shape [4]
+       help: Copy an array of the same shape, or write its elements as a list (ADR-035).
+24:11 error[E0866]: An array of shape [8] is copied into a return type of shape [4]
+       help: Copy an array of the same shape, or write its elements as a list (ADR-035).
+30:11 error[E0866]: An array of u16 is copied into a return type of u8
+       help: Copy an array of the same element type; an array's elements are not converted (ADR-035).
+35:11 error[E0866]: Array size mismatch: declared [4] but the initializer has 3 element(s)
+       help: Give one element per slot, or use the fill-all form such as [0*] (ADR-035).

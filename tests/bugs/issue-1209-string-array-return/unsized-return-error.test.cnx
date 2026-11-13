@@ -1,0 +1,17 @@
+// test-error
+// Issue #1209: an array return has no list to count its size from, so its
+// type states every dimension (ADR-035).
+
+// NEGATIVE CONTROL -- a sized return.
+u8[2] sized() {
+    return [1, 2];
+}
+
+// ASSERTION -- a return type with an unsized dimension.
+u8[] unsized() {
+    return [1, 2];
+}
+
+u32 main() {
+    return 0;
+}

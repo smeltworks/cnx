@@ -101,6 +101,28 @@ class ArrayFormListener extends CnxListener {
     }
   };
 
+  /**
+   * #1209 (ADR-035): an array return is copied into a buffer of its type's
+   * size, and has no list to count one from
+   */
+  override enterFunctionDeclaration = (
+    ctx: Parser.FunctionDeclarationContext,
+  ): void => {
+    const name = ctx.IDENTIFIER().getText();
+    const dimensions = ctx.type().arrayType()?.arrayTypeDimension() ?? [];
+    dimensions.forEach((dim, index) => {
+      if (dim.expression() !== null) return;
+      this.found.push(
+        FormError.at(
+          ParserUtils.getPosition(dim),
+          "E0892",
+          `Function '${name}' returns an array that leaves dimension ${index + 1} without a size`,
+          "A return has no list to count, so its type states every dimension's size, e.g. `u8[4] make()` (ADR-035).",
+        ),
+      );
+    });
+  };
+
   /** #1822 (ADR-035): a struct member states every dimension's size */
   private checkEmptyDimensions(
     dimensions: readonly (

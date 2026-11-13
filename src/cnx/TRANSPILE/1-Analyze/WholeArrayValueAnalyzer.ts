@@ -26,6 +26,7 @@ import OperandTyper from "../../utils/OperandTyper";
 import ArrayValueRule from "../../utils/ArrayValueRule";
 import ConstantExpression from "./helpers/ConstantExpression";
 import type IVariableDeclarationSyntax from "../../types/syntax/IVariableDeclarationSyntax";
+import type IFunctionDeclarationSyntax from "../../types/syntax/IFunctionDeclarationSyntax";
 import ForHeaderVariable from "../../utils/ForHeaderVariable";
 import TypeCheckUtils from "../../utils/TypeCheckUtils";
 import TypeText from "../../utils/TypeText";
@@ -34,6 +35,9 @@ import type IValuePositions from "../../types/IValuePositions";
 import type TExpression from "../../types/syntax/TExpression";
 import type IArrayDeclarationError from "./types/IArrayDeclarationError";
 import type IAnalysisContext from "./types/IAnalysisContext";
+
+/** Where an array is copied, as a diagnostic names it */
+type TCopyNoun = "parameter" | "target" | "declaration" | "return type";
 
 class WholeArrayValueAnalyzer {
   public constructor(private readonly context: IAnalysisContext) {}
@@ -57,6 +61,11 @@ class WholeArrayValueAnalyzer {
             this.declaredDimensions(declared.declaration),
           ),
         );
+        continue;
+      }
+      if (declared?.kind === "return" && at.isArray && !at.inList) {
+        WholeArrayValueAnalyzer.markAsked(value, at, positions, asked);
+        found.push(...this.returned(value, at, declared.function));
         continue;
       }
       if (!StructInitializerType.takesWholeArrayAt(at)) continue;
@@ -161,15 +170,64 @@ class WholeArrayValueAnalyzer {
     );
   }
 
+  /**
+   * #1209: a function's array return is copied into the caller's buffer, so
+   * the value has the return type's shape and element type, or is a list of
+   * its count, as a declaration's initializer is (ADR-035)
+   */
+  private returned(
+    value: TExpression,
+    at: IValuePosition,
+    fn: IFunctionDeclarationSyntax,
+  ): IArrayDeclarationError[] {
+    const type = fn.returnType;
+    const dimensions = this.folded(
+      type.kind === "array" ? type.dimensions : [],
+    );
+    const element =
+      at.typeText === null ? null : TypeText.withoutDimensions(at.typeText);
+    if (value.kind === "arrayInitializer") {
+      return ArrayListCount.mismatches(
+        value,
+        dimensions,
+        element,
+        this.context,
+      );
+    }
+    if (ExpressionShape.isStringLiteral(value)) {
+      return WholeArrayValueAnalyzer.check(value, at, this.context);
+    }
+    const arms = OperandTyper.arrayArms(value, this.context);
+    if (arms === null) {
+      return [
+        {
+          code: "E0866",
+          span: value.span,
+          message: ArrayValueRule.notAnArrayMessage(value),
+          helpText: ArrayValueRule.NOT_AN_ARRAY_HELP,
+        },
+      ];
+    }
+    return arms.flatMap((arm) =>
+      this.shapeMismatch(arm, at, "return type", dimensions),
+    );
+  }
+
   /** A declaration's sizes, folded where they fold, as its list is counted */
   private declaredDimensions(
     declaration: IVariableDeclarationSyntax,
   ): ReadonlyArray<number | string> {
     const type = declaration.type;
-    return [
+    return this.folded([
       ...(type.kind === "array" ? type.dimensions : []),
       ...declaration.dimensions,
-    ].map((size) =>
+    ]);
+  }
+
+  private folded(
+    sizes: ReadonlyArray<TExpression | null>,
+  ): ReadonlyArray<number | string> {
+    return sizes.map((size) =>
       size === null
         ? ""
         : (ConstantExpression.valueAt(size, this.context) ?? size.written),
@@ -184,7 +242,7 @@ class WholeArrayValueAnalyzer {
   private shapeMismatch(
     value: TExpression,
     at: IValuePosition,
-    noun: "parameter" | "target" | "declaration",
+    noun: TCopyNoun,
     taken: ReadonlyArray<number | string> = at.dimensions,
   ): IArrayDeclarationError[] {
     const given = OperandTyper.typeOf(value, this.context)?.dimensions;
@@ -238,7 +296,7 @@ class WholeArrayValueAnalyzer {
   private elementMismatch(
     value: TExpression,
     at: IValuePosition,
-    noun: "parameter" | "target" | "declaration",
+    noun: TCopyNoun,
   ): IArrayDeclarationError[] {
     if (at.typeText === null) return [];
     const taken = TypeText.withoutDimensions(at.typeText);

@@ -13,6 +13,8 @@
 // supplies, so a returned local is memory safe.
 const uint8_t table[4] = {5U, 6U, 7U, 8U};
 
+const uint32_t SIZE = 4U;
+
 void make(uint8_t cnx_return[4]) {
     const uint8_t a[4] = {1U, 2U, 3U, 4U};
     for (uint32_t cnx_tmp0 = 0U; cnx_tmp0 < 4U; cnx_tmp0++) {
@@ -49,12 +51,32 @@ void pair(char cnx_return[2][9]) {
     return;
 }
 
+// A const's name sizes a return as it sizes a variable
+void sized(uint8_t cnx_return[4]) {
+    const uint8_t a[4] = {1U, 2U, 3U, 4U};
+    for (uint32_t cnx_tmp6 = 0U; cnx_tmp6 < 4U; cnx_tmp6++) {
+        cnx_return[cnx_tmp6] = a[cnx_tmp6];
+    }
+    return;
+}
+
+// Every dimension of a two-dimensional return is the buffer's
+void grid(uint8_t cnx_return[2][3]) {
+    const uint8_t g[2][3] = {{1U, 2U, 3U}, {4U, 5U, 6U}};
+    for (uint32_t cnx_tmp7 = 0U; cnx_tmp7 < 2U; cnx_tmp7++) {
+        for (uint32_t cnx_tmp8 = 0U; cnx_tmp8 < 3U; cnx_tmp8++) {
+            cnx_return[cnx_tmp7][cnx_tmp8] = g[cnx_tmp7][cnx_tmp8];
+        }
+    }
+    return;
+}
+
 int main(void) {
-    uint8_t cnx_tmp6[4] = {0};
-    make(cnx_tmp6);
+    uint8_t cnx_tmp9[4] = {0};
+    make(cnx_tmp9);
     uint8_t a[4] = {0};
-    for (uint32_t cnx_tmp7 = 0U; cnx_tmp7 < 4U; cnx_tmp7++) {
-        a[cnx_tmp7] = cnx_tmp6[cnx_tmp7];
+    for (uint32_t cnx_tmp10 = 0U; cnx_tmp10 < 4U; cnx_tmp10++) {
+        a[cnx_tmp10] = cnx_tmp9[cnx_tmp10];
     }
     if (a[0U] != 1) {
         return 1U;
@@ -63,11 +85,11 @@ int main(void) {
         return 2U;
     }
     uint8_t b[4] = {0U, 0U, 0U, 0U};
-    uint8_t cnx_tmp8[4] = {0};
-    getTable(cnx_tmp8);
+    uint8_t cnx_tmp11[4] = {0};
+    getTable(cnx_tmp11);
     /* ADR-035 / Issue #1209: C has no array assignment, so the array is copied element by element. */
-    for (uint32_t cnx_tmp9 = 0U; cnx_tmp9 < 4U; cnx_tmp9++) {
-        b[cnx_tmp9] = cnx_tmp8[cnx_tmp9];
+    for (uint32_t cnx_tmp12 = 0U; cnx_tmp12 < 4U; cnx_tmp12++) {
+        b[cnx_tmp12] = cnx_tmp11[cnx_tmp12];
     }
     if (b[0U] != 5) {
         return 3U;
@@ -75,25 +97,51 @@ int main(void) {
     if (b[3U] != 8) {
         return 4U;
     }
-    uint8_t cnx_tmp10[4] = {0};
-    constant(cnx_tmp10);
+    uint8_t cnx_tmp13[4] = {0};
+    constant(cnx_tmp13);
     uint8_t c[4] = {0};
-    for (uint32_t cnx_tmp11 = 0U; cnx_tmp11 < 4U; cnx_tmp11++) {
-        c[cnx_tmp11] = cnx_tmp10[cnx_tmp11];
+    for (uint32_t cnx_tmp14 = 0U; cnx_tmp14 < 4U; cnx_tmp14++) {
+        c[cnx_tmp14] = cnx_tmp13[cnx_tmp14];
     }
     if (c[1U] != 8) {
         return 5U;
     }
-    char cnx_tmp12[2][9] = {0};
-    pair(cnx_tmp12);
+    char cnx_tmp15[2][9] = {0};
+    pair(cnx_tmp15);
     char names[2][9] = {0};
-    for (uint32_t cnx_tmp13 = 0U; cnx_tmp13 < 2U; cnx_tmp13++) {
-        for (uint32_t cnx_tmp14 = 0U; cnx_tmp14 < 9U; cnx_tmp14++) {
-            names[cnx_tmp13][cnx_tmp14] = cnx_tmp12[cnx_tmp13][cnx_tmp14];
+    for (uint32_t cnx_tmp16 = 0U; cnx_tmp16 < 2U; cnx_tmp16++) {
+        for (uint32_t cnx_tmp17 = 0U; cnx_tmp17 < 9U; cnx_tmp17++) {
+            names[cnx_tmp16][cnx_tmp17] = cnx_tmp15[cnx_tmp16][cnx_tmp17];
         }
     }
     if (strcmp(names[1U], "bc") != 0) {
         return 6U;
+    }
+    uint8_t cnx_tmp18[4] = {0};
+    sized(cnx_tmp18);
+    const uint8_t last = cnx_tmp18[3U];
+    if (last != 4) {
+        return 7U;
+    }
+    uint8_t cnx_tmp19[4] = {0};
+    sized(cnx_tmp19);
+    uint8_t s[4] = {0};
+    for (uint32_t cnx_tmp20 = 0U; cnx_tmp20 < 4U; cnx_tmp20++) {
+        s[cnx_tmp20] = cnx_tmp19[cnx_tmp20];
+    }
+    if (s[0U] != 1) {
+        return 8U;
+    }
+    uint8_t cnx_tmp21[2][3] = {0};
+    grid(cnx_tmp21);
+    uint8_t g[2][3] = {0};
+    for (uint32_t cnx_tmp22 = 0U; cnx_tmp22 < 2U; cnx_tmp22++) {
+        for (uint32_t cnx_tmp23 = 0U; cnx_tmp23 < 3U; cnx_tmp23++) {
+            g[cnx_tmp22][cnx_tmp23] = cnx_tmp21[cnx_tmp22][cnx_tmp23];
+        }
+    }
+    if (g[1U][2U] != 6) {
+        return 9U;
     }
     return 0U;
 }
