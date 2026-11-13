@@ -45,6 +45,19 @@ i32 remainderPast32(i32 a) {
     return a % I32_PAST;
 }
 
+// #1790 review: a divisor past the type's minimum, the `b < MIN` arm
+i8 quotientNegative8(i8 a) {
+    return a / NEG_BIG;
+}
+
+i8 remainderNegative8(i8 a) {
+    return a % NEG_BIG;
+}
+
+i32 quotientNegative32(i32 a) {
+    return a / NEG_HUGE;
+}
+
 i32 quotientMinusOne(i32 a) {
     return a / MINUS_ONE_LONG;
 }
@@ -112,6 +125,19 @@ u32 main() {
     i32 r15 <- quotientMinusOne(6);
     if (r15 != -6) {
         return 15;
+    }
+    // Narrowed, (int8_t)-300 is -44 and (int32_t)-3000000000 is 1294967296
+    i8 r16 <- quotientNegative8(100);
+    if (r16 != 0) {
+        return 16;
+    }
+    i8 r17 <- remainderNegative8(100);
+    if (r17 != 100) {
+        return 17;
+    }
+    i32 r18 <- quotientNegative32(2000000000);
+    if (r18 != 0) {
+        return 18;
     }
     return 0;
 }

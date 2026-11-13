@@ -101,7 +101,7 @@ describe("PlannedRequirements", () => {
     ).toThrow("cnx_safe_div_i32 is planned with one inner helper");
   });
 
-  it("keys an overflow helper within its family (#1790)", () => {
+  it("keys an overflow helper by its planned name (#1790)", () => {
     const requirements = new PlannedRequirements("a.cnx");
     requirements.overflowHelper({
       name: "cnx_clamp_mul_u8",
@@ -115,8 +115,10 @@ describe("PlannedRequirements", () => {
       operation: "div",
       cnxType: "i32",
     });
-    expect([...requirements.clampHelpers]).toEqual(["mul_u8"]);
-    expect([...requirements.wrapHelpers]).toEqual(["div_i32"]);
+    expect([...requirements.overflowHelpers.keys()]).toEqual([
+      "cnx_clamp_mul_u8",
+      "cnx_wrap_div_i32",
+    ]);
   });
 
   it("notes the LDREX/STREX loop and its site", () => {

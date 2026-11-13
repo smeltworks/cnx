@@ -22,8 +22,7 @@ const NOTHING: IEmissionFacts = {
   needsISR: false,
   selfIncludeAdded: false,
   existingIncludeTargets: [],
-  clampOps: new Set<string>(),
-  wrapOps: new Set<string>(),
+  overflowHelpers: new Map(),
   stringCopyHelper: false,
   castHelpers: new Set<string>(),
   lengthHelpers: new Set<string>(),
@@ -317,10 +316,18 @@ describe("EmissionPlan (2.2 Plan)", () => {
   // #1997: one decision -- Render picks the panic templates from this block,
   // and the block carries what they cost.
   describe("panicking overflow helpers", () => {
-    const clampOps = new Set(["add_u8"]);
+    const addU8 = {
+      name: "cnx_clamp_add_u8",
+      behavior: "clamp" as const,
+      operation: "add",
+      cnxType: "u8",
+    };
+    const overflowHelpers = new Map([[addU8.name, addU8]]);
 
     it("cost a hosted libc, as a planned block", () => {
-      const plan = EmissionPlan.build(facts({ debugMode: true, clampOps }));
+      const plan = EmissionPlan.build(
+        facts({ debugMode: true, overflowHelpers }),
+      );
 
       expect(plan.panicOverflowHelpers).toEqual({
         keyword: null,
@@ -335,7 +342,10 @@ describe("EmissionPlan (2.2 Plan)", () => {
     });
 
     it.each([
-      ["clamping helpers outside debug mode", { debugMode: false, clampOps }],
+      [
+        "clamping helpers outside debug mode",
+        { debugMode: false, overflowHelpers },
+      ],
       ["debug mode with no helper emitted", { debugMode: true }],
     ] as const)("are absent for %s", (_label, over) => {
       expect(EmissionPlan.build(facts(over)).panicOverflowHelpers).toBeNull();
@@ -372,16 +382,20 @@ describe("EmissionPlan (2.2 Plan)", () => {
         cnxType: "u32",
         inner: null,
       };
+      const wrapDivI32 = {
+        name: "cnx_wrap_div_i32",
+        behavior: "wrap" as const,
+        operation: "div",
+        cnxType: "i32",
+      };
       const plan = EmissionPlan.build(
         facts({
-          clampOps: new Set(["add_u32"]),
-          wrapOps: new Set(["div_i32"]),
+          overflowHelpers: new Map([[wrapDivI32.name, wrapDivI32]]),
           safeDivOps: new Map([["cnx_safe_div_u32", safeDivU32]]),
         }),
       );
 
-      expect(plan.clampOps).toEqual(["add_u32"]);
-      expect(plan.wrapOps).toEqual(["div_i32"]);
+      expect(plan.overflowHelpers).toEqual([wrapDivI32]);
       expect(plan.safeDivOps).toEqual([safeDivU32]);
     });
   });

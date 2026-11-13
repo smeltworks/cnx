@@ -3,6 +3,7 @@ import type TPlannedNarrowing from "../../../2-Plan/types/TPlannedNarrowing";
 import type IPlannedCallArgument from "./IPlannedCallArgument";
 import type TSubscriptKind from "../../../../types/TSubscriptKind";
 import type IChainStep from "../../../../types/IChainStep";
+import type IPlannedSafeDivision from "../../../../types/IPlannedSafeDivision";
 
 /**
  * One operation applied to a postfix expression's primary.
@@ -94,7 +95,7 @@ type TPlannedPostfixOp =
       readonly calleeType: () => string | null;
       readonly planArguments: () => readonly IPlannedCallArgument[] | null;
       /** ADR-051: the helper 2.2 planned this `safe_div`/`safe_mod` call as, else null */
-      readonly safeDivisionHelper: string | null;
+      readonly safeDivisionHelper: IPlannedSafeDivision | null;
     };
 
 export default TPlannedPostfixOp;

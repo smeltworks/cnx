@@ -18,6 +18,7 @@ import LengthProperty from "../../../../../utils/LengthProperty";
 import StringUtils from "../../../../../utils/StringUtils";
 import ComplianceAnnotations from "../../../../2-Plan/ComplianceAnnotations";
 import type IPlannedSafeDivision from "../../../../../types/IPlannedSafeDivision";
+import type IPlannedOverflowHelper from "../../../../../types/IPlannedOverflowHelper";
 
 /**
  * Generate a safe arithmetic helper function (div or mod).
@@ -66,11 +67,10 @@ const WIDER_PARAMETER_NOTE: readonly string[] = [
  *   of debug mode: the block that decides it carries its hosted-libc cost
  */
 const generateOverflowHelpers = (
-  usedClampOps: ReadonlySet<string>,
+  helpers: readonly IPlannedOverflowHelper[],
   panic: boolean,
-  usedWrapOps: ReadonlySet<string>,
 ): string[] => {
-  if (usedClampOps.size === 0 && usedWrapOps.size === 0) {
+  if (helpers.length === 0) {
     return [];
   }
 
@@ -97,31 +97,11 @@ const generateOverflowHelpers = (
   }
 
   // Sort for deterministic output
-  const sortedOps = Array.from(usedClampOps).sort((a, b) => a.localeCompare(b));
-
-  for (const op of sortedOps) {
-    const [operation, cnxType] = op.split("_");
-    const helper = panic
-      ? OverflowHelperTemplates.generatePanicHelper(operation, cnxType)
-      : OverflowHelperTemplates.generateClampHelper(operation, cnxType);
-    if (helper) {
-      lines.push(helper, "");
-    }
-  }
-
-  // #1790: `wrap` helpers have no panic body; under `--debug` 2.2 plans no
-  // `wrap` helper, a `wrap` operation calls the `clamp` one (#2408)
-  const sortedWrapOps = Array.from(usedWrapOps).sort((a, b) =>
-    a.localeCompare(b),
-  );
-  for (const op of sortedWrapOps) {
-    const [operation, cnxType] = op.split("_");
-    const helper = OverflowHelperTemplates.generateWrapHelper(
-      operation,
-      cnxType,
-    );
-    if (helper) {
-      lines.push(helper, "");
+  const sorted = [...helpers].sort((x, y) => x.name.localeCompare(y.name));
+  for (const helper of sorted) {
+    const definition = OverflowHelperTemplates.generate(helper, panic);
+    if (definition) {
+      lines.push(definition, "");
     }
   }
 

@@ -5,7 +5,7 @@
  * code for an assignment. Built once by the context extractor, then used
  * by the classifier and handlers.
  */
-import type IPlannedOverflowHelper from "./IPlannedOverflowHelper";
+import type IPlannedOverflowHelper from "../../../types/IPlannedOverflowHelper";
 import type TRenderedStringPart from "../../../types/TRenderedStringPart";
 import type IPlannedFloatBits from "./IPlannedFloatBits";
 import type IPlannedSliceSource from "./IPlannedSliceSource";

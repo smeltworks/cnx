@@ -98,6 +98,19 @@ int32_t remainderPast32(const int32_t a) {
     return cnx_clamp_mod_i32(a, I32_PAST);
 }
 
+// #1790 review: a divisor past the type's minimum, the `b < MIN` arm
+int8_t quotientNegative8(const int8_t a) {
+    return cnx_clamp_div_i8(a, NEG_BIG);
+}
+
+int8_t remainderNegative8(const int8_t a) {
+    return cnx_clamp_mod_i8(a, NEG_BIG);
+}
+
+int32_t quotientNegative32(const int32_t a) {
+    return cnx_clamp_div_i32(a, NEG_HUGE);
+}
+
 int32_t quotientMinusOne(const int32_t a) {
     return cnx_clamp_div_i32(a, MINUS_ONE_LONG);
 }
@@ -162,6 +175,18 @@ int main(void) {
     const int32_t r15 = quotientMinusOne(6);
     if (r15 != -6) {
         return 15U;
+    }
+    const int8_t r16 = quotientNegative8(100);
+    if (r16 != 0) {
+        return 16U;
+    }
+    const int8_t r17 = remainderNegative8(100);
+    if (r17 != 100) {
+        return 17U;
+    }
+    const int32_t r18 = quotientNegative32(2000000000);
+    if (r18 != 0) {
+        return 18U;
     }
     return 0U;
 }

@@ -4,7 +4,7 @@ import type IRequirementSite from "../../types/IRequirementSite";
 import type TDeferredSiteKey from "../../types/TDeferredSiteKey";
 import type TIncludeHeader from "../../types/TIncludeHeader";
 import type IPlannedSafeDivision from "../../types/IPlannedSafeDivision";
-import type IPlannedOverflowHelper from "./types/IPlannedOverflowHelper";
+import type IPlannedOverflowHelper from "../../types/IPlannedOverflowHelper";
 
 /**
  * #1991: what one file's plan requires -- its headers, helpers and deferred
@@ -23,8 +23,10 @@ class PlannedRequirements {
     string,
     IPlannedSafeDivision
   >();
-  private readonly clampHelperKeys = new Set<string>();
-  private readonly wrapHelperKeys = new Set<string>();
+  private readonly plannedOverflowHelpers = new Map<
+    string,
+    IPlannedOverflowHelper
+  >();
   private readonly lengthHelperNames = new Set<string>();
   private ldrexStrexLoop = false;
   private compareExchangeLoop = false;
@@ -70,11 +72,9 @@ class PlannedRequirements {
     this.safeDivisionHelpers.set(helper.name, helper);
   }
 
-  /** ADR-044: an overflow helper, keyed as `"add_u32"` within its family */
+  /** ADR-044: an overflow helper, keyed by the name 2.2 decided (#1790 review) */
   overflowHelper(helper: IPlannedOverflowHelper): void {
-    const keys =
-      helper.behavior === "clamp" ? this.clampHelperKeys : this.wrapHelperKeys;
-    keys.add(`${helper.operation}_${helper.cnxType}`);
+    this.plannedOverflowHelpers.set(helper.name, helper);
   }
 
   /** ADR-058: a runtime integer length's helper, `"cnx_value_bit_length"` */
@@ -114,12 +114,8 @@ class PlannedRequirements {
     return this.safeDivisionHelpers;
   }
 
-  get clampHelpers(): ReadonlySet<string> {
-    return this.clampHelperKeys;
-  }
-
-  get wrapHelpers(): ReadonlySet<string> {
-    return this.wrapHelperKeys;
+  get overflowHelpers(): ReadonlyMap<string, IPlannedOverflowHelper> {
+    return this.plannedOverflowHelpers;
   }
 
   get emitsCompareExchangeLoop(): boolean {

@@ -1210,10 +1210,9 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | ok     | warn       | n/a         | n/a        |
 | for header         | -         | -      | -          | n/a         | n/a        |
 
-2 linked fixtures with no derivable context:
+1 linked fixture with no derivable context:
 
 - `bugs/issue-1669-enum-member-values/value-overflow.test.cnx`
-- `bugs/issue-1790-shared-safe-division/shared-safe-division.test.cnx`
 
 ## ADR-044 E0909
 

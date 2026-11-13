@@ -235,6 +235,11 @@ const generatePostfixExpression = (
       if (orchestrator.state.isCrossFileDeclaration(tracking.result)) {
         AdrProvenance.record("010", op.line);
       }
+      // #1790 review: a safe_div/safe_mod that divides through ADR-044's
+      // overflow helper, as 2.2 planned it
+      if (op.safeDivisionHelper?.inner != null) {
+        AdrProvenance.record("044", op.line);
+      }
       const callResult = generateFunctionCall(
         tracking.result,
         // #1445: the plan is built by the orchestrator -- this is the only
@@ -242,7 +247,7 @@ const generatePostfixExpression = (
         // generator name no parse type.
         op.planArguments(),
         state,
-        op.safeDivisionHelper,
+        op.safeDivisionHelper?.name ?? null,
       );
       applyAccessEffects(callResult.effects, effects);
       tracking.result = callResult.code;

@@ -3,7 +3,7 @@ import OverflowBehaviorUtils from "../../utils/OverflowBehaviorUtils";
 import OverflowOperation from "../../utils/OverflowOperation";
 import ReservedCnxName from "../../utils/ReservedCnxName";
 import TypeCheckUtils from "../../utils/TypeCheckUtils";
-import type IPlannedOverflowHelper from "./types/IPlannedOverflowHelper";
+import type IPlannedOverflowHelper from "../../types/IPlannedOverflowHelper";
 
 /**
  * ADR-044: the overflow helper an operation of an integer type calls, from

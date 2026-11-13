@@ -4,7 +4,7 @@
  */
 import TYPE_MAP from "./types/TYPE_MAP";
 import SafeDivision from "../../utils/SafeDivision";
-import type IPlannedOverflowHelper from "./types/IPlannedOverflowHelper";
+import type IPlannedOverflowHelper from "../../types/IPlannedOverflowHelper";
 import IFunctionSignature from "../../types/IFunctionSignature";
 import type IResolvedSymbols from "../../types/IResolvedSymbols";
 import TypeResolver from "../../utils/TypeResolver";

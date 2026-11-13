@@ -3,7 +3,7 @@
  * Provides common mock setup functions to reduce duplication.
  */
 
-import type IPlannedOverflowHelper from "../../../../../2-Plan/types/IPlannedOverflowHelper";
+import type IPlannedOverflowHelper from "../../../../../../types/IPlannedOverflowHelper";
 import TestSymbolTable from "../../../../../__tests__/TestSymbolTable";
 import { vi } from "vitest";
 import createMockSymbols from "../../../../../../types/__testUtils__/codeGenSymbolsHelpers";

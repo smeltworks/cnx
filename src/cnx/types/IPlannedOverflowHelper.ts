@@ -1,4 +1,4 @@
-import type TOverflowBehavior from "../../../types/TOverflowBehavior";
+import type TOverflowBehavior from "./TOverflowBehavior";
 
 /**
  * ADR-044: one overflow helper 2.2 decided an integer operation calls, e.g.

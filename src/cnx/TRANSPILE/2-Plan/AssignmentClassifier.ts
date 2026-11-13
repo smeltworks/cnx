@@ -13,7 +13,7 @@ import OperandTyper from "../../utils/OperandTyper";
 import TypeCheckUtils from "../../utils/TypeCheckUtils";
 import CompoundOperator from "../../utils/CompoundOperator";
 import OverflowHelper from "./OverflowHelper";
-import type IPlannedOverflowHelper from "./types/IPlannedOverflowHelper";
+import type IPlannedOverflowHelper from "../../types/IPlannedOverflowHelper";
 
 /**
  * Classifies assignment statements by analyzing their structure. What is

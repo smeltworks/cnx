@@ -1,6 +1,26 @@
 import type IPlannedSafeDivision from "../../../../../../types/IPlannedSafeDivision";
+import type IPlannedOverflowHelper from "../../../../../../types/IPlannedOverflowHelper";
+import ReservedCnxName from "../../../../../../utils/ReservedCnxName";
 import { describe, expect, it } from "vitest";
 import helperGenerators from "../HelperGenerator";
+
+/** ADR-044 helpers as 2.2 plans them, from `"add_u8"`-style keys */
+const overflowHelpers = (
+  clamp: readonly string[],
+  wrap: readonly string[] = [],
+): IPlannedOverflowHelper[] =>
+  [
+    ...clamp.map((key) => ["clamp", key] as const),
+    ...wrap.map((key) => ["wrap", key] as const),
+  ].map(([behavior, key]) => {
+    const [operation, cnxType] = key.split("_");
+    return {
+      name: ReservedCnxName.overflowHelper(behavior, operation, cnxType),
+      behavior,
+      operation,
+      cnxType,
+    };
+  });
 
 const { generateOverflowHelpers, generateSafeDivHelpers, generateCastHelpers } =
   helperGenerators;
@@ -20,12 +40,12 @@ const safeHelpers = (keys: readonly string[]): IPlannedSafeDivision[] =>
 describe("HelperGenerator - generateOverflowHelpers", () => {
   describe("empty input", () => {
     it("returns empty array for empty set", () => {
-      const result = generateOverflowHelpers(new Set(), false, new Set());
+      const result = generateOverflowHelpers(overflowHelpers([]), false);
       expect(result).toEqual([]);
     });
 
     it("returns empty array for empty set in debug mode", () => {
-      const result = generateOverflowHelpers(new Set(), true, new Set());
+      const result = generateOverflowHelpers(overflowHelpers([]), true);
       expect(result).toEqual([]);
     });
   });
@@ -33,9 +53,8 @@ describe("HelperGenerator - generateOverflowHelpers", () => {
   describe("unsigned types - clamp mode", () => {
     it("generates u8 add helper", () => {
       const result = generateOverflowHelpers(
-        new Set(["add_u8"]),
+        overflowHelpers(["add_u8"]),
         false,
-        new Set(),
       );
       expect(result.join("\n")).toContain("cnx_clamp_add_u8");
       expect(result.join("\n")).toContain("(uint8_t)(a + (uint8_t)b)");
@@ -45,9 +64,8 @@ describe("HelperGenerator - generateOverflowHelpers", () => {
 
     it("generates u16 sub helper", () => {
       const result = generateOverflowHelpers(
-        new Set(["sub_u16"]),
+        overflowHelpers(["sub_u16"]),
         false,
-        new Set(),
       );
       expect(result.join("\n")).toContain("cnx_clamp_sub_u16");
       expect(result.join("\n")).toContain("(uint16_t)(a - (uint16_t)b)");
@@ -57,9 +75,8 @@ describe("HelperGenerator - generateOverflowHelpers", () => {
 
     it("generates u32 mul helper", () => {
       const result = generateOverflowHelpers(
-        new Set(["mul_u32"]),
+        overflowHelpers(["mul_u32"]),
         false,
-        new Set(),
       );
       expect(result.join("\n")).toContain("cnx_clamp_mul_u32");
       expect(result.join("\n")).toContain("(uint32_t)(a * (uint32_t)b)");
@@ -68,9 +85,8 @@ describe("HelperGenerator - generateOverflowHelpers", () => {
 
     it("generates u64 add helper", () => {
       const result = generateOverflowHelpers(
-        new Set(["add_u64"]),
+        overflowHelpers(["add_u64"]),
         false,
-        new Set(),
       );
       expect(result.join("\n")).toContain("cnx_clamp_add_u64");
       expect(result.join("\n")).toContain("uint64_t");
@@ -81,9 +97,8 @@ describe("HelperGenerator - generateOverflowHelpers", () => {
   describe("signed types - clamp mode", () => {
     it("generates i8 add helper with wider arithmetic", () => {
       const result = generateOverflowHelpers(
-        new Set(["add_i8"]),
+        overflowHelpers(["add_i8"]),
         false,
-        new Set(),
       );
       expect(result.join("\n")).toContain("cnx_clamp_add_i8");
       expect(result.join("\n")).toContain("int8_t");
@@ -94,9 +109,8 @@ describe("HelperGenerator - generateOverflowHelpers", () => {
 
     it("generates i16 sub helper with wider arithmetic", () => {
       const result = generateOverflowHelpers(
-        new Set(["sub_i16"]),
+        overflowHelpers(["sub_i16"]),
         false,
-        new Set(),
       );
       expect(result.join("\n")).toContain("cnx_clamp_sub_i16");
       expect(result.join("\n")).toContain("int16_t");
@@ -104,9 +118,8 @@ describe("HelperGenerator - generateOverflowHelpers", () => {
 
     it("generates i32 mul helper with wider arithmetic", () => {
       const result = generateOverflowHelpers(
-        new Set(["mul_i32"]),
+        overflowHelpers(["mul_i32"]),
         false,
-        new Set(),
       );
       expect(result.join("\n")).toContain("cnx_clamp_mul_i32");
       expect(result.join("\n")).toContain("int32_t");
@@ -114,9 +127,8 @@ describe("HelperGenerator - generateOverflowHelpers", () => {
 
     it("generates i64 add helper with direct check (no wider type)", () => {
       const result = generateOverflowHelpers(
-        new Set(["add_i64"]),
+        overflowHelpers(["add_i64"]),
         false,
-        new Set(),
       );
       expect(result.join("\n")).toContain("cnx_clamp_add_i64");
       expect(result.join("\n")).toContain("int64_t");
@@ -128,9 +140,8 @@ describe("HelperGenerator - generateOverflowHelpers", () => {
 
     it("generates i64 sub helper with direct check", () => {
       const result = generateOverflowHelpers(
-        new Set(["sub_i64"]),
+        overflowHelpers(["sub_i64"]),
         false,
-        new Set(),
       );
       expect(result.join("\n")).toContain("cnx_clamp_sub_i64");
       expect(result.join("\n")).toContain("return a - b");
@@ -138,9 +149,8 @@ describe("HelperGenerator - generateOverflowHelpers", () => {
 
     it("generates i64 mul helper with direct check", () => {
       const result = generateOverflowHelpers(
-        new Set(["mul_i64"]),
+        overflowHelpers(["mul_i64"]),
         false,
-        new Set(),
       );
       expect(result.join("\n")).toContain("cnx_clamp_mul_i64");
       expect(result.join("\n")).toContain("return a * b");
@@ -149,21 +159,13 @@ describe("HelperGenerator - generateOverflowHelpers", () => {
 
   describe("debug mode", () => {
     it("includes stdio and stdlib headers", () => {
-      const result = generateOverflowHelpers(
-        new Set(["add_u8"]),
-        true,
-        new Set(),
-      );
+      const result = generateOverflowHelpers(overflowHelpers(["add_u8"]), true);
       expect(result.join("\n")).toContain("#include <stdio.h>");
       expect(result.join("\n")).toContain("#include <stdlib.h>");
     });
 
     it("generates panic on overflow for unsigned add", () => {
-      const result = generateOverflowHelpers(
-        new Set(["add_u8"]),
-        true,
-        new Set(),
-      );
+      const result = generateOverflowHelpers(overflowHelpers(["add_u8"]), true);
       expect(result.join("\n")).toContain("fprintf(stderr");
       expect(result.join("\n")).toContain("PANIC");
       expect(result.join("\n")).toContain("abort()");
@@ -171,9 +173,8 @@ describe("HelperGenerator - generateOverflowHelpers", () => {
 
     it("generates panic on underflow for unsigned sub", () => {
       const result = generateOverflowHelpers(
-        new Set(["sub_u16"]),
+        overflowHelpers(["sub_u16"]),
         true,
-        new Set(),
       );
       expect(result.join("\n")).toContain("underflow");
       expect(result.join("\n")).toContain("abort()");
@@ -181,9 +182,8 @@ describe("HelperGenerator - generateOverflowHelpers", () => {
 
     it("generates panic for signed overflow", () => {
       const result = generateOverflowHelpers(
-        new Set(["add_i32"]),
+        overflowHelpers(["add_i32"]),
         true,
-        new Set(),
       );
       expect(result.join("\n")).toContain("PANIC");
       expect(result.join("\n")).toContain("overflow");
@@ -191,9 +191,8 @@ describe("HelperGenerator - generateOverflowHelpers", () => {
 
     it("generates panic for i64 operations", () => {
       const result = generateOverflowHelpers(
-        new Set(["mul_i64"]),
+        overflowHelpers(["mul_i64"]),
         true,
-        new Set(),
       );
       expect(result.join("\n")).toContain("fprintf(stderr");
       expect(result.join("\n")).toContain("abort()");
@@ -202,8 +201,8 @@ describe("HelperGenerator - generateOverflowHelpers", () => {
 
   describe("multiple operations", () => {
     it("generates multiple helpers in sorted order", () => {
-      const ops = new Set(["mul_u32", "add_u8", "sub_u16"]);
-      const result = generateOverflowHelpers(ops, false, new Set());
+      const ops = overflowHelpers(["mul_u32", "add_u8", "sub_u16"]);
+      const result = generateOverflowHelpers(ops, false);
       const code = result.join("\n");
 
       // Should have all three
@@ -221,9 +220,8 @@ describe("HelperGenerator - generateOverflowHelpers", () => {
 
     it("includes limits.h header", () => {
       const result = generateOverflowHelpers(
-        new Set(["add_u8"]),
+        overflowHelpers(["add_u8"]),
         false,
-        new Set(),
       );
       expect(result.join("\n")).toContain("#include <limits.h>");
     });
@@ -232,9 +230,8 @@ describe("HelperGenerator - generateOverflowHelpers", () => {
   describe("invalid operations", () => {
     it("skips unknown operations", () => {
       const result = generateOverflowHelpers(
-        new Set(["unknown_u8"]),
+        overflowHelpers(["unknown_u8"]),
         false,
-        new Set(),
       );
       // Should still have header but no helper functions
       expect(result.join("\n")).toContain("#include <limits.h>");
@@ -243,9 +240,8 @@ describe("HelperGenerator - generateOverflowHelpers", () => {
 
     it("skips unknown types", () => {
       const result = generateOverflowHelpers(
-        new Set(["add_float"]),
+        overflowHelpers(["add_float"]),
         false,
-        new Set(),
       );
       expect(result.join("\n")).not.toContain("cnx_clamp_add_float");
     });

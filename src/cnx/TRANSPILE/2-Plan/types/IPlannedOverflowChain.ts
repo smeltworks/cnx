@@ -1,4 +1,4 @@
-import type IPlannedOverflowHelper from "./IPlannedOverflowHelper";
+import type IPlannedOverflowHelper from "../../../types/IPlannedOverflowHelper";
 
 /**
  * ADR-044: the overflow helper 2.2 decided each operator of an integer chain

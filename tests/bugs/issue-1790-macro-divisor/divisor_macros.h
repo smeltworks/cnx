@@ -5,4 +5,6 @@
 #define HUGE 3000000000
 #define I32_PAST 2147483648
 #define MINUS_ONE_LONG (-1L)
+#define NEG_BIG (-300)
+#define NEG_HUGE (-3000000000LL)
 #endif

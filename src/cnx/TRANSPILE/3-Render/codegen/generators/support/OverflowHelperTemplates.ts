@@ -10,7 +10,7 @@
 
 import ClampTypes from "../../../../2-Plan/ClampTypes";
 import type IClampTypeInfo from "../../../../2-Plan/types/IClampTypeInfo";
-import ReservedCnxName from "../../../../../utils/ReservedCnxName";
+import type IPlannedOverflowHelper from "../../../../../types/IPlannedOverflowHelper";
 import type TOverflowBehavior from "../../../../../types/TOverflowBehavior";
 
 // C newline escape for generated fprintf statements (S7780: use raw string)
@@ -21,12 +21,8 @@ const C_NEWLINE = String.raw`\n`;
  * one fact an atomic's `__operand` (`AtomicOperandType`) and the #94 note
  * above the helpers also read through `ClampTypes`.
  */
-function generateSignature(
-  operation: string,
-  info: IClampTypeInfo,
-  behavior: TOverflowBehavior = "clamp",
-): string {
-  return `static inline ${info.cType} ${ReservedCnxName.overflowHelper(behavior, operation, info.cnxType)}(${info.cType} a, ${info.widerType} b)`;
+function generateSignature(info: IClampTypeInfo, name: string): string {
+  return `static inline ${info.cType} ${name}(${info.cType} a, ${info.widerType} b)`;
 }
 
 /**
@@ -67,8 +63,8 @@ const MIN_BY_MINUS_ONE_COMMENT =
  * C99, and shrinks these helpers by ~30% at -Os on Cortex-M4.
  */
 class UnsignedClampTemplates {
-  static add(info: IClampTypeInfo, debugMode: boolean): string {
-    const sig = generateSignature("add", info);
+  static add(info: IClampTypeInfo, name: string, debugMode: boolean): string {
+    const sig = generateSignature(info, name);
     const opName = OPERATION_NAMES.add;
 
     if (debugMode) {
@@ -86,8 +82,8 @@ ${generatePanicBlock(info.cnxType, opName)}
 }`;
   }
 
-  static sub(info: IClampTypeInfo, debugMode: boolean): string {
-    const sig = generateSignature("sub", info);
+  static sub(info: IClampTypeInfo, name: string, debugMode: boolean): string {
+    const sig = generateSignature(info, name);
     const opName = OPERATION_NAMES.sub;
     // Use "underflow" message for unsigned subtraction
     const panicMsg = `Integer underflow in ${info.cnxType} ${opName}`;
@@ -109,8 +105,8 @@ ${generatePanicBlock(info.cnxType, opName)}
 }`;
   }
 
-  static mul(info: IClampTypeInfo, debugMode: boolean): string {
-    const sig = generateSignature("mul", info);
+  static mul(info: IClampTypeInfo, name: string, debugMode: boolean): string {
+    const sig = generateSignature(info, name);
     const opName = OPERATION_NAMES.mul;
 
     if (debugMode) {
@@ -134,8 +130,8 @@ ${generatePanicBlock(info.cnxType, opName)}
  * Issue #94: Compute in wider type, then clamp to avoid UB
  */
 class SignedWiderTemplates {
-  static add(info: IClampTypeInfo, debugMode: boolean): string {
-    const sig = generateSignature("add", info);
+  static add(info: IClampTypeInfo, name: string, debugMode: boolean): string {
+    const sig = generateSignature(info, name);
     const opName = OPERATION_NAMES.add;
 
     if (debugMode) {
@@ -156,8 +152,8 @@ ${generatePanicBlock(info.cnxType, opName)}
 }`;
   }
 
-  static sub(info: IClampTypeInfo, debugMode: boolean): string {
-    const sig = generateSignature("sub", info);
+  static sub(info: IClampTypeInfo, name: string, debugMode: boolean): string {
+    const sig = generateSignature(info, name);
     const opName = OPERATION_NAMES.sub;
 
     if (debugMode) {
@@ -178,8 +174,8 @@ ${generatePanicBlock(info.cnxType, opName)}
 }`;
   }
 
-  static mul(info: IClampTypeInfo, debugMode: boolean): string {
-    const sig = generateSignature("mul", info);
+  static mul(info: IClampTypeInfo, name: string, debugMode: boolean): string {
+    const sig = generateSignature(info, name);
     const opName = OPERATION_NAMES.mul;
 
     if (debugMode) {
@@ -205,8 +201,8 @@ ${generatePanicBlock(info.cnxType, opName)}
  * Templates for i64 (widest type) using manual overflow checks
  */
 class SignedWidestTemplates {
-  static add(info: IClampTypeInfo, debugMode: boolean): string {
-    const sig = generateSignature("add", info);
+  static add(info: IClampTypeInfo, name: string, debugMode: boolean): string {
+    const sig = generateSignature(info, name);
     const opName = OPERATION_NAMES.add;
 
     if (debugMode) {
@@ -225,8 +221,8 @@ ${generatePanicBlock(info.cnxType, opName)}
 }`;
   }
 
-  static sub(info: IClampTypeInfo, debugMode: boolean): string {
-    const sig = generateSignature("sub", info);
+  static sub(info: IClampTypeInfo, name: string, debugMode: boolean): string {
+    const sig = generateSignature(info, name);
     const opName = OPERATION_NAMES.sub;
 
     if (debugMode) {
@@ -245,8 +241,8 @@ ${generatePanicBlock(info.cnxType, opName)}
 }`;
   }
 
-  static mul(info: IClampTypeInfo, debugMode: boolean): string {
-    const sig = generateSignature("mul", info);
+  static mul(info: IClampTypeInfo, name: string, debugMode: boolean): string {
+    const sig = generateSignature(info, name);
     const opName = OPERATION_NAMES.mul;
 
     if (debugMode) {
@@ -286,6 +282,7 @@ ${generatePanicBlock(info.cnxType, opName)}
 class SignedDivisionTemplates {
   static div(
     info: IClampTypeInfo,
+    name: string,
     behavior: TOverflowBehavior,
     debugMode: boolean,
   ): string {
@@ -297,7 +294,7 @@ class SignedDivisionTemplates {
 ${generatePanicBlock(info.cnxType, OPERATION_NAMES.div)}
     }`
           : `return ${info.maxValue};`;
-    const sig = generateSignature("div", info, behavior);
+    const sig = generateSignature(info, name);
     return `${sig} {
 ${MIN_BY_MINUS_ONE_COMMENT}
     if (b == -1 && a == ${info.minValue}) ${onOverflow}
@@ -305,8 +302,8 @@ ${SignedDivisionTemplates.pastType(info, "-1", "0")}    return (${info.cType})(a
 }`;
   }
 
-  static mod(info: IClampTypeInfo, behavior: TOverflowBehavior): string {
-    const sig = generateSignature("mod", info, behavior);
+  static mod(info: IClampTypeInfo, name: string): string {
+    const sig = generateSignature(info, name);
     return `${sig} {
 ${MIN_BY_MINUS_ONE_COMMENT}
     if (b == -1) return 0;
@@ -333,29 +330,28 @@ ${SignedDivisionTemplates.pastType(info, "0", "a")}    return (${info.cType})(a 
 }
 
 /**
- * Generate an overflow helper function for the given operation and type
+ * The definition of one overflow helper 2.2 planned, under the name it
+ * decided (#1790 review): nothing here works a name out again.
  *
- * @param operation - The arithmetic operation (add, sub, mul, div, mod)
- * @param cnxType - The cnx type (u8, i32, etc.)
- * @param debugMode - If true, generate panic helpers; otherwise, clamp helpers
- * @returns The generated helper function or null if type is invalid
+ * @param panic - 2.2's panic decision; a `clamp` helper then aborts on overflow
+ * @returns The helper's definition, or null for an operation with no template
  */
 function generateHelper(
-  operation: string,
-  cnxType: string,
-  debugMode: boolean,
-  behavior: TOverflowBehavior = "clamp",
+  helper: IPlannedOverflowHelper,
+  panic: boolean,
 ): string | null {
-  const info = ClampTypes.resolve(cnxType);
+  const { name, behavior, operation } = helper;
+  const debugMode = panic && behavior === "clamp";
+  const info = ClampTypes.resolve(helper.cnxType);
   if (!info) {
     return null;
   }
 
   if (!info.isUnsigned && operation === "div") {
-    return SignedDivisionTemplates.div(info, behavior, debugMode);
+    return SignedDivisionTemplates.div(info, name, behavior, debugMode);
   }
   if (!info.isUnsigned && operation === "mod") {
-    return SignedDivisionTemplates.mod(info, behavior);
+    return SignedDivisionTemplates.mod(info, name);
   }
   if (behavior === "wrap") {
     return null;
@@ -365,22 +361,22 @@ function generateHelper(
   if (info.isUnsigned) {
     switch (operation) {
       case "add":
-        return UnsignedClampTemplates.add(info, debugMode);
+        return UnsignedClampTemplates.add(info, name, debugMode);
       case "sub":
-        return UnsignedClampTemplates.sub(info, debugMode);
+        return UnsignedClampTemplates.sub(info, name, debugMode);
       case "mul":
-        return UnsignedClampTemplates.mul(info, debugMode);
+        return UnsignedClampTemplates.mul(info, name, debugMode);
       default:
         return null;
     }
   } else if (info.useWiderArithmetic) {
     switch (operation) {
       case "add":
-        return SignedWiderTemplates.add(info, debugMode);
+        return SignedWiderTemplates.add(info, name, debugMode);
       case "sub":
-        return SignedWiderTemplates.sub(info, debugMode);
+        return SignedWiderTemplates.sub(info, name, debugMode);
       case "mul":
-        return SignedWiderTemplates.mul(info, debugMode);
+        return SignedWiderTemplates.mul(info, name, debugMode);
       default:
         return null;
     }
@@ -388,11 +384,11 @@ function generateHelper(
     // i64: widest signed type
     switch (operation) {
       case "add":
-        return SignedWidestTemplates.add(info, debugMode);
+        return SignedWidestTemplates.add(info, name, debugMode);
       case "sub":
-        return SignedWidestTemplates.sub(info, debugMode);
+        return SignedWidestTemplates.sub(info, name, debugMode);
       case "mul":
-        return SignedWidestTemplates.mul(info, debugMode);
+        return SignedWidestTemplates.mul(info, name, debugMode);
       default:
         return null;
     }
@@ -404,32 +400,15 @@ function generateHelper(
  */
 class OverflowHelperTemplates {
   /**
-   * Generate a clamp helper (returns boundary value on overflow)
+   * ADR-044: a planned helper's definition. A `wrap` helper (#1790) has no
+   * panic body: under `--debug` 2.2 plans a `wrap` operation as a `clamp` one,
+   * whose helper panics (#2408).
    */
-  static generateClampHelper(
-    operation: string,
-    cnxType: string,
+  static generate(
+    helper: IPlannedOverflowHelper,
+    panic: boolean,
   ): string | null {
-    return generateHelper(operation, cnxType, false);
-  }
-
-  /**
-   * ADR-044 (#1790): a `wrap` helper, the two's-complement result where C
-   * leaves it undefined. It has no panic body: under `--debug` 2.2 plans a
-   * `wrap` operation as a `clamp` one, whose helper panics (#2408).
-   */
-  static generateWrapHelper(operation: string, cnxType: string): string | null {
-    return generateHelper(operation, cnxType, false, "wrap");
-  }
-
-  /**
-   * Generate a panic helper (calls abort on overflow)
-   */
-  static generatePanicHelper(
-    operation: string,
-    cnxType: string,
-  ): string | null {
-    return generateHelper(operation, cnxType, true);
+    return generateHelper(helper, panic);
   }
 }
 

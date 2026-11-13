@@ -1,5 +1,6 @@
 import type IPlannedSafeDivision from "./IPlannedSafeDivision";
 import type IRequirementSite from "./IRequirementSite";
+import type IPlannedOverflowHelper from "./IPlannedOverflowHelper";
 
 /**
  * The fully-resolved input to ONE file's emission decisions, gathered at the
@@ -61,10 +62,8 @@ interface IEmissionFacts {
    */
   readonly existingIncludeTargets: readonly string[];
 
-  /** ADR-044 clamp helper keys accumulated while generating (`"add_u32"`). */
-  readonly clampOps: ReadonlySet<string>;
-  /** ADR-044 (#1790): `wrap` overflow helper keys (`"div_i32"`). */
-  readonly wrapOps: ReadonlySet<string>;
+  /** ADR-044: the overflow helpers 2.2 planned, by name */
+  readonly overflowHelpers: ReadonlyMap<string, IPlannedOverflowHelper>;
   /** #2207: a string copy goes through `cnx_string_copy` */
   readonly stringCopyHelper: boolean;
   /** #1668: single-evaluation saturating cast keys (`"f32_u8"`) */

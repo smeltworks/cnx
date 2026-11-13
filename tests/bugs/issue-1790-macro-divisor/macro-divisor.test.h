@@ -22,6 +22,9 @@ int32_t quotient32(const int32_t a);
 int32_t remainder32(const int32_t a);
 int32_t quotientPast32(const int32_t a);
 int32_t remainderPast32(const int32_t a);
+int8_t quotientNegative8(const int8_t a);
+int8_t remainderNegative8(const int8_t a);
+int32_t quotientNegative32(const int32_t a);
 int32_t quotientMinusOne(const int32_t a);
 
 #ifdef __cplusplus

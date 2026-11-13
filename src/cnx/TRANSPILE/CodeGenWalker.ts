@@ -653,7 +653,7 @@ class CodeGenWalker {
     step: IChainStep | null,
     rootOp: TPostfixOpSyntax | null,
     narrowing: TPlannedNarrowing | null,
-    safeDivisionHelper: string | null,
+    safeDivisionHelper: IPlannedSafeDivision | null,
   ): TPlannedPostfixOp {
     const typedAs = step?.subscript ?? null;
     switch (op.kind) {
@@ -4131,9 +4131,8 @@ class CodeGenWalker {
    */
   private generateOverflowHelpers(plan: IEmissionPlan): string[] {
     return helperGenerateOverflowHelpers(
-      new Set(plan.clampOps),
+      plan.overflowHelpers,
       plan.panicOverflowHelpers !== null,
-      new Set(plan.wrapOps),
     );
   }
 

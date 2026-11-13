@@ -120,7 +120,8 @@ import type ITypeGenerationDeps from "./types/ITypeGenerationDeps";
 import type IFilePlan from "./types/IFilePlan";
 import type IPlannedOverflowChain from "./types/IPlannedOverflowChain";
 import OverflowHelper from "./OverflowHelper";
-import type IPlannedOverflowHelper from "./types/IPlannedOverflowHelper";
+import type IPlannedOverflowHelper from "../../types/IPlannedOverflowHelper";
+import type IPlannedSafeDivision from "../../types/IPlannedSafeDivision";
 import type IPlannedSliceSource from "./types/IPlannedSliceSource";
 import type IPlannedWholeArrayWrite from "./types/IPlannedWholeArrayWrite";
 import SliceSource from "./SliceSource";
@@ -590,10 +591,10 @@ class FilePlanner {
     unwritten: IUnwrittenSyntax,
     cTypes: Set<string>,
     requirements: PlannedRequirements,
-  ): ReadonlyMap<TExpression, string> {
+  ): ReadonlyMap<TExpression, IPlannedSafeDivision> {
     const state = this.state;
     const typing = state.typingContext();
-    const planned = new Map<TExpression, string>();
+    const planned = new Map<TExpression, IPlannedSafeDivision>();
     for (const expression of FilePlanner.writtenExpressions(
       program,
       unwritten,
@@ -631,13 +632,14 @@ class FilePlanner {
         cnxType,
         inner,
       );
-      planned.set(expression, name);
-      requirements.safeDivision({
+      const helper: IPlannedSafeDivision = {
         name,
         operation,
         cnxType,
         inner: inner?.name ?? null,
-      });
+      };
+      planned.set(expression, helper);
+      requirements.safeDivision(helper);
       if (inner !== null) {
         FilePlanner.useOverflowHelper(inner, cTypes, requirements);
       }
@@ -1344,8 +1346,7 @@ class FilePlanner {
       compoundOverflows: clamps.compound,
       compoundCasts,
       registerAccesses,
-      clampOps: requirements.clampHelpers,
-      wrapOps: requirements.wrapHelpers,
+      overflowHelpers: requirements.overflowHelpers,
       sliceSources,
       stringCopies: stringCopies.copies,
       characterWrites,
@@ -3062,8 +3063,7 @@ class FilePlanner {
       needsISR: requirements.requires("isr"),
       selfIncludeAdded,
       existingIncludeTargets,
-      clampOps: plan.clampOps,
-      wrapOps: plan.wrapOps,
+      overflowHelpers: plan.overflowHelpers,
       stringCopyHelper: plan.stringCopyHelper,
       castHelpers: requirements.castHelpers,
       lengthHelpers: requirements.lengthHelpers,
