@@ -132,6 +132,50 @@ describe("OverflowHelperTemplates", () => {
     });
   });
 
+  // #1790: ADR-044's table for MIN / -1 and MIN % -1
+  describe("signed division", () => {
+    it("clamps a narrow quotient, divided in its wider type", () => {
+      const helper = OverflowHelperTemplates.generateClampHelper("div", "i32");
+      expect(helper).toContain(
+        "static inline int32_t cnx_clamp_div_i32(int32_t a, int64_t b)",
+      );
+      expect(helper).toContain("int64_t result = (int64_t)a / b;");
+      expect(helper).toContain("if (result > INT32_MAX) return INT32_MAX;");
+    });
+
+    it("wraps a narrow quotient to MIN", () => {
+      const helper = OverflowHelperTemplates.generateWrapHelper("div", "i8");
+      expect(helper).toContain("cnx_wrap_div_i8(int8_t a, int32_t b)");
+      expect(helper).toContain("if (result > INT8_MAX) return INT8_MIN;");
+    });
+
+    it("tests the one i64 case, having no wider type", () => {
+      expect(
+        OverflowHelperTemplates.generateClampHelper("div", "i64"),
+      ).toContain("if (b == -1 && a == INT64_MIN) return INT64_MAX;");
+      expect(
+        OverflowHelperTemplates.generateWrapHelper("div", "i64"),
+      ).toContain("if (b == -1 && a == INT64_MIN) return INT64_MIN;");
+      expect(
+        OverflowHelperTemplates.generateWrapHelper("mod", "i64"),
+      ).toContain("if (b == -1) return 0;");
+    });
+
+    it("panics on the overflowing quotient in debug mode", () => {
+      const helper = OverflowHelperTemplates.generatePanicHelper("div", "i32");
+      expect(helper).toContain("PANIC: Integer overflow in i32 division");
+    });
+
+    it("writes no wrap helper for + - * or an unsigned type", () => {
+      expect(
+        OverflowHelperTemplates.generateWrapHelper("add", "i32"),
+      ).toBeNull();
+      expect(
+        OverflowHelperTemplates.generateWrapHelper("div", "u32"),
+      ).toBeNull();
+    });
+  });
+
   describe("generatePanicHelper", () => {
     it("should generate panic helper with fprintf and abort for u32", () => {
       const helper = OverflowHelperTemplates.generatePanicHelper("add", "u32");

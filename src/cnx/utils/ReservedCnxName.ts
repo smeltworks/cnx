@@ -65,7 +65,16 @@ class ReservedCnxName {
    * here so the prefix has exactly one definition.
    */
   static clampHelper(operation: string, cnxType: string): string {
-    return `${ReservedCnxName.PREFIX}clamp_${operation}_${cnxType}`;
+    return ReservedCnxName.overflowHelper("clamp", operation, cnxType);
+  }
+
+  /** ADR-044 (#1790): an overflow helper of either family, `cnx_wrap_div_i32` */
+  static overflowHelper(
+    behavior: "clamp" | "wrap",
+    operation: string,
+    cnxType: string,
+  ): string {
+    return `${ReservedCnxName.PREFIX}${behavior}_${operation}_${cnxType}`;
   }
 
   /** #1668: a single-evaluation saturating cast, `cnx_cast_sat_f32_u8` */

@@ -442,7 +442,7 @@ describe("SpecialHandlers", () => {
       specialHandlers.find(([kind]) => kind === AssignmentKind.ATOMIC_RMW)?.[1];
 
     it.each([
-      ["an integer value", false, "add"],
+      ["an integer value", false, "cnx_clamp_add_u32"],
       ["a floating value", true, null],
     ])(
       "passes the classifier's clamp helper for %s",

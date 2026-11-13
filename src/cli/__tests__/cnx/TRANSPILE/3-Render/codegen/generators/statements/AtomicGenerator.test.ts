@@ -306,7 +306,7 @@ describe("AtomicGenerator", () => {
         "+=",
         "1",
         planned(typeName, typeName === "u64" ? "uint64_t" : "uint32_t", form),
-        "add",
+        "cnx_clamp_add_u32",
       );
 
     it("writes the LDREX/STREX loop 2.2 planned", () => {
@@ -342,7 +342,7 @@ describe("AtomicGenerator", () => {
           "+=",
           "step()",
           planned("u32", "uint32_t", form, "uint64_t"),
-          "add",
+          "cnx_clamp_add_u32",
         ).code;
         expect(code.split("step()")).toHaveLength(2);
         expect(code.indexOf("uint64_t __operand = step();")).toBeGreaterThan(
@@ -366,18 +366,6 @@ describe("AtomicGenerator", () => {
       expect(code).toContain("int_fast16_t __operand = 1;");
       expect(code).toContain("int_fast16_t __old;");
       expect(code).toContain("__new = __old + __operand;");
-    });
-
-    it("fails when 2.2 planned a clamp helper for a C header type", () => {
-      expect(() =>
-        generateAtomicRMW(
-          "f",
-          "+=",
-          "1",
-          planned(null, "int_fast16_t", "interrupt-mask"),
-          "add",
-        ),
-      ).toThrow("2.2 plans a clamp helper only for a cnx integer");
     });
 
     it("annotates each retry loop with the ADR that shapes it", () => {

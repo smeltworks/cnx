@@ -1,8 +1,21 @@
+import type IPlannedSafeDivision from "../../../../../../types/IPlannedSafeDivision";
 import { describe, expect, it } from "vitest";
 import helperGenerators from "../HelperGenerator";
 
 const { generateOverflowHelpers, generateSafeDivHelpers, generateCastHelpers } =
   helperGenerators;
+
+/** ADR-051 helpers that divide in plain C, from `"div_u8"`-style keys */
+const safeHelpers = (keys: readonly string[]): IPlannedSafeDivision[] =>
+  keys.map((key) => {
+    const [operation, cnxType] = key.split("_");
+    return {
+      name: `cnx_safe_${key}`,
+      operation: operation as "div" | "mod",
+      cnxType,
+      inner: null,
+    };
+  });
 
 describe("HelperGenerator - generateOverflowHelpers", () => {
   describe("empty input", () => {
@@ -170,14 +183,14 @@ describe("HelperGenerator - generateOverflowHelpers", () => {
 describe("HelperGenerator - generateSafeDivHelpers", () => {
   describe("empty input", () => {
     it("returns empty array for empty set", () => {
-      const result = generateSafeDivHelpers(new Set());
+      const result = generateSafeDivHelpers([]);
       expect(result).toEqual([]);
     });
   });
 
   describe("div helpers", () => {
     it("generates u8 div helper", () => {
-      const result = generateSafeDivHelpers(new Set(["div_u8"]));
+      const result = generateSafeDivHelpers(safeHelpers(["div_u8"]));
       const code = result.join("\n");
       expect(code).toContain("cnx_safe_div_u8");
       expect(code).toContain("uint8_t");
@@ -187,14 +200,14 @@ describe("HelperGenerator - generateSafeDivHelpers", () => {
     });
 
     it("generates i32 div helper", () => {
-      const result = generateSafeDivHelpers(new Set(["div_i32"]));
+      const result = generateSafeDivHelpers(safeHelpers(["div_i32"]));
       const code = result.join("\n");
       expect(code).toContain("cnx_safe_div_i32");
       expect(code).toContain("int32_t");
     });
 
     it("generates u64 div helper", () => {
-      const result = generateSafeDivHelpers(new Set(["div_u64"]));
+      const result = generateSafeDivHelpers(safeHelpers(["div_u64"]));
       const code = result.join("\n");
       expect(code).toContain("cnx_safe_div_u64");
       expect(code).toContain("uint64_t");
@@ -203,7 +216,7 @@ describe("HelperGenerator - generateSafeDivHelpers", () => {
 
   describe("mod helpers", () => {
     it("generates u16 mod helper", () => {
-      const result = generateSafeDivHelpers(new Set(["mod_u16"]));
+      const result = generateSafeDivHelpers(safeHelpers(["mod_u16"]));
       const code = result.join("\n");
       expect(code).toContain("cnx_safe_mod_u16");
       expect(code).toContain("uint16_t");
@@ -211,7 +224,7 @@ describe("HelperGenerator - generateSafeDivHelpers", () => {
     });
 
     it("generates i64 mod helper", () => {
-      const result = generateSafeDivHelpers(new Set(["mod_i64"]));
+      const result = generateSafeDivHelpers(safeHelpers(["mod_i64"]));
       const code = result.join("\n");
       expect(code).toContain("cnx_safe_mod_i64");
       expect(code).toContain("int64_t");
@@ -220,15 +233,18 @@ describe("HelperGenerator - generateSafeDivHelpers", () => {
 
   describe("multiple helpers", () => {
     it("generates both div and mod for same type", () => {
-      const result = generateSafeDivHelpers(new Set(["div_u32", "mod_u32"]));
+      const result = generateSafeDivHelpers(
+        safeHelpers(["div_u32", "mod_u32"]),
+      );
       const code = result.join("\n");
       expect(code).toContain("cnx_safe_div_u32");
       expect(code).toContain("cnx_safe_mod_u32");
     });
 
     it("generates helpers for multiple types", () => {
-      const ops = new Set(["div_u8", "div_i32", "mod_u64"]);
-      const result = generateSafeDivHelpers(ops);
+      const result = generateSafeDivHelpers(
+        safeHelpers(["div_u8", "div_i32", "mod_u64"]),
+      );
       const code = result.join("\n");
       expect(code).toContain("cnx_safe_div_u8");
       expect(code).toContain("cnx_safe_div_i32");
@@ -239,26 +255,39 @@ describe("HelperGenerator - generateSafeDivHelpers", () => {
       // The <stdbool.h> dependency is signalled via requireInclude("stdbool")
       // when the safe-div effect is applied, so it flows through the single
       // addAutoIncludes path. The helper must not emit a duplicate include.
-      const result = generateSafeDivHelpers(new Set(["div_u8"]));
+      const result = generateSafeDivHelpers(safeHelpers(["div_u8"]));
       expect(result.join("\n")).not.toContain("#include <stdbool.h>");
     });
 
+    it("divides a signed quotient through its ADR-044 helper (#1790)", () => {
+      const code = generateSafeDivHelpers([
+        {
+          name: "cnx_safe_wrap_div_i32",
+          operation: "div",
+          cnxType: "i32",
+          inner: "cnx_wrap_div_i32",
+        },
+      ]).join("\n");
+      expect(code).toContain("cnx_safe_wrap_div_i32(int32_t* output");
+      expect(code).toContain("*output = cnx_wrap_div_i32(numerator, divisor);");
+    });
+
     it("includes ADR-051 comment", () => {
-      const result = generateSafeDivHelpers(new Set(["div_u8"]));
+      const result = generateSafeDivHelpers(safeHelpers(["div_u8"]));
       expect(result.join("\n")).toContain("ADR-051");
     });
   });
 
   describe("output pointer pattern", () => {
     it("uses output pointer for result", () => {
-      const result = generateSafeDivHelpers(new Set(["div_u32"]));
+      const result = generateSafeDivHelpers(safeHelpers(["div_u32"]));
       const code = result.join("\n");
       expect(code).toContain("uint32_t* output");
       expect(code).toContain("*output = numerator / divisor");
     });
 
     it("sets default value on error", () => {
-      const result = generateSafeDivHelpers(new Set(["div_u32"]));
+      const result = generateSafeDivHelpers(safeHelpers(["div_u32"]));
       const code = result.join("\n");
       expect(code).toContain("defaultValue");
       expect(code).toContain("*output = defaultValue");
@@ -267,7 +296,7 @@ describe("HelperGenerator - generateSafeDivHelpers", () => {
 
   describe("skip unused types", () => {
     it("only generates requested type helpers", () => {
-      const result = generateSafeDivHelpers(new Set(["div_u8"]));
+      const result = generateSafeDivHelpers(safeHelpers(["div_u8"]));
       const code = result.join("\n");
       expect(code).toContain("cnx_safe_div_u8");
       expect(code).not.toContain("cnx_safe_div_u16");

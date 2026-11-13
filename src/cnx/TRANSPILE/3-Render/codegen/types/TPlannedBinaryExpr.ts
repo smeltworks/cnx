@@ -58,7 +58,6 @@ type TPlannedBinaryExpr =
    */
   | {
       readonly kind: "comparison";
-      readonly defaultOperator: string;
       readonly operators: readonly string[];
       /** ADR-001: maps `=` to `==`. Absent on the relational arm. */
       readonly mapOperator: ((operator: string) => string) | null;
@@ -96,7 +95,6 @@ type TPlannedBinaryExpr =
        * null otherwise
        */
       readonly constantValue: string | null;
-      readonly defaultOperator: string;
       readonly operators: readonly string[];
       readonly clamp: IPlannedClamp | null;
       readonly adrLine: number | undefined;

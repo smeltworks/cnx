@@ -470,8 +470,46 @@ That is what makes a bounds guard trustworthy when one of its terms can
 saturate -- see #231, where an unclamped `offset + length` wrapped past a guard
 and wrote out of bounds.
 
-Applies to `+`, `-` and `*`. Unsigned division and modulo cannot overflow, and
-the single signed case (`INT_MIN / -1`) is left to the safe-division path.
+Applies to every `+`, `-` and `*`, wherever it stands in an expression. In a
+chain that mixes them with `/` or `%`, each `+`, `-` and `*` saturates where it
+stands and the division is ordinary C (#1790):
+
+```cnx
+u32 halveDouble(u32 x) {
+    return x * 2 / 2; // x = 4000000000 gives 2147483647: the product saturates to 4294967295, then halves
+}
+```
+
+Unsigned division and modulo cannot overflow. Signed division overflows in exactly one
+case, `MIN / -1`, whose true quotient is one past the type's maximum. C leaves it
+undefined, and on x86 it traps. Owner ruling, 2026-11-12 (#1790): cnx defines it.
+
+| operation  | `clamp`        | `wrap`         |
+| ---------- | -------------- | -------------- |
+| `MIN / -1` | the type's MAX | the type's MIN |
+| `MIN % -1` | 0              | 0              |
+
+**The rule behind the table.** `clamp` takes the exact mathematical answer and gives the value
+of the type nearest to it: an answer past the maximum is the maximum, one past the minimum is
+the minimum. This is the rule `+ - *` already follow. `MIN / -1` is exactly MAX + 1, so it
+gives MAX. `MIN % -1` is exactly 0, which every type holds, so it gives 0 under either
+modifier. It is not a limit. A zero divisor has no exact answer, and ADR-051 decides it:
+rejected at compile time, `safe_div`'s default at run time.
+
+The `wrap` quotient is the two's-complement result. Compound `/<-` and `%<-` follow the
+same table, and so do ADR-051's `safe_div` and `safe_mod`, whose numerator and divisor pick
+the modifier as `/` does, and which report `false` here because their divisor was not zero.
+
+```cnx
+i32 quotientOf(i32 n, i32 d) {
+    return n / d; // quotientOf(-2147483647 - 1, -1) is 2147483647
+}
+i32 remainderOf(i32 n, i32 d) {
+    return n % d; // remainderOf(-2147483647 - 1, -1) is 0
+}
+```
+
+A value fixed at compile time is different: `MIN / -1` there is rejected, as below.
 
 #### Values fixed at compile time
 

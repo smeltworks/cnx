@@ -12,7 +12,8 @@ import type IOperandType from "../../types/IOperandType";
 import OperandTyper from "../../utils/OperandTyper";
 import TypeCheckUtils from "../../utils/TypeCheckUtils";
 import CompoundOperator from "../../utils/CompoundOperator";
-import CLAMP_HELPER_FOR_OPERATOR from "../../types/CLAMP_HELPER_FOR_OPERATOR";
+import OverflowHelper from "./OverflowHelper";
+import type IPlannedOverflowHelper from "./types/IPlannedOverflowHelper";
 
 /**
  * Classifies assignment statements by analyzing their structure. What is
@@ -478,9 +479,7 @@ class AssignmentClassifier {
    *
    * `cnxType` is the type the helper saturates at: the written value's.
    */
-  static compoundClamp(
-    ctx: IAssignmentContext,
-  ): { operation: string; cnxType: string } | null {
+  static compoundClamp(ctx: IAssignmentContext): IPlannedOverflowHelper | null {
     return ctx.plannedClamp;
   }
 
@@ -496,7 +495,7 @@ class AssignmentClassifier {
     written: IOperandType | null,
     cnxOp: string,
     hasFloatingOperand: () => boolean,
-  ): { operation: string; cnxType: string } | null {
+  ): IPlannedOverflowHelper | null {
     if (written?.typeName == null || written.dimensions.length > 0) {
       return null;
     }
@@ -508,20 +507,23 @@ class AssignmentClassifier {
     );
   }
 
-  /** ADR-044: the clamp helper a compound `cnxOp` write of this type calls, or null */
+  /**
+   * ADR-044: the overflow helper a compound `cnxOp` write of this type calls,
+   * or null -- `OverflowHelper`'s decision for the operator it compounds
+   */
   static clampOf(
     baseType: string,
     overflowBehavior: TOverflowBehavior | null,
     cnxOp: string,
     hasFloatingOperand: () => boolean,
-  ): { operation: string; cnxType: string } | null {
-    if (overflowBehavior !== "clamp") return null;
+  ): IPlannedOverflowHelper | null {
+    if (overflowBehavior === null) return null;
     if (!TypeCheckUtils.isInteger(baseType)) return null;
     if (hasFloatingOperand()) return null;
     const operator = CompoundOperator.binaryOf(cnxOp);
-    const operation =
-      operator === null ? undefined : CLAMP_HELPER_FOR_OPERATOR[operator];
-    return operation ? { operation, cnxType: baseType } : null;
+    return operator === null
+      ? null
+      : OverflowHelper.of(overflowBehavior, operator, baseType);
   }
 }
 

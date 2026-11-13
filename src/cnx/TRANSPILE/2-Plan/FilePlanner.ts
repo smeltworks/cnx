@@ -118,6 +118,8 @@ import type IPlannedExpectedType from "./types/IPlannedExpectedType";
 import type ITypeGenerationDeps from "./types/ITypeGenerationDeps";
 import type IFilePlan from "./types/IFilePlan";
 import type IPlannedClamp from "./types/IPlannedClamp";
+import OverflowHelper from "./OverflowHelper";
+import type IPlannedOverflowHelper from "./types/IPlannedOverflowHelper";
 import type IPlannedSliceSource from "./types/IPlannedSliceSource";
 import type IPlannedWholeArrayWrite from "./types/IPlannedWholeArrayWrite";
 import SliceSource from "./SliceSource";
@@ -157,13 +159,6 @@ interface FunctionSignature {
     isArray: boolean;
   }>;
 }
-
-/** ADR-044 (#1152): the `+ - *` operators that saturate through a helper */
-const CLAMP_HELPER_FOR_OPERATOR: Readonly<Partial<Record<string, string>>> = {
-  "+": "add",
-  "-": "sub",
-  "*": "mul",
-};
 
 const NO_EXPECTED_TYPE: IPlannedExpectedType = {
   type: null,
@@ -609,11 +604,34 @@ class FilePlanner {
       invariant(output !== undefined, `${call.name} has an output argument`);
       const cnxType = OperandTyper.typeOf(output, typing)?.typeName;
       invariant(cnxType != null, `${call.name}'s output argument is typed`);
-      planned.set(
-        expression,
-        CallExprUtils.generateSafeDivModHelperName(call.name, cnxType),
+      // #1790: a signed quotient divides through ADR-044's helper, whose
+      // modifier the numerator and divisor pick as they do for `/`; with
+      // neither counted, the default `clamp`
+      const operation = SafeDivision.operationOf(call.name);
+      const inner = OverflowHelper.of(
+        PlanTyping.overflowOf(
+          call.args
+            .slice(1, 3)
+            .flatMap((arg) => OperandTyper.valueLeaves(arg, typing)),
+        ) ?? "clamp",
+        operation === "div" ? "/" : "%",
+        cnxType,
       );
-      requirements.safeDivision(SafeDivision.operationOf(call.name), cnxType);
+      const name = CallExprUtils.generateSafeDivModHelperName(
+        call.name,
+        cnxType,
+        inner,
+      );
+      planned.set(expression, name);
+      requirements.safeDivision({
+        name,
+        operation,
+        cnxType,
+        inner: inner?.name ?? null,
+      });
+      if (inner !== null) {
+        FilePlanner.useOverflowHelper(inner, cTypes, requirements);
+      }
       SafeDivisionTypes.cTypesOf(cnxType).forEach((t) => cTypes.add(t));
     }
     return planned;
@@ -1264,6 +1282,7 @@ class FilePlanner {
       unwritten,
       foreignRegisterValues,
       decidedCTypes,
+      requirements,
     );
     const atomicForms = this.planInterruptSafety(
       program,
@@ -1316,7 +1335,8 @@ class FilePlanner {
       compoundClamps: clamps.compound,
       compoundCasts,
       registerAccesses,
-      clampOps: clamps.ops,
+      clampOps: requirements.clampHelpers,
+      wrapOps: requirements.wrapHelpers,
       sliceSources,
       stringCopies: stringCopies.copies,
       characterWrites,
@@ -2065,47 +2085,46 @@ class FilePlanner {
     }
   }
 
-  /** ADR-044: the helpers a `+ - *` chain saturates through, or null for plain C */
+  /**
+   * ADR-044: the overflow helper each operator of an integer chain calls, as
+   * `OverflowHelper` decides it, or null for plain C. Each operator is decided
+   * where it stands, so `a * b / c` is `cnx_clamp_mul_u32(a, b) / c` (#1790);
+   * a chain with no helper at all is plain C.
+   */
   private clampChain(expr: TExpressionOf<"binary">): IPlannedClamp | null {
     const cnxType = this.compositeClampType(expr);
     if (cnxType === null || TypeCheckUtils.usesNativeArithmetic(cnxType)) {
       return null;
     }
-    if (this.compositeClampBehavior(expr) !== "clamp") return null;
-    const defaultOperator = expr.level === "additive" ? "+" : "*";
-    const helpers = expr.operands
-      .slice(1)
-      .map(
-        (_, i) =>
-          CLAMP_HELPER_FOR_OPERATOR[expr.operators[i] ?? defaultOperator],
-      );
-    if (!helpers.every((op): op is string => op !== undefined)) return null;
-    return { cnxType, operations: helpers };
+    const behavior = this.compositeClampBehavior(expr);
+    if (behavior === null) return null;
+    const operations = expr.operators.map((operator) =>
+      OverflowHelper.of(behavior, operator, cnxType),
+    );
+    if (operations.every((helper) => helper === null)) return null;
+    return { operations };
   }
 
   /**
-   * ADR-044: which written `+ - *` chains and compound writes of a `clamp`
-   * integer saturate, and through which helpers. A chain qualifies only when
-   * every operator has a helper; a mixed chain like `a * b / c` stays plain C.
+   * ADR-044: which written chains and compound writes of an integer call an
+   * overflow helper, and which. In a mixed chain like `a * b / c` of a `clamp`
+   * `u32` the `*` saturates and the `/` stays plain C (#1790).
    */
   private planClamps(
     program: IProgramSyntax,
     unwritten: IUnwrittenSyntax,
     foreignRegisterValues: readonly TExpression[],
     cTypes: Set<string>,
+    requirements: PlannedRequirements,
   ): {
     readonly chains: ReadonlyMap<TExpression, IPlannedClamp | null>;
     readonly compound: ReadonlyMap<
       IAssignmentSyntax,
-      { operation: string; cnxType: string } | null
+      IPlannedOverflowHelper | null
     >;
-    readonly ops: ReadonlySet<string>;
   } {
-    const ops = new Set<string>();
-    const use = (operation: string, cnxType: string): void => {
-      ops.add(`${operation}_${cnxType}`);
-      ClampTypes.cTypesOf(cnxType).forEach((t) => cTypes.add(t));
-    };
+    const use = (helper: IPlannedOverflowHelper): void =>
+      FilePlanner.useOverflowHelper(helper, cTypes, requirements);
 
     const chains = new Map<TExpression, IPlannedClamp | null>();
     for (const expr of [
@@ -2120,12 +2139,14 @@ class FilePlanner {
       }
       const chain = this.clampChain(expr);
       chains.set(expr, chain);
-      chain?.operations.forEach((operation) => use(operation, chain.cnxType));
+      chain?.operations.forEach((helper) => {
+        if (helper !== null) use(helper);
+      });
     }
 
     const compound = new Map<
       IAssignmentSyntax,
-      { operation: string; cnxType: string } | null
+      IPlannedOverflowHelper | null
     >();
     const typing = this.state.typingContext();
     for (const site of FilePlanner.assignmentSites(program)) {
@@ -2137,10 +2158,20 @@ class FilePlanner {
         () => site.value.kind !== "missing" && this.hasFloatingLeaf(site.value),
       );
       if (clamp === null) continue;
-      use(clamp.operation, clamp.cnxType);
+      use(clamp);
       compound.set(site, clamp);
     }
-    return { chains, compound, ops };
+    return { chains, compound };
+  }
+
+  /** ADR-044: an overflow helper the file calls, and the C types it spells */
+  private static useOverflowHelper(
+    helper: IPlannedOverflowHelper,
+    cTypes: Set<string>,
+    requirements: PlannedRequirements,
+  ): void {
+    requirements.overflowHelper(helper);
+    ClampTypes.cTypesOf(helper.cnxType).forEach((t) => cTypes.add(t));
   }
 
   /** Every assignment in the file, in source order */
@@ -2808,7 +2839,7 @@ class FilePlanner {
     floatBitWrites: ReadonlyMap<TExpression, IPlannedFloatBits | null>,
     compoundClamps: ReadonlyMap<
       IAssignmentSyntax,
-      { operation: string; cnxType: string } | null
+      IPlannedOverflowHelper | null
     >,
     cTypes: Set<string>,
     requirements: PlannedRequirements,
@@ -3010,6 +3041,7 @@ class FilePlanner {
       selfIncludeAdded,
       existingIncludeTargets,
       clampOps: plan.clampOps,
+      wrapOps: plan.wrapOps,
       stringCopyHelper: plan.stringCopyHelper,
       castHelpers: requirements.castHelpers,
       lengthHelpers: requirements.lengthHelpers,

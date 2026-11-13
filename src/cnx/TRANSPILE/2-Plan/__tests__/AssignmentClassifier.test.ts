@@ -697,7 +697,12 @@ describe("AssignmentClassifier - Special Compound", () => {
     const clampOf = (written: IOperandType | null) =>
       AssignmentClassifier.clampOfWrite(written, "+<-", () => false);
 
-    expect(clampOf(u8)).toEqual({ operation: "add", cnxType: "u8" });
+    expect(clampOf(u8)).toEqual({
+      name: "cnx_clamp_add_u8",
+      behavior: "clamp",
+      operation: "add",
+      cnxType: "u8",
+    });
     expect(clampOf({ ...u8, dimensions: [4] })).toBeNull();
     expect(clampOf({ ...u8, overflow: "wrap" })).toBeNull();
     expect(clampOf(null)).toBeNull();

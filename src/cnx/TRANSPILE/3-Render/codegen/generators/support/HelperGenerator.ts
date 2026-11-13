@@ -17,27 +17,35 @@ import ReservedCnxName from "../../../../../utils/ReservedCnxName";
 import LengthProperty from "../../../../../utils/LengthProperty";
 import StringUtils from "../../../../../utils/StringUtils";
 import ComplianceAnnotations from "../../../../2-Plan/ComplianceAnnotations";
+import type IPlannedSafeDivision from "../../../../../types/IPlannedSafeDivision";
 
 /**
  * Generate a safe arithmetic helper function (div or mod).
  * Extracted to eliminate duplication between safe_div and safe_mod generation.
  */
 const generateSafeArithmeticHelper = (
-  opName: string,
-  opSymbol: string,
-  cnxType: string,
+  helper: IPlannedSafeDivision,
   cType: string,
-): string[] => [
-  `static inline ${SafeDivisionTypes.RESULT_C_TYPE} cnx_safe_${opName}_${cnxType}(${cType}* output, ${cType} numerator, ${cType} divisor, ${cType} defaultValue) {`,
-  `    if (divisor == 0) {`,
-  `        *output = defaultValue;`,
-  `        return true;  // Error occurred`,
-  `    }`,
-  `    *output = numerator ${opSymbol} divisor;`,
-  `    return false;  // Success`,
-  `}`,
-  "",
-];
+): string[] => {
+  // #1790: a signed quotient goes through ADR-044's helper, so MIN / -1 gives
+  // what `/` gives rather than trapping
+  const opSymbol = helper.operation === "div" ? "/" : "%";
+  const quotient =
+    helper.inner === null
+      ? `numerator ${opSymbol} divisor`
+      : `${helper.inner}(numerator, divisor)`;
+  return [
+    `static inline ${SafeDivisionTypes.RESULT_C_TYPE} ${helper.name}(${cType}* output, ${cType} numerator, ${cType} divisor, ${cType} defaultValue) {`,
+    `    if (divisor == 0) {`,
+    `        *output = defaultValue;`,
+    `        return true;  // Error occurred`,
+    `    }`,
+    `    *output = ${quotient};`,
+    `    return false;  // Success`,
+    `}`,
+    "",
+  ];
+};
 
 /**
  * Generate all needed overflow helper functions
@@ -49,8 +57,9 @@ const generateSafeArithmeticHelper = (
 const generateOverflowHelpers = (
   usedClampOps: ReadonlySet<string>,
   panic: boolean,
+  usedWrapOps: ReadonlySet<string> = new Set(),
 ): string[] => {
-  if (usedClampOps.size === 0) {
+  if (usedClampOps.size === 0 && usedWrapOps.size === 0) {
     return [];
   }
 
@@ -95,6 +104,21 @@ const generateOverflowHelpers = (
     }
   }
 
+  // #1790: `wrap` helpers never panic
+  const sortedWrapOps = Array.from(usedWrapOps).sort((a, b) =>
+    a.localeCompare(b),
+  );
+  for (const op of sortedWrapOps) {
+    const [operation, cnxType] = op.split("_");
+    const helper = OverflowHelperTemplates.generateWrapHelper(
+      operation,
+      cnxType,
+    );
+    if (helper) {
+      lines.push(helper, "");
+    }
+  }
+
   return lines;
 };
 
@@ -103,9 +127,9 @@ const generateOverflowHelpers = (
  * ADR-051: Safe division helpers that return error flag on division by zero
  */
 const generateSafeDivHelpers = (
-  usedSafeDivOps: ReadonlySet<string>,
+  helpers: readonly IPlannedSafeDivision[],
 ): string[] => {
-  if (usedSafeDivOps.size === 0) {
+  if (helpers.length === 0) {
     return [];
   }
 
@@ -118,26 +142,20 @@ const generateSafeDivHelpers = (
   lines.push("// ADR-051: Safe division helper functions", "");
 
   const integerTypes = ["u8", "u16", "u32", "u64", "i8", "i16", "i32", "i64"];
+  const ordered = [...helpers].sort(
+    (a, b) =>
+      integerTypes.indexOf(a.cnxType) - integerTypes.indexOf(b.cnxType) ||
+      a.operation.localeCompare(b.operation) ||
+      a.name.localeCompare(b.name),
+  );
 
-  for (const cnxType of integerTypes) {
-    const needsDiv = usedSafeDivOps.has(`div_${cnxType}`);
-    const needsMod = usedSafeDivOps.has(`mod_${cnxType}`);
-
-    if (!needsDiv && !needsMod) {
-      continue; // Skip types that aren't used
-    }
-
-    const cType = SafeDivisionTypes.operandOf(cnxType);
-
-    // Generate safe_div helper if needed
-    if (needsDiv) {
-      lines.push(...generateSafeArithmeticHelper("div", "/", cnxType, cType));
-    }
-
-    // Generate safe_mod helper if needed
-    if (needsMod) {
-      lines.push(...generateSafeArithmeticHelper("mod", "%", cnxType, cType));
-    }
+  for (const helper of ordered) {
+    lines.push(
+      ...generateSafeArithmeticHelper(
+        helper,
+        SafeDivisionTypes.operandOf(helper.cnxType),
+      ),
+    );
   }
 
   return lines;

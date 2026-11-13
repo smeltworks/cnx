@@ -1,3 +1,4 @@
+import type IPlannedSafeDivision from "./IPlannedSafeDivision";
 import type IRequirementSite from "./IRequirementSite";
 
 /**
@@ -62,6 +63,8 @@ interface IEmissionFacts {
 
   /** ADR-044 clamp helper keys accumulated while generating (`"add_u32"`). */
   readonly clampOps: ReadonlySet<string>;
+  /** ADR-044 (#1790): `wrap` overflow helper keys (`"div_i32"`). */
+  readonly wrapOps: ReadonlySet<string>;
   /** #2207: a string copy goes through `cnx_string_copy` */
   readonly stringCopyHelper: boolean;
   /** #1668: single-evaluation saturating cast keys (`"f32_u8"`) */
@@ -69,8 +72,8 @@ interface IEmissionFacts {
   /** ADR-058: runtime integer length helpers (`"cnx_value_bit_length"`) */
   readonly lengthHelpers: ReadonlySet<string>;
 
-  /** ADR-051 safe-division helper keys accumulated while generating. */
-  readonly safeDivOps: ReadonlySet<string>;
+  /** ADR-051 safe-division helpers, by name. */
+  readonly safeDivOps: ReadonlyMap<string, IPlannedSafeDivision>;
 
   /** Sites that asked for the float static asserts, for attribution. */
   readonly floatAssertSites: readonly IRequirementSite[];

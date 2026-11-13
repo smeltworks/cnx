@@ -51,23 +51,31 @@ const renderOperands = (
   });
 
 /**
+ * The operator between operand `index` and `index + 1`. 1.2 lowers each
+ * operator between the two operands it joins (`TExpression`), so the list is
+ * never short; #1790 replaced the `defaultOperator` that guessed a gap here
+ * with this invariant, since the planner read the same gap a second way.
+ */
+const operatorAt = (operators: readonly string[], index: number): string => {
+  const operator = operators[index];
+  invariant(
+    operator !== undefined,
+    "1.2 lowers an operator between every two operands",
+  );
+  return operator;
+};
+
+/**
  * Join operand codes with the operator between each pair.
- *
- * `defaultOperator` fills a gap in `operators`, which the parse tree can leave
- * shorter than the operand list. Pre-existing and unexercised -- a probe on the
- * fallback never fires while one on the surrounding loop fires -- and kept
- * rather than dropped, because removing a defense because no fixture reaches it
- * is the argument #1143 records against.
  */
 const joinWithOperators = (
   operandCodes: readonly string[],
   operators: readonly string[],
-  defaultOperator: string,
   mapOperator: ((operator: string) => string) | null,
 ): string => {
   let result = operandCodes[0];
   for (let index = 1; index < operandCodes.length; index++) {
-    const raw = operators[index - 1] || defaultOperator;
+    const raw = operatorAt(operators, index - 1);
     const operator = mapOperator ? mapOperator(raw) : raw;
     result += ` ${operator} ${operandCodes[index]}`;
   }
@@ -105,9 +113,15 @@ const tryClampOperands = (
   // which decided this chain's helpers.
   AdrProvenance.record("044", plan.adrLine);
 
+  // #1790: an operator with no helper stays plain C where it stands, so
+  // `a * b / c` is `cnx_clamp_mul_u32(a, b) / c`
   let code = operandCodes[0];
-  clamp.operations.forEach((operation, index) => {
-    code = `cnx_clamp_${operation}_${clamp.cnxType}(${code}, ${operandCodes[index + 1]})`;
+  clamp.operations.forEach((helper, index) => {
+    const operand = operandCodes[index + 1];
+    code =
+      helper === null
+        ? `${code} ${operatorAt(plan.operators, index)} ${operand}`
+        : `${helper.name}(${code}, ${operand})`;
   });
   return code;
 };
@@ -149,12 +163,7 @@ const renderArithmetic = (
   }
 
   return {
-    code: joinWithOperators(
-      operandCodes,
-      plan.operators,
-      plan.defaultOperator,
-      null,
-    ),
+    code: joinWithOperators(operandCodes, plan.operators, null),
     effects,
   };
 };
@@ -195,12 +204,7 @@ const renderComparison = (
   const operandCodes = renderOperands(plan.renderOperands, effects);
 
   return {
-    code: joinWithOperators(
-      operandCodes,
-      plan.operators,
-      plan.defaultOperator,
-      plan.mapOperator,
-    ),
+    code: joinWithOperators(operandCodes, plan.operators, plan.mapOperator),
     effects,
   };
 };
@@ -232,7 +236,7 @@ const generateBinaryExpr = (
       const effects: TGeneratorEffect[] = [];
       const operandCodes = renderOperands(plan.renderOperands, effects);
       return {
-        code: joinWithOperators(operandCodes, plan.operators, "<<", null),
+        code: joinWithOperators(operandCodes, plan.operators, null),
         effects,
       };
     }

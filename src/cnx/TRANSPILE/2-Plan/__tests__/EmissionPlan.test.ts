@@ -23,10 +23,11 @@ const NOTHING: IEmissionFacts = {
   selfIncludeAdded: false,
   existingIncludeTargets: [],
   clampOps: new Set<string>(),
+  wrapOps: new Set<string>(),
   stringCopyHelper: false,
   castHelpers: new Set<string>(),
   lengthHelpers: new Set<string>(),
-  safeDivOps: new Set<string>(),
+  safeDivOps: new Map(),
   floatAssertSites: [],
   irqWrapperSites: [],
   debugMode: false,
@@ -365,15 +366,23 @@ describe("EmissionPlan (2.2 Plan)", () => {
     });
 
     it("carries helper keys as decided lists", () => {
+      const safeDivU32 = {
+        name: "cnx_safe_div_u32",
+        operation: "div" as const,
+        cnxType: "u32",
+        inner: null,
+      };
       const plan = EmissionPlan.build(
         facts({
           clampOps: new Set(["add_u32"]),
-          safeDivOps: new Set(["div_u32"]),
+          wrapOps: new Set(["div_i32"]),
+          safeDivOps: new Map([["cnx_safe_div_u32", safeDivU32]]),
         }),
       );
 
       expect(plan.clampOps).toEqual(["add_u32"]);
-      expect(plan.safeDivOps).toEqual(["div_u32"]);
+      expect(plan.wrapOps).toEqual(["div_i32"]);
+      expect(plan.safeDivOps).toEqual([safeDivU32]);
     });
   });
 });

@@ -1,10 +1,12 @@
+import type IPlannedOverflowHelper from "./IPlannedOverflowHelper";
+
 /**
- * ADR-044: the saturating helpers 2.2 decided a `clamp` integer write calls --
- * one `cnx_clamp_<operation>_<cnxType>` per operator, in order
+ * ADR-044: the overflow helper 2.2 decided each operator of an integer chain
+ * calls, in order. An operator with none stays plain C where it stands, so
+ * `a * b / c` is `cnx_clamp_mul_u32(a, b) / c` (#1790).
  */
 interface IPlannedClamp {
-  readonly cnxType: string;
-  readonly operations: readonly string[];
+  readonly operations: readonly (IPlannedOverflowHelper | null)[];
 }
 
 export default IPlannedClamp;

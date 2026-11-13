@@ -188,19 +188,6 @@ function generatePrimaskWrapper(
   return { code: masked.code, effects: [...effects, ...masked.effects] };
 }
 
-/** The ADR-044 helper a saturating compound write calls, or null */
-function clampHelperOf(
-  atomic: IPlannedAtomic,
-  clampOp: string | null,
-): string | null {
-  if (clampOp === null) return null;
-  invariant(
-    atomic.typeName !== null,
-    "2.2 plans a clamp helper only for a cnx integer",
-  );
-  return `cnx_clamp_${clampOp}_${atomic.typeName}`;
-}
-
 /**
  * ADR-049: Generate atomic Read-Modify-Write operation.
  * Written in the form 2.2 decided: LDREX/STREX, the masked region, or a
@@ -211,8 +198,8 @@ function clampHelperOf(
  * @param value - The value expression
  * @param atomic - 2.2's plan: the form, what the value is accessed as, and
  *   the C type `__operand` holds the value in
- * @param clampOp - ADR-044 helper operation from
- *   `AssignmentClassifier.compoundClamp`, or null for plain arithmetic
+ * @param clampHelper - the ADR-044 helper 2.2 planned
+ *   (`AssignmentClassifier.compoundClamp`), or null for plain arithmetic
  * @returns Generated code and effects
  */
 function generateAtomicRMW(
@@ -220,9 +207,8 @@ function generateAtomicRMW(
   cOp: string,
   value: string,
   atomic: IPlannedAtomic,
-  clampOp: string | null,
+  clampHelper: string | null,
 ): IGeneratorOutput {
-  const clampHelper = clampHelperOf(atomic, clampOp);
   if (atomic.form === "interrupt-mask") {
     return generatePrimaskWrapper(target, cOp, value, clampHelper);
   }

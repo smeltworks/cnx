@@ -4,6 +4,7 @@
  */
 import TYPE_MAP from "./types/TYPE_MAP";
 import SafeDivision from "../../utils/SafeDivision";
+import type IPlannedOverflowHelper from "./types/IPlannedOverflowHelper";
 import IFunctionSignature from "../../types/IFunctionSignature";
 import type IResolvedSymbols from "../../types/IResolvedSymbols";
 import TypeResolver from "../../utils/TypeResolver";
@@ -18,13 +19,16 @@ class CallExprUtils {
   }
 
   /**
-   * ADR-051: Generate the helper function name for safe_div/safe_mod.
+   * ADR-051: Generate the helper function name for safe_div/safe_mod. One
+   * that divides through a `wrap` helper is its own (#1790).
    */
   static generateSafeDivModHelperName(
     funcName: "safe_div" | "safe_mod",
     cnxType: string,
+    inner: IPlannedOverflowHelper | null,
   ): string {
-    return `cnx_safe_${SafeDivision.operationOf(funcName)}_${cnxType}`;
+    const family = inner?.behavior === "wrap" ? "wrap_" : "";
+    return `cnx_safe_${family}${SafeDivision.operationOf(funcName)}_${cnxType}`;
   }
 
   /**

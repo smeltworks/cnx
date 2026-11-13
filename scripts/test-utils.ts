@@ -1038,7 +1038,11 @@ class TestUtils {
     } catch (execError: unknown) {
       const failure = ExecFailure.of(execError);
       result.stdout = failure.stdout;
-      return `${mode.toUpperCase()} execution failed with exit code ${failure.status || 1}`;
+      // A crash has no exit code; reporting it as 1 made a trap read as a
+      // fixture's first failed check
+      return failure.signal === undefined
+        ? `${mode.toUpperCase()} execution failed with exit code ${failure.status || 1}`
+        : `${mode.toUpperCase()} execution was killed by ${failure.signal}`;
     } finally {
       try {
         if (existsSync(execPath)) unlinkSync(execPath);

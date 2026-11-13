@@ -2,6 +2,8 @@ import RequirementSites from "../../utils/RequirementSites";
 import type IRequirementSite from "../../types/IRequirementSite";
 import type TDeferredSiteKey from "../../types/TDeferredSiteKey";
 import type TIncludeHeader from "../../types/TIncludeHeader";
+import type IPlannedSafeDivision from "../../types/IPlannedSafeDivision";
+import type IPlannedOverflowHelper from "./types/IPlannedOverflowHelper";
 
 /**
  * #1991: what one file's plan requires -- its headers, helpers and deferred
@@ -16,7 +18,12 @@ class PlannedRequirements {
   private readonly headers = new Set<TIncludeHeader>();
   private readonly sites = new Map<TDeferredSiteKey, IRequirementSite[]>();
   private readonly castHelperKeys = new Set<string>();
-  private readonly safeDivisionKeys = new Set<string>();
+  private readonly safeDivisionHelpers = new Map<
+    string,
+    IPlannedSafeDivision
+  >();
+  private readonly clampHelperKeys = new Set<string>();
+  private readonly wrapHelperKeys = new Set<string>();
   private readonly lengthHelperNames = new Set<string>();
   private ldrexStrexLoop = false;
   private compareExchangeLoop = false;
@@ -51,9 +58,16 @@ class PlannedRequirements {
     this.require("limits");
   }
 
-  /** ADR-051: a safe_div/safe_mod helper, keyed as `"div_u32"` */
-  safeDivision(operation: string, cnxType: string): void {
-    this.safeDivisionKeys.add(`${operation}_${cnxType}`);
+  /** ADR-051: a safe_div/safe_mod helper, keyed by its name */
+  safeDivision(helper: IPlannedSafeDivision): void {
+    this.safeDivisionHelpers.set(helper.name, helper);
+  }
+
+  /** ADR-044: an overflow helper, keyed as `"add_u32"` within its family */
+  overflowHelper(helper: IPlannedOverflowHelper): void {
+    const keys =
+      helper.behavior === "clamp" ? this.clampHelperKeys : this.wrapHelperKeys;
+    keys.add(`${helper.operation}_${helper.cnxType}`);
   }
 
   /** ADR-058: a runtime integer length's helper, `"cnx_value_bit_length"` */
@@ -89,8 +103,16 @@ class PlannedRequirements {
     return this.lengthHelperNames;
   }
 
-  get safeDivisions(): ReadonlySet<string> {
-    return this.safeDivisionKeys;
+  get safeDivisions(): ReadonlyMap<string, IPlannedSafeDivision> {
+    return this.safeDivisionHelpers;
+  }
+
+  get clampHelpers(): ReadonlySet<string> {
+    return this.clampHelperKeys;
+  }
+
+  get wrapHelpers(): ReadonlySet<string> {
+    return this.wrapHelperKeys;
   }
 
   get emitsCompareExchangeLoop(): boolean {

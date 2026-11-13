@@ -1,4 +1,5 @@
 import InterruptMask from "./3-Render/codegen/helpers/InterruptMask";
+import type IPlannedSafeDivision from "../types/IPlannedSafeDivision";
 import type IPlannedArgument from "./2-Plan/types/IPlannedArgument";
 import type IPlannedStaticValue from "./2-Plan/types/IPlannedStaticValue";
 import LengthProperty from "../utils/LengthProperty";
@@ -779,7 +780,6 @@ class CodeGenWalker {
         this.rendering.comparisons.add(expr);
         return {
           kind: "comparison",
-          defaultOperator: "=",
           operators,
           mapOperator: BinaryExprUtils.mapEqualityOperator,
           adrLine: BinaryExprUtils.equalityAdrLine(operators, expr.span.line),
@@ -790,7 +790,6 @@ class CodeGenWalker {
       case "relational":
         return {
           kind: "comparison",
-          defaultOperator: "<",
           operators,
           mapOperator: null,
           adrLine: undefined,
@@ -804,7 +803,6 @@ class CodeGenWalker {
         return {
           kind: "arithmetic",
           constantValue: this.constantValue(expr),
-          defaultOperator: expr.level === "additive" ? "+" : "*",
           operators,
           clamp: CodeGenWalker.plannedAt(
             this.filePlan.clampChains,
@@ -4128,6 +4126,7 @@ class CodeGenWalker {
     return helperGenerateOverflowHelpers(
       new Set(plan.clampOps),
       plan.panicOverflowHelpers !== null,
+      new Set(plan.wrapOps),
     );
   }
 
@@ -4143,8 +4142,10 @@ class CodeGenWalker {
    * ADR-051: Generate safe division helper functions for used integer types only
    * Delegates to HelperGenerator
    */
-  private generateSafeDivHelpers(safeDivOps: readonly string[]): string[] {
-    return helperGenerateSafeDivHelpers(new Set(safeDivOps));
+  private generateSafeDivHelpers(
+    safeDivOps: readonly IPlannedSafeDivision[],
+  ): string[] {
+    return helperGenerateSafeDivHelpers(safeDivOps);
   }
 }
 

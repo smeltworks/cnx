@@ -1,4 +1,5 @@
 import type IPlannedCharacterWrite from "./IPlannedCharacterWrite";
+import type IPlannedOverflowHelper from "./IPlannedOverflowHelper";
 import type TStringValueForm from "../../../types/TStringValueForm";
 import type IPlannedArgument from "./IPlannedArgument";
 import type IPlannedFunctionParameter from "./IPlannedFunctionParameter";
@@ -93,12 +94,12 @@ interface IFilePlan {
   readonly atomicForms: ReadonlyMap<IAssignmentSyntax, IPlannedAtomic | null>;
   /** ADR-051: each written `safe_div`/`safe_mod` call, and the helper it is written as */
   readonly safeDivisions: ReadonlyMap<TExpression, string>;
-  /** ADR-044: each written `+ - *` chain, and the clamp helpers it calls (null: none) */
+  /** ADR-044: each written `+ - * / %` chain, and the overflow helpers it calls (null: none) */
   readonly clampChains: ReadonlyMap<TExpression, IPlannedClamp | null>;
-  /** ADR-044: each assignment, and the clamp helper it calls (null: none) */
+  /** ADR-044: each assignment, and the overflow helper it calls (null: none) */
   readonly compoundClamps: ReadonlyMap<
     IAssignmentSyntax,
-    { operation: string; cnxType: string } | null
+    IPlannedOverflowHelper | null
   >;
   /** #1081: how each slice write reads its source */
   readonly sliceSources: ReadonlyMap<IAssignmentSyntax, IPlannedSliceSource>;
@@ -155,6 +156,8 @@ interface IFilePlan {
   readonly registerAccesses: ReadonlyMap<IAssignmentSyntax, string>;
   /** ADR-044: every `<operation>_<cnxType>` helper the file calls */
   readonly clampOps: ReadonlySet<string>;
+  /** ADR-044 (#1790): the `wrap` overflow helpers the file calls (`"div_i32"`) */
+  readonly wrapOps: ReadonlySet<string>;
   /** #1927: the C types the file's text uses, which decide `<stdint.h>`/`<stdbool.h>` */
   readonly cTypes: ReadonlySet<string>;
   /** The type each value is rendered against; a value not listed has none */

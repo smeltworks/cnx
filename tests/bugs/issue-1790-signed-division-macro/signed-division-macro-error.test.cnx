@@ -1,0 +1,19 @@
+// test-error
+// test-adr: 024
+// #1790 (ADR-044): a signed `/` and `%` now go through an overflow helper,
+// for MIN / -1. A header macro cnx cannot type, beside one, is E0811 as it
+// is beside a `clamp` `+ - *`. An unsigned `/` stays plain C, so a macro
+// beside it is still E0812 (control).
+#include "division_macros.h"
+
+i32 signedQuotient(i32 n) {
+    return n / SCALED_CALL;
+}
+
+i32 signedRemainder(i32 n) {
+    return n % SCALED_CALL;
+}
+
+u32 unsignedQuotient(u32 n) {
+    return n / SCALED_CALL;
+}

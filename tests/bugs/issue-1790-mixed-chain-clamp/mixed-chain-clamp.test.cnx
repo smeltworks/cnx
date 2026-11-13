@@ -1,0 +1,267 @@
+// test-execution
+// test-adr: 044
+// Issue #1790: ADR-044 saturates every `+`, `-` and `*` of a `clamp` integer.
+// A multiplicative chain that mixed `*` with `/` or `%` was emitted as plain
+// C, so its `*` wrapped: `x * o / e` gave 1852516352 where the clamped product
+// halved is 2147483647. Each operator is now decided where it stands.
+//
+// Signed division overflows in one case, MIN / -1, which C leaves undefined
+// and x86 traps on. ADR-044 gives it MAX for `clamp` and MIN for `wrap`, and
+// MIN % -1 is 0 under either -- in an expression, a compound write and
+// ADR-051's safe_div and safe_mod.
+//
+// Each clamp case is picked so that wrapping gives a different answer. The
+// `wrap` cases are negative controls: a fix that clamped every chain whatever
+// its operands' modifier would pass the clamp cases alone.
+
+u32 productThenDivide(u32 x, u32 o, u32 e) {
+    return x * o / e;
+}
+
+u32 productThenModulo(u32 x, u32 o, u32 e) {
+    return x * o % e;
+}
+
+u32 divideThenProduct(u32 x, u32 e, u32 o) {
+    return x / e * o;
+}
+
+u32 divideBetweenProducts(u32 x, u32 o, u32 e) {
+    return x * o / e * o;
+}
+
+u8 narrowProducts(u8 a, u8 b, u8 c, u8 d) {
+    return a * b * c / d;
+}
+
+i32 signedProductThenDivide(i32 a, i32 b, i32 c) {
+    return a * b / c;
+}
+
+u32 wrapProductThenDivide(u32 x, u32 o, u32 e) {
+    wrap u32 wx <- x;
+    wrap u32 wf <- o;
+    wrap u32 wd <- e;
+    return wx * wf / wd;
+}
+
+i32 identity(i32 v) {
+    return v;
+}
+
+i32 quotientOf(i32 n, i32 d) {
+    return n / d;
+}
+
+i32 remainderOf(i32 n, i32 d) {
+    return n % d;
+}
+
+i32 wrapQuotient(i32 n, i32 d) {
+    wrap i32 wn <- n;
+    wrap i32 wd <- d;
+    return wn / wd;
+}
+
+i32 wrapRemainder(i32 n, i32 d) {
+    wrap i32 wn <- n;
+    wrap i32 wd <- d;
+    return wn % wd;
+}
+
+i32 compoundQuotient(i32 n, i32 d) {
+    mut i32 q <- n;
+    q /<- d;
+    return q;
+}
+
+i32 compoundRemainder(i32 n, i32 d) {
+    mut i32 r <- n;
+    r %<- d;
+    return r;
+}
+
+i32 wrapCompoundQuotient(i32 n, i32 d) {
+    mut wrap i32 q <- n;
+    q /<- d;
+    return q;
+}
+
+i8 narrowQuotient(i8 n, i8 d) {
+    return n / d;
+}
+
+i64 wideQuotient(i64 n, i64 d) {
+    return n / d;
+}
+
+i64 wrapWideQuotient(i64 n, i64 d) {
+    wrap i64 wn <- n;
+    wrap i64 wd <- d;
+    return wn / wd;
+}
+
+// safe_div and safe_mod report false: the divisor was not zero
+i32 safeQuotient(i32 n, i32 d) {
+    mut i32 q <- 0;
+    bool failed <- safe_div(q, n, d, 7);
+    if (failed = true) {
+        return -1;
+    }
+    return q;
+}
+
+i32 wrapSafeQuotient(i32 n, i32 d) {
+    wrap i32 wn <- n;
+    wrap i32 wd <- d;
+    mut wrap i32 q <- 0;
+    bool failed <- safe_div(q, wn, wd, 7);
+    if (failed = true) {
+        return -1;
+    }
+    return q;
+}
+
+i32 safeRemainder(i32 n, i32 d) {
+    mut i32 r <- 1;
+    bool failed <- safe_mod(r, n, d, 7);
+    if (failed = true) {
+        return -1;
+    }
+    return r;
+}
+
+u32 main() {
+    // 4000000000 * 2 saturates to 4294967295, then / 2
+    u32 r1 <- productThenDivide(4000000000, 2, 2);
+    if (r1 != 2147483647) {
+        return 1;
+    }
+    // 4294967295 % 10; the wrapped product 3705032704 % 10 is 4
+    u32 r2 <- productThenModulo(4000000000, 2, 10);
+    if (r2 != 5) {
+        return 2;
+    }
+    // 4000000000 / 1 * 2 saturates
+    u32 r3 <- divideThenProduct(4000000000, 1, 2);
+    if (r3 != 4294967295) {
+        return 3;
+    }
+    // (4294967295 / 2) * 2 = 4294967294; both products saturate
+    u32 r4 <- divideBetweenProducts(4000000000, 2, 2);
+    if (r4 != 4294967294) {
+        return 4;
+    }
+    // u8: 200 * 2 saturates to 255, * 2 stays 255, / 5 is 51
+    u8 r5 <- narrowProducts(200, 2, 2, 5);
+    if (r5 != 51) {
+        return 5;
+    }
+    // i32: 2000000000 * 2 saturates to 2147483647, / 2
+    i32 r6 <- signedProductThenDivide(2000000000, 2, 2);
+    if (r6 != 1073741823) {
+        return 6;
+    }
+    // i32: -2000000000 * 2 saturates to -2147483648, / 2
+    i32 r7 <- signedProductThenDivide(-2000000000, 2, 2);
+    if (r7 != -1073741824) {
+        return 7;
+    }
+    // wrap: 4000000000 * 2 wraps to 3705032704, / 2
+    u32 r8 <- wrapProductThenDivide(4000000000, 2, 2);
+    if (r8 != 1852516352) {
+        return 8;
+    }
+    // A chain with no overflow is unchanged by saturation
+    u32 r9 <- productThenDivide(6, 7, 3);
+    if (r9 != 14) {
+        return 9;
+    }
+    // The product saturates to MIN, and MIN / -1 then saturates to MAX
+    i32 r10 <- signedProductThenDivide(-2000000000, 2, -1);
+    if (r10 != 2147483647) {
+        return 10;
+    }
+    i32 r11 <- quotientOf(-2147483647 - 1, -1);
+    if (r11 != 2147483647) {
+        return 11;
+    }
+    i32 r12 <- remainderOf(-2147483647 - 1, -1);
+    if (r12 != 0) {
+        return 12;
+    }
+    i32 r13 <- wrapQuotient(-2147483647 - 1, -1);
+    if (r13 != -2147483647 - 1) {
+        return 13;
+    }
+    i32 r14 <- wrapRemainder(-2147483647 - 1, -1);
+    if (r14 != 0) {
+        return 14;
+    }
+    i32 r15 <- compoundQuotient(-2147483647 - 1, -1);
+    if (r15 != 2147483647) {
+        return 15;
+    }
+    i32 r16 <- compoundRemainder(-2147483647 - 1, -1);
+    if (r16 != 0) {
+        return 16;
+    }
+    i32 r17 <- wrapCompoundQuotient(-2147483647 - 1, -1);
+    if (r17 != -2147483647 - 1) {
+        return 17;
+    }
+    // i8 divides in int, where -128 / -1 is 128; clamp brings it to 127
+    i8 r18 <- narrowQuotient(-127 - 1, -1);
+    if (r18 != 127) {
+        return 18;
+    }
+    i64 r19 <- wideQuotient(-9223372036854775807 - 1, -1);
+    if (r19 != 9223372036854775807) {
+        return 19;
+    }
+    i64 r20 <- wrapWideQuotient(-9223372036854775807 - 1, -1);
+    if (r20 != -9223372036854775807 - 1) {
+        return 20;
+    }
+    i32 r21 <- safeQuotient(-2147483647 - 1, -1);
+    if (r21 != 2147483647) {
+        return 21;
+    }
+    i32 r22 <- wrapSafeQuotient(-2147483647 - 1, -1);
+    if (r22 != -2147483647 - 1) {
+        return 22;
+    }
+    i32 r23 <- safeRemainder(-2147483647 - 1, -1);
+    if (r23 != 0) {
+        return 23;
+    }
+    // A zero divisor is still ADR-051's: safe_div writes its default
+    i32 r24 <- safeQuotient(5, 0);
+    if (r24 != -1) {
+        return 24;
+    }
+    // The same quotient in a declaration, an argument and a condition
+    i32 low <- identity(-2147483647 - 1);
+    i32 minusOne <- identity(-1);
+    i32 inDeclaration <- low / minusOne;
+    if (inDeclaration != 2147483647) {
+        return 25;
+    }
+    i32 inArgument <- identity(low / minusOne);
+    if (inArgument != 2147483647) {
+        return 26;
+    }
+    if (low / minusOne != 2147483647) {
+        return 27;
+    }
+    // An ordinary quotient and remainder are unchanged
+    i32 r28 <- quotientOf(-7, 2);
+    if (r28 != -3) {
+        return 28;
+    }
+    i32 r29 <- remainderOf(-7, 2);
+    if (r29 != -1) {
+        return 29;
+    }
+    return 0;
+}

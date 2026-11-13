@@ -72,10 +72,34 @@ describe("PlannedRequirements", () => {
     expect(requirements.requires("limits")).toBe(true);
   });
 
-  it("keys a safe division by its operation and type", () => {
+  it("keys a safe division by its name", () => {
     const requirements = new PlannedRequirements("a.cnx");
-    requirements.safeDivision("mod", "i16");
-    expect([...requirements.safeDivisions]).toEqual(["mod_i16"]);
+    const helper = {
+      name: "cnx_safe_mod_i16",
+      operation: "mod" as const,
+      cnxType: "i16",
+      inner: "cnx_clamp_mod_i16",
+    };
+    requirements.safeDivision(helper);
+    expect([...requirements.safeDivisions.values()]).toEqual([helper]);
+  });
+
+  it("keys an overflow helper within its family (#1790)", () => {
+    const requirements = new PlannedRequirements("a.cnx");
+    requirements.overflowHelper({
+      name: "cnx_clamp_mul_u8",
+      behavior: "clamp",
+      operation: "mul",
+      cnxType: "u8",
+    });
+    requirements.overflowHelper({
+      name: "cnx_wrap_div_i32",
+      behavior: "wrap",
+      operation: "div",
+      cnxType: "i32",
+    });
+    expect([...requirements.clampHelpers]).toEqual(["mul_u8"]);
+    expect([...requirements.wrapHelpers]).toEqual(["div_i32"]);
   });
 
   it("notes the LDREX/STREX loop and its site", () => {

@@ -31,7 +31,7 @@ function handleAtomicRMW(ctx: IAssignmentContext): string {
     ctx.generatedValue,
     // #1179: the value 2.2 found atomic, however the target spells it
     atomic,
-    AssignmentClassifier.compoundClamp(ctx)?.operation ?? null,
+    AssignmentClassifier.compoundClamp(ctx)?.name ?? null,
   );
 }
 
@@ -41,7 +41,7 @@ const HOISTED_CLAMP_ANNOTATION =
 /**
  * Handle overflow-clamped compound assignment: clamp u8 saturated +<- 200
  *
- * Generates calls to cnx_clamp_add_u8, cnx_clamp_sub_u8, etc. Classified only
+ * Generates calls to cnx_clamp_add_u8, cnx_wrap_div_i32, etc. Classified only
  * when `AssignmentClassifier.compoundClamp` names a helper.
  */
 function handleOverflowClamp(ctx: IAssignmentContext): string {
@@ -54,7 +54,7 @@ function handleOverflowClamp(ctx: IAssignmentContext): string {
   // which reaches a different decision and would otherwise leave every
   // compound-only fixture without a derivable context.
   AdrProvenance.record("044", ctx.targetLine);
-  const helper = `cnx_clamp_${clamp.operation}_${clamp.cnxType}`;
+  const helper = clamp.name;
   if (!ctx.targetIndexHasSideEffect) {
     return `${target} = ${helper}(${target}, ${ctx.generatedValue});`;
   }

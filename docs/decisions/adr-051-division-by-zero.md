@@ -419,6 +419,10 @@ bool cnx_safe_div_u32(uint32_t* output, uint32_t numerator, uint32_t divisor, ui
 
 **Type variants:** Generated for all integer types: `u8`, `u16`, `u32`, `u64`, `i8`, `i16`, `i32`, `i64`
 
+**Signed overflow:** a signed `MIN / -1` is not a zero divisor, so `safe_div` and `safe_mod`
+return `false` and write what `/` and `%` give, as decided in ADR-044 (#1790): the type's MAX for
+`clamp`, its MIN for `wrap`, and 0 for the remainder.
+
 **Use case:** Safety-critical calculations where the extra check is worth the cost and a sensible default exists.
 
 ---

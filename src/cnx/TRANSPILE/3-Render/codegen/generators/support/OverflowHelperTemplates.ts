@@ -11,6 +11,7 @@
 import ClampTypes from "../../../../2-Plan/ClampTypes";
 import type IClampTypeInfo from "../../../../2-Plan/types/IClampTypeInfo";
 import ReservedCnxName from "../../../../../utils/ReservedCnxName";
+import type TOverflowBehavior from "../../../../../types/TOverflowBehavior";
 
 // C newline escape for generated fprintf statements (S7780: use raw string)
 const C_NEWLINE = String.raw`\n`;
@@ -22,9 +23,10 @@ function generateSignature(
   operation: string,
   info: IClampTypeInfo,
   bParamType?: string,
+  behavior: TOverflowBehavior = "clamp",
 ): string {
   const paramB = bParamType ?? info.cType;
-  return `static inline ${info.cType} ${ReservedCnxName.clampHelper(operation, info.cnxType)}(${info.cType} a, ${paramB} b)`;
+  return `static inline ${info.cType} ${ReservedCnxName.overflowHelper(behavior, operation, info.cnxType)}(${info.cType} a, ${paramB} b)`;
 }
 
 /**
@@ -40,7 +42,11 @@ const OPERATION_NAMES: Record<string, string> = {
   add: "addition",
   sub: "subtraction",
   mul: "multiplication",
+  div: "division",
 };
+
+const MIN_BY_MINUS_ONE_COMMENT =
+  "    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */";
 
 /**
  * Templates for unsigned clamp operations.
@@ -269,9 +275,63 @@ ${generatePanicBlock(info.cnxType, opName)}
 }
 
 /**
+ * ADR-044 (#1790): a signed `/` and `%`, the one case of each that overflows
+ * being `MIN / -1`. `clamp` gives MAX, `wrap` gives MIN, and the remainder is
+ * 0 under either. A type narrower than i64 divides in its wider type, where
+ * the quotient cannot overflow; i64 has none wider, so tests the case.
+ */
+class SignedDivisionTemplates {
+  static div(
+    info: IClampTypeInfo,
+    behavior: TOverflowBehavior,
+    debugMode: boolean,
+  ): string {
+    const onOverflow =
+      behavior === "wrap"
+        ? `return ${info.minValue};`
+        : debugMode
+          ? `{
+${generatePanicBlock(info.cnxType, OPERATION_NAMES.div)}
+    }`
+          : `return ${info.maxValue};`;
+    if (info.useWiderArithmetic) {
+      const sig = generateSignature("div", info, info.widerType, behavior);
+      return `${sig} {
+${MIN_BY_MINUS_ONE_COMMENT}
+    ${info.widerType} result = (${info.widerType})a / b;
+    if (result > ${info.maxValue}) ${onOverflow}
+    return (${info.cType})result;
+}`;
+    }
+    const sig = generateSignature("div", info, undefined, behavior);
+    return `${sig} {
+${MIN_BY_MINUS_ONE_COMMENT}
+    if (b == -1 && a == ${info.minValue}) ${onOverflow}
+    return a / b;
+}`;
+  }
+
+  static mod(info: IClampTypeInfo, behavior: TOverflowBehavior): string {
+    if (info.useWiderArithmetic) {
+      const sig = generateSignature("mod", info, info.widerType, behavior);
+      return `${sig} {
+${MIN_BY_MINUS_ONE_COMMENT}
+    return (${info.cType})((${info.widerType})a % b);
+}`;
+    }
+    const sig = generateSignature("mod", info, undefined, behavior);
+    return `${sig} {
+${MIN_BY_MINUS_ONE_COMMENT}
+    if (b == -1) return 0;
+    return a % b;
+}`;
+  }
+}
+
+/**
  * Generate an overflow helper function for the given operation and type
  *
- * @param operation - The arithmetic operation (add, sub, mul)
+ * @param operation - The arithmetic operation (add, sub, mul, div, mod)
  * @param cnxType - The cnx type (u8, i32, etc.)
  * @param debugMode - If true, generate panic helpers; otherwise, clamp helpers
  * @returns The generated helper function or null if type is invalid
@@ -280,9 +340,20 @@ function generateHelper(
   operation: string,
   cnxType: string,
   debugMode: boolean,
+  behavior: TOverflowBehavior = "clamp",
 ): string | null {
   const info = ClampTypes.resolve(cnxType);
   if (!info) {
+    return null;
+  }
+
+  if (!info.isUnsigned && operation === "div") {
+    return SignedDivisionTemplates.div(info, behavior, debugMode);
+  }
+  if (!info.isUnsigned && operation === "mod") {
+    return SignedDivisionTemplates.mod(info, behavior);
+  }
+  if (behavior === "wrap") {
     return null;
   }
 
@@ -336,6 +407,14 @@ class OverflowHelperTemplates {
     cnxType: string,
   ): string | null {
     return generateHelper(operation, cnxType, false);
+  }
+
+  /**
+   * ADR-044 (#1790): a `wrap` helper, the two's-complement result where C
+   * leaves it undefined. It never panics: wrapping is what was asked for.
+   */
+  static generateWrapHelper(operation: string, cnxType: string): string | null {
+    return generateHelper(operation, cnxType, false, "wrap");
   }
 
   /**

@@ -52,7 +52,7 @@ import OperandTyper from "../../utils/OperandTyper";
 import EssentialCategory from "../../utils/EssentialCategory";
 import ComparisonChain from "../../utils/ComparisonChain";
 import CompoundOperator from "../../utils/CompoundOperator";
-import CLAMP_HELPER_FOR_OPERATOR from "../../types/CLAMP_HELPER_FOR_OPERATOR";
+import OverflowOperation from "../../utils/OverflowOperation";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import type TBinaryOperatorLevel from "./types/TBinaryOperatorLevel";
 import type IOperandType from "../../types/IOperandType";
@@ -405,7 +405,12 @@ class MixedTypeCategoryAnalyzer {
       left === EssentialCategory.UNREADABLE_MACRO ||
       right === EssentialCategory.UNREADABLE_MACRO
     ) {
-      this.addUnreadableMacroError(span, what, operator);
+      this.addUnreadableMacroError(
+        span,
+        what,
+        operator,
+        left === "signed" || right === "signed",
+      );
       return;
     }
     const integer = (c: string) => c === "signed" || c === "unsigned";
@@ -451,12 +456,15 @@ class MixedTypeCategoryAnalyzer {
     span: ISourceSpan,
     what: TOperatorSite,
     operator: string | undefined,
+    signed: boolean,
   ): void {
-    // An operator that hands an integer operand to a clamp helper (ADR-044)
-    // makes an unreadable macro beside it E0811; any other makes it E0812
+    // An operator that hands an integer operand to an overflow helper
+    // (ADR-044) makes an unreadable macro beside it E0811; any other makes it
+    // E0812. The modifier is not known here, so it is the default `clamp`;
+    // a signed `/` or `%` calls a helper under either (#1790).
     const clamped =
       operator !== undefined &&
-      CLAMP_HELPER_FOR_OPERATOR[operator] !== undefined;
+      OverflowOperation.of(operator, signed, "clamp") !== undefined;
     const why = clamped
       ? "this operator would hand it to an integer clamp helper untyped"
       : "C's usual arithmetic conversions decide this result from the type it really has, which can change a comparison, a bit operation or a quotient (an unsigned 3 < -1 is true)";

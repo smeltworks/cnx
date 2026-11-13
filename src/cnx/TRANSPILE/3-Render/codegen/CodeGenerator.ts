@@ -725,14 +725,14 @@ export default class CodeGenerator implements IOrchestrator {
     cOp: string,
     value: string,
     atomic: IPlannedAtomic,
-    clampOp: string | null,
+    clampHelper: string | null,
   ): string {
     const result = atomicGenerators.generateAtomicRMW(
       target,
       cOp,
       value,
       atomic,
-      clampOp,
+      clampHelper,
     );
     this.applyEffects(result.effects);
     return result.code;
