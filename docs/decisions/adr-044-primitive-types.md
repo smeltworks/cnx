@@ -470,6 +470,14 @@ That is what makes a bounds guard trustworthy when one of its terms can
 saturate -- see #231, where an unclamped `offset + length` wrapped past a guard
 and wrote out of bounds.
 
+**A C value counts for neither.** An operand that comes from a C header -- a
+function's result, a variable, a macro -- has no `clamp` or `wrap`, so it does
+not count, and a literal counts no more than one does. An expression with no
+counted operand keeps C's semantics: `largest() + one()`, two header functions
+returning `INT32_MAX` and `1`, is C's signed overflow, as it is in C
+_([owner ruling](https://github.com/smeltworks/cnx/issues/2409#issuecomment-6859549254), #2409)_.
+`safe_div` and `safe_mod` follow it (ADR-051).
+
 Applies to every `+`, `-` and `*`, wherever it stands in an expression. In a
 chain that mixes them with `/` or `%`, each `+`, `-` and `*` saturates where it
 stands; an unsigned `/` or `%` is ordinary C, and a signed one follows the rule below (#1790):

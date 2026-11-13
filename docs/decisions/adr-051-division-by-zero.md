@@ -425,6 +425,11 @@ return `false` and write what `/` and `%` give, as decided in ADR-044 (#1790): t
 Under `--debug` a `MIN / -1` panics here under either modifier (#2408), as every overflow does in ADR-044
 ([owner ruling](https://github.com/smeltworks/cnx/issues/1790#issuecomment-6854471224), #1790); a zero divisor still
 returns `true` and writes the default.
+With no counted operand -- the numerator and divisor are C header values or literals
+(ADR-044, "A C value counts for neither") -- the quotient is C's own `/` and `%`, as it is
+outside `safe_div`; a signed one is written through `cnx_safe_plain_div_*` or `cnx_safe_plain_mod_*`
+([owner ruling](https://github.com/smeltworks/cnx/issues/2409#issuecomment-6859549254), #2409);
+a zero divisor still returns `true` and writes the default.
 
 **Use case:** Safety-critical calculations where the extra check is worth the cost and a sensible default exists.
 

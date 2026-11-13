@@ -1,0 +1,67 @@
+// test-execution
+// test-adr: 044
+// #2409: arithmetic whose only non-literal operands are C header values
+// keeps C's semantics, so `foreign_seven() / foreign_two()` is plain `/`.
+// `safe_div` and `safe_mod` over the same operands follow it: a zero
+// divisor still gives the default, any other divides as plain C, through
+// `cnx_safe_plain_*` rather than ADR-044's helper. A counted operand in the
+// same file keeps the clamp helper, under its own name.
+#include "header_values.h"
+
+i32 plainQuotient() {
+    return foreign_seven() / foreign_two();
+}
+
+i32 plainSum() {
+    return foreign_seven() + foreign_two();
+}
+
+u32 main() {
+    i32 q <- plainQuotient();
+    if (q != 3) {
+        return 1;
+    }
+    i32 s <- plainSum();
+    if (s != 9) {
+        return 2;
+    }
+
+    mut i32 sq <- 0;
+    bool divFailed <- safe_div(sq, foreign_seven(), foreign_two(), 99);
+    if (divFailed != false) {
+        return 3;
+    }
+    if (sq != 3) {
+        return 4;
+    }
+
+    mut i32 sr <- 0;
+    bool modFailed <- safe_mod(sr, foreign_seven(), foreign_two(), 99);
+    if (modFailed != false) {
+        return 5;
+    }
+    if (sr != 1) {
+        return 6;
+    }
+
+    mut i32 sz <- 0;
+    bool zeroFailed <- safe_div(sz, foreign_seven(), foreign_zero(), 99);
+    if (zeroFailed != true) {
+        return 7;
+    }
+    if (sz != 99) {
+        return 8;
+    }
+
+    // CONTROL: a counted numerator divides through ADR-044's clamp helper
+    i32 low <- plainQuotient() - 3 - 2147483647 - 1;
+    mut i32 cq <- 0;
+    bool countedFailed <- safe_div(cq, low, -1, 99);
+    if (countedFailed != false) {
+        return 9;
+    }
+    if (cq != 2147483647) {
+        return 10;
+    }
+    return 0;
+}

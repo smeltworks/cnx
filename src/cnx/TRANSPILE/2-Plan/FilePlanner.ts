@@ -607,21 +607,25 @@ class FilePlanner {
       invariant(cnxType != null, `${call.name}'s output argument is typed`);
       // #1790: a signed quotient divides through ADR-044's helper, whose
       // modifier the numerator and divisor pick as they do for `/`; with
-      // neither counted, the default `clamp` (#2409 asks whether it should be)
+      // neither counted, it is plain C, as `/` is (#2409)
       const operation = SafeDivision.operationOf(call.name);
-      const inner = OverflowHelper.of(
-        OverflowBehaviorUtils.ofLeaves(
-          call.args
-            .slice(1, 3)
-            .flatMap((arg) => OperandTyper.valueLeaves(arg, typing)),
-        ) ?? "clamp",
-        operation === "div" ? "/" : "%",
-        cnxType,
-        // One helper body serves every call with its name, so the MIN / -1
-        // guard cannot depend on this call's divisor (#1790 review)
-        null,
-        state.debugMode,
+      const behavior = OverflowBehaviorUtils.ofLeaves(
+        call.args
+          .slice(1, 3)
+          .flatMap((arg) => OperandTyper.valueLeaves(arg, typing)),
       );
+      const inner =
+        behavior === null
+          ? null
+          : OverflowHelper.of(
+              behavior,
+              operation === "div" ? "/" : "%",
+              cnxType,
+              // One helper body serves every call with its name, so the
+              // MIN / -1 guard cannot depend on this call's divisor (#1790)
+              null,
+              state.debugMode,
+            );
       const name = CallExprUtils.generateSafeDivModHelperName(
         call.name,
         cnxType,
