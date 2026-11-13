@@ -1,0 +1,24 @@
+// Issue #1209: functions returning a string and an array, declared one
+// include hop from the fixture that calls them.
+string<16> sharedName() {
+    string<16> s <- "shared";
+    return s;
+}
+
+u8[4] sharedBytes() {
+    u8[4] a <- [4, 3, 2, 1];
+    return a;
+}
+
+scope Store {
+    string<16> label <- "store";
+    u8[4] bytes <- [9, 8, 7, 6];
+
+    public string<16> name() {
+        return this.label;
+    }
+
+    public u8[4] data() {
+        return this.bytes;
+    }
+}

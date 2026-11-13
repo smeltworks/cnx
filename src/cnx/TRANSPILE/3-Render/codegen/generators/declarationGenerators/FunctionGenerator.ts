@@ -82,7 +82,13 @@ const generateFunction: TGeneratorFn<IPlannedFunction> = (
   const moveComments = orchestrator.movedParameterComments();
   orchestrator.exitFunctionContext();
 
-  const functionCode = `${moveComments}${actualReturnType} ${name}(${params}) ${body}\n`;
+  // #1209: a `string<N>` or array return fills the caller's buffer
+  const signature = FunctionContextManager.withReturnBuffer(
+    actualReturnType,
+    params,
+    planned.returnBuffer,
+  );
+  const functionCode = `${moveComments}${signature.returnType} ${name}(${signature.params}) ${body}\n`;
 
   orchestrator.recordCallbackTypedef(name);
 

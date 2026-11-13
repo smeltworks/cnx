@@ -360,7 +360,18 @@ string<64> result <- first + second; // OK: 64 >= 32 + 32
 
 // Substring extraction with bounds checking
 string<5> greeting <- name[0, 5]; // First 5 chars
+
+// Returning a string: the caller supplies the buffer (#1209)
+string<16> greet() {
+    string<16> s <- "hi";
+    return s; // void greet(char cnx_return[17]) { cnx_string_copy(cnx_return, s, 16U); }
+}
 ```
+
+A function returning `string<N>` or an array takes a buffer from its caller
+and copies its result in, since C returns neither, so returning a local is
+safe. Arrays are values: another array of the same shape is copied element by
+element into a declaration, an assignment, a field or an argument (ADR-035).
 
 All operations are validated at compile time:
 

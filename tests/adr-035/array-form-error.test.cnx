@@ -7,7 +7,9 @@
 // array-init-error.test.cnx.
 //
 // #1322 closed the first hole: an array initialized from another array
-// reached C as `uint8_t b[2] = a;`.
+// reached C as `uint8_t b[2] = a;`. #1209 (2026-11-13): inside a function
+// one of the same shape is copied in, element by element, so those are
+// negative controls now.
 
 // NEGATIVE CONTROLS -- a list, a fill-all with a size, a string literal into
 // a u8 array.
@@ -20,10 +22,9 @@ u8[] fillInferred <- [0*];
 
 void main() {
     u8[2] a <- [1, 2];
-    // ASSERTION 2 -- initialized from another array.
+    // NEGATIVE CONTROL (#1209) -- initialized from another array.
     u8[2] copy <- a;
-    // ASSERTION 3 -- a string array from a variable: the same non-list rule
-    // (it was ADR-045's arm of E0866 before the count was made one rule).
+    // NEGATIVE CONTROL (#1209) -- a string array from a variable.
     string<8>[2] names <- ["a", "b"];
     string<8>[2] namesCopy <- names;
 }

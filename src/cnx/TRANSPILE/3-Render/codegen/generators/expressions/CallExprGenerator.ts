@@ -67,14 +67,17 @@ const generateFunctionCall = (
   args: readonly IPlannedCallArgument[] | null,
   _state: IGeneratorState,
   safeDivisionHelper: string | null = null,
+  returnBuffer: string | null = null,
 ): IGeneratorOutput => {
   const effects: TGeneratorEffect[] = [];
+  // #1209: the buffer a `string<N>` or array return fills comes first
+  const lead = returnBuffer === null ? [] : [returnBuffer];
 
   // Empty function call. This test stays FIRST: a `safe_div` written with no
   // argument list emits `safe_div()` here, BEFORE the four-argument invariant
   // below can fire.
   if (!args) {
-    return { code: `${funcExpr}()`, effects };
+    return { code: `${funcExpr}(${lead.join(", ")})`, effects };
   }
 
   // ADR-051: 2.2 planned this call as a safe_div()/safe_mod() helper
@@ -88,30 +91,27 @@ const generateFunctionCall = (
 
   // Issue #992: 2.2 plans a struct initializer in an argument as a compound
   // literal (#1991).
-  const rendered = args
-    .map((arg) => {
-      // 2.2 decided how the argument binds and is passed (#1991)
-      const passing = arg.planned.passing;
+  const rendered = args.map((arg) => {
+    // 2.2 decided how the argument binds and is passed (#1991)
+    const passing = arg.planned.passing;
 
-      // C/C++ function: use pass-by-value semantics
-      if (passing.mode === "c") {
-        return _generateCFunctionArg(arg);
-      }
+    // C/C++ function: use pass-by-value semantics
+    if (passing.mode === "c") {
+      return _generateCFunctionArg(arg);
+    }
 
-      // cnx function: check if target parameter should be passed by value
-      if (passing.mode === "value") {
-        // Issue #872: 2.2 plans it against the parameter's type, with bare
-        // enum resolution suppressed (#1991)
-        const argCode = arg.render();
-        return wrapWithCppEnumCast(argCode, arg);
-      }
+    // cnx function: check if target parameter should be passed by value
+    if (passing.mode === "value") {
+      // Issue #872: 2.2 plans it against the parameter's type, with bare
+      // enum resolution suppressed (#1991)
+      const argCode = arg.render();
+      return wrapWithCppEnumCast(argCode, arg);
+    }
 
-      // Target parameter is pass-by-reference: use & logic
-      return arg.renderByReference();
-    })
-    .join(", ");
-
-  return { code: `${funcExpr}(${rendered})`, effects };
+    // Target parameter is pass-by-reference: use & logic
+    return arg.renderByReference();
+  });
+  return { code: `${funcExpr}(${[...lead, ...rendered].join(", ")})`, effects };
 };
 
 /**

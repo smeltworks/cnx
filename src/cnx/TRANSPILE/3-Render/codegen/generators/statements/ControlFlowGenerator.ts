@@ -64,6 +64,11 @@ const generateReturn = (
     return { code: "return;", effects };
   }
 
+  // #1209: a `string<N>` or array is written into the caller's buffer
+  if (plan.kind === "buffer") {
+    return { code: [...plan.renderWrite(), "return;"].join("\n"), effects };
+  }
+
   // Issue #477 / #1277: a `return` expression is written against the
   // function's declared return type, for EVERY return, not only an enum one.
   // 2.2 planned it (#1991), so `return { x: 1, y: 2 };` takes its struct and

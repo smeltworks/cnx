@@ -8,6 +8,7 @@
 
 import invariant from "../../../utils/invariant";
 import headerCType from "../../../utils/headerCType";
+import FunctionContextManager from "../codegen/helpers/FunctionContextManager";
 import IHeaderSymbol from "./types/IHeaderSymbol";
 import IParameterSymbol from "../../../utils/types/IParameterSymbol";
 import IHeaderOptions from "../codegen/types/IHeaderOptions";
@@ -323,7 +324,13 @@ abstract class BaseHeaderGenerator {
       params = translatedParams.join(", ");
     }
 
-    return `${returnType} ${sym.name}(${params});`;
+    // #1209: a `string<N>` or array return fills the caller's buffer
+    const signature = FunctionContextManager.withReturnBuffer(
+      returnType,
+      params,
+      sym.returnBuffer ?? null,
+    );
+    return `${signature.returnType} ${sym.name}(${signature.params});`;
   }
 
   /**

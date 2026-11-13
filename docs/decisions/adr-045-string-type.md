@@ -570,6 +570,37 @@ Transpiles to:
 char names[10][33];  // 32 + 1 for null terminator each
 ```
 
+### Returning a String (owner ruling, 2026-11-13, #1209)
+
+C cannot return an array, and a pointer to a local outlives nothing, so a
+function that returns `string<N>` takes its caller's buffer instead. The
+buffer outlives the call, so a local, a module variable and a scope member are
+all safe to return, and the copy is bounded:
+
+```cnx
+string<16> greet() {
+    string<16> s <- "hi";
+    return s;
+}
+string<32> b <- greet() + "!";
+```
+
+```c
+void greet(char cnx_return[17]) {
+    const char s[17] = "hi";
+    cnx_string_copy(cnx_return, s, 16U);
+    return;
+}
+```
+
+A call fills a temporary of the return type, which is then copied into a
+declaration or an assignment, concatenated, or passed as an argument. Nothing
+is filled in place, so `c <- twice(c)` cannot build into `c` while still
+reading it. The header declares `void greet(char cnx_return[17]);`, so a C
+caller passes the buffer. This had emitted `char[17] greet(void);`, which is
+not C. ADR-035 gives an array return the same lowering. Fixtures:
+`tests/bugs/issue-1209-string-array-return/`.
+
 ### A `for` Header (ADR-036)
 
 A `for` header declares one scalar loop variable, and a string is a `char`

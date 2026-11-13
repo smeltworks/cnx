@@ -35,6 +35,8 @@ type TPlannedScopeMember = {
       readonly fullName: string;
       readonly isPrivate: boolean;
       readonly renderReturnType: () => string;
+      /** #1209: the buffer a `string<N>` or array return fills, or null */
+      readonly renderReturnBuffer: () => string | null;
       /** Null when the declaration takes no parameters -- what `enterFunctionContext` expects. */
       readonly planParameters: () =>
         | readonly IPlannedFunctionParameter[]

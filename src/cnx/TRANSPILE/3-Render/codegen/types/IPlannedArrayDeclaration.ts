@@ -47,6 +47,18 @@ interface IPlannedArrayDeclaration {
 
   /** Null when the declaration has no initializer. */
   readonly init: IPlannedArrayInitializer | null;
+
+  /**
+   * #1209: initialized from another array -- a variable, a field, a call --
+   * which C cannot write as an initializer, so the declaration is zeroed and
+   * then copied into element by element. Null for a list or a string.
+   */
+  readonly copy: IPlannedArrayCopy | null;
+}
+
+interface IPlannedArrayCopy {
+  readonly dimensions: ReadonlyArray<number | string>;
+  readonly renderSource: () => string;
 }
 
 /**

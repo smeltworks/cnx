@@ -1,0 +1,32 @@
+// test-execution
+// Issue #1209: a string and an array returned across an include, and from a
+// scope's methods, fill the caller's buffer.
+#include "shared-returns.cnx"
+
+u32 main() {
+    string<16> n <- sharedName();
+    if (n != "shared") {
+        return 1;
+    }
+    u8[4] b <- sharedBytes();
+    if (b[0] != 4) {
+        return 2;
+    }
+    string<16> s <- Store.name();
+    if (s != "store") {
+        return 3;
+    }
+    u8[4] d <- Store.data();
+    if (d[3] != 6) {
+        return 4;
+    }
+    u8 second <- Store.data()[1];
+    if (second != 8) {
+        return 5;
+    }
+    string<32> joined <- sharedName() + Store.name();
+    if (joined != "sharedstore") {
+        return 6;
+    }
+    return 0;
+}

@@ -206,6 +206,37 @@ class ArrayInitHelper {
     return `static_cast<${type}&>(${type}${init})`;
   }
 
+  /**
+   * C has no array assignment, so a whole array is copied element by element
+   * (#1782): into an assignment's target, and into the caller's buffer a
+   * function returning an array fills (#1209).
+   */
+  static elementCopy(
+    target: string,
+    source: string,
+    dimensions: ReadonlyArray<number | string>,
+    state: TranspileState,
+  ): string[] {
+    const lines: string[] = [];
+    const indexes = dimensions.map(() => state.getNextTempVarName());
+    const subscripts = indexes.map((index) => `[${index}]`).join("");
+    dimensions.forEach((size, depth) => {
+      const index = indexes[depth];
+      const bound = typeof size === "number" ? `${size}U` : size;
+      lines.push(
+        `${"    ".repeat(depth)}for (uint32_t ${index} = 0U; ${index} < ${bound}; ${index}++) {`,
+      );
+    });
+    const depth = dimensions.length;
+    lines.push(
+      `${"    ".repeat(depth)}${target}${subscripts} = ${source}${subscripts};`,
+    );
+    for (let level = depth - 1; level >= 0; level--) {
+      lines.push(`${"    ".repeat(level)}}`);
+    }
+    return lines;
+  }
+
   private static shapeOf(array: IPlannedWholeArrayWrite): string {
     return array.dimensions.map((size) => `[${size}]`).join("");
   }

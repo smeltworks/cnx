@@ -39,6 +39,7 @@
 import IGeneratorInput from "../IGeneratorInput";
 import IGeneratorState from "../IGeneratorState";
 import IGeneratorOutput from "../IGeneratorOutput";
+import FunctionContextManager from "../../helpers/FunctionContextManager";
 import IOrchestrator from "../IOrchestrator";
 import IPlannedScope from "../../types/IPlannedScope";
 import TGeneratorFn from "../TGeneratorFn";
@@ -229,10 +230,16 @@ function renderScopeFunction(
 
   orchestrator.exitFunctionContext();
 
+  // #1209: a `string<N>` or array return fills the caller's buffer
+  const signature = FunctionContextManager.withReturnBuffer(
+    returnType,
+    params,
+    plan.renderReturnBuffer(),
+  );
   const lines: string[] = [];
   lines.push(
     "",
-    `${moveComments}${prefix}${returnType} ${plan.fullName}(${params}) ${body}`,
+    `${moveComments}${prefix}${signature.returnType} ${plan.fullName}(${signature.params}) ${body}`,
   );
 
   // ADR-029: Generate callback typedef only if used as a type

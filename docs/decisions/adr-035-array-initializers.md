@@ -223,14 +223,15 @@ The count is checked at every nesting level against the dimension it fills:
 only the outer list was counted, and the inner excess reached the generated C.
 A string literal is the one non-list initializer accepted, and only for a `u8`
 array (see "String Initialization" above); an array initialized from another
-array is rejected, since C has no such initializer and the generated code did
-not compile. Each rule is decided during analysis, at the initializer's own
+array at file scope is rejected, since C has no such initializer and the
+generated code did not compile. Inside a function another array is accepted
+and copied (see "Arrays Are Values" below). Each rule is decided during analysis, at the initializer's own
 position, and every offense in a file is reported.
 
 The same rules hold for an array assigned a whole value (`a <- [1, 2]`), since
 ADR-014 makes the list the whole value at an assignment target and at a field
-as well (#1782). Another array, a scalar, or a list of the wrong length there
-is E0866. These had been emitted as a C array assignment (`a = b;`,
+as well (#1782). A scalar, a list of the wrong length, or an array of another
+shape there is E0866. These had been emitted as a C array assignment (`a = b;`,
 `a = {1U, 2U};`), which C rejects, at exit 0. An accepted list cannot be
 assigned in C either, so it fills a temporary of the target's own type, written
 as a declaration's initializer is (struct elements designated, and each
@@ -259,6 +260,47 @@ array passed there must have the parameter's shape (#2194). Fixtures:
 `tests/bugs/issue-2194-array-argument-shape/`,
 `tests/bugs/issue-2195-array-row-slot/`,
 `tests/bugs/issue-2110-nested-fill-all/`.
+
+### Arrays Are Values (owner ruling, 2026-11-13, #1209)
+
+An array is a value, as a string is. Another array of the same element type
+and shape -- a variable, a parameter, a field, a call to a function that
+returns one -- is accepted where a whole array's list is: a declaration
+inside a function, an assignment target (a field's among them) and an argument.
+A struct initializer's array field still takes a list (#2411). C has no
+array assignment, so it is copied element by element, the lowering a list
+already gets; a declaration copied into is not `const` in C, since the copy is
+written after it. An array of another shape or element type is E0866. At file
+scope, and for an inferred size (`u8[]`), only a list or a literal is
+accepted: a copy is a statement, and file scope has none to run before `main`.
+
+C cannot return an array either, so a function that returns one takes a
+buffer from its caller, the lowering ADR-045 gives `string<N>` (#1209):
+
+```cnx
+u8[4] make() {
+    u8[4] a <- [1, 2, 3, 4];
+    return a;
+}
+u8 second <- make()[1];
+```
+
+```c
+void make(uint8_t cnx_return[4]) {
+    const uint8_t a[4] = {1U, 2U, 3U, 4U};
+    for (uint32_t cnx_tmp0 = 0U; cnx_tmp0 < 4U; cnx_tmp0++) {
+        cnx_return[cnx_tmp0] = a[cnx_tmp0];
+    }
+    return;
+}
+```
+
+The caller's buffer outlives the call, so returning a local is safe. A call
+fills a temporary of the declared return type, which a declaration, an
+assignment and an argument copy from or pass, and an element read
+(`make()[1]`) indexes. `make()[1]` had read a bit of the call's result, and the
+function had returned a pointer as a `uint8_t`. Fixtures:
+`tests/bugs/issue-1209-string-array-return/`.
 
 ## Scope-Context Matrix (#1219)
 

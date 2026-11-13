@@ -1,12 +1,8 @@
-19:21 error[E0876]: Fill-all syntax [0*] requires explicit array size
+21:21 error[E0876]: Fill-all syntax [0*] requires explicit array size
        help: An inferred size comes from counting the elements, and the fill-all form has none to count; write the dimension (ADR-035).
-24:18 error[E0866]: An array must be initialized by a list, not 'a'
-       help: Write the elements out in brackets, or declare it empty and assign the elements afterwards (ADR-035).
-28:30 error[E0866]: An array must be initialized by a list, not 'names'
-       help: Write the elements out in brackets, or declare it empty and assign the elements afterwards (ADR-035).
-33:17 error[E0876]: Fill-all syntax [0*] requires explicit array size
+34:17 error[E0876]: Fill-all syntax [0*] requires explicit array size
        help: An inferred size comes from counting the elements, and the fill-all form has none to count; write the dimension (ADR-035).
-38:23 error[E0876]: Fill-all syntax [0*] requires explicit array size
+39:23 error[E0876]: Fill-all syntax [0*] requires explicit array size
        help: An inferred size comes from counting the elements, and the fill-all form has none to count; write the dimension (ADR-035).
-42:27 error[E0876]: Fill-all syntax [0*] requires explicit array size
+43:27 error[E0876]: Fill-all syntax [0*] requires explicit array size
        help: An inferred size comes from counting the elements, and the fill-all form has none to count; write the dimension (ADR-035).

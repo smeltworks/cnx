@@ -5,6 +5,7 @@
  * to IHeaderSymbol for header generation.
  */
 
+import ReturnBuffer from "../../../2-Plan/ReturnBuffer";
 import DeclaredTypeInfo from "../../../../PARSE/3-Declare/DeclaredTypeInfo";
 import TSymbol from "../../../../types/symbols/TSymbol";
 import IHeaderSymbol from "../types/IHeaderSymbol";
@@ -85,10 +86,15 @@ class HeaderSymbolAdapter {
     const paramTypes = parameters.map((p) => p.type);
     const signature = `${qualifiedReturn} ${cName}(${paramTypes.join(", ")})`;
 
+    // #1209: a `string<N>` or array return fills a buffer the caller passes
+    const returnBuffer =
+      ReturnBuffer.parameterFor(func.returnType) ?? undefined;
+
     return {
       name: cName,
       kind: "function",
       type: qualifiedReturn,
+      returnBuffer,
       parameters,
       signature,
       parent: isGlobal ? undefined : func.scopePath,

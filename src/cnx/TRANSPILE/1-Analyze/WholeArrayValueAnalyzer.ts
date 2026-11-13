@@ -23,6 +23,9 @@ import StructInitializerType from "./helpers/StructInitializerType";
 import ExpressionChildren from "../../utils/ExpressionChildren";
 import ExpressionShape from "../../utils/ExpressionShape";
 import OperandTyper from "../../utils/OperandTyper";
+import ArrayValueRule from "../../utils/ArrayValueRule";
+import ConstantExpression from "./helpers/ConstantExpression";
+import type IVariableDeclarationSyntax from "../../types/syntax/IVariableDeclarationSyntax";
 import ForHeaderVariable from "../../utils/ForHeaderVariable";
 import TypeCheckUtils from "../../utils/TypeCheckUtils";
 import TypeText from "../../utils/TypeText";
@@ -40,9 +43,23 @@ class WholeArrayValueAnalyzer {
     // A value's operands stand in its position too; only the value is asked
     const asked = new Set<TExpression>();
     for (const [value, at] of positions.positions) {
-      if (asked.has(value) || !StructInitializerType.takesWholeArrayAt(at)) {
+      if (asked.has(value)) continue;
+      const declared = positions.sites.get(value)?.site;
+      if (
+        declared?.kind === "declaration" &&
+        WholeArrayValueAnalyzer.isArrayCopy(value, at)
+      ) {
+        WholeArrayValueAnalyzer.markAsked(value, at, positions, asked);
+        found.push(
+          ...this.declarationCopy(
+            value,
+            at,
+            this.declaredDimensions(declared.declaration),
+          ),
+        );
         continue;
       }
+      if (!StructInitializerType.takesWholeArrayAt(at)) continue;
       WholeArrayValueAnalyzer.markAsked(value, at, positions, asked);
       // A string field is an array to the symbol table but takes a string;
       // only a struct initializer is asked there, as before #1782
@@ -50,14 +67,18 @@ class WholeArrayValueAnalyzer {
         continue;
       }
       // #2157: an argument passes an array by reference, so an array value
-      // is one too -- and so is each arm of a ternary of arrays
+      // is one too -- and so is each arm of a ternary of arrays. #1209: an
+      // assignment copies one in element by element.
       const site = positions.sites.get(value)?.site;
       const arms =
-        site?.kind === "argument"
+        site?.kind === "argument" || site?.kind === "assignment"
           ? OperandTyper.arrayArms(value, this.context)
           : null;
       if (arms !== null) {
-        for (const arm of arms) found.push(...this.shapeMismatch(arm, at));
+        const noun = site?.kind === "argument" ? "parameter" : "target";
+        for (const arm of arms) {
+          found.push(...this.shapeMismatch(arm, at, noun));
+        }
         continue;
       }
       found.push(...WholeArrayValueAnalyzer.check(value, at, this.context));
@@ -102,16 +123,72 @@ class WholeArrayValueAnalyzer {
   }
 
   /**
+   * #1209 (ADR-035): a function's array declared from anything but a list
+   * or a string literal -- 1.2 left it here, since only its type says
+   * whether it is an array. 1.2 rejects one at file scope, or of an
+   * inferred size.
+   */
+  private static isArrayCopy(value: TExpression, at: IValuePosition): boolean {
+    return (
+      at.isDeclaration &&
+      at.isArray &&
+      !at.inList &&
+      value.kind !== "arrayInitializer" &&
+      value.kind !== "structInitializer" &&
+      !ExpressionShape.isStringLiteral(value)
+    );
+  }
+
+  /** #1209: another array of the declaration's element type and shape */
+  private declarationCopy(
+    value: TExpression,
+    at: IValuePosition,
+    declared: ReadonlyArray<number | string>,
+  ): IArrayDeclarationError[] {
+    const arms = OperandTyper.arrayArms(value, this.context);
+    if (arms === null) {
+      return [
+        {
+          code: "E0866",
+          span: value.span,
+          message: ArrayValueRule.notAnArrayMessage(value),
+          helpText: ArrayValueRule.NOT_AN_ARRAY_HELP,
+        },
+      ];
+    }
+    return arms.flatMap((arm) =>
+      this.shapeMismatch(arm, at, "declaration", declared),
+    );
+  }
+
+  /** A declaration's sizes, folded where they fold, as its list is counted */
+  private declaredDimensions(
+    declaration: IVariableDeclarationSyntax,
+  ): ReadonlyArray<number | string> {
+    const type = declaration.type;
+    return [
+      ...(type.kind === "array" ? type.dimensions : []),
+      ...declaration.dimensions,
+    ].map((size) =>
+      size === null
+        ? ""
+        : (ConstantExpression.valueAt(size, this.context) ?? size.written),
+    );
+  }
+
+  /**
    * #2194: the callee reads an array argument with the parameter's shape, so
-   * the two agree wherever both sizes fold.
+   * the two agree wherever both sizes fold. #1209: so does an array copied
+   * into a declaration or an assignment's target.
    */
   private shapeMismatch(
     value: TExpression,
     at: IValuePosition,
+    noun: "parameter" | "target" | "declaration",
+    taken: ReadonlyArray<number | string> = at.dimensions,
   ): IArrayDeclarationError[] {
     const given = OperandTyper.typeOf(value, this.context)?.dimensions;
     if (given === undefined) return [];
-    const taken = at.dimensions;
     const agree =
       given.length === taken.length &&
       given.every(
@@ -120,16 +197,21 @@ class WholeArrayValueAnalyzer {
           typeof taken[i] !== "number" ||
           size === taken[i],
       );
-    if (agree) return this.elementMismatch(value, at);
+    if (agree) return this.elementMismatch(value, at, noun);
     const shape = (sizes: ReadonlyArray<number | string>) =>
       sizes.map((size) => `[${size}]`).join("");
     return [
       {
         code: "E0866",
         span: value.span,
-        message: `An array of shape ${shape(given)} is passed for a parameter of shape ${shape(taken)}`,
+        message:
+          noun === "parameter"
+            ? `An array of shape ${shape(given)} is passed for a parameter of shape ${shape(taken)}`
+            : `An array of shape ${shape(given)} is copied into a ${noun} of shape ${shape(taken)}`,
         helpText:
-          "Pass an array of the parameter's shape, or write its elements as a list (ADR-014).",
+          noun === "parameter"
+            ? "Pass an array of the parameter's shape, or write its elements as a list (ADR-014)."
+            : "Copy an array of the same shape, or write its elements as a list (ADR-035).",
       },
     ];
   }
@@ -156,6 +238,7 @@ class WholeArrayValueAnalyzer {
   private elementMismatch(
     value: TExpression,
     at: IValuePosition,
+    noun: "parameter" | "target" | "declaration",
   ): IArrayDeclarationError[] {
     if (at.typeText === null) return [];
     const taken = TypeText.withoutDimensions(at.typeText);
@@ -171,9 +254,14 @@ class WholeArrayValueAnalyzer {
       {
         code: "E0866",
         span: value.span,
-        message: `An array of ${given} is passed for a parameter of ${taken}`,
+        message:
+          noun === "parameter"
+            ? `An array of ${given} is passed for a parameter of ${taken}`
+            : `An array of ${given} is copied into a ${noun} of ${taken}`,
         helpText:
-          "Pass an array of the parameter's element type; an array is passed by reference and is not converted (ADR-014).",
+          noun === "parameter"
+            ? "Pass an array of the parameter's element type; an array is passed by reference and is not converted (ADR-014)."
+            : "Copy an array of the same element type; an array's elements are not converted (ADR-035).",
       },
     ];
   }

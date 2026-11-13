@@ -590,6 +590,7 @@ describe("StringDeclHelper", () => {
         dimensions: "[4]",
         declaredSize: 4,
         renderInit: null,
+        copy: null,
         ...overrides,
       };
     }

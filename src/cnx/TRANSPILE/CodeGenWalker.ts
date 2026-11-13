@@ -89,6 +89,9 @@ import IPlannedForever from "./3-Render/codegen/types/IPlannedForever";
 import IPlannedIf from "./3-Render/codegen/types/IPlannedIf";
 import IPlannedLoop from "./3-Render/codegen/types/IPlannedLoop";
 import TPlannedReturn from "./3-Render/codegen/types/TPlannedReturn";
+import ReturnBuffer from "./2-Plan/ReturnBuffer";
+import type IPlannedWholeArrayWrite from "./2-Plan/types/IPlannedWholeArrayWrite";
+import type TType from "../types/TType";
 import VariableModifierBuilder from "./3-Render/codegen/helpers/VariableModifierBuilder";
 import ArrayInitHelper from "./3-Render/codegen/helpers/ArrayInitHelper";
 import generateCriticalStatement from "./3-Render/codegen/generators/statements/CriticalGenerator";
@@ -703,6 +706,7 @@ class CodeGenWalker {
           planArguments: () =>
             this.planCallArguments(args.length === 0 ? null : args),
           safeDivisionHelper,
+          returnBuffer: this.callReturnBuffer(step),
         };
       }
       case "missing":
@@ -711,6 +715,28 @@ class CodeGenWalker {
           "a missing postfix operation is a parse error, which stops the pipeline before render",
         );
     }
+  }
+
+  /**
+   * #1209: a call to a function returning a `string<N>` or an array is made
+   * into a temporary of its return type, which the call then stands for
+   */
+  private callReturnBuffer(
+    step: IChainStep | null,
+  ): ((name: string) => string) | null {
+    const callee = step?.callee ?? null;
+    if (callee === null) return null;
+    const symbol = this.host.state
+      .typingContext()
+      .program.symbolByCName(callee);
+    if (symbol?.kind !== "function") return null;
+    const returnType = symbol.returnType;
+    if (ReturnBuffer.dimensionsOf(returnType) === null) return null;
+    return (name) => {
+      const temporary = ReturnBuffer.temporaryFor(returnType, name);
+      invariant(temporary !== null, "a buffer return has a buffer");
+      return temporary;
+    };
   }
 
   private renderPostfix(expr: TExpression): string {
@@ -2031,6 +2057,13 @@ class CodeGenWalker {
             declaration.name,
           ),
           renderReturnType: () => this.renderType(declaration.returnType),
+          renderReturnBuffer: () =>
+            this.renderReturnBuffer(
+              this.host.state.declaredCName(
+                declaringScopePath,
+                declaration.name,
+              ),
+            ),
           planParameters: () => this.planFunctionParameters(params),
           renderBody: () => this.renderBlock(declaration.body),
           renderParameterList: () =>
@@ -2552,6 +2585,7 @@ class CodeGenWalker {
     return {
       name: fn.name,
       returnType: this.renderType(fn.returnType),
+      returnBuffer: this.renderReturnBuffer(fn.name),
       isMainWithArgs: this.isMainFunctionWithArgs(fn.name, params),
       firstParameterName: params?.[0]?.name,
       parameters: this.planFunctionParameters(params),
@@ -2560,6 +2594,24 @@ class CodeGenWalker {
         ? () => this.generateParameterList(params)
         : null,
     };
+  }
+
+  /**
+   * #1209: the buffer parameter a function returning a `string<N>` or an
+   * array fills, or null when it returns by value
+   */
+  private renderReturnBuffer(cName: string): string | null {
+    return ReturnBuffer.parameterFor(this.returnTypeOf(cName));
+  }
+
+  /** The declared return type of the function named `cName` */
+  private returnTypeOf(cName: string): TType {
+    const symbol = this.host.state.typingContext().program.symbolByCName(cName);
+    invariant(
+      symbol?.kind === "function",
+      `1.3 declared the function ${cName}`,
+    );
+    return symbol.returnType;
   }
 
   private generateFunction(fn: IFunctionDeclarationSyntax): string {
@@ -2759,7 +2811,10 @@ class CodeGenWalker {
       kind: "plain",
       sourceName: name,
       emittedName,
-      modifierPrefix: VariableModifierBuilder.toPrefix(modifiers),
+      // #1209: an array copied into is written after it is declared
+      modifierPrefix: VariableModifierBuilder.toPrefix(
+        array.copy === null ? modifiers : { ...modifiers, const: "" },
+      ),
       type,
       array,
       initializer,
@@ -2837,6 +2892,7 @@ class CodeGenWalker {
         arrayTypeDimensions: "",
         renderCStyleDimensions: () => "",
         init: null,
+        copy: null,
       };
     }
     const hasEmptyArrayTypeDimension = (typeDims ?? []).includes(null);
@@ -2870,6 +2926,37 @@ class CodeGenWalker {
             renderDimensions: () => this.renderLoweredDimensions(arrayDims),
           }
         : null,
+      copy: initializer ? this.planArrayCopy(initializer) : null,
+    };
+  }
+
+  /**
+   * #1209: an array declaration initialized from another array of its shape
+   * -- 2.1 checked the shape (E0866) -- copies it element by element
+   */
+  private planArrayCopy(
+    initializer: TExpression,
+  ): IPlannedArrayDeclaration["copy"] {
+    if (
+      initializer.kind === "arrayInitializer" ||
+      ExpressionShape.isStringLiteral(initializer)
+    ) {
+      return null;
+    }
+    const value = OperandTyper.typeOf(
+      initializer,
+      this.host.state.typingContext(),
+    );
+    invariant(
+      value !== null && value.dimensions.length > 0,
+      "2.1 accepted an array initialized only by a list, a string or an array (E0866)",
+    );
+    return {
+      dimensions: [
+        ...value.dimensions,
+        ...(value.stringCapacity === null ? [] : [value.stringCapacity + 1]),
+      ],
+      renderSource: () => this.renderExpression(initializer),
     };
   }
 
@@ -3288,6 +3375,7 @@ class CodeGenWalker {
         ? this.foldFirstDimension(typeDims)
         : this.countedSize(decl),
       renderInit: initializer ? () => this.renderExpression(initializer) : null,
+      copy: initializer ? this.planArrayCopy(initializer) : null,
     };
   }
 
@@ -3602,10 +3690,74 @@ class CodeGenWalker {
     if (!value) {
       return { kind: "void" };
     }
+    const fnName = this.host.state.currentFunctionName;
+    const returnType = fnName === null ? null : this.returnTypeOf(fnName);
+    if (returnType?.kind === "string") {
+      const form = this.filePlan.stringValueForms.get(value);
+      invariant(
+        form !== undefined,
+        "2.2 planned the form of every string a function returns",
+      );
+      return {
+        kind: "buffer",
+        renderWrite: () =>
+          this.renderFill(ReturnBuffer.NAME, returnType.capacity, form),
+      };
+    }
+    if (returnType?.kind === "array") {
+      return {
+        kind: "buffer",
+        renderWrite: () => this.renderArrayReturn(returnType, value),
+      };
+    }
     return {
       kind: "value",
       render: () => this.renderExpression(value),
     };
+  }
+
+  /**
+   * #1209: an array a function returns is copied into the caller's buffer
+   * element by element. A list, or a `u8` array's string, fills a temporary
+   * of the return type first, as an assigned one does (#1782).
+   */
+  private renderArrayReturn(
+    returnType: Extract<TType, { kind: "array" }>,
+    value: TExpression,
+  ): string[] {
+    const state = this.host.state;
+    const element = returnType.elementType;
+    const array: IPlannedWholeArrayWrite = {
+      elementCType: ReturnBuffer.elementCType(returnType),
+      dimensions: [
+        ...returnType.dimensions,
+        ...(element.kind === "string" ? [element.capacity + 1] : []),
+      ],
+      fromList: value.kind === "arrayInitializer",
+      fromArray:
+        value.kind !== "arrayInitializer" &&
+        !ExpressionShape.isStringLiteral(value),
+      volatileTarget: false,
+    };
+    const rendered = this.renderExpression(value);
+    if (array.fromArray) {
+      return ArrayInitHelper.elementCopy(
+        ReturnBuffer.NAME,
+        rendered,
+        array.dimensions,
+        state,
+      );
+    }
+    const temp = ArrayInitHelper.temporaryArray(array, rendered, state);
+    return [
+      temp.declaration,
+      ...ArrayInitHelper.elementCopy(
+        ReturnBuffer.NAME,
+        temp.name,
+        array.dimensions,
+        state,
+      ),
+    ];
   }
 
   /**

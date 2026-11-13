@@ -1602,7 +1602,7 @@ class FilePlanner {
   ): TArgumentForm | null {
     if (passing.mode !== "reference") return null;
     if (array !== undefined) return { kind: "array-temp", array };
-    if (this.isArrayTernary(expression, passing)) {
+    if (this.isArrayValue(expression, passing)) {
       return { kind: "array" };
     }
     return this.referenceForm(expression, passing, structInitializers);
@@ -1610,16 +1610,21 @@ class FilePlanner {
 
   /**
    * ADR-014: a ternary of arrays for an array parameter is passed as it
-   * stands, the way each of its arms would be; the arms are 2.1's to check
+   * stands, the way each of its arms would be; the arms are 2.1's to check.
+   * #1209: so is a call returning an array, which stands for the temporary
+   * it filled.
    */
-  private isArrayTernary(
+  private isArrayValue(
     expression: TExpression,
     passing: IArgumentPassing,
   ): boolean {
+    const typing = this.state.typingContext();
+    const inner = ExpressionShape.unparenthesized(expression);
     return (
       passing.param?.isArray === true &&
-      ExpressionShape.unparenthesized(expression).kind === "ternary" &&
-      OperandTyper.arrayArms(expression, this.state.typingContext()) !== null
+      (inner.kind === "ternary" ||
+        OperandTyper.typeOf(inner, typing)?.form.kind === "call") &&
+      OperandTyper.arrayArms(expression, typing) !== null
     );
   }
 
@@ -1732,8 +1737,13 @@ class FilePlanner {
             site.assignment.target,
             this.targetDeclaration(site.assignment.target),
           );
-        case "return":
-          return site.function.returnType.text;
+        case "return": {
+          // #1209: an array's list is written against its element type
+          const returned = site.function.returnType;
+          return returned.kind === "array"
+            ? returned.element.text
+            : returned.text;
+        }
         case "field":
           return outer === null
             ? null
@@ -2259,6 +2269,11 @@ class FilePlanner {
       cTypes.add("uint32_t");
     }
     FilePlanner.planStringInits(program, typing, forms);
+    const returned = FilePlanner.planStringReturns(
+      valuePositions,
+      typing,
+      forms,
+    );
     const builtArguments = FilePlanner.planStringArguments(
       valuePositions,
       typing,
@@ -2275,6 +2290,7 @@ class FilePlanner {
     // declaration's copy; the helper counts in `uint32_t`
     const helper =
       copies.size > 0 ||
+      returned ||
       fields.size > 0 ||
       [...forms.values()].some((f) => StringUtils.usesCopyHelper(f));
     if (helper) cTypes.add("uint32_t");
@@ -2378,6 +2394,27 @@ class FilePlanner {
   }
 
   /**
+   * #1209: each value a `string<N>` function returns, which is written into
+   * the caller's buffer as a declaration's initializer is -- copied whole or
+   * built from its parts, by `cnx_string_copy` even when it is a literal.
+   * Returns whether there is one.
+   */
+  private static planStringReturns(
+    valuePositions: IValuePositions | null,
+    typing: ITypingContext,
+    forms: Map<TExpression, TStringValueForm>,
+  ): boolean {
+    let returned = false;
+    for (const [value, at] of valuePositions?.sites ?? []) {
+      if (at.site.kind !== "return") continue;
+      if (at.site.function.returnType.kind !== "string") continue;
+      forms.set(value, StringValueForm.of(value, typing));
+      returned = true;
+    }
+    return returned;
+  }
+
+  /**
    * #1782: each `<-` that writes a whole array -- 2.1's position for its
    * value says so, and 2.1 has checked that it is given what ADR-035 gives
    * one (E0866) with `<-` alone (E0857) -- and the element type and
@@ -2402,8 +2439,9 @@ class FilePlanner {
         "a whole array's element type is named",
       );
       invariant(
-        ExpressionShape.givesWholeArray(value, typeName),
-        "2.1 gave a whole array its list (E0866)",
+        ExpressionShape.givesWholeArray(value, typeName) ||
+          OperandTyper.arrayArms(value, typing) !== null,
+        "2.1 gave a whole array its list or an array (E0866)",
       );
       planned.set(
         site,
@@ -2542,6 +2580,7 @@ class FilePlanner {
         elementCType: "char",
         dimensions: [...dimensions, capacity + 1],
         fromList: value.kind === "arrayInitializer",
+        fromArray: FilePlanner.isArrayCopy(value),
         volatileTarget,
       };
     }
@@ -2549,8 +2588,17 @@ class FilePlanner {
       elementCType: cType ?? TYPE_MAP[element] ?? element,
       dimensions,
       fromList: value.kind === "arrayInitializer",
+      fromArray: FilePlanner.isArrayCopy(value),
       volatileTarget,
     };
+  }
+
+  /** #1209: a whole array's value that is another array, not a list or a string */
+  private static isArrayCopy(value: TExpression): boolean {
+    return (
+      value.kind !== "arrayInitializer" &&
+      !ExpressionShape.isStringLiteral(value)
+    );
   }
 
   /**

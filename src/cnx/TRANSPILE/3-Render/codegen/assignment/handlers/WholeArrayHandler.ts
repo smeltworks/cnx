@@ -14,17 +14,20 @@ import ArrayInitHelper from "../../helpers/ArrayInitHelper";
 const COPY_COMMENT =
   "/* ADR-035 / Issue #1782: C has no array assignment, so the list fills a temporary that is copied element by element. */";
 
-function bound(size: number | string): string {
-  return typeof size === "number" ? `${size}U` : size;
-}
+const ARRAY_COPY_COMMENT =
+  "/* ADR-035 / Issue #1209: C has no array assignment, so the array is copied element by element. */";
 
 function handleWholeArray(ctx: IAssignmentContext): string {
   const plan = ctx.plannedWholeArray;
   invariant(plan !== null, "2.2 planned this whole-array write");
   const state = ctx.state;
   const shape = plan.dimensions.map((size) => `[${size}]`).join("");
-  const temp = ArrayInitHelper.temporaryArray(plan, ctx.generatedValue, state);
-  const lines = [COPY_COMMENT, temp.declaration];
+  // #1209: another array is read straight from; a list fills a temporary
+  const temp = plan.fromArray
+    ? null
+    : ArrayInitHelper.temporaryArray(plan, ctx.generatedValue, state);
+  const lines =
+    temp === null ? [ARRAY_COPY_COMMENT] : [COPY_COMMENT, temp.declaration];
 
   let target = ctx.renderTarget();
   if (ctx.targetIndexHasSideEffect) {
@@ -38,21 +41,14 @@ function handleWholeArray(ctx: IAssignmentContext): string {
     target = `(*${pointer})`;
   }
 
-  const indexes = plan.dimensions.map(() => state.getNextTempVarName());
-  const subscripts = indexes.map((index) => `[${index}]`).join("");
-  plan.dimensions.forEach((size, depth) => {
-    const index = indexes[depth];
-    lines.push(
-      `${"    ".repeat(depth)}for (uint32_t ${index} = 0U; ${index} < ${bound(size)}; ${index}++) {`,
-    );
-  });
-  const depth = plan.dimensions.length;
   lines.push(
-    `${"    ".repeat(depth)}${target}${subscripts} = ${temp.name}${subscripts};`,
+    ...ArrayInitHelper.elementCopy(
+      target,
+      temp === null ? ctx.generatedValue : temp.name,
+      plan.dimensions,
+      state,
+    ),
   );
-  for (let level = depth - 1; level >= 0; level--) {
-    lines.push(`${"    ".repeat(level)}}`);
-  }
   return lines.join("\n");
 }
 

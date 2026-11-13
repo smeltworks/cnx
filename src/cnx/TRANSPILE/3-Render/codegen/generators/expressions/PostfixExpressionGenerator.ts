@@ -235,6 +235,8 @@ const generatePostfixExpression = (
       if (orchestrator.state.isCrossFileDeclaration(tracking.result)) {
         AdrProvenance.record("010", op.line);
       }
+      const buffer =
+        op.returnBuffer === null ? null : orchestrator.nextTempName();
       const callResult = generateFunctionCall(
         tracking.result,
         // #1445: the plan is built by the orchestrator -- this is the only
@@ -243,9 +245,17 @@ const generatePostfixExpression = (
         op.planArguments(),
         state,
         op.safeDivisionHelper,
+        buffer,
       );
       applyAccessEffects(callResult.effects, effects);
       tracking.result = callResult.code;
+      // #1209: the call fills a temporary before its statement, and the
+      // expression reads the temporary
+      if (buffer !== null && op.returnBuffer !== null) {
+        orchestrator.addPendingTempDeclaration(op.returnBuffer(buffer));
+        orchestrator.addPendingTempDeclaration(`${callResult.code};`);
+        tracking.result = buffer;
+      }
     }
   }
 
