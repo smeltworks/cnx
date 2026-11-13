@@ -38,6 +38,7 @@ function init(overrides: Partial<IPlannedStringInit> = {}): IPlannedStringInit {
     form: "literal",
     text: '""',
     render: () => '""',
+    renderInto: null,
     renderParts: () => [],
     ...overrides,
   };

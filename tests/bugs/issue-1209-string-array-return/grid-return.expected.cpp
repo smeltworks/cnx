@@ -21,20 +21,14 @@ void grid(uint8_t cnx_return[2][3]) {
 }
 
 int main(void) {
-    uint8_t cnx_tmp2[2][3] = {0};
-    grid(cnx_tmp2);
     uint8_t g[2][3] = {0};
-    for (uint32_t cnx_tmp3 = 0U; cnx_tmp3 < 2U; cnx_tmp3++) {
-        for (uint32_t cnx_tmp4 = 0U; cnx_tmp4 < 3U; cnx_tmp4++) {
-            g[cnx_tmp3][cnx_tmp4] = cnx_tmp2[cnx_tmp3][cnx_tmp4];
-        }
-    }
+    grid(g);
     if (g[1U][2U] != 6) {
         return 1U;
     }
-    uint8_t cnx_tmp5[2][3] = {0};
-    grid(cnx_tmp5);
-    const uint8_t second = cnx_tmp5[0U][1U];
+    uint8_t cnx_tmp2[2][3] = {0};
+    grid(cnx_tmp2);
+    const uint8_t second = cnx_tmp2[0U][1U];
     if (second != 2) {
         return 2U;
     }

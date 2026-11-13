@@ -50,21 +50,21 @@ Maker Maker_init(void) {
 int main(void) {
     const Maker m = { .build = make, .label = name };
     uint8_t a[4] = {0};
-    for (uint32_t cnx_tmp1 = 0U; cnx_tmp1 < 4U; cnx_tmp1++) {
-        a[cnx_tmp1] = m.build(9U)[cnx_tmp1];
-    }
+    m.build(a, 9U);
     if (a[0U] != 9) {
         return 1U;
     }
     if (a[3U] != 4) {
         return 2U;
     }
-    const uint8_t second = m.build(1U)[1U];
+    uint8_t cnx_tmp1[4] = {0};
+    m.build(cnx_tmp1, 1U);
+    const uint8_t second = cnx_tmp1[1U];
     if (second != 2) {
         return 3U;
     }
     char s[9] = "";
-    cnx_string_copy(s, m.label(), 8U);
+    m.label(s);
     if (strcmp(s, "ab") != 0) {
         return 4U;
     }

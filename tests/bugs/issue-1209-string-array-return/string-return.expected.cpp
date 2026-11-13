@@ -62,31 +62,29 @@ void echo(char cnx_return[17], const char* s) {
 }
 
 int main(void) {
-    char cnx_tmp0[17] = {0};
-    greet(cnx_tmp0);
     char a[17] = "";
-    cnx_string_copy(a, cnx_tmp0, 16U);
+    greet(a);
     if (strcmp(a, "hi") != 0) {
         return 1U;
     }
-    char cnx_tmp1[17] = {0};
-    greet(cnx_tmp1);
+    char cnx_tmp0[17] = {0};
+    greet(cnx_tmp0);
     char b[33] = "";
-    cnx_string_copy(b, cnx_tmp1, 32U);
+    cnx_string_copy(b, cnx_tmp0, 32U);
     if (strcmp(b, "hi") != 0) {
         return 2U;
     }
     char c[17] = "";
-    char cnx_tmp2[17] = {0};
-    getLabel(cnx_tmp2);
-    cnx_string_copy(c, cnx_tmp2, 16U);
+    char cnx_tmp1[17] = {0};
+    getLabel(cnx_tmp1);
+    cnx_string_copy(c, cnx_tmp1, 16U);
     if (strcmp(c, "label") != 0) {
         return 3U;
     }
-    char cnx_tmp3[17] = {0};
-    greet(cnx_tmp3);
+    char cnx_tmp2[17] = {0};
+    greet(cnx_tmp2);
     char d[33] = "";
-    cnx_string_copy(d, cnx_tmp3, 32U);
+    cnx_string_copy(d, cnx_tmp2, 32U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(d);
         cnx_string_copy(&d[cnx_used], "!", 32U - cnx_used);
@@ -94,29 +92,25 @@ int main(void) {
     if (strcmp(d, "hi!") != 0) {
         return 4U;
     }
-    char cnx_tmp4[17] = {0};
-    getLabel(cnx_tmp4);
-    const uint32_t n = lengthOf(cnx_tmp4);
+    char cnx_tmp3[17] = {0};
+    getLabel(cnx_tmp3);
+    const uint32_t n = lengthOf(cnx_tmp3);
     if (n != 5) {
         return 5U;
     }
-    char cnx_tmp5[17] = {0};
-    pick(cnx_tmp5, true);
     char e[17] = "";
-    cnx_string_copy(e, cnx_tmp5, 16U);
+    pick(e, true);
     if (strcmp(e, "first") != 0) {
         return 6U;
     }
-    char cnx_tmp6[17] = {0};
-    pick(cnx_tmp6, false);
     char f[17] = "";
-    cnx_string_copy(f, cnx_tmp6, 16U);
+    pick(f, false);
     if (strcmp(f, "label") != 0) {
         return 7U;
     }
-    char cnx_tmp7[17] = {0};
-    echo(cnx_tmp7, c);
-    cnx_string_copy(c, cnx_tmp7, 16U);
+    char cnx_tmp4[17] = {0};
+    echo(cnx_tmp4, c);
+    cnx_string_copy(c, cnx_tmp4, 16U);
     if (strcmp(c, "label") != 0) {
         return 8U;
     }

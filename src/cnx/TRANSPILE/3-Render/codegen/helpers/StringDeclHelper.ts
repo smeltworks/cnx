@@ -107,8 +107,12 @@ class StringDeclHelper {
     const shape = `${plan.dimensions}[${plan.elementCapacity + 1}]`;
     // #1209: one copied into is written after it is declared
     if (plan.copy) {
+      const declared = `${extern}${atomic}${volatileMod}char ${name}${shape} = {0};`;
+      if (plan.copy.renderInto) {
+        return [declared, `${plan.copy.renderInto(name)};`].join("\n");
+      }
       return [
-        `${extern}${atomic}${volatileMod}char ${name}${shape} = {0};`,
+        declared,
         ...ArrayInitHelper.elementCopy(
           name,
           plan.copy.renderSource(),
@@ -187,6 +191,12 @@ class StringDeclHelper {
     // #1257: 2.2 planned the initializer's form, by an assignment's rule
     switch (init.form) {
       case "copy":
+        if (init.renderInto) {
+          return [
+            `${qualifiers}char ${name}[${capacity + 1}] = "";`,
+            `${init.renderInto(name)};`,
+          ].join("\n");
+        }
         return StringDeclHelper._generateCopyDecl(
           name,
           capacity,

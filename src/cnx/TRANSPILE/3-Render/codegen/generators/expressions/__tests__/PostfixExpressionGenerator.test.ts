@@ -319,6 +319,7 @@ function createMockPostfixOp(options?: {
     line: 1,
     calleeType: () => options?.calleeType ?? null,
     returnBuffer: null,
+    into: null,
     // Mirrors what `CodeGenerator.planCallArguments` does, against this file's
     // argument-list stand-in. It lived on the mock orchestrator until the
     // generator stopped asking for it.

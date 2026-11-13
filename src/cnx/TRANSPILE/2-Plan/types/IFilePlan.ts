@@ -180,6 +180,13 @@ interface IFilePlan {
    */
   readonly bufferCalls: ReadonlyMap<TPostfixOpSyntax, TType>;
   /**
+   * #1209 (owner ruling): the buffer calls a declaration of the return type
+   * stands for whole, which fill the declared variable in place. Nothing it
+   * reads can be the variable, which is defined once its declaration closes;
+   * an assignment's target can be, so an assignment fills a temporary.
+   */
+  readonly inPlaceCalls: ReadonlySet<TPostfixOpSyntax>;
+  /**
    * #2332: each `&&`/`||` operand after the first that holds a struct
    * initializer built before its statement -- or a call filling a buffer
    * (#1209) -- so it is built only when the operand runs

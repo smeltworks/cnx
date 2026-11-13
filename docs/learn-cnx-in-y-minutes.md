@@ -296,8 +296,9 @@ rgb <- saved;
 u8[3] black() {
     return [0, 0, 0];
 }
-rgb <- black();                 // black(tmp); then copied into rgb
-u8 red <- black()[0];           // Reads element 0 of the result
+// Inside a function (a call cannot initialize a file-scope variable):
+//   rgb <- black();             // black(tmp); then copied into rgb
+//   u8 red <- black()[0];       // Reads element 0 of the result
 
 // Multi-dimensional arrays
 mut u8[4][8] matrix;
@@ -335,7 +336,8 @@ string<16> greet() {
     string<16> s <- "hi";
     return s;                   // void greet(char cnx_return[17])
 }
-string<16> hi <- greet();       // greet(tmp); then copied into hi
+// Inside a function:
+//   string<16> hi <- greet();   // greet(hi): the same type is filled in place
 
 // =============================================================================
 // 7. TYPE SAFETY

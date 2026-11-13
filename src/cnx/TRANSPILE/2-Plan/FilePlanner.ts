@@ -69,6 +69,7 @@ import type TBlockSyntax from "../../types/syntax/TBlockSyntax";
 import AssignmentTarget from "../../utils/AssignmentTarget";
 import TypeCheckUtils from "../../utils/TypeCheckUtils";
 import TypeText from "../../utils/TypeText";
+import ValuePositions from "../1-Analyze/helpers/ValuePositions";
 import ExpressionShape from "../../utils/ExpressionShape";
 import ReturnBuffer from "../../utils/ReturnBuffer";
 import StringOperand from "../../utils/StringOperand";
@@ -751,6 +752,42 @@ class FilePlanner {
     return calls;
   }
 
+  /**
+   * #1209: the buffer calls a declaration of exactly the return type is
+   * initialized by, whole -- `string<16> a <- greet();`. 2.1 made an array
+   * declaration's shape and element type its source's (E0866); a string's
+   * capacity is the one thing a declaration may widen.
+   */
+  private static planInPlaceCalls(
+    valuePositions: IValuePositions,
+    bufferCalls: ReadonlyMap<TPostfixOpSyntax, TType>,
+  ): ReadonlySet<TPostfixOpSyntax> {
+    const calls = new Set<TPostfixOpSyntax>();
+    for (const [value, site] of valuePositions.sites) {
+      if (site.site.kind !== "declaration" || site.outer !== null) continue;
+      const last = ExpressionShape.postfixView(value)?.ops.at(-1);
+      const returnType = last === undefined ? undefined : bufferCalls.get(last);
+      if (last === undefined || returnType === undefined) continue;
+      const element =
+        returnType.kind === "array" ? returnType.elementType : returnType;
+      const typeText = ValuePositions.at(
+        valuePositions.positions,
+        value,
+      ).typeText;
+      if (
+        element.kind === "string" &&
+        (typeText === null ||
+          TypeCheckUtils.sizedStringCapacity(
+            TypeText.withoutDimensions(typeText),
+          ) !== element.capacity)
+      ) {
+        continue;
+      }
+      calls.add(last);
+    }
+    return calls;
+  }
+
   /** Every `for` update's expressions: run again each pass, after nothing written before them */
   private static forUpdates(program: IProgramSyntax): TExpression[] {
     return program.members.flatMap(({ declaration }) =>
@@ -1279,6 +1316,10 @@ class FilePlanner {
       ]),
     );
     const bufferCalls = this.planBufferCalls(program, unwritten);
+    const inPlaceCalls = FilePlanner.planInPlaceCalls(
+      valuePositions,
+      bufferCalls,
+    );
     const lazy = this.planLazyOperands(
       program,
       unwritten,
@@ -1366,6 +1407,7 @@ class FilePlanner {
       narrowings,
       structInitializers,
       bufferCalls,
+      inPlaceCalls,
       lazyOperands: lazy.operands,
       lazyTernaries: lazy.ternaries,
     };

@@ -227,8 +227,12 @@ class VariableDeclHelper {
     // #1209: an array initialized from another array is copied into
     const copy = plan.array.copy;
     if (copy) {
+      const declared = `${base}${plan.array.arrayTypeDimensions}${plan.array.renderCStyleDimensions()} = {0};`;
+      if (copy.renderInto) {
+        return [declared, `${copy.renderInto(plan.emittedName)};`].join("\n");
+      }
       return [
-        `${base}${plan.array.arrayTypeDimensions}${plan.array.renderCStyleDimensions()} = {0};`,
+        declared,
         ...ArrayInitHelper.elementCopy(
           plan.emittedName,
           copy.renderSource(),

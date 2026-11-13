@@ -100,6 +100,8 @@ type TPlannedPostfixOp =
        * fills, given its name -- or null when the call returns by value
        */
       readonly returnBuffer: ((name: string) => string) | null;
+      /** #1209: the declared variable 2.2 has the call fill in place, by C name */
+      readonly into: string | null;
     };
 
 export default TPlannedPostfixOp;

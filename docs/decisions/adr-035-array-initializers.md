@@ -282,7 +282,10 @@ u8[4] make() {
     u8[4] a <- [1, 2, 3, 4];
     return a;
 }
-u8 second <- make()[1];
+u32 main() {
+    u8[4] x <- make();
+    u8 second <- make()[1];
+}
 ```
 
 ```c
@@ -295,10 +298,11 @@ void make(uint8_t cnx_return[4]) {
 }
 ```
 
-The caller's buffer outlives the call, so returning a local is safe. A call
-fills a temporary of the declared return type, which a declaration, an
-assignment and an argument copy from or pass, and an element read
-(`make()[1]`) indexes. `make()[1]` had read a bit of the call's result, and the
+The caller's buffer outlives the call, so returning a local is safe. A
+declaration of the return type is filled in place (`make(x);`), as ADR-045's
+string return is. Any other call fills a temporary of the declared return
+type, which an assignment and an argument copy from or pass, and an element
+read (`make()[1]`) indexes. `make()[1]` had read a bit of the call's result, and the
 function had returned a pointer as a `uint8_t`. Fixtures:
 `tests/bugs/issue-1209-string-array-return/`.
 

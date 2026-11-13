@@ -59,6 +59,8 @@ interface IPlannedArrayDeclaration {
 interface IPlannedArrayCopy {
   readonly dimensions: ReadonlyArray<number | string>;
   readonly renderSource: () => string;
+  /** #1209: the call filling the declared array in place, given its name; null to copy */
+  readonly renderInto: ((target: string) => string) | null;
 }
 
 /**

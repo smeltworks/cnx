@@ -281,6 +281,8 @@ class CodeGenWalker {
     ]);
 
   private readonly commentFormatter: CommentFormatter = new CommentFormatter();
+  /** #1209: the variable each in-place call is filling, while it renders */
+  private readonly callTargets = new Map<TPostfixOpSyntax, string>();
 
   /** Issue #644: String declaration helper for bounded/array/concat strings */
   /** Issue #644: Array initialization helper for size inference and fill-all */
@@ -707,6 +709,7 @@ class CodeGenWalker {
             this.planCallArguments(args.length === 0 ? null : args),
           safeDivisionHelper,
           returnBuffer: this.callReturnBuffer(op),
+          into: this.callTargets.get(op) ?? null,
         };
       }
       case "missing":
@@ -715,6 +718,27 @@ class CodeGenWalker {
           "a missing postfix operation is a parse error, which stops the pipeline before render",
         );
     }
+  }
+
+  /**
+   * #1209: a declaration 2.2 has its initializing call fill in place, as
+   * that call written into the declared variable; null for any other
+   */
+  private renderInPlace(
+    initializer: TExpression,
+  ): ((target: string) => string) | null {
+    const call = ExpressionShape.postfixView(initializer)?.ops.at(-1);
+    if (call === undefined || !this.filePlan.inPlaceCalls.has(call)) {
+      return null;
+    }
+    return (target) => {
+      this.callTargets.set(call, target);
+      try {
+        return this.renderExpression(initializer);
+      } finally {
+        this.callTargets.delete(call);
+      }
+    };
   }
 
   /**
@@ -2951,6 +2975,7 @@ class CodeGenWalker {
         ...(value.stringCapacity === null ? [] : [value.stringCapacity + 1]),
       ],
       renderSource: () => this.renderExpression(initializer),
+      renderInto: this.renderInPlace(initializer),
     };
   }
 
@@ -3126,6 +3151,7 @@ class CodeGenWalker {
       form: form.kind,
       text: CodeGenWalker.stringTextOf(whole),
       render: () => this.renderExpression(whole),
+      renderInto: form.kind === "copy" ? this.renderInPlace(whole) : null,
       renderParts: () => this.renderStringParts(form),
     };
   }

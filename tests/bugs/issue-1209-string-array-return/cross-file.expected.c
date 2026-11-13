@@ -28,53 +28,41 @@ static inline void cnx_string_copy(char* target, const char* source, uint32_t ca
 }
 
 int main(void) {
-    char cnx_tmp0[17] = {0};
-    sharedName(cnx_tmp0);
     char n[17] = "";
-    cnx_string_copy(n, cnx_tmp0, 16U);
+    sharedName(n);
     if (strcmp(n, "shared") != 0) {
         return 1U;
     }
-    uint8_t cnx_tmp1[4] = {0};
-    sharedBytes(cnx_tmp1);
     uint8_t b[4] = {0};
-    for (uint32_t cnx_tmp2 = 0U; cnx_tmp2 < 4U; cnx_tmp2++) {
-        b[cnx_tmp2] = cnx_tmp1[cnx_tmp2];
-    }
+    sharedBytes(b);
     if (b[0U] != 4) {
         return 2U;
     }
-    char cnx_tmp3[17] = {0};
-    Store__name(cnx_tmp3);
     char s[17] = "";
-    cnx_string_copy(s, cnx_tmp3, 16U);
+    Store__name(s);
     if (strcmp(s, "store") != 0) {
         return 3U;
     }
-    uint8_t cnx_tmp4[4] = {0};
-    Store__data(cnx_tmp4);
     uint8_t d[4] = {0};
-    for (uint32_t cnx_tmp5 = 0U; cnx_tmp5 < 4U; cnx_tmp5++) {
-        d[cnx_tmp5] = cnx_tmp4[cnx_tmp5];
-    }
+    Store__data(d);
     if (d[3U] != 6) {
         return 4U;
     }
-    uint8_t cnx_tmp6[4] = {0};
-    Store__data(cnx_tmp6);
-    const uint8_t second = cnx_tmp6[1U];
+    uint8_t cnx_tmp0[4] = {0};
+    Store__data(cnx_tmp0);
+    const uint8_t second = cnx_tmp0[1U];
     if (second != 8) {
         return 5U;
     }
-    char cnx_tmp7[17] = {0};
-    sharedName(cnx_tmp7);
-    char cnx_tmp8[17] = {0};
-    Store__name(cnx_tmp8);
+    char cnx_tmp1[17] = {0};
+    sharedName(cnx_tmp1);
+    char cnx_tmp2[17] = {0};
+    Store__name(cnx_tmp2);
     char joined[33] = "";
-    cnx_string_copy(joined, cnx_tmp7, 32U);
+    cnx_string_copy(joined, cnx_tmp1, 32U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(joined);
-        cnx_string_copy(&joined[cnx_used], cnx_tmp8, 32U - cnx_used);
+        cnx_string_copy(&joined[cnx_used], cnx_tmp2, 32U - cnx_used);
     }
     if (strcmp(joined, "sharedstore") != 0) {
         return 6U;
