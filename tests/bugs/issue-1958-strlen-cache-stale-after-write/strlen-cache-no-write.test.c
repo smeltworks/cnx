@@ -3,12 +3,31 @@
  * A safer C for embedded systems
  */
 
+#include "strlen-cache-no-write.test.h"
+
 #include <stdint.h>
 #include <string.h>
 
 // test-execution
 // Issue #1958 negative control: with no write between the reads, the two
-// length reads share one cached strlen.
+// length reads share one cached strlen. Writing a non-local number cannot
+// change a string, so it keeps a non-local string's cache.
+const char title[9] = "ab";
+
+uint32_t ticks = 0U;
+
+uint32_t tick(void) {
+    uint32_t cnx_len_title = (uint32_t) strlen(title);
+    if (cnx_len_title == 2) {
+        ticks = 1U;
+        const uint32_t n = cnx_len_title;
+        if (n != 2) {
+            return 2U;
+        }
+    }
+    return 0U;
+}
+
 int main(void) {
     const char label[9] = "ab";
     uint32_t cnx_len_label = (uint32_t) strlen(label);
@@ -18,5 +37,5 @@ int main(void) {
             return 1U;
         }
     }
-    return 0U;
+    return tick();
 }

@@ -41,6 +41,26 @@ u32 writesAlias(mut string<8> t) {
     return 0;
 }
 
+struct Named {
+    string<8> name;
+}
+
+// Set in main: a file-scope initializer with a string field is #2259.
+mut Named named;
+mut Named longer;
+
+// A whole-struct write changes the strings it holds.
+u32 readsMember(string<8> s) {
+    if (s.value_char_count = 2) {
+        named <- longer;
+        u32 n <- s.value_char_count;
+        if (n != 4) {
+            return 12;
+        }
+    }
+    return 0;
+}
+
 // A read-only parameter is not a local: a callee can write what it names.
 u32 callsAlias(string<8> s) {
     if (s.value_char_count = 2) {
@@ -127,5 +147,11 @@ u32 main() {
         return viaWrite;
     }
     other <- "ab";
-    return callsAlias(other);
+    u32 viaCall <- callsAlias(other);
+    if (viaCall != 0) {
+        return viaCall;
+    }
+    named.name <- "ab";
+    longer.name <- "abcd";
+    return readsMember(named.name);
 }

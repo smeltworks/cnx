@@ -12,9 +12,16 @@
 extern "C" {
 #endif
 
+/* Struct definitions */
+typedef struct Named {
+    char name[9];
+} Named;
+
 /* External variables */
 extern char greeting[9];
 extern char other[9];
+extern Named named;
+extern Named longer;
 
 /* Function prototypes */
 void grow(void);
@@ -22,6 +29,7 @@ void fill(char* s);
 void growOther(void);
 uint32_t readsAlias(const char* s);
 uint32_t writesAlias(char* t);
+uint32_t readsMember(const char* s);
 uint32_t callsAlias(const char* s);
 
 #ifdef __cplusplus

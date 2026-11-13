@@ -66,6 +66,23 @@ uint32_t writesAlias(char* t) {
     return 0U;
 }
 
+// Set in main: a file-scope initializer with a string field is #2259.
+Named named = {0};
+
+Named longer = {0};
+
+// A whole-struct write changes the strings it holds.
+uint32_t readsMember(const char* s) {
+    if ((uint32_t) strlen(s) == 2) {
+        named = longer;
+        const uint32_t n = (uint32_t) strlen(s);
+        if (n != 4) {
+            return 12U;
+        }
+    }
+    return 0U;
+}
+
 // A read-only parameter is not a local: a callee can write what it names.
 uint32_t callsAlias(const char* s) {
     if ((uint32_t) strlen(s) == 2) {
@@ -145,5 +162,11 @@ int main(void) {
         return viaWrite;
     }
     cnx_string_copy(other, "ab", 8U);
-    return callsAlias(other);
+    const uint32_t viaCall = callsAlias(other);
+    if (viaCall != 0) {
+        return viaCall;
+    }
+    cnx_string_copy(named.name, "ab", 8U);
+    cnx_string_copy(longer.name, "abcd", 8U);
+    return readsMember(named.name);
 }

@@ -245,6 +245,36 @@ describe("StringLengthCounter", () => {
       ).toEqual([]);
     });
 
+    it("keeps a global string when a non-local number is written", () => {
+      expect(
+        keptIn("mut string<8> label; mut u32 ticks;", "ticks <- 1;"),
+      ).toEqual(["label"]);
+    });
+
+    it("keeps a global string when a non-local bool or enum is written", () => {
+      expect(
+        keptIn(
+          "enum Mode { OFF, ON } mut string<8> label; mut bool flag; mut Mode mode;",
+          "flag <- true; mode <- Mode.ON;",
+        ),
+      ).toEqual(["label"]);
+    });
+
+    it("drops a global string when a non-local struct is written", () => {
+      expect(
+        keptIn(
+          "struct Named { string<8> name; } mut string<8> label; mut Named a; mut Named b;",
+          "a <- b;",
+        ),
+      ).toEqual([]);
+    });
+
+    it("drops a global string when a char of another non-local string is written", () => {
+      expect(
+        keptIn("mut string<8> label; mut string<8> other;", "other[0] <- 'x';"),
+      ).toEqual([]);
+    });
+
     it("keeps a local string across a call that is not passed it", () => {
       expect(keptIn("void grow() { }", "mut string<8> label; grow();")).toEqual(
         ["label"],
