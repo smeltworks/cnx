@@ -761,24 +761,20 @@ describe("MixedTypeCategoryAnalyzer -- an integer beside an unreadable header ma
     expect(analyzeWithMacro(body)).toEqual([expected]);
   });
 
-  // #2408: under --debug a wrap `*` calls the panicking helper, so the macro
-  // beside it is E0811 there and E0812 in a normal build, as 2.2 plans it
-  it("decides a wrap operator from the helper --debug gives it", () => {
-    const codesOf = (debugMode: boolean) => {
-      const { syntax, context } = testAnalysisContextFor(
-        "void main() { wrap u32 w <- 3; u32 b <- w * RAW; }",
-        {
-          cppMode: false,
-          macros: { RAW: { kind: "unreadable" } },
-          overrides: { debugMode },
-        },
-      );
-      return new MixedTypeCategoryAnalyzer(context)
-        .analyze(syntax)
-        .map((e) => e.code);
-    };
-    expect(codesOf(false)).toEqual(["E0812"]);
-    expect(codesOf(true)).toEqual(["E0811"]);
+  // #1790 review: ADR-024 splits E0811 from E0812 by operator, not by the
+  // overflow helper 2.2 plans, so neither a modifier nor a signed `/` moves it
+  it.each([
+    ["a wrap `*`", "wrap u32 w <- 3; u32 b <- w * RAW;", "E0811"],
+    ["a signed `/`", "i32 n <- 3; i32 b <- n / RAW;", "E0812"],
+    ["a signed `%`", "i32 n <- 3; i32 b <- n % RAW;", "E0812"],
+  ])("gives %s the operator's code", (_label, body, code) => {
+    const { syntax, context } = testAnalysisContextFor(
+      `void main() { ${body} }`,
+      { cppMode: false, macros: { RAW: { kind: "unreadable" } } },
+    );
+    expect(
+      new MixedTypeCategoryAnalyzer(context).analyze(syntax).map((e) => e.code),
+    ).toEqual([code]);
   });
 });
 

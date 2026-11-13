@@ -52,10 +52,7 @@ import OperandTyper from "../../utils/OperandTyper";
 import EssentialCategory from "../../utils/EssentialCategory";
 import ComparisonChain from "../../utils/ComparisonChain";
 import CompoundOperator from "../../utils/CompoundOperator";
-import OverflowOperation from "../../utils/OverflowOperation";
-import ConstantFold from "../../utils/ConstantFold";
-import OverflowBehaviorUtils from "../../utils/OverflowBehaviorUtils";
-import type TOverflowBehavior from "../../types/TOverflowBehavior";
+import CLAMP_HELPER_FOR_OPERATOR from "../../types/CLAMP_HELPER_FOR_OPERATOR";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import type TBinaryOperatorLevel from "./types/TBinaryOperatorLevel";
 import type IOperandType from "../../types/IOperandType";
@@ -177,10 +174,6 @@ class MixedCategoryCheck {
               "binary",
               operator,
               this.hasOwnEnumMember(operands, enumBeingDeclared),
-              OverflowBehaviorUtils.ofLeaves(
-                OperandTyper.valueLeaves(expr, this.context),
-              ),
-              this.constantValue(operands[i]),
             );
           }
           mixed = true;
@@ -227,15 +220,6 @@ class MixedCategoryCheck {
         (leaf) =>
           leaf?.category === "enum" && leaf.enumTypeName === enumBeingDeclared,
       ),
-    );
-  }
-
-  /** A right operand's value when known at compile time, as 2.2 reads it */
-  private constantValue(expr: TExpression): number | null {
-    return ConstantFold.expressionValue(
-      this.context.program,
-      this.context.sourceFile,
-      expr,
     );
   }
 
@@ -336,16 +320,7 @@ class MixedCategoryCheck {
     const left = EssentialCategory.ofType(target);
     const right = this.operandCategory(value, null);
     if (EssentialCategory.differ(left, right, operator)) {
-      this.analyzer.addError(
-        value.span,
-        left!,
-        right!,
-        "compound",
-        operator,
-        false,
-        OperandTyper.writtenType(site.target, this.context)?.overflow ?? null,
-        this.constantValue(value),
-      );
+      this.analyzer.addError(value.span, left!, right!, "compound", operator);
     }
   }
 }
@@ -425,21 +400,12 @@ class MixedTypeCategoryAnalyzer {
     what: TOperatorSite = "binary",
     operator?: string,
     castOnly = false,
-    behavior: TOverflowBehavior | null = null,
-    divisor: number | null = null,
   ): void {
     if (
       left === EssentialCategory.UNREADABLE_MACRO ||
       right === EssentialCategory.UNREADABLE_MACRO
     ) {
-      this.addUnreadableMacroError(
-        span,
-        what,
-        operator,
-        left === "signed" || right === "signed",
-        behavior,
-        divisor,
-      );
+      this.addUnreadableMacroError(span, what, operator);
       return;
     }
     const integer = (c: string) => c === "signed" || c === "unsigned";
@@ -485,23 +451,14 @@ class MixedTypeCategoryAnalyzer {
     span: ISourceSpan,
     what: TOperatorSite,
     operator: string | undefined,
-    signed: boolean,
-    behavior: TOverflowBehavior | null,
-    divisor: number | null,
   ): void {
-    // An operator that hands an integer operand to an overflow helper
-    // (ADR-044) makes an unreadable macro beside it E0811; any other makes it
-    // E0812. `behavior` and `divisor` are 2.2's for the same operands, so the
-    // two decide alike (#1790 review); with none counted, 2.2 plans no helper.
+    // ADR-024's split, by operator: `+ - *` (and their compound forms) make
+    // an unreadable macro beside an integer E0811, any other operator E0812.
+    // It does not follow which helper 2.2 plans, so a line's code does not
+    // change with its modifier or `--debug` (#1790 review).
     const helped =
       operator !== undefined &&
-      behavior !== null &&
-      OverflowOperation.of(
-        operator,
-        signed,
-        OverflowBehaviorUtils.underDebug(behavior, this.context.debugMode),
-        divisor,
-      ) !== undefined;
+      CLAMP_HELPER_FOR_OPERATOR[operator] !== undefined;
     const why = helped
       ? "this operator would hand it to an overflow helper untyped"
       : "C's usual arithmetic conversions decide this result from the type it really has, which can change a comparison, a bit operation or a quotient (an unsigned 3 < -1 is true)";

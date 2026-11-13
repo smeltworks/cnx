@@ -1,14 +1,14 @@
-13:15 error[E0811]: Binary operator combines an integer operand and a header macro whose type cnx cannot read
-       help: ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; this operator would hand it to an overflow helper untyped. Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.
-17:15 error[E0811]: Binary operator combines an integer operand and a header macro whose type cnx cannot read
-       help: ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; this operator would hand it to an overflow helper untyped. Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.
-21:15 error[E0812]: Binary operator combines an integer operand and a header macro whose type cnx cannot read
+11:15 error[E0812]: Binary operator combines an integer operand and a header macro whose type cnx cannot read
        help: ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; C's usual arithmetic conversions decide this result from the type it really has, which can change a comparison, a bit operation or a quotient (an unsigned 3 < -1 is true). Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.
-26:16 error[E0812]: Binary operator combines an integer operand and a header macro whose type cnx cannot read
+15:15 error[E0812]: Binary operator combines an integer operand and a header macro whose type cnx cannot read
        help: ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; C's usual arithmetic conversions decide this result from the type it really has, which can change a comparison, a bit operation or a quotient (an unsigned 3 < -1 is true). Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.
-31:16 error[E0811]: Binary operator combines an integer operand and a header macro whose type cnx cannot read
+19:15 error[E0812]: Binary operator combines an integer operand and a header macro whose type cnx cannot read
+       help: ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; C's usual arithmetic conversions decide this result from the type it really has, which can change a comparison, a bit operation or a quotient (an unsigned 3 < -1 is true). Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.
+24:16 error[E0811]: Binary operator combines an integer operand and a header macro whose type cnx cannot read
        help: ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; this operator would hand it to an overflow helper untyped. Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.
-36:11 error[E0812]: Compound assignment combines an integer and a header macro whose type cnx cannot read
+29:16 error[E0812]: Binary operator combines an integer operand and a header macro whose type cnx cannot read
        help: ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; C's usual arithmetic conversions decide this result from the type it really has, which can change a comparison, a bit operation or a quotient (an unsigned 3 < -1 is true). Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.
-42:25 error[E0812]: Binary operator combines an integer operand and a header macro whose type cnx cannot read
+34:11 error[E0811]: Compound assignment combines an integer and a header macro whose type cnx cannot read
+       help: ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; this operator would hand it to an overflow helper untyped. Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.
+40:25 error[E0812]: Binary operator combines an integer operand and a header macro whose type cnx cannot read
        help: ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; C's usual arithmetic conversions decide this result from the type it really has, which can change a comparison, a bit operation or a quotient (an unsigned 3 < -1 is true). Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.

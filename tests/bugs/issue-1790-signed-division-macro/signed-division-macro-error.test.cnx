@@ -1,12 +1,10 @@
 // test-error
 // test-adr: 024
-// #1790 (ADR-044): a signed `/` and `%` now go through an overflow helper,
-// for MIN / -1. A header macro cnx cannot type, beside one, is E0811 as it
-// is beside a `clamp` `+ - *`. An unsigned `/` stays plain C, so a macro
-// beside it is still E0812 (control). 2.1 reads the operands' modifier as 2.2
-// does (#1790 review): a `wrap` `*` calls no helper, so beside it is E0812,
-// while a `wrap` signed `/` still calls one, E0811. A signed `/` by a known
-// divisor other than -1 calls none, so beside it is E0812 (#1790 review).
+// #1790 review: ADR-024 splits E0811 from E0812 by operator, not by which
+// overflow helper 2.2 plans. A signed `/` and `%` now call a helper for
+// MIN / -1, yet a header macro cnx cannot type beside one is still E0812, as
+// beside an unsigned `/` or a known divisor. A `wrap` `*` calls no helper
+// outside `--debug`, yet beside one, and in `*<-`, is still E0811.
 #include "division_macros.h"
 
 i32 signedQuotient(i32 n) {
