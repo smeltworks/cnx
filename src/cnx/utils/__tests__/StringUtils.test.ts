@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import StringUtils from "../StringUtils";
+import type TStringValueForm from "../../types/TStringValueForm";
+import type TRenderedStringPart from "../../types/TRenderedStringPart";
 
 // ========================================================================
 // copy
@@ -22,16 +24,18 @@ describe("StringUtils.copy", () => {
 // build
 // ========================================================================
 describe("StringUtils.build", () => {
-  it("copies the first part and appends the second, then terminates", () => {
+  it("copies the first part in and appends the second (#1902)", () => {
     expect(
       StringUtils.build("result", 64, [
         { kind: "whole", code: '"Hello"' },
         { kind: "whole", code: '" World"' },
       ]),
     ).toEqual([
-      '(void) strncpy(result, "Hello", 64);',
-      '(void) strncat(result, " World", 64 - strlen(result));',
-      "result[64] = '\\0';",
+      'cnx_string_copy(result, "Hello", 64U);',
+      "{",
+      "    const uint32_t cnx_used = (uint32_t) strlen(result);",
+      '    cnx_string_copy(&result[cnx_used], " World", 64U - cnx_used);',
+      "}",
     ]);
   });
 
@@ -43,10 +47,15 @@ describe("StringUtils.build", () => {
         { kind: "whole", code: "c" },
       ]),
     ).toEqual([
-      "(void) strncpy(buf, a, 12);",
-      "(void) strncat(buf, b, 12 - strlen(buf));",
-      "(void) strncat(buf, c, 12 - strlen(buf));",
-      "buf[12] = '\\0';",
+      "cnx_string_copy(buf, a, 12U);",
+      "{",
+      "    const uint32_t cnx_used = (uint32_t) strlen(buf);",
+      "    cnx_string_copy(&buf[cnx_used], b, 12U - cnx_used);",
+      "}",
+      "{",
+      "    const uint32_t cnx_used = (uint32_t) strlen(buf);",
+      "    cnx_string_copy(&buf[cnx_used], c, 12U - cnx_used);",
+      "}",
     ]);
   });
 
@@ -68,9 +77,8 @@ describe("StringUtils.build", () => {
       "cnx_string_copy(t, a + 0, 2U);",
       "{",
       "    const uint32_t cnx_used = (uint32_t) strlen(t);",
-      "    cnx_string_copy(t + cnx_used, b + 1, ((8U - cnx_used) < 1U) ? (8U - cnx_used) : 1U);",
+      "    cnx_string_copy(&t[cnx_used], b + 1, ((8U - cnx_used) < 1U) ? (8U - cnx_used) : 1U);",
       "}",
-      "t[8] = '\\0';",
     ]);
   });
 });
@@ -147,6 +155,70 @@ describe("StringUtils.characterAt", () => {
   it("is the terminator past the literal's end", () => {
     expect(StringUtils.characterAt('"A"', 1)).toBe("'\\0'");
   });
+});
+
+// ========================================================================
+// usesCopyHelper
+// ========================================================================
+describe("StringUtils.usesCopyHelper", () => {
+  const whole: TRenderedStringPart = { kind: "whole", code: "a" };
+  const substring: TRenderedStringPart = {
+    kind: "substring",
+    source: "s",
+    start: "0",
+    length: 2,
+  };
+  // Each form with the lines it lowers to: a copy is `copy`, and a substring
+  // or a concatenation is `build`. The literal row is a declaration's direct
+  // initializer only; a literal assigned or written into a struct field goes
+  // through `copy`, and FilePlanner.planStringCopies counts those separately
+  const cases: ReadonlyArray<{
+    name: string;
+    form: TStringValueForm;
+    lowering: readonly string[];
+  }> = [
+    {
+      name: "literal declaration",
+      form: { kind: "literal" } as TStringValueForm,
+      lowering: ['char t[9] = "abc";'],
+    },
+    {
+      name: "copy",
+      form: { kind: "copy" } as TStringValueForm,
+      lowering: [StringUtils.copy("t", "a", 8)],
+    },
+    {
+      name: "substring",
+      form: { kind: "substring" } as TStringValueForm,
+      lowering: StringUtils.build("t", 8, [substring]),
+    },
+    {
+      name: "whole + whole concat",
+      form: {
+        kind: "concat",
+        parts: [{ kind: "whole" }, { kind: "whole" }],
+      } as unknown as TStringValueForm,
+      lowering: StringUtils.build("t", 8, [whole, whole]),
+    },
+    {
+      name: "substring + whole concat",
+      form: {
+        kind: "concat",
+        parts: [{ kind: "substring" }, { kind: "whole" }],
+      } as unknown as TStringValueForm,
+      lowering: StringUtils.build("t", 8, [substring, whole]),
+    },
+  ];
+
+  it.each(cases)(
+    "reports the helper exactly when the $name lowering calls it (#1902)",
+    ({ form, lowering }) => {
+      const callsHelper = lowering.some((line) =>
+        line.includes(`${StringUtils.COPY_HELPER}(`),
+      );
+      expect(StringUtils.usesCopyHelper(form)).toBe(callsHelper);
+    },
+  );
 });
 
 describe("StringUtils.decoded (#2117)", () => {

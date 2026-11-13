@@ -4,15 +4,6 @@
  *
  * Extracted from CodeGenerator.ts as part of ADR-065 decomposition.
  */
-/**
- * MISRA C:2012 Rule 17.7 (ADR-070 Case 1): every `strncpy`/`strncat` below is a
- * call the TRANSPILER emits to lower a cnx string operation -- the author
- * never wrote it, so its discarded return is cast to `(void)` here rather than
- * being reported to the author. Author-written discards are Case 2 (E0708).
- *
- * This class is the single source of truth for that lowering; callers must not
- * build these calls themselves, or the cast would have to be repeated.
- */
 import LengthProperty from "./LengthProperty";
 import type TRenderedStringPart from "../types/TRenderedStringPart";
 import type TStringValueForm from "../types/TStringValueForm";
@@ -20,6 +11,12 @@ import type TStringValueForm from "../types/TStringValueForm";
 /** C null terminator character literal for generated code */
 const C_NULL_CHAR = String.raw`'\0'`;
 
+/**
+ * This class is the single source of truth for lowering a cnx string write:
+ * every copy, substring and concatenation part goes through `cnx_string_copy`
+ * (#2207, #1902), so no `strncpy`/`strncat` result is discarded (MISRA C:2012
+ * Rule 17.7). Callers must not build these calls themselves.
+ */
 class StringUtils {
   /** #2207: the copy a string written from another string goes through */
   static readonly COPY_HELPER = "cnx_string_copy";
@@ -35,9 +32,11 @@ class StringUtils {
   /**
    * ADR-045: the lines that build a string into `buffer` from its parts --
    * one substring, or a concatenation of two or more parts, each a whole
-   * string or a substring (#1954). A concatenation copies its first part,
-   * appends each later one bounded by what is left, then terminates at the
-   * capacity. The `(void)` casts are MISRA 17.7's (ADR-070 Case 1).
+   * string or a substring (#1954). A concatenation copies its first part in
+   * with `cnx_string_copy`, as every copy is, so a first part that fills the
+   * capacity has its terminator written without gcc's `-Wstringop-truncation`
+   * (#1902). Each later part is appended bounded by what is left, and every
+   * step terminates what it writes.
    */
   static build(
     buffer: string,
@@ -48,39 +47,44 @@ class StringUtils {
     const lines =
       first.kind === "substring"
         ? StringUtils.substring(buffer, first.source, first.start, first.length)
-        : [`(void) strncpy(${buffer}, ${first.code}, ${capacity});`];
-    if (rest.length === 0 && first.kind === "substring") return lines;
+        : [StringUtils.copy(buffer, first.code, capacity)];
     for (const part of rest) {
-      if (part.kind === "substring") {
-        lines.push(...StringUtils.appendSubstring(buffer, capacity, part));
-      } else {
-        lines.push(
-          `(void) strncat(${buffer}, ${part.code}, ${capacity} - strlen(${buffer}));`,
-        );
-      }
+      lines.push(...StringUtils.append(buffer, capacity, part));
     }
-    lines.push(`${buffer}[${capacity}] = ${C_NULL_CHAR};`);
     return lines;
   }
 
   /**
-   * A substring appended to what is built, bounded by the space left as
-   * `strncat` bounds a whole part: a part before it may be a C string or an
-   * unsized `string`, whose length 2.1 cannot measure (#2160 review)
+   * A part appended to what is built: copied in at its end by
+   * `cnx_string_copy`, bounded by the space left (and a substring by its
+   * length too). A part before it may be a C string or an unsized `string`,
+   * whose length 2.1 cannot measure (#2160 review), so the end is found with
+   * `strlen`. `strncat` is not used: when every earlier part is empty, gcc
+   * cannot fold its bound and rejects any part it can size that fills the
+   * capacity with `-Wstringop-truncation` (#1902).
    */
-  private static appendSubstring(
+  private static append(
     buffer: string,
     capacity: number,
-    part: Extract<TRenderedStringPart, { kind: "substring" }>,
+    part: TRenderedStringPart,
   ): string[] {
-    const count = StringUtils.count(part.length);
-    const left = `(${capacity}U - cnx_used)`;
+    const left = `${capacity}U - cnx_used`;
+    const source =
+      part.kind === "substring" ? `${part.source} + ${part.start}` : part.code;
+    const bound =
+      part.kind === "substring"
+        ? StringUtils.bounded(left, StringUtils.count(part.length))
+        : left;
     return [
       "{",
       `    const ${LengthProperty.CHAR_COUNT_C_TYPE} cnx_used = ${LengthProperty.stringCharsC(buffer)};`,
-      `    ${StringUtils.COPY_HELPER}(${buffer} + cnx_used, ${part.source} + ${part.start}, (${left} < ${count}) ? ${left} : ${count});`,
+      `    ${StringUtils.COPY_HELPER}(&${buffer}[cnx_used], ${source}, ${bound});`,
       "}",
     ];
+  }
+
+  private static bounded(left: string, count: string): string {
+    return `((${left}) < ${count}) ? (${left}) : ${count}`;
   }
 
   private static count(length: number): string {
@@ -108,16 +112,11 @@ class StringUtils {
 
   /**
    * Whether `build` calls `cnx_string_copy`, so 2.2 decides the helper by
-   * the rule that emits it: a copy does, and so does every substring, a
-   * concatenation's parts among them (an appended one is copied in at the
-   * end of what is built, without `strncat`'s `-Wstringop-truncation`)
+   * the rule that emits it: every form but a literal does -- a copy, a
+   * substring, and a concatenation, whose first part is copied in (#1902)
    */
   static usesCopyHelper(form: TStringValueForm): boolean {
-    if (form.kind === "copy" || form.kind === "substring") return true;
-    return (
-      form.kind === "concat" &&
-      form.parts.some((part) => part.kind === "substring")
-    );
+    return form.kind !== "literal";
   }
 
   /**
@@ -134,7 +133,7 @@ class StringUtils {
       i += width;
     }
     const character = characters[k];
-    if (character === undefined) return String.raw`'\0'`;
+    if (character === undefined) return C_NULL_CHAR;
     return character === "'" ? String.raw`'\''` : `'${character}'`;
   }
 

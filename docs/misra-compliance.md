@@ -466,31 +466,31 @@ E0929 (ADR-045: a string compares only with a string, and a string comparison ha
 
 ## Rule 17 - Functions
 
-| Rule | Description                         | Status        | Reference                                                                                        |
-| ---- | ----------------------------------- | ------------- | ------------------------------------------------------------------------------------------------ |
-| 17.1 | No stdarg.h                         | **By Design** | No variadic functions                                                                            |
-| 17.2 | No recursion                        | Partial       | E0423 (ADR-030); a call through the function's own callback type is not detected: #2131          |
-| 17.3 | Function declared before use        | **By Design** | Module system                                                                                    |
-| 17.4 | All exit paths return value         | Partial       | Some detection                                                                                   |
-| 17.5 | Array parameter size                | **By Design** | Arrays have size info                                                                            |
-| 17.6 | No `static` in array parameter `[]` | **By Design** | `[static N]` is never emitted                                                                    |
-| 17.7 | Return value used or explicit void  | **Enforced**  | E0708 for author-written discards; transpiler-emitted lowering calls are `(void)`-cast (ADR-070) |
-| 17.8 | Parameter not modified              | **By Design** | ADR-006: pass-by-value                                                                           |
+| Rule | Description                         | Status        | Reference                                                                                                                       |
+| ---- | ----------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| 17.1 | No stdarg.h                         | **By Design** | No variadic functions                                                                                                           |
+| 17.2 | No recursion                        | Partial       | E0423 (ADR-030); a call through the function's own callback type is not detected: #2131                                         |
+| 17.3 | Function declared before use        | **By Design** | Module system                                                                                                                   |
+| 17.4 | All exit paths return value         | Partial       | Some detection                                                                                                                  |
+| 17.5 | Array parameter size                | **By Design** | Arrays have size info                                                                                                           |
+| 17.6 | No `static` in array parameter `[]` | **By Design** | `[static N]` is never emitted                                                                                                   |
+| 17.7 | Return value used or explicit void  | **Enforced**  | E0708 for author-written discards (ADR-070); string lowering calls `cnx_string_copy`, a `void` helper, so it discards no result |
+| 17.8 | Parameter not modified              | **By Design** | ADR-006: pass-by-value                                                                                                          |
 
 ---
 
 ## Rule 18 - Pointers and Arrays
 
-| Rule | Description                   | Status        | Reference                                                                                                   |
-| ---- | ----------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------- |
-| 18.1 | Pointer arithmetic in bounds  | **By Design** | No pointer arithmetic in cnx source; premise under audit (see 18.4): #2134                                  |
-| 18.2 | Subtraction on same array     | **By Design** | No pointer arithmetic in cnx source; premise under audit (see 18.4): #2134                                  |
-| 18.3 | Relational on same object     | **By Design** | No pointer comparison                                                                                       |
-| 18.4 | No +, -, += , -= on pointers  | Not Enforced  | Substring copies emit `source + offset` (ADR-045), and `+` on a `c_` pointer passes through (ADR-046): #859 |
-| 18.5 | Max two levels of indirection | **By Design** | No raw pointers                                                                                             |
-| 18.6 | No pointer to auto            | N/A           | No address-of operator                                                                                      |
-| 18.7 | No flexible array members     | **By Design** | Not in grammar                                                                                              |
-| 18.8 | No VLAs                       | **By Design** | Static allocation only                                                                                      |
+| Rule | Description                   | Status        | Reference                                                                                                                                            |
+| ---- | ----------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 18.1 | Pointer arithmetic in bounds  | **By Design** | No pointer arithmetic in cnx source; premise under audit (see 18.4): #2134                                                                           |
+| 18.2 | Subtraction on same array     | **By Design** | No pointer arithmetic in cnx source; premise under audit (see 18.4): #2134                                                                           |
+| 18.3 | Relational on same object     | **By Design** | No pointer comparison                                                                                                                                |
+| 18.4 | No +, -, += , -= on pointers  | Not Enforced  | Substring copies emit `source + offset` (ADR-045; an append's destination is `&buf[used]`), and `+` on a `c_` pointer passes through (ADR-046): #859 |
+| 18.5 | Max two levels of indirection | **By Design** | No raw pointers                                                                                                                                      |
+| 18.6 | No pointer to auto            | N/A           | No address-of operator                                                                                                                               |
+| 18.7 | No flexible array members     | **By Design** | Not in grammar                                                                                                                                       |
+| 18.8 | No VLAs                       | **By Design** | Static allocation only                                                                                                                               |
 
 ---
 

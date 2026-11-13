@@ -248,9 +248,11 @@ if (destCapacity < src1Capacity + src2Capacity) {
 
 // Generate:
 // char dest[N+1] = "";
-// strncpy(dest, src1, N);
-// strncat(dest, src2, N - strlen(dest));
-// dest[N] = '\0';
+// cnx_string_copy(dest, src1, NU);
+// {
+//     const uint32_t cnx_used = (uint32_t) strlen(dest);
+//     cnx_string_copy(&dest[cnx_used], src2, NU - cnx_used);
+// }
 ```
 
 ### 4.3 Substring
@@ -266,7 +268,7 @@ if (typeInfo?.isString && hasStartAndLength) {
       `Error: Substring [${start},${length}] exceeds capacity ${capacity}`,
     );
   }
-  // Generate: strncpy(dest, src + start, length); dest[length] = '\0';
+  // Generate: cnx_string_copy(dest, src + start, lengthU);
 }
 ```
 
@@ -374,9 +376,11 @@ string<64> result <- a + b;
 
 ```c
 char result[65] = "";
-strncpy(result, a, 64);
-strncat(result, b, 64 - strlen(result));
-result[64] = '\0';
+cnx_string_copy(result, a, 64U);
+{
+    const uint32_t cnx_used = (uint32_t) strlen(result);
+    cnx_string_copy(&result[cnx_used], b, 64U - cnx_used);
+}
 ```
 
 ### Substring
@@ -388,9 +392,8 @@ string<5> hello <- source[0, 5];
 →
 
 ```c
-char hello[6];
-strncpy(hello, source + 0, 5);
-hello[5] = '\0';
+char hello[6] = "";
+cnx_string_copy(hello, source + 0, 5U);
 ```
 
 ---

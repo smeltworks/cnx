@@ -523,9 +523,11 @@ describe("ArgumentGenerator", () => {
       expect(state.pendingTempDeclarations).toEqual([
         "/* ADR-045 / Issue #2239: a concatenation or a substring argument is built into a string<N> before the call. */",
         'char cnx_tmp0[9] = "";',
-        "(void) strncpy(cnx_tmp0, a, 8);",
-        "(void) strncat(cnx_tmp0, b, 8 - strlen(cnx_tmp0));",
-        "cnx_tmp0[8] = '\\0';",
+        "cnx_string_copy(cnx_tmp0, a, 8U);",
+        "{",
+        "    const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp0);",
+        "    cnx_string_copy(&cnx_tmp0[cnx_used], b, 8U - cnx_used);",
+        "}",
       ]);
     });
   });

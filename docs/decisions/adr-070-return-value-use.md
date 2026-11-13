@@ -326,7 +326,9 @@ require them.
 - **Case 1 has one producer.** Every lowered `strncpy`/`strncat` the string operations emit
   carries the `(void)` cast as part of what is produced, from a single place. Two of those
   sequences were previously rebuilt separately; they now come from the one producer, so the
-  cast cannot be present in one lowering and missing from another.
+  cast cannot be present in one lowering and missing from another. Since #2207 and #1902 that
+  producer lowers every string write to the `void` helper `cnx_string_copy`, so nothing is left
+  for Case 1 to cast (#2403).
 - **Case 2 reports E0708** when a resolvable non-void call is the entire expression
   statement.
 - **ADR-016 qualifiers are separate tokens.** `this.member()` and `global.Scope.member()` do

@@ -28,7 +28,7 @@ import ProgramExpressions from "../../utils/ProgramExpressions";
  * ## Three messages that were one rule
  *
  * At file scope a string may be initialized by a LITERAL and by nothing else.
- * C has no place to run `strncpy` or `strncat` before `main`, so a copy from a
+ * C has no place to run `cnx_string_copy` before `main`, so a copy from a
  * variable, a concatenation and a substring extraction are all impossible
  * there -- and all three threw, with three different messages, from three
  * different generation paths. Probed rather than assumed: a literal and an

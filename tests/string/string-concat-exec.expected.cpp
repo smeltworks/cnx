@@ -6,15 +6,33 @@
 #include <stdint.h>
 #include <string.h>
 
+/* MISRA C:2012 Rule 19.1: string copied a character at a time by `cnx_string_copy` (`strncpy` would be passed overlapping arguments when a string is written from itself). */
+static inline void cnx_string_copy(char* target, const char* source, uint32_t capacity) {
+    const char* next = source;
+    uint32_t i = 0U;
+    while ((i < capacity) && (*next != '\0')) {
+        target[i] = *next;
+        next++;
+        i++;
+    }
+    while (i < capacity) {
+        target[i] = '\0';
+        i++;
+    }
+    target[capacity] = '\0';
+}
+
 // test-execution
 // ADR-045: Validate string concatenation at runtime
 int main(void) {
     const char first[33] = "Hello";
     const char second[33] = " World";
     char result[65] = "";
-    (void) strncpy(result, first, 64);
-    (void) strncat(result, second, 64 - strlen(result));
-    result[64] = '\0';
+    cnx_string_copy(result, first, 64U);
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(result);
+        cnx_string_copy(&result[cnx_used], second, 64U - cnx_used);
+    }
     if ((uint32_t) strlen(result) != 11) {
         return 1;
     }
@@ -25,9 +43,11 @@ int main(void) {
         return 3;
     }
     char withLit[65] = "";
-    (void) strncpy(withLit, first, 64);
-    (void) strncat(withLit, "!", 64 - strlen(withLit));
-    withLit[64] = '\0';
+    cnx_string_copy(withLit, first, 64U);
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(withLit);
+        cnx_string_copy(&withLit[cnx_used], "!", 64U - cnx_used);
+    }
     if ((uint32_t) strlen(withLit) != 6) {
         return 4;
     }
@@ -37,9 +57,11 @@ int main(void) {
     const char a[9] = "AB";
     const char b[9] = "CD";
     char ab[17] = "";
-    (void) strncpy(ab, a, 16);
-    (void) strncat(ab, b, 16 - strlen(ab));
-    ab[16] = '\0';
+    cnx_string_copy(ab, a, 16U);
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(ab);
+        cnx_string_copy(&ab[cnx_used], b, 16U - cnx_used);
+    }
     if ((uint32_t) strlen(ab) != 4) {
         return 6;
     }
@@ -49,9 +71,11 @@ int main(void) {
     const char part1[33] = "The quick ";
     const char part2[33] = "brown fox";
     char sentence[65] = "";
-    (void) strncpy(sentence, part1, 64);
-    (void) strncat(sentence, part2, 64 - strlen(sentence));
-    sentence[64] = '\0';
+    cnx_string_copy(sentence, part1, 64U);
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(sentence);
+        cnx_string_copy(&sentence[cnx_used], part2, 64U - cnx_used);
+    }
     if ((uint32_t) strlen(sentence) != 19) {
         return 8;
     }
@@ -61,9 +85,11 @@ int main(void) {
     const char nonEmpty[33] = "Text";
     const char empty[33] = "";
     char withEmpty[65] = "";
-    (void) strncpy(withEmpty, nonEmpty, 64);
-    (void) strncat(withEmpty, empty, 64 - strlen(withEmpty));
-    withEmpty[64] = '\0';
+    cnx_string_copy(withEmpty, nonEmpty, 64U);
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(withEmpty);
+        cnx_string_copy(&withEmpty[cnx_used], empty, 64U - cnx_used);
+    }
     if ((uint32_t) strlen(withEmpty) != 4) {
         return 10;
     }
@@ -71,16 +97,20 @@ int main(void) {
         return 11;
     }
     char emptyFirst[65] = "";
-    (void) strncpy(emptyFirst, empty, 64);
-    (void) strncat(emptyFirst, nonEmpty, 64 - strlen(emptyFirst));
-    emptyFirst[64] = '\0';
+    cnx_string_copy(emptyFirst, empty, 64U);
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(emptyFirst);
+        cnx_string_copy(&emptyFirst[cnx_used], nonEmpty, 64U - cnx_used);
+    }
     if (strcmp(emptyFirst, "Text") != 0) {
         return 12;
     }
     char litConcat[12] = "";
-    (void) strncpy(litConcat, "Hello", 11);
-    (void) strncat(litConcat, " World", 11 - strlen(litConcat));
-    litConcat[11] = '\0';
+    cnx_string_copy(litConcat, "Hello", 11U);
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(litConcat);
+        cnx_string_copy(&litConcat[cnx_used], " World", 11U - cnx_used);
+    }
     if ((uint32_t) strlen(litConcat) != 11) {
         return 13;
     }

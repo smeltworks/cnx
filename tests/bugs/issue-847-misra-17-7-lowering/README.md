@@ -24,6 +24,10 @@ Every emitted `strncpy`/`strncat` must carry an explicit `(void)`. The author
 never wrote these calls, so the cast is codegen rather than a language change —
 which is why this is a snapshot fixture and not a `test-error` one.
 
+Since #2207 and #1902 both forms lower to `cnx_string_copy`, a `void` helper, so
+no emitted call discards a result and this fixture has no cast left to check.
+What it should guard instead is tracked in #2403.
+
 ## Why the cast lives in one place
 
 `StringUtils` is the sole producer of these calls. `StringDeclHelper` used to

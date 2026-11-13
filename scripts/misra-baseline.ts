@@ -53,8 +53,8 @@ const BASELINE = new Map<string, string>([
   ["misra-c2012-12.1", "#865"],
   ["misra-c2012-15.5", "#861"],
   ["misra-c2012-18.4", "#859"],
-  // Rule 17.7 is deliberately absent: #847 / ADR-070 casts transpiler-emitted
-  // lowering calls to (void) at their single emit site and makes author-written
+  // Rule 17.7 is deliberately absent: string lowering calls the void helper
+  // cnx_string_copy (#2207, #1902), and #847 / ADR-070 makes author-written
   // discards a compile error (E0708), so the rule is enforced, not baselined.
   // --- rules surfaced by #1057, newly tracked (#1059–#1072) ---
   // 8.6 (#1059) and 8.5 (#1064) are deliberately absent: each measured 0

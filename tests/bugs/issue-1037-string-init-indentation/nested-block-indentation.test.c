@@ -35,9 +35,11 @@ int main(void) {
         char copied[33] = "";
         cnx_string_copy(copied, base, 32U);
         char joined[33] = "";
-        (void) strncpy(joined, base, 32);
-        (void) strncat(joined, base, 32 - strlen(joined));
-        joined[32] = '\0';
+        cnx_string_copy(joined, base, 32U);
+        {
+            const uint32_t cnx_used = (uint32_t) strlen(joined);
+            cnx_string_copy(&joined[cnx_used], base, 32U - cnx_used);
+        }
         char part[9] = "";
         cnx_string_copy(part, base + 0, 3U);
         if (strcmp(copied, "Hello") != 0) {

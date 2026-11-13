@@ -33,12 +33,11 @@ uint32_t joinAll(const char* p) {
     const char s[9] = "abcdefgh";
     /* ADR-045 / Issue #2236: a string<N> field is copied in like any string; C initializes a char[] only from a literal. */
     Box cnx_tmp0 = { .t = { 0 }, .canary = 90U };
-    (void) strncpy(cnx_tmp0.t, p, 8);
+    cnx_string_copy(cnx_tmp0.t, p, 8U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp0.t);
-        cnx_string_copy(cnx_tmp0.t + cnx_used, s + 0U, ((8U - cnx_used) < 4U) ? (8U - cnx_used) : 4U);
+        cnx_string_copy(&cnx_tmp0.t[cnx_used], s + 0U, ((8U - cnx_used) < 4U) ? (8U - cnx_used) : 4U);
     }
-    cnx_tmp0.t[8] = '\0';
     const Box b = cnx_tmp0;
     if (b.canary != 90) {
         return 1U;
@@ -47,25 +46,23 @@ uint32_t joinAll(const char* p) {
         return 2U;
     }
     char d[9] = "";
-    (void) strncpy(d, p, 8);
+    cnx_string_copy(d, p, 8U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(d);
-        cnx_string_copy(d + cnx_used, s + 0, ((8U - cnx_used) < 4U) ? (8U - cnx_used) : 4U);
+        cnx_string_copy(&d[cnx_used], s + 0, ((8U - cnx_used) < 4U) ? (8U - cnx_used) : 4U);
     }
-    d[8] = '\0';
     if (strcmp(d, "12345678") != 0) {
         return 3U;
     }
     char e[9] = "";
-    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (`strncpy` and `strncat` would be passed overlapping arguments when a part reads the string written). */
+    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (copying the parts in place would overwrite characters a later part still reads when a part reads the string written). */
     {
         char cnx_tmp1[9] = "";
-        (void) strncpy(cnx_tmp1, p, 8);
+        cnx_string_copy(cnx_tmp1, p, 8U);
         {
             const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp1);
-            cnx_string_copy(cnx_tmp1 + cnx_used, s + 0U, ((8U - cnx_used) < 4U) ? (8U - cnx_used) : 4U);
+            cnx_string_copy(&cnx_tmp1[cnx_used], s + 0U, ((8U - cnx_used) < 4U) ? (8U - cnx_used) : 4U);
         }
-        cnx_tmp1[8] = '\0';
         cnx_string_copy(e, cnx_tmp1, 8U);
     }
     if (strcmp(e, "12345678") != 0) {
@@ -73,9 +70,11 @@ uint32_t joinAll(const char* p) {
     }
     /* ADR-045 / Issue #2236: a string<N> field is copied in like any string; C initializes a char[] only from a literal. */
     Box cnx_tmp2 = { .t = { 0 }, .canary = 91U };
-    (void) strncpy(cnx_tmp2.t, p, 8);
-    (void) strncat(cnx_tmp2.t, "xyz", 8 - strlen(cnx_tmp2.t));
-    cnx_tmp2.t[8] = '\0';
+    cnx_string_copy(cnx_tmp2.t, p, 8U);
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp2.t);
+        cnx_string_copy(&cnx_tmp2.t[cnx_used], "xyz", 8U - cnx_used);
+    }
     const Box c = cnx_tmp2;
     if (c.canary != 91) {
         return 5U;

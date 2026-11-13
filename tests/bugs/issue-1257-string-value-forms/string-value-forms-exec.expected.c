@@ -40,9 +40,11 @@ uint32_t S__run(void) {
     // cppcheck-suppress misra-c2012-9.4
     const char arr[3][9] = {"e0", "e1", "e2"};
     char d0[41] = "";
-    (void) strncpy(d0, a, 40);
-    (void) strncat(d0, b, 40 - strlen(d0));
-    d0[40] = '\0';
+    cnx_string_copy(d0, a, 40U);
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(d0);
+        cnx_string_copy(&d0[cnx_used], b, 40U - cnx_used);
+    }
     if (strcmp(d0, "abcd") != 0) {
         return 13U;
     }
@@ -52,16 +54,20 @@ uint32_t S__run(void) {
         return 14U;
     }
     char d1[41] = "";
-    (void) strncpy(d1, c.name, 40);
-    (void) strncat(d1, "z", 40 - strlen(d1));
-    d1[40] = '\0';
+    cnx_string_copy(d1, c.name, 40U);
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(d1);
+        cnx_string_copy(&d1[cnx_used], "z", 40U - cnx_used);
+    }
     if (strcmp(d1, "xyz") != 0) {
         return 1U;
     }
     char d2[41] = "";
-    (void) strncpy(d2, arr[1], 40);
-    (void) strncat(d2, S__m, 40 - strlen(d2));
-    d2[40] = '\0';
+    cnx_string_copy(d2, arr[1], 40U);
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(d2);
+        cnx_string_copy(&d2[cnx_used], S__m, 40U - cnx_used);
+    }
     if (strcmp(d2, "e1mm") != 0) {
         return 2U;
     }
@@ -69,21 +75,25 @@ uint32_t S__run(void) {
     cnx_string_copy(d3, S__m + 0, 1U);
     {
         const uint32_t cnx_used = (uint32_t) strlen(d3);
-        cnx_string_copy(d3 + cnx_used, c.name + 1, ((40U - cnx_used) < 1U) ? (40U - cnx_used) : 1U);
+        cnx_string_copy(&d3[cnx_used], c.name + 1, ((40U - cnx_used) < 1U) ? (40U - cnx_used) : 1U);
     }
     {
         const uint32_t cnx_used = (uint32_t) strlen(d3);
-        cnx_string_copy(d3 + cnx_used, arr[2] + 1, ((40U - cnx_used) < 1U) ? (40U - cnx_used) : 1U);
+        cnx_string_copy(&d3[cnx_used], arr[2] + 1, ((40U - cnx_used) < 1U) ? (40U - cnx_used) : 1U);
     }
-    d3[40] = '\0';
     if (strcmp(d3, "my2") != 0) {
         return 3U;
     }
     char d4[41] = "";
-    (void) strncpy(d4, a, 40);
-    (void) strncat(d4, b, 40 - strlen(d4));
-    (void) strncat(d4, "z", 40 - strlen(d4));
-    d4[40] = '\0';
+    cnx_string_copy(d4, a, 40U);
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(d4);
+        cnx_string_copy(&d4[cnx_used], b, 40U - cnx_used);
+    }
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(d4);
+        cnx_string_copy(&d4[cnx_used], "z", 40U - cnx_used);
+    }
     if (strcmp(d4, "abcdz") != 0) {
         return 4U;
     }
@@ -92,18 +102,20 @@ uint32_t S__run(void) {
         return 5U;
     }
     char t[41] = "";
-    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (`strncpy` and `strncat` would be passed overlapping arguments when a part reads the string written). */
+    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (copying the parts in place would overwrite characters a later part still reads when a part reads the string written). */
     {
         char cnx_tmp0[41] = "";
-        (void) strncpy(cnx_tmp0, a, 40);
-        (void) strncat(cnx_tmp0, b, 40 - strlen(cnx_tmp0));
-        cnx_tmp0[40] = '\0';
+        cnx_string_copy(cnx_tmp0, a, 40U);
+        {
+            const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp0);
+            cnx_string_copy(&cnx_tmp0[cnx_used], b, 40U - cnx_used);
+        }
         cnx_string_copy(t, cnx_tmp0, 40U);
     }
     if (strcmp(t, "abcd") != 0) {
         return 6U;
     }
-    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (`strncpy` and `strncat` would be passed overlapping arguments when a part reads the string written). */
+    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (copying the parts in place would overwrite characters a later part still reads when a part reads the string written). */
     {
         char cnx_tmp1[41] = "";
         cnx_string_copy(cnx_tmp1, a + 1U, 1U);
@@ -113,12 +125,14 @@ uint32_t S__run(void) {
         return 7U;
     }
     Box x = {0};
-    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (`strncpy` and `strncat` would be passed overlapping arguments when a part reads the string written). */
+    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (copying the parts in place would overwrite characters a later part still reads when a part reads the string written). */
     {
         char cnx_tmp2[41] = "";
-        (void) strncpy(cnx_tmp2, c.name, 40);
-        (void) strncat(cnx_tmp2, arr[0U], 40 - strlen(cnx_tmp2));
-        cnx_tmp2[40] = '\0';
+        cnx_string_copy(cnx_tmp2, c.name, 40U);
+        {
+            const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp2);
+            cnx_string_copy(&cnx_tmp2[cnx_used], arr[0U], 40U - cnx_used);
+        }
         cnx_string_copy(x.name, cnx_tmp2, 40U);
     }
     if (strcmp(x.name, "xye0") != 0) {
@@ -127,36 +141,34 @@ uint32_t S__run(void) {
     // cppcheck-suppress misra-c2012-9.3
     // cppcheck-suppress misra-c2012-9.4
     char o[2][41] = {"", ""};
-    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (`strncpy` and `strncat` would be passed overlapping arguments when a part reads the string written). */
+    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (copying the parts in place would overwrite characters a later part still reads when a part reads the string written). */
     {
         char cnx_tmp3[41] = "";
-        (void) strncpy(cnx_tmp3, "z", 40);
+        cnx_string_copy(cnx_tmp3, "z", 40U);
         {
             const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp3);
-            cnx_string_copy(cnx_tmp3 + cnx_used, S__m + 0U, ((40U - cnx_used) < 1U) ? (40U - cnx_used) : 1U);
+            cnx_string_copy(&cnx_tmp3[cnx_used], S__m + 0U, ((40U - cnx_used) < 1U) ? (40U - cnx_used) : 1U);
         }
-        cnx_tmp3[40] = '\0';
         cnx_string_copy(o[1], cnx_tmp3, 40U);
     }
     if (strcmp(o[1U], "zm") != 0) {
         return 9U;
     }
     char s[9] = "abc";
-    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (`strncpy` and `strncat` would be passed overlapping arguments when a part reads the string written). */
+    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (copying the parts in place would overwrite characters a later part still reads when a part reads the string written). */
     {
         char cnx_tmp4[9] = "";
-        (void) strncpy(cnx_tmp4, "z", 8);
+        cnx_string_copy(cnx_tmp4, "z", 8U);
         {
             const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp4);
-            cnx_string_copy(cnx_tmp4 + cnx_used, s + 0U, ((8U - cnx_used) < 2U) ? (8U - cnx_used) : 2U);
+            cnx_string_copy(&cnx_tmp4[cnx_used], s + 0U, ((8U - cnx_used) < 2U) ? (8U - cnx_used) : 2U);
         }
-        cnx_tmp4[8] = '\0';
         cnx_string_copy(s, cnx_tmp4, 8U);
     }
     if (strcmp(s, "zab") != 0) {
         return 10U;
     }
-    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (`strncpy` and `strncat` would be passed overlapping arguments when a part reads the string written). */
+    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (copying the parts in place would overwrite characters a later part still reads when a part reads the string written). */
     {
         char cnx_tmp5[9] = "";
         cnx_string_copy(cnx_tmp5, s + 1U, 2U);
