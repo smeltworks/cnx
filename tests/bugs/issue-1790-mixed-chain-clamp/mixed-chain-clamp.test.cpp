@@ -83,7 +83,7 @@ static inline bool cnx_safe_div_i32(int32_t* output, int32_t numerator, int32_t 
         *output = defaultValue;
         return true;  // Error occurred
     }
-    *output = numerator / divisor;
+    *output = cnx_clamp_div_i32(numerator, divisor);
     return false;  // Success
 }
 
@@ -92,7 +92,7 @@ static inline bool cnx_safe_wrap_div_i32(int32_t* output, int32_t numerator, int
         *output = defaultValue;
         return true;  // Error occurred
     }
-    *output = numerator / divisor;
+    *output = cnx_wrap_div_i32(numerator, divisor);
     return false;  // Success
 }
 
@@ -101,7 +101,7 @@ static inline bool cnx_safe_mod_i32(int32_t* output, int32_t numerator, int32_t 
         *output = defaultValue;
         return true;  // Error occurred
     }
-    *output = numerator % divisor;
+    *output = cnx_clamp_mod_i32(numerator, divisor);
     return false;  // Success
 }
 
