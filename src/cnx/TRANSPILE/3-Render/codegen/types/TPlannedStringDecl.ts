@@ -1,4 +1,5 @@
 import type IPlannedStringInit from "./IPlannedStringInit";
+import type IPlannedArrayDeclaration from "./IPlannedArrayDeclaration";
 
 /**
  * One ADR-045 string declaration, reduced to which form it takes and what that
@@ -33,6 +34,8 @@ type TPlannedStringDecl =
       readonly kind: "array";
       readonly elementCapacity: number;
       readonly dimensions: string;
+      /** #1209: another string array of its shape, copied in */
+      readonly copy: IPlannedArrayDeclaration["copy"];
       /**
        * The first declared dimension when it is a numeric literal, else null.
        *

@@ -537,6 +537,7 @@ export default class CodeGenerator implements IOrchestrator {
       callbackInfo.typedefName,
       callbackInfo.parameters,
       this.isCppMode(),
+      callbackInfo.returnBuffer,
     );
   }
 

@@ -1,0 +1,41 @@
+// test-error
+// test-adr: 035
+// Issue #1209: a return is copied into the caller's buffer, so the value must
+// have the return type's shape, element type and list count (ADR-035).
+
+// NEGATIVE CONTROLS -- the return type's shape and element type.
+u8[4] same() {
+    u8[4] a <- [1, 2, 3, 4];
+    return a;
+}
+
+u8[4] sameList() {
+    return [1, 2, 3, 4];
+}
+
+// ASSERTION 1 -- an array of a smaller shape.
+u8[4] smaller() {
+    u8[2] a <- [1, 2];
+    return a;
+}
+
+// ASSERTION 2 -- an array of a larger shape.
+u8[4] larger() {
+    u8[8] a <- [0*];
+    return a;
+}
+
+// ASSERTION 3 -- an array of another element type.
+u8[2] wider() {
+    u16[2] a <- [300, 2];
+    return a;
+}
+
+// ASSERTION 4 -- a list of another count.
+u8[4] shortList() {
+    return [1, 2, 3];
+}
+
+u32 main() {
+    return 0;
+}

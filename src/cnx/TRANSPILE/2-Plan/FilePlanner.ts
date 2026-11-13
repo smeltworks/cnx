@@ -2,6 +2,7 @@ import ForeignTypeFacts from "../../utils/ForeignTypeFacts";
 import SubscriptDepthValidator from "./SubscriptDepthValidator";
 import UnwrittenIncludes from "./UnwrittenIncludes";
 import type TTypeInfo from "../../types/TTypeInfo";
+import type TType from "../../types/TType";
 import type TCArgumentForm from "./types/TCArgumentForm";
 import CArgumentAddress from "./CArgumentAddress";
 import type IPlannedArgument from "./types/IPlannedArgument";
@@ -69,7 +70,10 @@ import type TBlockSyntax from "../../types/syntax/TBlockSyntax";
 import AssignmentTarget from "../../utils/AssignmentTarget";
 import TypeCheckUtils from "../../utils/TypeCheckUtils";
 import TypeText from "../../utils/TypeText";
+import CArrayDimensions from "../../utils/CArrayDimensions";
+import ValuePositions from "../1-Analyze/helpers/ValuePositions";
 import ExpressionShape from "../../utils/ExpressionShape";
+import ReturnBuffer from "../../utils/ReturnBuffer";
 import StringOperand from "../../utils/StringOperand";
 import VariableDeclarations from "../../utils/VariableDeclarations";
 import MutArgument from "../1-Analyze/helpers/MutArgument";
@@ -106,6 +110,7 @@ import type TExpressionOf from "../../types/syntax/TExpressionOf";
 import ExpressionChildren from "../../utils/ExpressionChildren";
 import type TStructInitializerForm from "./types/TStructInitializerForm";
 import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
+import type TPlannedLazyTernary from "./types/TPlannedLazyTernary";
 import type TTypeSyntax from "../../types/syntax/TTypeSyntax";
 import type ISourcePosition from "../../utils/types/ISourcePosition";
 import TypeGenerationHelper from "./TypeGenerationHelper";
@@ -677,18 +682,25 @@ class FilePlanner {
       TStructInitializerForm
     >,
     stringFields: ReadonlyMap<TExpression, number>,
+    bufferCalls: ReadonlyMap<TPostfixOpSyntax, TType>,
     expectedTypes: ReadonlyMap<TExpression, IPlannedExpectedType>,
     cTypes: Set<string>,
   ): {
     readonly operands: ReadonlySet<TExpression>;
-    readonly ternaries: ReadonlyMap<TExpressionOf<"ternary">, string>;
+    readonly ternaries: ReadonlyMap<
+      TExpressionOf<"ternary">,
+      TPlannedLazyTernary
+    >;
+    /** A string ternary's arm other than a call is copied into its buffer */
+    readonly copiesString: boolean;
   } {
     const buildsApart = (expr: TExpression): boolean =>
       ExpressionNodes.direct(expr).some(
         (node) =>
-          node.kind === "structInitializer" &&
-          (structInitializers.get(node) === "cppClass" ||
-            node.fields.some((field) => stringFields.has(field.value))),
+          (node.kind === "structInitializer" &&
+            (structInitializers.get(node) === "cppClass" ||
+              node.fields.some((field) => stringFields.has(field.value)))) ||
+          ExpressionShape.headOf(node).ops.some((op) => bufferCalls.has(op)),
       );
     const retested = new Set(
       FilePlanner.forUpdates(program).flatMap((head) =>
@@ -696,7 +708,8 @@ class FilePlanner {
       ),
     );
     const operands = new Set<TExpression>();
-    const ternaries = new Map<TExpressionOf<"ternary">, string>();
+    const ternaries = new Map<TExpressionOf<"ternary">, TPlannedLazyTernary>();
+    let copiesString = false;
     for (const expr of FilePlanner.writtenExpressions(program, unwritten)) {
       if (retested.has(expr)) continue;
       if (
@@ -711,16 +724,67 @@ class FilePlanner {
         expr.kind === "ternary" &&
         (buildsApart(expr.whenTrue) || buildsApart(expr.whenFalse))
       ) {
+        const buffer = this.bufferTernary(expr, bufferCalls);
+        if (buffer !== null) {
+          ternaries.set(expr, buffer);
+          copiesString ||=
+            buffer.type.kind === "string" &&
+            [expr.whenTrue, expr.whenFalse].some(
+              (arm) => !FilePlanner.fillsInPlace(arm, buffer.calls),
+            );
+          continue;
+        }
         const cType = TypeGenerationHelper.generateByName(
           this.lazyTernaryType(expr, expectedTypes),
           this.typeGenerationDeps(),
         );
         cTypes.add(cType);
-        ternaries.set(expr, cType);
+        ternaries.set(expr, { kind: "value", cType });
       }
     }
     if (operands.size > 0) cTypes.add("bool");
-    return { operands, ternaries };
+    if (copiesString) cTypes.add("uint32_t");
+    return { operands, ternaries, copiesString };
+  }
+
+  /**
+   * #1209: a ternary whose arm is a whole call filling a buffer holds a
+   * `string<N>` or an array: one buffer, wide enough for either arm
+   */
+  private bufferTernary(
+    expr: TExpressionOf<"ternary">,
+    bufferCalls: ReadonlyMap<TPostfixOpSyntax, TType>,
+  ): Extract<TPlannedLazyTernary, { kind: "buffer" }> | null {
+    const arms = [expr.whenTrue, expr.whenFalse];
+    const calls = new Set<TPostfixOpSyntax>();
+    let type: TType | null = null;
+    for (const arm of arms) {
+      const call = ExpressionShape.postfixView(arm)?.ops.at(-1);
+      const returned = call === undefined ? undefined : bufferCalls.get(call);
+      if (call === undefined || returned === undefined) continue;
+      calls.add(call);
+      type ??= returned;
+    }
+    if (type === null) return null;
+    if (type.kind === "string") {
+      const typing = this.state.typingContext();
+      const capacity = Math.max(
+        ...arms.map(
+          (arm) => OperandTyper.typeOf(arm, typing)?.stringCapacity ?? 0,
+        ),
+      );
+      type = { ...type, capacity: Math.max(type.capacity, capacity) };
+    }
+    return { kind: "buffer", type, calls };
+  }
+
+  /** #1209: the arm is one of a buffer ternary's calls, filling it in place */
+  static fillsInPlace(
+    arm: TExpression,
+    calls: ReadonlySet<TPostfixOpSyntax>,
+  ): boolean {
+    const call = ExpressionShape.postfixView(arm)?.ops.at(-1);
+    return call !== undefined && calls.has(call);
   }
 
   /**
@@ -744,6 +808,76 @@ class FilePlanner {
       `the ternary on line ${expr.span.line} has a typed arm: one holds a call or a struct initializer, which E0357 types from its position`,
     );
     return typeName;
+  }
+
+  /**
+   * #1209: each written call to a function returning a `string<N>` or an
+   * array -- a function, a scope member, a cross-file one -- which fills a
+   * temporary of its return type before its statement and stands for it
+   */
+  private planBufferCalls(
+    program: IProgramSyntax,
+    unwritten: IUnwrittenSyntax,
+  ): ReadonlyMap<TPostfixOpSyntax, TType> {
+    const typing = this.state.typingContext();
+    const calls = new Map<TPostfixOpSyntax, TType>();
+    for (const expr of FilePlanner.writtenExpressions(program, unwritten)) {
+      if (ExpressionShape.postfixView(expr) === null) continue;
+      const head = ExpressionShape.headOf(expr);
+      const steps = OperandTyper.chainOf(expr, typing).steps;
+      head.ops.forEach((op, i) => {
+        const step = steps[i - head.opsConsumed];
+        if (op.kind !== "call" || step === undefined) return;
+        // A function, or an ADR-029 callback: its type names the function
+        const callee = step.callee ?? step.before?.typeName ?? null;
+        if (callee === null) return;
+        const symbol = typing.program.symbolByCName(callee);
+        if (symbol?.kind !== "function") return;
+        if (ReturnBuffer.dimensionsOf(symbol.returnType) === null) return;
+        calls.set(op, symbol.returnType);
+      });
+    }
+    return calls;
+  }
+
+  /**
+   * #1209: the buffer calls a declaration of exactly the return type is
+   * initialized by, whole -- `string<16> a <- greet();`. 2.1 made an array
+   * declaration's shape and element type its source's (E0866); a string's
+   * capacity is the one thing a declaration may widen.
+   */
+  private static planInPlaceCalls(
+    valuePositions: IValuePositions,
+    bufferCalls: ReadonlyMap<TPostfixOpSyntax, TType>,
+  ): ReadonlySet<TPostfixOpSyntax> {
+    const calls = new Set<TPostfixOpSyntax>();
+    for (const [value, site] of valuePositions.sites) {
+      if (site.site.kind !== "declaration" || site.outer !== null) continue;
+      // A volatile or atomic declaration is not a buffer parameter's type,
+      // so it is filled through a temporary and copied into
+      const { modifiers } = site.site.declaration;
+      if (modifiers.volatile || modifiers.atomic) continue;
+      const last = ExpressionShape.postfixView(value)?.ops.at(-1);
+      const returnType = last === undefined ? undefined : bufferCalls.get(last);
+      if (last === undefined || returnType === undefined) continue;
+      const element =
+        returnType.kind === "array" ? returnType.elementType : returnType;
+      const typeText = ValuePositions.at(
+        valuePositions.positions,
+        value,
+      ).typeText;
+      if (
+        element.kind === "string" &&
+        (typeText === null ||
+          TypeCheckUtils.sizedStringCapacity(
+            TypeText.withoutDimensions(typeText),
+          ) !== element.capacity)
+      ) {
+        continue;
+      }
+      calls.add(last);
+    }
+    return calls;
   }
 
   /** Every `for` update's expressions: run again each pass, after nothing written before them */
@@ -1273,11 +1407,18 @@ class FilePlanner {
         ...wholeArrayArguments.keys(),
       ]),
     );
+    const arrayReturns = this.planArrayReturns(valuePositions);
+    const bufferCalls = this.planBufferCalls(program, unwritten);
+    const inPlaceCalls = FilePlanner.planInPlaceCalls(
+      valuePositions,
+      bufferCalls,
+    );
     const lazy = this.planLazyOperands(
       program,
       unwritten,
       structInitializers,
       stringCopies.fields,
+      bufferCalls,
       expectedTypes,
       decidedCTypes,
     );
@@ -1353,12 +1494,16 @@ class FilePlanner {
       stringValueForms: stringCopies.forms,
       substringCounts: this.planSubstringCounts(stringCopies.forms),
       stringFields: stringCopies.fields,
-      stringCopyHelper: stringCopies.helper,
+      stringCopyHelper: stringCopies.helper || lazy.copiesString,
       wholeArrayWrites,
       fillSizes,
       expectedTypes,
       narrowings,
       structInitializers,
+      bufferCalls,
+      inPlaceCalls,
+      arrayReturns,
+      stringReturns: stringCopies.returns,
       lazyOperands: lazy.operands,
       lazyTernaries: lazy.ternaries,
     };
@@ -1632,7 +1777,7 @@ class FilePlanner {
   ): TArgumentForm | null {
     if (passing.mode !== "reference") return null;
     if (array !== undefined) return { kind: "array-temp", array };
-    if (this.isArrayTernary(expression, passing)) {
+    if (this.isArrayValue(expression, passing)) {
       return { kind: "array" };
     }
     return this.referenceForm(expression, passing, structInitializers);
@@ -1640,16 +1785,21 @@ class FilePlanner {
 
   /**
    * ADR-014: a ternary of arrays for an array parameter is passed as it
-   * stands, the way each of its arms would be; the arms are 2.1's to check
+   * stands, the way each of its arms would be; the arms are 2.1's to check.
+   * #1209: so is a call returning an array, which stands for the temporary
+   * it filled.
    */
-  private isArrayTernary(
+  private isArrayValue(
     expression: TExpression,
     passing: IArgumentPassing,
   ): boolean {
+    const typing = this.state.typingContext();
+    const inner = ExpressionShape.unparenthesized(expression);
     return (
       passing.param?.isArray === true &&
-      ExpressionShape.unparenthesized(expression).kind === "ternary" &&
-      OperandTyper.arrayArms(expression, this.state.typingContext()) !== null
+      (inner.kind === "ternary" ||
+        OperandTyper.typeOf(inner, typing)?.form.kind === "call") &&
+      OperandTyper.arrayArms(expression, typing) !== null
     );
   }
 
@@ -1762,8 +1912,13 @@ class FilePlanner {
             site.assignment.target,
             this.targetDeclaration(site.assignment.target),
           );
-        case "return":
-          return site.function.returnType.text;
+        case "return": {
+          // #1209: an array's list is written against its element type
+          const returned = site.function.returnType;
+          return returned.kind === "array"
+            ? returned.element.text
+            : returned.text;
+        }
         case "field":
           return outer === null
             ? null
@@ -2293,6 +2448,7 @@ class FilePlanner {
     readonly forms: ReadonlyMap<TExpression, TStringValueForm>;
     readonly arguments: ReadonlyMap<TExpression, number>;
     readonly fields: ReadonlyMap<TExpression, number>;
+    readonly returns: ReadonlyMap<TExpression, number>;
     readonly helper: boolean;
   } {
     const copies = new Map<IAssignmentSyntax, number>();
@@ -2313,6 +2469,11 @@ class FilePlanner {
       cTypes.add("uint32_t");
     }
     FilePlanner.planStringInits(program, typing, forms);
+    const returned = FilePlanner.planStringReturns(
+      valuePositions,
+      typing,
+      forms,
+    );
     const builtArguments = FilePlanner.planStringArguments(
       valuePositions,
       typing,
@@ -2329,10 +2490,18 @@ class FilePlanner {
     // declaration's copy; the helper counts in `uint32_t`
     const helper =
       copies.size > 0 ||
+      returned.size > 0 ||
       fields.size > 0 ||
       [...forms.values()].some((f) => StringUtils.usesCopyHelper(f));
     if (helper) cTypes.add("uint32_t");
-    return { copies, forms, arguments: builtArguments, fields, helper };
+    return {
+      copies,
+      forms,
+      arguments: builtArguments,
+      fields,
+      returns: returned,
+      helper,
+    };
   }
 
   /**
@@ -2432,6 +2601,62 @@ class FilePlanner {
   }
 
   /**
+   * #1209: each value a `string<N>` function returns, which is written into
+   * the caller's buffer as a declaration's initializer is -- copied whole or
+   * built from its parts, by `cnx_string_copy` even when it is a literal --
+   * at the capacity 2.1's E0864 checked it against.
+   */
+  private static planStringReturns(
+    valuePositions: IValuePositions | null,
+    typing: ITypingContext,
+    forms: Map<TExpression, TStringValueForm>,
+  ): ReadonlyMap<TExpression, number> {
+    const returned = new Map<TExpression, number>();
+    if (valuePositions === null) return returned;
+    for (const { value, write, capacity } of StringWriteSites.of(
+      valuePositions,
+    )) {
+      if (write !== "return") continue;
+      forms.set(value, StringValueForm.of(value, typing));
+      returned.set(value, capacity);
+    }
+    return returned;
+  }
+
+  /**
+   * #1209: each value an array function returns, and the copy that writes it
+   * into the caller's buffer -- the whole-array write an assignment plans,
+   * against the return type 2.1 checked it by (E0866)
+   */
+  private planArrayReturns(
+    valuePositions: IValuePositions,
+  ): ReadonlyMap<TExpression, IPlannedWholeArrayWrite> {
+    const planned = new Map<TExpression, IPlannedWholeArrayWrite>();
+    for (const [value, at] of valuePositions.sites) {
+      if (at.site.kind !== "return" || at.outer !== null) continue;
+      const returned = at.site.function.returnType;
+      if (returned.kind !== "array") continue;
+      // A size that does not fold, a C macro, stays as written, as a
+      // variable's does
+      const dimensions = returned.dimensions.map((size) => {
+        invariant(size !== null, "1.2 sized every returned dimension (E0892)");
+        return this.constantOf(size) ?? size.written;
+      });
+      planned.set(
+        value,
+        FilePlanner.wholeArrayShape(
+          returned.text,
+          null,
+          dimensions,
+          value,
+          false,
+        ),
+      );
+    }
+    return planned;
+  }
+
+  /**
    * #1782: each `<-` that writes a whole array -- 2.1's position for its
    * value says so, and 2.1 has checked that it is given what ADR-035 gives
    * one (E0866) with `<-` alone (E0857) -- and the element type and
@@ -2456,8 +2681,9 @@ class FilePlanner {
         "a whole array's element type is named",
       );
       invariant(
-        ExpressionShape.givesWholeArray(value, typeName),
-        "2.1 gave a whole array its list (E0866)",
+        ExpressionShape.givesWholeArray(value, typeName) ||
+          OperandTyper.arrayArms(value, typing) !== null,
+        "2.1 gave a whole array its list or an array (E0866)",
       );
       planned.set(
         site,
@@ -2594,8 +2820,10 @@ class FilePlanner {
       const capacity = Number(element.slice("string<".length, -1));
       return {
         elementCType: "char",
-        dimensions: [...dimensions, capacity + 1],
+        dimensions: CArrayDimensions.of(dimensions, capacity),
         fromList: value.kind === "arrayInitializer",
+        fromArray: ExpressionShape.isArrayValue(value),
+        groupedSource: ExpressionShape.isOperatorResult(value),
         volatileTarget,
       };
     }
@@ -2603,6 +2831,8 @@ class FilePlanner {
       elementCType: cType ?? TYPE_MAP[element] ?? element,
       dimensions,
       fromList: value.kind === "arrayInitializer",
+      fromArray: ExpressionShape.isArrayValue(value),
+      groupedSource: ExpressionShape.isOperatorResult(value),
       volatileTarget,
     };
   }
@@ -3556,6 +3786,7 @@ class FilePlanner {
       returnType: CallbackParameterShape.returnType(symbol, facts),
       parameters: CallbackParameterShape.parameters(cName, symbol, facts),
       typedefName: CallbackParameterShape.typedefName(cName),
+      returnBuffer: ReturnBuffer.parameterFor(symbol.returnType),
     };
   }
 

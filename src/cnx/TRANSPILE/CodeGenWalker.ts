@@ -90,6 +90,9 @@ import IPlannedForever from "./3-Render/codegen/types/IPlannedForever";
 import IPlannedIf from "./3-Render/codegen/types/IPlannedIf";
 import IPlannedLoop from "./3-Render/codegen/types/IPlannedLoop";
 import TPlannedReturn from "./3-Render/codegen/types/TPlannedReturn";
+import ReturnBuffer from "../utils/ReturnBuffer";
+import type IPlannedWholeArrayWrite from "./2-Plan/types/IPlannedWholeArrayWrite";
+import type TType from "../types/TType";
 import VariableModifierBuilder from "./3-Render/codegen/helpers/VariableModifierBuilder";
 import ArrayInitHelper from "./3-Render/codegen/helpers/ArrayInitHelper";
 import generateCriticalStatement from "./3-Render/codegen/generators/statements/CriticalGenerator";
@@ -121,6 +124,7 @@ import PublicInterface from "./2-Plan/PublicInterface";
 import functionGenerator from "./3-Render/codegen/generators/declarationGenerators/FunctionGenerator";
 import scopeGenerator from "./3-Render/codegen/generators/declarationGenerators/ScopeGenerator";
 import FormatUtils from "../utils/FormatUtils";
+import CArrayDimensions from "../utils/CArrayDimensions";
 import ExpressionShape from "../utils/ExpressionShape";
 import SafeDivision from "../utils/SafeDivision";
 import helperGenerators from "./3-Render/codegen/generators/support/HelperGenerator";
@@ -198,6 +202,7 @@ const { processPreprocessorDirective: includeProcessPreprocessorDirective } =
   includeGenerators;
 import CodeGenerator from "./3-Render/codegen/CodeGenerator";
 import FilePlanner from "./2-Plan/FilePlanner";
+import type TPlannedLazyTernary from "./2-Plan/types/TPlannedLazyTernary";
 import ParameterPassing from "./2-Plan/ParameterPassing";
 /** What render folds a constant chain at: wide enough to hold any i64 */
 const WIDEST_SIGNED = "i64";
@@ -279,6 +284,8 @@ class CodeGenWalker {
     ]);
 
   private readonly commentFormatter: CommentFormatter = new CommentFormatter();
+  /** #1209: the variable each in-place call is filling, while it renders */
+  private readonly callTargets = new Map<TPostfixOpSyntax, string>();
 
   /** Issue #644: String declaration helper for bounded/array/concat strings */
   /** Issue #644: Array initialization helper for size inference and fill-all */
@@ -433,8 +440,8 @@ class CodeGenWalker {
     if (expr.kind !== "ternary") {
       return { kind: "value", code: this.renderBinary(expr) };
     }
-    const cType = this.filePlan.lazyTernaries.get(expr);
-    if (cType === undefined) {
+    const planned = this.filePlan.lazyTernaries.get(expr);
+    if (planned === undefined) {
       return {
         kind: "ternary",
         renderCondition: () => this.renderBinary(expr.condition),
@@ -444,6 +451,9 @@ class CodeGenWalker {
     }
     this.rendering.lazyTernaries.add(expr);
     const condition = this.renderBinary(expr.condition);
+    if (planned.kind === "buffer") {
+      return this.renderBufferTernary(expr, planned, condition);
+    }
     const whenTrue = this.renderQueuing(() => this.renderBinary(expr.whenTrue));
     const whenFalse = this.renderQueuing(() =>
       this.renderBinary(expr.whenFalse),
@@ -460,7 +470,7 @@ class CodeGenWalker {
     ];
     this.host.state.pendingTempDeclarations.push(
       ComplianceAnnotations.render(ComplianceAnnotations.TERNARY_ARM),
-      `${cType} ${temp};`,
+      `${planned.cType} ${temp};`,
       `if (${condition}) {`,
       ...arm(whenTrue),
       "} else {",
@@ -468,6 +478,78 @@ class CodeGenWalker {
       "}",
     );
     return { kind: "value", code: temp };
+  }
+
+  /**
+   * #1209: a ternary holding a `string<N>` or an array fills one buffer
+   * declared before its `if`: an arm's call fills it in place, any other arm
+   * is copied in, and the buffer outlives whichever branch ran.
+   */
+  private renderBufferTernary(
+    expr: TExpressionOf<"ternary">,
+    planned: Extract<TPlannedLazyTernary, { kind: "buffer" }>,
+    condition: string,
+  ): TPlannedTernary {
+    const state = this.host.state;
+    const temp = state.getNextTempVarName();
+    const declaration = ReturnBuffer.temporaryFor(
+      planned.type,
+      temp,
+      this.host.getAggregateZeroInitBrace(),
+    );
+    invariant(declaration !== null, "a buffer ternary has a buffer");
+    const indent = FormatUtils.indent(1);
+    const fill = (arm: TExpression): string[] => {
+      const call = ExpressionShape.postfixView(arm)?.ops.at(-1);
+      const inPlace =
+        call !== undefined && FilePlanner.fillsInPlace(arm, planned.calls);
+      if (inPlace) this.callTargets.set(call, temp);
+      try {
+        const rendered = this.renderQueuing(() => this.renderBinary(arm));
+        const written = inPlace
+          ? [`${rendered.code};`]
+          : this.copyIntoBuffer(temp, planned.type, arm, rendered.code);
+        return [...rendered.queued, ...written].map((line) => indent + line);
+      } finally {
+        if (inPlace) this.callTargets.delete(call);
+      }
+    };
+    const whenTrue = fill(expr.whenTrue);
+    const whenFalse = fill(expr.whenFalse);
+    state.pendingTempDeclarations.push(
+      ComplianceAnnotations.render(ComplianceAnnotations.TERNARY_ARM),
+      ReturnBuffer.TEMPORARY_COMMENT,
+      declaration,
+      `if (${condition}) {`,
+      ...whenTrue,
+      "} else {",
+      ...whenFalse,
+      "}",
+    );
+    return { kind: "value", code: temp };
+  }
+
+  /** #1209: a buffer ternary's arm other than a call, copied into its buffer */
+  private copyIntoBuffer(
+    buffer: string,
+    type: TType,
+    arm: TExpression,
+    code: string,
+  ): string[] {
+    if (type.kind === "string") {
+      return [StringUtils.copy(buffer, code, type.capacity)];
+    }
+    invariant(type.kind === "array", "a buffer holds a string or an array");
+    const element = type.elementType;
+    return ArrayInitHelper.elementCopy(
+      buffer,
+      { text: code, grouped: ExpressionShape.isOperatorResult(arm) },
+      CArrayDimensions.of(
+        type.dimensions,
+        element.kind === "string" ? element.capacity : null,
+      ),
+      this.host.state,
+    );
   }
 
   /**
@@ -704,6 +786,8 @@ class CodeGenWalker {
           planArguments: () =>
             this.planCallArguments(args.length === 0 ? null : args),
           safeDivisionHelper,
+          returnBuffer: this.callReturnBuffer(op),
+          into: this.callTargets.get(op) ?? null,
         };
       }
       case "missing":
@@ -712,6 +796,47 @@ class CodeGenWalker {
           "a missing postfix operation is a parse error, which stops the pipeline before render",
         );
     }
+  }
+
+  /**
+   * #1209: a declaration 2.2 has its initializing call fill in place, as
+   * that call written into the declared variable; null for any other
+   */
+  private renderInPlace(
+    initializer: TExpression,
+  ): ((target: string) => string) | null {
+    const call = ExpressionShape.postfixView(initializer)?.ops.at(-1);
+    if (call === undefined || !this.filePlan.inPlaceCalls.has(call)) {
+      return null;
+    }
+    return (target) => {
+      this.callTargets.set(call, target);
+      try {
+        return this.renderExpression(initializer);
+      } finally {
+        this.callTargets.delete(call);
+      }
+    };
+  }
+
+  /**
+   * #1209: a call 2.2 found filling a buffer is made into a temporary of its
+   * return type, which the call then stands for
+   */
+  private callReturnBuffer(
+    op: TPostfixOpSyntax,
+  ): ((name: string) => string) | null {
+    const returnType = this.filePlan.bufferCalls.get(op);
+    if (returnType === undefined) return null;
+    return (name) => {
+      const temporary = ReturnBuffer.temporaryFor(
+        returnType,
+        name,
+        this.host.getAggregateZeroInitBrace(),
+      );
+      invariant(temporary !== null, "a buffer return has a buffer");
+      return temporary;
+    };
   }
 
   private renderPostfix(expr: TExpression): string {
@@ -2029,6 +2154,13 @@ class CodeGenWalker {
             declaration.name,
           ),
           renderReturnType: () => this.renderType(declaration.returnType),
+          renderReturnBuffer: () =>
+            this.renderReturnBuffer(
+              this.host.state.declaredCName(
+                declaringScopePath,
+                declaration.name,
+              ),
+            ),
           planParameters: () => this.planFunctionParameters(params),
           renderBody: () => this.renderBlock(declaration.body),
           renderParameterList: () =>
@@ -2550,6 +2682,7 @@ class CodeGenWalker {
     return {
       name: fn.name,
       returnType: this.renderType(fn.returnType),
+      returnBuffer: this.renderReturnBuffer(fn.name),
       isMainWithArgs: this.isMainFunctionWithArgs(fn.name, params),
       firstParameterName: params?.[0]?.name,
       parameters: this.planFunctionParameters(params),
@@ -2558,6 +2691,24 @@ class CodeGenWalker {
         ? () => this.generateParameterList(params)
         : null,
     };
+  }
+
+  /**
+   * #1209: the buffer parameter a function returning a `string<N>` or an
+   * array fills, or null when it returns by value
+   */
+  private renderReturnBuffer(cName: string): string | null {
+    return ReturnBuffer.parameterFor(this.returnTypeOf(cName));
+  }
+
+  /** The declared return type of the function named `cName` */
+  private returnTypeOf(cName: string): TType {
+    const symbol = this.host.state.typingContext().program.symbolByCName(cName);
+    invariant(
+      symbol?.kind === "function",
+      `1.3 declared the function ${cName}`,
+    );
+    return symbol.returnType;
   }
 
   private generateFunction(fn: IFunctionDeclarationSyntax): string {
@@ -2757,7 +2908,10 @@ class CodeGenWalker {
       kind: "plain",
       sourceName: name,
       emittedName,
-      modifierPrefix: VariableModifierBuilder.toPrefix(modifiers),
+      // #1209: an array copied into is written after it is declared
+      modifierPrefix: VariableModifierBuilder.toPrefix(
+        array.copy === null ? modifiers : { ...modifiers, const: "" },
+      ),
       type,
       array,
       initializer,
@@ -2835,6 +2989,7 @@ class CodeGenWalker {
         arrayTypeDimensions: "",
         renderCStyleDimensions: () => "",
         init: null,
+        copy: null,
       };
     }
     const hasEmptyArrayTypeDimension = (typeDims ?? []).includes(null);
@@ -2868,6 +3023,34 @@ class CodeGenWalker {
             renderDimensions: () => this.renderLoweredDimensions(arrayDims),
           }
         : null,
+      copy: initializer ? this.planArrayCopy(initializer) : null,
+    };
+  }
+
+  /**
+   * #1209: an array declaration initialized from another array of its shape
+   * -- 2.1 checked the shape (E0866) -- copies it element by element
+   */
+  private planArrayCopy(
+    initializer: TExpression,
+  ): IPlannedArrayDeclaration["copy"] {
+    if (!ExpressionShape.isArrayValue(initializer)) return null;
+    const value = OperandTyper.typeOf(
+      initializer,
+      this.host.state.typingContext(),
+    );
+    invariant(
+      value !== null && value.dimensions.length > 0,
+      "2.1 accepted an array initialized only by a list, a string or an array (E0866)",
+    );
+    return {
+      dimensions: CArrayDimensions.of(value.dimensions, value.stringCapacity),
+      renderSource: () => ({
+        text: this.renderExpression(initializer),
+        grouped: ExpressionShape.isOperatorResult(initializer),
+      }),
+      renderInto: this.renderInPlace(initializer),
+      zero: this.host.getAggregateZeroInitBrace(),
     };
   }
 
@@ -3043,6 +3226,7 @@ class CodeGenWalker {
       form: form.kind,
       text: CodeGenWalker.stringTextOf(whole),
       render: () => this.renderExpression(whole),
+      renderInto: form.kind === "copy" ? this.renderInPlace(whole) : null,
       renderParts: () => this.renderStringParts(form),
     };
   }
@@ -3286,6 +3470,7 @@ class CodeGenWalker {
         ? this.foldFirstDimension(typeDims)
         : this.countedSize(decl),
       renderInit: initializer ? () => this.renderExpression(initializer) : null,
+      copy: initializer ? this.planArrayCopy(initializer) : null,
     };
   }
 
@@ -3600,10 +3785,60 @@ class CodeGenWalker {
     if (!value) {
       return { kind: "void" };
     }
+    const capacity = this.filePlan.stringReturns.get(value);
+    if (capacity !== undefined) {
+      const form = this.filePlan.stringValueForms.get(value);
+      invariant(
+        form !== undefined,
+        "2.2 planned the form of every string a function returns",
+      );
+      return {
+        kind: "buffer",
+        renderWrite: () => this.renderFill(ReturnBuffer.NAME, capacity, form),
+      };
+    }
+    const array = this.filePlan.arrayReturns.get(value);
+    if (array !== undefined) {
+      return {
+        kind: "buffer",
+        renderWrite: () => this.renderArrayReturn(array, value),
+      };
+    }
     return {
       kind: "value",
       render: () => this.renderExpression(value),
     };
+  }
+
+  /**
+   * #1209: an array a function returns is copied into the caller's buffer
+   * element by element. A list, or a `u8` array's string, fills a temporary
+   * of the return type first, as an assigned one does (#1782).
+   */
+  private renderArrayReturn(
+    array: IPlannedWholeArrayWrite,
+    value: TExpression,
+  ): string[] {
+    const state = this.host.state;
+    const rendered = this.renderExpression(value);
+    if (array.fromArray) {
+      return ArrayInitHelper.elementCopy(
+        ReturnBuffer.NAME,
+        { text: rendered, grouped: array.groupedSource },
+        array.dimensions,
+        state,
+      );
+    }
+    const temp = ArrayInitHelper.temporaryArray(array, rendered, state);
+    return [
+      temp.declaration,
+      ...ArrayInitHelper.elementCopy(
+        ReturnBuffer.NAME,
+        { text: temp.name, grouped: false },
+        array.dimensions,
+        state,
+      ),
+    ];
   }
 
   /**

@@ -17,7 +17,8 @@ u8[2] globalCopy <- source;
 u8[][LIMIT] globalRows <- [[1, 2, 3]];
 
 void main() {
-    // ASSERTIONS -- a function local.
+    // ASSERTIONS -- a function local. Its copy of `source` is a negative
+    // control: inside a function another array is copied in (#1209).
     u8[] localFill <- [LIMIT*];
     u8[2] localCopy <- source;
     u8[][LIMIT] localRows <- [[1, 2, 3]];
@@ -30,7 +31,7 @@ scope Table {
     u8[][LIMIT] memberRows <- [[1, 2, 3]];
 
     public void fill() {
-        // ASSERTIONS -- a scope-method local.
+        // ASSERTIONS -- a scope-method local; its copy, as a function local's.
         u8[] methodFill <- [LIMIT*];
         u8[2] methodCopy <- source;
         u8[][LIMIT] methodRows <- [[1, 2, 3]];

@@ -1,0 +1,6 @@
+16:11 error[E0866]: An array of shape [N] is copied into a return type of shape [8]
+       help: Copy an array of the same shape, or write its elements as a list (ADR-035).
+23:15 error[E0866]: An array of shape [N] is copied into a declaration of shape [2]
+       help: Copy an array of the same shape, or write its elements as a list (ADR-035).
+26:9 error[E0866]: An array of shape [N] is copied into a target of shape [8]
+       help: Copy an array of the same shape, or write its elements as a list (ADR-035).

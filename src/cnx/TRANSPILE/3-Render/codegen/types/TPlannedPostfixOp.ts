@@ -96,6 +96,13 @@ type TPlannedPostfixOp =
       readonly planArguments: () => readonly IPlannedCallArgument[] | null;
       /** ADR-051: the helper 2.2 planned this `safe_div`/`safe_mod` call as, else null */
       readonly safeDivisionHelper: IPlannedSafeDivision | null;
+      /**
+       * #1209: the declaration of the buffer a `string<N>` or array return
+       * fills, given its name -- or null when the call returns by value
+       */
+      readonly returnBuffer: ((name: string) => string) | null;
+      /** #1209: the declared variable 2.2 has the call fill in place, by C name */
+      readonly into: string | null;
     };
 
 export default TPlannedPostfixOp;

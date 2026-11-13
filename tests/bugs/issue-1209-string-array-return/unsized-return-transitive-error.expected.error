@@ -1,0 +1,4 @@
+17:2 error[E0892]: Function 'unsizedArray' returns an array that leaves dimension 1 without a size
+       help: A return has no list to count, so its type states every dimension's size, e.g. `u8[4] make()` (ADR-035).
+22:0 error[E0862]: Function 'unsizedName' returns a string without a capacity
+       help: A return has no literal to infer a capacity from, so its type states one, e.g. `string<16> greet()` (ADR-045).

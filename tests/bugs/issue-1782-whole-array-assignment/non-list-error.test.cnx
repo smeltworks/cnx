@@ -38,21 +38,21 @@ void assignments() {
     a[0, 2] <- word;
     text <- "Hello";
 
-    // ASSERTION 1 -- another array of the same type.
+    // NEGATIVE CONTROL (#1209) -- another array of the same type is copied.
     a <- source;
     // ASSERTION 2 -- an array of another length.
     a <- wide;
     // ASSERTION 3 -- a scalar.
     a <- 5;
-    // ASSERTION 4 -- a struct's array field from another array.
+    // NEGATIVE CONTROL (#1209) -- so is one into a struct's array field.
     h.buf <- source;
-    // ASSERTION 5 -- a row from another array.
+    // ASSERTION 5 -- a row from an array of another length.
     grid[1] <- source;
-    // ASSERTION 6 -- a string array from another string array.
+    // NEGATIVE CONTROL (#1209) -- so is a string array of the same shape.
     names <- others;
-    // ASSERTION 7 -- an array declared across an include.
+    // NEGATIVE CONTROL (#1209) -- so is one into an array declared across an include.
     sharedBuf <- source;
-    // ASSERTION 8 -- a field of a struct declared across an include.
+    // NEGATIVE CONTROL (#1209) -- so is one into a field of a struct declared across an include.
     pk.payload <- source;
     // ASSERTION 9 -- too few elements.
     a <- [1, 2, 3];

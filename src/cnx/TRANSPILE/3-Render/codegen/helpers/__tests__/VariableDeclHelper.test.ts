@@ -49,6 +49,7 @@ function arrayPlan(
     arrayTypeDimensions: "",
     renderCStyleDimensions: () => "",
     init: null,
+    copy: null,
     ...overrides,
   };
 }

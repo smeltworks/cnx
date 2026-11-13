@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-980 fixture(s) assert a diagnostic; 965 carry a code.
+988 fixture(s) assert a diagnostic; 973 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -609,6 +609,14 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1203-non-addressable-mut-argument/non-addressable-mut-argument-error.test.cnx            | E0915                             |
 | tests/bugs/issue-1203-non-addressable-mut-argument/scope-method-error.test.cnx                            | E0915                             |
 | tests/bugs/issue-1203-non-addressable-mut-argument/transitive-import-error.test.cnx                       | E0915                             |
+| tests/bugs/issue-1209-string-array-return/array-return-fit-error.test.cnx                                 | E0866                             |
+| tests/bugs/issue-1209-string-array-return/macro-size-copy-error.test.cnx                                  | E0866                             |
+| tests/bugs/issue-1209-string-array-return/return-transitive-error.test.cnx                                | E0866                             |
+| tests/bugs/issue-1209-string-array-return/string-return-fit-error.test.cnx                                | E0864                             |
+| tests/bugs/issue-1209-string-array-return/string-return-transitive-error.test.cnx                         | E0864                             |
+| tests/bugs/issue-1209-string-array-return/unsized-return-error.test.cnx                                   | E0892                             |
+| tests/bugs/issue-1209-string-array-return/unsized-return-transitive-error.test.cnx                        | E0862, E0892                      |
+| tests/bugs/issue-1209-string-array-return/unsized-string-return-error.test.cnx                            | E0862                             |
 | tests/bugs/issue-1220-analyzer-cross-file-symbols/boolean-operand-imported-direct.test.cnx                | E0807                             |
 | tests/bugs/issue-1220-analyzer-cross-file-symbols/boolean-operand-imported-transitive.test.cnx            | E0807                             |
 | tests/bugs/issue-1220-analyzer-cross-file-symbols/boolean-operand-same-file.test.cnx                      | E0807                             |

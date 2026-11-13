@@ -49,6 +49,9 @@ interface IHeaderSymbol {
   /** Function parameters for signature generation */
   readonly parameters?: readonly IParameterSymbol[];
 
+  /** #1209: the buffer parameter a `string<N>` or array return fills */
+  readonly returnBuffer?: string;
+
   /** Function signature for display */
   readonly signature?: string;
 

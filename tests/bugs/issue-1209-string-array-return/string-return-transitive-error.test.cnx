@@ -1,0 +1,19 @@
+// test-error
+// test-adr: 045
+// Issue #1209: E0864 at a string return, on a string declared in a file the
+// included file includes.
+#include "return-chain.cnx"
+
+// NEGATIVE CONTROL -- a return wide enough for the string.
+string<16> name() {
+    return longName;
+}
+
+// ASSERTION -- a string return that does not fit.
+string<4> shortName() {
+    return longName;
+}
+
+u32 main() {
+    return 0;
+}

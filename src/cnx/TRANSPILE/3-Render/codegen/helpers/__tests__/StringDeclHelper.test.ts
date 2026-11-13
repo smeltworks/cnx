@@ -38,6 +38,7 @@ function init(overrides: Partial<IPlannedStringInit> = {}): IPlannedStringInit {
     form: "literal",
     text: '""',
     render: () => '""',
+    renderInto: null,
     renderParts: () => [],
     ...overrides,
   };
@@ -590,6 +591,7 @@ describe("StringDeclHelper", () => {
         dimensions: "[4]",
         declaredSize: 4,
         renderInit: null,
+        copy: null,
         ...overrides,
       };
     }

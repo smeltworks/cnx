@@ -1,0 +1,18 @@
+// test-error
+// test-adr: 045
+// Issue #1209: a string return is copied into the caller's buffer, which has
+// no literal to infer its capacity from, so the type states it (ADR-045).
+
+// NEGATIVE CONTROL -- a return with a capacity.
+string<8> sized() {
+    return "hi";
+}
+
+// ASSERTION -- a return type without a capacity.
+string unsized() {
+    return "hi";
+}
+
+u32 main() {
+    return 0;
+}

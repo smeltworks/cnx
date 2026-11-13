@@ -21,6 +21,12 @@ interface IPlannedFunction {
   /** The rendered C return type. */
   readonly returnType: string;
 
+  /**
+   * #1209: the buffer parameter a `string<N>` or array return fills, which
+   * makes the C function `void` -- or null when it returns by value
+   */
+  readonly returnBuffer: string | null;
+
   /** ADR-016: `main(u8 args[][])` or `main(string args[])`. */
   readonly isMainWithArgs: boolean;
 

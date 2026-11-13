@@ -18,6 +18,7 @@ import type IResolvedSymbols from "../../../types/IResolvedSymbols";
 import ParameterInputAdapter from "../codegen/helpers/ParameterInputAdapter";
 import ParameterSignatureBuilder from "../codegen/helpers/ParameterSignatureBuilder";
 import StructInitFunction from "../codegen/helpers/StructInitFunction";
+import ReturnBuffer from "../../../utils/ReturnBuffer";
 
 /**
  * Abstract base class for header file generation
@@ -323,7 +324,13 @@ abstract class BaseHeaderGenerator {
       params = translatedParams.join(", ");
     }
 
-    return `${returnType} ${sym.name}(${params});`;
+    // #1209: a `string<N>` or array return fills the caller's buffer
+    const signature = ReturnBuffer.signature(
+      returnType,
+      params,
+      sym.returnBuffer ?? null,
+    );
+    return `${signature.returnType} ${sym.name}(${signature.params});`;
   }
 
   /**

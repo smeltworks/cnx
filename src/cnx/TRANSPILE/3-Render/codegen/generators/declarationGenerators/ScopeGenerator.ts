@@ -52,6 +52,7 @@ import generateBitmapHeader from "../../../headers/generators/generateBitmapHead
 import generateStructHeader from "../../../headers/generators/generateStructHeader";
 import type IHeaderTypeInput from "../../../headers/generators/IHeaderTypeInput";
 import type TranspileState from "../../../../TranspileState";
+import ReturnBuffer from "../../../../../utils/ReturnBuffer";
 
 /**
  * The header's own per-type emitters, by kind.
@@ -229,10 +230,15 @@ function renderScopeFunction(
 
   orchestrator.exitFunctionContext();
 
+  // #1209: a `string<N>` or array return fills the caller's buffer
+  const returnBuffer = plan.renderReturnBuffer();
+  const signature = ReturnBuffer.signature(returnType, params, returnBuffer);
+  const lowered =
+    returnBuffer === null ? "" : `${ReturnBuffer.SIGNATURE_COMMENT}\n`;
   const lines: string[] = [];
   lines.push(
     "",
-    `${moveComments}${prefix}${returnType} ${plan.fullName}(${params}) ${body}`,
+    `${moveComments}${lowered}${prefix}${signature.returnType} ${plan.fullName}(${signature.params}) ${body}`,
   );
 
   // ADR-029: Generate callback typedef only if used as a type

@@ -31,6 +31,7 @@
  * why the placement cannot be changed while it holds.)
  */
 
+import ArrayInitHelper from "./ArrayInitHelper";
 import IPlannedStringInit from "../types/IPlannedStringInit";
 import VariableModifierBuilder from "./VariableModifierBuilder";
 import IRenderedModifiers from "../types/IRenderedModifiers";
@@ -103,7 +104,25 @@ class StringDeclHelper {
       volatile: volatileMod,
     } = modifiers;
 
-    const decl = `${extern}${constMod}${atomic}${volatileMod}char ${name}${plan.dimensions}[${plan.elementCapacity + 1}]`;
+    const shape = `${plan.dimensions}[${plan.elementCapacity + 1}]`;
+    // #1209: one copied into is written after it is declared
+    if (plan.copy) {
+      const declared = `${extern}${atomic}${volatileMod}char ${name}${shape} = ${plan.copy.zero};`;
+      if (plan.copy.renderInto) {
+        return [declared, `${plan.copy.renderInto(name)};`].join("\n");
+      }
+      return [
+        declared,
+        ArrayInitHelper.ARRAY_COPY_COMMENT,
+        ...ArrayInitHelper.elementCopy(
+          name,
+          plan.copy.renderSource(),
+          plan.copy.dimensions,
+          state,
+        ),
+      ].join("\n");
+    }
+    const decl = `${extern}${constMod}${atomic}${volatileMod}char ${name}${shape}`;
 
     // No initializer - zero-initialize
     if (!plan.renderInit) {
@@ -173,6 +192,12 @@ class StringDeclHelper {
     // #1257: 2.2 planned the initializer's form, by an assignment's rule
     switch (init.form) {
       case "copy":
+        if (init.renderInto) {
+          return [
+            `${qualifiers}char ${name}[${capacity + 1}] = "";`,
+            `${init.renderInto(name)};`,
+          ].join("\n");
+        }
         return StringDeclHelper._generateCopyDecl(
           name,
           capacity,

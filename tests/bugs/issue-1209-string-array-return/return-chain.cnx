@@ -1,0 +1,3 @@
+// Helper for the issue-1209 return-*-transitive fixtures: re-includes
+// return-chain-lib.cnx, so its names are two includes away from the fixture.
+#include "return-chain-lib.cnx"
