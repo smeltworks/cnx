@@ -14,5 +14,5 @@
 // This is the shape where the symbol path and the parse-tree path answered the
 // same question differently, so it needs its own included declaration.
 uint32_t describe(const char* label) {
-    return strlen(label);
+    return (uint32_t) strlen(label);
 }

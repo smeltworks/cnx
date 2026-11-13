@@ -12,5 +12,5 @@
 extern const char message[65] = "Hello";
 
 void test(void) {
-    const uint32_t len = strlen(message);
+    const uint32_t len = (uint32_t) strlen(message);
 }

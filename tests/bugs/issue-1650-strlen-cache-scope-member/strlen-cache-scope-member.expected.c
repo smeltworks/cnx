@@ -27,11 +27,11 @@ const char title[9] = "xyz";
 const char Cfg__label[9] = "ab";
 
 uint32_t Cfg__check(void) {
-    size_t cnx_len_label = strlen(Cfg__label);
+    uint32_t cnx_len_label = (uint32_t) strlen(Cfg__label);
     if (cnx_len_label != 2 || cnx_len_label < 1) {
         return 1U;
     }
-    if (strlen(Cfg__label) != 2) {
+    if ((uint32_t) strlen(Cfg__label) != 2) {
         return 2U;
     }
     return 0U;
@@ -42,7 +42,7 @@ int main(void) {
     if (result != 0) {
         return result;
     }
-    size_t cnx_len_title = strlen(title);
+    uint32_t cnx_len_title = (uint32_t) strlen(title);
     if (cnx_len_title != 3 || cnx_len_title < 1) {
         return 3U;
     }

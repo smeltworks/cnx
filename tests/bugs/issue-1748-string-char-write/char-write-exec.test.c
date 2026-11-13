@@ -57,7 +57,7 @@ int main(void) {
     if (gp.name[2U] != 'c') {
         return 3U;
     }
-    if (strlen(gp.name) != 3) {
+    if ((uint32_t) strlen(gp.name) != 3) {
         return 4U;
     }
     if (s[0U] != 'h') {
@@ -75,7 +75,7 @@ int main(void) {
     if (s[4U] != 'Q') {
         return 9U;
     }
-    if (strlen(s) != 5) {
+    if ((uint32_t) strlen(s) != 5) {
         return 10U;
     }
     if (names[1U][0U] != 'a') {
@@ -84,16 +84,16 @@ int main(void) {
     if (names[1U][2U] != 'c') {
         return 12U;
     }
-    if (strlen(names[1U]) != 3) {
+    if ((uint32_t) strlen(names[1U]) != 3) {
         return 13U;
     }
     if (parr[1U].name[0U] != 'a') {
         return 14U;
     }
-    if (strlen(parr[1U].name) != 3) {
+    if ((uint32_t) strlen(parr[1U].name) != 3) {
         return 15U;
     }
-    if (strlen(parr[0U].name) != 0) {
+    if ((uint32_t) strlen(parr[0U].name) != 0) {
         return 16U;
     }
     return 0U;

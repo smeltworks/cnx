@@ -192,6 +192,40 @@ void f() {
   });
 });
 
+describe("OperandTyper.typeOf: .value_char_count (#1742)", () => {
+  it.each([
+    [
+      "a string's",
+      inMain('string<8> s <- "ab";\nu32 r <- s.value_char_count;'),
+    ],
+    ["an integer's", inMain("u16 w <- 7;\nu32 r <- w.value_char_count;")],
+  ])("types %s count as a u32", (_why, source) => {
+    expect(facts(typeOf(source))).toEqual({
+      typeName: "u32",
+      category: "unsigned",
+      bitWidth: 32,
+      form: "declared",
+    });
+  });
+
+  it.each([
+    ["a bool's", "bool f <- true;\nu8 r <- f.value_char_count;"],
+    ["an array's", "u8[3] a <- [1, 2, 3];\nu8 r <- a.value_char_count;"],
+  ])(
+    "leaves %s spelled count untyped, as .type_char_count is",
+    (_why, body) => {
+      expect(typeOf(inMain(body))?.typeName ?? null).toBeNull();
+    },
+  );
+
+  it("leaves another length property untyped", () => {
+    expect(
+      typeOf(inMain("u16 w <- 7;\nu32 r <- w.value_bit_length;"))?.typeName ??
+        null,
+    ).toBeNull();
+  });
+});
+
 describe("OperandTyper.typeOfWritten (#1668)", () => {
   it.each([
     ["this.T inside its scope", "this.EMode", ["Motor", "EMode"]],

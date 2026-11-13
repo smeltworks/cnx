@@ -1,0 +1,17 @@
+// test-execution
+// Issue #1742: .value_char_count is a u32 operand. Uncached, it is written as
+// (uint32_t) strlen(...), stored without narrowing, and adds as a u32.
+
+u32 main() {
+    string<8> a <- "ab";
+    string<8> b <- "xyz";
+    u32 first <- a.value_char_count;
+    u32 total <- a.value_char_count + b.value_char_count;
+    if (first != 2) {
+        return 1;
+    }
+    if (total != 5) {
+        return 2;
+    }
+    return 0;
+}

@@ -60,13 +60,13 @@ int main(void) {
         return 3;
     }
     const char text[65] = "Hello";
-    if (strlen(text) == 5) {
+    if ((uint32_t) strlen(text) == 5) {
         result = 4U;
     }
     if (result != 4) {
         return 4;
     }
-    if (strlen(text) > 3) {
+    if ((uint32_t) strlen(text) > 3) {
         result = 5U;
     }
     if (result != 5) {
@@ -80,21 +80,21 @@ int main(void) {
     uint32_t totalLen = 0U;
     uint32_t i = 0U;
     while (i < 4) {
-        totalLen = cnx_clamp_add_u32(totalLen, strlen(items[i]));
+        totalLen = cnx_clamp_add_u32(totalLen, (uint32_t) strlen(items[i]));
         i = cnx_clamp_add_u32(i, 1U);
     }
     if (totalLen != 15) {
         return 6;
     }
     char maybeEmpty[33] = "";
-    if (strlen(maybeEmpty) == 0) {
+    if ((uint32_t) strlen(maybeEmpty) == 0) {
         result = 6U;
     }
     if (result != 6) {
         return 7;
     }
     cnx_string_copy(maybeEmpty, "NotEmpty", 32U);
-    if (strlen(maybeEmpty) != 0) {
+    if ((uint32_t) strlen(maybeEmpty) != 0) {
         result = 7U;
     }
     if (result != 7) {
@@ -102,7 +102,7 @@ int main(void) {
     }
     const char status[33] = "active";
     if (strcmp(status, "active") == 0) {
-        if (strlen(status) == 6) {
+        if ((uint32_t) strlen(status) == 6) {
             result = 8U;
         }
     }

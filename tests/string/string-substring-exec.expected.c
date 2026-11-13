@@ -29,7 +29,7 @@ int main(void) {
     const char source[65] = "Hello, World!";
     char hello[6] = "";
     cnx_string_copy(hello, source + 0, 5U);
-    if (strlen(hello) != 5) {
+    if ((uint32_t) strlen(hello) != 5) {
         return 1;
     }
     if (strcmp(hello, "Hello") != 0) {
@@ -40,7 +40,7 @@ int main(void) {
     }
     char world[7] = "";
     cnx_string_copy(world, source + 7, 6U);
-    if (strlen(world) != 6) {
+    if ((uint32_t) strlen(world) != 6) {
         return 4;
     }
     if (strcmp(world, "World!") != 0) {
@@ -48,7 +48,7 @@ int main(void) {
     }
     char h[2] = "";
     cnx_string_copy(h, source + 0, 1U);
-    if (strlen(h) != 1) {
+    if ((uint32_t) strlen(h) != 1) {
         return 6;
     }
     if (strcmp(h, "H") != 0) {
@@ -61,7 +61,7 @@ int main(void) {
     }
     char middle[6] = "";
     cnx_string_copy(middle, source + 3, 5U);
-    if (strlen(middle) != 5) {
+    if ((uint32_t) strlen(middle) != 5) {
         return 9;
     }
     if (strcmp(middle, "lo, W") != 0) {
@@ -69,7 +69,7 @@ int main(void) {
     }
     char full[14] = "";
     cnx_string_copy(full, source + 0, 13U);
-    if (strlen(full) != 13) {
+    if ((uint32_t) strlen(full) != 13) {
         return 11;
     }
     if (strcmp(full, "Hello, World!") != 0) {
@@ -77,7 +77,7 @@ int main(void) {
     }
     char two[3] = "";
     cnx_string_copy(two, source + 0, 2U);
-    if (strlen(two) != 2) {
+    if ((uint32_t) strlen(two) != 2) {
         return 13;
     }
     if (strcmp(two, "He") != 0) {

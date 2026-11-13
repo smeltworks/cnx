@@ -107,7 +107,7 @@ uint32_t Counter__writeBitRange(void) {
 uint32_t Counter__shadowingString(void) {
     /* C11 6.2.1p4, C++ [basic.scope.hiding]: `wmsg` emitted as `Counter__shadowingString__wmsg` (a plain `wmsg` would hide the file-scope `wmsg` for the rest of its scope, so `global.wmsg` would reach the local). */
     const char Counter__shadowingString__wmsg[9] = "ab";
-    return strlen(Counter__shadowingString__wmsg);
+    return (uint32_t) strlen(Counter__shadowingString__wmsg);
 }
 
 uint32_t Counter__sizeofArray(void) {
@@ -141,7 +141,7 @@ uint32_t Counter__globalBits(void) {
 }
 
 uint32_t Counter__globalStringLength(void) {
-    return strlen(wmsg);
+    return (uint32_t) strlen(wmsg);
 }
 
 int main(void) {

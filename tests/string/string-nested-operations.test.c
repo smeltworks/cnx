@@ -34,7 +34,7 @@ int main(void) {
         const uint32_t cnx_used = (uint32_t) strlen(concat);
         cnx_string_copy(&concat[cnx_used], b, 64U - cnx_used);
     }
-    if (strlen(concat) != 11) {
+    if ((uint32_t) strlen(concat) != 11) {
         return 1;
     }
     if (64 != 64) {
@@ -46,7 +46,7 @@ int main(void) {
     const char source[65] = "Hello, World!";
     char sub[6] = "";
     cnx_string_copy(sub, source + 0, 5U);
-    if (strlen(sub) != 5) {
+    if ((uint32_t) strlen(sub) != 5) {
         return 4;
     }
     if (5 != 5) {
@@ -66,7 +66,7 @@ int main(void) {
     if (strcmp(combined, "ABCD") != 0) {
         return 7;
     }
-    if (strlen(combined) != 4) {
+    if ((uint32_t) strlen(combined) != 4) {
         return 8;
     }
     const char text[21] = "Testing123";
@@ -81,7 +81,7 @@ int main(void) {
         return 10;
     }
     const char msg[65] = "Example";
-    const uint32_t len = strlen(msg);
+    const uint32_t len = (uint32_t) strlen(msg);
     const uint32_t cap = 64;
     const uint32_t sz = 65;
     if (len != 7) {
@@ -104,7 +104,7 @@ int main(void) {
     if (strcmp(word, "prefix") != 0) {
         return 14;
     }
-    if (strlen(word) != 6) {
+    if ((uint32_t) strlen(word) != 6) {
         return 15;
     }
     return 0;

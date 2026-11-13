@@ -31,7 +31,7 @@ static inline void cnx_string_copy(char* target, const char* source, uint32_t ca
 /* Scope: StrMember */
 
 uint32_t getNameLength(const Person& p) {
-    return strlen(p.name);
+    return (uint32_t) strlen(p.name);
 }
 
 bool compareName(const Person& p, const char* expected) {
@@ -43,10 +43,10 @@ int main(void) {
     cnx_string_copy(alice.name, "Alice", 64U);
     cnx_string_copy(alice.bio, "Software engineer", 128U);
     alice.age = 30U;
-    if (strlen(alice.name) != 5) {
+    if ((uint32_t) strlen(alice.name) != 5) {
         return 1;
     }
-    if (strlen(alice.bio) != 17) {
+    if ((uint32_t) strlen(alice.bio) != 17) {
         return 2;
     }
     if (64 != 64) {
@@ -71,7 +71,7 @@ int main(void) {
     cnx_string_copy(bob.name, "Bob", 64U);
     cnx_string_copy(bob.bio, "Data scientist", 128U);
     bob.age = 25U;
-    if (strlen(bob.name) != 3) {
+    if ((uint32_t) strlen(bob.name) != 3) {
         return 9;
     }
     if (strcmp(bob.name, "Bob") != 0) {
@@ -104,10 +104,10 @@ int main(void) {
     StrMember__Config cfg = {};
     cnx_string_copy(cfg.key, "api_url", 32U);
     cnx_string_copy(cfg.value, "https://example.com/api/v1", 256U);
-    if (strlen(cfg.key) != 7) {
+    if ((uint32_t) strlen(cfg.key) != 7) {
         return 17;
     }
-    if (strlen(cfg.value) != 26) {
+    if ((uint32_t) strlen(cfg.value) != 26) {
         return 18;
     }
     if (32 != 32) {
@@ -118,11 +118,11 @@ int main(void) {
     }
     Person emptyPerson = {};
     cnx_string_copy(emptyPerson.name, "", 64U);
-    if (strlen(emptyPerson.name) != 0) {
+    if ((uint32_t) strlen(emptyPerson.name) != 0) {
         return 21;
     }
     cnx_string_copy(alice.name, "Alicia", 64U);
-    if (strlen(alice.name) != 6) {
+    if ((uint32_t) strlen(alice.name) != 6) {
         return 22;
     }
     if (strcmp(alice.name, "Alicia") != 0) {

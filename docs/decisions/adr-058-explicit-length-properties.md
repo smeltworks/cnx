@@ -643,6 +643,15 @@ error: `.length` is not a built-in property. Use explicit properties instead.
   (`sizeof(o.p)`, `sizeof(Odd)`); their type row stays E0867.
 - `.value_char_count` on a float is a compile error: a float has no single
   decimal form (`0.1` prints as `"0.1"`, `"0.100000"` or `"0.100000001"`).
+- `.value_char_count` is a `u32` wherever it counts characters as the program
+  runs -- a string's, or an integer's in decimal (#1742; owner: _"The goal is
+  memory safety and simplicity"_). Where it spells a type (a struct, a `bool`,
+  an enum value, an array) it is the same constant `.type_char_count` is, and is
+  typed the same way. It takes part in comparisons and arithmetic
+  as any `u32` operand does (ADR-024): with an `i32 s`, `str.value_char_count > s`
+  is E0810, and `u8 n <- str.value_char_count` narrows (E0869). A string's count
+  is written `(uint32_t) strlen(s)`, cached or not. Width-named counts
+  (`.char_count_64`) are left to a later version (#1756).
 
 **The design these rulings add up to (the Decision; owner-approved):**
 

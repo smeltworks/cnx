@@ -11,22 +11,22 @@
 // Demonstrates: string<N> declaration, assignment, properties
 int main(void) {
     const char greeting[11] = "Hello";
-    if (strlen(greeting) != 5) {
+    if ((uint32_t) strlen(greeting) != 5) {
         return 1U;
     }
     if (11 != 11) {
         return 2U;
     }
     const char empty[21] = "";
-    if (strlen(empty) != 0) {
+    if ((uint32_t) strlen(empty) != 0) {
         return 3U;
     }
     const char message[21] = "Hi there";
-    if (strlen(message) != 8) {
+    if ((uint32_t) strlen(message) != 8) {
         return 4U;
     }
     const char longer[51] = "The quick brown fox";
-    if (strlen(longer) != 19) {
+    if ((uint32_t) strlen(longer) != 19) {
         return 5U;
     }
     const char hello1[11] = "Hello";

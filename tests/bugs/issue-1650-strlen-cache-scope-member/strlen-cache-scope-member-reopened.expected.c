@@ -24,11 +24,11 @@
 /* Scope: Cfg */
 
 uint32_t Cfg__check(void) {
-    size_t cnx_len_label = strlen(Cfg__label);
+    uint32_t cnx_len_label = (uint32_t) strlen(Cfg__label);
     if (cnx_len_label != 2 || cnx_len_label < 1) {
         return 1U;
     }
-    if (strlen(Cfg__label) != 2) {
+    if ((uint32_t) strlen(Cfg__label) != 2) {
         return 2U;
     }
     return 0U;

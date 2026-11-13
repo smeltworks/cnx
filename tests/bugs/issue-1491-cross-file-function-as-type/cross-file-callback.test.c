@@ -77,7 +77,7 @@ uint32_t localHelper(void) {
 // incompatible pointer types and assigning the function to a variable of its own
 // type warns.
 uint32_t localWithText(const char* label) {
-    return strlen(label);
+    return (uint32_t) strlen(label);
 }
 
 int main(void) {

@@ -39,7 +39,7 @@ void Lab__set(void) {
 }
 
 uint32_t Lab__firstLength(void) {
-    return strlen(Lab__tags[0U]);
+    return (uint32_t) strlen(Lab__tags[0U]);
 }
 
 int main(void) {

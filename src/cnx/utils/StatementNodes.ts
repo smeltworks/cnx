@@ -49,14 +49,17 @@ class StatementNodes {
   static assignments(
     declaration: TMemberDeclaration,
   ): readonly IAssignmentSyntax[] {
-    const walk = (
-      statements: readonly TStatement[],
-    ): readonly IAssignmentSyntax[] =>
-      statements.flatMap((statement) => [
-        ...StatementWrites.of(statement),
-        ...walk(StatementChildren.of(statement)),
-      ]);
-    return walk(StatementNodes.roots(declaration));
+    return StatementNodes.assignmentsIn(StatementNodes.roots(declaration));
+  }
+
+  /** `assignments`, over a list of statements and those nested in them */
+  static assignmentsIn(
+    statements: readonly TStatement[],
+  ): readonly IAssignmentSyntax[] {
+    return statements.flatMap((statement) => [
+      ...StatementWrites.of(statement),
+      ...StatementNodes.assignmentsIn(StatementChildren.of(statement)),
+    ]);
   }
 
   static of(statements: readonly TStatement[]): readonly TStatement[] {

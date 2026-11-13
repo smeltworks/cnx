@@ -32,7 +32,7 @@ static inline void cnx_string_copy(char* target, const char* source, uint32_t ca
 }
 
 uint32_t lengthOf(const char* s) {
-    return strlen(s);
+    return (uint32_t) strlen(s);
 }
 
 int main(void) {
@@ -49,7 +49,7 @@ int main(void) {
     if (strcmp(cfg.tags[1U], "ab") != 0) {
         return 3;
     }
-    if (strlen(cfg.tags[1U]) != 2) {
+    if ((uint32_t) strlen(cfg.tags[1U]) != 2) {
         return 4;
     }
     return 0;

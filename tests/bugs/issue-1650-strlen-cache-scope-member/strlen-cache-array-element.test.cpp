@@ -23,14 +23,14 @@ int main(void) {
     // cppcheck-suppress misra-c2012-9.3
     // cppcheck-suppress misra-c2012-9.4
     const char names[4][9] = {"ab", "ab", "ab", "ab"};
-    if (strlen(names[0U]) != 2 || strlen(names[0U]) < 1) {
+    if ((uint32_t) strlen(names[0U]) != 2 || (uint32_t) strlen(names[0U]) < 1) {
         return 1U;
     }
-    if (strlen(names[1U]) != 2) {
+    if ((uint32_t) strlen(names[1U]) != 2) {
         return 2U;
     }
     const char word[9] = "abc";
-    size_t cnx_len_word = strlen(word);
+    uint32_t cnx_len_word = (uint32_t) strlen(word);
     if (cnx_len_word != 3 || cnx_len_word < 1) {
         return 3U;
     }

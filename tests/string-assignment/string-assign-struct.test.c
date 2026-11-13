@@ -44,19 +44,19 @@ void clearConfigName(void) {
 
 int main(void) {
     setConfigName();
-    if (strlen(config.name) != 10) {
+    if ((uint32_t) strlen(config.name) != 10) {
         return 1U;
     }
     updateConfigName();
-    if (strlen(config.name) != 7) {
+    if ((uint32_t) strlen(config.name) != 7) {
         return 2U;
     }
     clearConfigName();
-    if (strlen(config.name) != 0) {
+    if ((uint32_t) strlen(config.name) != 0) {
         return 3U;
     }
     cnx_string_copy(config.name, "DirectAssign", 32U);
-    if (strlen(config.name) != 12) {
+    if ((uint32_t) strlen(config.name) != 12) {
         return 4U;
     }
     return 0U;

@@ -49,19 +49,19 @@ void setNested(const uint32_t level) {
 
 int main(void) {
     setStatus(true);
-    if (strlen(status) != 7) {
+    if ((uint32_t) strlen(status) != 7) {
         return 1U;
     }
     setStatus(false);
-    if (strlen(status) != 7) {
+    if ((uint32_t) strlen(status) != 7) {
         return 2U;
     }
     setNested(2U);
-    if (strlen(status) != 6) {
+    if ((uint32_t) strlen(status) != 6) {
         return 3U;
     }
     setNested(1U);
-    if (strlen(status) != 6) {
+    if ((uint32_t) strlen(status) != 6) {
         return 4U;
     }
     return 0U;

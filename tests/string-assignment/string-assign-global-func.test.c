@@ -43,27 +43,27 @@ void clear(void) {
 
 int main(void) {
     reset();
-    if (strlen(messageBuffer) != 6) {
+    if ((uint32_t) strlen(messageBuffer) != 6) {
         return 1U;
     }
     setToHello();
-    if (strlen(messageBuffer) != 13) {
+    if ((uint32_t) strlen(messageBuffer) != 13) {
         return 2U;
     }
     clear();
-    if (strlen(messageBuffer) != 0) {
+    if ((uint32_t) strlen(messageBuffer) != 0) {
         return 3U;
     }
     cnx_string_copy(messageBuffer, "First", 64U);
-    if (strlen(messageBuffer) != 5) {
+    if ((uint32_t) strlen(messageBuffer) != 5) {
         return 4U;
     }
     cnx_string_copy(messageBuffer, "Second", 64U);
-    if (strlen(messageBuffer) != 6) {
+    if ((uint32_t) strlen(messageBuffer) != 6) {
         return 5U;
     }
     cnx_string_copy(messageBuffer, "Third", 64U);
-    if (strlen(messageBuffer) != 5) {
+    if ((uint32_t) strlen(messageBuffer) != 5) {
         return 6U;
     }
     return 0U;

@@ -94,7 +94,7 @@ int main(void) {
             s[3] = cnx_tmp4;
         }
     }
-    if (strlen(s) != 5) {
+    if ((uint32_t) strlen(s) != 5) {
         return 1U;
     }
     if (s[0U] != 'h') {

@@ -56,7 +56,7 @@ void setIt(char* s) {
 int main(void) {
     char local[9] = "ab";
     setIt(local);
-    if (strlen(local) != 2) {
+    if ((uint32_t) strlen(local) != 2) {
         return 1U;
     }
     return 0U;

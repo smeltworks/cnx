@@ -47,7 +47,7 @@ int main(void) {
         cnx_string_copy(current, "Loop", 16U);
         count = cnx_clamp_add_u32(count, 1U);
     }
-    if (strlen(current) != 4) {
+    if ((uint32_t) strlen(current) != 4) {
         return 1U;
     }
     count = 0U;
@@ -59,7 +59,7 @@ int main(void) {
         }
         count = cnx_clamp_add_u32(count, 1U);
     }
-    if (strlen(current) != 6) {
+    if ((uint32_t) strlen(current) != 6) {
         return 2U;
     }
     return 0U;

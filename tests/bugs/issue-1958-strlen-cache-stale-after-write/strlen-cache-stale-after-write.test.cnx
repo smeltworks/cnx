@@ -1,0 +1,157 @@
+// test-execution
+// Issue #1958: a length read after the string is written in the same `if`
+// measures the string as written, not the length cached before the condition.
+
+mut string<8> greeting <- "ab";
+
+void grow() {
+    greeting <- "abcd";
+}
+
+void fill(mut string<8> s) {
+    s <- "abcd";
+}
+
+mut string<8> other <- "ab";
+
+void growOther() {
+    other <- "abcd";
+}
+
+// A parameter can be the global another name writes, with no call between.
+u32 readsAlias(string<8> s) {
+    if (s.value_char_count = 2) {
+        other <- "abcd";
+        u32 n <- s.value_char_count;
+        if (n != 4) {
+            return 7;
+        }
+    }
+    return 0;
+}
+
+u32 writesAlias(mut string<8> t) {
+    if (other.value_char_count = 2) {
+        t <- "abcd";
+        u32 n <- other.value_char_count;
+        if (n != 4) {
+            return 8;
+        }
+    }
+    return 0;
+}
+
+struct Named {
+    string<8> name;
+}
+
+// Set in main: a file-scope initializer with a string field is #2259.
+mut Named named;
+mut Named longer;
+
+// A whole-struct write changes the strings it holds.
+u32 readsMember(string<8> s) {
+    if (s.value_char_count = 2) {
+        named <- longer;
+        u32 n <- s.value_char_count;
+        if (n != 4) {
+            return 12;
+        }
+    }
+    return 0;
+}
+
+// A read-only parameter is not a local: a callee can write what it names.
+u32 callsAlias(string<8> s) {
+    if (s.value_char_count = 2) {
+        growOther();
+        u32 n <- s.value_char_count;
+        if (n != 4) {
+            return 9;
+        }
+    }
+    return 0;
+}
+
+u32 main() {
+    mut string<8> label <- "ab";
+    if (label.value_char_count = 2) {
+        label <- "abcd";
+        u32 n <- label.value_char_count;
+        if (n != 4) {
+            return 1;
+        }
+    }
+
+    mut string<8> nested <- "ab";
+    if (nested.value_char_count = 2) {
+        {
+            nested <- "abc";
+        }
+        u32 n <- nested.value_char_count;
+        if (n != 3) {
+            return 2;
+        }
+    }
+
+    mut string<8> passed <- "ab";
+    if (passed.value_char_count = 2) {
+        fill(passed);
+        u32 n <- passed.value_char_count;
+        if (n != 4) {
+            return 3;
+        }
+    }
+
+    if (greeting.value_char_count = 2) {
+        grow();
+        u32 n <- greeting.value_char_count;
+        if (n != 4) {
+            return 4;
+        }
+    }
+
+    // The cache is live through the else, and an else-if declares none.
+    mut string<8> otherwise <- "ab";
+    if (otherwise.value_char_count = 5) {
+        return 10;
+    } else {
+        otherwise <- "abcd";
+        u32 n <- otherwise.value_char_count;
+        if (n != 4) {
+            return 5;
+        }
+    }
+
+    mut string<8> chained <- "ab";
+    if (chained.value_char_count = 5) {
+        return 10;
+    } else if (chained.value_char_count = 2) {
+        chained <- "abcd";
+        u32 n <- chained.value_char_count;
+        if (n != 4) {
+            return 6;
+        }
+    } else {
+        return 11;
+    }
+
+    other <- "ab";
+    u32 viaRead <- readsAlias(other);
+    if (viaRead != 0) {
+        return viaRead;
+    }
+    other <- "ab";
+    u32 viaWrite <- writesAlias(other);
+    if (viaWrite != 0) {
+        return viaWrite;
+    }
+    other <- "ab";
+    u32 viaCall <- callsAlias(other);
+    if (viaCall != 0) {
+        return viaCall;
+    }
+    named.name <- "ab";
+    longer.name <- "abcd";
+    return readsMember(named.name);
+}

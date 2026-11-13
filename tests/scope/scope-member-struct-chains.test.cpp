@@ -68,7 +68,7 @@ uint32_t S__inside(void) {
     if (b != true) {
         return 2U;
     }
-    const uint32_t n = strlen(S__cfg.name);
+    const uint32_t n = (uint32_t) strlen(S__cfg.name);
     if (n != 3) {
         return 3U;
     }
@@ -97,7 +97,7 @@ int main(void) {
     if (b != true) {
         return 3U;
     }
-    const uint32_t n = strlen(S__cfg.name);
+    const uint32_t n = (uint32_t) strlen(S__cfg.name);
     if (n != 3) {
         return 4U;
     }

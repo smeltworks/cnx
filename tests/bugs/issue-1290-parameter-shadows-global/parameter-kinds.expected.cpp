@@ -51,7 +51,7 @@ int32_t sumPoint(const Point& p) {
 }
 
 uint32_t measure(const char* s) {
-    return strlen(s);
+    return (uint32_t) strlen(s);
 }
 
 void bump(uint32_t& v) {

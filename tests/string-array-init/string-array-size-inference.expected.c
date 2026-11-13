@@ -25,10 +25,10 @@ uint32_t test(void) {
     if (count != 4) {
         return 1U;
     }
-    if (strlen(items[0U]) != 1) {
+    if ((uint32_t) strlen(items[0U]) != 1) {
         return 2U;
     }
-    if (strlen(items[3U]) != 1) {
+    if ((uint32_t) strlen(items[3U]) != 1) {
         return 3U;
     }
     return 0U;
@@ -38,13 +38,13 @@ int main(void) {
     if (3 != 3) {
         return 1U;
     }
-    if (strlen(DAYS[0U]) != 6) {
+    if ((uint32_t) strlen(DAYS[0U]) != 6) {
         return 2U;
     }
-    if (strlen(DAYS[1U]) != 7) {
+    if ((uint32_t) strlen(DAYS[1U]) != 7) {
         return 3U;
     }
-    if (strlen(DAYS[2U]) != 9) {
+    if ((uint32_t) strlen(DAYS[2U]) != 9) {
         return 4U;
     }
     const uint32_t localResult = test();

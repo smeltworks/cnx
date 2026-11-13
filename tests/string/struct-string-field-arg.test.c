@@ -31,7 +31,7 @@ static inline void cnx_string_copy(char* target, const char* source, uint32_t ca
 // as the buffer itself -- a string is a C array and decays -- never &p.name,
 // which C rejects as an incompatible pointer type
 uint32_t lengthOf(const char* s) {
-    return strlen(s);
+    return (uint32_t) strlen(s);
 }
 
 bool isBob(const char* s) {

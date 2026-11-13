@@ -15,7 +15,7 @@
 static const char S__NAME[9] = "abc";
 
 uint32_t S__length(void) {
-    return strlen(S__NAME);
+    return (uint32_t) strlen(S__NAME);
 }
 
 int main(void) {

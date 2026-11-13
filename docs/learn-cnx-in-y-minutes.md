@@ -303,7 +303,7 @@ string<64> name <- "Hello";     // 64 chars max, transpiles to char[65]
 string<128> buffer;             // Empty string
 
 // Properties
-u32 len <- name.value_char_count;     // Runtime: strlen(name) = 5
+u32 len <- name.value_char_count;     // Runtime u32: (uint32_t) strlen(name) = 5
 u32 cap <- name.capacity;       // Compile-time: 64
 
 // Comparison uses =

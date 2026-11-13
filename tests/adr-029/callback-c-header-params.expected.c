@@ -46,7 +46,7 @@ void bytesSlot(const uint8_t bytes[4]) {
 }
 
 void textSlot(const char* text) {
-    const uint32_t n = strlen(text);
+    const uint32_t n = (uint32_t) strlen(text);
 }
 
 float mixSlot(const double d, const bool b, const int8_t i) {

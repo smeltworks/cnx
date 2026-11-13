@@ -17,11 +17,11 @@ static const char Lab__tags[2][9] = {"alpha", "seven c"};
 static const char Lab__codes[2][5] = {"ab", "xyz"};
 
 uint32_t Lab__codeLength(const uint32_t i) {
-    return strlen(Lab__codes[i]);
+    return (uint32_t) strlen(Lab__codes[i]);
 }
 
 uint32_t Lab__lengthOf(const uint32_t i) {
-    return strlen(Lab__tags[i]);
+    return (uint32_t) strlen(Lab__tags[i]);
 }
 
 int main(void) {

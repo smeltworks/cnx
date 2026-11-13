@@ -57,7 +57,7 @@ int main(void) {
         return 4U;
     }
     const char name[9] = "abc";
-    const uint32_t chars = strlen(name);
+    const uint32_t chars = (uint32_t) strlen(name);
     const uint32_t room = 8;
     const uint32_t slots = 2;
     if (chars != 3) {
