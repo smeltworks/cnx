@@ -17,6 +17,12 @@ u8[4] constant() {
     return [9, 8, 7, 6];
 }
 
+// A string array's return is a whole array too, copied a row at a time
+string<8>[2] pair() {
+    string<8>[2] p <- ["a", "bc"];
+    return p;
+}
+
 u32 main() {
     u8[4] a <- make();
     if (a[0] != 1) {
@@ -36,6 +42,10 @@ u32 main() {
     u8[4] c <- constant();
     if (c[1] != 8) {
         return 5;
+    }
+    string<8>[2] names <- pair();
+    if (names[1] != "bc") {
+        return 6;
     }
     return 0;
 }

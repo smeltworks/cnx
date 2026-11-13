@@ -9,7 +9,8 @@
 // #1322 closed the first hole: an array initialized from another array
 // reached C as `uint8_t b[2] = a;`. #1209 (2026-11-13): inside a function
 // one of the same shape is copied in, element by element, so those are
-// negative controls now.
+// negative controls now. A copy runs as a statement, so at file scope, or
+// into an inferred size, another array is still 1.2's E0866.
 
 // NEGATIVE CONTROLS -- a list, a fill-all with a size, a string literal into
 // a u8 array.
@@ -20,10 +21,15 @@ u8[] okText <- "Hello";
 // ASSERTION 1 -- the fill-all form on an inferred size.
 u8[] fillInferred <- [0*];
 
+// ASSERTION 2 -- another array at file scope, where no copy can run.
+u8[3] fileCopy <- okList;
+
 void main() {
     u8[2] a <- [1, 2];
     // NEGATIVE CONTROL (#1209) -- initialized from another array.
     u8[2] copy <- a;
+    // ASSERTION 3 -- another array into an inferred size.
+    u8[] inferredCopy <- a;
     // NEGATIVE CONTROL (#1209) -- a string array from a variable.
     string<8>[2] names <- ["a", "b"];
     string<8>[2] namesCopy <- names;

@@ -19,6 +19,7 @@ extern const uint8_t table[4];
 void make(uint8_t cnx_return[4]);
 void getTable(uint8_t cnx_return[4]);
 void constant(uint8_t cnx_return[4]);
+void pair(char cnx_return[2][9]);
 
 #ifdef __cplusplus
 }

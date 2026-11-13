@@ -6,6 +6,7 @@
 #include "array-return.test.h"
 
 #include <stdint.h>
+#include <string.h>
 
 // test-execution
 // Issue #1209: a function returning an array fills a buffer the caller
@@ -35,12 +36,25 @@ void constant(uint8_t cnx_return[4]) {
     return;
 }
 
+// A string array's return is a whole array too, copied a row at a time
+void pair(char cnx_return[2][9]) {
+    // cppcheck-suppress misra-c2012-9.3
+    // cppcheck-suppress misra-c2012-9.4
+    const char p[2][9] = {"a", "bc"};
+    for (uint32_t cnx_tmp4 = 0U; cnx_tmp4 < 2U; cnx_tmp4++) {
+        for (uint32_t cnx_tmp5 = 0U; cnx_tmp5 < 9U; cnx_tmp5++) {
+            cnx_return[cnx_tmp4][cnx_tmp5] = p[cnx_tmp4][cnx_tmp5];
+        }
+    }
+    return;
+}
+
 int main(void) {
-    uint8_t cnx_tmp4[4] = {0};
-    make(cnx_tmp4);
+    uint8_t cnx_tmp6[4] = {0};
+    make(cnx_tmp6);
     uint8_t a[4] = {0};
-    for (uint32_t cnx_tmp5 = 0U; cnx_tmp5 < 4U; cnx_tmp5++) {
-        a[cnx_tmp5] = cnx_tmp4[cnx_tmp5];
+    for (uint32_t cnx_tmp7 = 0U; cnx_tmp7 < 4U; cnx_tmp7++) {
+        a[cnx_tmp7] = cnx_tmp6[cnx_tmp7];
     }
     if (a[0U] != 1) {
         return 1U;
@@ -49,11 +63,11 @@ int main(void) {
         return 2U;
     }
     uint8_t b[4] = {0U, 0U, 0U, 0U};
-    uint8_t cnx_tmp6[4] = {0};
-    getTable(cnx_tmp6);
+    uint8_t cnx_tmp8[4] = {0};
+    getTable(cnx_tmp8);
     /* ADR-035 / Issue #1209: C has no array assignment, so the array is copied element by element. */
-    for (uint32_t cnx_tmp7 = 0U; cnx_tmp7 < 4U; cnx_tmp7++) {
-        b[cnx_tmp7] = cnx_tmp6[cnx_tmp7];
+    for (uint32_t cnx_tmp9 = 0U; cnx_tmp9 < 4U; cnx_tmp9++) {
+        b[cnx_tmp9] = cnx_tmp8[cnx_tmp9];
     }
     if (b[0U] != 5) {
         return 3U;
@@ -61,14 +75,25 @@ int main(void) {
     if (b[3U] != 8) {
         return 4U;
     }
-    uint8_t cnx_tmp8[4] = {0};
-    constant(cnx_tmp8);
+    uint8_t cnx_tmp10[4] = {0};
+    constant(cnx_tmp10);
     uint8_t c[4] = {0};
-    for (uint32_t cnx_tmp9 = 0U; cnx_tmp9 < 4U; cnx_tmp9++) {
-        c[cnx_tmp9] = cnx_tmp8[cnx_tmp9];
+    for (uint32_t cnx_tmp11 = 0U; cnx_tmp11 < 4U; cnx_tmp11++) {
+        c[cnx_tmp11] = cnx_tmp10[cnx_tmp11];
     }
     if (c[1U] != 8) {
         return 5U;
+    }
+    char cnx_tmp12[2][9] = {0};
+    pair(cnx_tmp12);
+    char names[2][9] = {0};
+    for (uint32_t cnx_tmp13 = 0U; cnx_tmp13 < 2U; cnx_tmp13++) {
+        for (uint32_t cnx_tmp14 = 0U; cnx_tmp14 < 9U; cnx_tmp14++) {
+            names[cnx_tmp13][cnx_tmp14] = cnx_tmp12[cnx_tmp13][cnx_tmp14];
+        }
+    }
+    if (strcmp(names[1U], "bc") != 0) {
+        return 6U;
     }
     return 0U;
 }

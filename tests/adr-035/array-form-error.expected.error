@@ -1,8 +1,12 @@
-21:21 error[E0876]: Fill-all syntax [0*] requires explicit array size
+22:21 error[E0876]: Fill-all syntax [0*] requires explicit array size
        help: An inferred size comes from counting the elements, and the fill-all form has none to count; write the dimension (ADR-035).
-34:17 error[E0876]: Fill-all syntax [0*] requires explicit array size
+25:18 error[E0866]: An array at file scope must be initialized by a list, not 'okList'
+       help: Write the elements out in brackets; a copy of another array runs inside a function, and file scope has none (ADR-035).
+32:25 error[E0866]: An array of an inferred size must be initialized by a list, not 'a'
+       help: Write the elements out in brackets, or write its size to copy another array in (ADR-035).
+40:17 error[E0876]: Fill-all syntax [0*] requires explicit array size
        help: An inferred size comes from counting the elements, and the fill-all form has none to count; write the dimension (ADR-035).
-39:23 error[E0876]: Fill-all syntax [0*] requires explicit array size
+45:23 error[E0876]: Fill-all syntax [0*] requires explicit array size
        help: An inferred size comes from counting the elements, and the fill-all form has none to count; write the dimension (ADR-035).
-43:27 error[E0876]: Fill-all syntax [0*] requires explicit array size
+49:27 error[E0876]: Fill-all syntax [0*] requires explicit array size
        help: An inferred size comes from counting the elements, and the fill-all form has none to count; write the dimension (ADR-035).
