@@ -55,10 +55,11 @@ class WholeArrayValueAnalyzer {
       ) {
         WholeArrayValueAnalyzer.markAsked(value, at, positions, asked);
         found.push(
-          ...this.declarationCopy(
+          ...this.arrayCopy(
             value,
             at,
             this.declaredDimensions(declared.declaration),
+            "declaration",
           ),
         );
         continue;
@@ -146,11 +147,12 @@ class WholeArrayValueAnalyzer {
     );
   }
 
-  /** #1209: another array of the declaration's element type and shape */
-  private declarationCopy(
+  /** #1209: another array of the declaration's, or return type's, element type and shape */
+  private arrayCopy(
     value: TExpression,
     at: IValuePosition,
     declared: ReadonlyArray<number | string>,
+    site: TCopyNoun,
   ): IArrayDeclarationError[] {
     const arms = OperandTyper.arrayArms(value, this.context);
     if (arms === null) {
@@ -163,9 +165,7 @@ class WholeArrayValueAnalyzer {
         },
       ];
     }
-    return arms.flatMap((arm) =>
-      this.shapeMismatch(arm, at, "declaration", declared),
-    );
+    return arms.flatMap((arm) => this.shapeMismatch(arm, at, site, declared));
   }
 
   /**
@@ -195,20 +195,7 @@ class WholeArrayValueAnalyzer {
     if (ExpressionShape.isStringLiteral(value)) {
       return WholeArrayValueAnalyzer.check(value, at, this.context);
     }
-    const arms = OperandTyper.arrayArms(value, this.context);
-    if (arms === null) {
-      return [
-        {
-          code: "E0866",
-          span: value.span,
-          message: ArrayValueRule.notAnArrayMessage(value),
-          helpText: ArrayValueRule.NOT_AN_ARRAY_HELP,
-        },
-      ];
-    }
-    return arms.flatMap((arm) =>
-      this.shapeMismatch(arm, at, "return type", dimensions),
-    );
+    return this.arrayCopy(value, at, dimensions, "return type");
   }
 
   /** A declaration's sizes, folded where they fold, as its list is counted */
