@@ -1,0 +1,4 @@
+// Helper for the issue-1209 return-*-transitive fixtures: the array and the
+// string they return, two includes away from the fixture.
+u8[3] source <- [1, 2, 3];
+string<16> longName <- "a longer name";

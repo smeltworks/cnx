@@ -1,24 +1,20 @@
 15:19 error[E0876]: Fill-all syntax [LIMIT*] requires explicit array size
        help: An inferred size comes from counting the elements, and the fill-all form has none to count; write the dimension (ADR-035).
-16:20 error[E0866]: An array must be initialized by a list, not 'source'
-       help: Write the elements out in brackets, or declare it empty and assign the elements afterwards (ADR-035).
+16:20 error[E0866]: An array at file scope must be initialized by a list, not 'source'
+       help: Write the elements out in brackets; a copy of another array runs inside a function, and file scope has none (ADR-035).
 17:2 error[E0892]: Array 'globalRows' leaves dimension 1 without a size
        help: Write the size. Only a one-dimensional array initialized by a list (or, for u8, a string literal) may leave it out, and its size is the number of elements (ADR-035).
-21:22 error[E0876]: Fill-all syntax [LIMIT*] requires explicit array size
+22:22 error[E0876]: Fill-all syntax [LIMIT*] requires explicit array size
        help: An inferred size comes from counting the elements, and the fill-all form has none to count; write the dimension (ADR-035).
-22:23 error[E0866]: An array must be initialized by a list, not 'source'
-       help: Write the elements out in brackets, or declare it empty and assign the elements afterwards (ADR-035).
-23:6 error[E0892]: Array 'localRows' leaves dimension 1 without a size
+24:6 error[E0892]: Array 'localRows' leaves dimension 1 without a size
        help: Write the size. Only a one-dimensional array initialized by a list (or, for u8, a string literal) may leave it out, and its size is the number of elements (ADR-035).
-28:23 error[E0876]: Fill-all syntax [LIMIT*] requires explicit array size
+29:23 error[E0876]: Fill-all syntax [LIMIT*] requires explicit array size
        help: An inferred size comes from counting the elements, and the fill-all form has none to count; write the dimension (ADR-035).
-29:24 error[E0866]: An array must be initialized by a list, not 'source'
-       help: Write the elements out in brackets, or declare it empty and assign the elements afterwards (ADR-035).
-30:6 error[E0892]: Array 'memberRows' leaves dimension 1 without a size
+30:24 error[E0866]: An array at file scope must be initialized by a list, not 'source'
+       help: Write the elements out in brackets; a copy of another array runs inside a function, and file scope has none (ADR-035).
+31:6 error[E0892]: Array 'memberRows' leaves dimension 1 without a size
        help: Write the size. Only a one-dimensional array initialized by a list (or, for u8, a string literal) may leave it out, and its size is the number of elements (ADR-035).
-34:27 error[E0876]: Fill-all syntax [LIMIT*] requires explicit array size
+35:27 error[E0876]: Fill-all syntax [LIMIT*] requires explicit array size
        help: An inferred size comes from counting the elements, and the fill-all form has none to count; write the dimension (ADR-035).
-35:28 error[E0866]: An array must be initialized by a list, not 'source'
-       help: Write the elements out in brackets, or declare it empty and assign the elements afterwards (ADR-035).
-36:10 error[E0892]: Array 'methodRows' leaves dimension 1 without a size
+37:10 error[E0892]: Array 'methodRows' leaves dimension 1 without a size
        help: Write the size. Only a one-dimensional array initialized by a list (or, for u8, a string literal) may leave it out, and its size is the number of elements (ADR-035).

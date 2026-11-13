@@ -1,0 +1,32 @@
+// test-execution
+// test-adr: 035
+// Issue #1209: an array return sized by a C macro keeps the macro as its
+// buffer's size, the way a variable's does.
+#include "return-sizes.h"
+
+u8[N] src <- [1, 2, 3, 4];
+
+u8[N] makeN() {
+    u8[N] a <- [1, 2, 3, 4];
+    return a;
+}
+
+u8[N] copied() {
+    return src;
+}
+
+u32 main() {
+    u8[N] y <- makeN();
+    if (y[0] != 1) {
+        return 1;
+    }
+    u8 last <- makeN()[3];
+    if (last != 4) {
+        return 2;
+    }
+    u8[N] c <- copied();
+    if (c[2] != 3) {
+        return 3;
+    }
+    return 0;
+}

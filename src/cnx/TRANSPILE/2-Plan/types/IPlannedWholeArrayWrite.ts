@@ -8,6 +8,10 @@ interface IPlannedWholeArrayWrite {
   readonly dimensions: ReadonlyArray<number | string>;
   /** A list, whose fill-all form expands; otherwise a `u8` array's string */
   readonly fromList: boolean;
+  /** #1209: another array, copied straight from, with no temporary */
+  readonly fromArray: boolean;
+  /** #1209: an operator's result, parenthesized before it is subscripted */
+  readonly groupedSource: boolean;
   /** The target is `volatile` (or `atomic`, which C writes `volatile`) */
   readonly volatileTarget: boolean;
 }

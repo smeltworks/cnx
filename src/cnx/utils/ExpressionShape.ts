@@ -29,6 +29,14 @@ class ExpressionShape {
     }
   }
 
+  /**
+   * #1209: an operator's result -- a ternary's, say -- which C binds a
+   * subscript into unless it is parenthesized first
+   */
+  static isOperatorResult(expr: TExpression): boolean {
+    return ExpressionShape.postfixView(expr) === null;
+  }
+
   /** The identifier a postfix chain starts from, or null */
   static rootName(expr: TExpression): string | null {
     const view = ExpressionShape.postfixView(expr);
@@ -98,6 +106,18 @@ class ExpressionShape {
   ): boolean {
     if (value.kind === "arrayInitializer") return true;
     return ExpressionShape.isStringLiteral(value) && elementType === "u8";
+  }
+
+  /**
+   * #1209 (ADR-035): a value that is another array -- not a list, a struct
+   * literal or a string literal -- which a whole array is copied from
+   */
+  static isArrayValue(value: TExpression): boolean {
+    return (
+      value.kind !== "arrayInitializer" &&
+      value.kind !== "structInitializer" &&
+      !ExpressionShape.isStringLiteral(value)
+    );
   }
 
   /**

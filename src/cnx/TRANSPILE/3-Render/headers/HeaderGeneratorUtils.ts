@@ -537,6 +537,7 @@ class HeaderGeneratorUtils {
           cbInfo.typedefName,
           cbInfo.parameters,
           isCppMode,
+          cbInfo.returnBuffer,
         ),
       );
     }

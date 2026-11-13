@@ -286,7 +286,19 @@ u8[50] ones <- [1*];            // All 50 elements = 1
 mut u8[3] rgb <- [0*];
 rgb <- [255, 128, 0];           // Every element read, then copied in
 rgb <- [7*];                    // Fill-all works here too
-// rgb <- data;                 // ERROR: an array must be given a list
+
+// An array is a value: another of the same shape is copied in (#1209)
+u8[3] saved <- rgb;             // Copied element by element
+rgb <- saved;
+// rgb <- data;                 // ERROR: shape [5] into a target of shape [3]
+
+// A function returns an array into a buffer its caller supplies
+u8[3] black() {
+    return [0, 0, 0];
+}
+// Inside a function (a call cannot initialize a file-scope variable):
+//   rgb <- black();             // black(tmp); then copied into rgb
+//   u8 red <- black()[0];       // Reads element 0 of the result
 
 // Multi-dimensional arrays
 mut u8[4][8] matrix;
@@ -318,6 +330,14 @@ string<64> result <- a + " World";  // OK: 64 >= 32 + 6
 
 // Substring extraction
 string<5> hello <- name[0, 5];  // "Hello"
+
+// Returning a string fills the caller's buffer, so a local is safe (#1209)
+string<16> greet() {
+    string<16> s <- "hi";
+    return s;                   // void greet(char cnx_return[17])
+}
+// Inside a function:
+//   string<16> hi <- greet();   // greet(hi): the same type is filled in place
 
 // =============================================================================
 // 7. TYPE SAFETY

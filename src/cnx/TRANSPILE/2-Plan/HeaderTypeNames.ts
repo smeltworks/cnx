@@ -55,7 +55,14 @@ class HeaderTypeNames {
     }
 
     if (symbol.kind === "function") {
-      into.add(TypeResolver.getTypeName(symbol.returnType));
+      // #1209: an array return is a `void` function filling a buffer of the
+      // element type, which is what the header names
+      const returned = symbol.returnType;
+      into.add(
+        TypeResolver.getTypeName(
+          returned.kind === "array" ? returned.elementType : returned,
+        ),
+      );
       for (const parameter of symbol.parameters) {
         into.add(TypeResolver.getTypeName(parameter.type));
       }

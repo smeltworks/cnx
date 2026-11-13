@@ -75,13 +75,29 @@ describe("ArrayForm", () => {
   });
 
   describe("E0866 -- an initializer that is not a list", () => {
-    it("rejects an initializer that is not a list (the closed hole)", () => {
-      // `uint8_t b[2] = a;` is not C.
+    it("rejects another array at file scope (the closed hole)", () => {
+      // `uint8_t b[2] = a;` is not C, and file scope has no copy to run.
+      const found = errors("u8[2] a <- [1, 2];\nu8[2] b <- a;");
+      expect(found).toHaveLength(1);
+      expect(found[0].message).toContain(
+        "at file scope must be initialized by a list",
+      );
+    });
+
+    it("rejects another array into an inferred size", () => {
       const found = errors(
-        "void f() {\n    u8[2] a <- [1, 2];\n    u8[2] b <- a;\n}",
+        "void f() {\n    u8[2] a <- [1, 2];\n    u8[] b <- a;\n}",
       );
       expect(found).toHaveLength(1);
-      expect(found[0].message).toContain("must be initialized by a list");
+      expect(found[0].message).toContain(
+        "of an inferred size must be initialized by a list",
+      );
+    });
+
+    it("leaves a sized local's copy of another array to 2.1 (#1209)", () => {
+      expect(
+        errors("void f() {\n    u8[2] a <- [1, 2];\n    u8[2] b <- a;\n}"),
+      ).toEqual([]);
     });
 
     it("rejects a string literal into a non-u8 array", () => {

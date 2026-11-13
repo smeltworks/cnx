@@ -184,6 +184,7 @@ class HeaderEmissionCapture {
         result.set(funcName, {
           typedefName: cbInfo.typedefName,
           returnType: cbInfo.returnType,
+          returnBuffer: cbInfo.returnBuffer,
           // #1164/#1552: pass the parameter through WHOLE. This used to say so
           // while enumerating six of the seven fields below it, and the one it
           // left out was `isString` -- so the formatter's `string<N>` branch

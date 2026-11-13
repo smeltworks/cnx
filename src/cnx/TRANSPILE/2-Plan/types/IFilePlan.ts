@@ -22,6 +22,8 @@ import type IPlannedSliceSource from "./IPlannedSliceSource";
 import type IPlannedWholeArrayWrite from "./IPlannedWholeArrayWrite";
 import type IPlannedExpectedType from "./IPlannedExpectedType";
 import type IPlannedStaticValue from "./IPlannedStaticValue";
+import type TType from "../../../types/TType";
+import type TPlannedLazyTernary from "./TPlannedLazyTernary";
 import type IPlannedType from "./IPlannedType";
 import type TNegativeMinimum from "./TNegativeMinimum";
 import type TStructInitializerForm from "./TStructInitializerForm";
@@ -174,13 +176,32 @@ interface IFilePlan {
     TStructInitializerForm
   >;
   /**
+   * #1209: each call to a function returning a `string<N>` or an array, by
+   * its call operation, with the return type whose buffer the caller fills
+   */
+  readonly bufferCalls: ReadonlyMap<TPostfixOpSyntax, TType>;
+  /**
+   * #1209 (owner ruling): the buffer calls a declaration of the return type
+   * stands for whole, which fill the declared variable in place. Nothing it
+   * reads can be the variable, which is defined once its declaration closes;
+   * an assignment's target can be, so an assignment fills a temporary.
+   */
+  readonly inPlaceCalls: ReadonlySet<TPostfixOpSyntax>;
+  /** #1209: each value a `string<N>` function returns into its caller's buffer */
+  readonly stringReturns: ReadonlyMap<TExpression, number>;
+  /** #1209: each value an array function returns, and its copy into the caller's buffer */
+  readonly arrayReturns: ReadonlyMap<TExpression, IPlannedWholeArrayWrite>;
+  /**
    * #2332: each `&&`/`||` operand after the first that holds a struct
-   * initializer built before its statement, so it is built only when the
-   * operand runs
+   * initializer built before its statement -- or a call filling a buffer
+   * (#1209) -- so it is built only when the operand runs
    */
   readonly lazyOperands: ReadonlySet<TExpression>;
-  /** #2332: the same for `?:`, by the C type of the value each branch sets */
-  readonly lazyTernaries: ReadonlyMap<TExpressionOf<"ternary">, string>;
+  /** #2332: the same for `?:`, by what each branch sets (#1209: or fills) */
+  readonly lazyTernaries: ReadonlyMap<
+    TExpressionOf<"ternary">,
+    TPlannedLazyTernary
+  >;
 
   /** What the file's text costs: its system includes, helpers and requirements */
   readonly emission: IEmissionPlan;

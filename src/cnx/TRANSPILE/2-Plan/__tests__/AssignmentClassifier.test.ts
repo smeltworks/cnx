@@ -555,6 +555,8 @@ describe("AssignmentClassifier - Array Access", () => {
         elementCType: "uint8_t",
         dimensions: [4],
         fromList: true,
+        fromArray: false,
+        groupedSource: false,
         volatileTarget: false,
       },
     });

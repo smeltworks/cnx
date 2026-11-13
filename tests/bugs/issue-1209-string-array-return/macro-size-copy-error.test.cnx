@@ -1,0 +1,28 @@
+// test-error
+// test-adr: 035
+// Issue #1209: a copy writes its target, so a size that does not fold must
+// be the same size on both sides; a C macro agrees only with itself (ADR-035).
+#include "return-sizes.h"
+
+u8[N] src <- [1, 2, 3, 4];
+
+// NEGATIVE CONTROL -- the same macro on both sides.
+u8[N] same() {
+    return src;
+}
+
+// ASSERTION 1 -- a return copy of another size.
+u8[8] widen() {
+    return src;
+}
+
+u32 main() {
+    // NEGATIVE CONTROL -- a declaration of the same macro size.
+    u8[N] kept <- src;
+    // ASSERTION 2 -- a declaration copy of another size.
+    u8[2] y <- src;
+    mut u8[8] z <- [0*];
+    // ASSERTION 3 -- an assignment copy of another size.
+    z <- src;
+    return 0;
+}

@@ -1,0 +1,29 @@
+// test-execution
+// test-adr: 045, 035
+// Issue #1209: an assignment of a call that reads its own target fills a
+// temporary, so the function never writes the buffer it is still reading.
+
+string<16> shift(string<16> s) {
+    return "x" + s[0, 15];
+}
+
+u8[3] reversed(u8[3] p) {
+    return [p[2], p[1], p[0]];
+}
+
+u32 main() {
+    mut string<16> c <- "label";
+    c <- shift(c);
+    if (c != "xlabel") {
+        return 1;
+    }
+    mut u8[3] r <- [1, 2, 3];
+    r <- reversed(r);
+    if (r[0] != 3) {
+        return 2;
+    }
+    if (r[2] != 1) {
+        return 3;
+    }
+    return 0;
+}

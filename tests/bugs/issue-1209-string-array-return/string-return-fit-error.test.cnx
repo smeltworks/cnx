@@ -1,0 +1,29 @@
+// test-error
+// test-adr: 045
+// Issue #1209: a return is copied into the caller's string<N> buffer, so the
+// value must fit the return type as a declaration's initializer must (ADR-045).
+
+// NEGATIVE CONTROLS -- a value of the return type's capacity.
+string<4> fits() {
+    string<4> s <- "abcd";
+    return s;
+}
+
+string<4> fitsLiteral() {
+    return "abcd";
+}
+
+// ASSERTION 1 -- a literal longer than the return type.
+string<4> longLiteral() {
+    return "toolong";
+}
+
+// ASSERTION 2 -- a string of a larger capacity.
+string<4> longString() {
+    string<16> s <- "toolong";
+    return s;
+}
+
+u32 main() {
+    return 0;
+}

@@ -101,7 +101,12 @@ class ValuePositionWalk {
         if (statement.value) {
           this.place(
             statement.value,
-            { ...NO_TYPE, typeText: fn.returnType.text },
+            {
+              ...NO_TYPE,
+              typeText: fn.returnType.text,
+              // #1209: an array's return is a whole array, copied out
+              isArray: fn.returnType.kind === "array",
+            },
             { site: { kind: "return", function: fn }, outer: null },
           );
         }

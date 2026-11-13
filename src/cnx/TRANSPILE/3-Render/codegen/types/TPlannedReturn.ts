@@ -18,6 +18,11 @@ type TPlannedReturn =
   | {
       readonly kind: "value";
       readonly render: () => string;
+    }
+  | {
+      /** #1209: the lines that write the value into the caller's buffer */
+      readonly kind: "buffer";
+      readonly renderWrite: () => readonly string[];
     };
 
 export default TPlannedReturn;

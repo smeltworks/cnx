@@ -1,7 +1,8 @@
 /**
  * ADR-045's string declaration forms (#1322, #1991): a capacity is written or
  * can be inferred (E0862), and a file-scope string is initialized only by a
- * literal (E0863). Both read only how the declaration is written, so 1.2
+ * literal (E0863). A string return states its capacity (E0862, #1209). All
+ * read only how the declaration is written, so 1.2
  * reports them. Whether the initializer fits is 2.1's (E0864/E0865).
  *
  * The declarations judged are `VariableDeclarations.ruled`, the same walk 2.1
@@ -11,6 +12,7 @@ import ExpressionShape from "../../utils/ExpressionShape";
 import FormError from "./FormError";
 import VariableDeclarations from "../../utils/VariableDeclarations";
 import type ITranspileError from "../../types/ITranspileError";
+import type IFunctionDeclarationSyntax from "../../types/syntax/IFunctionDeclarationSyntax";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IVariableDeclarationSite from "../../types/syntax/IVariableDeclarationSite";
 import type TExpression from "../../types/syntax/TExpression";
@@ -51,6 +53,24 @@ class StringFormCheck {
         "E0863",
         `A string at file scope may only be initialized by a literal, not '${initializer.written}'`,
         "Copying, concatenating and extracting a substring all need runtime calls, which C cannot make before `main`. Move the declaration into a function, or initialize it empty and assign later.",
+      ),
+    );
+  }
+
+  /**
+   * #1209: a string return is copied into a buffer of its type's capacity,
+   * and has no literal to infer one from
+   */
+  returned(fn: IFunctionDeclarationSyntax): void {
+    const returned =
+      fn.returnType.kind === "array" ? fn.returnType.element : fn.returnType;
+    if (returned.kind !== "string" || returned.capacity !== null) return;
+    this.found.push(
+      FormError.at(
+        returned.span,
+        "E0862",
+        `Function '${fn.name}' returns a string without a capacity`,
+        "A return has no literal to infer a capacity from, so its type states one, e.g. `string<16> greet()` (ADR-045).",
       ),
     );
   }
@@ -126,6 +146,9 @@ class StringForm {
     const check = new StringFormCheck();
     for (const entry of VariableDeclarations.ruled(program)) {
       check.variable(entry);
+    }
+    for (const { declaration } of program.members) {
+      if (declaration.kind === "function") check.returned(declaration);
     }
     return check.errors();
   }

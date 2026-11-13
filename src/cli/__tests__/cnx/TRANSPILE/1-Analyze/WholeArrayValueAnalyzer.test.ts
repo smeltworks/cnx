@@ -7,7 +7,8 @@ import testAnalysisContextFor from "./testAnalysisContextFor";
 /**
  * ADR-014: an array's whole value is ADR-035's list (E0866) wherever a whole
  * array is taken. A declaration's is 1.2's and ArrayDeclarationAnalyzer's;
- * a field, an assignment target and a parameter are this analyzer's (#1782).
+ * a field, an assignment target and a parameter are this analyzer's (#1782),
+ * and so is another array copied into one of the same shape (#1209).
  */
 const types = [
   "struct S { u32 a; }",
@@ -50,13 +51,12 @@ describe("WholeArrayValueAnalyzer (E0866)", () => {
       "    take({ a: 1 });",
       "{ a: 1 }",
     ],
+    ["a scalar at an assignment target", "    mut u8[4] a;\n    a <- 5;", "5"],
     [
-      "another array at an assignment target",
-      "    mut u8[4] a;\n    a <- src;",
+      "another array as a struct initializer's field",
+      "    B b <- { data: src };",
       "src",
     ],
-    ["a scalar at an assignment target", "    mut u8[4] a;\n    a <- 5;", "5"],
-    ["another array as a field", "    B b <- { data: src };", "src"],
     [
       "a string literal for an array that is not u8",
       '    mut u32[4] w;\n    w <- "abc";',
@@ -97,6 +97,15 @@ describe("WholeArrayValueAnalyzer (E0866)", () => {
     ]);
   });
 
+  it.each([
+    ["an assignment target", "    mut u8[2] a;\n    a <- src;", "target"],
+    ["a declaration", "    u8[2] a <- src;", "declaration"],
+  ])("rejects another array's shape at %s (#1209)", (_label, body, noun) => {
+    expect(messages(body)).toEqual([
+      `An array of shape [4] is copied into a ${noun} of shape [2]`,
+    ]);
+  });
+
   it("counts a list for an array parameter (#2157)", () => {
     expect(messages("    take([1, 2]);")).toEqual([
       "Array size mismatch: declared [4] but the initializer has 2 element(s)",
@@ -104,7 +113,7 @@ describe("WholeArrayValueAnalyzer (E0866)", () => {
   });
 
   it("reports a value once, not again for its operands", () => {
-    expect(errors("    mut u8[4] a;\n    a <- (src);")).toHaveLength(1);
+    expect(errors("    mut u8[4] a;\n    a <- (5);")).toHaveLength(1);
   });
 
   it("asks a call's argument inside a whole-array value at its parameter", () => {
@@ -126,6 +135,11 @@ describe("WholeArrayValueAnalyzer (E0866)", () => {
     ["an element write", "    mut u8[4] a;\n    a[0] <- src[1];"],
     ["a field's list", "    D d <- { items: [{ a: 1 }, { a: 2 }], n: 1 };"],
     ["an array passed by reference", "    take(src);"],
+    [
+      "another array at an assignment target (#1209)",
+      "    mut u8[4] a;\n    a <- src;",
+    ],
+    ["another array at a declaration (#1209)", "    u8[4] a <- src;"],
     [
       "a declaration, which ADR-035's own rule checks",
       "    S[2] sa <- { a: 1 };",

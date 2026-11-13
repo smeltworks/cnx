@@ -31,6 +31,7 @@ import SyntaxLowering from "./SyntaxLowering";
 import ProgramLowering from "./ProgramLowering";
 import MainSignature from "../../utils/MainSignature";
 import ExpressionShape from "../../utils/ExpressionShape";
+import ArrayValueRule from "../../utils/ArrayValueRule";
 import ParserUtils from "../../utils/ParserUtils";
 import ForHeaderVariable from "../../utils/ForHeaderVariable";
 import VariableDeclarations from "../../utils/VariableDeclarations";
@@ -98,6 +99,28 @@ class ArrayFormListener extends CnxListener {
         ),
       );
     }
+  };
+
+  /**
+   * #1209 (ADR-035): an array return is copied into a buffer of its type's
+   * size, and has no list to count one from
+   */
+  override enterFunctionDeclaration = (
+    ctx: Parser.FunctionDeclarationContext,
+  ): void => {
+    const name = ctx.IDENTIFIER().getText();
+    const dimensions = ctx.type().arrayType()?.arrayTypeDimension() ?? [];
+    dimensions.forEach((dim, index) => {
+      if (dim.expression() !== null) return;
+      this.found.push(
+        FormError.at(
+          ParserUtils.getPosition(dim),
+          "E0892",
+          `Function '${name}' returns an array that leaves dimension ${index + 1} without a size`,
+          "A return has no list to count, so its type states every dimension's size, e.g. `u8[4] make()` (ADR-035).",
+        ),
+      );
+    });
   };
 
   /** #1822 (ADR-035): a struct member states every dimension's size */
@@ -201,7 +224,7 @@ class ArrayVariableForm {
       return;
     }
     if (type.kind !== "array" || initializer === null) return;
-    this.checkInitializer(type, initializer);
+    this.checkInitializer(type, initializer, entry.site === "statement");
   }
 
   /**
@@ -242,22 +265,26 @@ class ArrayVariableForm {
   private checkInitializer(
     type: TArrayTypeSyntax,
     initializer: TExpression,
+    inFunction: boolean,
   ): void {
+    const inferred = type.dimensions.some((size) => size === null);
     if (initializer.kind !== "arrayInitializer") {
       if (ExpressionShape.givesWholeArray(initializer, type.element.text)) {
         return; // `u8[] s <- "Hello"` (ADR-035)
       }
+      // #1209: inside a function another array of its shape is copied in,
+      // which needs its type -- 2.1's `WholeArrayValueAnalyzer` asks
+      if (inFunction && !inferred) return;
       this.found.push(
         FormError.at(
           initializer.span,
           "E0866",
-          `An array must be initialized by a list, not '${initializer.written}'`,
-          "Write the elements out in brackets, or declare it empty and assign the elements afterwards (ADR-035).",
+          ArrayValueRule.notAListMessage(initializer, inFunction),
+          ArrayValueRule.notAListHelp(inFunction),
         ),
       );
       return;
     }
-    const inferred = type.dimensions.some((size) => size === null);
     if (inferred && initializer.fill !== null) {
       this.found.push(
         FormError.at(

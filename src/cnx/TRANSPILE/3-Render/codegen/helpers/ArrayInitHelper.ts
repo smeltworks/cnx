@@ -55,6 +55,10 @@ const ARGUMENT_COMMENT =
   "/* ADR-035 / Issue #2157: a list for an array parameter is an array of the parameter's shape, written where the argument stands. */";
 
 class ArrayInitHelper {
+  /** #1209: above an array copied whole from another, element by element */
+  static readonly ARRAY_COPY_COMMENT =
+    "/* ADR-035 / Issue #1209: C has no array assignment, so the array is copied element by element. */";
+
   /**
    * Process array initialization expression.
    * Returns null if not an array initializer pattern.
@@ -204,6 +208,38 @@ class ArrayInitHelper {
       `typedef const ${array.elementCType} ${type}${shape};`,
     );
     return `static_cast<${type}&>(${type}${init})`;
+  }
+
+  /**
+   * C has no array assignment, so a whole array is copied element by element
+   * (#1782): into an assignment's target, and into the caller's buffer a
+   * function returning an array fills (#1209).
+   */
+  static elementCopy(
+    target: string,
+    source: { readonly text: string; readonly grouped: boolean },
+    dimensions: ReadonlyArray<number | string>,
+    state: TranspileState,
+  ): string[] {
+    const read = source.grouped ? `(${source.text})` : source.text;
+    const lines: string[] = [];
+    const indexes = dimensions.map(() => state.getNextTempVarName());
+    const subscripts = indexes.map((index) => `[${index}]`).join("");
+    dimensions.forEach((size, depth) => {
+      const index = indexes[depth];
+      const bound = typeof size === "number" ? `${size}U` : size;
+      lines.push(
+        `${"    ".repeat(depth)}for (uint32_t ${index} = 0U; ${index} < ${bound}; ${index}++) {`,
+      );
+    });
+    const depth = dimensions.length;
+    lines.push(
+      `${"    ".repeat(depth)}${target}${subscripts} = ${read}${subscripts};`,
+    );
+    for (let level = depth - 1; level >= 0; level--) {
+      lines.push(`${"    ".repeat(level)}}`);
+    }
+    return lines;
   }
 
   private static shapeOf(array: IPlannedWholeArrayWrite): string {

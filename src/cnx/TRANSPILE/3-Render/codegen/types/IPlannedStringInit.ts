@@ -30,6 +30,9 @@ interface IPlannedStringInit {
   /** The literal, or the one string copied in, as generated C */
   readonly render: () => string;
 
+  /** #1209: the call filling the declared string in place, given its name; null to copy */
+  readonly renderInto: ((target: string) => string) | null;
+
   /** A concatenation's or a substring's parts, as generated C */
   readonly renderParts: () => readonly TRenderedStringPart[];
 }

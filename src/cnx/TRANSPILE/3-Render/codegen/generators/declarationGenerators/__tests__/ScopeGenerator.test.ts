@@ -538,6 +538,7 @@ describe("ScopeGenerator", () => {
         fullName: "Driver__init",
         isPrivate,
         renderReturnType: () => "void",
+        renderReturnBuffer: () => null,
         planParameters: () => null,
         renderBody: () => "{ }",
         renderParameterList: () => "void",

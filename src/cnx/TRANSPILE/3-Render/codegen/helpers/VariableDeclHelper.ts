@@ -224,6 +224,25 @@ class VariableDeclHelper {
     // declaration through the lexical frames; only the text moves.
     const base = `${plan.modifierPrefix}${plan.type} ${plan.emittedName}`;
 
+    // #1209: an array initialized from another array is copied into
+    const copy = plan.array.copy;
+    if (copy) {
+      const declared = `${base}${plan.array.arrayTypeDimensions}${plan.array.renderCStyleDimensions()} = ${copy.zero};`;
+      if (copy.renderInto) {
+        return [declared, `${copy.renderInto(plan.emittedName)};`].join("\n");
+      }
+      return [
+        declared,
+        ArrayInitHelper.ARRAY_COPY_COMMENT,
+        ...ArrayInitHelper.elementCopy(
+          plan.emittedName,
+          copy.renderSource(),
+          copy.dimensions,
+          state,
+        ),
+      ].join("\n");
+    }
+
     // Array declarations can complete the whole declaration themselves.
     const arrayResult = VariableDeclHelper.renderArrayDeclaration(
       plan.array,

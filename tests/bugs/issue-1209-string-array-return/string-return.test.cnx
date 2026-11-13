@@ -1,0 +1,70 @@
+// test-execution
+// test-adr: 045
+// Issue #1209: a function returning string<N> fills a buffer the caller
+// supplies, so a returned local is memory safe and every call site gets the
+// whole value: in place, through a temporary, in a concatenation, as an
+// argument, and as an operand of a length read.
+
+string<16> label <- "label";
+
+string<16> greet() {
+    string<16> s <- "hi";
+    return s;
+}
+
+string<16> getLabel() {
+    return label;
+}
+
+string<16> pick(bool first) {
+    if (first = true) {
+        return "first";
+    }
+    return label;
+}
+
+u32 lengthOf(string<16> s) {
+    return s.value_char_count;
+}
+
+string<16> echo(string<16> s) {
+    return s;
+}
+
+u32 main() {
+    string<16> a <- greet();
+    if (a != "hi") {
+        return 1;
+    }
+    string<32> b <- greet();
+    if (b != "hi") {
+        return 2;
+    }
+    mut string<16> c <- "";
+    c <- getLabel();
+    if (c != "label") {
+        return 3;
+    }
+    string<32> d <- greet() + "!";
+    if (d != "hi!") {
+        return 4;
+    }
+    u32 n <- lengthOf(getLabel());
+    if (n != 5) {
+        return 5;
+    }
+    string<16> e <- pick(true);
+    if (e != "first") {
+        return 6;
+    }
+    string<16> f <- pick(false);
+    if (f != "label") {
+        return 7;
+    }
+    // An assignment fills a temporary, so a call reading its target is safe
+    c <- echo(c);
+    if (c != "label") {
+        return 8;
+    }
+    return 0;
+}

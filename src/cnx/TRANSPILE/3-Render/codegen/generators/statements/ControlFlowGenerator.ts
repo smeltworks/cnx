@@ -34,6 +34,7 @@
  * `.value_char_count` reads walks the tree and emits nothing, so asking at plan time
  * costs what asking at render time cost.
  */
+import ReturnBuffer from "../../../../../utils/ReturnBuffer";
 import ComplianceAnnotations from "../../../../2-Plan/ComplianceAnnotations";
 import IGeneratorOutput from "../IGeneratorOutput";
 import TGeneratorEffect from "../TGeneratorEffect";
@@ -62,6 +63,18 @@ const generateReturn = (
 
   if (plan.kind === "void") {
     return { code: "return;", effects };
+  }
+
+  // #1209: a `string<N>` or array is written into the caller's buffer
+  if (plan.kind === "buffer") {
+    return {
+      code: [
+        ReturnBuffer.RETURN_COMMENT,
+        ...plan.renderWrite(),
+        "return;",
+      ].join("\n"),
+      effects,
+    };
   }
 
   // Issue #477 / #1277: a `return` expression is written against the

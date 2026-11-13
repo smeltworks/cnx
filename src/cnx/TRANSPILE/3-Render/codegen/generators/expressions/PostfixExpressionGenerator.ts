@@ -11,6 +11,7 @@
  * This generator was extracted from CodeGenerator._generatePostfixExpr
  * to reduce the size and complexity of CodeGenerator.ts.
  */
+import ReturnBuffer from "../../../../../utils/ReturnBuffer";
 import type IPlannedFloatBits from "../../../../2-Plan/types/IPlannedFloatBits";
 import FloatBitType from "../../../../2-Plan/FloatBitType";
 import type TPlannedNarrowing from "../../../../2-Plan/types/TPlannedNarrowing";
@@ -235,6 +236,11 @@ const generatePostfixExpression = (
       if (orchestrator.state.isCrossFileDeclaration(tracking.result)) {
         AdrProvenance.record("010", op.line);
       }
+      const temporary =
+        op.returnBuffer === null || op.into !== null
+          ? null
+          : orchestrator.nextTempName();
+      const buffer = op.into ?? temporary;
       const callResult = generateFunctionCall(
         tracking.result,
         // #1445: the plan is built by the orchestrator -- this is the only
@@ -243,9 +249,18 @@ const generatePostfixExpression = (
         op.planArguments(),
         state,
         op.safeDivisionHelper,
+        buffer,
       );
       applyAccessEffects(callResult.effects, effects);
       tracking.result = callResult.code;
+      // #1209: the call fills a temporary before its statement, and the
+      // expression reads the temporary
+      if (temporary !== null && op.returnBuffer !== null) {
+        orchestrator.addPendingTempDeclaration(ReturnBuffer.TEMPORARY_COMMENT);
+        orchestrator.addPendingTempDeclaration(op.returnBuffer(temporary));
+        orchestrator.addPendingTempDeclaration(`${callResult.code};`);
+        tracking.result = temporary;
+      }
     }
   }
 

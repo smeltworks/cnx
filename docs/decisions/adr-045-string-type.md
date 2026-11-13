@@ -570,6 +570,58 @@ Transpiles to:
 char names[10][33];  // 32 + 1 for null terminator each
 ```
 
+### Returning a String (owner ruling, 2026-11-13, #1209)
+
+C cannot return an array, and a pointer to a local outlives nothing, so a
+function that returns `string<N>` takes its caller's buffer instead. The
+buffer outlives the call, so a local, a module variable and a scope member are
+all safe to return, and the copy is bounded:
+
+```cnx
+string<16> greet() {
+    string<16> s <- "hi";
+    return s;
+}
+u32 main() {
+    string<16> a <- greet();
+    string<32> b <- greet() + "!";
+}
+```
+
+```c
+void greet(char cnx_return[17]) {
+    const char s[17] = "hi";
+    cnx_string_copy(cnx_return, s, 16U);
+    return;
+}
+int main(void) {
+    char a[17] = "";
+    greet(a);
+    char cnx_tmp0[17] = {0};
+    greet(cnx_tmp0);
+    /* ...b is built from cnx_tmp0 and "!"... */
+}
+```
+
+A declaration of exactly the return type is filled in place: nothing the call
+reads can be the variable, which is defined once its declaration closes. Every
+other use fills a temporary of the return type, which is then copied into a
+wider declaration or an assignment, concatenated, or passed as an argument. An
+assignment is never filled in place, so `c <- twice(c)` cannot build into `c`
+while still reading it. The header declares `void greet(char cnx_return[17]);`, so a C
+caller passes the buffer. This had emitted `char[17] greet(void);`, which is
+not C. ADR-035 gives an array return the same lowering. Fixtures:
+`tests/bugs/issue-1209-string-array-return/`.
+
+A `volatile` or `atomic` declaration is not filled in place either: the
+buffer parameter is not volatile, so the call fills a temporary that is copied
+in. A ternary whose arm is such a call fills one buffer declared before its
+`if`, wide enough for either arm: the chosen arm's call fills it in place, and
+an arm that is not a call is copied in, so the value outlives the branch that
+set it and only the chosen arm's function runs. A return type states its
+capacity, since a return has no literal to infer one from: `string greet()` is
+E0862.
+
 ### A `for` Header (ADR-036)
 
 A `for` header declares one scalar loop variable, and a string is a `char`
