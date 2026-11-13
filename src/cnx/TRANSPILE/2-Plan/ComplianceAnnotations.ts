@@ -78,7 +78,7 @@ class ComplianceAnnotations {
   static readonly STRING_BUILT_APART: IComplianceAnnotation = {
     citation: `${ComplianceAnnotations.MISRA} 19.1`,
     what: "string built in a temporary, then copied in by `cnx_string_copy`",
-    why: "`strncpy` and `strncat` would be passed overlapping arguments when a part reads the string written",
+    why: "copying the parts in place would overwrite characters a later part still reads when a part reads the string written",
   };
 
   /**

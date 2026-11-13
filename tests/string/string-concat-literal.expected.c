@@ -5,13 +5,32 @@
 
 #include "string-concat-literal.test.h"
 
+#include <stdint.h>
 #include <string.h>
+
+/* MISRA C:2012 Rule 19.1: string copied a character at a time by `cnx_string_copy` (`strncpy` would be passed overlapping arguments when a string is written from itself). */
+static inline void cnx_string_copy(char* target, const char* source, uint32_t capacity) {
+    const char* next = source;
+    uint32_t i = 0U;
+    while ((i < capacity) && (*next != '\0')) {
+        target[i] = *next;
+        next++;
+        i++;
+    }
+    while (i < capacity) {
+        target[i] = '\0';
+        i++;
+    }
+    target[capacity] = '\0';
+}
 
 // ADR-045: Test string concatenation with literal
 void test(void) {
     const char greeting[33] = "Hello";
     char result[65] = "";
-    (void) strncpy(result, greeting, 64);
-    (void) strncat(result, " World", 64 - strlen(result));
-    result[64] = '\0';
+    cnx_string_copy(result, greeting, 64U);
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(result);
+        cnx_string_copy(&result[cnx_used], " World", 64U - cnx_used);
+    }
 }

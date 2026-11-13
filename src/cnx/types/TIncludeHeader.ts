@@ -5,7 +5,7 @@
  * types a file emits (`CTypeIncludes`, #1927), so a generator records the type
  * rather than asking for the header.
  *
- * - string: String functions (strlen, strncpy, etc.)
+ * - string: String functions (strlen, strcmp, etc.)
  * - cmsis: CMSIS intrinsics (for atomic operations)
  * - irq_wrappers: IRQ wrapper functions for critical sections (avoids macro collisions)
  * - float_static_assert: Static assert for float bit indexing size verification

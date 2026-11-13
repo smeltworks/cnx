@@ -371,8 +371,10 @@ describe("StringDeclHelper", () => {
       );
 
       expect(code).toContain('char full[51] = "";');
-      expect(code).toContain("strncpy");
-      expect(code).toContain("strncat");
+      expect(code).toContain("cnx_string_copy(full, first, 50U);");
+      expect(code).toContain(
+        "cnx_string_copy(&full[cnx_used], second, 50U - cnx_used);",
+      );
     });
 
     it("asserts the invariant for concatenation at global scope", () => {

@@ -29,9 +29,11 @@ int main(void) {
     const char a[33] = "Hello";
     const char b[33] = " World";
     char concat[65] = "";
-    (void) strncpy(concat, a, 64);
-    (void) strncat(concat, b, 64 - strlen(concat));
-    concat[64] = '\0';
+    cnx_string_copy(concat, a, 64U);
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(concat);
+        cnx_string_copy(&concat[cnx_used], b, 64U - cnx_used);
+    }
     if (strlen(concat) != 11) {
         return 1;
     }
@@ -56,9 +58,11 @@ int main(void) {
     const char first[33] = "AB";
     const char second[33] = "CD";
     char combined[65] = "";
-    (void) strncpy(combined, first, 64);
-    (void) strncat(combined, second, 64 - strlen(combined));
-    combined[64] = '\0';
+    cnx_string_copy(combined, first, 64U);
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(combined);
+        cnx_string_copy(&combined[cnx_used], second, 64U - cnx_used);
+    }
     if (strcmp(combined, "ABCD") != 0) {
         return 7;
     }
@@ -92,9 +96,11 @@ int main(void) {
     const char prefix[17] = "pre";
     const char suffix[17] = "fix";
     char word[33] = "";
-    (void) strncpy(word, prefix, 32);
-    (void) strncat(word, suffix, 32 - strlen(word));
-    word[32] = '\0';
+    cnx_string_copy(word, prefix, 32U);
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(word);
+        cnx_string_copy(&word[cnx_used], suffix, 32U - cnx_used);
+    }
     if (strcmp(word, "prefix") != 0) {
         return 14;
     }

@@ -117,7 +117,7 @@ class CompoundAssignmentCheck {
     }
     // The chain may END on a string -- `config.name +<- " suffix"` where
     // `name` is a `string<32>` field. A string is a buffer copied by
-    // `strncpy`, not a value `+` can be applied to, wherever it is reached
+    // `cnx_string_copy`, not a value `+` can be applied to, wherever it is reached
     // from.
     const last = OperandTyper.typeOfTarget(target, this.context);
     return OperandTyper.isScalarString(last) ? "string" : null;
