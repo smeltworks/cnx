@@ -9,14 +9,14 @@ scope S {
         buf <- "";
     }
 
-    public u8 len() {
+    public u32 len() {
         return buf.value_char_count;
     }
 }
 
 u32 main() {
     S.init();
-    u8 length <- S.len();
+    u32 length <- S.len();
     if (length != 0) {
         return 1;
     }

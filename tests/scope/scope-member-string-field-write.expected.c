@@ -42,7 +42,7 @@ void S__setInside(void) {
 }
 
 uint32_t S__insideLength(void) {
-    return strlen(S__cfg.name);
+    return (uint32_t) strlen(S__cfg.name);
 }
 
 int main(void) {
@@ -55,7 +55,7 @@ int main(void) {
         return 2U;
     }
     cnx_string_copy(S__cfg.name, "wxyz", 16U);
-    const uint32_t n2 = strlen(S__cfg.name);
+    const uint32_t n2 = (uint32_t) strlen(S__cfg.name);
     if (n2 != 4) {
         return 3U;
     }

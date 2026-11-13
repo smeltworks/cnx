@@ -118,7 +118,7 @@ uint32_t S__positions(const uint32_t flag) {
     acc = cnx_clamp_add_u32(acc, S__positions__pcfg.x);
     acc = cnx_clamp_add_u32(acc, 4);
     cnx_string_copy(S__positions__pstr, "cd", 8U);
-    acc = cnx_clamp_add_u32(acc, strlen(S__positions__pstr));
+    acc = cnx_clamp_add_u32(acc, (uint32_t) strlen(S__positions__pstr));
     const Holder made = { .x = S__positions__probe };
     acc = cnx_clamp_add_u32(acc, made.x);
     const uint32_t init[2] = {S__positions__probe, 2U};

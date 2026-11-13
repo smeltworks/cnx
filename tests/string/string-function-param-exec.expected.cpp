@@ -18,7 +18,7 @@
 // (69 violations). Add the marker here when #862 closes.
 // ADR-045: Validate string function parameters at runtime
 uint32_t getLen(const char* s) {
-    return strlen(s);
+    return (uint32_t) strlen(s);
 }
 
 uint32_t getCap(const char* s) {

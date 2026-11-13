@@ -51,19 +51,19 @@ void setLevel(const uint32_t code) {
 
 int main(void) {
     setLevel(0U);
-    if (strlen(level) != 3) {
+    if ((uint32_t) strlen(level) != 3) {
         return 1U;
     }
     setLevel(1U);
-    if (strlen(level) != 6) {
+    if ((uint32_t) strlen(level) != 6) {
         return 2U;
     }
     setLevel(2U);
-    if (strlen(level) != 4) {
+    if ((uint32_t) strlen(level) != 4) {
         return 3U;
     }
     setLevel(99U);
-    if (strlen(level) != 7) {
+    if ((uint32_t) strlen(level) != 7) {
         return 4U;
     }
     return 0U;

@@ -36,18 +36,18 @@ void copyString(void) {
 
 int main(void) {
     copyString();
-    if (strlen(dest) != 8) {
+    if ((uint32_t) strlen(dest) != 8) {
         return 1U;
     }
     cnx_string_copy(source, "NewValue", 64U);
     cnx_string_copy(dest, source, 64U);
-    if (strlen(dest) != 8) {
+    if ((uint32_t) strlen(dest) != 8) {
         return 2U;
     }
     const char localSrc[33] = "LocalSource";
     char localDst[33] = "";
     cnx_string_copy(localDst, localSrc, 32U);
-    if (strlen(localDst) != 11) {
+    if ((uint32_t) strlen(localDst) != 11) {
         return 3U;
     }
     return 0U;

@@ -28,7 +28,7 @@ int main(void) {
     const char small[33] = "Test";
     char big[65] = "";
     cnx_string_copy(big, small, 64U);
-    if (strlen(big) != 4) {
+    if ((uint32_t) strlen(big) != 4) {
         return 1;
     }
     if (strcmp(big, "Test") != 0) {
@@ -40,7 +40,7 @@ int main(void) {
     const char source[17] = "Hello World";
     char dest[33] = "";
     cnx_string_copy(dest, source, 32U);
-    if (strlen(dest) != 11) {
+    if ((uint32_t) strlen(dest) != 11) {
         return 4;
     }
     if (strcmp(dest, "Hello World") != 0) {
@@ -49,7 +49,7 @@ int main(void) {
     const char emptySource[33] = "";
     char emptyDest[65] = "";
     cnx_string_copy(emptyDest, emptySource, 64U);
-    if (strlen(emptyDest) != 0) {
+    if ((uint32_t) strlen(emptyDest) != 0) {
         return 6;
     }
     if (strcmp(emptyDest, "") != 0) {
@@ -63,7 +63,7 @@ int main(void) {
     if (strcmp(local, "Second") != 0) {
         return 9;
     }
-    if (strlen(local) != 6) {
+    if ((uint32_t) strlen(local) != 6) {
         return 10;
     }
     char multi[65] = "One";
@@ -72,11 +72,11 @@ int main(void) {
     if (strcmp(multi, "Three") != 0) {
         return 11;
     }
-    if (strlen(multi) != 5) {
+    if ((uint32_t) strlen(multi) != 5) {
         return 12;
     }
     const char fromLit[33] = "Direct Literal";
-    if (strlen(fromLit) != 14) {
+    if ((uint32_t) strlen(fromLit) != 14) {
         return 13;
     }
     if (strcmp(fromLit, "Direct Literal") != 0) {

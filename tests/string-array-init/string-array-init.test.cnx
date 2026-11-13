@@ -10,7 +10,7 @@ string<8>[4] colors <- ["Red", "Green", "Blue", "Yellow"];
 scope Test {
     public void init() {
         // Access string array element
-        u8 len <- global.LABELS[0].value_char_count;
+        u32 len <- global.LABELS[0].value_char_count;
     }
 }
 

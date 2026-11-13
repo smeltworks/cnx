@@ -30,20 +30,20 @@ static inline void cnx_string_copy(char* target, const char* source, uint32_t ca
 const char globalStr[65] = "Hello";
 
 int main(void) {
-    if (strlen(globalStr) != 5) {
+    if ((uint32_t) strlen(globalStr) != 5) {
         return 1;
     }
     const char localStr[33] = "World";
-    if (strlen(localStr) != 5) {
+    if ((uint32_t) strlen(localStr) != 5) {
         return 2;
     }
     const char emptyStr[17] = "";
-    if (strlen(emptyStr) != 0) {
+    if ((uint32_t) strlen(emptyStr) != 0) {
         return 3;
     }
     TestStruct ts = {0};
     cnx_string_copy(ts.name, "Test", 32U);
-    if (strlen(ts.name) != 4) {
+    if ((uint32_t) strlen(ts.name) != 4) {
         return 4;
     }
     return 0;

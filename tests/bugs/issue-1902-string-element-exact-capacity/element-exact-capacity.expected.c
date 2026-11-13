@@ -40,7 +40,7 @@ char globalNames[2][9] = {0};
 char globalSource[9] = "";
 
 uint32_t charCount(const char* value) {
-    return strlen(value);
+    return (uint32_t) strlen(value);
 }
 
 int main(void) {
@@ -138,13 +138,13 @@ int main(void) {
     if (strcmp(cfg.items[1U], "eight ch") != 0) {
         return 12;
     }
-    if (strlen(localNames[1U]) != 8) {
+    if ((uint32_t) strlen(localNames[1U]) != 8) {
         return 13;
     }
-    if (strlen(globalNames[1U]) != 8) {
+    if ((uint32_t) strlen(globalNames[1U]) != 8) {
         return 14;
     }
-    if (strlen(cfg.items[1U]) != 8) {
+    if ((uint32_t) strlen(cfg.items[1U]) != 8) {
         return 15;
     }
     char scalar[9] = "";

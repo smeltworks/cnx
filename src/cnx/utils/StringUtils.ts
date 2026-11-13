@@ -4,6 +4,7 @@
  *
  * Extracted from CodeGenerator.ts as part of ADR-065 decomposition.
  */
+import LengthProperty from "./LengthProperty";
 import type TRenderedStringPart from "../types/TRenderedStringPart";
 import type TStringValueForm from "../types/TStringValueForm";
 
@@ -76,7 +77,7 @@ class StringUtils {
         : left;
     return [
       "{",
-      `    const uint32_t cnx_used = (uint32_t) strlen(${buffer});`,
+      `    const ${LengthProperty.CHAR_COUNT_C_TYPE} cnx_used = ${LengthProperty.stringCharsC(buffer)};`,
       `    ${StringUtils.COPY_HELPER}(&${buffer}[cnx_used], ${source}, ${bound});`,
       "}",
     ];

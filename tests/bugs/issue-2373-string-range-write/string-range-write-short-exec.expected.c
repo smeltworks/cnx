@@ -105,7 +105,7 @@ int main(void) {
     if (v[3U] != 'l') {
         return 3U;
     }
-    if (strlen(v) != 5) {
+    if ((uint32_t) strlen(v) != 5) {
         return 4U;
     }
     if (u[0U] != 'j') {
@@ -120,7 +120,7 @@ int main(void) {
     if (c[3U] != 'l') {
         return 8U;
     }
-    if (strlen(c) != 5) {
+    if ((uint32_t) strlen(c) != 5) {
         return 9U;
     }
     if (l[2U] != 'l') {
@@ -132,7 +132,7 @@ int main(void) {
     if (f[1U] != 'e') {
         return 12U;
     }
-    if (strlen(f) != 5) {
+    if ((uint32_t) strlen(f) != 5) {
         return 13U;
     }
     return 0U;

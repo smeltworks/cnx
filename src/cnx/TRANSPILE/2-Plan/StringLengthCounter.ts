@@ -14,7 +14,24 @@ import type TExpressionOf from "../../types/syntax/TExpressionOf";
 import type TBlockSyntax from "../../types/syntax/TBlockSyntax";
 import type TStatement from "../../types/syntax/TStatement";
 import type TranspileState from "../TranspileState";
+import type ISourcePosition from "../../utils/types/ISourcePosition";
+import AssignmentTarget from "../../utils/AssignmentTarget";
+import DeclarationParts from "../../utils/DeclarationParts";
+import ExpressionNodes from "../../utils/ExpressionNodes";
+import ExpressionShape from "../../utils/ExpressionShape";
 import LengthProperty from "../../utils/LengthProperty";
+import OperandTyper from "../../utils/OperandTyper";
+import StatementNodes from "../../utils/StatementNodes";
+import type TEssentialCategory from "../../types/TEssentialCategory";
+
+/** The categories of a scalar that holds no characters */
+const SCALAR_CATEGORIES: ReadonlySet<TEssentialCategory> = new Set([
+  "signed",
+  "unsigned",
+  "floating",
+  "boolean",
+  "enum",
+]);
 
 /**
  * Counts .value_char_count accesses on string variables in an expression tree.
@@ -44,6 +61,84 @@ class StringLengthCounter {
     for (const stmt of block.statements) {
       StringLengthCounter.walkStatement(stmt, counts, state);
     }
+  }
+
+  /**
+   * Issue #1958: drop each counted string the region may write, so a length
+   * read after the write measures the string as written. A string is written
+   * by an assignment to it, nested ones included, and by a call it is passed
+   * to. One that is not a local is also written by any call, since the callee
+   * can reach it, and by a write to another non-local that may change a
+   * string's characters, since the two may name the same string (a parameter
+   * bound to a global).
+   */
+  static dropWrittenIn(
+    region: readonly TStatement[],
+    counts: Map<string, number>,
+    at: ISourcePosition,
+    state: TranspileState,
+  ): void {
+    const writes = StatementNodes.assignmentsIn(region).map((assignment) => ({
+      target: assignment.target,
+      parts: AssignmentTarget.parts(assignment.target),
+    }));
+    const assigned = new Set(writes.map(({ parts }) => parts.identifier));
+    const writesNonLocalString = writes.some(
+      ({ target, parts }) =>
+        (parts.root !== null ||
+          (parts.identifier !== null &&
+            !StringLengthCounter.isLocal(
+              parts.identifier,
+              parts.position,
+              state,
+            ))) &&
+        StringLengthCounter.mayWriteString(target, state),
+    );
+    const calls = DeclarationParts.statements(region)
+      .flatMap(ExpressionNodes.of)
+      .flatMap((node) => (node.kind === "postfix" ? node.ops : []))
+      .flatMap((op) => (op.kind === "call" ? [op] : []));
+    const passed = new Set(
+      calls.flatMap((call) => call.arguments.map(ExpressionShape.rootName)),
+    );
+    for (const name of [...counts.keys()]) {
+      if (
+        assigned.has(name) ||
+        passed.has(name) ||
+        ((calls.length > 0 || writesNonLocalString) &&
+          !StringLengthCounter.isLocal(name, at, state))
+      ) {
+        counts.delete(name);
+      }
+    }
+  }
+
+  /**
+   * Whether a write may change a string's characters: anything but a write
+   * to a scalar number, bool or enum, and anything the typer cannot type.
+   */
+  private static mayWriteString(
+    target: TExpression,
+    state: TranspileState,
+  ): boolean {
+    const written = OperandTyper.typeOfTarget(target, state.typingContext());
+    return (
+      written === null ||
+      written.dimensions.length > 0 ||
+      !SCALAR_CATEGORIES.has(written.category)
+    );
+  }
+
+  /** A local declared in the function body, which no callee can name */
+  private static isLocal(
+    name: string,
+    at: ISourcePosition,
+    state: TranspileState,
+  ): boolean {
+    const binding = state.bindingAt(null, name, at);
+    return (
+      binding?.kind === "local" && binding.declaration.kind !== "parameter"
+    );
   }
 
   /**

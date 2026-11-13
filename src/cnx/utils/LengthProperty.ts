@@ -13,6 +13,7 @@
 import type TConstExpr from "../types/TConstExpr";
 import type TCaseLabelSyntax from "../types/syntax/TCaseLabelSyntax";
 import TYPE_WIDTH from "../types/TYPE_WIDTH";
+import CNX_TO_C_TYPE_MAP from "./constants/TypeMappings";
 import type IStructSymbol from "../types/symbols/IStructSymbol";
 import type TSymbol from "../types/symbols/TSymbol";
 import type IElementWidthFacts from "./types/IElementWidthFacts";
@@ -63,6 +64,17 @@ const STRING_SUBJECT: ILengthSubject = {
 class LengthProperty {
   /** The C type an unfolded length's product is taken in (#1760) */
   static readonly PRODUCT_C_TYPE = "uint32_t";
+
+  /** `.value_char_count`'s cnx type, for every subject (#1742 owner ruling) */
+  static readonly CHAR_COUNT_TYPE = "u32";
+  static readonly CHAR_COUNT_C_TYPE =
+    CNX_TO_C_TYPE_MAP[LengthProperty.CHAR_COUNT_TYPE];
+  static readonly VALUE_CHAR_COUNT_PROPERTY = "value_char_count";
+
+  /** The chars a string holds now, in the count's type: `(uint32_t) strlen(s)` */
+  static stringCharsC(operand: string): string {
+    return `(${LengthProperty.CHAR_COUNT_C_TYPE}) strlen(${operand})`;
+  }
 
   /** The C helpers a runtime integer length is written with (`HelperGenerator`) */
   static readonly VALUE_BIT_LENGTH = "cnx_value_bit_length";
@@ -218,18 +230,34 @@ class LengthProperty {
             "Use .memory_byte_length for the memory a value takes.",
           );
     }
-    if (!scalar) return { kind: "spelling" };
-    if (subject.isString) return { kind: "string" };
-    if (subject.category === "floating") {
+    if (LengthProperty.countsCharsNow(subject)) {
+      return subject.isString
+        ? { kind: "string" }
+        : { kind: "decimal", signed: subject.category === "signed" };
+    }
+    if (scalar && subject.category === "floating") {
       return LengthProperty.error(
         `.value_char_count is not available on the float '${subject.spelling}'`,
         "A float prints in more than one correct way (0.1, 0.100000), and cnx fixes no format, so it has no character count.",
       );
     }
-    if (subject.category === "signed" || subject.category === "unsigned") {
-      return { kind: "decimal", signed: subject.category === "signed" };
-    }
     return { kind: "spelling" };
+  }
+
+  /**
+   * Whether `.value_char_count` counts the subject's characters as it runs --
+   * a string's, or an integer's in decimal -- rather than spelling its type,
+   * so the count is a `CHAR_COUNT_TYPE` value (#1742)
+   */
+  static countsCharsNow(
+    subject: Pick<ILengthSubject, "category" | "isString" | "isArray">,
+  ): boolean {
+    return (
+      !subject.isArray &&
+      (subject.isString ||
+        subject.category === "signed" ||
+        subject.category === "unsigned")
+    );
   }
 
   private static error(message: string, helpText: string): TLengthRule {

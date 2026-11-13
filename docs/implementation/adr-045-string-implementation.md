@@ -172,7 +172,7 @@ if (memberName === "capacity") {
 
 ### Success Criteria
 
-- [ ] `msg.value_char_count` → `strlen(msg)`
+- [ ] `msg.value_char_count` → `(uint32_t) strlen(msg)` (a `u32`, #1742)
 - [ ] `msg.capacity` → compile-time constant N
 
 ---
@@ -338,7 +338,7 @@ u32 cap <- message.capacity;
 →
 
 ```c
-uint32_t len = strlen(message);
+uint32_t len = (uint32_t) strlen(message);
 uint32_t cap = 64;
 ```
 

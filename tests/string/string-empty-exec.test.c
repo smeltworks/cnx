@@ -26,7 +26,7 @@ static inline void cnx_string_copy(char* target, const char* source, uint32_t ca
 // ADR-045: Validate empty string behavior at runtime
 int main(void) {
     const char empty[65] = "";
-    if (strlen(empty) != 0) {
+    if ((uint32_t) strlen(empty) != 0) {
         return 1;
     }
     if (64 != 64) {
@@ -43,7 +43,7 @@ int main(void) {
         return 5;
     }
     const char explicitEmpty[33] = "";
-    if (strlen(explicitEmpty) != 0) {
+    if ((uint32_t) strlen(explicitEmpty) != 0) {
         return 6;
     }
     if (strcmp(explicitEmpty, "") != 0) {
@@ -56,7 +56,7 @@ int main(void) {
         const uint32_t cnx_used = (uint32_t) strlen(concatEmpty);
         cnx_string_copy(&concatEmpty[cnx_used], empty, 96U - cnx_used);
     }
-    if (strlen(concatEmpty) != 5) {
+    if ((uint32_t) strlen(concatEmpty) != 5) {
         return 8;
     }
     if (strcmp(concatEmpty, "Hello") != 0) {
@@ -68,7 +68,7 @@ int main(void) {
         const uint32_t cnx_used = (uint32_t) strlen(emptyPlusText);
         cnx_string_copy(&emptyPlusText[cnx_used], text, 96U - cnx_used);
     }
-    if (strlen(emptyPlusText) != 5) {
+    if ((uint32_t) strlen(emptyPlusText) != 5) {
         return 10;
     }
     if (strcmp(emptyPlusText, "Hello") != 0) {

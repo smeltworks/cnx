@@ -23,35 +23,35 @@ extern const char colors[4][9] = {"Red", "Green", "Blue", "Yellow"};
 /* Scope: Test */
 
 void Test__init(void) {
-    const uint8_t len = strlen(LABELS[0U]);
+    const uint32_t len = (uint32_t) strlen(LABELS[0U]);
 }
 
 int main(void) {
     if (3 != 3) {
         return 1U;
     }
-    if (strlen(LABELS[0U]) != 3) {
+    if ((uint32_t) strlen(LABELS[0U]) != 3) {
         return 2U;
     }
-    if (strlen(LABELS[1U]) != 3) {
+    if ((uint32_t) strlen(LABELS[1U]) != 3) {
         return 3U;
     }
-    if (strlen(LABELS[2U]) != 5) {
+    if ((uint32_t) strlen(LABELS[2U]) != 5) {
         return 4U;
     }
     if (4 != 4) {
         return 5U;
     }
-    if (strlen(colors[0U]) != 3) {
+    if ((uint32_t) strlen(colors[0U]) != 3) {
         return 6U;
     }
-    if (strlen(colors[1U]) != 5) {
+    if ((uint32_t) strlen(colors[1U]) != 5) {
         return 7U;
     }
-    if (strlen(colors[2U]) != 4) {
+    if ((uint32_t) strlen(colors[2U]) != 4) {
         return 8U;
     }
-    if (strlen(colors[3U]) != 6) {
+    if ((uint32_t) strlen(colors[3U]) != 6) {
         return 9U;
     }
     Test__init();

@@ -5,6 +5,7 @@
 
 #include "string-length-repeated.test.hpp"
 
+#include <stdint.h>
 #include <string.h>
 
 // ADR-045: Test repeated .value_char_count usage
@@ -14,8 +15,7 @@
 char text[65] = "Hello World";
 
 void test(void) {
-    size_t cnx_len_text = strlen(text);
-    if (cnx_len_text > 0 && text[cnx_len_text - 1U] == 'd') {
-        text[cnx_len_text - 1] = 'D';
+    if ((uint32_t) strlen(text) > 0 && text[(uint32_t) strlen(text) - 1U] == 'd') {
+        text[(uint32_t) strlen(text) - 1] = 'D';
     }
 }

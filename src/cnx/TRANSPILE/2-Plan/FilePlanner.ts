@@ -1965,7 +1965,7 @@ class FilePlanner {
    * The `uint32_t` 2.3 writes a length in (#1760): a logical bit or byte
    * length of an array with a dimension that does not fold (a C macro) is a
    * product, a memory length a cast `sizeof`, a runtime one a helper's, and
-   * strlen's only when it is widened for its bits.
+   * strlen's, cast to the char count's type (#1742).
    */
   private planLengthCTypes(
     program: IProgramSyntax,
@@ -1981,7 +1981,7 @@ class FilePlanner {
       if (
         unfolded ||
         rule.kind === "memory" ||
-        (rule.kind === "string" && name.unit === "bit_length") ||
+        rule.kind === "string" ||
         helper
       ) {
         cTypes.add(LengthProperty.PRODUCT_C_TYPE);

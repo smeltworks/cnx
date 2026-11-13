@@ -33,7 +33,7 @@ int main(void) {
     if (strcmp(big, "Test") != 0) {
         return 1;
     }
-    if (strlen(big) != 4) {
+    if ((uint32_t) strlen(big) != 4) {
         return 2;
     }
     return 0;

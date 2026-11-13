@@ -5,6 +5,7 @@
 
 import PlanQueries from "../../2-Plan/PlanQueries";
 import type IFloatBitWrite from "../../types/IFloatBitWrite";
+import LengthProperty from "../../../utils/LengthProperty";
 import ReservedCnxName from "../../../utils/ReservedCnxName";
 
 // Issue #60: BITMAP_SIZE and BITMAP_BACKING_TYPE moved to SymbolCollector
@@ -354,7 +355,9 @@ export default class CodeGenerator implements IOrchestrator {
         const tempVar = ReservedCnxName.stringLengthCache(varName);
         const operand = renderOperand(varName);
         cache.set(operand, tempVar);
-        declarations.push(`size_t ${tempVar} = strlen(${operand});`);
+        declarations.push(
+          `${LengthProperty.CHAR_COUNT_C_TYPE} ${tempVar} = ${LengthProperty.stringCharsC(operand)};`,
+        );
       }
     }
 

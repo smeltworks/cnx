@@ -42,13 +42,13 @@ int main(void) {
     if (strcmp(cfg.items[1U], "seven c") != 0) {
         return 2;
     }
-    if (strlen(cfg.items[2U]) != 0) {
+    if ((uint32_t) strlen(cfg.items[2U]) != 0) {
         return 3;
     }
-    if (strlen(cfg.items[0U]) != 2) {
+    if ((uint32_t) strlen(cfg.items[0U]) != 2) {
         return 4;
     }
-    if (strlen(cfg.items[1U]) != 7) {
+    if ((uint32_t) strlen(cfg.items[1U]) != 7) {
         return 5;
     }
     if (cfg.count != 3) {

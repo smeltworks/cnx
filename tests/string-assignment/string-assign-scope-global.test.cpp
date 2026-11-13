@@ -44,15 +44,15 @@ void Handler__setLongMessage(void) {
 
 int main(void) {
     Handler__updateGlobal();
-    if (strlen(globalBuffer) != 9) {
+    if ((uint32_t) strlen(globalBuffer) != 9) {
         return 1U;
     }
     Handler__clearGlobal();
-    if (strlen(globalBuffer) != 0) {
+    if ((uint32_t) strlen(globalBuffer) != 0) {
         return 2U;
     }
     Handler__setLongMessage();
-    if (strlen(globalBuffer) != 35) {
+    if ((uint32_t) strlen(globalBuffer) != 35) {
         return 3U;
     }
     return 0U;

@@ -66,7 +66,7 @@ int main(void) {
     if (s[4U] != 'o') {
         return 5U;
     }
-    if (strlen(s) != 5) {
+    if ((uint32_t) strlen(s) != 5) {
         return 6U;
     }
     return 0U;

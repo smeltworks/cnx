@@ -10,7 +10,7 @@
 // ADR-045: Validate .length, .capacity, .size return correct values at runtime
 int main(void) {
     const char msg[65] = "Hello";
-    if (strlen(msg) != 5) {
+    if ((uint32_t) strlen(msg) != 5) {
         return 1;
     }
     if (64 != 64) {
@@ -20,7 +20,7 @@ int main(void) {
         return 3;
     }
     const char longer[129] = "This is a longer string for testing";
-    if (strlen(longer) != 35) {
+    if ((uint32_t) strlen(longer) != 35) {
         return 4;
     }
     if (128 != 128) {
@@ -30,7 +30,7 @@ int main(void) {
         return 6;
     }
     const char empty[33] = "";
-    if (strlen(empty) != 0) {
+    if ((uint32_t) strlen(empty) != 0) {
         return 7;
     }
     if (32 != 32) {
@@ -40,7 +40,7 @@ int main(void) {
         return 9;
     }
     const char exact[6] = "Hello";
-    if (strlen(exact) != 5) {
+    if ((uint32_t) strlen(exact) != 5) {
         return 10;
     }
     if (5 != 5) {
@@ -50,7 +50,7 @@ int main(void) {
         return 12;
     }
     const char single[17] = "X";
-    if (strlen(single) != 1) {
+    if ((uint32_t) strlen(single) != 1) {
         return 13;
     }
     if (16 != 16) {

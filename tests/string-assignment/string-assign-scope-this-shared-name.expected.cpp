@@ -75,18 +75,18 @@ void Unique__set(void) {
 
 int main(void) {
     Wide__set();
-    if (strlen(Wide__message) != 4) {
+    if ((uint32_t) strlen(Wide__message) != 4) {
         return 1U;
     }
     Narrow__set();
-    if (strlen(Narrow__message) != 6) {
+    if ((uint32_t) strlen(Narrow__message) != 6) {
         return 2U;
     }
-    if (strlen(Wide__message) != 4) {
+    if ((uint32_t) strlen(Wide__message) != 4) {
         return 3U;
     }
     Unique__set();
-    if (strlen(Unique__banner) != 6) {
+    if ((uint32_t) strlen(Unique__banner) != 6) {
         return 4U;
     }
     return 0U;

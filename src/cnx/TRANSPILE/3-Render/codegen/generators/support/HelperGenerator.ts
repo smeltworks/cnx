@@ -233,8 +233,8 @@ const generateLengthHelpers = (used: readonly string[]): string[] => {
   if (signed || needs.has(LengthProperty.VALUE_CHAR_COUNT)) {
     lines.push(
       "/* .value_char_count: an integer's characters in decimal */",
-      `static inline uint32_t ${LengthProperty.VALUE_CHAR_COUNT}(uint64_t value) {`,
-      "    uint32_t chars = 1U;",
+      `static inline ${LengthProperty.CHAR_COUNT_C_TYPE} ${LengthProperty.VALUE_CHAR_COUNT}(uint64_t value) {`,
+      `    ${LengthProperty.CHAR_COUNT_C_TYPE} chars = 1U;`,
       "    uint64_t rest = value;",
       "    while (rest >= 10U) {",
       "        chars++;",
@@ -249,7 +249,7 @@ const generateLengthHelpers = (used: readonly string[]): string[] => {
     lines.push(
       "/* A negative value's '-' is a character too. Its magnitude is taken in",
       " * uint64_t, so negating INT64_MIN is defined (C99 6.2.5p9) */",
-      `static inline uint32_t ${LengthProperty.VALUE_CHAR_COUNT_SIGNED}(int64_t value) {`,
+      `static inline ${LengthProperty.CHAR_COUNT_C_TYPE} ${LengthProperty.VALUE_CHAR_COUNT_SIGNED}(int64_t value) {`,
       "    uint64_t magnitude = (value < 0) ? (0U - (uint64_t)value) : (uint64_t)value;",
       `    return ${LengthProperty.VALUE_CHAR_COUNT}(magnitude) + ((value < 0) ? 1U : 0U);`,
       "}",

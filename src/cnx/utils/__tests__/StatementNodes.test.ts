@@ -17,6 +17,16 @@ describe("StatementNodes", () => {
     expect(sites).toEqual(["<-", "+<-", "-<-"]);
   });
 
+  it("lists the assignment sites in a statement list, nested ones too", () => {
+    const [member] = CnxSourceParser.parse(
+      `void f() { mut u8 a <- 0; { a <- 1; } if (a = 1) { a +<- 2; } }`,
+    ).program.members;
+    const statements = StatementNodes.roots(member.declaration);
+    expect(
+      StatementNodes.assignmentsIn(statements).map((s) => s.operator),
+    ).toEqual(["<-", "+<-"]);
+  });
+
   it("reaches nested statements in source order", () => {
     expect(
       kinds(
