@@ -12,9 +12,6 @@
 extern "C" {
 #endif
 
-/* External type dependencies - include appropriate headers */
-typedef struct u8[2] u8[2];
-
 /* Function prototypes */
 void grid(uint8_t cnx_return[2][3]);
 

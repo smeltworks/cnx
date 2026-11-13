@@ -1,0 +1,58 @@
+// test-execution
+// test-no-warnings
+// Tests: #1209 - a call filling a buffer runs only when the `?:` arm or the
+// `&&`/`||` operand holding it runs (#2332), for an array and a string return
+mut u32 calls;
+
+u8[4] make() {
+    calls <- calls + 1;
+    return [1, 2, 3, 4];
+}
+
+string<8> name() {
+    calls <- calls + 1;
+    return "ab";
+}
+
+u32 main() {
+    u32 z <- 0;
+    u8 skippedArm <- (z = 1) ? make()[1] : 7;
+    bool skippedAnd <- (z = 1) && (make()[0] = 1);
+    bool skippedOr <- (z = 0) || (make()[0] = 1);
+    u32 skippedString <- (z = 1) ? name().value_char_count : 0;
+    if (calls != 0) {
+        return 1;
+    }
+    if (skippedArm != 7) {
+        return 2;
+    }
+    if (skippedAnd != false) {
+        return 3;
+    }
+    if (skippedOr != true) {
+        return 4;
+    }
+    if (skippedString != 0) {
+        return 5;
+    }
+    u8 takenArm <- (z = 0) ? make()[1] : 7;
+    bool takenAnd <- (z = 0) && (make()[0] = 1);
+    bool takenOr <- (z = 1) || (make()[3] = 4);
+    u32 takenString <- (z = 0) ? name().value_char_count : 0;
+    if (calls != 4) {
+        return 6;
+    }
+    if (takenArm != 2) {
+        return 7;
+    }
+    if (takenAnd != true) {
+        return 8;
+    }
+    if (takenOr != true) {
+        return 9;
+    }
+    if (takenString != 2) {
+        return 10;
+    }
+    return 0;
+}

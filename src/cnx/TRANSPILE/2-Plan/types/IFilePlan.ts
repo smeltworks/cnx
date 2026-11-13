@@ -22,6 +22,7 @@ import type IPlannedSliceSource from "./IPlannedSliceSource";
 import type IPlannedWholeArrayWrite from "./IPlannedWholeArrayWrite";
 import type IPlannedExpectedType from "./IPlannedExpectedType";
 import type IPlannedStaticValue from "./IPlannedStaticValue";
+import type TType from "../../../types/TType";
 import type IPlannedType from "./IPlannedType";
 import type TNegativeMinimum from "./TNegativeMinimum";
 import type TStructInitializerForm from "./TStructInitializerForm";
@@ -174,9 +175,14 @@ interface IFilePlan {
     TStructInitializerForm
   >;
   /**
+   * #1209: each call to a function returning a `string<N>` or an array, by
+   * its call operation, with the return type whose buffer the caller fills
+   */
+  readonly bufferCalls: ReadonlyMap<TPostfixOpSyntax, TType>;
+  /**
    * #2332: each `&&`/`||` operand after the first that holds a struct
-   * initializer built before its statement, so it is built only when the
-   * operand runs
+   * initializer built before its statement -- or a call filling a buffer
+   * (#1209) -- so it is built only when the operand runs
    */
   readonly lazyOperands: ReadonlySet<TExpression>;
   /** #2332: the same for `?:`, by the C type of the value each branch sets */

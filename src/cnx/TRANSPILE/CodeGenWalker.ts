@@ -706,7 +706,7 @@ class CodeGenWalker {
           planArguments: () =>
             this.planCallArguments(args.length === 0 ? null : args),
           safeDivisionHelper,
-          returnBuffer: this.callReturnBuffer(step),
+          returnBuffer: this.callReturnBuffer(op),
         };
       }
       case "missing":
@@ -718,20 +718,14 @@ class CodeGenWalker {
   }
 
   /**
-   * #1209: a call to a function returning a `string<N>` or an array is made
-   * into a temporary of its return type, which the call then stands for
+   * #1209: a call 2.2 found filling a buffer is made into a temporary of its
+   * return type, which the call then stands for
    */
   private callReturnBuffer(
-    step: IChainStep | null,
+    op: TPostfixOpSyntax,
   ): ((name: string) => string) | null {
-    const callee = step?.callee ?? null;
-    if (callee === null) return null;
-    const symbol = this.host.state
-      .typingContext()
-      .program.symbolByCName(callee);
-    if (symbol?.kind !== "function") return null;
-    const returnType = symbol.returnType;
-    if (ReturnBuffer.dimensionsOf(returnType) === null) return null;
+    const returnType = this.filePlan.bufferCalls.get(op);
+    if (returnType === undefined) return null;
     return (name) => {
       const temporary = ReturnBuffer.temporaryFor(returnType, name);
       invariant(temporary !== null, "a buffer return has a buffer");

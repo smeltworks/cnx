@@ -2,6 +2,7 @@ import ForeignTypeFacts from "../../utils/ForeignTypeFacts";
 import SubscriptDepthValidator from "./SubscriptDepthValidator";
 import UnwrittenIncludes from "./UnwrittenIncludes";
 import type TTypeInfo from "../../types/TTypeInfo";
+import type TType from "../../types/TType";
 import type TCArgumentForm from "./types/TCArgumentForm";
 import CArgumentAddress from "./CArgumentAddress";
 import type IPlannedArgument from "./types/IPlannedArgument";
@@ -69,6 +70,7 @@ import AssignmentTarget from "../../utils/AssignmentTarget";
 import TypeCheckUtils from "../../utils/TypeCheckUtils";
 import TypeText from "../../utils/TypeText";
 import ExpressionShape from "../../utils/ExpressionShape";
+import ReturnBuffer from "./ReturnBuffer";
 import StringOperand from "../../utils/StringOperand";
 import VariableDeclarations from "../../utils/VariableDeclarations";
 import MutArgument from "../1-Analyze/helpers/MutArgument";
@@ -648,6 +650,7 @@ class FilePlanner {
       TStructInitializerForm
     >,
     stringFields: ReadonlyMap<TExpression, number>,
+    bufferCalls: ReadonlyMap<TPostfixOpSyntax, TType>,
     expectedTypes: ReadonlyMap<TExpression, IPlannedExpectedType>,
     cTypes: Set<string>,
   ): {
@@ -657,9 +660,10 @@ class FilePlanner {
     const buildsApart = (expr: TExpression): boolean =>
       ExpressionNodes.direct(expr).some(
         (node) =>
-          node.kind === "structInitializer" &&
-          (structInitializers.get(node) === "cppClass" ||
-            node.fields.some((field) => stringFields.has(field.value))),
+          (node.kind === "structInitializer" &&
+            (structInitializers.get(node) === "cppClass" ||
+              node.fields.some((field) => stringFields.has(field.value)))) ||
+          ExpressionShape.headOf(node).ops.some((op) => bufferCalls.has(op)),
       );
     const retested = new Set(
       FilePlanner.forUpdates(program).flatMap((head) =>
@@ -715,6 +719,33 @@ class FilePlanner {
       `the ternary on line ${expr.span.line} has a typed arm: one holds a call or a struct initializer, which E0357 types from its position`,
     );
     return typeName;
+  }
+
+  /**
+   * #1209: each written call to a function returning a `string<N>` or an
+   * array -- a function, a scope member, a cross-file one -- which fills a
+   * temporary of its return type before its statement and stands for it
+   */
+  private planBufferCalls(
+    program: IProgramSyntax,
+    unwritten: IUnwrittenSyntax,
+  ): ReadonlyMap<TPostfixOpSyntax, TType> {
+    const typing = this.state.typingContext();
+    const calls = new Map<TPostfixOpSyntax, TType>();
+    for (const expr of FilePlanner.writtenExpressions(program, unwritten)) {
+      if (ExpressionShape.postfixView(expr) === null) continue;
+      const head = ExpressionShape.headOf(expr);
+      const steps = OperandTyper.chainOf(expr, typing).steps;
+      head.ops.forEach((op, i) => {
+        const callee = steps[i - head.opsConsumed]?.callee ?? null;
+        if (op.kind !== "call" || callee === null) return;
+        const symbol = typing.program.symbolByCName(callee);
+        if (symbol?.kind !== "function") return;
+        if (ReturnBuffer.dimensionsOf(symbol.returnType) === null) return;
+        calls.set(op, symbol.returnType);
+      });
+    }
+    return calls;
   }
 
   /** Every `for` update's expressions: run again each pass, after nothing written before them */
@@ -1244,11 +1275,13 @@ class FilePlanner {
         ...wholeArrayArguments.keys(),
       ]),
     );
+    const bufferCalls = this.planBufferCalls(program, unwritten);
     const lazy = this.planLazyOperands(
       program,
       unwritten,
       structInitializers,
       stringCopies.fields,
+      bufferCalls,
       expectedTypes,
       decidedCTypes,
     );
@@ -1329,6 +1362,7 @@ class FilePlanner {
       expectedTypes,
       narrowings,
       structInitializers,
+      bufferCalls,
       lazyOperands: lazy.operands,
       lazyTernaries: lazy.ternaries,
     };
