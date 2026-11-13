@@ -58,16 +58,6 @@ class ReservedCnxName {
     return `${ReservedCnxName.PREFIX}len_${variableName}`;
   }
 
-  /**
-   * Name for a clamping overflow helper, e.g. `cnx_clamp_add_u8`.
-   *
-   * This family already conformed before ADR-063 part 2; it is routed through
-   * here so the prefix has exactly one definition.
-   */
-  static clampHelper(operation: string, cnxType: string): string {
-    return ReservedCnxName.overflowHelper("clamp", operation, cnxType);
-  }
-
   /** ADR-044 (#1790): an overflow helper of either family, `cnx_wrap_div_i32` */
   static overflowHelper(
     behavior: "clamp" | "wrap",

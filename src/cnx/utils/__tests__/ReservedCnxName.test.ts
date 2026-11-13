@@ -49,8 +49,10 @@ describe("ReservedCnxName", () => {
     });
 
     it("builds clamp helpers carrying the prefix", () => {
-      expect(ReservedCnxName.clampHelper("add", "u8")).toBe("cnx_clamp_add_u8");
-      expect(ReservedCnxName.clampHelper("mul", "i32")).toBe(
+      expect(ReservedCnxName.overflowHelper("clamp", "add", "u8")).toBe(
+        "cnx_clamp_add_u8",
+      );
+      expect(ReservedCnxName.overflowHelper("clamp", "mul", "i32")).toBe(
         "cnx_clamp_mul_i32",
       );
     });
@@ -62,7 +64,7 @@ describe("ReservedCnxName", () => {
       const generated = [
         ReservedCnxName.temporary(3),
         ReservedCnxName.stringLengthCache("msg"),
-        ReservedCnxName.clampHelper("sub", "u16"),
+        ReservedCnxName.overflowHelper("clamp", "sub", "u16"),
       ];
 
       for (const name of generated) {
