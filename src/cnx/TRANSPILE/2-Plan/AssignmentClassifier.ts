@@ -455,8 +455,8 @@ class AssignmentClassifier {
       return AssignmentKind.ATOMIC_RMW;
     }
 
-    if (AssignmentClassifier.compoundClamp(ctx) !== null) {
-      return AssignmentKind.OVERFLOW_CLAMP;
+    if (AssignmentClassifier.compoundOverflow(ctx) !== null) {
+      return AssignmentKind.OVERFLOW_HELPER;
     }
 
     return null;
@@ -468,7 +468,7 @@ class AssignmentClassifier {
    *
    * Only a `clamp` integer target qualifies, and only for the arithmetic
    * operators that can overflow; a bitwise compound cannot, so it stays plain.
-   * This is the one decision: the classifier asks it to pick OVERFLOW_CLAMP,
+   * This is the one decision: the classifier asks it to pick OVERFLOW_HELPER,
    * the overflow handler asks it for the helper, and the atomic handler asks it
    * for the inner operation of its read-modify-write. The atomic generator used
    * to decide the same thing from its own operator map and its own integer test.
@@ -479,43 +479,49 @@ class AssignmentClassifier {
    *
    * `cnxType` is the type the helper saturates at: the written value's.
    */
-  static compoundClamp(ctx: IAssignmentContext): IPlannedOverflowHelper | null {
-    return ctx.plannedClamp;
+  static compoundOverflow(
+    ctx: IAssignmentContext,
+  ): IPlannedOverflowHelper | null {
+    return ctx.plannedOverflow;
   }
 
   /**
-   * 2.2's one decision behind `compoundClamp`: the helper a compound `cOp`
+   * 2.2's one decision behind `compoundOverflow`: the helper a compound `cOp`
    * write calls, from the type the write stores -- the typer's
    * `OperandTyper.writtenType`, which the string copy reads too (#1731 review).
    * A field (`p.x`) or an element (`levels[1]`) carries its own overflow
    * behavior (#1411, #1887), and a whole array is no integer the clamp
    * can saturate.
    */
-  static clampOfWrite(
+  static overflowOfWrite(
     written: IOperandType | null,
     cnxOp: string,
     hasFloatingOperand: () => boolean,
+    divisor: number | null,
   ): IPlannedOverflowHelper | null {
     if (written?.typeName == null || written.dimensions.length > 0) {
       return null;
     }
-    return AssignmentClassifier.clampOf(
+    return AssignmentClassifier.overflowHelperOf(
       written.typeName,
       written.overflow,
       cnxOp,
       hasFloatingOperand,
+      divisor,
     );
   }
 
   /**
    * ADR-044: the overflow helper a compound `cnxOp` write of this type calls,
-   * or null -- `OverflowHelper`'s decision for the operator it compounds
+   * or null -- `OverflowHelper`'s decision for the operator it compounds;
+   * `divisor` is the written value when it is known at compile time
    */
-  static clampOf(
+  static overflowHelperOf(
     baseType: string,
     overflowBehavior: TOverflowBehavior | null,
     cnxOp: string,
     hasFloatingOperand: () => boolean,
+    divisor: number | null,
   ): IPlannedOverflowHelper | null {
     if (overflowBehavior === null) return null;
     if (!TypeCheckUtils.isInteger(baseType)) return null;
@@ -523,7 +529,7 @@ class AssignmentClassifier {
     const operator = CompoundOperator.binaryOf(cnxOp);
     return operator === null
       ? null
-      : OverflowHelper.of(overflowBehavior, operator, baseType);
+      : OverflowHelper.of(overflowBehavior, operator, baseType, divisor);
   }
 }
 

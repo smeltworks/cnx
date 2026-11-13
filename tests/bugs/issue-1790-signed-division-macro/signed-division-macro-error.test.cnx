@@ -3,7 +3,9 @@
 // #1790 (ADR-044): a signed `/` and `%` now go through an overflow helper,
 // for MIN / -1. A header macro cnx cannot type, beside one, is E0811 as it
 // is beside a `clamp` `+ - *`. An unsigned `/` stays plain C, so a macro
-// beside it is still E0812 (control).
+// beside it is still E0812 (control). 2.1 reads the operands' modifier as 2.2
+// does (#1790 review): a `wrap` `*` calls no helper, so beside it is E0812,
+// while a `wrap` signed `/` still calls one, E0811.
 #include "division_macros.h"
 
 i32 signedQuotient(i32 n) {
@@ -16,4 +18,20 @@ i32 signedRemainder(i32 n) {
 
 u32 unsignedQuotient(u32 n) {
     return n / SCALED_CALL;
+}
+
+i32 wrapProduct(i32 n) {
+    wrap i32 wn <- n;
+    return wn * SCALED_CALL;
+}
+
+i32 wrapQuotient(i32 n) {
+    wrap i32 wn <- n;
+    return wn / SCALED_CALL;
+}
+
+i32 wrapCompoundProduct(i32 n) {
+    mut wrap i32 wn <- n;
+    wn *<- SCALED_CALL;
+    return wn;
 }

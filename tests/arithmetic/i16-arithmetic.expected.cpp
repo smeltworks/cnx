@@ -20,18 +20,6 @@ static inline int16_t cnx_clamp_add_i16(int16_t a, int32_t b) {
     return (int16_t)result;
 }
 
-static inline int16_t cnx_clamp_div_i16(int16_t a, int32_t b) {
-    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
-    int32_t result = (int32_t)a / b;
-    if (result > INT16_MAX) return INT16_MAX;
-    return (int16_t)result;
-}
-
-static inline int16_t cnx_clamp_mod_i16(int16_t a, int32_t b) {
-    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
-    return (int16_t)((int32_t)a % b);
-}
-
 static inline int16_t cnx_clamp_mul_i16(int16_t a, int32_t b) {
     int32_t result = (int32_t)a * b;
     if (result > INT16_MAX) return INT16_MAX;
@@ -79,19 +67,19 @@ int main(void) {
     const int16_t product_pos = cnx_clamp_mul_i16(q, r);
     const int16_t s = 6000;
     const int16_t t = 3;
-    const int16_t quotient = cnx_clamp_div_i16(s, t);
+    const int16_t quotient = s / t;
     const int16_t u = -6000;
     const int16_t v = 3;
-    const int16_t quotient_neg = cnx_clamp_div_i16(u, v);
+    const int16_t quotient_neg = u / v;
     const int16_t w = 6000;
     const int16_t x = -3;
-    const int16_t quotient_neg_div = cnx_clamp_div_i16(w, x);
+    const int16_t quotient_neg_div = w / x;
     const int16_t y = 1023;
     const int16_t z = 50;
-    const int16_t remainder = cnx_clamp_mod_i16(y, z);
+    const int16_t remainder = y % z;
     const int16_t aa = -1023;
     const int16_t bb = 50;
-    const int16_t remainder_neg = cnx_clamp_mod_i16(aa, bb);
+    const int16_t remainder_neg = aa % bb;
     const int16_t max_val = 32767;
     const int16_t one = 1;
     const int16_t max_minus_one = cnx_clamp_sub_i16(max_val, one);

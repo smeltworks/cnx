@@ -20,16 +20,10 @@ static inline int8_t cnx_clamp_add_i8(int8_t a, int32_t b) {
     return (int8_t)result;
 }
 
-static inline int8_t cnx_clamp_div_i8(int8_t a, int32_t b) {
+static inline int8_t cnx_clamp_div_i8(int8_t a, int8_t b) {
     /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
-    int32_t result = (int32_t)a / b;
-    if (result > INT8_MAX) return INT8_MAX;
-    return (int8_t)result;
-}
-
-static inline int8_t cnx_clamp_mod_i8(int8_t a, int32_t b) {
-    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
-    return (int8_t)((int32_t)a % b);
+    if (b == -1 && a == INT8_MIN) return INT8_MAX;
+    return (int8_t)(a / b);
 }
 
 static inline int8_t cnx_clamp_mul_i8(int8_t a, int32_t b) {
@@ -144,22 +138,22 @@ int main(void) {
         return 25U;
     }
     int8_t div = 100;
-    div = cnx_clamp_div_i8(div, 10);
+    div = static_cast<int8_t>((div / 10));
     if (div != 10) {
         return 30U;
     }
     div = -100;
-    div = cnx_clamp_div_i8(div, 10);
+    div = static_cast<int8_t>((div / 10));
     if (div != -10) {
         return 31U;
     }
     div = -100;
-    div = cnx_clamp_div_i8(div, -10);
+    div = static_cast<int8_t>((div / -10));
     if (div != 10) {
         return 32U;
     }
     div = 50;
-    div = cnx_clamp_div_i8(div, 1);
+    div = static_cast<int8_t>((div / 1));
     if (div != 50) {
         return 33U;
     }
@@ -169,32 +163,32 @@ int main(void) {
         return 34U;
     }
     div = 127;
-    div = cnx_clamp_div_i8(div, 127);
+    div = static_cast<int8_t>((div / 127));
     if (div != 1) {
         return 35U;
     }
     int8_t mod = 107;
-    mod = cnx_clamp_mod_i8(mod, 10);
+    mod = static_cast<int8_t>((mod % 10));
     if (mod != 7) {
         return 40U;
     }
     mod = -107;
-    mod = cnx_clamp_mod_i8(mod, 10);
+    mod = static_cast<int8_t>((mod % 10));
     if (mod != -7) {
         return 41U;
     }
     mod = 17;
-    mod = cnx_clamp_mod_i8(mod, 5);
+    mod = static_cast<int8_t>((mod % 5));
     if (mod != 2) {
         return 42U;
     }
     mod = 100;
-    mod = cnx_clamp_mod_i8(mod, 100);
+    mod = static_cast<int8_t>((mod % 100));
     if (mod != 0) {
         return 43U;
     }
     mod = -128;
-    mod = cnx_clamp_mod_i8(mod, 127);
+    mod = static_cast<int8_t>((mod % 127));
     if (mod != -1) {
         return 44U;
     }

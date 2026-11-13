@@ -262,10 +262,11 @@ function plannedClampOf(
   ctx: Pick<IAssignmentContext, "cnxOp" | "valueHasFloatingOperand">,
   target: IChainBase,
 ): IPlannedOverflowHelper | null {
-  return AssignmentClassifier.clampOfWrite(
+  return AssignmentClassifier.overflowOfWrite(
     writtenOf(target),
     ctx.cnxOp,
     ctx.valueHasFloatingOperand,
+    null,
   );
 }
 

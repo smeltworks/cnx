@@ -1,4 +1,4 @@
-import type IPlannedClamp from "../../../2-Plan/types/IPlannedClamp";
+import type IPlannedOverflowChain from "../../../2-Plan/types/IPlannedOverflowChain";
 import type IGeneratorOutput from "../generators/IGeneratorOutput";
 
 /**
@@ -84,8 +84,8 @@ type TPlannedBinaryExpr =
    * `+ - * / %` -- constant-folded, or lowered to ADR-044 saturating helpers,
    * or joined.
    *
-   * `clamp` is 2.2's decision (#1991): the helpers a `clamp` integer chain
-   * calls, or null when it is plain C.
+   * `overflow` is 2.2's decision (#1991): the ADR-044 helpers an integer
+   * chain calls, or null when it is plain C.
    */
   | {
       readonly kind: "arithmetic";
@@ -96,7 +96,7 @@ type TPlannedBinaryExpr =
        */
       readonly constantValue: string | null;
       readonly operators: readonly string[];
-      readonly clamp: IPlannedClamp | null;
+      readonly overflow: IPlannedOverflowChain | null;
       readonly adrLine: number | undefined;
       readonly renderOperands: readonly (() => IGeneratorOutput)[];
     };

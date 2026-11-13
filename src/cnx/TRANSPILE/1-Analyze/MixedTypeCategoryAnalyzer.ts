@@ -53,6 +53,8 @@ import EssentialCategory from "../../utils/EssentialCategory";
 import ComparisonChain from "../../utils/ComparisonChain";
 import CompoundOperator from "../../utils/CompoundOperator";
 import OverflowOperation from "../../utils/OverflowOperation";
+import OverflowBehaviorUtils from "../../utils/OverflowBehaviorUtils";
+import type TOverflowBehavior from "../../types/TOverflowBehavior";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import type TBinaryOperatorLevel from "./types/TBinaryOperatorLevel";
 import type IOperandType from "../../types/IOperandType";
@@ -174,6 +176,9 @@ class MixedCategoryCheck {
               "binary",
               operator,
               this.hasOwnEnumMember(operands, enumBeingDeclared),
+              OverflowBehaviorUtils.ofLeaves(
+                OperandTyper.valueLeaves(expr, this.context),
+              ),
             );
           }
           mixed = true;
@@ -320,7 +325,15 @@ class MixedCategoryCheck {
     const left = EssentialCategory.ofType(target);
     const right = this.operandCategory(value, null);
     if (EssentialCategory.differ(left, right, operator)) {
-      this.analyzer.addError(value.span, left!, right!, "compound", operator);
+      this.analyzer.addError(
+        value.span,
+        left!,
+        right!,
+        "compound",
+        operator,
+        false,
+        OperandTyper.writtenType(site.target, this.context)?.overflow ?? null,
+      );
     }
   }
 }
@@ -400,6 +413,7 @@ class MixedTypeCategoryAnalyzer {
     what: TOperatorSite = "binary",
     operator?: string,
     castOnly = false,
+    behavior: TOverflowBehavior | null = null,
   ): void {
     if (
       left === EssentialCategory.UNREADABLE_MACRO ||
@@ -410,6 +424,7 @@ class MixedTypeCategoryAnalyzer {
         what,
         operator,
         left === "signed" || right === "signed",
+        behavior,
       );
       return;
     }
@@ -457,19 +472,21 @@ class MixedTypeCategoryAnalyzer {
     what: TOperatorSite,
     operator: string | undefined,
     signed: boolean,
+    behavior: TOverflowBehavior | null,
   ): void {
     // An operator that hands an integer operand to an overflow helper
     // (ADR-044) makes an unreadable macro beside it E0811; any other makes it
-    // E0812. The modifier is not known here, so it is the default `clamp`;
-    // a signed `/` or `%` calls a helper under either (#1790).
-    const clamped =
+    // E0812. `behavior` is 2.2's for the same operands, so the two decide
+    // alike (#1790 review); with none counted, 2.2 plans no helper.
+    const helped =
       operator !== undefined &&
-      OverflowOperation.of(operator, signed, "clamp") !== undefined;
-    const why = clamped
-      ? "this operator would hand it to an integer clamp helper untyped"
+      behavior !== null &&
+      OverflowOperation.of(operator, signed, behavior) !== undefined;
+    const why = helped
+      ? "this operator would hand it to an overflow helper untyped"
       : "C's usual arithmetic conversions decide this result from the type it really has, which can change a comparison, a bit operation or a quotient (an unsigned 3 < -1 is true)";
     this.errors.push({
-      code: clamped ? "E0811" : "E0812",
+      code: helped ? "E0811" : "E0812",
       span,
       message: MixedTypeCategoryAnalyzer.unreadableMacroMessage(what),
       helpText: `ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; ${why}. Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.`,

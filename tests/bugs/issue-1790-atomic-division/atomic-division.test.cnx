@@ -1,0 +1,35 @@
+#pragma target host
+// test-execution
+// test-adr: 044
+// #1790 review: an atomic /<- of MIN by -1 gives ADR-044's MAX, as a plain
+// write does. Pinned to host because an atomic's lowering is the target's.
+
+atomic i32 shared <- 0;
+
+i32 atomicQuotient(i32 n, i32 d) {
+    shared <- n;
+    shared /<- d;
+    return shared;
+}
+
+i32 atomicRemainder(i32 n, i32 d) {
+    shared <- n;
+    shared %<- d;
+    return shared;
+}
+
+u32 main() {
+    i32 q <- atomicQuotient(-2147483647 - 1, -1);
+    if (q != 2147483647) {
+        return 1;
+    }
+    i32 r <- atomicRemainder(-2147483647 - 1, -1);
+    if (r != 0) {
+        return 2;
+    }
+    i32 ordinary <- atomicQuotient(-7, 2);
+    if (ordinary != -3) {
+        return 3;
+    }
+    return 0;
+}

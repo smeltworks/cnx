@@ -97,26 +97,26 @@ const joinWithOperators = (
  * other natively-handled type, a `wrap` type, or operands whose type cannot be
  * resolved.
  */
-const tryClampOperands = (
+const tryOverflowOperands = (
   plan: Extract<TPlannedBinaryExpr, { kind: "arithmetic" }>,
   operandCodes: readonly string[],
 ): string | null => {
-  const clamp = plan.clamp;
-  if (clamp === null) return null;
+  const overflow = plan.overflow;
+  if (overflow === null) return null;
   invariant(
-    clamp.operations.length === operandCodes.length - 1,
-    "2.2 planned one clamp helper per operator",
+    overflow.operations.length === operandCodes.length - 1,
+    "2.2 planned one overflow helper or none per operator",
   );
 
-  // #1241: ADR-044's rule -- a `clamp` integer expression is lowered to
-  // saturating helper calls rather than plain C arithmetic -- fired in 2.2,
+  // #1241: ADR-044's rule -- an integer expression is lowered to its
+  // overflow helper calls rather than plain C arithmetic -- fired in 2.2,
   // which decided this chain's helpers.
   AdrProvenance.record("044", plan.adrLine);
 
   // #1790: an operator with no helper stays plain C where it stands, so
   // `a * b / c` is `cnx_clamp_mul_u32(a, b) / c`
   let code = operandCodes[0];
-  clamp.operations.forEach((helper, index) => {
+  overflow.operations.forEach((helper, index) => {
     const operand = operandCodes[index + 1];
     code =
       helper === null
@@ -130,8 +130,8 @@ const tryClampOperands = (
  * Fold, clamp, or join an arithmetic chain.
  *
  * #1450: `analyze:duplication` reported the additive and multiplicative tails
- * as a nine-line clone. One arm serves both now, differing only in the
- * `defaultOperator` the plan carries.
+ * as a nine-line clone. One arm serves both now, reading the operators the
+ * plan carries.
  */
 const renderArithmetic = (
   plan: Extract<TPlannedBinaryExpr, { kind: "arithmetic" }>,
@@ -150,14 +150,14 @@ const renderArithmetic = (
     )
   ) {
     invariant(
-      plan.clamp === null,
+      plan.overflow === null,
       `2.2 planned no clamp helper for a chain 2.3 folds (line ${plan.adrLine})`,
     );
     return { code: plan.constantValue, effects };
   }
 
   // Issue #1152: saturate when the operands are of a clamp integer type
-  const clamped = tryClampOperands(plan, operandCodes);
+  const clamped = tryOverflowOperands(plan, operandCodes);
   if (clamped !== null) {
     return { code: clamped, effects };
   }

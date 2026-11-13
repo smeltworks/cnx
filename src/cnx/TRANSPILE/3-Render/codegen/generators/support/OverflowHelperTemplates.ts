@@ -277,8 +277,11 @@ ${generatePanicBlock(info.cnxType, opName)}
 /**
  * ADR-044 (#1790): a signed `/` and `%`, the one case of each that overflows
  * being `MIN / -1`. `clamp` gives MAX, `wrap` gives MIN, and the remainder is
- * 0 under either. A type narrower than i64 divides in its wider type, where
- * the quotient cannot overflow; i64 has none wider, so tests the case.
+ * 0 under either. Every type tests the case in its own width, so an i32
+ * divides in 32 bits rather than through a 64-bit library division on the
+ * embedded targets (#1790 review). `b` is the operand type: 2.2 plans no
+ * helper for a known divisor other than -1, and a wider run-time divisor is
+ * E0869.
  */
 class SignedDivisionTemplates {
   static div(
@@ -294,36 +297,20 @@ class SignedDivisionTemplates {
 ${generatePanicBlock(info.cnxType, OPERATION_NAMES.div)}
     }`
           : `return ${info.maxValue};`;
-    if (info.useWiderArithmetic) {
-      const sig = generateSignature("div", info, info.widerType, behavior);
-      return `${sig} {
-${MIN_BY_MINUS_ONE_COMMENT}
-    ${info.widerType} result = (${info.widerType})a / b;
-    if (result > ${info.maxValue}) ${onOverflow}
-    return (${info.cType})result;
-}`;
-    }
     const sig = generateSignature("div", info, undefined, behavior);
     return `${sig} {
 ${MIN_BY_MINUS_ONE_COMMENT}
     if (b == -1 && a == ${info.minValue}) ${onOverflow}
-    return a / b;
+    return (${info.cType})(a / b);
 }`;
   }
 
   static mod(info: IClampTypeInfo, behavior: TOverflowBehavior): string {
-    if (info.useWiderArithmetic) {
-      const sig = generateSignature("mod", info, info.widerType, behavior);
-      return `${sig} {
-${MIN_BY_MINUS_ONE_COMMENT}
-    return (${info.cType})((${info.widerType})a % b);
-}`;
-    }
     const sig = generateSignature("mod", info, undefined, behavior);
     return `${sig} {
 ${MIN_BY_MINUS_ONE_COMMENT}
     if (b == -1) return 0;
-    return a % b;
+    return (${info.cType})(a % b);
 }`;
   }
 }

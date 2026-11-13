@@ -7,7 +7,7 @@ describe("OverflowHelper.of (ADR-044)", () => {
     operator: string,
     cnxType: string,
   ): string | null =>
-    OverflowHelper.of(behavior, operator, cnxType)?.name ?? null;
+    OverflowHelper.of(behavior, operator, cnxType, null)?.name ?? null;
 
   it("saturates a clamp + - * of any integer", () => {
     expect(nameOf("clamp", "+", "u8")).toBe("cnx_clamp_add_u8");
@@ -26,6 +26,19 @@ describe("OverflowHelper.of (ADR-044)", () => {
     expect(nameOf("clamp", "%", "i8")).toBe("cnx_clamp_mod_i8");
     expect(nameOf("wrap", "/", "i64")).toBe("cnx_wrap_div_i64");
     expect(nameOf("wrap", "%", "i16")).toBe("cnx_wrap_mod_i16");
+  });
+
+  // #1790 review: only MIN / -1 overflows, so a known divisor other than -1
+  // keeps C's division
+  it("leaves a signed / and % by a known divisor other than -1 to C", () => {
+    expect(OverflowHelper.of("clamp", "/", "i32", 5)).toBeNull();
+    expect(OverflowHelper.of("wrap", "%", "i8", 200)).toBeNull();
+    expect(OverflowHelper.of("clamp", "/", "i32", -1)?.name).toBe(
+      "cnx_clamp_div_i32",
+    );
+    expect(OverflowHelper.of("clamp", "*", "i32", 5)?.name).toBe(
+      "cnx_clamp_mul_i32",
+    );
   });
 
   it("leaves an unsigned / and % to C, which cannot overflow", () => {

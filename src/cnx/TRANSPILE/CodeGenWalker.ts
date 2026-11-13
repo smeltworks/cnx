@@ -804,10 +804,10 @@ class CodeGenWalker {
           kind: "arithmetic",
           constantValue: this.constantValue(expr),
           operators,
-          clamp: CodeGenWalker.plannedAt(
-            this.filePlan.clampChains,
+          overflow: CodeGenWalker.plannedAt(
+            this.filePlan.overflowChains,
             expr,
-            this.rendering.clampChains,
+            this.rendering.overflowChains,
             "`+ - *` chain",
           ),
           adrLine: expr.span.line,
@@ -1433,9 +1433,9 @@ class CodeGenWalker {
       lazyOperands: new Set(),
       lazyTernaries: new Set(),
       narrowings: new Set(),
-      clampChains: new Set(),
+      overflowChains: new Set(),
       floatBitWrites: new Set(),
-      compoundClamps: new Set(),
+      compoundOverflows: new Set(),
       bitmapFieldWrites: new Set(),
       atomicForms: new Set(),
     };
@@ -1610,8 +1610,8 @@ class CodeGenWalker {
       "promoted read",
     );
     CodeGenWalker.assertAllRendered(
-      CodeGenWalker.decidedSites(this.filePlan.clampChains),
-      this.rendering.clampChains,
+      CodeGenWalker.decidedSites(this.filePlan.overflowChains),
+      this.rendering.overflowChains,
       "clamp chain",
     );
     CodeGenWalker.assertAllRendered(
@@ -1620,8 +1620,8 @@ class CodeGenWalker {
       "float bit write",
     );
     CodeGenWalker.assertAllRendered(
-      CodeGenWalker.decidedSites(this.filePlan.compoundClamps),
-      this.rendering.compoundClamps,
+      CodeGenWalker.decidedSites(this.filePlan.compoundOverflows),
+      this.rendering.compoundOverflows,
       "compound clamp",
     );
     CodeGenWalker.assertAllRendered(
@@ -3454,10 +3454,10 @@ class CodeGenWalker {
         this.rendering.atomicForms,
         "assignment",
       ),
-      plannedClamp: CodeGenWalker.plannedAt(
-        this.filePlan.compoundClamps,
+      plannedOverflow: CodeGenWalker.plannedAt(
+        this.filePlan.compoundOverflows,
         site,
-        this.rendering.compoundClamps,
+        this.rendering.compoundOverflows,
         "assignment",
       ),
       plannedSliceSource: this.filePlan.sliceSources.get(site) ?? null,

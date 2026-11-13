@@ -482,7 +482,7 @@ u32 halveDouble(u32 x) {
 
 Unsigned division and modulo cannot overflow. Signed division overflows in exactly one
 case, `MIN / -1`, whose true quotient is one past the type's maximum. C leaves it
-undefined, and on x86 it traps. Owner ruling, 2026-11-12 (#1790): cnx defines it.
+undefined, and on x86 it traps. [Owner ruling, 2026-11-12](https://github.com/smeltworks/cnx/issues/1790#issuecomment-6846924329) (#1790): cnx defines it.
 
 | operation  | `clamp`        | `wrap`         |
 | ---------- | -------------- | -------------- |

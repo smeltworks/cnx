@@ -20,16 +20,10 @@ static inline int16_t cnx_clamp_add_i16(int16_t a, int32_t b) {
     return (int16_t)result;
 }
 
-static inline int16_t cnx_clamp_div_i16(int16_t a, int32_t b) {
+static inline int16_t cnx_clamp_div_i16(int16_t a, int16_t b) {
     /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
-    int32_t result = (int32_t)a / b;
-    if (result > INT16_MAX) return INT16_MAX;
-    return (int16_t)result;
-}
-
-static inline int16_t cnx_clamp_mod_i16(int16_t a, int32_t b) {
-    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
-    return (int16_t)((int32_t)a % b);
+    if (b == -1 && a == INT16_MIN) return INT16_MAX;
+    return (int16_t)(a / b);
 }
 
 static inline int16_t cnx_clamp_mul_i16(int16_t a, int32_t b) {
@@ -144,22 +138,22 @@ int main(void) {
         return 25U;
     }
     int16_t div = 10000;
-    div = cnx_clamp_div_i16(div, 100);
+    div = (int16_t)(div / 100);
     if (div != 100) {
         return 30U;
     }
     div = -10000;
-    div = cnx_clamp_div_i16(div, 100);
+    div = (int16_t)(div / 100);
     if (div != -100) {
         return 31U;
     }
     div = -10000;
-    div = cnx_clamp_div_i16(div, -100);
+    div = (int16_t)(div / -100);
     if (div != 100) {
         return 32U;
     }
     div = 1000;
-    div = cnx_clamp_div_i16(div, 1);
+    div = (int16_t)(div / 1);
     if (div != 1000) {
         return 33U;
     }
@@ -169,32 +163,32 @@ int main(void) {
         return 34U;
     }
     div = 32767;
-    div = cnx_clamp_div_i16(div, 32767);
+    div = (int16_t)(div / 32767);
     if (div != 1) {
         return 35U;
     }
     int16_t mod = 10007;
-    mod = cnx_clamp_mod_i16(mod, 1000);
+    mod = (int16_t)(mod % 1000);
     if (mod != 7) {
         return 40U;
     }
     mod = -10007;
-    mod = cnx_clamp_mod_i16(mod, 1000);
+    mod = (int16_t)(mod % 1000);
     if (mod != -7) {
         return 41U;
     }
     mod = 12345;
-    mod = cnx_clamp_mod_i16(mod, 7);
+    mod = (int16_t)(mod % 7);
     if (mod != 4) {
         return 42U;
     }
     mod = -12345;
-    mod = cnx_clamp_mod_i16(mod, 7);
+    mod = (int16_t)(mod % 7);
     if (mod != -4) {
         return 43U;
     }
     mod = 1000;
-    mod = cnx_clamp_mod_i16(mod, 1000);
+    mod = (int16_t)(mod % 1000);
     if (mod != 0) {
         return 44U;
     }

@@ -3,7 +3,7 @@
  *
  * Handles special compound assignment operations:
  * - ATOMIC_RMW: atomic counter +<- 1
- * - OVERFLOW_CLAMP: clamp u8 saturated +<- 200
+ * - OVERFLOW_HELPER: clamp u8 saturated +<- 200
  */
 import AssignmentKind from "../../../../../types/AssignmentKind";
 import IAssignmentContext from "../../../../2-Plan/types/IAssignmentContext";
@@ -31,7 +31,7 @@ function handleAtomicRMW(ctx: IAssignmentContext): string {
     ctx.generatedValue,
     // #1179: the value 2.2 found atomic, however the target spells it
     atomic,
-    AssignmentClassifier.compoundClamp(ctx)?.name ?? null,
+    AssignmentClassifier.compoundOverflow(ctx)?.name ?? null,
   );
 }
 
@@ -42,11 +42,11 @@ const HOISTED_CLAMP_ANNOTATION =
  * Handle overflow-clamped compound assignment: clamp u8 saturated +<- 200
  *
  * Generates calls to cnx_clamp_add_u8, cnx_wrap_div_i32, etc. Classified only
- * when `AssignmentClassifier.compoundClamp` names a helper.
+ * when `AssignmentClassifier.compoundOverflow` names a helper.
  */
-function handleOverflowClamp(ctx: IAssignmentContext): string {
-  const clamp = AssignmentClassifier.compoundClamp(ctx);
-  invariant(clamp !== null, "OVERFLOW_CLAMP is classified only with a helper");
+function handleOverflowHelper(ctx: IAssignmentContext): string {
+  const clamp = AssignmentClassifier.compoundOverflow(ctx);
+  invariant(clamp !== null, "OVERFLOW_HELPER is classified only with a helper");
   const target = ctx.renderTarget();
 
   // #1241: ADR-044's rule firing on the COMPOUND form. The expression form
@@ -72,7 +72,7 @@ function handleOverflowClamp(ctx: IAssignmentContext): string {
  */
 const specialHandlers: ReadonlyArray<[AssignmentKind, TAssignmentHandler]> = [
   [AssignmentKind.ATOMIC_RMW, handleAtomicRMW],
-  [AssignmentKind.OVERFLOW_CLAMP, handleOverflowClamp],
+  [AssignmentKind.OVERFLOW_HELPER, handleOverflowHelper],
 ];
 
 export default specialHandlers;

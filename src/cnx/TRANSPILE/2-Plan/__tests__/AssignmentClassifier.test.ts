@@ -87,11 +87,11 @@ function createMockContext(
   } as IAssignmentContext;
   // #1668 (C7): what the target writes, as the binder would bind it
   const target = overrides.target ?? HandlerTestUtils.targetOf(state, ctx);
-  const plannedClamp =
-    overrides.plannedClamp === undefined
+  const plannedOverflow =
+    overrides.plannedOverflow === undefined
       ? HandlerTestUtils.plannedClampOf(ctx, target)
-      : overrides.plannedClamp;
-  return withPlannedCopy({ ...ctx, target, plannedClamp }, overrides);
+      : overrides.plannedOverflow;
+  return withPlannedCopy({ ...ctx, target, plannedOverflow }, overrides);
 }
 
 /**
@@ -683,29 +683,29 @@ describe("AssignmentClassifier - Special Compound", () => {
       cnxOp: "+<-",
     });
 
-    expect(classify(ctx)).toBe(AssignmentKind.OVERFLOW_CLAMP);
+    expect(classify(ctx)).toBe(AssignmentKind.OVERFLOW_HELPER);
   });
 
   it("clamps what the typer says the target writes (#1731 review)", () => {
-    // 2.2 hands `clampOfWrite` the typer's written type, the same one the
+    // 2.2 hands `overflowOfWrite` the typer's written type, the same one the
     // string copy reads -- a whole array and an untyped target write no
     // integer the clamp can saturate
     const u8 = {
       ...HandlerTestUtils.operandOf("u8", true, false),
       overflow: "clamp" as const,
     };
-    const clampOf = (written: IOperandType | null) =>
-      AssignmentClassifier.clampOfWrite(written, "+<-", () => false);
+    const overflowHelperOf = (written: IOperandType | null) =>
+      AssignmentClassifier.overflowOfWrite(written, "+<-", () => false, null);
 
-    expect(clampOf(u8)).toEqual({
+    expect(overflowHelperOf(u8)).toEqual({
       name: "cnx_clamp_add_u8",
       behavior: "clamp",
       operation: "add",
       cnxType: "u8",
     });
-    expect(clampOf({ ...u8, dimensions: [4] })).toBeNull();
-    expect(clampOf({ ...u8, overflow: "wrap" })).toBeNull();
-    expect(clampOf(null)).toBeNull();
+    expect(overflowHelperOf({ ...u8, dimensions: [4] })).toBeNull();
+    expect(overflowHelperOf({ ...u8, overflow: "wrap" })).toBeNull();
+    expect(overflowHelperOf(null)).toBeNull();
   });
 
   it("does not classify float as overflow clamp", () => {
@@ -725,7 +725,7 @@ describe("AssignmentClassifier - Special Compound", () => {
       cnxOp: "+<-",
     });
 
-    // Floats use native arithmetic, so not OVERFLOW_CLAMP
+    // Floats use native arithmetic, so not OVERFLOW_HELPER
     expect(classify(ctx)).toBe(AssignmentKind.SIMPLE);
   });
 
@@ -750,7 +750,7 @@ describe("AssignmentClassifier - Special Compound", () => {
   });
 });
 
-describe("AssignmentClassifier.compoundClamp (#1668)", () => {
+describe("AssignmentClassifier.compoundOverflow (#1668)", () => {
   it.each([
     ["clamp u32 +<-", "u32", "clamp", "+<-", false, "add"],
     ["clamp i8 -<-", "i8", "clamp", "-<-", false, "sub"],
@@ -776,7 +776,7 @@ describe("AssignmentClassifier.compoundClamp (#1668)", () => {
       },
     });
 
-    expect(AssignmentClassifier.compoundClamp(ctx)?.operation ?? null).toBe(
+    expect(AssignmentClassifier.compoundOverflow(ctx)?.operation ?? null).toBe(
       expected,
     );
   });

@@ -33,6 +33,13 @@ int64_t wideQuotient(const int64_t n, const int64_t d);
 int64_t wrapWideQuotient(const int64_t n, const int64_t d);
 int32_t safeQuotient(const int32_t n, const int32_t d);
 int32_t wrapSafeQuotient(const int32_t n, const int32_t d);
+int32_t safeOutput(const int32_t n, const int32_t d);
+int32_t wrapSafeRemainder(const int32_t n, const int32_t d);
+int16_t shortQuotient(const int16_t n, const int16_t d);
+int8_t wrapNarrowQuotient(const int8_t n, const int8_t d);
+int16_t wrapShortQuotient(const int16_t n, const int16_t d);
+int64_t wideRemainder(const int64_t n, const int64_t d);
+int64_t wrapWideRemainder(const int64_t n, const int64_t d);
 int32_t safeRemainder(const int32_t n, const int32_t d);
 
 #ifdef __cplusplus

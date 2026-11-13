@@ -20,18 +20,6 @@ static inline int8_t cnx_clamp_add_i8(int8_t a, int32_t b) {
     return (int8_t)result;
 }
 
-static inline int8_t cnx_clamp_div_i8(int8_t a, int32_t b) {
-    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
-    int32_t result = (int32_t)a / b;
-    if (result > INT8_MAX) return INT8_MAX;
-    return (int8_t)result;
-}
-
-static inline int8_t cnx_clamp_mod_i8(int8_t a, int32_t b) {
-    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
-    return (int8_t)((int32_t)a % b);
-}
-
 static inline int8_t cnx_clamp_mul_i8(int8_t a, int32_t b) {
     int32_t result = (int32_t)a * b;
     if (result > INT8_MAX) return INT8_MAX;
@@ -79,19 +67,19 @@ int main(void) {
     const int8_t product_pos = cnx_clamp_mul_i8(q, r);
     const int8_t s = 60;
     const int8_t t = 3;
-    const int8_t quotient = cnx_clamp_div_i8(s, t);
+    const int8_t quotient = s / t;
     const int8_t u = -60;
     const int8_t v = 3;
-    const int8_t quotient_neg = cnx_clamp_div_i8(u, v);
+    const int8_t quotient_neg = u / v;
     const int8_t w = 60;
     const int8_t x = -3;
-    const int8_t quotient_neg_div = cnx_clamp_div_i8(w, x);
+    const int8_t quotient_neg_div = w / x;
     const int8_t y = 23;
     const int8_t z = 5;
-    const int8_t remainder = cnx_clamp_mod_i8(y, z);
+    const int8_t remainder = y % z;
     const int8_t aa = -23;
     const int8_t bb = 5;
-    const int8_t remainder_neg = cnx_clamp_mod_i8(aa, bb);
+    const int8_t remainder_neg = aa % bb;
     const int8_t max_val = 127;
     const int8_t one = 1;
     const int8_t max_minus_one = cnx_clamp_sub_i8(max_val, one);

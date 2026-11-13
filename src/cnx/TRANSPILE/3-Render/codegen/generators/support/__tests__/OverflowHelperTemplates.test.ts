@@ -134,31 +134,44 @@ describe("OverflowHelperTemplates", () => {
 
   // #1790: ADR-044's table for MIN / -1 and MIN % -1
   describe("signed division", () => {
-    it("clamps a narrow quotient, divided in its wider type", () => {
+    // #1790 review: every type tests MIN / -1 in its own width, so an i32
+    // never reaches a 64-bit library division
+    it("clamps a quotient in its own width", () => {
       const helper = OverflowHelperTemplates.generateClampHelper("div", "i32");
       expect(helper).toContain(
-        "static inline int32_t cnx_clamp_div_i32(int32_t a, int64_t b)",
+        "static inline int32_t cnx_clamp_div_i32(int32_t a, int32_t b)",
       );
-      expect(helper).toContain("int64_t result = (int64_t)a / b;");
-      expect(helper).toContain("if (result > INT32_MAX) return INT32_MAX;");
+      expect(helper).toContain(
+        "if (b == -1 && a == INT32_MIN) return INT32_MAX;",
+      );
+      expect(helper).toContain("return (int32_t)(a / b);");
+      expect(helper).not.toContain("int64_t");
     });
 
     it("wraps a narrow quotient to MIN", () => {
       const helper = OverflowHelperTemplates.generateWrapHelper("div", "i8");
-      expect(helper).toContain("cnx_wrap_div_i8(int8_t a, int32_t b)");
-      expect(helper).toContain("if (result > INT8_MAX) return INT8_MIN;");
+      expect(helper).toContain("cnx_wrap_div_i8(int8_t a, int8_t b)");
+      expect(helper).toContain(
+        "if (b == -1 && a == INT8_MIN) return INT8_MIN;",
+      );
     });
 
-    it("tests the one i64 case, having no wider type", () => {
+    it("gives a remainder by -1 of 0 under either modifier", () => {
+      expect(
+        OverflowHelperTemplates.generateClampHelper("mod", "i16"),
+      ).toContain("if (b == -1) return 0;");
+      expect(
+        OverflowHelperTemplates.generateWrapHelper("mod", "i64"),
+      ).toContain("if (b == -1) return 0;");
+    });
+
+    it("tests i64 the same way", () => {
       expect(
         OverflowHelperTemplates.generateClampHelper("div", "i64"),
       ).toContain("if (b == -1 && a == INT64_MIN) return INT64_MAX;");
       expect(
         OverflowHelperTemplates.generateWrapHelper("div", "i64"),
       ).toContain("if (b == -1 && a == INT64_MIN) return INT64_MIN;");
-      expect(
-        OverflowHelperTemplates.generateWrapHelper("mod", "i64"),
-      ).toContain("if (b == -1) return 0;");
     });
 
     it("panics on the overflowing quotient in debug mode", () => {

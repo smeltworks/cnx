@@ -16,29 +16,40 @@
    the check: cnx_clamp_add_u8(0, 256) must saturate to 255, but (uint8_t)256 is 0, so a
    uint8_t parameter would return 0 -- the opposite of saturation. */
 
-static inline int32_t cnx_clamp_div_i32(int32_t a, int64_t b) {
+static inline int16_t cnx_clamp_div_i16(int16_t a, int16_t b) {
     /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
-    int64_t result = (int64_t)a / b;
-    if (result > INT32_MAX) return INT32_MAX;
-    return (int32_t)result;
+    if (b == -1 && a == INT16_MIN) return INT16_MAX;
+    return (int16_t)(a / b);
+}
+
+static inline int32_t cnx_clamp_div_i32(int32_t a, int32_t b) {
+    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
+    if (b == -1 && a == INT32_MIN) return INT32_MAX;
+    return (int32_t)(a / b);
 }
 
 static inline int64_t cnx_clamp_div_i64(int64_t a, int64_t b) {
     /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
     if (b == -1 && a == INT64_MIN) return INT64_MAX;
-    return a / b;
+    return (int64_t)(a / b);
 }
 
-static inline int8_t cnx_clamp_div_i8(int8_t a, int32_t b) {
+static inline int8_t cnx_clamp_div_i8(int8_t a, int8_t b) {
     /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
-    int32_t result = (int32_t)a / b;
-    if (result > INT8_MAX) return INT8_MAX;
-    return (int8_t)result;
+    if (b == -1 && a == INT8_MIN) return INT8_MAX;
+    return (int8_t)(a / b);
 }
 
-static inline int32_t cnx_clamp_mod_i32(int32_t a, int64_t b) {
+static inline int32_t cnx_clamp_mod_i32(int32_t a, int32_t b) {
     /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
-    return (int32_t)((int64_t)a % b);
+    if (b == -1) return 0;
+    return (int32_t)(a % b);
+}
+
+static inline int64_t cnx_clamp_mod_i64(int64_t a, int64_t b) {
+    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
+    if (b == -1) return 0;
+    return (int64_t)(a % b);
 }
 
 static inline int32_t cnx_clamp_mul_i32(int32_t a, int64_t b) {
@@ -58,22 +69,40 @@ static inline uint8_t cnx_clamp_mul_u8(uint8_t a, uint32_t b) {
     return (uint8_t)(a * (uint8_t)b);
 }
 
-static inline int32_t cnx_wrap_div_i32(int32_t a, int64_t b) {
+static inline int16_t cnx_wrap_div_i16(int16_t a, int16_t b) {
     /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
-    int64_t result = (int64_t)a / b;
-    if (result > INT32_MAX) return INT32_MIN;
-    return (int32_t)result;
+    if (b == -1 && a == INT16_MIN) return INT16_MIN;
+    return (int16_t)(a / b);
+}
+
+static inline int32_t cnx_wrap_div_i32(int32_t a, int32_t b) {
+    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
+    if (b == -1 && a == INT32_MIN) return INT32_MIN;
+    return (int32_t)(a / b);
 }
 
 static inline int64_t cnx_wrap_div_i64(int64_t a, int64_t b) {
     /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
     if (b == -1 && a == INT64_MIN) return INT64_MIN;
-    return a / b;
+    return (int64_t)(a / b);
 }
 
-static inline int32_t cnx_wrap_mod_i32(int32_t a, int64_t b) {
+static inline int8_t cnx_wrap_div_i8(int8_t a, int8_t b) {
     /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
-    return (int32_t)((int64_t)a % b);
+    if (b == -1 && a == INT8_MIN) return INT8_MIN;
+    return (int8_t)(a / b);
+}
+
+static inline int32_t cnx_wrap_mod_i32(int32_t a, int32_t b) {
+    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
+    if (b == -1) return 0;
+    return (int32_t)(a % b);
+}
+
+static inline int64_t cnx_wrap_mod_i64(int64_t a, int64_t b) {
+    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
+    if (b == -1) return 0;
+    return (int64_t)(a % b);
 }
 
 // ADR-051: Safe division helper functions
@@ -102,6 +131,15 @@ static inline bool cnx_safe_mod_i32(int32_t* output, int32_t numerator, int32_t 
         return true;  // Error occurred
     }
     *output = cnx_clamp_mod_i32(numerator, divisor);
+    return false;  // Success
+}
+
+static inline bool cnx_safe_wrap_mod_i32(int32_t* output, int32_t numerator, int32_t divisor, int32_t defaultValue) {
+    if (divisor == 0) {
+        *output = defaultValue;
+        return true;  // Error occurred
+    }
+    *output = cnx_wrap_mod_i32(numerator, divisor);
     return false;  // Success
 }
 
@@ -226,6 +264,50 @@ int32_t wrapSafeQuotient(const int32_t n, const int32_t d) {
         return -1;
     }
     return q;
+}
+
+// Returns the output whatever the status, so a zero divisor shows the default
+int32_t safeOutput(const int32_t n, const int32_t d) {
+    int32_t q = 0;
+    const bool failed = cnx_safe_div_i32(&q, n, d, 7);
+    return q;
+}
+
+int32_t wrapSafeRemainder(const int32_t n, const int32_t d) {
+    const int32_t wn = n;
+    const int32_t wd = d;
+    int32_t r = 1;
+    const bool failed = cnx_safe_wrap_mod_i32(&r, wn, wd, 7);
+    if (failed == true) {
+        return -1;
+    }
+    return r;
+}
+
+int16_t shortQuotient(const int16_t n, const int16_t d) {
+    return cnx_clamp_div_i16(n, d);
+}
+
+int8_t wrapNarrowQuotient(const int8_t n, const int8_t d) {
+    const int8_t wn = n;
+    const int8_t wd = d;
+    return cnx_wrap_div_i8(wn, wd);
+}
+
+int16_t wrapShortQuotient(const int16_t n, const int16_t d) {
+    const int16_t wn = n;
+    const int16_t wd = d;
+    return cnx_wrap_div_i16(wn, wd);
+}
+
+int64_t wideRemainder(const int64_t n, const int64_t d) {
+    return cnx_clamp_mod_i64(n, d);
+}
+
+int64_t wrapWideRemainder(const int64_t n, const int64_t d) {
+    const int64_t wn = n;
+    const int64_t wd = d;
+    return cnx_wrap_mod_i64(wn, wd);
 }
 
 int32_t safeRemainder(const int32_t n, const int32_t d) {
@@ -354,6 +436,38 @@ int main(void) {
     const int32_t r29 = remainderOf(-7, 2);
     if (r29 != -1) {
         return 29U;
+    }
+    const int32_t r30 = safeOutput(5, 0);
+    if (r30 != 7) {
+        return 30U;
+    }
+    const int32_t r31 = wrapSafeRemainder(-2147483648, -1);
+    if (r31 != 0) {
+        return 31U;
+    }
+    const int16_t r32 = shortQuotient(-32768, -1);
+    if (r32 != 32767) {
+        return 32U;
+    }
+    const int8_t r33 = wrapNarrowQuotient(-128, -1);
+    if (r33 != -128) {
+        return 33U;
+    }
+    const int16_t r34 = wrapShortQuotient(-32768, -1);
+    if (r34 != -32768) {
+        return 34U;
+    }
+    const int64_t r35 = wideRemainder(-9223372036854775807 - 1, -1);
+    if (r35 != 0) {
+        return 35U;
+    }
+    const int64_t r36 = wrapWideRemainder(-9223372036854775807 - 1, -1);
+    if (r36 != 0) {
+        return 36U;
+    }
+    const int32_t byLiteral = cnx_clamp_div_i32(low, -1);
+    if (byLiteral != 2147483647) {
+        return 37U;
     }
     return 0U;
 }

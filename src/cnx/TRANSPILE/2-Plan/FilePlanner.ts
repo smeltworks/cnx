@@ -49,6 +49,7 @@ import headerCType from "../../utils/headerCType";
 import HeaderTypeNames from "./HeaderTypeNames";
 import PublicInterface from "./PublicInterface";
 import PlanTyping from "./PlanTyping";
+import OverflowBehaviorUtils from "../../utils/OverflowBehaviorUtils";
 import CompositeType from "../../utils/CompositeType";
 import type IOperandType from "../../types/IOperandType";
 import type TValueBinding from "../../types/TValueBinding";
@@ -117,7 +118,7 @@ import type TValueSite from "../../types/TValueSite";
 import type IPlannedExpectedType from "./types/IPlannedExpectedType";
 import type ITypeGenerationDeps from "./types/ITypeGenerationDeps";
 import type IFilePlan from "./types/IFilePlan";
-import type IPlannedClamp from "./types/IPlannedClamp";
+import type IPlannedOverflowChain from "./types/IPlannedOverflowChain";
 import OverflowHelper from "./OverflowHelper";
 import type IPlannedOverflowHelper from "./types/IPlannedOverflowHelper";
 import type IPlannedSliceSource from "./types/IPlannedSliceSource";
@@ -259,7 +260,7 @@ class FilePlanner {
 
   /** #1668 (C6b): ADR-044's behavior for a composite, PlanTyping's row */
   private compositeClampBehavior(expr: TExpression): TOverflowBehavior | null {
-    return PlanTyping.overflowOf(
+    return OverflowBehaviorUtils.ofLeaves(
       OperandTyper.valueLeaves(expr, this.state.typingContext()),
     );
   }
@@ -609,13 +610,14 @@ class FilePlanner {
       // neither counted, the default `clamp`
       const operation = SafeDivision.operationOf(call.name);
       const inner = OverflowHelper.of(
-        PlanTyping.overflowOf(
+        OverflowBehaviorUtils.ofLeaves(
           call.args
             .slice(1, 3)
             .flatMap((arg) => OperandTyper.valueLeaves(arg, typing)),
         ) ?? "clamp",
         operation === "div" ? "/" : "%",
         cnxType,
+        PlanTyping.constantValue(call.args[2], typing),
       );
       const name = CallExprUtils.generateSafeDivModHelperName(
         call.name,
@@ -1023,7 +1025,7 @@ class FilePlanner {
         clampLines: ExpressionNodes.direct(value.value).flatMap((node) =>
           node.kind === "binary" &&
           (node.level === "additive" || node.level === "multiplicative") &&
-          this.clampChain(node) !== null
+          this.overflowChain(node) !== null
             ? [node.span.line]
             : [],
         ),
@@ -1331,8 +1333,8 @@ class FilePlanner {
         ...complementCasts.values(),
       ]),
       safeDivisions,
-      clampChains: clamps.chains,
-      compoundClamps: clamps.compound,
+      overflowChains: clamps.chains,
+      compoundOverflows: clamps.compound,
       compoundCasts,
       registerAccesses,
       clampOps: requirements.clampHelpers,
@@ -2006,7 +2008,7 @@ class FilePlanner {
   private planAssignmentCTypes(
     program: IProgramSyntax,
     atomicForms: ReadonlyMap<IAssignmentSyntax, IPlannedAtomic | null>,
-    compoundClamps: ReadonlyMap<IAssignmentSyntax, unknown>,
+    compoundOverflows: ReadonlyMap<IAssignmentSyntax, unknown>,
     sliceSources: Map<IAssignmentSyntax, IPlannedSliceSource>,
     compoundCasts: Map<IAssignmentSyntax, string>,
     cTypes: Set<string>,
@@ -2076,7 +2078,7 @@ class FilePlanner {
       );
       if (
         COMPOUND_TO_BINARY[cOp] !== undefined &&
-        (compoundClamps.get(site) ?? null) === null
+        (compoundOverflows.get(site) ?? null) === null
       ) {
         const cType = TYPE_MAP[baseType] ?? baseType;
         compoundCasts.set(site, cType);
@@ -2091,15 +2093,23 @@ class FilePlanner {
    * where it stands, so `a * b / c` is `cnx_clamp_mul_u32(a, b) / c` (#1790);
    * a chain with no helper at all is plain C.
    */
-  private clampChain(expr: TExpressionOf<"binary">): IPlannedClamp | null {
+  private overflowChain(
+    expr: TExpressionOf<"binary">,
+  ): IPlannedOverflowChain | null {
     const cnxType = this.compositeClampType(expr);
     if (cnxType === null || TypeCheckUtils.usesNativeArithmetic(cnxType)) {
       return null;
     }
     const behavior = this.compositeClampBehavior(expr);
     if (behavior === null) return null;
-    const operations = expr.operators.map((operator) =>
-      OverflowHelper.of(behavior, operator, cnxType),
+    const typing = this.state.typingContext();
+    const operations = expr.operators.map((operator, index) =>
+      OverflowHelper.of(
+        behavior,
+        operator,
+        cnxType,
+        PlanTyping.constantValue(expr.operands[index + 1], typing),
+      ),
     );
     if (operations.every((helper) => helper === null)) return null;
     return { operations };
@@ -2117,7 +2127,7 @@ class FilePlanner {
     cTypes: Set<string>,
     requirements: PlannedRequirements,
   ): {
-    readonly chains: ReadonlyMap<TExpression, IPlannedClamp | null>;
+    readonly chains: ReadonlyMap<TExpression, IPlannedOverflowChain | null>;
     readonly compound: ReadonlyMap<
       IAssignmentSyntax,
       IPlannedOverflowHelper | null
@@ -2126,7 +2136,7 @@ class FilePlanner {
     const use = (helper: IPlannedOverflowHelper): void =>
       FilePlanner.useOverflowHelper(helper, cTypes, requirements);
 
-    const chains = new Map<TExpression, IPlannedClamp | null>();
+    const chains = new Map<TExpression, IPlannedOverflowChain | null>();
     for (const expr of [
       ...FilePlanner.writtenExpressions(program, unwritten),
       ...foreignRegisterValues.flatMap((value) =>
@@ -2137,7 +2147,7 @@ class FilePlanner {
       if (expr.level !== "additive" && expr.level !== "multiplicative") {
         continue;
       }
-      const chain = this.clampChain(expr);
+      const chain = this.overflowChain(expr);
       chains.set(expr, chain);
       chain?.operations.forEach((helper) => {
         if (helper !== null) use(helper);
@@ -2152,10 +2162,13 @@ class FilePlanner {
     for (const site of FilePlanner.assignmentSites(program)) {
       compound.set(site, null);
       if (site.operator === "<-") continue;
-      const clamp = AssignmentClassifier.clampOfWrite(
+      const clamp = AssignmentClassifier.overflowOfWrite(
         OperandTyper.writtenType(site.target, typing),
         site.operator,
         () => site.value.kind !== "missing" && this.hasFloatingLeaf(site.value),
+        site.value.kind === "missing"
+          ? null
+          : PlanTyping.constantValue(site.value, typing),
       );
       if (clamp === null) continue;
       use(clamp);
@@ -2837,7 +2850,7 @@ class FilePlanner {
       IBitmapFieldTarget | null
     >,
     floatBitWrites: ReadonlyMap<TExpression, IPlannedFloatBits | null>,
-    compoundClamps: ReadonlyMap<
+    compoundOverflows: ReadonlyMap<
       IAssignmentSyntax,
       IPlannedOverflowHelper | null
     >,
@@ -2862,7 +2875,7 @@ class FilePlanner {
           site,
           bitmapFieldWrites.get(site) ?? null,
           (floatBitWrites.get(site.target) ?? null) !== null,
-          compoundClamps.get(site)?.cnxType ?? null,
+          compoundOverflows.get(site)?.cnxType ?? null,
         );
         forms.set(site, atomic);
         if (atomic === null) continue;

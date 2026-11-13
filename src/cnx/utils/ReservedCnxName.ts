@@ -18,6 +18,7 @@
  * QualifiedCName, and the two must not be confused: `__` asserts "qualified user
  * name, component boundary here", which a temporary has no business claiming.
  */
+import type TOverflowBehavior from "../types/TOverflowBehavior";
 class ReservedCnxName {
   /**
    * The reserved prefix, in the case used for C identifiers.
@@ -58,9 +59,14 @@ class ReservedCnxName {
     return `${ReservedCnxName.PREFIX}len_${variableName}`;
   }
 
-  /** ADR-044 (#1790): an overflow helper of either family, `cnx_wrap_div_i32` */
+  /**
+   * ADR-044 (#1790): an overflow helper of either family, `cnx_wrap_div_i32`.
+   *
+   * The clamp family already conformed before ADR-063 part 2; both families
+   * are routed through here so the prefix has exactly one definition.
+   */
   static overflowHelper(
-    behavior: "clamp" | "wrap",
+    behavior: TOverflowBehavior,
     operation: string,
     cnxType: string,
   ): string {

@@ -21,16 +21,10 @@ static inline int32_t cnx_clamp_add_i32(int32_t a, int64_t b) {
     return (int32_t)result;
 }
 
-static inline int32_t cnx_clamp_div_i32(int32_t a, int64_t b) {
+static inline int32_t cnx_clamp_div_i32(int32_t a, int32_t b) {
     /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
-    int64_t result = (int64_t)a / b;
-    if (result > INT32_MAX) return INT32_MAX;
-    return (int32_t)result;
-}
-
-static inline int32_t cnx_clamp_mod_i32(int32_t a, int64_t b) {
-    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
-    return (int32_t)((int64_t)a % b);
+    if (b == -1 && a == INT32_MIN) return INT32_MAX;
+    return (int32_t)(a / b);
 }
 
 static inline int32_t cnx_clamp_mul_i32(int32_t a, int64_t b) {
@@ -145,22 +139,22 @@ int main(void) {
         return 25U;
     }
     int32_t div = 1000000000;
-    div = cnx_clamp_div_i32(div, 1000);
+    div /= 1000;
     if (div != 1000000) {
         return 30U;
     }
     div = -1000000000;
-    div = cnx_clamp_div_i32(div, 1000);
+    div /= 1000;
     if (div != -1000000) {
         return 31U;
     }
     div = -1000000000;
-    div = cnx_clamp_div_i32(div, -1000);
+    div /= -1000;
     if (div != 1000000) {
         return 32U;
     }
     div = 1000000;
-    div = cnx_clamp_div_i32(div, 1);
+    div /= 1;
     if (div != 1000000) {
         return 33U;
     }
@@ -170,32 +164,32 @@ int main(void) {
         return 34U;
     }
     div = 2147483647;
-    div = cnx_clamp_div_i32(div, 2147483647);
+    div /= 2147483647;
     if (div != 1) {
         return 35U;
     }
     int32_t mod = 1000000007;
-    mod = cnx_clamp_mod_i32(mod, 1000000);
+    mod %= 1000000;
     if (mod != 7) {
         return 40U;
     }
     mod = -1000000007;
-    mod = cnx_clamp_mod_i32(mod, 1000000);
+    mod %= 1000000;
     if (mod != -7) {
         return 41U;
     }
     mod = 12345;
-    mod = cnx_clamp_mod_i32(mod, 7);
+    mod %= 7;
     if (mod != 4) {
         return 42U;
     }
     mod = -12345;
-    mod = cnx_clamp_mod_i32(mod, 7);
+    mod %= 7;
     if (mod != -4) {
         return 43U;
     }
     mod = 1000000;
-    mod = cnx_clamp_mod_i32(mod, 1000000);
+    mod %= 1000000;
     if (mod != 0) {
         return 44U;
     }

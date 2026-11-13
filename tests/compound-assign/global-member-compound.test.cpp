@@ -15,18 +15,6 @@
    the check: cnx_clamp_add_u8(0, 256) must saturate to 255, but (uint8_t)256 is 0, so a
    uint8_t parameter would return 0 -- the opposite of saturation. */
 
-static inline int32_t cnx_clamp_div_i32(int32_t a, int64_t b) {
-    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
-    int64_t result = (int64_t)a / b;
-    if (result > INT32_MAX) return INT32_MAX;
-    return (int32_t)result;
-}
-
-static inline int32_t cnx_clamp_mod_i32(int32_t a, int64_t b) {
-    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
-    return (int32_t)((int64_t)a % b);
-}
-
 static inline int32_t cnx_clamp_mul_i32(int32_t a, int64_t b) {
     int64_t result = (int64_t)a * b;
     if (result > INT32_MAX) return INT32_MAX;
@@ -88,17 +76,17 @@ int32_t Worker__testMultiplication(void) {
 
 int32_t Worker__testDivision(void) {
     gValue = 100;
-    gValue = cnx_clamp_div_i32(gValue, 5);
+    gValue /= 5;
     if (gValue != 20) {
         return 20;
     }
     gValue = 81;
-    gValue = cnx_clamp_div_i32(gValue, 9);
+    gValue /= 9;
     if (gValue != 9) {
         return 21;
     }
     gValue = 50;
-    gValue = cnx_clamp_div_i32(gValue, 1);
+    gValue /= 1;
     if (gValue != 50) {
         return 22;
     }
@@ -107,17 +95,17 @@ int32_t Worker__testDivision(void) {
 
 int32_t Worker__testModulo(void) {
     gValue = 17;
-    gValue = cnx_clamp_mod_i32(gValue, 5);
+    gValue %= 5;
     if (gValue != 2) {
         return 30;
     }
     gValue = 100;
-    gValue = cnx_clamp_mod_i32(gValue, 7);
+    gValue %= 7;
     if (gValue != 2) {
         return 31;
     }
     gValue = 25;
-    gValue = cnx_clamp_mod_i32(gValue, 25);
+    gValue %= 25;
     if (gValue != 0) {
         return 32;
     }

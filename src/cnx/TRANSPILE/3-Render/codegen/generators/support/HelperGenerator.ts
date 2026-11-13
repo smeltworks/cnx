@@ -57,7 +57,7 @@ const generateSafeArithmeticHelper = (
 const generateOverflowHelpers = (
   usedClampOps: ReadonlySet<string>,
   panic: boolean,
-  usedWrapOps: ReadonlySet<string> = new Set(),
+  usedWrapOps: ReadonlySet<string>,
 ): string[] => {
   if (usedClampOps.size === 0 && usedWrapOps.size === 0) {
     return [];

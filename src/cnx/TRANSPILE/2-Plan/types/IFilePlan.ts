@@ -18,7 +18,7 @@ import type TExpressionOf from "../../../types/syntax/TExpressionOf";
 import type TPostfixOpSyntax from "../../../types/syntax/TPostfixOpSyntax";
 import type TTypeSyntax from "../../../types/syntax/TTypeSyntax";
 import type IPlannedCast from "./IPlannedCast";
-import type IPlannedClamp from "./IPlannedClamp";
+import type IPlannedOverflowChain from "./IPlannedOverflowChain";
 import type IPlannedSliceSource from "./IPlannedSliceSource";
 import type IPlannedWholeArrayWrite from "./IPlannedWholeArrayWrite";
 import type IPlannedExpectedType from "./IPlannedExpectedType";
@@ -95,9 +95,12 @@ interface IFilePlan {
   /** ADR-051: each written `safe_div`/`safe_mod` call, and the helper it is written as */
   readonly safeDivisions: ReadonlyMap<TExpression, string>;
   /** ADR-044: each written `+ - * / %` chain, and the overflow helpers it calls (null: none) */
-  readonly clampChains: ReadonlyMap<TExpression, IPlannedClamp | null>;
+  readonly overflowChains: ReadonlyMap<
+    TExpression,
+    IPlannedOverflowChain | null
+  >;
   /** ADR-044: each assignment, and the overflow helper it calls (null: none) */
-  readonly compoundClamps: ReadonlyMap<
+  readonly compoundOverflows: ReadonlyMap<
     IAssignmentSyntax,
     IPlannedOverflowHelper | null
   >;

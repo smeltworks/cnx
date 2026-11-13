@@ -122,6 +122,50 @@ i32 wrapSafeQuotient(i32 n, i32 d) {
     return q;
 }
 
+// Returns the output whatever the status, so a zero divisor shows the default
+i32 safeOutput(i32 n, i32 d) {
+    mut i32 q <- 0;
+    bool failed <- safe_div(q, n, d, 7);
+    return q;
+}
+
+i32 wrapSafeRemainder(i32 n, i32 d) {
+    wrap i32 wn <- n;
+    wrap i32 wd <- d;
+    mut wrap i32 r <- 1;
+    bool failed <- safe_mod(r, wn, wd, 7);
+    if (failed = true) {
+        return -1;
+    }
+    return r;
+}
+
+i16 shortQuotient(i16 n, i16 d) {
+    return n / d;
+}
+
+i8 wrapNarrowQuotient(i8 n, i8 d) {
+    wrap i8 wn <- n;
+    wrap i8 wd <- d;
+    return wn / wd;
+}
+
+i16 wrapShortQuotient(i16 n, i16 d) {
+    wrap i16 wn <- n;
+    wrap i16 wd <- d;
+    return wn / wd;
+}
+
+i64 wideRemainder(i64 n, i64 d) {
+    return n % d;
+}
+
+i64 wrapWideRemainder(i64 n, i64 d) {
+    wrap i64 wn <- n;
+    wrap i64 wd <- d;
+    return wn % wd;
+}
+
 i32 safeRemainder(i32 n, i32 d) {
     mut i32 r <- 1;
     bool failed <- safe_mod(r, n, d, 7);
@@ -262,6 +306,40 @@ u32 main() {
     i32 r29 <- remainderOf(-7, 2);
     if (r29 != -1) {
         return 29;
+    }
+    // safe_div writes its default for a zero divisor
+    i32 r30 <- safeOutput(5, 0);
+    if (r30 != 7) {
+        return 30;
+    }
+    i32 r31 <- wrapSafeRemainder(-2147483647 - 1, -1);
+    if (r31 != 0) {
+        return 31;
+    }
+    i16 r32 <- shortQuotient(-32767 - 1, -1);
+    if (r32 != 32767) {
+        return 32;
+    }
+    i8 r33 <- wrapNarrowQuotient(-127 - 1, -1);
+    if (r33 != -127 - 1) {
+        return 33;
+    }
+    i16 r34 <- wrapShortQuotient(-32767 - 1, -1);
+    if (r34 != -32767 - 1) {
+        return 34;
+    }
+    i64 r35 <- wideRemainder(-9223372036854775807 - 1, -1);
+    if (r35 != 0) {
+        return 35;
+    }
+    i64 r36 <- wrapWideRemainder(-9223372036854775807 - 1, -1);
+    if (r36 != 0) {
+        return 36;
+    }
+    // A literal -1 divisor still overflows at MIN
+    i32 byLiteral <- low / -1;
+    if (byLiteral != 2147483647) {
+        return 37;
     }
     return 0;
 }
