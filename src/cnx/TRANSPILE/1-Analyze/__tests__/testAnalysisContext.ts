@@ -37,6 +37,7 @@ const testAnalysisContext = (
   // negative is the status quo -- and a test that needs `false` passes it
   // through `overrides`, which is where the fact travels in production too.
   includesForeignHeader: true,
+  debugMode: false,
   sourceFile: "test.cnx",
   ...overrides,
 });

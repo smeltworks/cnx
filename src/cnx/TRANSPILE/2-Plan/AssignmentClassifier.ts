@@ -498,6 +498,7 @@ class AssignmentClassifier {
     cnxOp: string,
     hasFloatingOperand: () => boolean,
     divisor: number | null,
+    debugMode: boolean,
   ): IPlannedOverflowHelper | null {
     if (written?.typeName == null || written.dimensions.length > 0) {
       return null;
@@ -508,6 +509,7 @@ class AssignmentClassifier {
       cnxOp,
       hasFloatingOperand,
       divisor,
+      debugMode,
     );
   }
 
@@ -522,6 +524,7 @@ class AssignmentClassifier {
     cnxOp: string,
     hasFloatingOperand: () => boolean,
     divisor: number | null,
+    debugMode: boolean,
   ): IPlannedOverflowHelper | null {
     if (overflowBehavior === null) return null;
     if (!TypeCheckUtils.isInteger(baseType)) return null;
@@ -529,7 +532,13 @@ class AssignmentClassifier {
     const operator = CompoundOperator.binaryOf(cnxOp);
     return operator === null
       ? null
-      : OverflowHelper.of(overflowBehavior, operator, baseType, divisor);
+      : OverflowHelper.of(
+          overflowBehavior,
+          operator,
+          baseType,
+          divisor,
+          debugMode,
+        );
   }
 }
 

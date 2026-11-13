@@ -65,6 +65,13 @@ interface IAnalysisContext {
   readonly includesForeignHeader: boolean;
 
   /**
+   * The run's `--debug` (1.1's `IRunSettings.debugMode`): under it every
+   * overflow panics, `wrap` included (#2408), so 2.1 decides E0811 from the
+   * helper 2.2 plans under it
+   */
+  readonly debugMode: boolean;
+
+  /**
    * #1668: the file being analyzed. With it this context is the one
    * operand typer's `ITypingContext`, so 2.1 types an operand from exactly
    * the facts 2.2 does.

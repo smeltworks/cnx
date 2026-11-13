@@ -26,6 +26,19 @@ class OverflowBehaviorUtils {
   }
 
   /**
+   * ADR-044: the behavior an operation runs with. `--debug` makes every
+   * overflow panic, `wrap` as well as `clamp` (#2408), and the panic body is
+   * the `clamp` helper family's, so under it a `wrap` operation is planned as
+   * a `clamp` one.
+   */
+  static underDebug(
+    behavior: TOverflowBehavior,
+    debugMode: boolean,
+  ): TOverflowBehavior {
+    return debugMode ? "clamp" : behavior;
+  }
+
+  /**
    * ADR-044: whether a composite's arithmetic saturates or wraps, from its
    * value leaves. Safety wins a mix: it wraps only when every counted integer
    * leaf was declared `wrap`, so one saturating operand makes the result

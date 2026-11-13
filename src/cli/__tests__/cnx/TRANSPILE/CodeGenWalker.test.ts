@@ -266,6 +266,45 @@ describe("CodeGenWalker", () => {
       expect(code).toContain("PANIC: Integer overflow in i32 division");
     });
 
+    it("panics on a wrap overflow in debug mode (#2408)", () => {
+      // ADR-044: --debug panics on every overflow regardless of clamp/wrap
+      const source = `
+        u8 bump(u8 start) {
+          mut wrap u8 w <- start;
+          w +<- 1;
+          return w;
+        }
+        i32 quotient(i32 n, i32 d) {
+          wrap i32 wn <- n;
+          wrap i32 wd <- d;
+          return wn / wd;
+        }
+      `;
+      const generate = (debugMode: boolean) => {
+        const { tree, program } = CnxSourceParser.parse(source);
+        const generator = new CodeGenWalker(new CodeGenerator());
+        const symbols = TSymbolInfoAdapter.convert(declareAndResolve(tree));
+        return generateWithProgram(generator, tree, program, {
+          cppMode: false,
+          symbolInfo: symbols,
+          sourcePath: "test.cnx",
+          debugMode,
+        });
+      };
+
+      const debug = generate(true);
+      expect(debug).toContain("w = cnx_clamp_add_u8(w, 1U);");
+      expect(debug).toContain("return cnx_clamp_div_i32(wn, wd);");
+      expect(debug).toContain("PANIC: Integer overflow in u8 addition");
+      expect(debug).toContain("PANIC: Integer overflow in i32 division");
+      expect(debug).not.toContain("cnx_wrap_");
+
+      const normal = generate(false);
+      expect(normal).toContain("w = (uint8_t)(w + 1U);");
+      expect(normal).toContain("return cnx_wrap_div_i32(wn, wd);");
+      expect(normal).not.toContain("PANIC:");
+    });
+
     it("should generate C++ output when cppMode is enabled", () => {
       const source = `
         void foo() { }

@@ -589,7 +589,14 @@ When compiled with `--debug`, **all** arithmetic operations panic on overflow re
 mut clamp u8 temp <- 255;
 temp <- temp + 1; // Normal: clamps to 255
 // --debug: PANIC! Overflow detected
+
+mut wrap u8 counter <- 255;
+counter +<- 1; // Normal: wraps to 0
+// --debug: PANIC! Overflow detected
 ```
+
+A `wrap` operation panics under `--debug` the same way, through the same helper a `clamp` one
+calls (#2408, decided in #1790).
 
 This catches bugs during development before they matter in production.
 
@@ -626,6 +633,7 @@ cycleCount = (uint32_t)(cycleCount + 1);  // Natural wrap
 
 // With --debug flag, ALL operations become:
 // cnx_clamp_add_u16(egtTemp, 100);  // Panics on overflow
+// cnx_clamp_add_u32(cycleCount, 1); // wrap too: panics on overflow
 ```
 
 #### Helper Functions (Generated)

@@ -104,7 +104,8 @@ const generateOverflowHelpers = (
     }
   }
 
-  // #1790: `wrap` helpers never panic
+  // #1790: `wrap` helpers have no panic body; under `--debug` 2.2 plans no
+  // `wrap` helper, a `wrap` operation calls the `clamp` one (#2408)
   const sortedWrapOps = Array.from(usedWrapOps).sort((a, b) =>
     a.localeCompare(b),
   );

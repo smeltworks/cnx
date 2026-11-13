@@ -398,7 +398,8 @@ class OverflowHelperTemplates {
 
   /**
    * ADR-044 (#1790): a `wrap` helper, the two's-complement result where C
-   * leaves it undefined. It never panics: wrapping is what was asked for.
+   * leaves it undefined. It has no panic body: under `--debug` 2.2 plans a
+   * `wrap` operation as a `clamp` one, whose helper panics (#2408).
    */
   static generateWrapHelper(operation: string, cnxType: string): string | null {
     return generateHelper(operation, cnxType, false, "wrap");

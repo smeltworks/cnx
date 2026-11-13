@@ -180,6 +180,7 @@ function testAnalysisContextFor(
       program,
       symbolTable,
       includesForeignHeader: true,
+      debugMode: false,
       sourceFile: TEST_SOURCE,
       ...options.overrides,
     },

@@ -256,7 +256,8 @@ const TOOLCHAIN_REQUIREMENTS: Record<TRequirementKey, IToolchainRequirement> = {
     platformLib: "hosted libc",
     condition: null,
     reason: "fprintf(stderr, ...), abort()",
-    incurredBy: "transpiling with --debug and using a clamp type",
+    incurredBy:
+      "transpiling with --debug and using clamp or wrap integer arithmetic",
     probe: /fprintf\(stderr, "PANIC:/,
     adr: "ADR-044",
     misra: ["21.6", "21.8"],

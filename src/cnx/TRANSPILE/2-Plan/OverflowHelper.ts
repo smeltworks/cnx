@@ -1,4 +1,5 @@
 import type TOverflowBehavior from "../../types/TOverflowBehavior";
+import OverflowBehaviorUtils from "../../utils/OverflowBehaviorUtils";
 import OverflowOperation from "../../utils/OverflowOperation";
 import ReservedCnxName from "../../utils/ReservedCnxName";
 import TypeCheckUtils from "../../utils/TypeCheckUtils";
@@ -15,14 +16,17 @@ class OverflowHelper {
    * `divisor` is the right operand's value when it is known at compile time,
    * else null. A `/` or `%` overflows only at `MIN / -1`, so a known divisor
    * other than -1 is plain C, which keeps C's own promotion of a divisor past
-   * the type and its multiply for a constant (#1790 review).
+   * the type and its multiply for a constant (#1790 review). Under
+   * `debugMode` every operation panics on overflow, `wrap` included (#2408).
    */
   static of(
-    behavior: TOverflowBehavior,
+    declared: TOverflowBehavior,
     operator: string,
     cnxType: string,
     divisor: number | null,
+    debugMode: boolean,
   ): IPlannedOverflowHelper | null {
+    const behavior = OverflowBehaviorUtils.underDebug(declared, debugMode);
     if (!TypeCheckUtils.isInteger(cnxType)) return null;
     if (
       DIVISION_OPERATORS.has(operator) &&

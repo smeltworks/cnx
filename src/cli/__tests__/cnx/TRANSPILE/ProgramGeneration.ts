@@ -123,6 +123,7 @@ class ProgramGeneration {
         program: resolved,
         symbolTable: resolved.symbolTable(),
         includesForeignHeader: true,
+        debugMode: options.debugMode ?? false,
         sourceFile: sourcePath,
       }),
     };

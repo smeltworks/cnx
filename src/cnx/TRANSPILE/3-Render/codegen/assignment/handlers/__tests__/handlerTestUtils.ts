@@ -267,6 +267,7 @@ function plannedClampOf(
     ctx.cnxOp,
     ctx.valueHasFloatingOperand,
     null,
+    false,
   );
 }
 

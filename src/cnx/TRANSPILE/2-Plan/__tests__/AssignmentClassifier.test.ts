@@ -695,7 +695,13 @@ describe("AssignmentClassifier - Special Compound", () => {
       overflow: "clamp" as const,
     };
     const overflowHelperOf = (written: IOperandType | null) =>
-      AssignmentClassifier.overflowOfWrite(written, "+<-", () => false, null);
+      AssignmentClassifier.overflowOfWrite(
+        written,
+        "+<-",
+        () => false,
+        null,
+        false,
+      );
 
     expect(overflowHelperOf(u8)).toEqual({
       name: "cnx_clamp_add_u8",

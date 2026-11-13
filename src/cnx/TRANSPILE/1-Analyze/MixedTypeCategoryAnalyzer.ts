@@ -481,7 +481,11 @@ class MixedTypeCategoryAnalyzer {
     const helped =
       operator !== undefined &&
       behavior !== null &&
-      OverflowOperation.of(operator, signed, behavior) !== undefined;
+      OverflowOperation.of(
+        operator,
+        signed,
+        OverflowBehaviorUtils.underDebug(behavior, this.context.debugMode),
+      ) !== undefined;
     const why = helped
       ? "this operator would hand it to an overflow helper untyped"
       : "C's usual arithmetic conversions decide this result from the type it really has, which can change a comparison, a bit operation or a quotient (an unsigned 3 < -1 is true)";

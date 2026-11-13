@@ -80,6 +80,7 @@ class Analyze {
         program,
         symbolTable: program.symbolTable(),
         includesForeignHeader: file.includesForeignHeader,
+        debugMode: discovery.run.debugMode,
         sourceFile: sourcePath,
       },
       includes: {

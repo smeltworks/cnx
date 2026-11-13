@@ -618,6 +618,7 @@ class FilePlanner {
         operation === "div" ? "/" : "%",
         cnxType,
         PlanTyping.constantValue(call.args[2], typing),
+        state.debugMode,
       );
       const name = CallExprUtils.generateSafeDivModHelperName(
         call.name,
@@ -2109,6 +2110,7 @@ class FilePlanner {
         operator,
         cnxType,
         PlanTyping.constantValue(expr.operands[index + 1], typing),
+        this.state.debugMode,
       ),
     );
     if (operations.every((helper) => helper === null)) return null;
@@ -2169,6 +2171,7 @@ class FilePlanner {
         site.value.kind === "missing"
           ? null
           : PlanTyping.constantValue(site.value, typing),
+        this.state.debugMode,
       );
       if (clamp === null) continue;
       use(clamp);
