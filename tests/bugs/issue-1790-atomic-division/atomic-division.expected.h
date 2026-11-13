@@ -14,10 +14,13 @@ extern "C" {
 
 /* External variables */
 extern volatile int32_t shared;
+extern volatile int8_t shared8;
 
 /* Function prototypes */
 int32_t atomicQuotient(const int32_t n, const int32_t d);
 int32_t atomicRemainder(const int32_t n, const int32_t d);
+int8_t atomicQuotientBig(const int8_t n);
+int8_t atomicRemainderBig(const int8_t n);
 
 #ifdef __cplusplus
 }

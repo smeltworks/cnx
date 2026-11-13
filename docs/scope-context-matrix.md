@@ -1213,7 +1213,7 @@ cell is declared by the ADR that owns it.
 2 linked fixtures with no derivable context:
 
 - `bugs/issue-1669-enum-member-values/value-overflow.test.cnx`
-- `bugs/issue-1790-atomic-division/atomic-division.test.cnx`
+- `bugs/issue-1790-shared-safe-division/shared-safe-division.test.cnx`
 
 ## ADR-044 E0909
 

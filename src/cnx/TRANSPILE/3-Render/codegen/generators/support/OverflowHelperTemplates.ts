@@ -17,16 +17,16 @@ import type TOverflowBehavior from "../../../../../types/TOverflowBehavior";
 const C_NEWLINE = String.raw`\n`;
 
 /**
- * Generate function signature
+ * Every helper's signature. `b` is the wider type for every one (#94), the
+ * one fact an atomic's `__operand` (`AtomicOperandType`) and the #94 note
+ * above the helpers also read through `ClampTypes`.
  */
 function generateSignature(
   operation: string,
   info: IClampTypeInfo,
-  bParamType?: string,
   behavior: TOverflowBehavior = "clamp",
 ): string {
-  const paramB = bParamType ?? info.cType;
-  return `static inline ${info.cType} ${ReservedCnxName.overflowHelper(behavior, operation, info.cnxType)}(${info.cType} a, ${paramB} b)`;
+  return `static inline ${info.cType} ${ReservedCnxName.overflowHelper(behavior, operation, info.cnxType)}(${info.cType} a, ${info.widerType} b)`;
 }
 
 /**
@@ -68,7 +68,7 @@ const MIN_BY_MINUS_ONE_COMMENT =
  */
 class UnsignedClampTemplates {
   static add(info: IClampTypeInfo, debugMode: boolean): string {
-    const sig = generateSignature("add", info, info.widerType);
+    const sig = generateSignature("add", info);
     const opName = OPERATION_NAMES.add;
 
     if (debugMode) {
@@ -87,7 +87,7 @@ ${generatePanicBlock(info.cnxType, opName)}
   }
 
   static sub(info: IClampTypeInfo, debugMode: boolean): string {
-    const sig = generateSignature("sub", info, info.widerType);
+    const sig = generateSignature("sub", info);
     const opName = OPERATION_NAMES.sub;
     // Use "underflow" message for unsigned subtraction
     const panicMsg = `Integer underflow in ${info.cnxType} ${opName}`;
@@ -110,7 +110,7 @@ ${generatePanicBlock(info.cnxType, opName)}
   }
 
   static mul(info: IClampTypeInfo, debugMode: boolean): string {
-    const sig = generateSignature("mul", info, info.widerType);
+    const sig = generateSignature("mul", info);
     const opName = OPERATION_NAMES.mul;
 
     if (debugMode) {
@@ -135,7 +135,7 @@ ${generatePanicBlock(info.cnxType, opName)}
  */
 class SignedWiderTemplates {
   static add(info: IClampTypeInfo, debugMode: boolean): string {
-    const sig = generateSignature("add", info, info.widerType);
+    const sig = generateSignature("add", info);
     const opName = OPERATION_NAMES.add;
 
     if (debugMode) {
@@ -157,7 +157,7 @@ ${generatePanicBlock(info.cnxType, opName)}
   }
 
   static sub(info: IClampTypeInfo, debugMode: boolean): string {
-    const sig = generateSignature("sub", info, info.widerType);
+    const sig = generateSignature("sub", info);
     const opName = OPERATION_NAMES.sub;
 
     if (debugMode) {
@@ -179,7 +179,7 @@ ${generatePanicBlock(info.cnxType, opName)}
   }
 
   static mul(info: IClampTypeInfo, debugMode: boolean): string {
-    const sig = generateSignature("mul", info, info.widerType);
+    const sig = generateSignature("mul", info);
     const opName = OPERATION_NAMES.mul;
 
     if (debugMode) {
@@ -279,9 +279,9 @@ ${generatePanicBlock(info.cnxType, opName)}
  * being `MIN / -1`. `clamp` gives MAX, `wrap` gives MIN, and the remainder is
  * 0 under either. Every type tests the case in its own width, so an i32
  * divides in 32 bits rather than through a 64-bit library division on the
- * embedded targets (#1790 review). `b` is the operand type: 2.2 plans no
- * helper for a known divisor other than -1, and a wider run-time divisor is
- * E0869.
+ * embedded targets (#1790 review). `b` is the wider type, as for every
+ * helper (#94): a header macro is not narrowed at the call, so a divisor past
+ * the type is answered exactly by comparison, never by a wider division.
  */
 class SignedDivisionTemplates {
   static div(
@@ -297,21 +297,38 @@ class SignedDivisionTemplates {
 ${generatePanicBlock(info.cnxType, OPERATION_NAMES.div)}
     }`
           : `return ${info.maxValue};`;
-    const sig = generateSignature("div", info, undefined, behavior);
+    const sig = generateSignature("div", info, behavior);
     return `${sig} {
 ${MIN_BY_MINUS_ONE_COMMENT}
     if (b == -1 && a == ${info.minValue}) ${onOverflow}
-    return (${info.cType})(a / b);
+${SignedDivisionTemplates.pastType(info, "-1", "0")}    return (${info.cType})(a / (${info.cType})b);
 }`;
   }
 
   static mod(info: IClampTypeInfo, behavior: TOverflowBehavior): string {
-    const sig = generateSignature("mod", info, undefined, behavior);
+    const sig = generateSignature("mod", info, behavior);
     return `${sig} {
 ${MIN_BY_MINUS_ONE_COMMENT}
     if (b == -1) return 0;
-    return (${info.cType})(a % b);
+${SignedDivisionTemplates.pastType(info, "0", "a")}    return (${info.cType})(a % (${info.cType})b);
 }`;
+  }
+
+  /**
+   * A divisor past the type is at least as large as `a`, so the quotient is
+   * 0 and the remainder `a`, but for `MIN` by `MAX + 1`: -1 and 0. Nothing
+   * for an i64, whose wider type is its own.
+   */
+  private static pastType(
+    info: IClampTypeInfo,
+    atMinByMaxPlusOne: string,
+    otherwise: string,
+  ): string {
+    if (info.widerType === info.cType) return "";
+    return `    if (b < ${info.minValue} || b > ${info.maxValue}) {
+        return (a == ${info.minValue} && b == (${info.widerType})${info.maxValue} + 1) ? ${atMinByMaxPlusOne} : ${otherwise};
+    }
+`;
   }
 }
 

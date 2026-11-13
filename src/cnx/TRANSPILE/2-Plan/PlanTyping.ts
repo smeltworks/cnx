@@ -8,7 +8,6 @@ import type IOperandType from "../../types/IOperandType";
 import type ITypingContext from "../../types/ITypingContext";
 import type TExpression from "../../types/syntax/TExpression";
 import ConstantFold from "../../utils/ConstantFold";
-import ConstExprLowering from "../../utils/ConstExprLowering";
 
 class PlanTyping {
   /** An operand's value where it is written, when it is known at compile time */
@@ -16,10 +15,10 @@ class PlanTyping {
     expr: TExpression,
     typing: ITypingContext,
   ): number | null {
-    return ConstantFold.numberValue(
+    return ConstantFold.expressionValue(
       typing.program,
       typing.sourceFile,
-      ConstExprLowering.lower(expr),
+      expr,
     );
   }
 

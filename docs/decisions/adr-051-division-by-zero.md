@@ -422,7 +422,7 @@ bool cnx_safe_div_u32(uint32_t* output, uint32_t numerator, uint32_t divisor, ui
 **Signed overflow:** a signed `MIN / -1` is not a zero divisor, so `safe_div` and `safe_mod`
 return `false` and write what `/` and `%` give, as decided in ADR-044 (#1790): the type's MAX for
 `clamp`, its MIN for `wrap`, and 0 for the remainder.
-Under `--debug` a `clamp` `MIN / -1` panics here as every overflow does in ADR-044
+Under `--debug` a `MIN / -1` panics here under either modifier (#2408), as every overflow does in ADR-044
 ([owner ruling](https://github.com/smeltworks/cnx/issues/1790#issuecomment-6854471224), #1790); a zero divisor still
 returns `true` and writes the default.
 

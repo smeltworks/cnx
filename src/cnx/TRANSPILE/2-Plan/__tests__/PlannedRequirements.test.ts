@@ -84,6 +84,23 @@ describe("PlannedRequirements", () => {
     expect([...requirements.safeDivisions.values()]).toEqual([helper]);
   });
 
+  // #1790 review: every call with the name shares one body, so a second
+  // inner helper would silently replace the first call's
+  it("refuses a safe division planned with two inner helpers", () => {
+    const requirements = new PlannedRequirements("a.cnx");
+    const helper = {
+      name: "cnx_safe_div_i32",
+      operation: "div" as const,
+      cnxType: "i32",
+      inner: "cnx_clamp_div_i32",
+    };
+    requirements.safeDivision(helper);
+    requirements.safeDivision({ ...helper });
+    expect(() =>
+      requirements.safeDivision({ ...helper, inner: "cnx_wrap_div_i32" }),
+    ).toThrow("cnx_safe_div_i32 is planned with one inner helper");
+  });
+
   it("keys an overflow helper within its family (#1790)", () => {
     const requirements = new PlannedRequirements("a.cnx");
     requirements.overflowHelper({

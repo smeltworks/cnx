@@ -1,0 +1,8 @@
+#ifndef DIVISOR_MACROS_H
+#define DIVISOR_MACROS_H
+#define BIG 300
+#define I8_PAST 128
+#define HUGE 3000000000
+#define I32_PAST 2147483648
+#define MINUS_ONE_LONG (-1L)
+#endif

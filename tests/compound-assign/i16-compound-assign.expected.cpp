@@ -20,10 +20,13 @@ static inline int16_t cnx_clamp_add_i16(int16_t a, int32_t b) {
     return (int16_t)result;
 }
 
-static inline int16_t cnx_clamp_div_i16(int16_t a, int16_t b) {
+static inline int16_t cnx_clamp_div_i16(int16_t a, int32_t b) {
     /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
     if (b == -1 && a == INT16_MIN) return INT16_MAX;
-    return (int16_t)(a / b);
+    if (b < INT16_MIN || b > INT16_MAX) {
+        return (a == INT16_MIN && b == (int32_t)INT16_MAX + 1) ? -1 : 0;
+    }
+    return (int16_t)(a / (int16_t)b);
 }
 
 static inline int16_t cnx_clamp_mul_i16(int16_t a, int32_t b) {

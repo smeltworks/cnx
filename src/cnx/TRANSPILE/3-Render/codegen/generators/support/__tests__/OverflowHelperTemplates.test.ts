@@ -134,23 +134,39 @@ describe("OverflowHelperTemplates", () => {
 
   // #1790: ADR-044's table for MIN / -1 and MIN % -1
   describe("signed division", () => {
-    // #1790 review: every type tests MIN / -1 in its own width, so an i32
-    // never reaches a 64-bit library division
+    // #1790 review: `b` is the wider type (#94), so a header macro divisor
+    // past the type keeps its value, but the division itself stays in the
+    // operand's width and an i32 never reaches a 64-bit library division
     it("clamps a quotient in its own width", () => {
       const helper = OverflowHelperTemplates.generateClampHelper("div", "i32");
       expect(helper).toContain(
-        "static inline int32_t cnx_clamp_div_i32(int32_t a, int32_t b)",
+        "static inline int32_t cnx_clamp_div_i32(int32_t a, int64_t b)",
       );
       expect(helper).toContain(
         "if (b == -1 && a == INT32_MIN) return INT32_MAX;",
       );
-      expect(helper).toContain("return (int32_t)(a / b);");
-      expect(helper).not.toContain("int64_t");
+      expect(helper).toContain("return (int32_t)(a / (int32_t)b);");
+      expect(helper).not.toContain("(int64_t)a");
+    });
+
+    it("gives the exact quotient of a divisor past the type", () => {
+      const helper = OverflowHelperTemplates.generateClampHelper("div", "i8");
+      expect(helper).toContain("if (b < INT8_MIN || b > INT8_MAX) {");
+      expect(helper).toContain(
+        "return (a == INT8_MIN && b == (int32_t)INT8_MAX + 1) ? -1 : 0;",
+      );
+    });
+
+    it("gives the exact remainder of a divisor past the type", () => {
+      const helper = OverflowHelperTemplates.generateClampHelper("mod", "i8");
+      expect(helper).toContain(
+        "return (a == INT8_MIN && b == (int32_t)INT8_MAX + 1) ? 0 : a;",
+      );
     });
 
     it("wraps a narrow quotient to MIN", () => {
       const helper = OverflowHelperTemplates.generateWrapHelper("div", "i8");
-      expect(helper).toContain("cnx_wrap_div_i8(int8_t a, int8_t b)");
+      expect(helper).toContain("cnx_wrap_div_i8(int8_t a, int32_t b)");
       expect(helper).toContain(
         "if (b == -1 && a == INT8_MIN) return INT8_MIN;",
       );

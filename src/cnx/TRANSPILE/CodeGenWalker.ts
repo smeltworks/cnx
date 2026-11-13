@@ -808,7 +808,7 @@ class CodeGenWalker {
             this.filePlan.overflowChains,
             expr,
             this.rendering.overflowChains,
-            "`+ - *` chain",
+            "overflow chain",
           ),
           adrLine: expr.span.line,
           renderOperands,
@@ -1612,7 +1612,7 @@ class CodeGenWalker {
     CodeGenWalker.assertAllRendered(
       CodeGenWalker.decidedSites(this.filePlan.overflowChains),
       this.rendering.overflowChains,
-      "clamp chain",
+      "overflow chain",
     );
     CodeGenWalker.assertAllRendered(
       CodeGenWalker.decidedSites(this.filePlan.floatBitWrites),
@@ -1622,7 +1622,7 @@ class CodeGenWalker {
     CodeGenWalker.assertAllRendered(
       CodeGenWalker.decidedSites(this.filePlan.compoundOverflows),
       this.rendering.compoundOverflows,
-      "compound clamp",
+      "compound overflow",
     );
     CodeGenWalker.assertAllRendered(
       CodeGenWalker.decidedSites(this.filePlan.bitmapFieldWrites),

@@ -472,7 +472,7 @@ and wrote out of bounds.
 
 Applies to every `+`, `-` and `*`, wherever it stands in an expression. In a
 chain that mixes them with `/` or `%`, each `+`, `-` and `*` saturates where it
-stands and the division is ordinary C (#1790):
+stands; an unsigned `/` or `%` is ordinary C, and a signed one follows the rule below (#1790):
 
 ```cnx
 u32 halveDouble(u32 x) {

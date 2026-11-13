@@ -607,7 +607,7 @@ class FilePlanner {
       invariant(cnxType != null, `${call.name}'s output argument is typed`);
       // #1790: a signed quotient divides through ADR-044's helper, whose
       // modifier the numerator and divisor pick as they do for `/`; with
-      // neither counted, the default `clamp`
+      // neither counted, the default `clamp` (#2409 asks whether it should be)
       const operation = SafeDivision.operationOf(call.name);
       const inner = OverflowHelper.of(
         OverflowBehaviorUtils.ofLeaves(
@@ -617,7 +617,9 @@ class FilePlanner {
         ) ?? "clamp",
         operation === "div" ? "/" : "%",
         cnxType,
-        PlanTyping.constantValue(call.args[2], typing),
+        // One helper body serves every call with its name, so the MIN / -1
+        // guard cannot depend on this call's divisor (#1790 review)
+        null,
         state.debugMode,
       );
       const name = CallExprUtils.generateSafeDivModHelperName(
@@ -2919,7 +2921,7 @@ class FilePlanner {
     site: IAssignmentSyntax,
     bitmapField: IBitmapFieldTarget | null,
     writesFloatBits: boolean,
-    clampType: string | null,
+    helperType: string | null,
   ): IPlannedAtomic | null {
     const typing = this.state.typingContext();
     const access = AtomicOwner.ofWrite(site, typing, bitmapField);
@@ -2948,7 +2950,7 @@ class FilePlanner {
         ...planned,
         operandCType: AtomicOperandType.ofCompound(
           access,
-          clampType,
+          helperType,
           valueCType,
         ),
       };

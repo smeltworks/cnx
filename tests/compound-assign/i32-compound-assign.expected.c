@@ -21,10 +21,13 @@ static inline int32_t cnx_clamp_add_i32(int32_t a, int64_t b) {
     return (int32_t)result;
 }
 
-static inline int32_t cnx_clamp_div_i32(int32_t a, int32_t b) {
+static inline int32_t cnx_clamp_div_i32(int32_t a, int64_t b) {
     /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
     if (b == -1 && a == INT32_MIN) return INT32_MAX;
-    return (int32_t)(a / b);
+    if (b < INT32_MIN || b > INT32_MAX) {
+        return (a == INT32_MIN && b == (int64_t)INT32_MAX + 1) ? -1 : 0;
+    }
+    return (int32_t)(a / (int32_t)b);
 }
 
 static inline int32_t cnx_clamp_mul_i32(int32_t a, int64_t b) {

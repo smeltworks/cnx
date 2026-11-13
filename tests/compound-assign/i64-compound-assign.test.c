@@ -22,7 +22,7 @@ static inline int64_t cnx_clamp_add_i64(int64_t a, int64_t b) {
 static inline int64_t cnx_clamp_div_i64(int64_t a, int64_t b) {
     /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
     if (b == -1 && a == INT64_MIN) return INT64_MAX;
-    return (int64_t)(a / b);
+    return (int64_t)(a / (int64_t)b);
 }
 
 static inline int64_t cnx_clamp_mul_i64(int64_t a, int64_t b) {

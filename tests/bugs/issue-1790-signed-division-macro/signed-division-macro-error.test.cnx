@@ -5,7 +5,8 @@
 // is beside a `clamp` `+ - *`. An unsigned `/` stays plain C, so a macro
 // beside it is still E0812 (control). 2.1 reads the operands' modifier as 2.2
 // does (#1790 review): a `wrap` `*` calls no helper, so beside it is E0812,
-// while a `wrap` signed `/` still calls one, E0811.
+// while a `wrap` signed `/` still calls one, E0811. A signed `/` by a known
+// divisor other than -1 calls none, so beside it is E0812 (#1790 review).
 #include "division_macros.h"
 
 i32 signedQuotient(i32 n) {
@@ -34,4 +35,9 @@ i32 wrapCompoundProduct(i32 n) {
     mut wrap i32 wn <- n;
     wn *<- SCALED_CALL;
     return wn;
+}
+
+i32 knownDivisor() {
+    i32 two <- 2;
+    return SCALED_CALL / two;
 }

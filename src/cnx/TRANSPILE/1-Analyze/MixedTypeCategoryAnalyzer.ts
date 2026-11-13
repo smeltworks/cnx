@@ -53,6 +53,7 @@ import EssentialCategory from "../../utils/EssentialCategory";
 import ComparisonChain from "../../utils/ComparisonChain";
 import CompoundOperator from "../../utils/CompoundOperator";
 import OverflowOperation from "../../utils/OverflowOperation";
+import ConstantFold from "../../utils/ConstantFold";
 import OverflowBehaviorUtils from "../../utils/OverflowBehaviorUtils";
 import type TOverflowBehavior from "../../types/TOverflowBehavior";
 import type IAnalysisContext from "./types/IAnalysisContext";
@@ -179,6 +180,7 @@ class MixedCategoryCheck {
               OverflowBehaviorUtils.ofLeaves(
                 OperandTyper.valueLeaves(expr, this.context),
               ),
+              this.constantValue(operands[i]),
             );
           }
           mixed = true;
@@ -225,6 +227,15 @@ class MixedCategoryCheck {
         (leaf) =>
           leaf?.category === "enum" && leaf.enumTypeName === enumBeingDeclared,
       ),
+    );
+  }
+
+  /** A right operand's value when known at compile time, as 2.2 reads it */
+  private constantValue(expr: TExpression): number | null {
+    return ConstantFold.expressionValue(
+      this.context.program,
+      this.context.sourceFile,
+      expr,
     );
   }
 
@@ -333,6 +344,7 @@ class MixedCategoryCheck {
         operator,
         false,
         OperandTyper.writtenType(site.target, this.context)?.overflow ?? null,
+        this.constantValue(value),
       );
     }
   }
@@ -414,6 +426,7 @@ class MixedTypeCategoryAnalyzer {
     operator?: string,
     castOnly = false,
     behavior: TOverflowBehavior | null = null,
+    divisor: number | null = null,
   ): void {
     if (
       left === EssentialCategory.UNREADABLE_MACRO ||
@@ -425,6 +438,7 @@ class MixedTypeCategoryAnalyzer {
         operator,
         left === "signed" || right === "signed",
         behavior,
+        divisor,
       );
       return;
     }
@@ -473,11 +487,12 @@ class MixedTypeCategoryAnalyzer {
     operator: string | undefined,
     signed: boolean,
     behavior: TOverflowBehavior | null,
+    divisor: number | null,
   ): void {
     // An operator that hands an integer operand to an overflow helper
     // (ADR-044) makes an unreadable macro beside it E0811; any other makes it
-    // E0812. `behavior` is 2.2's for the same operands, so the two decide
-    // alike (#1790 review); with none counted, 2.2 plans no helper.
+    // E0812. `behavior` and `divisor` are 2.2's for the same operands, so the
+    // two decide alike (#1790 review); with none counted, 2.2 plans no helper.
     const helped =
       operator !== undefined &&
       behavior !== null &&
@@ -485,6 +500,7 @@ class MixedTypeCategoryAnalyzer {
         operator,
         signed,
         OverflowBehaviorUtils.underDebug(behavior, this.context.debugMode),
+        divisor,
       ) !== undefined;
     const why = helped
       ? "this operator would hand it to an overflow helper untyped"

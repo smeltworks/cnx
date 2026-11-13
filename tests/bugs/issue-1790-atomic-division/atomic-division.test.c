@@ -7,6 +7,14 @@
 
 #include "atomic-division.test.h"
 
+// test-execution
+// test-adr: 044
+// #1790 review: an atomic /<- of MIN by -1 gives ADR-044's MAX, as a plain
+// write does. Pinned to host because an atomic's lowering is the target's.
+// A header macro divisor is held in the helper's wider `b`, not the atomic's
+// type: `BIG` (300) narrowed into an i8 divided by 44 (#2413).
+#include "atomic_macros.h"
+
 
 #include <stdint.h>
 
@@ -18,23 +26,45 @@
    the check: cnx_clamp_add_u8(0, 256) must saturate to 255, but (uint8_t)256 is 0, so a
    uint8_t parameter would return 0 -- the opposite of saturation. */
 
-static inline int32_t cnx_clamp_div_i32(int32_t a, int32_t b) {
+static inline int32_t cnx_clamp_div_i32(int32_t a, int64_t b) {
     /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
     if (b == -1 && a == INT32_MIN) return INT32_MAX;
-    return (int32_t)(a / b);
+    if (b < INT32_MIN || b > INT32_MAX) {
+        return (a == INT32_MIN && b == (int64_t)INT32_MAX + 1) ? -1 : 0;
+    }
+    return (int32_t)(a / (int32_t)b);
 }
 
-static inline int32_t cnx_clamp_mod_i32(int32_t a, int32_t b) {
+static inline int8_t cnx_clamp_div_i8(int8_t a, int32_t b) {
+    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
+    if (b == -1 && a == INT8_MIN) return INT8_MAX;
+    if (b < INT8_MIN || b > INT8_MAX) {
+        return (a == INT8_MIN && b == (int32_t)INT8_MAX + 1) ? -1 : 0;
+    }
+    return (int8_t)(a / (int8_t)b);
+}
+
+static inline int32_t cnx_clamp_mod_i32(int32_t a, int64_t b) {
     /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
     if (b == -1) return 0;
-    return (int32_t)(a % b);
+    if (b < INT32_MIN || b > INT32_MAX) {
+        return (a == INT32_MIN && b == (int64_t)INT32_MAX + 1) ? 0 : a;
+    }
+    return (int32_t)(a % (int32_t)b);
 }
 
-// test-execution
-// test-adr: 044
-// #1790 review: an atomic /<- of MIN by -1 gives ADR-044's MAX, as a plain
-// write does. Pinned to host because an atomic's lowering is the target's.
+static inline int8_t cnx_clamp_mod_i8(int8_t a, int32_t b) {
+    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
+    if (b == -1) return 0;
+    if (b < INT8_MIN || b > INT8_MAX) {
+        return (a == INT8_MIN && b == (int32_t)INT8_MAX + 1) ? 0 : a;
+    }
+    return (int8_t)(a % (int8_t)b);
+}
+
 volatile int32_t shared = 0;
+
+volatile int8_t shared8 = 0;
 
 int32_t atomicQuotient(const int32_t n, const int32_t d) {
     shared = n;
@@ -66,6 +96,36 @@ int32_t atomicRemainder(const int32_t n, const int32_t d) {
     return shared;
 }
 
+int8_t atomicQuotientBig(const int8_t n) {
+    shared8 = n;
+    {
+        /* ADR-049 / Issue #1789: atomic read-modify-write as a compare-exchange retry loop, for a target with neither LDREX/STREX nor an interrupt mask. The GNU __atomic builtins are a compiler extension (MISRA C:2012 Rule 1.2). The value is evaluated once, before the loop, so a failed exchange does not evaluate it again (Issue #1807). */
+        int32_t __operand = BIG;
+        int8_t __old;
+        int8_t __new;
+        __atomic_load(&shared8, &__old, __ATOMIC_RELAXED);
+        do {
+            __new = cnx_clamp_div_i8(__old, __operand);
+        } while (!__atomic_compare_exchange(&shared8, &__old, &__new, 0, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED));
+    }
+    return shared8;
+}
+
+int8_t atomicRemainderBig(const int8_t n) {
+    shared8 = n;
+    {
+        /* ADR-049 / Issue #1789: atomic read-modify-write as a compare-exchange retry loop, for a target with neither LDREX/STREX nor an interrupt mask. The GNU __atomic builtins are a compiler extension (MISRA C:2012 Rule 1.2). The value is evaluated once, before the loop, so a failed exchange does not evaluate it again (Issue #1807). */
+        int32_t __operand = BIG;
+        int8_t __old;
+        int8_t __new;
+        __atomic_load(&shared8, &__old, __ATOMIC_RELAXED);
+        do {
+            __new = cnx_clamp_mod_i8(__old, __operand);
+        } while (!__atomic_compare_exchange(&shared8, &__old, &__new, 0, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED));
+    }
+    return shared8;
+}
+
 int main(void) {
     const int32_t q = atomicQuotient(-2147483648, -1);
     if (q != 2147483647) {
@@ -78,6 +138,14 @@ int main(void) {
     const int32_t ordinary = atomicQuotient(-7, 2);
     if (ordinary != -3) {
         return 3U;
+    }
+    const int8_t bigQuotient = atomicQuotientBig(100);
+    if (bigQuotient != 0) {
+        return 4U;
+    }
+    const int8_t bigRemainder = atomicRemainderBig(100);
+    if (bigRemainder != 100) {
+        return 5U;
     }
     return 0U;
 }

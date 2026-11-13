@@ -1,3 +1,4 @@
+import invariant from "../../utils/invariant";
 import RequirementSites from "../../utils/RequirementSites";
 import type IRequirementSite from "../../types/IRequirementSite";
 import type TDeferredSiteKey from "../../types/TDeferredSiteKey";
@@ -60,6 +61,12 @@ class PlannedRequirements {
 
   /** ADR-051: a safe_div/safe_mod helper, keyed by its name */
   safeDivision(helper: IPlannedSafeDivision): void {
+    const planned = this.safeDivisionHelpers.get(helper.name);
+    // Every call with the helper's name shares its one body (#1790 review)
+    invariant(
+      planned === undefined || planned.inner === helper.inner,
+      `${helper.name} is planned with one inner helper`,
+    );
     this.safeDivisionHelpers.set(helper.name, helper);
   }
 

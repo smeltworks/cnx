@@ -166,7 +166,7 @@ int main(void) {
         return 21;
     }
     uint8_t once[2] = {250U, 250U};
-    /* ADR-044 / Issue #1887: target reached once through a temp (its subscript has a side effect, and the clamp reads the element as well as writing it). */
+    /* ADR-044 / Issue #1887: target reached once through a temp (its subscript has a side effect, and the overflow helper reads the element as well as writing it). */
     { volatile uint8_t* cnx_tmp0 = &once[Tank__nextIndex()]; *cnx_tmp0 = cnx_clamp_add_u8(*cnx_tmp0, 10U); }
     if (once[0U] != 255) {
         return 22;

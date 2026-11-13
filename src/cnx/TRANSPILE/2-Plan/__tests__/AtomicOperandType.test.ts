@@ -13,6 +13,13 @@ describe("AtomicOperandType.ofCompound", () => {
     expect(AtomicOperandType.ofCompound(U8, "u8", "uint8_t")).toBe("uint32_t");
   });
 
+  // #1790 review: a signed `/<-` helper's `b` is wider too, so an i32's
+  // `__operand` is the int64_t it takes, not narrowed (-Wconversion)
+  it("holds a signed division's divisor in the helper's wider type", () => {
+    const I32 = { typeName: "i32", cType: "int32_t", bits: 32 };
+    expect(AtomicOperandType.ofCompound(I32, "i32", "int32_t")).toBe("int64_t");
+  });
+
   it("keeps a wider float value's precision", () => {
     expect(AtomicOperandType.ofCompound(F32, null, "double")).toBe("double");
   });

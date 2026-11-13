@@ -463,11 +463,12 @@ class AssignmentClassifier {
   }
 
   /**
-   * ADR-044: the saturating helper operation (`add`, `sub`, `mul`) that a
-   * compound assignment lowers to, or null when it is plain C arithmetic.
+   * ADR-044: the overflow helper (`cnx_clamp_add_u8`, `cnx_wrap_div_i32`, ...)
+   * that a compound assignment lowers to, or null when it is plain C arithmetic.
    *
-   * Only a `clamp` integer target qualifies, and only for the arithmetic
-   * operators that can overflow; a bitwise compound cannot, so it stays plain.
+   * A `clamp` integer target qualifies for `+<- -<- *<-`, and a signed one of
+   * either modifier for `/<-` and `%<-` (#1790), as `OverflowOperation` rules.
+   * A bitwise compound cannot overflow, so it stays plain.
    * This is the one decision: the classifier asks it to pick OVERFLOW_HELPER,
    * the overflow handler asks it for the helper, and the atomic handler asks it
    * for the inner operation of its read-modify-write. The atomic generator used

@@ -94,7 +94,8 @@ const joinWithOperators = (
  * saturating values be trusted (#231).
  *
  * Returns null when the expression should be emitted as plain C: a float or
- * other natively-handled type, a `wrap` type, or operands whose type cannot be
+ * other natively-handled type, a chain none of whose operators calls a helper
+ * (a `wrap` `+ - *`, an unsigned `/`), or operands whose type cannot be
  * resolved.
  */
 const tryOverflowOperands = (
