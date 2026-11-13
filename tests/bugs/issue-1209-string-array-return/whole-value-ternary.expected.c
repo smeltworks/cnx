@@ -90,6 +90,7 @@ uint8_t first(const uint8_t p[2]) {
 int main(void) {
     const bool pickLeft = false;
     /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
     char cnx_tmp2[9] = {0};
     if (pickLeft == true) {
         left(cnx_tmp2);
@@ -106,6 +107,7 @@ int main(void) {
     }
     char t[9] = "";
     /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
     char cnx_tmp3[9] = {0};
     if (pickLeft == false) {
         left(cnx_tmp3);
@@ -118,6 +120,7 @@ int main(void) {
     }
     const char wide[17] = "wider string";
     /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
     char cnx_tmp4[17] = {0};
     if (pickLeft == true) {
         left(cnx_tmp4);
@@ -130,6 +133,7 @@ int main(void) {
         return 4U;
     }
     /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
     uint8_t cnx_tmp5[2] = {0};
     if (pickLeft == true) {
         one(cnx_tmp5);
@@ -146,6 +150,7 @@ int main(void) {
     }
     uint8_t b[2] = {0U, 0U};
     /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
     uint8_t cnx_tmp7[2] = {0};
     if (pickLeft == false) {
         one(cnx_tmp7);
@@ -160,6 +165,7 @@ int main(void) {
         return 6U;
     }
     /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
     uint8_t cnx_tmp9[2] = {0};
     if (pickLeft == true) {
         one(cnx_tmp9);

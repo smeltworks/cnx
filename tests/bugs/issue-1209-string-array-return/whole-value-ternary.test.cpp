@@ -90,20 +90,15 @@ uint8_t first(const uint8_t p[2]) {
 int main(void) {
     const bool pickLeft = false;
     /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
-    string<8> cnx_tmp4;
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
+    char cnx_tmp2[9] = {};
     if (pickLeft == true) {
-        /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-        char cnx_tmp2[9] = {};
         left(cnx_tmp2);
-        cnx_tmp4 = cnx_tmp2;
     } else {
-        /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-        char cnx_tmp3[9] = {};
-        right(cnx_tmp3);
-        cnx_tmp4 = cnx_tmp3;
+        right(cnx_tmp2);
     }
     char s[9] = "";
-    cnx_string_copy(s, cnx_tmp4, 8U);
+    cnx_string_copy(s, cnx_tmp2, 8U);
     if (strcmp(s, "right") != 0) {
         return 1U;
     }
@@ -112,94 +107,72 @@ int main(void) {
     }
     char t[9] = "";
     /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
-    string<8> cnx_tmp7;
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
+    char cnx_tmp3[9] = {};
     if (pickLeft == false) {
-        /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-        char cnx_tmp5[9] = {};
-        left(cnx_tmp5);
-        cnx_tmp7 = cnx_tmp5;
+        left(cnx_tmp3);
     } else {
-        /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-        char cnx_tmp6[9] = {};
-        right(cnx_tmp6);
-        cnx_tmp7 = cnx_tmp6;
+        right(cnx_tmp3);
     }
-    cnx_string_copy(t, cnx_tmp7, 8U);
+    cnx_string_copy(t, cnx_tmp3, 8U);
     if (strcmp(t, "left") != 0) {
         return 3U;
     }
     const char wide[17] = "wider string";
     /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
-    string<8> cnx_tmp9;
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
+    char cnx_tmp4[17] = {};
     if (pickLeft == true) {
-        /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-        char cnx_tmp8[9] = {};
-        left(cnx_tmp8);
-        cnx_tmp9 = cnx_tmp8;
+        left(cnx_tmp4);
     } else {
-        cnx_tmp9 = wide;
+        cnx_string_copy(cnx_tmp4, wide, 16U);
     }
     char w[17] = "";
-    cnx_string_copy(w, cnx_tmp9, 16U);
+    cnx_string_copy(w, cnx_tmp4, 16U);
     if (strcmp(w, "wider string") != 0) {
         return 4U;
     }
     /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
-    uint8_t cnx_tmp12;
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
+    uint8_t cnx_tmp5[2] = {};
     if (pickLeft == true) {
-        /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-        uint8_t cnx_tmp10[2] = {};
-        one(cnx_tmp10);
-        cnx_tmp12 = cnx_tmp10;
+        one(cnx_tmp5);
     } else {
-        /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-        uint8_t cnx_tmp11[2] = {};
-        two(cnx_tmp11);
-        cnx_tmp12 = cnx_tmp11;
+        two(cnx_tmp5);
     }
     uint8_t a[2] = {};
     /* ADR-035 / Issue #1209: C has no array assignment, so the array is copied element by element. */
-    for (uint32_t cnx_tmp13 = 0U; cnx_tmp13 < 2U; cnx_tmp13++) {
-        a[cnx_tmp13] = (cnx_tmp12)[cnx_tmp13];
+    for (uint32_t cnx_tmp6 = 0U; cnx_tmp6 < 2U; cnx_tmp6++) {
+        a[cnx_tmp6] = (cnx_tmp5)[cnx_tmp6];
     }
     if (a[0U] != 2) {
         return 5U;
     }
     uint8_t b[2] = {0U, 0U};
     /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
-    uint8_t cnx_tmp16;
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
+    uint8_t cnx_tmp7[2] = {};
     if (pickLeft == false) {
-        /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-        uint8_t cnx_tmp14[2] = {};
-        one(cnx_tmp14);
-        cnx_tmp16 = cnx_tmp14;
+        one(cnx_tmp7);
     } else {
-        /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-        uint8_t cnx_tmp15[2] = {};
-        two(cnx_tmp15);
-        cnx_tmp16 = cnx_tmp15;
+        two(cnx_tmp7);
     }
     /* ADR-035 / Issue #1209: C has no array assignment, so the array is copied element by element. */
-    for (uint32_t cnx_tmp17 = 0U; cnx_tmp17 < 2U; cnx_tmp17++) {
-        b[cnx_tmp17] = (cnx_tmp16)[cnx_tmp17];
+    for (uint32_t cnx_tmp8 = 0U; cnx_tmp8 < 2U; cnx_tmp8++) {
+        b[cnx_tmp8] = (cnx_tmp7)[cnx_tmp8];
     }
     if (b[1U] != 1) {
         return 6U;
     }
     /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
-    uint8_t cnx_tmp20;
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
+    uint8_t cnx_tmp9[2] = {};
     if (pickLeft == true) {
-        /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-        uint8_t cnx_tmp18[2] = {};
-        one(cnx_tmp18);
-        cnx_tmp20 = cnx_tmp18;
+        one(cnx_tmp9);
     } else {
-        /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-        uint8_t cnx_tmp19[2] = {};
-        two(cnx_tmp19);
-        cnx_tmp20 = cnx_tmp19;
+        two(cnx_tmp9);
     }
-    const uint8_t f = first(cnx_tmp20);
+    const uint8_t f = first(cnx_tmp9);
     if (f != 2) {
         return 7U;
     }

@@ -517,6 +517,7 @@ class CodeGenWalker {
     const whenFalse = fill(expr.whenFalse);
     state.pendingTempDeclarations.push(
       ComplianceAnnotations.render(ComplianceAnnotations.TERNARY_ARM),
+      ReturnBuffer.TEMPORARY_COMMENT,
       declaration,
       `if (${condition}) {`,
       ...whenTrue,
