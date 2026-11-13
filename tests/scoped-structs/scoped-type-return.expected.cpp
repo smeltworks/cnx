@@ -24,6 +24,13 @@ static inline int32_t cnx_clamp_add_i32(int32_t a, int64_t b) {
     return (int32_t)result;
 }
 
+static inline int32_t cnx_clamp_div_i32(int32_t a, int64_t b) {
+    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
+    int64_t result = (int64_t)a / b;
+    if (result > INT32_MAX) return INT32_MAX;
+    return (int32_t)result;
+}
+
 // test-execution
 // Tests: this.Type and Scope.Type as function return types
 // Coverage: Section 13.2 this.Type as return, 13.3 Scope.Type as return/parameter
@@ -40,8 +47,8 @@ Geometry__Point Geometry__origin(void) {
 }
 
 Geometry__Point Geometry__midpoint(const Geometry__Point& a, const Geometry__Point& b) {
-    const int32_t mx = (cnx_clamp_add_i32(a.x, b.x)) / 2;
-    const int32_t my = (cnx_clamp_add_i32(a.y, b.y)) / 2;
+    const int32_t mx = cnx_clamp_div_i32((cnx_clamp_add_i32(a.x, b.x)), 2);
+    const int32_t my = cnx_clamp_div_i32((cnx_clamp_add_i32(a.y, b.y)), 2);
     const Geometry__Point m = { .x = mx, .y = my };
     return m;
 }

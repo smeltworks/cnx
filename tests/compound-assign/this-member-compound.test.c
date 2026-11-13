@@ -15,6 +15,18 @@
    the check: cnx_clamp_add_u8(0, 256) must saturate to 255, but (uint8_t)256 is 0, so a
    uint8_t parameter would return 0 -- the opposite of saturation. */
 
+static inline int32_t cnx_clamp_div_i32(int32_t a, int64_t b) {
+    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
+    int64_t result = (int64_t)a / b;
+    if (result > INT32_MAX) return INT32_MAX;
+    return (int32_t)result;
+}
+
+static inline int32_t cnx_clamp_mod_i32(int32_t a, int64_t b) {
+    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
+    return (int32_t)((int64_t)a % b);
+}
+
 static inline int32_t cnx_clamp_mul_i32(int32_t a, int64_t b) {
     int64_t result = (int64_t)a * b;
     if (result > INT32_MAX) return INT32_MAX;
@@ -73,17 +85,17 @@ int32_t Calculator__testMultiplication(void) {
 
 int32_t Calculator__testDivision(void) {
     Calculator__value = 100;
-    Calculator__value /= 5;
+    Calculator__value = cnx_clamp_div_i32(Calculator__value, 5);
     if (Calculator__value != 20) {
         return 20;
     }
     Calculator__value = 81;
-    Calculator__value /= 9;
+    Calculator__value = cnx_clamp_div_i32(Calculator__value, 9);
     if (Calculator__value != 9) {
         return 21;
     }
     Calculator__value = 50;
-    Calculator__value /= 1;
+    Calculator__value = cnx_clamp_div_i32(Calculator__value, 1);
     if (Calculator__value != 50) {
         return 22;
     }
@@ -92,17 +104,17 @@ int32_t Calculator__testDivision(void) {
 
 int32_t Calculator__testModulo(void) {
     Calculator__value = 17;
-    Calculator__value %= 5;
+    Calculator__value = cnx_clamp_mod_i32(Calculator__value, 5);
     if (Calculator__value != 2) {
         return 30;
     }
     Calculator__value = 100;
-    Calculator__value %= 7;
+    Calculator__value = cnx_clamp_mod_i32(Calculator__value, 7);
     if (Calculator__value != 2) {
         return 31;
     }
     Calculator__value = 25;
-    Calculator__value %= 25;
+    Calculator__value = cnx_clamp_mod_i32(Calculator__value, 25);
     if (Calculator__value != 0) {
         return 32;
     }

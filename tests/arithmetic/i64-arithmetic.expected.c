@@ -20,6 +20,18 @@ static inline int64_t cnx_clamp_add_i64(int64_t a, int64_t b) {
     return a + b;
 }
 
+static inline int64_t cnx_clamp_div_i64(int64_t a, int64_t b) {
+    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
+    if (b == -1 && a == INT64_MIN) return INT64_MAX;
+    return a / b;
+}
+
+static inline int64_t cnx_clamp_mod_i64(int64_t a, int64_t b) {
+    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
+    if (b == -1) return 0;
+    return a % b;
+}
+
 static inline int64_t cnx_clamp_mul_i64(int64_t a, int64_t b) {
     if (a == 0 || b == 0) return 0;
     if (a > 0 && b > 0 && a > INT64_MAX / b) return INT64_MAX;
@@ -68,19 +80,19 @@ int main(void) {
     const int64_t product_pos = cnx_clamp_mul_i64(q, r);
     const int64_t s = 6000000000;
     const int64_t t = 3;
-    const int64_t quotient = s / t;
+    const int64_t quotient = cnx_clamp_div_i64(s, t);
     const int64_t u = -6000000000;
     const int64_t v = 3;
-    const int64_t quotient_neg = u / v;
+    const int64_t quotient_neg = cnx_clamp_div_i64(u, v);
     const int64_t w = 6000000000;
     const int64_t x = -3;
-    const int64_t quotient_neg_div = w / x;
+    const int64_t quotient_neg_div = cnx_clamp_div_i64(w, x);
     const int64_t y = 1000000023;
     const int64_t z = 5000;
-    const int64_t remainder = y % z;
+    const int64_t remainder = cnx_clamp_mod_i64(y, z);
     const int64_t aa = -1000000023;
     const int64_t bb = 5000;
-    const int64_t remainder_neg = aa % bb;
+    const int64_t remainder_neg = cnx_clamp_mod_i64(aa, bb);
     const int64_t max_val = 9223372036854775807;
     const int64_t one = 1;
     const int64_t max_minus_one = cnx_clamp_sub_i64(max_val, one);

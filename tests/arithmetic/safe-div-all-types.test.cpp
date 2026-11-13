@@ -8,6 +8,46 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+// ADR-044: Overflow helper functions
+#include <limits.h>
+
+/* ADR-044 / Issue #94: the second parameter is the WIDER type, not the value type.
+   Narrowing it first would let an out-of-range operand truncate INTO range and defeat
+   the check: cnx_clamp_add_u8(0, 256) must saturate to 255, but (uint8_t)256 is 0, so a
+   uint8_t parameter would return 0 -- the opposite of saturation. */
+
+static inline int16_t cnx_clamp_div_i16(int16_t a, int32_t b) {
+    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
+    int32_t result = (int32_t)a / b;
+    if (result > INT16_MAX) return INT16_MAX;
+    return (int16_t)result;
+}
+
+static inline int32_t cnx_clamp_div_i32(int32_t a, int64_t b) {
+    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
+    int64_t result = (int64_t)a / b;
+    if (result > INT32_MAX) return INT32_MAX;
+    return (int32_t)result;
+}
+
+static inline int64_t cnx_clamp_div_i64(int64_t a, int64_t b) {
+    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
+    if (b == -1 && a == INT64_MIN) return INT64_MAX;
+    return a / b;
+}
+
+static inline int8_t cnx_clamp_div_i8(int8_t a, int32_t b) {
+    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
+    int32_t result = (int32_t)a / b;
+    if (result > INT8_MAX) return INT8_MAX;
+    return (int8_t)result;
+}
+
+static inline int32_t cnx_clamp_mod_i32(int32_t a, int64_t b) {
+    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
+    return (int32_t)((int64_t)a % b);
+}
+
 // ADR-051: Safe division helper functions
 
 static inline bool cnx_safe_div_u8(uint8_t* output, uint8_t numerator, uint8_t divisor, uint8_t defaultValue) {
@@ -78,7 +118,7 @@ static inline bool cnx_safe_div_i8(int8_t* output, int8_t numerator, int8_t divi
         *output = defaultValue;
         return true;  // Error occurred
     }
-    *output = numerator / divisor;
+    *output = cnx_clamp_div_i8(numerator, divisor);
     return false;  // Success
 }
 
@@ -87,7 +127,7 @@ static inline bool cnx_safe_div_i16(int16_t* output, int16_t numerator, int16_t 
         *output = defaultValue;
         return true;  // Error occurred
     }
-    *output = numerator / divisor;
+    *output = cnx_clamp_div_i16(numerator, divisor);
     return false;  // Success
 }
 
@@ -96,7 +136,7 @@ static inline bool cnx_safe_div_i32(int32_t* output, int32_t numerator, int32_t 
         *output = defaultValue;
         return true;  // Error occurred
     }
-    *output = numerator / divisor;
+    *output = cnx_clamp_div_i32(numerator, divisor);
     return false;  // Success
 }
 
@@ -105,7 +145,7 @@ static inline bool cnx_safe_mod_i32(int32_t* output, int32_t numerator, int32_t 
         *output = defaultValue;
         return true;  // Error occurred
     }
-    *output = numerator % divisor;
+    *output = cnx_clamp_mod_i32(numerator, divisor);
     return false;  // Success
 }
 
@@ -114,7 +154,7 @@ static inline bool cnx_safe_div_i64(int64_t* output, int64_t numerator, int64_t 
         *output = defaultValue;
         return true;  // Error occurred
     }
-    *output = numerator / divisor;
+    *output = cnx_clamp_div_i64(numerator, divisor);
     return false;  // Success
 }
 
