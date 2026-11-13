@@ -239,6 +239,33 @@ describe("CodeGenWalker", () => {
       expect(code).not.toContain("hosted libc");
     });
 
+    it("panics on a signed safe_div MIN / -1 in debug mode (#1790)", () => {
+      // #1790 owner ruling: --debug panics here as on every overflow; a zero
+      // divisor still returns the default
+      const source = `
+        i32 quotient(i32 n, i32 d) {
+          mut i32 q <- 0;
+          bool failed <- safe_div(q, n, d, 7);
+          return q;
+        }
+      `;
+      const { tree, program } = CnxSourceParser.parse(source);
+      const generator = new CodeGenWalker(new CodeGenerator());
+      const symbols = TSymbolInfoAdapter.convert(declareAndResolve(tree));
+
+      const code = generateWithProgram(generator, tree, program, {
+        cppMode: false,
+        symbolInfo: symbols,
+        sourcePath: "test.cnx",
+        debugMode: true,
+      });
+
+      expect(code).toContain(
+        "*output = cnx_clamp_div_i32(numerator, divisor);",
+      );
+      expect(code).toContain("PANIC: Integer overflow in i32 division");
+    });
+
     it("should generate C++ output when cppMode is enabled", () => {
       const source = `
         void foo() { }
