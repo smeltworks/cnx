@@ -1055,11 +1055,30 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | n/a         | n/a        |
 | for header         | -         | -      | -          | n/a         | n/a        |
 
-3 linked fixtures with no derivable context:
+12 linked fixtures with no derivable context:
 
 - `adr-035/empty-dimension-included.test.cnx`
 - `adr-035/inferred-size-render.test.cnx`
+- `bugs/issue-1209-string-array-return/array-copy.test.cnx`
+- `bugs/issue-1209-string-array-return/array-return.test.cnx`
+- `bugs/issue-1209-string-array-return/callback-return.test.cnx`
+- `bugs/issue-1209-string-array-return/cross-file.test.cnx`
+- `bugs/issue-1209-string-array-return/grid-return.test.cnx`
+- `bugs/issue-1209-string-array-return/lazy-buffer-call.test.cnx`
+- `bugs/issue-1209-string-array-return/macro-size-return.test.cnx`
+- `bugs/issue-1209-string-array-return/return-alias.test.cnx`
+- `bugs/issue-1209-string-array-return/whole-value-ternary.test.cnx`
 - `bugs/issue-2110-nested-fill-all/nested-fill.test.cnx`
+
+## ADR-035 E0862
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | n/a         | n/a        |
+| top-level function | -         | -      | ok         | n/a         | n/a        |
+| scope member       | -         | -      | -          | n/a         | n/a        |
+| scope method       | -         | -      | -          | n/a         | n/a        |
+| for header         | -         | -      | -          | n/a         | n/a        |
 
 ## ADR-035 E0866
 
@@ -1254,8 +1273,11 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | n/a         | n/a        |
 | for header         | -         | -      | -          | n/a         | n/a        |
 
-3 linked fixtures with no derivable context:
+6 linked fixtures with no derivable context:
 
+- `bugs/issue-1209-string-array-return/callback-return.test.cnx`
+- `bugs/issue-1209-string-array-return/cross-file.test.cnx`
+- `bugs/issue-1209-string-array-return/lazy-buffer-call.test.cnx`
 - `bugs/issue-1373-string-comparison-chain/c-string-control.test.cnx`
 - `bugs/issue-1373-string-comparison-chain/chain-control.test.cnx`
 - `bugs/issue-2017-integer-string-comparison/string-literal-control.test.cnx`
@@ -1329,6 +1351,16 @@ cell is declared by the ADR that owns it.
 | scope member       | ok        | ok     | ok         | n/a         | n/a        |
 | scope method       | ok        | ok     | ok         | n/a         | n/a        |
 | for header         | ok        | ok     | ok         | n/a         | n/a        |
+
+## ADR-045 E0892
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | n/a         | n/a        |
+| top-level function | -         | -      | ok         | n/a         | n/a        |
+| scope member       | -         | -      | -          | n/a         | n/a        |
+| scope method       | -         | -      | -          | n/a         | n/a        |
+| for header         | -         | -      | -          | n/a         | n/a        |
 
 ## ADR-045 E0929
 

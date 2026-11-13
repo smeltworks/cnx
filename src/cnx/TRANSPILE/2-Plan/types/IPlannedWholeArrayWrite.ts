@@ -10,6 +10,8 @@ interface IPlannedWholeArrayWrite {
   readonly fromList: boolean;
   /** #1209: another array, copied straight from, with no temporary */
   readonly fromArray: boolean;
+  /** #1209: an operator's result, parenthesized before it is subscripted */
+  readonly groupedSource: boolean;
   /** The target is `volatile` (or `atomic`, which C writes `volatile`) */
   readonly volatileTarget: boolean;
 }

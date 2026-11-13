@@ -80,7 +80,9 @@ describe("2.2 plans the operands built only when they run (#2332)", () => {
       ].join("\n"),
     );
 
-    expect([...planned.lazyTernaries.values()]).toEqual(["float"]);
+    expect([...planned.lazyTernaries.values()]).toEqual([
+      { kind: "value", cType: "float" },
+    ]);
   });
 
   it("types a ternary of a u32 and a literal by its typed arm", () => {
@@ -89,7 +91,9 @@ describe("2.2 plans the operands built only when they run (#2332)", () => {
       "  bool b <- (a = 1) && (((c = 1) ? w({ s: t, n: 1 }) : 0) = 1);",
     ]);
 
-    expect([...planned.lazyTernaries.values()]).toEqual(["uint32_t"]);
+    expect([...planned.lazyTernaries.values()]).toEqual([
+      { kind: "value", cType: "uint32_t" },
+    ]);
   });
 
   it("plans a ternary's value as its own C type", () => {
@@ -97,6 +101,8 @@ describe("2.2 plans the operands built only when they run (#2332)", () => {
       "  Named p <- (a = 1) ? { s: t, n: 1 } : { s: t, n: 2 };",
     ]);
 
-    expect([...planned.lazyTernaries.values()]).toEqual(["Named"]);
+    expect([...planned.lazyTernaries.values()]).toEqual([
+      { kind: "value", cType: "Named" },
+    ]);
   });
 });

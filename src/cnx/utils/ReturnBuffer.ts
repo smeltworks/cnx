@@ -75,8 +75,11 @@ class ReturnBuffer {
     };
   }
 
-  /** A caller's temporary for a call returning `type`, or null */
-  static temporaryFor(type: TType, name: string): string | null {
+  /**
+   * A caller's temporary for a call returning `type`, or null. `zero` is the
+   * file's aggregate zero: C++ cannot write an enum element `{0}`
+   */
+  static temporaryFor(type: TType, name: string, zero: string): string | null {
     const dimensions = ReturnBuffer.dimensionsOf(type);
     return dimensions === null
       ? null
@@ -84,6 +87,7 @@ class ReturnBuffer {
           ReturnBuffer.elementCType(type),
           name,
           dimensions,
+          zero,
         );
   }
 
@@ -92,8 +96,9 @@ class ReturnBuffer {
     cElementType: string,
     name: string,
     dimensions: string,
+    zero: string,
   ): string {
-    return `${cElementType} ${name}${dimensions} = {0};`;
+    return `${cElementType} ${name}${dimensions} = ${zero};`;
   }
 
   /** The buffer parameter, written with the element's C type */

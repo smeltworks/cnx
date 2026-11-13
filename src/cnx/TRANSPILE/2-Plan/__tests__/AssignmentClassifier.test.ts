@@ -556,6 +556,7 @@ describe("AssignmentClassifier - Array Access", () => {
         dimensions: [4],
         fromList: true,
         fromArray: false,
+        groupedSource: false,
         volatileTarget: false,
       },
     });

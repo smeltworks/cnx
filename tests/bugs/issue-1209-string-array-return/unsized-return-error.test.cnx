@@ -1,4 +1,5 @@
 // test-error
+// test-adr: 035
 // Issue #1209: an array return has no list to count its size from, so its
 // type states every dimension (ADR-035).
 

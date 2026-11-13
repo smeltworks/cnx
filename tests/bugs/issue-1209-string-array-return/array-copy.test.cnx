@@ -1,4 +1,5 @@
 // test-execution
+// test-adr: 035
 // Issue #1209 (ADR-035 clarification, 2026-11-13): an array is a value. Inside
 // a function, another array of the same element type and shape -- a variable,
 // a field, a call -- initializes or is assigned to an array, and is copied

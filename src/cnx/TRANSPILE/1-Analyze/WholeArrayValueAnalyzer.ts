@@ -221,8 +221,9 @@ class WholeArrayValueAnalyzer {
 
   /**
    * #2194: the callee reads an array argument with the parameter's shape, so
-   * the two agree wherever both sizes fold. #1209: so does an array copied
-   * into a declaration or an assignment's target.
+   * the two agree wherever both sizes fold. #1209: an array copied into a
+   * declaration, an assignment's target or a return type has its shape --
+   * the same size, or the same size that does not fold.
    */
   private shapeMismatch(
     value: TExpression,
@@ -232,13 +233,15 @@ class WholeArrayValueAnalyzer {
   ): IArrayDeclarationError[] {
     const given = OperandTyper.typeOf(value, this.context)?.dimensions;
     if (given === undefined) return [];
+    // A callee only reads its parameter, so a size that does not fold may
+    // agree (#2194); a copy writes, so its sizes are the same (#1209)
     const agree =
       given.length === taken.length &&
       given.every(
         (size, i) =>
-          typeof size !== "number" ||
-          typeof taken[i] !== "number" ||
-          size === taken[i],
+          size === taken[i] ||
+          (noun === "parameter" &&
+            (typeof size !== "number" || typeof taken[i] !== "number")),
       );
     if (agree) return this.elementMismatch(value, at, noun);
     const shape = (sizes: ReadonlyArray<number | string>) =>

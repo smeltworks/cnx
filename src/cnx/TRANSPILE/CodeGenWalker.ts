@@ -201,6 +201,7 @@ const { processPreprocessorDirective: includeProcessPreprocessorDirective } =
   includeGenerators;
 import CodeGenerator from "./3-Render/codegen/CodeGenerator";
 import FilePlanner from "./2-Plan/FilePlanner";
+import type TPlannedLazyTernary from "./2-Plan/types/TPlannedLazyTernary";
 import ParameterPassing from "./2-Plan/ParameterPassing";
 /** What render folds a constant chain at: wide enough to hold any i64 */
 const WIDEST_SIGNED = "i64";
@@ -438,8 +439,8 @@ class CodeGenWalker {
     if (expr.kind !== "ternary") {
       return { kind: "value", code: this.renderBinary(expr) };
     }
-    const cType = this.filePlan.lazyTernaries.get(expr);
-    if (cType === undefined) {
+    const planned = this.filePlan.lazyTernaries.get(expr);
+    if (planned === undefined) {
       return {
         kind: "ternary",
         renderCondition: () => this.renderBinary(expr.condition),
@@ -449,6 +450,9 @@ class CodeGenWalker {
     }
     this.rendering.lazyTernaries.add(expr);
     const condition = this.renderBinary(expr.condition);
+    if (planned.kind === "buffer") {
+      return this.renderBufferTernary(expr, planned, condition);
+    }
     const whenTrue = this.renderQueuing(() => this.renderBinary(expr.whenTrue));
     const whenFalse = this.renderQueuing(() =>
       this.renderBinary(expr.whenFalse),
@@ -465,7 +469,7 @@ class CodeGenWalker {
     ];
     this.host.state.pendingTempDeclarations.push(
       ComplianceAnnotations.render(ComplianceAnnotations.TERNARY_ARM),
-      `${cType} ${temp};`,
+      `${planned.cType} ${temp};`,
       `if (${condition}) {`,
       ...arm(whenTrue),
       "} else {",
@@ -473,6 +477,77 @@ class CodeGenWalker {
       "}",
     );
     return { kind: "value", code: temp };
+  }
+
+  /**
+   * #1209: a ternary holding a `string<N>` or an array fills one buffer
+   * declared before its `if`: an arm's call fills it in place, any other arm
+   * is copied in, and the buffer outlives whichever branch ran.
+   */
+  private renderBufferTernary(
+    expr: TExpressionOf<"ternary">,
+    planned: Extract<TPlannedLazyTernary, { kind: "buffer" }>,
+    condition: string,
+  ): TPlannedTernary {
+    const state = this.host.state;
+    const temp = state.getNextTempVarName();
+    const declaration = ReturnBuffer.temporaryFor(
+      planned.type,
+      temp,
+      this.host.getAggregateZeroInitBrace(),
+    );
+    invariant(declaration !== null, "a buffer ternary has a buffer");
+    const indent = FormatUtils.indent(1);
+    const fill = (arm: TExpression): string[] => {
+      const call = ExpressionShape.postfixView(arm)?.ops.at(-1);
+      const inPlace =
+        call !== undefined && FilePlanner.fillsInPlace(arm, planned.calls);
+      if (inPlace) this.callTargets.set(call, temp);
+      try {
+        const rendered = this.renderQueuing(() => this.renderBinary(arm));
+        const written = inPlace
+          ? [`${rendered.code};`]
+          : this.copyIntoBuffer(temp, planned.type, arm, rendered.code);
+        return [...rendered.queued, ...written].map((line) => indent + line);
+      } finally {
+        if (inPlace) this.callTargets.delete(call);
+      }
+    };
+    const whenTrue = fill(expr.whenTrue);
+    const whenFalse = fill(expr.whenFalse);
+    state.pendingTempDeclarations.push(
+      ComplianceAnnotations.render(ComplianceAnnotations.TERNARY_ARM),
+      declaration,
+      `if (${condition}) {`,
+      ...whenTrue,
+      "} else {",
+      ...whenFalse,
+      "}",
+    );
+    return { kind: "value", code: temp };
+  }
+
+  /** #1209: a buffer ternary's arm other than a call, copied into its buffer */
+  private copyIntoBuffer(
+    buffer: string,
+    type: TType,
+    arm: TExpression,
+    code: string,
+  ): string[] {
+    if (type.kind === "string") {
+      return [StringUtils.copy(buffer, code, type.capacity)];
+    }
+    invariant(type.kind === "array", "a buffer holds a string or an array");
+    const element = type.elementType;
+    return ArrayInitHelper.elementCopy(
+      buffer,
+      { text: code, grouped: ExpressionShape.isOperatorResult(arm) },
+      CArrayDimensions.of(
+        type.dimensions,
+        element.kind === "string" ? element.capacity : null,
+      ),
+      this.host.state,
+    );
   }
 
   /**
@@ -752,7 +827,11 @@ class CodeGenWalker {
     const returnType = this.filePlan.bufferCalls.get(op);
     if (returnType === undefined) return null;
     return (name) => {
-      const temporary = ReturnBuffer.temporaryFor(returnType, name);
+      const temporary = ReturnBuffer.temporaryFor(
+        returnType,
+        name,
+        this.host.getAggregateZeroInitBrace(),
+      );
       invariant(temporary !== null, "a buffer return has a buffer");
       return temporary;
     };
@@ -2967,8 +3046,12 @@ class CodeGenWalker {
     );
     return {
       dimensions: CArrayDimensions.of(value.dimensions, value.stringCapacity),
-      renderSource: () => this.renderExpression(initializer),
+      renderSource: () => ({
+        text: this.renderExpression(initializer),
+        grouped: ExpressionShape.isOperatorResult(initializer),
+      }),
       renderInto: this.renderInPlace(initializer),
+      zero: this.host.getAggregateZeroInitBrace(),
     };
   }
 
@@ -3703,18 +3786,16 @@ class CodeGenWalker {
     if (!value) {
       return { kind: "void" };
     }
-    if (this.filePlan.stringReturns.has(value)) {
+    const capacity = this.filePlan.stringReturns.get(value);
+    if (capacity !== undefined) {
       const form = this.filePlan.stringValueForms.get(value);
-      const fnName = this.host.state.currentFunctionName;
-      const returnType = fnName === null ? null : this.returnTypeOf(fnName);
       invariant(
-        form !== undefined && returnType?.kind === "string",
+        form !== undefined,
         "2.2 planned the form of every string a function returns",
       );
       return {
         kind: "buffer",
-        renderWrite: () =>
-          this.renderFill(ReturnBuffer.NAME, returnType.capacity, form),
+        renderWrite: () => this.renderFill(ReturnBuffer.NAME, capacity, form),
       };
     }
     const array = this.filePlan.arrayReturns.get(value);
@@ -3744,7 +3825,7 @@ class CodeGenWalker {
     if (array.fromArray) {
       return ArrayInitHelper.elementCopy(
         ReturnBuffer.NAME,
-        rendered,
+        { text: rendered, grouped: array.groupedSource },
         array.dimensions,
         state,
       );
@@ -3754,7 +3835,7 @@ class CodeGenWalker {
       temp.declaration,
       ...ArrayInitHelper.elementCopy(
         ReturnBuffer.NAME,
-        temp.name,
+        { text: temp.name, grouped: false },
         array.dimensions,
         state,
       ),

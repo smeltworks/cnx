@@ -43,7 +43,9 @@ function handleWholeArray(ctx: IAssignmentContext): string {
   lines.push(
     ...ArrayInitHelper.elementCopy(
       target,
-      temp === null ? ctx.generatedValue : temp.name,
+      temp === null
+        ? { text: ctx.generatedValue, grouped: plan.groupedSource }
+        : { text: temp.name, grouped: false },
       plan.dimensions,
       state,
     ),

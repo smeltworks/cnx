@@ -26,6 +26,7 @@ static inline void cnx_string_copy(char* target, const char* source, uint32_t ca
 }
 
 // test-execution
+// test-adr: 045
 // Issue #1209: a function returning string<N> fills a buffer the caller
 // supplies, so a returned local is memory safe and every call site gets the
 // whole value: in place, through a temporary, in a concatenation, as an

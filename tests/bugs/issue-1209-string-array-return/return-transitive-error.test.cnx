@@ -1,0 +1,23 @@
+// test-error
+// test-adr: 035
+// Issue #1209: E0866 at an array return and an array declaration copy, on an
+// array declared in a file the included file includes.
+#include "return-chain.cnx"
+
+// NEGATIVE CONTROL -- a return of the same shape.
+u8[3] kept() {
+    return source;
+}
+
+// ASSERTION 1 -- a return copy of another shape.
+u8[2] narrowed() {
+    return source;
+}
+
+u32 main() {
+    // NEGATIVE CONTROL -- a declaration copy of the same shape.
+    u8[3] same <- source;
+    // ASSERTION 2 -- a declaration copy of another shape.
+    u8[2] cut <- source;
+    return 0;
+}

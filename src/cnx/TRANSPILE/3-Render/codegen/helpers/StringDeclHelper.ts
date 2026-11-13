@@ -107,7 +107,7 @@ class StringDeclHelper {
     const shape = `${plan.dimensions}[${plan.elementCapacity + 1}]`;
     // #1209: one copied into is written after it is declared
     if (plan.copy) {
-      const declared = `${extern}${atomic}${volatileMod}char ${name}${shape} = {0};`;
+      const declared = `${extern}${atomic}${volatileMod}char ${name}${shape} = ${plan.copy.zero};`;
       if (plan.copy.renderInto) {
         return [declared, `${plan.copy.renderInto(name)};`].join("\n");
       }

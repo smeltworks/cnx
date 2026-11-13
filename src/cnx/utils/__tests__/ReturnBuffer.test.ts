@@ -23,7 +23,7 @@ describe("ReturnBuffer (#1209)", () => {
   it("returns a scalar by value", () => {
     expect(ReturnBuffer.dimensionsOf(u8)).toBeNull();
     expect(ReturnBuffer.parameterFor(u8)).toBeNull();
-    expect(ReturnBuffer.temporaryFor(u8, "cnx_tmp0")).toBeNull();
+    expect(ReturnBuffer.temporaryFor(u8, "cnx_tmp0", "{0}")).toBeNull();
   });
 
   it.each([
@@ -35,12 +35,13 @@ describe("ReturnBuffer (#1209)", () => {
   });
 
   it.each([
-    [label, "char cnx_tmp0[17] = {0};"],
-    [bytes, "uint8_t cnx_tmp0[4] = {0};"],
+    [label, "{0}", "char cnx_tmp0[17] = {0};"],
+    [bytes, "{0}", "uint8_t cnx_tmp0[4] = {0};"],
+    [bytes, "{}", "uint8_t cnx_tmp0[4] = {};"],
   ])(
-    "gives a call a zero-filled temporary of the buffer's shape",
-    (type, written) => {
-      expect(ReturnBuffer.temporaryFor(type, "cnx_tmp0")).toBe(written);
+    "gives a call a temporary of the buffer's shape, zeroed as the file's language writes it",
+    (type, zero, written) => {
+      expect(ReturnBuffer.temporaryFor(type, "cnx_tmp0", zero)).toBe(written);
     },
   );
 });

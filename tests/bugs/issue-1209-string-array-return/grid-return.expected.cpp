@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 
+// test-adr: 035
 // Issue #1209: a two-dimensional return fills a `uint8_t[2][3]` buffer. The
 // header declares nothing else, so it includes <stdint.h> for the buffer's
 // element type alone -- the whole `u8[2][3]` named no external type.
@@ -23,13 +24,13 @@ void grid(uint8_t cnx_return[2][3]) {
 }
 
 int main(void) {
-    uint8_t g[2][3] = {0};
+    uint8_t g[2][3] = {};
     grid(g);
     if (g[1U][2U] != 6) {
         return 1U;
     }
     /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-    uint8_t cnx_tmp2[2][3] = {0};
+    uint8_t cnx_tmp2[2][3] = {};
     grid(cnx_tmp2);
     const uint8_t second = cnx_tmp2[0U][1U];
     if (second != 2) {

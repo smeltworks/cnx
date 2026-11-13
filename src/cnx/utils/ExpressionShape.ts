@@ -29,6 +29,14 @@ class ExpressionShape {
     }
   }
 
+  /**
+   * #1209: an operator's result -- a ternary's, say -- which C binds a
+   * subscript into unless it is parenthesized first
+   */
+  static isOperatorResult(expr: TExpression): boolean {
+    return ExpressionShape.postfixView(expr) === null;
+  }
+
   /** The identifier a postfix chain starts from, or null */
   static rootName(expr: TExpression): string | null {
     const view = ExpressionShape.postfixView(expr);

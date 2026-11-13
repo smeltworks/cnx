@@ -1,4 +1,5 @@
 // test-execution
+// test-adr: 035, 045
 // Issue #1209: a string and an array returned across an include, and from a
 // scope's methods, fill the caller's buffer.
 #include "shared-returns.cnx"

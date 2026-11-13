@@ -4,6 +4,7 @@
  */
 
 // test-execution
+// test-adr: 035, 045
 // Issue #1209: a string and an array returned across an include, and from a
 // scope's methods, fill the caller's buffer.
 #include "shared-returns.hpp"
@@ -33,7 +34,7 @@ int main(void) {
     if (strcmp(n, "shared") != 0) {
         return 1U;
     }
-    uint8_t b[4] = {0};
+    uint8_t b[4] = {};
     sharedBytes(b);
     if (b[0U] != 4) {
         return 2U;
@@ -43,23 +44,23 @@ int main(void) {
     if (strcmp(s, "store") != 0) {
         return 3U;
     }
-    uint8_t d[4] = {0};
+    uint8_t d[4] = {};
     Store__data(d);
     if (d[3U] != 6) {
         return 4U;
     }
     /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-    uint8_t cnx_tmp0[4] = {0};
+    uint8_t cnx_tmp0[4] = {};
     Store__data(cnx_tmp0);
     const uint8_t second = cnx_tmp0[1U];
     if (second != 8) {
         return 5U;
     }
     /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-    char cnx_tmp1[17] = {0};
+    char cnx_tmp1[17] = {};
     sharedName(cnx_tmp1);
     /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-    char cnx_tmp2[17] = {0};
+    char cnx_tmp2[17] = {};
     Store__name(cnx_tmp2);
     char joined[33] = "";
     cnx_string_copy(joined, cnx_tmp1, 32U);

@@ -109,6 +109,7 @@ import type TExpressionOf from "../../types/syntax/TExpressionOf";
 import ExpressionChildren from "../../utils/ExpressionChildren";
 import type TStructInitializerForm from "./types/TStructInitializerForm";
 import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
+import type TPlannedLazyTernary from "./types/TPlannedLazyTernary";
 import type TTypeSyntax from "../../types/syntax/TTypeSyntax";
 import type ISourcePosition from "../../utils/types/ISourcePosition";
 import TypeGenerationHelper from "./TypeGenerationHelper";
@@ -657,7 +658,12 @@ class FilePlanner {
     cTypes: Set<string>,
   ): {
     readonly operands: ReadonlySet<TExpression>;
-    readonly ternaries: ReadonlyMap<TExpressionOf<"ternary">, string>;
+    readonly ternaries: ReadonlyMap<
+      TExpressionOf<"ternary">,
+      TPlannedLazyTernary
+    >;
+    /** A string ternary's arm other than a call is copied into its buffer */
+    readonly copiesString: boolean;
   } {
     const buildsApart = (expr: TExpression): boolean =>
       ExpressionNodes.direct(expr).some(
@@ -673,7 +679,8 @@ class FilePlanner {
       ),
     );
     const operands = new Set<TExpression>();
-    const ternaries = new Map<TExpressionOf<"ternary">, string>();
+    const ternaries = new Map<TExpressionOf<"ternary">, TPlannedLazyTernary>();
+    let copiesString = false;
     for (const expr of FilePlanner.writtenExpressions(program, unwritten)) {
       if (retested.has(expr)) continue;
       if (
@@ -688,16 +695,67 @@ class FilePlanner {
         expr.kind === "ternary" &&
         (buildsApart(expr.whenTrue) || buildsApart(expr.whenFalse))
       ) {
+        const buffer = this.bufferTernary(expr, bufferCalls);
+        if (buffer !== null) {
+          ternaries.set(expr, buffer);
+          copiesString ||=
+            buffer.type.kind === "string" &&
+            [expr.whenTrue, expr.whenFalse].some(
+              (arm) => !FilePlanner.fillsInPlace(arm, buffer.calls),
+            );
+          continue;
+        }
         const cType = TypeGenerationHelper.generateByName(
           this.lazyTernaryType(expr, expectedTypes),
           this.typeGenerationDeps(),
         );
         cTypes.add(cType);
-        ternaries.set(expr, cType);
+        ternaries.set(expr, { kind: "value", cType });
       }
     }
     if (operands.size > 0) cTypes.add("bool");
-    return { operands, ternaries };
+    if (copiesString) cTypes.add("uint32_t");
+    return { operands, ternaries, copiesString };
+  }
+
+  /**
+   * #1209: a ternary whose arm is a whole call filling a buffer holds a
+   * `string<N>` or an array: one buffer, wide enough for either arm
+   */
+  private bufferTernary(
+    expr: TExpressionOf<"ternary">,
+    bufferCalls: ReadonlyMap<TPostfixOpSyntax, TType>,
+  ): Extract<TPlannedLazyTernary, { kind: "buffer" }> | null {
+    const arms = [expr.whenTrue, expr.whenFalse];
+    const calls = new Set<TPostfixOpSyntax>();
+    let type: TType | null = null;
+    for (const arm of arms) {
+      const call = ExpressionShape.postfixView(arm)?.ops.at(-1);
+      const returned = call === undefined ? undefined : bufferCalls.get(call);
+      if (call === undefined || returned === undefined) continue;
+      calls.add(call);
+      type ??= returned;
+    }
+    if (type === null) return null;
+    if (type.kind === "string") {
+      const typing = this.state.typingContext();
+      const capacity = Math.max(
+        ...arms.map(
+          (arm) => OperandTyper.typeOf(arm, typing)?.stringCapacity ?? 0,
+        ),
+      );
+      type = { ...type, capacity: Math.max(type.capacity, capacity) };
+    }
+    return { kind: "buffer", type, calls };
+  }
+
+  /** #1209: the arm is one of a buffer ternary's calls, filling it in place */
+  static fillsInPlace(
+    arm: TExpression,
+    calls: ReadonlySet<TPostfixOpSyntax>,
+  ): boolean {
+    const call = ExpressionShape.postfixView(arm)?.ops.at(-1);
+    return call !== undefined && calls.has(call);
   }
 
   /**
@@ -766,6 +824,10 @@ class FilePlanner {
     const calls = new Set<TPostfixOpSyntax>();
     for (const [value, site] of valuePositions.sites) {
       if (site.site.kind !== "declaration" || site.outer !== null) continue;
+      // A volatile or atomic declaration is not a buffer parameter's type,
+      // so it is filled through a temporary and copied into
+      const { modifiers } = site.site.declaration;
+      if (modifiers.volatile || modifiers.atomic) continue;
       const last = ExpressionShape.postfixView(value)?.ops.at(-1);
       const returnType = last === undefined ? undefined : bufferCalls.get(last);
       if (last === undefined || returnType === undefined) continue;
@@ -1402,7 +1464,7 @@ class FilePlanner {
       stringValueForms: stringCopies.forms,
       substringCounts: this.planSubstringCounts(stringCopies.forms),
       stringFields: stringCopies.fields,
-      stringCopyHelper: stringCopies.helper,
+      stringCopyHelper: stringCopies.helper || lazy.copiesString,
       wholeArrayWrites,
       fillSizes,
       expectedTypes,
@@ -2332,7 +2394,7 @@ class FilePlanner {
     readonly forms: ReadonlyMap<TExpression, TStringValueForm>;
     readonly arguments: ReadonlyMap<TExpression, number>;
     readonly fields: ReadonlyMap<TExpression, number>;
-    readonly returns: ReadonlySet<TExpression>;
+    readonly returns: ReadonlyMap<TExpression, number>;
     readonly helper: boolean;
   } {
     const copies = new Map<IAssignmentSyntax, number>();
@@ -2487,19 +2549,22 @@ class FilePlanner {
   /**
    * #1209: each value a `string<N>` function returns, which is written into
    * the caller's buffer as a declaration's initializer is -- copied whole or
-   * built from its parts, by `cnx_string_copy` even when it is a literal.
+   * built from its parts, by `cnx_string_copy` even when it is a literal --
+   * at the capacity 2.1's E0864 checked it against.
    */
   private static planStringReturns(
     valuePositions: IValuePositions | null,
     typing: ITypingContext,
     forms: Map<TExpression, TStringValueForm>,
-  ): ReadonlySet<TExpression> {
-    const returned = new Set<TExpression>();
-    for (const [value, at] of valuePositions?.sites ?? []) {
-      if (at.site.kind !== "return") continue;
-      if (at.site.function.returnType.kind !== "string") continue;
+  ): ReadonlyMap<TExpression, number> {
+    const returned = new Map<TExpression, number>();
+    if (valuePositions === null) return returned;
+    for (const { value, write, capacity } of StringWriteSites.of(
+      valuePositions,
+    )) {
+      if (write !== "return") continue;
       forms.set(value, StringValueForm.of(value, typing));
-      returned.add(value);
+      returned.set(value, capacity);
     }
     return returned;
   }
@@ -2517,13 +2582,11 @@ class FilePlanner {
       if (at.site.kind !== "return" || at.outer !== null) continue;
       const returned = at.site.function.returnType;
       if (returned.kind !== "array") continue;
+      // A size that does not fold, a C macro, stays as written, as a
+      // variable's does
       const dimensions = returned.dimensions.map((size) => {
-        const folded = size === null ? undefined : this.constantOf(size);
-        invariant(
-          folded !== undefined,
-          "1.2 sized every returned dimension (E0892), and each folds",
-        );
-        return folded;
+        invariant(size !== null, "1.2 sized every returned dimension (E0892)");
+        return this.constantOf(size) ?? size.written;
       });
       planned.set(
         value,
@@ -2706,6 +2769,7 @@ class FilePlanner {
         dimensions: CArrayDimensions.of(dimensions, capacity),
         fromList: value.kind === "arrayInitializer",
         fromArray: ExpressionShape.isArrayValue(value),
+        groupedSource: ExpressionShape.isOperatorResult(value),
         volatileTarget,
       };
     }
@@ -2714,6 +2778,7 @@ class FilePlanner {
       dimensions,
       fromList: value.kind === "arrayInitializer",
       fromArray: ExpressionShape.isArrayValue(value),
+      groupedSource: ExpressionShape.isOperatorResult(value),
       volatileTarget,
     };
   }

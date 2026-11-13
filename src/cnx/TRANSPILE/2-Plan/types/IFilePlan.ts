@@ -23,6 +23,7 @@ import type IPlannedWholeArrayWrite from "./IPlannedWholeArrayWrite";
 import type IPlannedExpectedType from "./IPlannedExpectedType";
 import type IPlannedStaticValue from "./IPlannedStaticValue";
 import type TType from "../../../types/TType";
+import type TPlannedLazyTernary from "./TPlannedLazyTernary";
 import type IPlannedType from "./IPlannedType";
 import type TNegativeMinimum from "./TNegativeMinimum";
 import type TStructInitializerForm from "./TStructInitializerForm";
@@ -187,7 +188,7 @@ interface IFilePlan {
    */
   readonly inPlaceCalls: ReadonlySet<TPostfixOpSyntax>;
   /** #1209: each value a `string<N>` function returns into its caller's buffer */
-  readonly stringReturns: ReadonlySet<TExpression>;
+  readonly stringReturns: ReadonlyMap<TExpression, number>;
   /** #1209: each value an array function returns, and its copy into the caller's buffer */
   readonly arrayReturns: ReadonlyMap<TExpression, IPlannedWholeArrayWrite>;
   /**
@@ -196,8 +197,11 @@ interface IFilePlan {
    * (#1209) -- so it is built only when the operand runs
    */
   readonly lazyOperands: ReadonlySet<TExpression>;
-  /** #2332: the same for `?:`, by the C type of the value each branch sets */
-  readonly lazyTernaries: ReadonlyMap<TExpressionOf<"ternary">, string>;
+  /** #2332: the same for `?:`, by what each branch sets (#1209: or fills) */
+  readonly lazyTernaries: ReadonlyMap<
+    TExpressionOf<"ternary">,
+    TPlannedLazyTernary
+  >;
 
   /** What the file's text costs: its system includes, helpers and requirements */
   readonly emission: IEmissionPlan;

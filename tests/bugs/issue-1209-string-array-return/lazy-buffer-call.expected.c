@@ -40,6 +40,7 @@ static inline void cnx_string_copy(char* target, const char* source, uint32_t ca
 
 // test-execution
 // test-no-warnings
+// test-adr: 035, 045
 // Tests: #1209 - a call filling a buffer runs only when the `?:` arm or the
 // `&&`/`||` operand holding it runs (#2332), for an array and a string return
 uint32_t calls = 0;

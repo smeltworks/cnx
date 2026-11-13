@@ -40,6 +40,7 @@ static inline void cnx_string_copy(char* target, const char* source, uint32_t ca
 
 // test-execution
 // test-no-warnings
+// test-adr: 035, 045
 // Tests: #1209 - a call filling a buffer runs only when the `?:` arm or the
 // `&&`/`||` operand holding it runs (#2332), for an array and a string return
 uint32_t calls = 0;
@@ -69,7 +70,7 @@ int main(void) {
     uint8_t cnx_tmp3;
     if (z == 1) {
         /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-        uint8_t cnx_tmp2[4] = {0};
+        uint8_t cnx_tmp2[4] = {};
         make(cnx_tmp2);
         cnx_tmp3 = cnx_tmp2[1U];
     } else {
@@ -80,7 +81,7 @@ int main(void) {
     bool cnx_tmp5 = (z == 1);
     if (cnx_tmp5) {
         /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-        uint8_t cnx_tmp4[4] = {0};
+        uint8_t cnx_tmp4[4] = {};
         make(cnx_tmp4);
         cnx_tmp5 = (cnx_tmp4[0U] == 1);
     }
@@ -89,7 +90,7 @@ int main(void) {
     bool cnx_tmp7 = (z == 0);
     if (!cnx_tmp7) {
         /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-        uint8_t cnx_tmp6[4] = {0};
+        uint8_t cnx_tmp6[4] = {};
         make(cnx_tmp6);
         cnx_tmp7 = (cnx_tmp6[0U] == 1);
     }
@@ -98,7 +99,7 @@ int main(void) {
     uint32_t cnx_tmp9;
     if (z == 1) {
         /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-        char cnx_tmp8[9] = {0};
+        char cnx_tmp8[9] = {};
         name(cnx_tmp8);
         cnx_tmp9 = (uint32_t) strlen(cnx_tmp8);
     } else {
@@ -124,7 +125,7 @@ int main(void) {
     uint8_t cnx_tmp11;
     if (z == 0) {
         /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-        uint8_t cnx_tmp10[4] = {0};
+        uint8_t cnx_tmp10[4] = {};
         make(cnx_tmp10);
         cnx_tmp11 = cnx_tmp10[1U];
     } else {
@@ -135,7 +136,7 @@ int main(void) {
     bool cnx_tmp13 = (z == 0);
     if (cnx_tmp13) {
         /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-        uint8_t cnx_tmp12[4] = {0};
+        uint8_t cnx_tmp12[4] = {};
         make(cnx_tmp12);
         cnx_tmp13 = (cnx_tmp12[0U] == 1);
     }
@@ -144,7 +145,7 @@ int main(void) {
     bool cnx_tmp15 = (z == 1);
     if (!cnx_tmp15) {
         /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-        uint8_t cnx_tmp14[4] = {0};
+        uint8_t cnx_tmp14[4] = {};
         make(cnx_tmp14);
         cnx_tmp15 = (cnx_tmp14[3U] == 4);
     }
@@ -153,7 +154,7 @@ int main(void) {
     uint32_t cnx_tmp17;
     if (z == 0) {
         /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-        char cnx_tmp16[9] = {0};
+        char cnx_tmp16[9] = {};
         name(cnx_tmp16);
         cnx_tmp17 = (uint32_t) strlen(cnx_tmp16);
     } else {

@@ -1,4 +1,5 @@
 // test-error
+// test-adr: 035
 // Issue #1209: a return is copied into the caller's buffer, so the value must
 // have the return type's shape, element type and list count (ADR-035).
 

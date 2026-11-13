@@ -613,6 +613,15 @@ caller passes the buffer. This had emitted `char[17] greet(void);`, which is
 not C. ADR-035 gives an array return the same lowering. Fixtures:
 `tests/bugs/issue-1209-string-array-return/`.
 
+A `volatile` or `atomic` declaration is not filled in place either: the
+buffer parameter is not volatile, so the call fills a temporary that is copied
+in. A ternary whose arm is such a call fills one buffer declared before its
+`if`, wide enough for either arm: the chosen arm's call fills it in place, and
+an arm that is not a call is copied in, so the value outlives the branch that
+set it and only the chosen arm's function runs. A return type states its
+capacity, since a return has no literal to infer one from: `string greet()` is
+E0862.
+
 ### A `for` Header (ADR-036)
 
 A `for` header declares one scalar loop variable, and a string is a `char`

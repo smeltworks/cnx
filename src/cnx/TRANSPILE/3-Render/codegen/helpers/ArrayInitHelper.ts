@@ -217,10 +217,11 @@ class ArrayInitHelper {
    */
   static elementCopy(
     target: string,
-    source: string,
+    source: { readonly text: string; readonly grouped: boolean },
     dimensions: ReadonlyArray<number | string>,
     state: TranspileState,
   ): string[] {
+    const read = source.grouped ? `(${source.text})` : source.text;
     const lines: string[] = [];
     const indexes = dimensions.map(() => state.getNextTempVarName());
     const subscripts = indexes.map((index) => `[${index}]`).join("");
@@ -233,7 +234,7 @@ class ArrayInitHelper {
     });
     const depth = dimensions.length;
     lines.push(
-      `${"    ".repeat(depth)}${target}${subscripts} = ${source}${subscripts};`,
+      `${"    ".repeat(depth)}${target}${subscripts} = ${read}${subscripts};`,
     );
     for (let level = depth - 1; level >= 0; level--) {
       lines.push(`${"    ".repeat(level)}}`);

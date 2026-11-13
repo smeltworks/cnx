@@ -26,6 +26,7 @@ static inline void cnx_string_copy(char* target, const char* source, uint32_t ca
 }
 
 // test-execution
+// test-adr: 045
 // Issue #1209: a function returning string<N> fills a buffer the caller
 // supplies, so a returned local is memory safe and every call site gets the
 // whole value: in place, through a temporary, in a concatenation, as an
@@ -77,7 +78,7 @@ int main(void) {
         return 1U;
     }
     /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-    char cnx_tmp0[17] = {0};
+    char cnx_tmp0[17] = {};
     greet(cnx_tmp0);
     char b[33] = "";
     cnx_string_copy(b, cnx_tmp0, 32U);
@@ -86,14 +87,14 @@ int main(void) {
     }
     char c[17] = "";
     /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-    char cnx_tmp1[17] = {0};
+    char cnx_tmp1[17] = {};
     getLabel(cnx_tmp1);
     cnx_string_copy(c, cnx_tmp1, 16U);
     if (strcmp(c, "label") != 0) {
         return 3U;
     }
     /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-    char cnx_tmp2[17] = {0};
+    char cnx_tmp2[17] = {};
     greet(cnx_tmp2);
     char d[33] = "";
     cnx_string_copy(d, cnx_tmp2, 32U);
@@ -105,7 +106,7 @@ int main(void) {
         return 4U;
     }
     /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-    char cnx_tmp3[17] = {0};
+    char cnx_tmp3[17] = {};
     getLabel(cnx_tmp3);
     const uint32_t n = lengthOf(cnx_tmp3);
     if (n != 5) {
@@ -122,7 +123,7 @@ int main(void) {
         return 7U;
     }
     /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-    char cnx_tmp4[17] = {0};
+    char cnx_tmp4[17] = {};
     echo(cnx_tmp4, c);
     cnx_string_copy(c, cnx_tmp4, 16U);
     if (strcmp(c, "label") != 0) {

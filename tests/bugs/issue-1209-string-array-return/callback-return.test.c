@@ -26,6 +26,7 @@ static inline void cnx_string_copy(char* target, const char* source, uint32_t ca
 
 // test-execution
 // test-no-warnings
+// test-adr: 035, 045
 // Tests: #1209 - a function returning a `string<N>` or an array is an
 // ADR-029 callback type too. Its `_fp` typedef fills a buffer, as the
 // function it names does, and a call through the callback passes one.

@@ -1,0 +1,2 @@
+12:0 error[E0862]: Function 'unsized' returns a string without a capacity
+       help: A return has no literal to infer a capacity from, so its type states one, e.g. `string<16> greet()` (ADR-045).

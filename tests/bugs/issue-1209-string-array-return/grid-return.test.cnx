@@ -1,3 +1,4 @@
+// test-adr: 035
 // Issue #1209: a two-dimensional return fills a `uint8_t[2][3]` buffer. The
 // header declares nothing else, so it includes <stdint.h> for the buffer's
 // element type alone -- the whole `u8[2][3]` named no external type.

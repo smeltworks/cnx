@@ -273,6 +273,9 @@ already gets; a declaration copied into is not `const` in C, since the copy is
 written after it. An array of another shape or element type is E0866. At file
 scope, and for an inferred size (`u8[]`), only a list or a literal is
 accepted: a copy is a statement, and file scope has none to run before `main`.
+A size that does not fold, such as a C macro `N`, agrees only with the same
+name: `u8[N] same <- src;` copies when `src` is `u8[N]`, and `u8[8] z <- src;`
+is E0866, since the copy's bounds would otherwise be unchecked.
 
 C cannot return an array either, so a function that returns one takes a
 buffer from its caller, the lowering ADR-045 gives `string<N>` (#1209):

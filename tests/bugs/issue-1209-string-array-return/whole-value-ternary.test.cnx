@@ -1,0 +1,77 @@
+// test-execution
+// test-adr: 045, 035
+// Issue #1209: a ternary holding a whole string<N> or array fills one buffer
+// declared before its branches, so the value outlives whichever branch ran,
+// and only the chosen arm's function is called.
+
+mut u32 calls <- 0;
+
+string<8> left() {
+    calls <- calls + 1;
+    return "left";
+}
+
+string<8> right() {
+    calls <- calls + 1;
+    return "right";
+}
+
+u8[2] one() {
+    calls <- calls + 1;
+    u8[2] a <- [1, 1];
+    return a;
+}
+
+u8[2] two() {
+    calls <- calls + 1;
+    u8[2] a <- [2, 2];
+    return a;
+}
+
+u8 first(u8[2] p) {
+    return p[0];
+}
+
+u32 main() {
+    bool pickLeft <- false;
+    // A declaration, from the arm not taken first
+    string<8> s <- (pickLeft = true) ? left() : right();
+    if (s != "right") {
+        return 1;
+    }
+    if (calls != 1) {
+        return 2;
+    }
+    // An assignment
+    mut string<8> t <- "";
+    t <- (pickLeft = false) ? left() : right();
+    if (t != "left") {
+        return 3;
+    }
+    // An arm that is not a call is copied into the same buffer
+    string<16> wide <- "wider string";
+    string<16> w <- (pickLeft = true) ? left() : wide;
+    if (w != "wider string") {
+        return 4;
+    }
+    // An array declaration
+    u8[2] a <- (pickLeft = true) ? one() : two();
+    if (a[0] != 2) {
+        return 5;
+    }
+    // An array assignment
+    mut u8[2] b <- [0, 0];
+    b <- (pickLeft = false) ? one() : two();
+    if (b[1] != 1) {
+        return 6;
+    }
+    // An argument
+    u8 f <- first((pickLeft = true) ? one() : two());
+    if (f != 2) {
+        return 7;
+    }
+    if (calls != 5) {
+        return 8;
+    }
+    return 0;
+}

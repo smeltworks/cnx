@@ -1,2 +1,2 @@
-11:2 error[E0892]: Function 'unsized' returns an array that leaves dimension 1 without a size
+12:2 error[E0892]: Function 'unsized' returns an array that leaves dimension 1 without a size
        help: A return has no list to count, so its type states every dimension's size, e.g. `u8[4] make()` (ADR-035).

@@ -28,6 +28,7 @@ static inline void cnx_string_copy(char* target, const char* source, uint32_t ca
 
 // test-execution
 // test-no-warnings
+// test-adr: 035, 045
 // Tests: #1209 - a function returning a `string<N>` or an array is an
 // ADR-029 callback type too. Its `_fp` typedef fills a buffer, as the
 // function it names does, and a call through the callback passes one.
@@ -55,7 +56,7 @@ Maker Maker_init(void) {
 
 int main(void) {
     const Maker m = { .build = make, .label = name };
-    uint8_t a[4] = {0};
+    uint8_t a[4] = {};
     m.build(a, 9U);
     if (a[0U] != 9) {
         return 1U;
@@ -64,7 +65,7 @@ int main(void) {
         return 2U;
     }
     /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-    uint8_t cnx_tmp1[4] = {0};
+    uint8_t cnx_tmp1[4] = {};
     m.build(cnx_tmp1, 1U);
     const uint8_t second = cnx_tmp1[1U];
     if (second != 2) {

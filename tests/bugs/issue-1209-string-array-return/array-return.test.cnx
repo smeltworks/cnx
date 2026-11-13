@@ -1,4 +1,5 @@
 // test-execution
+// test-adr: 035
 // Issue #1209: a function returning an array fills a buffer the caller
 // supplies, so a returned local is memory safe.
 

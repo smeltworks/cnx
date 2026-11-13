@@ -9,6 +9,7 @@
 #include <string.h>
 
 // test-execution
+// test-adr: 035
 // Issue #1209: a function returning an array fills a buffer the caller
 // supplies, so a returned local is memory safe.
 const uint8_t table[4] = {5U, 6U, 7U, 8U};

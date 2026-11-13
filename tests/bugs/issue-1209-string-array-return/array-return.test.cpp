@@ -9,6 +9,7 @@
 #include <string.h>
 
 // test-execution
+// test-adr: 035
 // Issue #1209: a function returning an array fills a buffer the caller
 // supplies, so a returned local is memory safe.
 extern const uint8_t table[4] = {5U, 6U, 7U, 8U};
@@ -84,7 +85,7 @@ void grid(uint8_t cnx_return[2][3]) {
 }
 
 int main(void) {
-    uint8_t a[4] = {0};
+    uint8_t a[4] = {};
     make(a);
     if (a[0U] != 1) {
         return 1U;
@@ -94,7 +95,7 @@ int main(void) {
     }
     uint8_t b[4] = {0U, 0U, 0U, 0U};
     /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-    uint8_t cnx_tmp9[4] = {0};
+    uint8_t cnx_tmp9[4] = {};
     getTable(cnx_tmp9);
     /* ADR-035 / Issue #1209: C has no array assignment, so the array is copied element by element. */
     for (uint32_t cnx_tmp10 = 0U; cnx_tmp10 < 4U; cnx_tmp10++) {
@@ -106,29 +107,29 @@ int main(void) {
     if (b[3U] != 8) {
         return 4U;
     }
-    uint8_t c[4] = {0};
+    uint8_t c[4] = {};
     constant(c);
     if (c[1U] != 8) {
         return 5U;
     }
-    char names[2][9] = {0};
+    char names[2][9] = {};
     pair(names);
     if (strcmp(names[1U], "bc") != 0) {
         return 6U;
     }
     /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-    uint8_t cnx_tmp11[4] = {0};
+    uint8_t cnx_tmp11[4] = {};
     sized(cnx_tmp11);
     const uint8_t last = cnx_tmp11[3U];
     if (last != 4) {
         return 7U;
     }
-    uint8_t s[4] = {0};
+    uint8_t s[4] = {};
     sized(s);
     if (s[0U] != 1) {
         return 8U;
     }
-    uint8_t g[2][3] = {0};
+    uint8_t g[2][3] = {};
     grid(g);
     if (g[1U][2U] != 6) {
         return 9U;

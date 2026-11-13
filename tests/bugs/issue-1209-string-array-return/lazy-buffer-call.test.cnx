@@ -1,5 +1,6 @@
 // test-execution
 // test-no-warnings
+// test-adr: 035, 045
 // Tests: #1209 - a call filling a buffer runs only when the `?:` arm or the
 // `&&`/`||` operand holding it runs (#2332), for an array and a string return
 mut u32 calls;

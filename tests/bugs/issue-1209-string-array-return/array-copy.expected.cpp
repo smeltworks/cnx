@@ -11,6 +11,7 @@
 #include <string.h>
 
 // test-execution
+// test-adr: 035
 // Issue #1209 (ADR-035 clarification, 2026-11-13): an array is a value. Inside
 // a function, another array of the same element type and shape -- a variable,
 // a field, a call -- initializes or is assigned to an array, and is copied
@@ -28,7 +29,7 @@ void reversed(uint8_t cnx_return[4], const uint8_t p[4]) {
 }
 
 int main(void) {
-    uint8_t copy[4] = {0};
+    uint8_t copy[4] = {};
     /* ADR-035 / Issue #1209: C has no array assignment, so the array is copied element by element. */
     for (uint32_t cnx_tmp2 = 0U; cnx_tmp2 < 4U; cnx_tmp2++) {
         copy[cnx_tmp2] = source[cnx_tmp2];
@@ -67,7 +68,7 @@ int main(void) {
     if (strcmp(others[1U], "b") != 0) {
         return 4U;
     }
-    char namesCopy[2][9] = {0};
+    char namesCopy[2][9] = {};
     /* ADR-035 / Issue #1209: C has no array assignment, so the array is copied element by element. */
     for (uint32_t cnx_tmp7 = 0U; cnx_tmp7 < 2U; cnx_tmp7++) {
         for (uint32_t cnx_tmp8 = 0U; cnx_tmp8 < 9U; cnx_tmp8++) {
@@ -77,13 +78,13 @@ int main(void) {
     if (strcmp(namesCopy[0U], "a") != 0) {
         return 5U;
     }
-    uint8_t flip[4] = {0};
+    uint8_t flip[4] = {};
     /* ADR-035 / Issue #1209: C has no array assignment, so the array is copied element by element. */
     for (uint32_t cnx_tmp9 = 0U; cnx_tmp9 < 4U; cnx_tmp9++) {
         flip[cnx_tmp9] = source[cnx_tmp9];
     }
     /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-    uint8_t cnx_tmp10[4] = {0};
+    uint8_t cnx_tmp10[4] = {};
     reversed(cnx_tmp10, flip);
     /* ADR-035 / Issue #1209: C has no array assignment, so the array is copied element by element. */
     for (uint32_t cnx_tmp11 = 0U; cnx_tmp11 < 4U; cnx_tmp11++) {
@@ -95,7 +96,7 @@ int main(void) {
     if (flip[3U] != 1) {
         return 7U;
     }
-    uint8_t fromField[4] = {0};
+    uint8_t fromField[4] = {};
     /* ADR-035 / Issue #1209: C has no array assignment, so the array is copied element by element. */
     for (uint32_t cnx_tmp12 = 0U; cnx_tmp12 < 4U; cnx_tmp12++) {
         fromField[cnx_tmp12] = h.buf[cnx_tmp12];

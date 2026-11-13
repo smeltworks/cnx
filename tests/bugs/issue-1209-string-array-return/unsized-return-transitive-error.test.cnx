@@ -1,0 +1,28 @@
+// test-error
+// test-adr: 035, 045
+// Issue #1209: E0892 and E0862 at a return type without a size, on functions
+// returning values declared in a file the included file includes.
+#include "return-chain.cnx"
+
+// NEGATIVE CONTROLS -- returns that state their size and capacity.
+u8[3] kept() {
+    return source;
+}
+
+string<16> name() {
+    return longName;
+}
+
+// ASSERTION 1 -- an array return without a size.
+u8[] unsizedArray() {
+    return source;
+}
+
+// ASSERTION 2 -- a string return without a capacity.
+string unsizedName() {
+    return longName;
+}
+
+u32 main() {
+    return 0;
+}
