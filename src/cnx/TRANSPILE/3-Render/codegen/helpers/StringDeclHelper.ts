@@ -113,6 +113,7 @@ class StringDeclHelper {
       }
       return [
         declared,
+        ArrayInitHelper.ARRAY_COPY_COMMENT,
         ...ArrayInitHelper.elementCopy(
           name,
           plan.copy.renderSource(),

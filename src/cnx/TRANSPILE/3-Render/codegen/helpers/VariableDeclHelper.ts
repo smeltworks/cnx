@@ -233,6 +233,7 @@ class VariableDeclHelper {
       }
       return [
         declared,
+        ArrayInitHelper.ARRAY_COPY_COMMENT,
         ...ArrayInitHelper.elementCopy(
           plan.emittedName,
           copy.renderSource(),

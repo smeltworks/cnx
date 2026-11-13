@@ -69,6 +69,7 @@ import type TBlockSyntax from "../../types/syntax/TBlockSyntax";
 import AssignmentTarget from "../../utils/AssignmentTarget";
 import TypeCheckUtils from "../../utils/TypeCheckUtils";
 import TypeText from "../../utils/TypeText";
+import CArrayDimensions from "../../utils/CArrayDimensions";
 import ValuePositions from "../1-Analyze/helpers/ValuePositions";
 import ExpressionShape from "../../utils/ExpressionShape";
 import ReturnBuffer from "../../utils/ReturnBuffer";
@@ -1315,6 +1316,7 @@ class FilePlanner {
         ...wholeArrayArguments.keys(),
       ]),
     );
+    const arrayReturns = this.planArrayReturns(valuePositions);
     const bufferCalls = this.planBufferCalls(program, unwritten);
     const inPlaceCalls = FilePlanner.planInPlaceCalls(
       valuePositions,
@@ -1408,6 +1410,8 @@ class FilePlanner {
       structInitializers,
       bufferCalls,
       inPlaceCalls,
+      arrayReturns,
+      stringReturns: stringCopies.returns,
       lazyOperands: lazy.operands,
       lazyTernaries: lazy.ternaries,
     };
@@ -2328,6 +2332,7 @@ class FilePlanner {
     readonly forms: ReadonlyMap<TExpression, TStringValueForm>;
     readonly arguments: ReadonlyMap<TExpression, number>;
     readonly fields: ReadonlyMap<TExpression, number>;
+    readonly returns: ReadonlySet<TExpression>;
     readonly helper: boolean;
   } {
     const copies = new Map<IAssignmentSyntax, number>();
@@ -2369,11 +2374,18 @@ class FilePlanner {
     // declaration's copy; the helper counts in `uint32_t`
     const helper =
       copies.size > 0 ||
-      returned ||
+      returned.size > 0 ||
       fields.size > 0 ||
       [...forms.values()].some((f) => StringUtils.usesCopyHelper(f));
     if (helper) cTypes.add("uint32_t");
-    return { copies, forms, arguments: builtArguments, fields, helper };
+    return {
+      copies,
+      forms,
+      arguments: builtArguments,
+      fields,
+      returns: returned,
+      helper,
+    };
   }
 
   /**
@@ -2476,21 +2488,55 @@ class FilePlanner {
    * #1209: each value a `string<N>` function returns, which is written into
    * the caller's buffer as a declaration's initializer is -- copied whole or
    * built from its parts, by `cnx_string_copy` even when it is a literal.
-   * Returns whether there is one.
    */
   private static planStringReturns(
     valuePositions: IValuePositions | null,
     typing: ITypingContext,
     forms: Map<TExpression, TStringValueForm>,
-  ): boolean {
-    let returned = false;
+  ): ReadonlySet<TExpression> {
+    const returned = new Set<TExpression>();
     for (const [value, at] of valuePositions?.sites ?? []) {
       if (at.site.kind !== "return") continue;
       if (at.site.function.returnType.kind !== "string") continue;
       forms.set(value, StringValueForm.of(value, typing));
-      returned = true;
+      returned.add(value);
     }
     return returned;
+  }
+
+  /**
+   * #1209: each value an array function returns, and the copy that writes it
+   * into the caller's buffer -- the whole-array write an assignment plans,
+   * against the return type 2.1 checked it by (E0866)
+   */
+  private planArrayReturns(
+    valuePositions: IValuePositions,
+  ): ReadonlyMap<TExpression, IPlannedWholeArrayWrite> {
+    const planned = new Map<TExpression, IPlannedWholeArrayWrite>();
+    for (const [value, at] of valuePositions.sites) {
+      if (at.site.kind !== "return" || at.outer !== null) continue;
+      const returned = at.site.function.returnType;
+      if (returned.kind !== "array") continue;
+      const dimensions = returned.dimensions.map((size) => {
+        const folded = size === null ? undefined : this.constantOf(size);
+        invariant(
+          folded !== undefined,
+          "1.2 sized every returned dimension (E0892), and each folds",
+        );
+        return folded;
+      });
+      planned.set(
+        value,
+        FilePlanner.wholeArrayShape(
+          returned.text,
+          null,
+          dimensions,
+          value,
+          false,
+        ),
+      );
+    }
+    return planned;
   }
 
   /**
@@ -2657,9 +2703,9 @@ class FilePlanner {
       const capacity = Number(element.slice("string<".length, -1));
       return {
         elementCType: "char",
-        dimensions: [...dimensions, capacity + 1],
+        dimensions: CArrayDimensions.of(dimensions, capacity),
         fromList: value.kind === "arrayInitializer",
-        fromArray: FilePlanner.isArrayCopy(value),
+        fromArray: ExpressionShape.isArrayValue(value),
         volatileTarget,
       };
     }
@@ -2667,17 +2713,9 @@ class FilePlanner {
       elementCType: cType ?? TYPE_MAP[element] ?? element,
       dimensions,
       fromList: value.kind === "arrayInitializer",
-      fromArray: FilePlanner.isArrayCopy(value),
+      fromArray: ExpressionShape.isArrayValue(value),
       volatileTarget,
     };
-  }
-
-  /** #1209: a whole array's value that is another array, not a list or a string */
-  private static isArrayCopy(value: TExpression): boolean {
-    return (
-      value.kind !== "arrayInitializer" &&
-      !ExpressionShape.isStringLiteral(value)
-    );
   }
 
   /**

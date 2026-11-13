@@ -1,4 +1,5 @@
 import type TType from "../types/TType";
+import CArrayDimensions from "./CArrayDimensions";
 import headerCType from "./headerCType";
 import TypeResolver from "./TypeResolver";
 
@@ -13,19 +14,32 @@ class ReturnBuffer {
   /** The parameter the buffer is passed as, ahead of the declared ones */
   static readonly NAME = "cnx_return";
 
+  /** Above a function that fills a buffer instead of returning its value */
+  static readonly SIGNATURE_COMMENT =
+    "/* ADR-045 / Issue #1209: C returns no array, so the result is written into a buffer the caller supplies. */";
+
+  /** Above a `return` that copies into the caller's buffer */
+  static readonly RETURN_COMMENT =
+    "/* ADR-045 / Issue #1209: the result is copied into the caller's buffer, which outlives the call. */";
+
+  /** Above the temporary a caller supplies for a call to fill */
+  static readonly TEMPORARY_COMMENT =
+    "/* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */";
+
   /**
    * The C dimensions of the buffer a function returning `type` fills --
    * `[17]` for a `string<16>`, `[4]` for a `u8[4]`, `[2][17]` for a
    * `string<16>[2]` -- or null when the type is returned by value
    */
   static dimensionsOf(type: TType): string | null {
-    if (type.kind === "string") return `[${type.capacity + 1}]`;
-    if (type.kind !== "array") return null;
-    const element =
-      type.elementType.kind === "string"
-        ? `[${type.elementType.capacity + 1}]`
-        : "";
-    return type.dimensions.map((size) => `[${size}]`).join("") + element;
+    if (type.kind !== "string" && type.kind !== "array") return null;
+    const element = type.kind === "array" ? type.elementType : type;
+    return CArrayDimensions.of(
+      type.kind === "array" ? type.dimensions : [],
+      element.kind === "string" ? element.capacity : null,
+    )
+      .map((size) => `[${size}]`)
+      .join("");
   }
 
   /** The C type of one element of the buffer a function returning `type` fills */

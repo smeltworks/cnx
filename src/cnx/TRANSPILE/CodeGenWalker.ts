@@ -123,6 +123,7 @@ import PublicInterface from "./2-Plan/PublicInterface";
 import functionGenerator from "./3-Render/codegen/generators/declarationGenerators/FunctionGenerator";
 import scopeGenerator from "./3-Render/codegen/generators/declarationGenerators/ScopeGenerator";
 import FormatUtils from "../utils/FormatUtils";
+import CArrayDimensions from "../utils/CArrayDimensions";
 import ExpressionShape from "../utils/ExpressionShape";
 import SafeDivision from "../utils/SafeDivision";
 import helperGenerators from "./3-Render/codegen/generators/support/HelperGenerator";
@@ -2955,12 +2956,7 @@ class CodeGenWalker {
   private planArrayCopy(
     initializer: TExpression,
   ): IPlannedArrayDeclaration["copy"] {
-    if (
-      initializer.kind === "arrayInitializer" ||
-      ExpressionShape.isStringLiteral(initializer)
-    ) {
-      return null;
-    }
+    if (!ExpressionShape.isArrayValue(initializer)) return null;
     const value = OperandTyper.typeOf(
       initializer,
       this.host.state.typingContext(),
@@ -2970,10 +2966,7 @@ class CodeGenWalker {
       "2.1 accepted an array initialized only by a list, a string or an array (E0866)",
     );
     return {
-      dimensions: [
-        ...value.dimensions,
-        ...(value.stringCapacity === null ? [] : [value.stringCapacity + 1]),
-      ],
+      dimensions: CArrayDimensions.of(value.dimensions, value.stringCapacity),
       renderSource: () => this.renderExpression(initializer),
       renderInto: this.renderInPlace(initializer),
     };
@@ -3710,12 +3703,12 @@ class CodeGenWalker {
     if (!value) {
       return { kind: "void" };
     }
-    const fnName = this.host.state.currentFunctionName;
-    const returnType = fnName === null ? null : this.returnTypeOf(fnName);
-    if (returnType?.kind === "string") {
+    if (this.filePlan.stringReturns.has(value)) {
       const form = this.filePlan.stringValueForms.get(value);
+      const fnName = this.host.state.currentFunctionName;
+      const returnType = fnName === null ? null : this.returnTypeOf(fnName);
       invariant(
-        form !== undefined,
+        form !== undefined && returnType?.kind === "string",
         "2.2 planned the form of every string a function returns",
       );
       return {
@@ -3724,10 +3717,11 @@ class CodeGenWalker {
           this.renderFill(ReturnBuffer.NAME, returnType.capacity, form),
       };
     }
-    if (returnType?.kind === "array") {
+    const array = this.filePlan.arrayReturns.get(value);
+    if (array !== undefined) {
       return {
         kind: "buffer",
-        renderWrite: () => this.renderArrayReturn(returnType, value),
+        renderWrite: () => this.renderArrayReturn(array, value),
       };
     }
     return {
@@ -3742,23 +3736,10 @@ class CodeGenWalker {
    * of the return type first, as an assigned one does (#1782).
    */
   private renderArrayReturn(
-    returnType: Extract<TType, { kind: "array" }>,
+    array: IPlannedWholeArrayWrite,
     value: TExpression,
   ): string[] {
     const state = this.host.state;
-    const element = returnType.elementType;
-    const array: IPlannedWholeArrayWrite = {
-      elementCType: ReturnBuffer.elementCType(returnType),
-      dimensions: [
-        ...returnType.dimensions,
-        ...(element.kind === "string" ? [element.capacity + 1] : []),
-      ],
-      fromList: value.kind === "arrayInitializer",
-      fromArray:
-        value.kind !== "arrayInitializer" &&
-        !ExpressionShape.isStringLiteral(value),
-      volatileTarget: false,
-    };
     const rendered = this.renderExpression(value);
     if (array.fromArray) {
       return ArrayInitHelper.elementCopy(

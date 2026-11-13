@@ -55,6 +55,10 @@ const ARGUMENT_COMMENT =
   "/* ADR-035 / Issue #2157: a list for an array parameter is an array of the parameter's shape, written where the argument stands. */";
 
 class ArrayInitHelper {
+  /** #1209: above an array copied whole from another, element by element */
+  static readonly ARRAY_COPY_COMMENT =
+    "/* ADR-035 / Issue #1209: C has no array assignment, so the array is copied element by element. */";
+
   /**
    * Process array initialization expression.
    * Returns null if not an array initializer pattern.

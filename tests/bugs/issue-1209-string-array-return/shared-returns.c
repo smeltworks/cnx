@@ -26,14 +26,18 @@ static inline void cnx_string_copy(char* target, const char* source, uint32_t ca
 
 // Issue #1209: functions returning a string and an array, declared one
 // include hop from the fixture that calls them.
+/* ADR-045 / Issue #1209: C returns no array, so the result is written into a buffer the caller supplies. */
 void sharedName(char cnx_return[17]) {
     const char s[17] = "shared";
+    /* ADR-045 / Issue #1209: the result is copied into the caller's buffer, which outlives the call. */
     cnx_string_copy(cnx_return, s, 16U);
     return;
 }
 
+/* ADR-045 / Issue #1209: C returns no array, so the result is written into a buffer the caller supplies. */
 void sharedBytes(uint8_t cnx_return[4]) {
     const uint8_t a[4] = {4U, 3U, 2U, 1U};
+    /* ADR-045 / Issue #1209: the result is copied into the caller's buffer, which outlives the call. */
     for (uint32_t cnx_tmp0 = 0U; cnx_tmp0 < 4U; cnx_tmp0++) {
         cnx_return[cnx_tmp0] = a[cnx_tmp0];
     }
@@ -44,12 +48,16 @@ void sharedBytes(uint8_t cnx_return[4]) {
 static const char Store__label[17] = "store";
 static const uint8_t Store__bytes[4] = {9U, 8U, 7U, 6U};
 
+/* ADR-045 / Issue #1209: C returns no array, so the result is written into a buffer the caller supplies. */
 void Store__name(char cnx_return[17]) {
+    /* ADR-045 / Issue #1209: the result is copied into the caller's buffer, which outlives the call. */
     cnx_string_copy(cnx_return, Store__label, 16U);
     return;
 }
 
+/* ADR-045 / Issue #1209: C returns no array, so the result is written into a buffer the caller supplies. */
 void Store__data(uint8_t cnx_return[4]) {
+    /* ADR-045 / Issue #1209: the result is copied into the caller's buffer, which outlives the call. */
     for (uint32_t cnx_tmp1 = 0U; cnx_tmp1 < 4U; cnx_tmp1++) {
         cnx_return[cnx_tmp1] = Store__bytes[cnx_tmp1];
     }

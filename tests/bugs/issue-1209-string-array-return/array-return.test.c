@@ -15,22 +15,28 @@ const uint8_t table[4] = {5U, 6U, 7U, 8U};
 
 const uint32_t SIZE = 4U;
 
+/* ADR-045 / Issue #1209: C returns no array, so the result is written into a buffer the caller supplies. */
 void make(uint8_t cnx_return[4]) {
     const uint8_t a[4] = {1U, 2U, 3U, 4U};
+    /* ADR-045 / Issue #1209: the result is copied into the caller's buffer, which outlives the call. */
     for (uint32_t cnx_tmp0 = 0U; cnx_tmp0 < 4U; cnx_tmp0++) {
         cnx_return[cnx_tmp0] = a[cnx_tmp0];
     }
     return;
 }
 
+/* ADR-045 / Issue #1209: C returns no array, so the result is written into a buffer the caller supplies. */
 void getTable(uint8_t cnx_return[4]) {
+    /* ADR-045 / Issue #1209: the result is copied into the caller's buffer, which outlives the call. */
     for (uint32_t cnx_tmp1 = 0U; cnx_tmp1 < 4U; cnx_tmp1++) {
         cnx_return[cnx_tmp1] = table[cnx_tmp1];
     }
     return;
 }
 
+/* ADR-045 / Issue #1209: C returns no array, so the result is written into a buffer the caller supplies. */
 void constant(uint8_t cnx_return[4]) {
+    /* ADR-045 / Issue #1209: the result is copied into the caller's buffer, which outlives the call. */
     const uint8_t cnx_tmp2[4] = {9U, 8U, 7U, 6U};
     for (uint32_t cnx_tmp3 = 0U; cnx_tmp3 < 4U; cnx_tmp3++) {
         cnx_return[cnx_tmp3] = cnx_tmp2[cnx_tmp3];
@@ -39,10 +45,12 @@ void constant(uint8_t cnx_return[4]) {
 }
 
 // A string array's return is a whole array too, copied a row at a time
+/* ADR-045 / Issue #1209: C returns no array, so the result is written into a buffer the caller supplies. */
 void pair(char cnx_return[2][9]) {
     // cppcheck-suppress misra-c2012-9.3
     // cppcheck-suppress misra-c2012-9.4
     const char p[2][9] = {"a", "bc"};
+    /* ADR-045 / Issue #1209: the result is copied into the caller's buffer, which outlives the call. */
     for (uint32_t cnx_tmp4 = 0U; cnx_tmp4 < 2U; cnx_tmp4++) {
         for (uint32_t cnx_tmp5 = 0U; cnx_tmp5 < 9U; cnx_tmp5++) {
             cnx_return[cnx_tmp4][cnx_tmp5] = p[cnx_tmp4][cnx_tmp5];
@@ -52,8 +60,10 @@ void pair(char cnx_return[2][9]) {
 }
 
 // A const's name sizes a return as it sizes a variable
+/* ADR-045 / Issue #1209: C returns no array, so the result is written into a buffer the caller supplies. */
 void sized(uint8_t cnx_return[4]) {
     const uint8_t a[4] = {1U, 2U, 3U, 4U};
+    /* ADR-045 / Issue #1209: the result is copied into the caller's buffer, which outlives the call. */
     for (uint32_t cnx_tmp6 = 0U; cnx_tmp6 < 4U; cnx_tmp6++) {
         cnx_return[cnx_tmp6] = a[cnx_tmp6];
     }
@@ -61,8 +71,10 @@ void sized(uint8_t cnx_return[4]) {
 }
 
 // Every dimension of a two-dimensional return is the buffer's
+/* ADR-045 / Issue #1209: C returns no array, so the result is written into a buffer the caller supplies. */
 void grid(uint8_t cnx_return[2][3]) {
     const uint8_t g[2][3] = {{1U, 2U, 3U}, {4U, 5U, 6U}};
+    /* ADR-045 / Issue #1209: the result is copied into the caller's buffer, which outlives the call. */
     for (uint32_t cnx_tmp7 = 0U; cnx_tmp7 < 2U; cnx_tmp7++) {
         for (uint32_t cnx_tmp8 = 0U; cnx_tmp8 < 3U; cnx_tmp8++) {
             cnx_return[cnx_tmp7][cnx_tmp8] = g[cnx_tmp7][cnx_tmp8];
@@ -81,6 +93,7 @@ int main(void) {
         return 2U;
     }
     uint8_t b[4] = {0U, 0U, 0U, 0U};
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
     uint8_t cnx_tmp9[4] = {0};
     getTable(cnx_tmp9);
     /* ADR-035 / Issue #1209: C has no array assignment, so the array is copied element by element. */
@@ -103,6 +116,7 @@ int main(void) {
     if (strcmp(names[1U], "bc") != 0) {
         return 6U;
     }
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
     uint8_t cnx_tmp11[4] = {0};
     sized(cnx_tmp11);
     const uint8_t last = cnx_tmp11[3U];

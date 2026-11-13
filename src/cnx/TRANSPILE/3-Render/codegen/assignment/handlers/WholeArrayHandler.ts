@@ -14,9 +14,6 @@ import ArrayInitHelper from "../../helpers/ArrayInitHelper";
 const COPY_COMMENT =
   "/* ADR-035 / Issue #1782: C has no array assignment, so the list fills a temporary that is copied element by element. */";
 
-const ARRAY_COPY_COMMENT =
-  "/* ADR-035 / Issue #1209: C has no array assignment, so the array is copied element by element. */";
-
 function handleWholeArray(ctx: IAssignmentContext): string {
   const plan = ctx.plannedWholeArray;
   invariant(plan !== null, "2.2 planned this whole-array write");
@@ -27,7 +24,9 @@ function handleWholeArray(ctx: IAssignmentContext): string {
     ? null
     : ArrayInitHelper.temporaryArray(plan, ctx.generatedValue, state);
   const lines =
-    temp === null ? [ARRAY_COPY_COMMENT] : [COPY_COMMENT, temp.declaration];
+    temp === null
+      ? [ArrayInitHelper.ARRAY_COPY_COMMENT]
+      : [COPY_COMMENT, temp.declaration];
 
   let target = ctx.renderTarget();
   if (ctx.targetIndexHasSideEffect) {

@@ -44,8 +44,10 @@ static inline void cnx_string_copy(char* target, const char* source, uint32_t ca
 // `&&`/`||` operand holding it runs (#2332), for an array and a string return
 uint32_t calls = 0;
 
+/* ADR-045 / Issue #1209: C returns no array, so the result is written into a buffer the caller supplies. */
 void make(uint8_t cnx_return[4]) {
     calls = cnx_clamp_add_u32(calls, 1U);
+    /* ADR-045 / Issue #1209: the result is copied into the caller's buffer, which outlives the call. */
     const uint8_t cnx_tmp0[4] = {1U, 2U, 3U, 4U};
     for (uint32_t cnx_tmp1 = 0U; cnx_tmp1 < 4U; cnx_tmp1++) {
         cnx_return[cnx_tmp1] = cnx_tmp0[cnx_tmp1];
@@ -53,8 +55,10 @@ void make(uint8_t cnx_return[4]) {
     return;
 }
 
+/* ADR-045 / Issue #1209: C returns no array, so the result is written into a buffer the caller supplies. */
 void name(char cnx_return[9]) {
     calls = cnx_clamp_add_u32(calls, 1U);
+    /* ADR-045 / Issue #1209: the result is copied into the caller's buffer, which outlives the call. */
     cnx_string_copy(cnx_return, "ab", 8U);
     return;
 }
@@ -64,6 +68,7 @@ int main(void) {
     /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
     uint8_t cnx_tmp3;
     if (z == 1) {
+        /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
         uint8_t cnx_tmp2[4] = {0};
         make(cnx_tmp2);
         cnx_tmp3 = cnx_tmp2[1U];
@@ -74,6 +79,7 @@ int main(void) {
     /* C11 6.5.13p4, C++ [expr.log.and]: right operand of `&&` built under a test of the left one (building its temporary before the statement would evaluate the operand's calls even when the left side is false). */
     bool cnx_tmp5 = (z == 1);
     if (cnx_tmp5) {
+        /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
         uint8_t cnx_tmp4[4] = {0};
         make(cnx_tmp4);
         cnx_tmp5 = (cnx_tmp4[0U] == 1);
@@ -82,6 +88,7 @@ int main(void) {
     /* C11 6.5.14p4, C++ [expr.log.or]: right operand of `||` built under a test of the left one (building its temporary before the statement would evaluate the operand's calls even when the left side is true). */
     bool cnx_tmp7 = (z == 0);
     if (!cnx_tmp7) {
+        /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
         uint8_t cnx_tmp6[4] = {0};
         make(cnx_tmp6);
         cnx_tmp7 = (cnx_tmp6[0U] == 1);
@@ -90,6 +97,7 @@ int main(void) {
     /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
     uint32_t cnx_tmp9;
     if (z == 1) {
+        /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
         char cnx_tmp8[9] = {0};
         name(cnx_tmp8);
         cnx_tmp9 = (uint32_t) strlen(cnx_tmp8);
@@ -115,6 +123,7 @@ int main(void) {
     /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
     uint8_t cnx_tmp11;
     if (z == 0) {
+        /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
         uint8_t cnx_tmp10[4] = {0};
         make(cnx_tmp10);
         cnx_tmp11 = cnx_tmp10[1U];
@@ -125,6 +134,7 @@ int main(void) {
     /* C11 6.5.13p4, C++ [expr.log.and]: right operand of `&&` built under a test of the left one (building its temporary before the statement would evaluate the operand's calls even when the left side is false). */
     bool cnx_tmp13 = (z == 0);
     if (cnx_tmp13) {
+        /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
         uint8_t cnx_tmp12[4] = {0};
         make(cnx_tmp12);
         cnx_tmp13 = (cnx_tmp12[0U] == 1);
@@ -133,6 +143,7 @@ int main(void) {
     /* C11 6.5.14p4, C++ [expr.log.or]: right operand of `||` built under a test of the left one (building its temporary before the statement would evaluate the operand's calls even when the left side is true). */
     bool cnx_tmp15 = (z == 1);
     if (!cnx_tmp15) {
+        /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
         uint8_t cnx_tmp14[4] = {0};
         make(cnx_tmp14);
         cnx_tmp15 = (cnx_tmp14[3U] == 4);
@@ -141,6 +152,7 @@ int main(void) {
     /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
     uint32_t cnx_tmp17;
     if (z == 0) {
+        /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
         char cnx_tmp16[9] = {0};
         name(cnx_tmp16);
         cnx_tmp17 = (uint32_t) strlen(cnx_tmp16);

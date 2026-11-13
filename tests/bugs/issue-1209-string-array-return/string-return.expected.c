@@ -32,22 +32,29 @@ static inline void cnx_string_copy(char* target, const char* source, uint32_t ca
 // argument, and as an operand of a length read.
 const char label[17] = "label";
 
+/* ADR-045 / Issue #1209: C returns no array, so the result is written into a buffer the caller supplies. */
 void greet(char cnx_return[17]) {
     const char s[17] = "hi";
+    /* ADR-045 / Issue #1209: the result is copied into the caller's buffer, which outlives the call. */
     cnx_string_copy(cnx_return, s, 16U);
     return;
 }
 
+/* ADR-045 / Issue #1209: C returns no array, so the result is written into a buffer the caller supplies. */
 void getLabel(char cnx_return[17]) {
+    /* ADR-045 / Issue #1209: the result is copied into the caller's buffer, which outlives the call. */
     cnx_string_copy(cnx_return, label, 16U);
     return;
 }
 
+/* ADR-045 / Issue #1209: C returns no array, so the result is written into a buffer the caller supplies. */
 void pick(char cnx_return[17], const bool first) {
     if (first == true) {
+        /* ADR-045 / Issue #1209: the result is copied into the caller's buffer, which outlives the call. */
         cnx_string_copy(cnx_return, "first", 16U);
         return;
     }
+    /* ADR-045 / Issue #1209: the result is copied into the caller's buffer, which outlives the call. */
     cnx_string_copy(cnx_return, label, 16U);
     return;
 }
@@ -56,7 +63,9 @@ uint32_t lengthOf(const char* s) {
     return (uint32_t) strlen(s);
 }
 
+/* ADR-045 / Issue #1209: C returns no array, so the result is written into a buffer the caller supplies. */
 void echo(char cnx_return[17], const char* s) {
+    /* ADR-045 / Issue #1209: the result is copied into the caller's buffer, which outlives the call. */
     cnx_string_copy(cnx_return, s, 16U);
     return;
 }
@@ -67,6 +76,7 @@ int main(void) {
     if (strcmp(a, "hi") != 0) {
         return 1U;
     }
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
     char cnx_tmp0[17] = {0};
     greet(cnx_tmp0);
     char b[33] = "";
@@ -75,12 +85,14 @@ int main(void) {
         return 2U;
     }
     char c[17] = "";
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
     char cnx_tmp1[17] = {0};
     getLabel(cnx_tmp1);
     cnx_string_copy(c, cnx_tmp1, 16U);
     if (strcmp(c, "label") != 0) {
         return 3U;
     }
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
     char cnx_tmp2[17] = {0};
     greet(cnx_tmp2);
     char d[33] = "";
@@ -92,6 +104,7 @@ int main(void) {
     if (strcmp(d, "hi!") != 0) {
         return 4U;
     }
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
     char cnx_tmp3[17] = {0};
     getLabel(cnx_tmp3);
     const uint32_t n = lengthOf(cnx_tmp3);
@@ -108,6 +121,7 @@ int main(void) {
     if (strcmp(f, "label") != 0) {
         return 7U;
     }
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
     char cnx_tmp4[17] = {0};
     echo(cnx_tmp4, c);
     cnx_string_copy(c, cnx_tmp4, 16U);

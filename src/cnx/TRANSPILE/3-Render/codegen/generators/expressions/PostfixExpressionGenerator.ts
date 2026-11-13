@@ -11,6 +11,7 @@
  * This generator was extracted from CodeGenerator._generatePostfixExpr
  * to reduce the size and complexity of CodeGenerator.ts.
  */
+import ReturnBuffer from "../../../../../utils/ReturnBuffer";
 import type IPlannedFloatBits from "../../../../2-Plan/types/IPlannedFloatBits";
 import FloatBitType from "../../../../2-Plan/FloatBitType";
 import type TPlannedNarrowing from "../../../../2-Plan/types/TPlannedNarrowing";
@@ -255,6 +256,7 @@ const generatePostfixExpression = (
       // #1209: the call fills a temporary before its statement, and the
       // expression reads the temporary
       if (temporary !== null && op.returnBuffer !== null) {
+        orchestrator.addPendingTempDeclaration(ReturnBuffer.TEMPORARY_COMMENT);
         orchestrator.addPendingTempDeclaration(op.returnBuffer(temporary));
         orchestrator.addPendingTempDeclaration(`${callResult.code};`);
         tracking.result = temporary;

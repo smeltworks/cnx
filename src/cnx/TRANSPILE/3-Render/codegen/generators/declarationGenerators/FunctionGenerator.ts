@@ -89,7 +89,9 @@ const generateFunction: TGeneratorFn<IPlannedFunction> = (
     params,
     planned.returnBuffer,
   );
-  const functionCode = `${moveComments}${signature.returnType} ${name}(${signature.params}) ${body}\n`;
+  const lowered =
+    planned.returnBuffer === null ? "" : `${ReturnBuffer.SIGNATURE_COMMENT}\n`;
+  const functionCode = `${moveComments}${lowered}${signature.returnType} ${name}(${signature.params}) ${body}\n`;
 
   orchestrator.recordCallbackTypedef(name);
 

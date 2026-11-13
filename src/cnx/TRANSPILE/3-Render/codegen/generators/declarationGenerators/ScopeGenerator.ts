@@ -231,15 +231,14 @@ function renderScopeFunction(
   orchestrator.exitFunctionContext();
 
   // #1209: a `string<N>` or array return fills the caller's buffer
-  const signature = ReturnBuffer.signature(
-    returnType,
-    params,
-    plan.renderReturnBuffer(),
-  );
+  const returnBuffer = plan.renderReturnBuffer();
+  const signature = ReturnBuffer.signature(returnType, params, returnBuffer);
+  const lowered =
+    returnBuffer === null ? "" : `${ReturnBuffer.SIGNATURE_COMMENT}\n`;
   const lines: string[] = [];
   lines.push(
     "",
-    `${moveComments}${prefix}${signature.returnType} ${plan.fullName}(${signature.params}) ${body}`,
+    `${moveComments}${lowered}${prefix}${signature.returnType} ${plan.fullName}(${signature.params}) ${body}`,
   );
 
   // ADR-029: Generate callback typedef only if used as a type

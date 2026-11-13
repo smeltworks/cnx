@@ -142,9 +142,7 @@ class WholeArrayValueAnalyzer {
       at.isDeclaration &&
       at.isArray &&
       !at.inList &&
-      value.kind !== "arrayInitializer" &&
-      value.kind !== "structInitializer" &&
-      !ExpressionShape.isStringLiteral(value)
+      ExpressionShape.isArrayValue(value)
     );
   }
 

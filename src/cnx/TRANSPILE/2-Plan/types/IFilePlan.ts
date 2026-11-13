@@ -186,6 +186,10 @@ interface IFilePlan {
    * an assignment's target can be, so an assignment fills a temporary.
    */
   readonly inPlaceCalls: ReadonlySet<TPostfixOpSyntax>;
+  /** #1209: each value a `string<N>` function returns into its caller's buffer */
+  readonly stringReturns: ReadonlySet<TExpression>;
+  /** #1209: each value an array function returns, and its copy into the caller's buffer */
+  readonly arrayReturns: ReadonlyMap<TExpression, IPlannedWholeArrayWrite>;
   /**
    * #2332: each `&&`/`||` operand after the first that holds a struct
    * initializer built before its statement -- or a call filling a buffer

@@ -101,6 +101,18 @@ class ExpressionShape {
   }
 
   /**
+   * #1209 (ADR-035): a value that is another array -- not a list, a struct
+   * literal or a string literal -- which a whole array is copied from
+   */
+  static isArrayValue(value: TExpression): boolean {
+    return (
+      value.kind !== "arrayInitializer" &&
+      value.kind !== "structInitializer" &&
+      !ExpressionShape.isStringLiteral(value)
+    );
+  }
+
+  /**
    * A postfix chain as written through its first `count` operations: the
    * value an operation applies to, as a message quotes it (`packets[1].header`
    * for the `[4]` of `packets[1].header[4]`). The source's spelling, not the

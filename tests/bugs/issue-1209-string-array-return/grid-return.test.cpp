@@ -10,8 +10,10 @@
 // Issue #1209: a two-dimensional return fills a `uint8_t[2][3]` buffer. The
 // header declares nothing else, so it includes <stdint.h> for the buffer's
 // element type alone -- the whole `u8[2][3]` named no external type.
+/* ADR-045 / Issue #1209: C returns no array, so the result is written into a buffer the caller supplies. */
 void grid(uint8_t cnx_return[2][3]) {
     const uint8_t g[2][3] = {{1U, 2U, 3U}, {4U, 5U, 6U}};
+    /* ADR-045 / Issue #1209: the result is copied into the caller's buffer, which outlives the call. */
     for (uint32_t cnx_tmp0 = 0U; cnx_tmp0 < 2U; cnx_tmp0++) {
         for (uint32_t cnx_tmp1 = 0U; cnx_tmp1 < 3U; cnx_tmp1++) {
             cnx_return[cnx_tmp0][cnx_tmp1] = g[cnx_tmp0][cnx_tmp1];
@@ -26,6 +28,7 @@ int main(void) {
     if (g[1U][2U] != 6) {
         return 1U;
     }
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
     uint8_t cnx_tmp2[2][3] = {0};
     grid(cnx_tmp2);
     const uint8_t second = cnx_tmp2[0U][1U];

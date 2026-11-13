@@ -48,14 +48,17 @@ int main(void) {
     if (d[3U] != 6) {
         return 4U;
     }
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
     uint8_t cnx_tmp0[4] = {0};
     Store__data(cnx_tmp0);
     const uint8_t second = cnx_tmp0[1U];
     if (second != 8) {
         return 5U;
     }
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
     char cnx_tmp1[17] = {0};
     sharedName(cnx_tmp1);
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
     char cnx_tmp2[17] = {0};
     Store__name(cnx_tmp2);
     char joined[33] = "";
