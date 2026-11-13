@@ -21,6 +21,11 @@ interface ICallbackTypeInfo {
    */
   parameters: Array<Required<ICallbackTypedefParameter>>;
   typedefName: string; // e.g., "onReceive_fp"
+  /**
+   * #1209: the buffer a `string<N>`- or array-returning function fills,
+   * ahead of its parameters, as its prototype has it; null otherwise
+   */
+  returnBuffer: string | null;
 }
 
 export default ICallbackTypeInfo;

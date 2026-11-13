@@ -66,22 +66,6 @@ class FunctionContextManager {
   }
 
   /**
-   * #1209: a function returning a `string<N>` or an array is `void`, and the
-   * buffer it fills is its first parameter
-   */
-  static withReturnBuffer(
-    returnType: string,
-    params: string,
-    returnBuffer: string | null,
-  ): { returnType: string; params: string } {
-    if (returnBuffer === null) return { returnType, params };
-    return {
-      returnType: "void",
-      params: params === "void" ? returnBuffer : `${returnBuffer}, ${params}`,
-    };
-  }
-
-  /**
    * Enter the parameters 2.2 planned for the function being rendered (#1991).
    */
   static processParameterList(

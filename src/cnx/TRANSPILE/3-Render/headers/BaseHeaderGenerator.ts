@@ -8,7 +8,6 @@
 
 import invariant from "../../../utils/invariant";
 import headerCType from "../../../utils/headerCType";
-import FunctionContextManager from "../codegen/helpers/FunctionContextManager";
 import IHeaderSymbol from "./types/IHeaderSymbol";
 import IParameterSymbol from "../../../utils/types/IParameterSymbol";
 import IHeaderOptions from "../codegen/types/IHeaderOptions";
@@ -19,6 +18,7 @@ import type IResolvedSymbols from "../../../types/IResolvedSymbols";
 import ParameterInputAdapter from "../codegen/helpers/ParameterInputAdapter";
 import ParameterSignatureBuilder from "../codegen/helpers/ParameterSignatureBuilder";
 import StructInitFunction from "../codegen/helpers/StructInitFunction";
+import ReturnBuffer from "../../../utils/ReturnBuffer";
 
 /**
  * Abstract base class for header file generation
@@ -325,7 +325,7 @@ abstract class BaseHeaderGenerator {
     }
 
     // #1209: a `string<N>` or array return fills the caller's buffer
-    const signature = FunctionContextManager.withReturnBuffer(
+    const signature = ReturnBuffer.signature(
       returnType,
       params,
       sym.returnBuffer ?? null,

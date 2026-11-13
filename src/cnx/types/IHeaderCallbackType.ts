@@ -15,6 +15,8 @@ import type ICallbackTypedefParameter from "./ICallbackTypedefParameter";
 interface IHeaderCallbackType {
   readonly typedefName: string;
   readonly returnType: string;
+  /** #1209: as `ICallbackTypeInfo.returnBuffer` */
+  readonly returnBuffer: string | null;
   /**
    * Exactly what `CallbackTypedefFormatter` consumes, not a copy of it.
    *

@@ -1589,6 +1589,7 @@ describe("CallExprGenerator", () => {
             returnType: "uint32_t",
             parameters: [],
             typedefName: "peek_fp",
+            returnBuffer: null,
           },
         ],
       ]);

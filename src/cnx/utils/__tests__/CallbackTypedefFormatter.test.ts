@@ -126,14 +126,32 @@ describe("CallbackTypedefFormatter", () => {
     it("builds a complete typedef declaration", () => {
       const params = [{ type: "Message", isStruct: true, isConst: true }];
       expect(
-        CallbackTypedefFormatter.format("void", "onReceive_fp", params, false),
+        CallbackTypedefFormatter.format(
+          "void",
+          "onReceive_fp",
+          params,
+          false,
+          null,
+        ),
       ).toBe("typedef void (*onReceive_fp)(const Message*);");
     });
 
     it("builds a void parameter list for a no-argument callback", () => {
       expect(
-        CallbackTypedefFormatter.format("uint8_t", "tick_fp", [], false),
+        CallbackTypedefFormatter.format("uint8_t", "tick_fp", [], false, null),
       ).toBe("typedef uint8_t (*tick_fp)(void);");
+    });
+
+    it("#1209: fills a buffer, as the function it names does", () => {
+      expect(
+        CallbackTypedefFormatter.format(
+          "uint8_t",
+          "make_fp",
+          [{ type: "uint32_t", isStruct: false, isConst: false }],
+          false,
+          "uint8_t cnx_return[4]",
+        ),
+      ).toBe("typedef void (*make_fp)(uint8_t cnx_return[4], uint32_t);");
     });
   });
 });

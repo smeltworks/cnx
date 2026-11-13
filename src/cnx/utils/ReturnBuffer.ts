@@ -1,6 +1,6 @@
-import type TType from "../../types/TType";
-import headerCType from "../../utils/headerCType";
-import TypeResolver from "../../utils/TypeResolver";
+import type TType from "../types/TType";
+import headerCType from "./headerCType";
+import TypeResolver from "./TypeResolver";
 
 /**
  * #1209 (owner ruling, 2026-11-13): C returns no array, so a function whose
@@ -42,6 +42,23 @@ class ReturnBuffer {
     return dimensions === null
       ? null
       : ReturnBuffer.parameter(ReturnBuffer.elementCType(type), dimensions);
+  }
+
+  /**
+   * A function returning a `string<N>` or an array is `void`, and the buffer
+   * it fills is its first parameter: its prototype and its callback typedef
+   * both say so through here
+   */
+  static signature(
+    returnType: string,
+    params: string,
+    returnBuffer: string | null,
+  ): { returnType: string; params: string } {
+    if (returnBuffer === null) return { returnType, params };
+    return {
+      returnType: "void",
+      params: params === "void" ? returnBuffer : `${returnBuffer}, ${params}`,
+    };
   }
 
   /** A caller's temporary for a call returning `type`, or null */

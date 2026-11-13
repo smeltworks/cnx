@@ -13,6 +13,7 @@
  */
 
 import type ICallbackTypedefParameter from "../types/ICallbackTypedefParameter";
+import ReturnBuffer from "./ReturnBuffer";
 
 class CallbackTypedefFormatter {
   /**
@@ -41,12 +42,15 @@ class CallbackTypedefFormatter {
     typedefName: string,
     parameters: readonly ICallbackTypedefParameter[],
     isCppMode: boolean,
+    returnBuffer: string | null,
   ): string {
-    const parameterList = CallbackTypedefFormatter.formatParameterList(
-      parameters,
-      isCppMode,
+    // #1209: shaped as the function's own prototype, which fills a buffer
+    const signature = ReturnBuffer.signature(
+      returnType,
+      CallbackTypedefFormatter.formatParameterList(parameters, isCppMode),
+      returnBuffer,
     );
-    return `typedef ${returnType} (*${typedefName})(${parameterList});`;
+    return `typedef ${signature.returnType} (*${typedefName})(${signature.params});`;
   }
 
   private static formatParameter(

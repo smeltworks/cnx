@@ -452,6 +452,7 @@ describe("ParameterInputAdapter", () => {
             returnType: "void",
             parameters: [],
             typedefName: "handleClick_fp",
+            returnBuffer: null,
           },
         ],
       ]);
@@ -500,6 +501,7 @@ describe("ParameterInputAdapter", () => {
             returnType: "void",
             parameters: [],
             typedefName: "handleClick_fp",
+            returnBuffer: null,
           },
         ],
       ]);

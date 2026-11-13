@@ -89,7 +89,7 @@ import IPlannedForever from "./3-Render/codegen/types/IPlannedForever";
 import IPlannedIf from "./3-Render/codegen/types/IPlannedIf";
 import IPlannedLoop from "./3-Render/codegen/types/IPlannedLoop";
 import TPlannedReturn from "./3-Render/codegen/types/TPlannedReturn";
-import ReturnBuffer from "./2-Plan/ReturnBuffer";
+import ReturnBuffer from "../utils/ReturnBuffer";
 import type IPlannedWholeArrayWrite from "./2-Plan/types/IPlannedWholeArrayWrite";
 import type TType from "../types/TType";
 import VariableModifierBuilder from "./3-Render/codegen/helpers/VariableModifierBuilder";

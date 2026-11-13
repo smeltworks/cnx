@@ -39,7 +39,6 @@
 import IGeneratorInput from "../IGeneratorInput";
 import IGeneratorState from "../IGeneratorState";
 import IGeneratorOutput from "../IGeneratorOutput";
-import FunctionContextManager from "../../helpers/FunctionContextManager";
 import IOrchestrator from "../IOrchestrator";
 import IPlannedScope from "../../types/IPlannedScope";
 import TGeneratorFn from "../TGeneratorFn";
@@ -53,6 +52,7 @@ import generateBitmapHeader from "../../../headers/generators/generateBitmapHead
 import generateStructHeader from "../../../headers/generators/generateStructHeader";
 import type IHeaderTypeInput from "../../../headers/generators/IHeaderTypeInput";
 import type TranspileState from "../../../../TranspileState";
+import ReturnBuffer from "../../../../../utils/ReturnBuffer";
 
 /**
  * The header's own per-type emitters, by kind.
@@ -231,7 +231,7 @@ function renderScopeFunction(
   orchestrator.exitFunctionContext();
 
   // #1209: a `string<N>` or array return fills the caller's buffer
-  const signature = FunctionContextManager.withReturnBuffer(
+  const signature = ReturnBuffer.signature(
     returnType,
     params,
     plan.renderReturnBuffer(),

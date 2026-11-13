@@ -70,7 +70,7 @@ import AssignmentTarget from "../../utils/AssignmentTarget";
 import TypeCheckUtils from "../../utils/TypeCheckUtils";
 import TypeText from "../../utils/TypeText";
 import ExpressionShape from "../../utils/ExpressionShape";
-import ReturnBuffer from "./ReturnBuffer";
+import ReturnBuffer from "../../utils/ReturnBuffer";
 import StringOperand from "../../utils/StringOperand";
 import VariableDeclarations from "../../utils/VariableDeclarations";
 import MutArgument from "../1-Analyze/helpers/MutArgument";
@@ -737,8 +737,11 @@ class FilePlanner {
       const head = ExpressionShape.headOf(expr);
       const steps = OperandTyper.chainOf(expr, typing).steps;
       head.ops.forEach((op, i) => {
-        const callee = steps[i - head.opsConsumed]?.callee ?? null;
-        if (op.kind !== "call" || callee === null) return;
+        const step = steps[i - head.opsConsumed];
+        if (op.kind !== "call" || step === undefined) return;
+        // A function, or an ADR-029 callback: its type names the function
+        const callee = step.callee ?? step.before?.typeName ?? null;
+        if (callee === null) return;
         const symbol = typing.program.symbolByCName(callee);
         if (symbol?.kind !== "function") return;
         if (ReturnBuffer.dimensionsOf(symbol.returnType) === null) return;
@@ -3584,6 +3587,7 @@ class FilePlanner {
       returnType: CallbackParameterShape.returnType(symbol, facts),
       parameters: CallbackParameterShape.parameters(cName, symbol, facts),
       typedefName: CallbackParameterShape.typedefName(cName),
+      returnBuffer: ReturnBuffer.parameterFor(symbol.returnType),
     };
   }
 

@@ -1,0 +1,38 @@
+// test-execution
+// test-no-warnings
+// Tests: #1209 - a function returning a `string<N>` or an array is an
+// ADR-029 callback type too. Its `_fp` typedef fills a buffer, as the
+// function it names does, and a call through the callback passes one.
+u8[4] make(u8 seed) {
+    u8[4] a <- [seed, 2, 3, 4];
+    return a;
+}
+
+string<8> name() {
+    return "ab";
+}
+
+struct Maker {
+    make build;
+    name label;
+}
+
+u32 main() {
+    Maker m <- { build: make, label: name };
+    u8[4] a <- m.build(9);
+    if (a[0] != 9) {
+        return 1;
+    }
+    if (a[3] != 4) {
+        return 2;
+    }
+    u8 second <- m.build(1)[1];
+    if (second != 2) {
+        return 3;
+    }
+    string<8> s <- m.label();
+    if (s != "ab") {
+        return 4;
+    }
+    return 0;
+}

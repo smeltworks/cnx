@@ -1374,6 +1374,7 @@ describe("CodeGenWalker Coverage Tests", () => {
             info.typedefName,
             info.parameters,
             cppMode,
+            info.returnBuffer,
           );
         };
         expect(typedefOf("aPoke")).toBe(

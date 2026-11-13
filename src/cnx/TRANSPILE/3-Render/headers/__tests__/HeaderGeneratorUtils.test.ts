@@ -902,6 +902,7 @@ describe("HeaderGeneratorUtils", () => {
             "processData",
             {
               typedefName: "processData_t",
+              returnBuffer: null,
               returnType: "void",
               parameters: [
                 { type: "DataStruct", isStruct: true },
@@ -932,6 +933,7 @@ describe("HeaderGeneratorUtils", () => {
             "handler1",
             {
               typedefName: "handler1_t",
+              returnBuffer: null,
               returnType: "void",
               parameters: [{ type: "MyStruct", isStruct: true }],
             },
@@ -940,6 +942,7 @@ describe("HeaderGeneratorUtils", () => {
             "handler2",
             {
               typedefName: "handler2_t",
+              returnBuffer: null,
               returnType: "void",
               parameters: [{ type: "MyStruct", isStruct: true }],
             },
@@ -967,6 +970,7 @@ describe("HeaderGeneratorUtils", () => {
             "handler",
             {
               typedefName: "handler_t",
+              returnBuffer: null,
               returnType: "uint32_t",
               parameters: [
                 { type: "uint32_t", isStruct: false },
@@ -998,6 +1002,7 @@ describe("HeaderGeneratorUtils", () => {
             "handler",
             {
               typedefName: "handler_t",
+              returnBuffer: null,
               returnType: "void",
               parameters: [
                 { type: "LocalStruct", isStruct: true },
@@ -1055,6 +1060,7 @@ describe("HeaderGeneratorUtils", () => {
             "processU32",
             {
               typedefName: "processU32_t",
+              returnBuffer: null,
               returnType: "uint32_t",
               parameters: [{ type: "uint32_t", isStruct: false }],
             },
@@ -1083,6 +1089,7 @@ describe("HeaderGeneratorUtils", () => {
             "processPoint",
             {
               typedefName: "processPoint_t",
+              returnBuffer: null,
               returnType: "uint32_t",
               parameters: [{ type: "Point", isStruct: true }],
             },
@@ -1109,6 +1116,7 @@ describe("HeaderGeneratorUtils", () => {
             "processPoint",
             {
               typedefName: "processPoint_t",
+              returnBuffer: null,
               returnType: "uint32_t",
               parameters: [{ type: "Point", isStruct: true }],
             },
@@ -1135,6 +1143,7 @@ describe("HeaderGeneratorUtils", () => {
             "multiParam",
             {
               typedefName: "multiParam_t",
+              returnBuffer: null,
               returnType: "void",
               parameters: [
                 { type: "uint32_t", isStruct: false },

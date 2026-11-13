@@ -22,6 +22,7 @@ import IOrchestrator from "../IOrchestrator";
 import TGeneratorFn from "../TGeneratorFn";
 import FunctionContextManager from "../../helpers/FunctionContextManager";
 import type IPlannedFunction from "../../types/IPlannedFunction";
+import ReturnBuffer from "../../../../../utils/ReturnBuffer";
 
 /**
  * Generate a C function from a cnx function declaration.
@@ -83,7 +84,7 @@ const generateFunction: TGeneratorFn<IPlannedFunction> = (
   orchestrator.exitFunctionContext();
 
   // #1209: a `string<N>` or array return fills the caller's buffer
-  const signature = FunctionContextManager.withReturnBuffer(
+  const signature = ReturnBuffer.signature(
     actualReturnType,
     params,
     planned.returnBuffer,

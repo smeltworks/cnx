@@ -4,7 +4,7 @@
  */
 import { describe, it, expect } from "vitest";
 import ReturnBuffer from "../ReturnBuffer";
-import type TType from "../../../types/TType";
+import type TType from "../../types/TType";
 
 const u8: TType = { kind: "primitive", primitive: "u8" };
 const label: TType = { kind: "string", capacity: 16 };
