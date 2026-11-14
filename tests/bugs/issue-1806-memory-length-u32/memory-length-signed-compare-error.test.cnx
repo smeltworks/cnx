@@ -1,0 +1,24 @@
+// test-error
+// Issue #1806: the memory row is a u32 (owner ruling), so comparing it with a
+// signed operand mixes essential type categories (E0810), on every subject.
+
+struct Cfg {
+    u8 a;
+}
+
+u32 main() {
+    u8[4] buf <- [0*];
+    string<8> str <- "ab";
+    u32 limit <- 2;
+    i32 s <- -5;
+
+    // NEGATIVE CONTROLS -- an unsigned operand shares the memory row's category.
+    bool fits <- buf.memory_byte_length > limit;
+    bool roomy <- str.memory_char_count > limit;
+
+    // ASSERTIONS -- a signed operand does not.
+    bool bytes <- buf.memory_byte_length > s;
+    bool chars <- str.memory_char_count > s;
+    bool named <- Cfg.memory_bit_length > s;
+    return 0;
+}

@@ -42,7 +42,7 @@ int main(void) {
     if (((uint32_t)9U) != 9) {
         return 8U;
     }
-    if (9 != 9) {
+    if (((uint32_t)9U) != 9) {
         return 9U;
     }
     const uint16_t arr[3] = {};

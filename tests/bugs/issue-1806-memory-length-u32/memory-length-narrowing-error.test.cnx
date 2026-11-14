@@ -1,0 +1,38 @@
+// test-error
+// Issue #1806: the memory row is a u32 (owner ruling), so storing it in a
+// narrower integer is a narrowing conversion (E0869), on every subject.
+
+struct Cfg {
+    u8 a;
+}
+
+enum Mode {
+    A,
+    B,
+    C
+}
+
+u32 main() {
+    u8[4] buf <- [0*];
+    string<8> str <- "ab";
+    Cfg cfg <- { a: 1 };
+
+    // NEGATIVE CONTROLS -- the memory row's own width and a wider one.
+    u32 same <- buf.memory_byte_length;
+    u64 wider <- str.memory_char_count;
+
+    // .memory_element_count is .type_element_count, a constant, as is the
+    // type row: neither is a u32, so they narrow nothing.
+    u8 count <- buf.memory_element_count;
+    u8 typed <- cfg.type_byte_length;
+
+    // ASSERTIONS
+    u8 bytes <- buf.memory_byte_length;
+    u16 bits <- cfg.memory_bit_length;
+    u8 chars <- str.memory_char_count;
+    u8 strBytes <- str.memory_byte_length;
+    u8 named <- Cfg.memory_byte_length;
+    u8 mode <- Mode.memory_byte_length;
+    u8 prim <- u16.memory_bit_length;
+    return 0;
+}
