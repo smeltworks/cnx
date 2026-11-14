@@ -652,6 +652,16 @@ error: `.length` is not a built-in property. Use explicit properties instead.
   is E0810, and `u8 n <- str.value_char_count` narrows (E0869). A string's count
   is written `(uint32_t) strlen(s)`, cached or not. Width-named counts
   (`.char_count_64`) are left to a later version (#1756).
+- The memory row (`.memory_bit_length`, `.memory_byte_length`,
+  `.memory_char_count`) is a `u32` on every subject and target (#1806), as
+  `.value_char_count` is (#1742), not the target's `size_t`. It takes part in
+  comparisons and arithmetic as any `u32` operand does (ADR-024): with a
+  `u8[300] buf` and a `u8 b`, `buf.memory_byte_length + b` is a `u32` sum
+  (301, not 45), with an `i32 s`, `buf.memory_byte_length < s` is E0810, and
+  `u8 n <- buf.memory_byte_length` narrows (E0869). It is written cast to
+  `uint32_t`: `((uint32_t)sizeof(Cfg))`, and a string's `((uint32_t)9U)`.
+  `.memory_element_count` is `.type_element_count`, a constant, and is typed
+  the same way.
 
 **The design these rulings add up to (the Decision; owner-approved):**
 
@@ -665,9 +675,9 @@ error: `.length` is not a built-in property. Use explicit properties instead.
 | `.type_byte_length`     | `.type_bit_length` rounded up to whole bytes                                                                                                                                                                                                        | as `.type_bit_length`                                                                  |
 | `.type_char_count`      | the letters in the type's name (`u32` is 3)                                                                                                                                                                                                         | --                                                                                     |
 | `.type_element_count`   | an array's first dimension; a struct's field count                                                                                                                                                                                                  | anything else                                                                          |
-| `.memory_bit_length`    | `.memory_byte_length` x 8                                                                                                                                                                                                                           | as `.memory_byte_length`                                                               |
-| `.memory_byte_length`   | `sizeof`, emitted for the C compiler to answer                                                                                                                                                                                                      | bit-field and bitmap-field members                                                     |
-| `.memory_char_count`    | a string's buffer, `\0` included (`string<8>` is 9)                                                                                                                                                                                                 | anything but a string                                                                  |
+| `.memory_bit_length`    | `.memory_byte_length` x 8, a `u32`                                                                                                                                                                                                                  | as `.memory_byte_length`                                                               |
+| `.memory_byte_length`   | `sizeof`, emitted for the C compiler to answer, a `u32` on every target                                                                                                                                                                             | bit-field and bitmap-field members                                                     |
+| `.memory_char_count`    | a string's buffer, `\0` included (`string<8>` is 9), a `u32`                                                                                                                                                                                        | anything but a string                                                                  |
 | `.memory_element_count` | `.type_element_count`                                                                                                                                                                                                                               | as `.type_element_count`                                                               |
 
 `.bit_length`, `.byte_length`, `.char_count` and `.element_count` are removed;

@@ -457,12 +457,17 @@ class OperandTyper {
       op.kind === "member" &&
       OperandTyper.enumReadsProperty(current.name, op.name, ctx)
     ) {
-      return {
-        ...OperandTyper.plain(current.name),
-        ...OperandTyper.namedFacts(current.name, ctx),
-      };
+      return OperandTyper.enumShape(current.name, ctx);
     }
     return null;
+  }
+
+  /** A cnx enum named as a type, as its length properties measure it */
+  private static enumShape(cName: string, ctx: ITypingContext): IOperandType {
+    return {
+      ...OperandTyper.plain(cName),
+      ...OperandTyper.namedFacts(cName, ctx),
+    };
   }
 
   /** `Mode.type_byte_length`: a property name the enum declares no member of */
@@ -1620,7 +1625,11 @@ class OperandTyper {
         t: { ...t, form: { kind: "enumMember" } },
       };
     }
-    // `Point.y` names the field's type, still no value
+    // `Point.memory_byte_length` is a value; `Point.y` names the field's
+    // type, still no value
+    if (OperandTyper.readsProperty(t, member, ctx)) {
+      return OperandTyper.propertyOf(t, member);
+    }
     const field = OperandTyper.fieldOf(t, member, ctx);
     return field.k === "value" ? { k: "type", t: field.t } : field;
   }
@@ -1637,7 +1646,10 @@ class OperandTyper {
         return OperandTyper.memberOfType(current.t, member, ctx);
       case "enumType":
         if (OperandTyper.enumReadsProperty(current.name, member, ctx)) {
-          return UNKNOWN;
+          return OperandTyper.propertyOf(
+            OperandTyper.enumShape(current.name, ctx),
+            member,
+          );
         }
         return OperandTyper.enumMember(current.name);
       case "register": {
@@ -1747,6 +1759,18 @@ class OperandTyper {
     return ctx.symbolTable.getStructFieldInfo(t.typeName, member) !== undefined;
   }
 
+  /** A length property's value, in the type `LengthProperty` gives it, if any */
+  private static propertyOf(t: IOperandType, member: string): TChainValue {
+    const type = LengthProperty.operandType(member, {
+      category: t.category,
+      isString: OperandTyper.isString(t),
+      isArray: t.dimensions.length > 0,
+    });
+    return type === null
+      ? UNKNOWN
+      : { k: "value", registerMember: null, t: OperandTyper.primitive(type) };
+  }
+
   /** A field of a struct, a bitmap field, or a property */
   private static fieldOf(
     t: IOperandType,
@@ -1755,18 +1779,7 @@ class OperandTyper {
   ): TChainValue {
     // ADR-058/ADR-045 properties: typed by their own rules, never as a member
     if (OperandTyper.readsProperty(t, member, ctx)) {
-      return member === LengthProperty.VALUE_CHAR_COUNT_PROPERTY &&
-        LengthProperty.countsCharsNow({
-          category: t.category,
-          isString: OperandTyper.isString(t),
-          isArray: t.dimensions.length > 0,
-        })
-        ? {
-            k: "value",
-            registerMember: null,
-            t: OperandTyper.primitive(LengthProperty.CHAR_COUNT_TYPE),
-          }
-        : UNKNOWN;
+      return OperandTyper.propertyOf(t, member);
     }
     if (t.typeName === null || t.dimensions.length > 0) {
       return UNKNOWN;

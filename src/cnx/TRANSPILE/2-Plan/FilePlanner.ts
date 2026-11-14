@@ -2099,8 +2099,8 @@ class FilePlanner {
   /**
    * The `uint32_t` 2.3 writes a length in (#1760): a logical bit or byte
    * length of an array with a dimension that does not fold (a C macro) is a
-   * product, a memory length a cast `sizeof`, a runtime one a helper's, and
-   * strlen's, cast to the char count's type (#1742).
+   * product, a runtime one a helper's, and strlen's, cast to the char count's
+   * type (#1742). The memory row is cast to its own type (#1806).
    */
   private planLengthCTypes(
     program: IProgramSyntax,
@@ -2113,13 +2113,11 @@ class FilePlanner {
         name.unit !== "element_count" &&
         step.before?.dimensions.some((dim) => typeof dim !== "number");
       const helper = LengthProperty.helperOf(rule) !== null;
-      if (
-        unfolded ||
-        rule.kind === "memory" ||
-        rule.kind === "string" ||
-        helper
-      ) {
+      if (unfolded || rule.kind === "string" || helper) {
         cTypes.add(LengthProperty.PRODUCT_C_TYPE);
+      }
+      if (rule.kind === "memory" || rule.kind === "stringBuffer") {
+        cTypes.add(LengthProperty.MEMORY_C_TYPE);
       }
       // `sizeof(bool)`: the C type a memory length measures (2.3's memoryCType)
       const primitive = TYPE_MAP[step.before?.typeName ?? ""];

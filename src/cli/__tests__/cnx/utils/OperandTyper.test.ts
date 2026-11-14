@@ -226,6 +226,40 @@ describe("OperandTyper.typeOf: .value_char_count (#1742)", () => {
   });
 });
 
+describe("OperandTyper.typeOf: the memory row (#1806)", () => {
+  const STRUCT = "struct Cfg {\n    u8 a;\n}\nenum Mode { A, B, C }\n";
+  it.each([
+    ["an array's bytes", "u8[300] a <- [0*];\nu32 r <- a.memory_byte_length;"],
+    ["an array's bits", "u8[3] a <- [0*];\nu32 r <- a.memory_bit_length;"],
+    ["a string's chars", 'string<8> s <- "ab";\nu32 r <- s.memory_char_count;'],
+    [
+      "a string's bytes",
+      'string<8> s <- "ab";\nu32 r <- s.memory_byte_length;',
+    ],
+    [
+      "a struct value's bytes",
+      "Cfg c <- { a: 1 };\nu32 r <- c.memory_byte_length;",
+    ],
+    ["a struct type's bytes", "u32 r <- Cfg.memory_byte_length;"],
+    ["an enum type's bytes", "u32 r <- Mode.memory_byte_length;"],
+    ["a primitive type's bits", "u32 r <- u16.memory_bit_length;"],
+  ])("types %s as a u32", (_why, body) => {
+    expect(facts(typeOf(STRUCT + inMain(body)))).toEqual({
+      typeName: "u32",
+      category: "unsigned",
+      bitWidth: 32,
+      form: "declared",
+    });
+  });
+
+  it("leaves .memory_element_count untyped, as .type_element_count is", () => {
+    expect(
+      typeOf(inMain("u8[3] a <- [0*];\nu8 r <- a.memory_element_count;"))
+        ?.typeName ?? null,
+    ).toBeNull();
+  });
+});
+
 describe("OperandTyper.typeOfWritten (#1668)", () => {
   it.each([
     ["this.T inside its scope", "this.EMode", ["Motor", "EMode"]],

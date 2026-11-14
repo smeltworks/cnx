@@ -343,6 +343,49 @@ describe("LengthProperty (ADR-058, #1175, #1975 review 2)", () => {
       }
     });
 
+    it("types the memory row a u32 on every subject, and .value_char_count where it counts now (#1806, #1742)", () => {
+      const subjects = [
+        SCALAR,
+        { ...SCALAR, isArray: true },
+        { ...SCALAR, category: "none", isString: true },
+        { ...SCALAR, category: "enum" },
+      ] as const;
+      for (const subject of subjects) {
+        for (const property of [
+          "memory_bit_length",
+          "memory_byte_length",
+          "memory_char_count",
+        ]) {
+          expect(LengthProperty.operandType(property, subject)).toBe(
+            LengthProperty.MEMORY_TYPE,
+          );
+        }
+        expect(
+          LengthProperty.operandType("memory_element_count", subject),
+        ).toBeNull();
+        expect(
+          LengthProperty.operandType("type_byte_length", subject),
+        ).toBeNull();
+      }
+      expect(LengthProperty.operandType("value_char_count", SCALAR)).toBe(
+        LengthProperty.CHAR_COUNT_TYPE,
+      );
+      expect(
+        LengthProperty.operandType("value_char_count", {
+          ...SCALAR,
+          isArray: true,
+        }),
+      ).toBeNull();
+      expect(LengthProperty.operandType("value_bit_length", SCALAR)).toBeNull();
+      expect(LengthProperty.operandType("bit_length", SCALAR)).toBeNull();
+    });
+
+    it("writes the memory row in its own C type", () => {
+      expect(LengthProperty.memoryC("sizeof(Cfg)", [3], true)).toBe(
+        `((${LengthProperty.MEMORY_C_TYPE})sizeof(Cfg) * 3U * 8U)`,
+      );
+    });
+
     it("reads a string's characters now only for its value lengths", () => {
       expect(LengthProperty.readsStringNow("value_char_count")).toBe(true);
       expect(LengthProperty.readsStringNow("value_byte_length")).toBe(true);

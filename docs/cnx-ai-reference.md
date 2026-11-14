@@ -335,6 +335,8 @@ u32 m1 <- Cfg.memory_byte_length;    // sizeof(Cfg): the C compiler's answer, 8 
 u32 m2 <- s.memory_char_count;       // 9: the buffer, its '\0' included
 ```
 
+The `memory_` row (`_bit_length`, `_byte_length`, `_char_count`) is a `u32` operand on every target (#1806), written `((uint32_t)sizeof(Cfg))`: with a `u8 b`, `s.memory_char_count + b` is a `u32` sum, and `u8 n <- Cfg.memory_byte_length` narrows (E0869).
+
 The removed `.bit_length`, `.byte_length`, `.char_count` and `.element_count` are `E0886`, whose help names the replacement. The `type_` row is a compile-time constant:
 
 ```cnx

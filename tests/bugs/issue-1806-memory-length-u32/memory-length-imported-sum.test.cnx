@@ -1,0 +1,27 @@
+// test-execution
+// Issue #1806 across ONE include hop: the memory row of an imported type is a
+// u32, so a sum with a u8 is not clamped at u8.
+
+#include "memory-length-types.cnx"
+
+u32 main() {
+    u8 b <- 1;
+
+    // An imported struct's memory, by its type's name and as a value.
+    u32 typeBytes <- Shared.memory_byte_length + b;
+    if (typeBytes != 301) {
+        return 1;
+    }
+    Shared shared <- { data: [0*] };
+    u32 valueBytes <- shared.memory_byte_length + b;
+    if (valueBytes != 301) {
+        return 2;
+    }
+
+    // CONTROL: an imported enum's memory, a sum that fits in u8.
+    u32 shadeBytes <- Shade.memory_byte_length + b;
+    if (shadeBytes < 2) {
+        return 3;
+    }
+    return 0;
+}
