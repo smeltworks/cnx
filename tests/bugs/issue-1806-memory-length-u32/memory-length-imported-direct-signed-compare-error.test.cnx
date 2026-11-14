@@ -1,0 +1,22 @@
+// test-error
+// Issue #1806 across ONE include hop: the memory row of an imported type is a u32, so
+// comparing it with a signed operand mixes essential type categories (E0810),
+// as it does for a type declared in this file.
+
+#include "memory-length-types.cnx"
+
+u32 main() {
+    Shared shared <- { data: [0*] };
+    u32 limit <- 2;
+    i32 s <- -5;
+
+    // NEGATIVE CONTROLS -- an unsigned operand shares the memory row's category.
+    bool fits <- Shared.memory_byte_length > limit;
+    bool roomy <- Shade.memory_bit_length > limit;
+
+    // ASSERTIONS -- a signed operand does not.
+    bool named <- Shared.memory_byte_length > s;
+    bool value <- shared.memory_bit_length > s;
+    bool shade <- Shade.memory_byte_length > s;
+    return 0;
+}

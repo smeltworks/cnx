@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-989 fixture(s) assert a diagnostic; 974 carry a code.
+993 fixture(s) assert a diagnostic; 978 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -835,6 +835,10 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1805-member-on-primitive/parameter-shadows-scope-error.test.cnx                          | E0927                             |
 | tests/bugs/issue-1805-member-on-primitive/primitive-member-error.test.cnx                                 | E0927                             |
 | tests/bugs/issue-1805-member-on-primitive/string-unknown-member-error.test.cnx                            | E0927                             |
+| tests/bugs/issue-1806-memory-length-u32/memory-length-imported-direct-narrowing-error.test.cnx            | E0869                             |
+| tests/bugs/issue-1806-memory-length-u32/memory-length-imported-direct-signed-compare-error.test.cnx       | E0810                             |
+| tests/bugs/issue-1806-memory-length-u32/memory-length-imported-transitive-narrowing-error.test.cnx        | E0869                             |
+| tests/bugs/issue-1806-memory-length-u32/memory-length-imported-transitive-signed-compare-error.test.cnx   | E0810                             |
 | tests/bugs/issue-1806-memory-length-u32/memory-length-narrowing-error.test.cnx                            | E0869                             |
 | tests/bugs/issue-1806-memory-length-u32/memory-length-signed-compare-error.test.cnx                       | E0810                             |
 | tests/bugs/issue-1808-bit-index-width/bit-index-width-error.test.cnx                                      | E0920                             |

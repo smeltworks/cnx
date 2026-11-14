@@ -1,0 +1,20 @@
+// test-error
+// Issue #1806 across TWO include hops: the memory row of an imported type is a u32, so
+// storing it in a narrower integer is a narrowing conversion (E0869), as it is
+// for a type declared in this file.
+
+#include "memory-length-relay.cnx"
+
+u32 main() {
+    Shared shared <- { data: [0*] };
+
+    // NEGATIVE CONTROLS -- the memory row's own width and a wider one.
+    u32 same <- Shared.memory_byte_length;
+    u64 wider <- Shade.memory_byte_length;
+
+    // ASSERTIONS
+    u8 named <- Shared.memory_byte_length;
+    u16 value <- shared.memory_bit_length;
+    u8 shade <- Shade.memory_byte_length;
+    return 0;
+}
