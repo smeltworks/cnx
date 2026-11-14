@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <limits.h>
 
 // ADR-044: Overflow helper functions
 #include <limits.h>
@@ -154,7 +155,7 @@ uint32_t negationContexts(const int8_t n) {
 int main(void) {
     const int8_t minI8 = -128;
     const int16_t minI16 = -32768;
-    const int32_t minI32 = -2147483648;
+    const int32_t minI32 = (int32_t)INT32_MIN;
     const int64_t minI64 = -9223372036854775807 - 1;
     const int8_t a = negI8(minI8);
     if (a != 127) {
