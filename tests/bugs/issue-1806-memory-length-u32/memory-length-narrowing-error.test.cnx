@@ -1,4 +1,5 @@
 // test-error
+// test-adr: 024
 // Issue #1806: the memory row is a u32 (owner ruling), so storing it in a
 // narrower integer is a narrowing conversion (E0869), on every subject.
 

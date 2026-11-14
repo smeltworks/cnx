@@ -396,7 +396,12 @@ class OperandTyper {
     let bitField = false;
     for (const op of start.ops) {
       const before = OperandTyper.measuredBy(current, op, ctx);
-      const { next, subscript } = OperandTyper.applyOp(current, op, ctx);
+      const { next, subscript } = OperandTyper.applyOp(
+        current,
+        op,
+        ctx,
+        bitField,
+      );
       const member = op.kind === "member" ? op.name : null;
       const field = bitField
         ? OperandTyper.fieldBitsOf(steps.at(-1), subscript, ctx)
@@ -1589,11 +1594,12 @@ class OperandTyper {
     current: TChainValue,
     op: TPostfixOpSyntax,
     ctx: ITypingContext,
+    onBitField = false,
   ): { next: TChainValue; subscript: TSubscriptKind | null } {
     switch (op.kind) {
       case "member":
         return {
-          next: OperandTyper.memberOf(current, op.name, ctx),
+          next: OperandTyper.memberOf(current, op.name, ctx, onBitField),
           subscript: null,
         };
       case "subscript":
@@ -1614,6 +1620,7 @@ class OperandTyper {
     t: IOperandType,
     member: string,
     ctx: ITypingContext,
+    onBitField: boolean,
   ): TChainValue {
     // A header enum names its members first (`Color.Red`), as a cnx enum
     // does; only a length property measures it. It stays the header's enum,
@@ -1628,9 +1635,9 @@ class OperandTyper {
     // `Point.memory_byte_length` is a value; `Point.y` names the field's
     // type, still no value
     if (OperandTyper.readsProperty(t, member, ctx)) {
-      return OperandTyper.propertyOf(t, member);
+      return OperandTyper.propertyOf(t, member, true, onBitField);
     }
-    const field = OperandTyper.fieldOf(t, member, ctx);
+    const field = OperandTyper.fieldOf(t, member, ctx, false);
     return field.k === "value" ? { k: "type", t: field.t } : field;
   }
 
@@ -1638,17 +1645,20 @@ class OperandTyper {
     current: TChainValue,
     member: string,
     ctx: ITypingContext,
+    onBitField: boolean,
   ): TChainValue {
     switch (current.k) {
       case "scope":
         return OperandTyper.memberOfScope(current.scopePath, member, ctx);
       case "type":
-        return OperandTyper.memberOfType(current.t, member, ctx);
+        return OperandTyper.memberOfType(current.t, member, ctx, onBitField);
       case "enumType":
         if (OperandTyper.enumReadsProperty(current.name, member, ctx)) {
           return OperandTyper.propertyOf(
             OperandTyper.enumShape(current.name, ctx),
             member,
+            true,
+            false,
           );
         }
         return OperandTyper.enumMember(current.name);
@@ -1716,7 +1726,7 @@ class OperandTyper {
           ctx,
         );
       case "value":
-        return OperandTyper.fieldOf(current.t, member, ctx);
+        return OperandTyper.fieldOf(current.t, member, ctx, onBitField);
       default:
         return UNKNOWN;
     }
@@ -1759,9 +1769,19 @@ class OperandTyper {
     return ctx.symbolTable.getStructFieldInfo(t.typeName, member) !== undefined;
   }
 
-  /** A length property's value, in the type `LengthProperty` gives it, if any */
-  private static propertyOf(t: IOperandType, member: string): TChainValue {
+  /**
+   * A length property's value, in the type `LengthProperty` gives it, if any:
+   * none where its rule rejects the read, so E0867 is what 2.1 reports
+   */
+  private static propertyOf(
+    t: IOperandType,
+    member: string,
+    namesType: boolean,
+    onBitField: boolean,
+  ): TChainValue {
     const type = LengthProperty.operandType(member, {
+      namesType,
+      isBitField: onBitField,
       category: t.category,
       isString: OperandTyper.isString(t),
       isArray: t.dimensions.length > 0,
@@ -1776,10 +1796,11 @@ class OperandTyper {
     t: IOperandType,
     member: string,
     ctx: ITypingContext,
+    onBitField: boolean,
   ): TChainValue {
     // ADR-058/ADR-045 properties: typed by their own rules, never as a member
     if (OperandTyper.readsProperty(t, member, ctx)) {
-      return OperandTyper.propertyOf(t, member);
+      return OperandTyper.propertyOf(t, member, false, onBitField);
     }
     if (t.typeName === null || t.dimensions.length > 0) {
       return UNKNOWN;

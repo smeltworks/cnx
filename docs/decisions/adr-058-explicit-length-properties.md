@@ -653,8 +653,10 @@ error: `.length` is not a built-in property. Use explicit properties instead.
   is written `(uint32_t) strlen(s)`, cached or not. Width-named counts
   (`.char_count_64`) are left to a later version (#1756).
 - The memory row (`.memory_bit_length`, `.memory_byte_length`,
-  `.memory_char_count`) is a `u32` on every subject and target (#1806), as
-  `.value_char_count` is (#1742), not the target's `size_t`. It takes part in
+  `.memory_char_count`) is a `u32` on every subject and target (#1806; owner,
+  2026-11-13, in the #1806 work session that opened PR #2420: _"u32 on every
+  subject and target, like .value_char_count (#1742)"_), as `.value_char_count`
+  is (#1742), not the target's `size_t` the issue first proposed. It takes part in
   comparisons and arithmetic as any `u32` operand does (ADR-024): with a
   `u8[300] buf` and a `u8 b`, `buf.memory_byte_length + b` is a `u32` sum
   (301, not 45), with an `i32 s`, `buf.memory_byte_length < s` is E0810, and

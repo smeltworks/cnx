@@ -1,4 +1,5 @@
 // test-error
+// test-adr: 024
 // Issue #1806: the memory row is a u32 (owner ruling), so comparing it with a
 // signed operand mixes essential type categories (E0810), on every subject.
 
@@ -11,6 +12,7 @@ u32 main() {
     string<8> str <- "ab";
     u32 limit <- 2;
     i32 s <- -5;
+    i32 k <- 3;
 
     // NEGATIVE CONTROLS -- an unsigned operand shares the memory row's category.
     bool fits <- buf.memory_byte_length > limit;
@@ -20,5 +22,7 @@ u32 main() {
     bool bytes <- buf.memory_byte_length > s;
     bool chars <- str.memory_char_count > s;
     bool named <- Cfg.memory_bit_length > s;
+    i32 sum <- buf.memory_byte_length + s;
+    i32 product <- buf.memory_byte_length * k;
     return 0;
 }

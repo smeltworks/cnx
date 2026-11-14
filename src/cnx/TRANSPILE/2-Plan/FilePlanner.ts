@@ -2116,7 +2116,7 @@ class FilePlanner {
       if (unfolded || rule.kind === "string" || helper) {
         cTypes.add(LengthProperty.PRODUCT_C_TYPE);
       }
-      if (rule.kind === "memory" || rule.kind === "stringBuffer") {
+      if (rule.kind === "memory") {
         cTypes.add(LengthProperty.MEMORY_C_TYPE);
       }
       // `sizeof(bool)`: the C type a memory length measures (2.3's memoryCType)

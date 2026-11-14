@@ -221,7 +221,7 @@ describe("LengthProperty (ADR-058, #1175, #1975 review 2)", () => {
         "error",
         "memory",
         "memory",
-        "stringBuffer",
+        "memory",
         "error",
       ],
       array: [
@@ -333,32 +333,23 @@ describe("LengthProperty (ADR-058, #1175, #1975 review 2)", () => {
         LengthProperty.readsAtRuntime({ kind: "decimal", signed: false }),
       ).toBe(true);
       expect(LengthProperty.readsAtRuntime({ kind: "string" })).toBe(true);
-      for (const kind of [
-        "logical",
-        "spelling",
-        "stringBuffer",
-        "memory",
-      ] as const) {
+      for (const kind of ["logical", "spelling", "memory"] as const) {
         expect(LengthProperty.readsAtRuntime({ kind })).toBe(false);
       }
     });
 
-    it("types the memory row a u32 on every subject, and .value_char_count where it counts now (#1806, #1742)", () => {
+    it("types the memory row a u32 on every subject its rule answers, and .value_char_count where it counts now (#1806, #1742)", () => {
+      const STRING = { ...SCALAR, category: "none", isString: true } as const;
       const subjects = [
         SCALAR,
         { ...SCALAR, isArray: true },
-        { ...SCALAR, category: "none", isString: true },
+        STRING,
         { ...SCALAR, category: "enum" },
+        { ...SCALAR, namesType: true },
       ] as const;
       for (const subject of subjects) {
-        for (const property of [
-          "memory_bit_length",
-          "memory_byte_length",
-          "memory_char_count",
-        ]) {
-          expect(LengthProperty.operandType(property, subject)).toBe(
-            LengthProperty.MEMORY_TYPE,
-          );
+        for (const property of ["memory_bit_length", "memory_byte_length"]) {
+          expect(LengthProperty.operandType(property, subject)).toBe("u32");
         }
         expect(
           LengthProperty.operandType("memory_element_count", subject),
@@ -367,8 +358,14 @@ describe("LengthProperty (ADR-058, #1175, #1975 review 2)", () => {
           LengthProperty.operandType("type_byte_length", subject),
         ).toBeNull();
       }
+      expect(LengthProperty.operandType("memory_char_count", STRING)).toBe(
+        "u32",
+      );
       expect(LengthProperty.operandType("value_char_count", SCALAR)).toBe(
-        LengthProperty.CHAR_COUNT_TYPE,
+        "u32",
+      );
+      expect(LengthProperty.operandType("value_char_count", STRING)).toBe(
+        "u32",
       );
       expect(
         LengthProperty.operandType("value_char_count", {
@@ -377,12 +374,40 @@ describe("LengthProperty (ADR-058, #1175, #1975 review 2)", () => {
         }),
       ).toBeNull();
       expect(LengthProperty.operandType("value_bit_length", SCALAR)).toBeNull();
+      expect(
+        LengthProperty.operandType("value_byte_length", STRING),
+      ).toBeNull();
       expect(LengthProperty.operandType("bit_length", SCALAR)).toBeNull();
+    });
+
+    it("leaves untyped a read its rule rejects, so E0867 is reported (#1806 review)", () => {
+      for (const subject of [
+        SCALAR,
+        { ...SCALAR, isArray: true },
+        { ...SCALAR, category: "enum" },
+      ] as const) {
+        expect(
+          LengthProperty.operandType("memory_char_count", subject),
+        ).toBeNull();
+      }
+      const bitField = { ...SCALAR, isBitField: true };
+      expect(
+        LengthProperty.operandType("memory_byte_length", bitField),
+      ).toBeNull();
+      expect(
+        LengthProperty.operandType("memory_bit_length", bitField),
+      ).toBeNull();
+      expect(
+        LengthProperty.operandType("value_char_count", {
+          ...SCALAR,
+          namesType: true,
+        }),
+      ).toBeNull();
     });
 
     it("writes the memory row in its own C type", () => {
       expect(LengthProperty.memoryC("sizeof(Cfg)", [3], true)).toBe(
-        `((${LengthProperty.MEMORY_C_TYPE})sizeof(Cfg) * 3U * 8U)`,
+        "((uint32_t)sizeof(Cfg) * 3U * 8U)",
       );
     });
 

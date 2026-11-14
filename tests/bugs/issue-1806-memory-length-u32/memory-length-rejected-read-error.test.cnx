@@ -1,0 +1,26 @@
+// test-error
+// test-adr: 058
+// Issue #1806 review: a length read its rule rejects has no operand type, so the
+// error reported is its E0867, not a category mismatch (E0810) with the operand
+// beside it.
+
+bitmap8 Gear {
+    mode[3],
+    rest[5]
+}
+
+u32 main() {
+    u8[4] buf <- [0*];
+    Gear g <- 0;
+    i32 s <- -5;
+    u32 limit <- 2;
+
+    // NEGATIVE CONTROL -- a read the rule answers is a u32, so a signed operand is E0810's.
+    bool fits <- buf.memory_byte_length > limit;
+
+    // ASSERTIONS -- each read is E0867.
+    bool chars <- buf.memory_char_count > s;
+    bool field <- g.mode.memory_byte_length > s;
+    bool named <- u8.value_char_count > s;
+    return 0;
+}

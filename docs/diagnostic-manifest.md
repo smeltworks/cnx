@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-993 fixture(s) assert a diagnostic; 978 carry a code.
+994 fixture(s) assert a diagnostic; 979 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -840,6 +840,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1806-memory-length-u32/memory-length-imported-transitive-narrowing-error.test.cnx        | E0869                             |
 | tests/bugs/issue-1806-memory-length-u32/memory-length-imported-transitive-signed-compare-error.test.cnx   | E0810                             |
 | tests/bugs/issue-1806-memory-length-u32/memory-length-narrowing-error.test.cnx                            | E0869                             |
+| tests/bugs/issue-1806-memory-length-u32/memory-length-rejected-read-error.test.cnx                        | E0867                             |
 | tests/bugs/issue-1806-memory-length-u32/memory-length-signed-compare-error.test.cnx                       | E0810                             |
 | tests/bugs/issue-1808-bit-index-width/bit-index-width-error.test.cnx                                      | E0920                             |
 | tests/bugs/issue-1833-miscased-cnx-extension/miscased-include-error.test.cnx                              | E0518                             |

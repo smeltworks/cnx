@@ -76,25 +76,37 @@ class LengthProperty {
 
   /**
    * The cnx type a length property reads as an operand, or null where it has
-   * none: the memory row is a `MEMORY_TYPE` on every subject (#1806), and
-   * `.value_char_count` a `CHAR_COUNT_TYPE` where it counts as the program
-   * runs (#1742). A logical length is a constant; the other runtime ones are
-   * not typed yet (#2401).
+   * none. Keyed on `rule`, so a read the rule rejects has no type and its
+   * E0867 is the error reported (#1806 review): the memory row is a
+   * `MEMORY_TYPE` on every subject (#1806), and `.value_char_count` a
+   * `CHAR_COUNT_TYPE` where it counts as the program runs (#1742). A logical
+   * length is a constant; the other runtime ones are not typed yet (#2401).
+   * An element count is never typed, so `isStruct` is not asked, and the
+   * rule's message is not read, so neither is `spelling`.
    */
   static operandType(
     property: string,
-    subject: Pick<ILengthSubject, "category" | "isString" | "isArray">,
+    subject: Omit<ILengthSubject, "isStruct" | "spelling">,
   ): string | null {
     const name = LengthProperty.parse(property);
-    if (name === null) return null;
-    if (name.kind === "memory") {
-      return name.unit === "element_count" ? null : LengthProperty.MEMORY_TYPE;
+    if (name === null || name.unit === "element_count") return null;
+    const rule = LengthProperty.rule(name, {
+      ...subject,
+      isStruct: false,
+      spelling: "",
+    });
+    switch (rule.kind) {
+      case "memory":
+        return LengthProperty.MEMORY_TYPE;
+      case "decimal":
+        return LengthProperty.CHAR_COUNT_TYPE;
+      case "string":
+        return name.unit === "char_count"
+          ? LengthProperty.CHAR_COUNT_TYPE
+          : null;
+      default:
+        return null;
     }
-    return name.kind === "value" &&
-      name.unit === "char_count" &&
-      LengthProperty.countsCharsNow(subject)
-      ? LengthProperty.CHAR_COUNT_TYPE
-      : null;
   }
 
   /** The chars a string holds now, in the count's type: `(uint32_t) strlen(s)` */
@@ -250,7 +262,7 @@ class LengthProperty {
     if (kind === "type") return { kind: "spelling" };
     if (kind === "memory") {
       return scalar && subject.isString
-        ? { kind: "stringBuffer" }
+        ? { kind: "memory" }
         : LengthProperty.error(
             `.memory_char_count is only available on strings, not on '${subject.spelling}'`,
             "Use .memory_byte_length for the memory a value takes.",

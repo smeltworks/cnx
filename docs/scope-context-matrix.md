@@ -1681,7 +1681,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | n/a         | n/a        |
 | for header         | -         | -      | -          | n/a         | n/a        |
 
-11 linked fixtures with no derivable context:
+12 linked fixtures with no derivable context:
 
 - `adr-058/kinds-contexts.test.cnx`
 - `adr-058/kinds-header.test.cnx`
@@ -1693,6 +1693,7 @@ cell is declared by the ADR that owns it.
 - `adr-058/length-property-enum-and-bitmap.test.cnx`
 - `adr-058/length-property-struct.test.cnx`
 - `adr-058/slice-length-byte-length.test.cnx`
+- `bugs/issue-1806-memory-length-u32/memory-length-char-count-constant.test.cnx`
 - `bugs/issue-1975-type-length-across-includes/type-length-across-includes.test.cnx`
 
 ## ADR-058 E0800
@@ -1942,7 +1943,7 @@ ADR declares a position table.
 
 | Position                  | Severity | Fixtures |
 | ------------------------- | -------- | -------- |
-| declaration initializer   | error    | ok (18)  |
+| declaration initializer   | error    | ok (21)  |
 | assignment                | error    | ok (2)   |
 | array element assignment  | error    | ok (1)   |
 | struct field assignment   | error    | ok (2)   |

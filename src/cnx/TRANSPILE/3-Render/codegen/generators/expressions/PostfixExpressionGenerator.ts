@@ -625,12 +625,6 @@ const generateLengthProperty = (
         : measuredLength(ctx, input, name.unit as "bit_length" | "byte_length");
     case "spelling":
       return String(subject.spelling.length);
-    case "stringBuffer":
-      return LengthProperty.memoryC(
-        `${stringBufferChars(measured)}U`,
-        [],
-        false,
-      );
     case "memory":
       return memoryLength(measured, input, bits);
     case "bits": {
