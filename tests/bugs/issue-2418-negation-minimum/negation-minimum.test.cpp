@@ -82,46 +82,46 @@ static inline int8_t cnx_wrap_neg_i8(int8_t a) {
 // clamp -MIN is MAX, wrap -MIN is MIN, and the operator that reads the
 // negation gets that value, never C's promoted one.
 int8_t negI8(const int8_t n) {
-    return -n;
+    return cnx_clamp_neg_i8(n);
 }
 
 int16_t negI16(const int16_t n) {
-    return -n;
+    return cnx_clamp_neg_i16(n);
 }
 
 int32_t negI32(const int32_t n) {
-    return -n;
+    return cnx_clamp_neg_i32(n);
 }
 
 int64_t negI64(const int64_t n) {
-    return -n;
+    return cnx_clamp_neg_i64(n);
 }
 
 int8_t wrapNegI8(const int8_t n) {
     const int8_t w = n;
-    return -w;
+    return cnx_wrap_neg_i8(w);
 }
 
 int32_t wrapNegI32(const int32_t n) {
     const int32_t w = n;
-    return -w;
+    return cnx_wrap_neg_i32(w);
 }
 
 // -n + d: -(-128) saturates to 127 before + -1
 int8_t negPlus(const int8_t n, const int8_t d) {
-    return cnx_clamp_add_i8(-n, d);
+    return cnx_clamp_add_i8(cnx_clamp_neg_i8(n), d);
 }
 
 // -n / d: -(-128) saturates to 127 before / 2
 int8_t negOver(const int8_t n, const int8_t d) {
-    return cnx_clamp_div_i8(-n, d);
+    return cnx_clamp_div_i8(cnx_clamp_neg_i8(n), d);
 }
 
 // wrap -n / d: -(-128) wraps to -128 before / 2
 int8_t wrapNegOver(const int8_t n, const int8_t d) {
     const int8_t w = n;
     const int8_t wd = d;
-    return cnx_wrap_div_i8(-w, wd);
+    return cnx_wrap_div_i8(cnx_wrap_neg_i8(w), wd);
 }
 
 bool isPositive(const int8_t v) {
@@ -132,20 +132,20 @@ bool isPositive(const int8_t v) {
 // parameter, so the negation happens at run time.
 uint32_t negationContexts(const int8_t n) {
     int8_t j = 0;
-    j = -n;
+    j = cnx_clamp_neg_i8(n);
     if (j != 127) {
         return 10U;
     }
     int8_t k = -1;
-    k = cnx_clamp_add_i8(k, -n);
+    k = cnx_clamp_add_i8(k, cnx_clamp_neg_i8(n));
     if (k != 126) {
         return 11U;
     }
-    const bool positive = isPositive(-n);
+    const bool positive = isPositive(cnx_clamp_neg_i8(n));
     if (positive == false) {
         return 12U;
     }
-    if (-n < 0) {
+    if (cnx_clamp_neg_i8(n) < 0) {
         return 13U;
     }
     return 0U;
