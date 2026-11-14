@@ -1,0 +1,55 @@
+// test-execution
+// #2419: a chain over a private scope const, which is written as its value,
+// is calculated by the overflow helper 2.2 planned for it rather than aborting
+// code generation. `N * 2` aborted on main; `N / -1` and `N % -1` aborted
+// once #1790 gave a signed division by -1 a helper.
+
+scope Limits {
+    i32 N <- 6;
+    i32 LOW <- -2147483647 - 1;
+    u8 BYTE <- 200;
+
+    public i32 product() {
+        return N * 2;
+    }
+
+    public i32 quotient() {
+        return N / -1;
+    }
+
+    public i32 remainder() {
+        return N % -1;
+    }
+
+    public i32 lowRemainder() {
+        return LOW % -1;
+    }
+
+    public u8 sum() {
+        return BYTE + 50;
+    }
+}
+
+u32 main() {
+    i32 p <- Limits.product();
+    if (p != 12) {
+        return 1;
+    }
+    i32 q <- Limits.quotient();
+    if (q != -6) {
+        return 2;
+    }
+    i32 r <- Limits.remainder();
+    if (r != 0) {
+        return 3;
+    }
+    i32 low <- Limits.lowRemainder();
+    if (low != 0) {
+        return 4;
+    }
+    u8 s <- Limits.sum();
+    if (s != 250) {
+        return 5;
+    }
+    return 0;
+}

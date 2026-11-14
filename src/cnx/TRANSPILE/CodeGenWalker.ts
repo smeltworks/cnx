@@ -924,20 +924,24 @@ class CodeGenWalker {
       case "shift":
         return { kind: "shift", operators, renderOperands };
       case "additive":
-      case "multiplicative":
+      case "multiplicative": {
+        const overflow = CodeGenWalker.plannedAt(
+          this.filePlan.overflowChains,
+          expr,
+          this.rendering.overflowChains,
+          "overflow chain",
+        );
+        // #2419: a chain with a helper is not folded, though its operands
+        // render as integers -- a private const is written as its value
         return {
           kind: "arithmetic",
-          constantValue: this.constantValue(expr),
+          constantValue: overflow === null ? this.constantValue(expr) : null,
           operators,
-          overflow: CodeGenWalker.plannedAt(
-            this.filePlan.overflowChains,
-            expr,
-            this.rendering.overflowChains,
-            "overflow chain",
-          ),
+          overflow,
           adrLine: expr.span.line,
           renderOperands,
         };
+      }
     }
   }
 
