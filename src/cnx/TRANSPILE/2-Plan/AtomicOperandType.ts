@@ -33,19 +33,21 @@ class AtomicOperandType {
   }
 
   /**
-   * A compound write: a clamp helper's `b` is its wider type (`ClampTypes`,
-   * #94: `cnx_clamp_add_u8(0, 256)` must give 255); any other value is held
+   * A compound write: an overflow helper's `b` is its type's wider type
+   * (`ClampTypes`, #94: `cnx_clamp_add_u8(0, 256)` must give 255), for every
+   * helper `OverflowHelperTemplates` writes, clamp or wrap, `+` to `%` (#1790
+   * review); any other value is held
    * in the type the inline form computes it in (`valueCType`), as `v %<- d`
    * divides by all of `d` and `f32 +<- d * 2.0` keeps the double (#2250,
    * #2155 review 9) -- or the atomic's when the value has none.
    */
   static ofCompound(
     access: IAtomicAccess,
-    clampType: string | null,
+    helperType: string | null,
     valueCType: string | null,
   ): string {
-    if (clampType !== null) {
-      return ClampTypes.resolve(clampType)?.widerType ?? access.cType;
+    if (helperType !== null) {
+      return ClampTypes.resolve(helperType)?.widerType ?? access.cType;
     }
     return valueCType ?? access.cType;
   }

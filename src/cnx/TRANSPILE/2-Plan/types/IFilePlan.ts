@@ -1,4 +1,6 @@
 import type IPlannedCharacterWrite from "./IPlannedCharacterWrite";
+import type IPlannedOverflowHelper from "../../../types/IPlannedOverflowHelper";
+import type IPlannedSafeDivision from "../../../types/IPlannedSafeDivision";
 import type TStringValueForm from "../../../types/TStringValueForm";
 import type IPlannedArgument from "./IPlannedArgument";
 import type IPlannedFunctionParameter from "./IPlannedFunctionParameter";
@@ -17,7 +19,7 @@ import type TExpressionOf from "../../../types/syntax/TExpressionOf";
 import type TPostfixOpSyntax from "../../../types/syntax/TPostfixOpSyntax";
 import type TTypeSyntax from "../../../types/syntax/TTypeSyntax";
 import type IPlannedCast from "./IPlannedCast";
-import type IPlannedClamp from "./IPlannedClamp";
+import type IPlannedOverflowChain from "./IPlannedOverflowChain";
 import type IPlannedSliceSource from "./IPlannedSliceSource";
 import type IPlannedWholeArrayWrite from "./IPlannedWholeArrayWrite";
 import type IPlannedExpectedType from "./IPlannedExpectedType";
@@ -94,13 +96,16 @@ interface IFilePlan {
   /** ADR-049: each assignment, and how it is written atomically (null: it is not atomic) */
   readonly atomicForms: ReadonlyMap<IAssignmentSyntax, IPlannedAtomic | null>;
   /** ADR-051: each written `safe_div`/`safe_mod` call, and the helper it is written as */
-  readonly safeDivisions: ReadonlyMap<TExpression, string>;
-  /** ADR-044: each written `+ - *` chain, and the clamp helpers it calls (null: none) */
-  readonly clampChains: ReadonlyMap<TExpression, IPlannedClamp | null>;
-  /** ADR-044: each assignment, and the clamp helper it calls (null: none) */
-  readonly compoundClamps: ReadonlyMap<
+  readonly safeDivisions: ReadonlyMap<TExpression, IPlannedSafeDivision>;
+  /** ADR-044: each written `+ - * / %` chain, and the overflow helpers it calls (null: none) */
+  readonly overflowChains: ReadonlyMap<
+    TExpression,
+    IPlannedOverflowChain | null
+  >;
+  /** ADR-044: each assignment, and the overflow helper it calls (null: none) */
+  readonly compoundOverflows: ReadonlyMap<
     IAssignmentSyntax,
-    { operation: string; cnxType: string } | null
+    IPlannedOverflowHelper | null
   >;
   /** #1081: how each slice write reads its source */
   readonly sliceSources: ReadonlyMap<IAssignmentSyntax, IPlannedSliceSource>;
@@ -155,8 +160,8 @@ interface IFilePlan {
    * member is written through, for each write that is one memory access
    */
   readonly registerAccesses: ReadonlyMap<IAssignmentSyntax, string>;
-  /** ADR-044: every `<operation>_<cnxType>` helper the file calls */
-  readonly clampOps: ReadonlySet<string>;
+  /** ADR-044: every overflow helper the file calls, by the name 2.2 decided */
+  readonly overflowHelpers: ReadonlyMap<string, IPlannedOverflowHelper>;
   /** #1927: the C types the file's text uses, which decide `<stdint.h>`/`<stdbool.h>` */
   readonly cTypes: ReadonlySet<string>;
   /** The type each value is rendered against; a value not listed has none */

@@ -16,8 +16,8 @@ import type IPlannedAtomic from "./IPlannedAtomic";
 
 interface ICodeGenApi {
   /**
-   * Generate atomic read-modify-write operation. `clampOp` is the ADR-044
-   * helper the inner operation saturates with, or null for plain arithmetic;
+   * Generate atomic read-modify-write operation. `overflowHelper` is the ADR-044
+   * helper the inner operation calls, or null for plain arithmetic;
    * `form` is the one 2.2 planned (ADR-049); `valueType` is the value's
    * cnx type, which a retry loop's `__operand` may need to stay wide.
    */
@@ -26,7 +26,7 @@ interface ICodeGenApi {
     op: string,
     value: string,
     atomic: IPlannedAtomic,
-    clampOp: string | null,
+    overflowHelper: string | null,
   ): string;
 
   /**

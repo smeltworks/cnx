@@ -1,0 +1,59 @@
+#pragma target host
+// test-execution
+// test-adr: 044
+// #1790 review: an atomic /<- of MIN by -1 gives ADR-044's MAX, as a plain
+// write does. Pinned to host because an atomic's lowering is the target's.
+// A header macro divisor is held in the helper's wider `b`, not the atomic's
+// type: `BIG` (300) narrowed into an i8 divided by 44 (#2413).
+#include "atomic_macros.h"
+
+atomic i32 shared <- 0;
+atomic i8 shared8 <- 0;
+
+i32 atomicQuotient(i32 n, i32 d) {
+    shared <- n;
+    shared /<- d;
+    return shared;
+}
+
+i32 atomicRemainder(i32 n, i32 d) {
+    shared <- n;
+    shared %<- d;
+    return shared;
+}
+
+i8 atomicQuotientBig(i8 n) {
+    shared8 <- n;
+    shared8 /<- BIG;
+    return shared8;
+}
+
+i8 atomicRemainderBig(i8 n) {
+    shared8 <- n;
+    shared8 %<- BIG;
+    return shared8;
+}
+
+u32 main() {
+    i32 q <- atomicQuotient(-2147483647 - 1, -1);
+    if (q != 2147483647) {
+        return 1;
+    }
+    i32 r <- atomicRemainder(-2147483647 - 1, -1);
+    if (r != 0) {
+        return 2;
+    }
+    i32 ordinary <- atomicQuotient(-7, 2);
+    if (ordinary != -3) {
+        return 3;
+    }
+    i8 bigQuotient <- atomicQuotientBig(100);
+    if (bigQuotient != 0) {
+        return 4;
+    }
+    i8 bigRemainder <- atomicRemainderBig(100);
+    if (bigRemainder != 100) {
+        return 5;
+    }
+    return 0;
+}

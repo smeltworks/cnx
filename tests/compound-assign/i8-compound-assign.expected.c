@@ -20,6 +20,15 @@ static inline int8_t cnx_clamp_add_i8(int8_t a, int32_t b) {
     return (int8_t)result;
 }
 
+static inline int8_t cnx_clamp_div_i8(int8_t a, int32_t b) {
+    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
+    if (b == -1 && a == INT8_MIN) return INT8_MAX;
+    if (b < INT8_MIN || b > INT8_MAX) {
+        return (a == INT8_MIN && b == (int32_t)INT8_MAX + 1) ? -1 : 0;
+    }
+    return (int8_t)(a / (int8_t)b);
+}
+
 static inline int8_t cnx_clamp_mul_i8(int8_t a, int32_t b) {
     int32_t result = (int32_t)a * b;
     if (result > INT8_MAX) return INT8_MAX;
@@ -152,7 +161,7 @@ int main(void) {
         return 33U;
     }
     div = -50;
-    div = (int8_t)(div / -1);
+    div = cnx_clamp_div_i8(div, -1);
     if (div != 50) {
         return 34U;
     }

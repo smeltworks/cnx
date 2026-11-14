@@ -35,28 +35,56 @@ describe("CallExprUtils", () => {
   describe("generateSafeDivModHelperName", () => {
     it("generates safe_div helper name", () => {
       expect(
-        CallExprUtils.generateSafeDivModHelperName("safe_div", "u32"),
+        CallExprUtils.generateSafeDivModHelperName("safe_div", "u32", null),
       ).toBe("cnx_safe_div_u32");
       expect(
-        CallExprUtils.generateSafeDivModHelperName("safe_div", "i64"),
-      ).toBe("cnx_safe_div_i64");
+        CallExprUtils.generateSafeDivModHelperName("safe_div", "u64", null),
+      ).toBe("cnx_safe_div_u64");
     });
 
     it("generates safe_mod helper name", () => {
       expect(
-        CallExprUtils.generateSafeDivModHelperName("safe_mod", "u32"),
+        CallExprUtils.generateSafeDivModHelperName("safe_mod", "u32", null),
       ).toBe("cnx_safe_mod_u32");
       expect(
-        CallExprUtils.generateSafeDivModHelperName("safe_mod", "i16"),
-      ).toBe("cnx_safe_mod_i16");
+        CallExprUtils.generateSafeDivModHelperName("safe_mod", "u16", null),
+      ).toBe("cnx_safe_mod_u16");
+    });
+
+    it("names a signed helper with no overflow helper apart (#2409)", () => {
+      expect(
+        CallExprUtils.generateSafeDivModHelperName("safe_div", "i64", null),
+      ).toBe("cnx_safe_plain_div_i64");
+      expect(
+        CallExprUtils.generateSafeDivModHelperName("safe_mod", "i16", null),
+      ).toBe("cnx_safe_plain_mod_i16");
+    });
+
+    it("names a helper that divides through a wrap helper apart (#1790)", () => {
+      expect(
+        CallExprUtils.generateSafeDivModHelperName("safe_div", "i32", {
+          name: "cnx_wrap_div_i32",
+          behavior: "wrap",
+          operation: "div",
+          cnxType: "i32",
+        }),
+      ).toBe("cnx_safe_wrap_div_i32");
+      expect(
+        CallExprUtils.generateSafeDivModHelperName("safe_div", "i32", {
+          name: "cnx_clamp_div_i32",
+          behavior: "clamp",
+          operation: "div",
+          cnxType: "i32",
+        }),
+      ).toBe("cnx_safe_div_i32");
     });
 
     it("works with all integer types", () => {
-      expect(CallExprUtils.generateSafeDivModHelperName("safe_div", "u8")).toBe(
-        "cnx_safe_div_u8",
-      );
       expect(
-        CallExprUtils.generateSafeDivModHelperName("safe_mod", "u16"),
+        CallExprUtils.generateSafeDivModHelperName("safe_div", "u8", null),
+      ).toBe("cnx_safe_div_u8");
+      expect(
+        CallExprUtils.generateSafeDivModHelperName("safe_mod", "u16", null),
       ).toBe("cnx_safe_mod_u16");
     });
   });

@@ -1,7 +1,10 @@
+import invariant from "../../utils/invariant";
 import RequirementSites from "../../utils/RequirementSites";
 import type IRequirementSite from "../../types/IRequirementSite";
 import type TDeferredSiteKey from "../../types/TDeferredSiteKey";
 import type TIncludeHeader from "../../types/TIncludeHeader";
+import type IPlannedSafeDivision from "../../types/IPlannedSafeDivision";
+import type IPlannedOverflowHelper from "../../types/IPlannedOverflowHelper";
 
 /**
  * #1991: what one file's plan requires -- its headers, helpers and deferred
@@ -16,7 +19,14 @@ class PlannedRequirements {
   private readonly headers = new Set<TIncludeHeader>();
   private readonly sites = new Map<TDeferredSiteKey, IRequirementSite[]>();
   private readonly castHelperKeys = new Set<string>();
-  private readonly safeDivisionKeys = new Set<string>();
+  private readonly safeDivisionHelpers = new Map<
+    string,
+    IPlannedSafeDivision
+  >();
+  private readonly plannedOverflowHelpers = new Map<
+    string,
+    IPlannedOverflowHelper
+  >();
   private readonly lengthHelperNames = new Set<string>();
   private ldrexStrexLoop = false;
   private compareExchangeLoop = false;
@@ -51,9 +61,20 @@ class PlannedRequirements {
     this.require("limits");
   }
 
-  /** ADR-051: a safe_div/safe_mod helper, keyed as `"div_u32"` */
-  safeDivision(operation: string, cnxType: string): void {
-    this.safeDivisionKeys.add(`${operation}_${cnxType}`);
+  /** ADR-051: a safe_div/safe_mod helper, keyed by its name */
+  safeDivision(helper: IPlannedSafeDivision): void {
+    const planned = this.safeDivisionHelpers.get(helper.name);
+    // Every call with the helper's name shares its one body (#1790 review)
+    invariant(
+      planned === undefined || planned.inner === helper.inner,
+      `${helper.name} is planned with one inner helper`,
+    );
+    this.safeDivisionHelpers.set(helper.name, helper);
+  }
+
+  /** ADR-044: an overflow helper, keyed by the name 2.2 decided (#1790 review) */
+  overflowHelper(helper: IPlannedOverflowHelper): void {
+    this.plannedOverflowHelpers.set(helper.name, helper);
   }
 
   /** ADR-058: a runtime integer length's helper, `"cnx_value_bit_length"` */
@@ -89,8 +110,12 @@ class PlannedRequirements {
     return this.lengthHelperNames;
   }
 
-  get safeDivisions(): ReadonlySet<string> {
-    return this.safeDivisionKeys;
+  get safeDivisions(): ReadonlyMap<string, IPlannedSafeDivision> {
+    return this.safeDivisionHelpers;
+  }
+
+  get overflowHelpers(): ReadonlyMap<string, IPlannedOverflowHelper> {
+    return this.plannedOverflowHelpers;
   }
 
   get emitsCompareExchangeLoop(): boolean {

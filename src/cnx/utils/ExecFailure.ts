@@ -25,6 +25,7 @@ class ExecFailure {
         stdout: undefined,
         stderr: undefined,
         status: undefined,
+        signal: undefined,
       };
     }
     return {
@@ -32,6 +33,10 @@ class ExecFailure {
       stdout: ExecFailure.text("stdout" in error ? error.stdout : undefined),
       stderr: ExecFailure.text("stderr" in error ? error.stderr : undefined),
       status: ExecFailure.exitCode(error),
+      signal:
+        "signal" in error && typeof error.signal === "string"
+          ? error.signal
+          : undefined,
     };
   }
 

@@ -73,7 +73,7 @@ static inline bool cnx_safe_div_u64(uint64_t* output, uint64_t numerator, uint64
     return false;  // Success
 }
 
-static inline bool cnx_safe_div_i8(int8_t* output, int8_t numerator, int8_t divisor, int8_t defaultValue) {
+static inline bool cnx_safe_plain_div_i8(int8_t* output, int8_t numerator, int8_t divisor, int8_t defaultValue) {
     if (divisor == 0) {
         *output = defaultValue;
         return true;  // Error occurred
@@ -82,7 +82,7 @@ static inline bool cnx_safe_div_i8(int8_t* output, int8_t numerator, int8_t divi
     return false;  // Success
 }
 
-static inline bool cnx_safe_div_i16(int16_t* output, int16_t numerator, int16_t divisor, int16_t defaultValue) {
+static inline bool cnx_safe_plain_div_i16(int16_t* output, int16_t numerator, int16_t divisor, int16_t defaultValue) {
     if (divisor == 0) {
         *output = defaultValue;
         return true;  // Error occurred
@@ -91,7 +91,7 @@ static inline bool cnx_safe_div_i16(int16_t* output, int16_t numerator, int16_t 
     return false;  // Success
 }
 
-static inline bool cnx_safe_div_i32(int32_t* output, int32_t numerator, int32_t divisor, int32_t defaultValue) {
+static inline bool cnx_safe_plain_div_i32(int32_t* output, int32_t numerator, int32_t divisor, int32_t defaultValue) {
     if (divisor == 0) {
         *output = defaultValue;
         return true;  // Error occurred
@@ -100,7 +100,7 @@ static inline bool cnx_safe_div_i32(int32_t* output, int32_t numerator, int32_t 
     return false;  // Success
 }
 
-static inline bool cnx_safe_mod_i32(int32_t* output, int32_t numerator, int32_t divisor, int32_t defaultValue) {
+static inline bool cnx_safe_plain_mod_i32(int32_t* output, int32_t numerator, int32_t divisor, int32_t defaultValue) {
     if (divisor == 0) {
         *output = defaultValue;
         return true;  // Error occurred
@@ -109,7 +109,7 @@ static inline bool cnx_safe_mod_i32(int32_t* output, int32_t numerator, int32_t 
     return false;  // Success
 }
 
-static inline bool cnx_safe_div_i64(int64_t* output, int64_t numerator, int64_t divisor, int64_t defaultValue) {
+static inline bool cnx_safe_plain_div_i64(int64_t* output, int64_t numerator, int64_t divisor, int64_t defaultValue) {
     if (divisor == 0) {
         *output = defaultValue;
         return true;  // Error occurred
@@ -135,13 +135,13 @@ void testSafeDivUnsignedTypes(void) {
 void testSafeDivSignedTypes(void) {
     bool err = false;
     int8_t result_i8 = 0;
-    err = cnx_safe_div_i8(&result_i8, -10, 2, 0);
+    err = cnx_safe_plain_div_i8(&result_i8, -10, 2, 0);
     int16_t result_i16 = 0;
-    err = cnx_safe_div_i16(&result_i16, -1000, 10, 0);
+    err = cnx_safe_plain_div_i16(&result_i16, -1000, 10, 0);
     int32_t result_i32 = 0;
-    err = cnx_safe_div_i32(&result_i32, -100000, 1000, 0);
+    err = cnx_safe_plain_div_i32(&result_i32, -100000, 1000, 0);
     int64_t result_i64 = 0;
-    err = cnx_safe_div_i64(&result_i64, -10000000, 1000, 0);
+    err = cnx_safe_plain_div_i64(&result_i64, -10000000, 1000, 0);
 }
 
 void testSafeModAllTypes(void) {
@@ -153,7 +153,7 @@ void testSafeModAllTypes(void) {
     uint32_t mod_u32 = 0U;
     err = cnx_safe_mod_u32(&mod_u32, 100000, 97, 0);
     int32_t mod_i32 = 0;
-    err = cnx_safe_mod_i32(&mod_i32, -10, 3, 0);
+    err = cnx_safe_plain_mod_i32(&mod_i32, -10, 3, 0);
 }
 
 void testSafeDivZeroAllTypes(void) {

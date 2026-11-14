@@ -470,8 +470,54 @@ That is what makes a bounds guard trustworthy when one of its terms can
 saturate -- see #231, where an unclamped `offset + length` wrapped past a guard
 and wrote out of bounds.
 
-Applies to `+`, `-` and `*`. Unsigned division and modulo cannot overflow, and
-the single signed case (`INT_MIN / -1`) is left to the safe-division path.
+**A C value counts for neither.** An operand that comes from a C header -- a
+function's result, a variable, a macro -- has no `clamp` or `wrap`, so it does
+not count, and a literal counts no more than one does. An expression with no
+counted operand keeps C's semantics: `largest() + one()`, two header functions
+returning `INT32_MAX` and `1`, is C's signed overflow, as it is in C
+_([owner ruling](https://github.com/smeltworks/cnx/issues/2409#issuecomment-6859549254), #2409)_.
+`safe_div` and `safe_mod` follow it (ADR-051).
+
+Applies to every `+`, `-` and `*`, wherever it stands in an expression. In a
+chain that mixes them with `/` or `%`, each `+`, `-` and `*` saturates where it
+stands; an unsigned `/` or `%` is ordinary C, and a signed one follows the rule below (#1790):
+
+```cnx
+u32 halveDouble(u32 x) {
+    return x * 2 / 2; // x = 4000000000 gives 2147483647: the product saturates to 4294967295, then halves
+}
+```
+
+Unsigned division and modulo cannot overflow. Signed division overflows in exactly one
+case, `MIN / -1`, whose true quotient is one past the type's maximum. C leaves it
+undefined, and on x86 it traps. [Owner ruling, 2026-11-12](https://github.com/smeltworks/cnx/issues/1790#issuecomment-6846924329) (#1790): cnx defines it.
+
+| operation  | `clamp`        | `wrap`         |
+| ---------- | -------------- | -------------- |
+| `MIN / -1` | the type's MAX | the type's MIN |
+| `MIN % -1` | 0              | 0              |
+
+**The rule behind the table.** `clamp` takes the exact mathematical answer and gives the value
+of the type nearest to it: an answer past the maximum is the maximum, one past the minimum is
+the minimum. This is the rule `+ - *` already follow. `MIN / -1` is exactly MAX + 1, so it
+gives MAX. `MIN % -1` is exactly 0, which every type holds, so it gives 0 under either
+modifier. It is not a limit. A zero divisor has no exact answer, and ADR-051 decides it:
+rejected at compile time, `safe_div`'s default at run time.
+
+The `wrap` quotient is the two's-complement result. Compound `/<-` and `%<-` follow the
+same table, and so do ADR-051's `safe_div` and `safe_mod`, whose numerator and divisor pick
+the modifier as `/` does, and which report `false` here because their divisor was not zero.
+
+```cnx
+i32 quotientOf(i32 n, i32 d) {
+    return n / d; // quotientOf(-2147483647 - 1, -1) is 2147483647
+}
+i32 remainderOf(i32 n, i32 d) {
+    return n % d; // remainderOf(-2147483647 - 1, -1) is 0
+}
+```
+
+A value fixed at compile time is different: `MIN / -1` there is rejected, as below.
 
 #### Values fixed at compile time
 
@@ -551,7 +597,14 @@ When compiled with `--debug`, **all** arithmetic operations panic on overflow re
 mut clamp u8 temp <- 255;
 temp <- temp + 1; // Normal: clamps to 255
 // --debug: PANIC! Overflow detected
+
+mut wrap u8 counter <- 255;
+counter +<- 1; // Normal: wraps to 0
+// --debug: PANIC! Overflow detected
 ```
+
+A `wrap` operation panics under `--debug` the same way, through the same helper a `clamp` one
+calls (#2408, decided in #1790).
 
 This catches bugs during development before they matter in production.
 
@@ -588,6 +641,7 @@ cycleCount = (uint32_t)(cycleCount + 1);  // Natural wrap
 
 // With --debug flag, ALL operations become:
 // cnx_clamp_add_u16(egtTemp, 100);  // Panics on overflow
+// cnx_clamp_add_u32(cycleCount, 1); // wrap too: panics on overflow
 ```
 
 #### Helper Functions (Generated)

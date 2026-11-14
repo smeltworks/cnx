@@ -760,6 +760,22 @@ describe("MixedTypeCategoryAnalyzer -- an integer beside an unreadable header ma
   ])("names the site for %s", (_label, body, expected) => {
     expect(analyzeWithMacro(body)).toEqual([expected]);
   });
+
+  // #1790 review: ADR-024 splits E0811 from E0812 by operator, not by the
+  // overflow helper 2.2 plans, so neither a modifier nor a signed `/` moves it
+  it.each([
+    ["a wrap `*`", "wrap u32 w <- 3; u32 b <- w * RAW;", "E0811"],
+    ["a signed `/`", "i32 n <- 3; i32 b <- n / RAW;", "E0812"],
+    ["a signed `%`", "i32 n <- 3; i32 b <- n % RAW;", "E0812"],
+  ])("gives %s the operator's code", (_label, body, code) => {
+    const { syntax, context } = testAnalysisContextFor(
+      `void main() { ${body} }`,
+      { cppMode: false, macros: { RAW: { kind: "unreadable" } } },
+    );
+    expect(
+      new MixedTypeCategoryAnalyzer(context).analyze(syntax).map((e) => e.code),
+    ).toEqual([code]);
+  });
 });
 
 describe("MixedTypeCategoryAnalyzer -- a member of the enum being declared", () => {

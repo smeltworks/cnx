@@ -9,6 +9,7 @@ import { CnxListener } from "../../../../../cnx/PARSE/2-Parse/grammar/CnxListene
 import * as Parser from "../../../../../cnx/PARSE/2-Parse/grammar/CnxParser";
 import OperandTyper from "../../../../../cnx/utils/OperandTyper";
 import PlanTyping from "../../../../../cnx/TRANSPILE/2-Plan/PlanTyping";
+import OverflowBehaviorUtils from "../../../../../cnx/utils/OverflowBehaviorUtils";
 import testAnalysisContextFor from "../1-Analyze/testAnalysisContextFor";
 
 /** The initializer of `r`, and the context that types it */
@@ -32,7 +33,7 @@ function initializerOf(source: string) {
 /** ADR-044's behavior for the initializer of `r` */
 function overflowOf(source: string): string | null {
   const { expression, context } = initializerOf(source);
-  return PlanTyping.overflowOf(
+  return OverflowBehaviorUtils.ofLeaves(
     OperandTyper.valueLeaves(
       SyntaxLowering.expressionNode(expression),
       context,
@@ -103,7 +104,7 @@ describe("OperandTyper.directTypeName", () => {
   });
 });
 
-describe("PlanTyping.overflowOf (ADR-044)", () => {
+describe("OverflowBehaviorUtils.ofLeaves (ADR-044)", () => {
   const globals = "wrap u32 w <- 1;\nclamp u32 c <- 1;\nu32[2] arr;\n";
 
   it.each([

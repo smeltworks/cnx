@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-987 fixture(s) assert a diagnostic; 972 carry a code.
+988 fixture(s) assert a diagnostic; 973 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -824,6 +824,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1782-whole-array-assignment/for-clause-error.test.cnx                                    | E0917                             |
 | tests/bugs/issue-1782-whole-array-assignment/non-list-error.test.cnx                                      | E0866                             |
 | tests/bugs/issue-1782-whole-array-assignment/transitive-error.test.cnx                                    | E0866                             |
+| tests/bugs/issue-1790-signed-division-macro/signed-division-macro-error.test.cnx                          | E0811, E0812                      |
 | tests/bugs/issue-1800-float-to-integer/for-header-rejected.test.cnx                                       | E0868, E0869, E0891               |
 | tests/bugs/issue-1800-float-to-integer/implicit-rejected.test.cnx                                         | E0891                             |
 | tests/bugs/issue-1800-float-to-integer/positions-rejected.test.cnx                                        | E0891                             |

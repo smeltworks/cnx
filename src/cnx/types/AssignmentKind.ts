@@ -67,8 +67,8 @@ enum AssignmentKind {
   /** atomic counter +<- 1 (atomic read-modify-write) */
   ATOMIC_RMW,
 
-  /** clamp u8 saturated +<- 200 (saturating arithmetic) */
-  OVERFLOW_CLAMP,
+  /** clamp u8 saturated +<- 200, wrap i32 w /<- d: an ADR-044 overflow helper */
+  OVERFLOW_HELPER,
 
   // === Access patterns (global/this prefix) ===
 

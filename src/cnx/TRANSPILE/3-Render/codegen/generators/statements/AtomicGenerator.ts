@@ -26,7 +26,7 @@ import type ICompareExchangeViews from "../../../../types/ICompareExchangeViews"
 function generateInnerAtomicOp(
   cOp: string,
   value: string,
-  clampHelper: string | null,
+  overflowHelper: string | null,
 ): IGeneratorOutput {
   const effects: TGeneratorEffect[] = [];
   const simpleOp = COMPOUND_TO_BINARY[cOp];
@@ -35,9 +35,9 @@ function generateInnerAtomicOp(
     `an atomic read-modify-write is a compound assignment (got '${cOp}')`,
   );
 
-  // Saturate when the classifier chose a clamp helper
-  if (clampHelper) {
-    return { code: `${clampHelper}(__old, ${value})`, effects };
+  // Call the overflow helper the classifier chose
+  if (overflowHelper) {
+    return { code: `${overflowHelper}(__old, ${value})`, effects };
   }
 
   // For wrap behavior, floats, or non-clamp ops, use natural arithmetic
@@ -170,35 +170,22 @@ function generatePrimaskWrapper(
   target: string,
   cOp: string,
   value: string,
-  clampHelper: string | null,
+  overflowHelper: string | null,
 ): IGeneratorOutput {
   const effects: TGeneratorEffect[] = [];
 
   // Generate the actual assignment operation inside the masked region
   let assignment: string;
 
-  // Saturate when the classifier chose a clamp helper
-  if (clampHelper) {
-    assignment = `${target} = ${clampHelper}(${target}, ${value});`;
+  // Call the overflow helper the classifier chose
+  if (overflowHelper) {
+    assignment = `${target} = ${overflowHelper}(${target}, ${value});`;
   } else {
     assignment = `${target} ${cOp} ${value};`;
   }
 
   const masked = InterruptMask.wrap(assignment);
   return { code: masked.code, effects: [...effects, ...masked.effects] };
-}
-
-/** The ADR-044 helper a saturating compound write calls, or null */
-function clampHelperOf(
-  atomic: IPlannedAtomic,
-  clampOp: string | null,
-): string | null {
-  if (clampOp === null) return null;
-  invariant(
-    atomic.typeName !== null,
-    "2.2 plans a clamp helper only for a cnx integer",
-  );
-  return `cnx_clamp_${clampOp}_${atomic.typeName}`;
 }
 
 /**
@@ -211,8 +198,8 @@ function clampHelperOf(
  * @param value - The value expression
  * @param atomic - 2.2's plan: the form, what the value is accessed as, and
  *   the C type `__operand` holds the value in
- * @param clampOp - ADR-044 helper operation from
- *   `AssignmentClassifier.compoundClamp`, or null for plain arithmetic
+ * @param overflowHelper - the ADR-044 helper 2.2 planned
+ *   (`AssignmentClassifier.compoundOverflow`), or null for plain arithmetic
  * @returns Generated code and effects
  */
 function generateAtomicRMW(
@@ -220,15 +207,14 @@ function generateAtomicRMW(
   cOp: string,
   value: string,
   atomic: IPlannedAtomic,
-  clampOp: string | null,
+  overflowHelper: string | null,
 ): IGeneratorOutput {
-  const clampHelper = clampHelperOf(atomic, clampOp);
   if (atomic.form === "interrupt-mask") {
-    return generatePrimaskWrapper(target, cOp, value, clampHelper);
+    return generatePrimaskWrapper(target, cOp, value, overflowHelper);
   }
 
   // A retry loop reads the value once, through `__operand` (#1807)
-  const innerResult = generateInnerAtomicOp(cOp, OPERAND, clampHelper);
+  const innerResult = generateInnerAtomicOp(cOp, OPERAND, overflowHelper);
 
   if (atomic.form === "ldrex-strex") {
     return generateLdrexStrexLoop(

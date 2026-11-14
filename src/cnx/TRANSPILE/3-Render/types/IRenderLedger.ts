@@ -19,9 +19,9 @@ interface IRenderLedger {
   readonly lazyOperands: Set<TExpression>;
   readonly lazyTernaries: Set<TExpression>;
   readonly narrowings: Set<TExpression>;
-  readonly clampChains: Set<TExpression>;
+  readonly overflowChains: Set<TExpression>;
   readonly floatBitWrites: Set<TExpression>;
-  readonly compoundClamps: Set<IAssignmentSyntax>;
+  readonly compoundOverflows: Set<IAssignmentSyntax>;
   readonly bitmapFieldWrites: Set<IAssignmentSyntax>;
   readonly atomicForms: Set<IAssignmentSyntax>;
 }

@@ -101,7 +101,23 @@ describe("ExecFailure.of", () => {
       stdout: undefined,
       stderr: undefined,
       status: undefined,
+      signal: undefined,
     });
+  });
+
+  it("reads the signal that killed a child, which has no exit code", () => {
+    const error = caught(() =>
+      execFileSync(
+        process.execPath,
+        ["-e", "process.kill(process.pid, 'SIGTERM')"],
+        { encoding: "utf-8", stdio: "pipe" },
+      ),
+    );
+
+    const failure = ExecFailure.of(error);
+
+    expect(failure.signal).toBe("SIGTERM");
+    expect(failure.status).toBeUndefined();
   });
 
   it("ignores stream fields that are not text", () => {

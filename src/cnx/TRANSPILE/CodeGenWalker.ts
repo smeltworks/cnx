@@ -1,4 +1,5 @@
 import InterruptMask from "./3-Render/codegen/helpers/InterruptMask";
+import type IPlannedSafeDivision from "../types/IPlannedSafeDivision";
 import type IPlannedArgument from "./2-Plan/types/IPlannedArgument";
 import type IPlannedStaticValue from "./2-Plan/types/IPlannedStaticValue";
 import LengthProperty from "../utils/LengthProperty";
@@ -734,7 +735,7 @@ class CodeGenWalker {
     step: IChainStep | null,
     rootOp: TPostfixOpSyntax | null,
     narrowing: TPlannedNarrowing | null,
-    safeDivisionHelper: string | null,
+    safeDivisionHelper: IPlannedSafeDivision | null,
   ): TPlannedPostfixOp {
     const typedAs = step?.subscript ?? null;
     switch (op.kind) {
@@ -904,7 +905,6 @@ class CodeGenWalker {
         this.rendering.comparisons.add(expr);
         return {
           kind: "comparison",
-          defaultOperator: "=",
           operators,
           mapOperator: BinaryExprUtils.mapEqualityOperator,
           adrLine: BinaryExprUtils.equalityAdrLine(operators, expr.span.line),
@@ -915,7 +915,6 @@ class CodeGenWalker {
       case "relational":
         return {
           kind: "comparison",
-          defaultOperator: "<",
           operators,
           mapOperator: null,
           adrLine: undefined,
@@ -925,21 +924,24 @@ class CodeGenWalker {
       case "shift":
         return { kind: "shift", operators, renderOperands };
       case "additive":
-      case "multiplicative":
+      case "multiplicative": {
+        const overflow = CodeGenWalker.plannedAt(
+          this.filePlan.overflowChains,
+          expr,
+          this.rendering.overflowChains,
+          "overflow chain",
+        );
+        // #2419: a chain with a helper is not folded, though its operands
+        // render as integers -- a private const is written as its value
         return {
           kind: "arithmetic",
-          constantValue: this.constantValue(expr),
-          defaultOperator: expr.level === "additive" ? "+" : "*",
+          constantValue: overflow === null ? this.constantValue(expr) : null,
           operators,
-          clamp: CodeGenWalker.plannedAt(
-            this.filePlan.clampChains,
-            expr,
-            this.rendering.clampChains,
-            "`+ - *` chain",
-          ),
+          overflow,
           adrLine: expr.span.line,
           renderOperands,
         };
+      }
     }
   }
 
@@ -1560,9 +1562,9 @@ class CodeGenWalker {
       lazyOperands: new Set(),
       lazyTernaries: new Set(),
       narrowings: new Set(),
-      clampChains: new Set(),
+      overflowChains: new Set(),
       floatBitWrites: new Set(),
-      compoundClamps: new Set(),
+      compoundOverflows: new Set(),
       bitmapFieldWrites: new Set(),
       atomicForms: new Set(),
     };
@@ -1737,9 +1739,9 @@ class CodeGenWalker {
       "promoted read",
     );
     CodeGenWalker.assertAllRendered(
-      CodeGenWalker.decidedSites(this.filePlan.clampChains),
-      this.rendering.clampChains,
-      "clamp chain",
+      CodeGenWalker.decidedSites(this.filePlan.overflowChains),
+      this.rendering.overflowChains,
+      "overflow chain",
     );
     CodeGenWalker.assertAllRendered(
       CodeGenWalker.decidedSites(this.filePlan.floatBitWrites),
@@ -1747,9 +1749,9 @@ class CodeGenWalker {
       "float bit write",
     );
     CodeGenWalker.assertAllRendered(
-      CodeGenWalker.decidedSites(this.filePlan.compoundClamps),
-      this.rendering.compoundClamps,
-      "compound clamp",
+      CodeGenWalker.decidedSites(this.filePlan.compoundOverflows),
+      this.rendering.compoundOverflows,
+      "compound overflow",
     );
     CodeGenWalker.assertAllRendered(
       CodeGenWalker.decidedSites(this.filePlan.bitmapFieldWrites),
@@ -3641,10 +3643,10 @@ class CodeGenWalker {
         this.rendering.atomicForms,
         "assignment",
       ),
-      plannedClamp: CodeGenWalker.plannedAt(
-        this.filePlan.compoundClamps,
+      plannedOverflow: CodeGenWalker.plannedAt(
+        this.filePlan.compoundOverflows,
         site,
-        this.rendering.compoundClamps,
+        this.rendering.compoundOverflows,
         "assignment",
       ),
       plannedSliceSource: this.filePlan.sliceSources.get(site) ?? null,
@@ -4368,7 +4370,7 @@ class CodeGenWalker {
    */
   private generateOverflowHelpers(plan: IEmissionPlan): string[] {
     return helperGenerateOverflowHelpers(
-      new Set(plan.clampOps),
+      plan.overflowHelpers,
       plan.panicOverflowHelpers !== null,
     );
   }
@@ -4385,8 +4387,10 @@ class CodeGenWalker {
    * ADR-051: Generate safe division helper functions for used integer types only
    * Delegates to HelperGenerator
    */
-  private generateSafeDivHelpers(safeDivOps: readonly string[]): string[] {
-    return helperGenerateSafeDivHelpers(new Set(safeDivOps));
+  private generateSafeDivHelpers(
+    safeDivOps: readonly IPlannedSafeDivision[],
+  ): string[] {
+    return helperGenerateSafeDivHelpers(safeDivOps);
   }
 }
 
