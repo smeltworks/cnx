@@ -39,7 +39,25 @@ const OPERATION_NAMES: Record<string, string> = {
   sub: "subtraction",
   mul: "multiplication",
   div: "division",
+  neg: "negation",
 };
+
+/**
+ * What a signed helper does at its one overflow at MIN (`MIN / -1`, `-MIN`):
+ * `wrap` gives MIN, `clamp` gives MAX, and `--debug` panics.
+ */
+function generateMinimumOverflow(
+  info: IClampTypeInfo,
+  behavior: TOverflowBehavior,
+  debugMode: boolean,
+  opName: string,
+): string {
+  if (behavior === "wrap") return `return ${info.minValue};`;
+  if (!debugMode) return `return ${info.maxValue};`;
+  return `{
+${generatePanicBlock(info.cnxType, opName)}
+    }`;
+}
 
 const MIN_BY_MINUS_ONE_COMMENT =
   "    /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */";
@@ -286,14 +304,12 @@ class SignedDivisionTemplates {
     behavior: TOverflowBehavior,
     debugMode: boolean,
   ): string {
-    const onOverflow =
-      behavior === "wrap"
-        ? `return ${info.minValue};`
-        : debugMode
-          ? `{
-${generatePanicBlock(info.cnxType, OPERATION_NAMES.div)}
-    }`
-          : `return ${info.maxValue};`;
+    const onOverflow = generateMinimumOverflow(
+      info,
+      behavior,
+      debugMode,
+      OPERATION_NAMES.div,
+    );
     const sig = generateSignature(info, name);
     return `${sig} {
 ${MIN_BY_MINUS_ONE_COMMENT}
@@ -330,6 +346,31 @@ ${SignedDivisionTemplates.pastType(info, "0", "a")}    return (${info.cType})(a 
 }
 
 /**
+ * #2418: a signed unary `-`, an operator of its own, whose one overflow is
+ * `-MIN`. Its one parameter is the value type: the operand is a value of it.
+ */
+class SignedNegationTemplates {
+  static neg(
+    info: IClampTypeInfo,
+    name: string,
+    behavior: TOverflowBehavior,
+    debugMode: boolean,
+  ): string {
+    const onOverflow = generateMinimumOverflow(
+      info,
+      behavior,
+      debugMode,
+      OPERATION_NAMES.neg,
+    );
+    return `static inline ${info.cType} ${name}(${info.cType} a) {
+    /* ADR-044 / Issue #2418: -MIN is past the type. C leaves it undefined for an int, and narrows it back to MIN for a narrower type. */
+    if (a == ${info.minValue}) ${onOverflow}
+    return (${info.cType})(-a);
+}`;
+  }
+}
+
+/**
  * The definition of one overflow helper 2.2 planned, under the name it
  * decided (#1790 review): nothing here works a name out again.
  *
@@ -352,6 +393,9 @@ function generateHelper(
   }
   if (!info.isUnsigned && operation === "mod") {
     return SignedDivisionTemplates.mod(info, name);
+  }
+  if (!info.isUnsigned && operation === "neg") {
+    return SignedNegationTemplates.neg(info, name, behavior, debugMode);
   }
   if (behavior === "wrap") {
     return null;

@@ -305,6 +305,34 @@ describe("CodeGenWalker", () => {
       expect(normal).not.toContain("PANIC:");
     });
 
+    it("panics on a negation of MIN in debug mode (#2418)", () => {
+      // #2418 owner ruling: a unary `-` overflows by itself, and --debug
+      // panics there as on every overflow, wrap included
+      const source = `
+        i8 negated(i8 n) { return -n; }
+        i32 wrapNegated(i32 n) {
+          wrap i32 w <- n;
+          return -w;
+        }
+      `;
+      const { tree, program } = CnxSourceParser.parse(source);
+      const generator = new CodeGenWalker(new CodeGenerator());
+      const symbols = TSymbolInfoAdapter.convert(declareAndResolve(tree));
+
+      const code = generateWithProgram(generator, tree, program, {
+        cppMode: false,
+        symbolInfo: symbols,
+        sourcePath: "test.cnx",
+        debugMode: true,
+      });
+
+      expect(code).toContain("return cnx_clamp_neg_i8(n);");
+      expect(code).toContain("return cnx_clamp_neg_i32(w);");
+      expect(code).toContain("PANIC: Integer overflow in i8 negation");
+      expect(code).toContain("PANIC: Integer overflow in i32 negation");
+      expect(code).not.toContain("cnx_wrap_");
+    });
+
     it("should generate C++ output when cppMode is enabled", () => {
       const source = `
         void foo() { }

@@ -642,6 +642,7 @@ class CodeGenWalker {
         operandCode: this.renderPostfix(expr),
         minimum: null,
         complementCast: null,
+        negation: null,
       });
     }
 
@@ -650,11 +651,14 @@ class CodeGenWalker {
     if (minimum !== null) this.rendering.minimums.add(expr);
     const complementCast = this.filePlan.complementCasts.get(expr) ?? null;
     if (complementCast !== null) this.rendering.complementCasts.add(expr);
+    const negation = this.filePlan.overflowNegations.get(expr) ?? null;
+    if (negation !== null) this.rendering.overflowNegations.add(expr);
     return this.invokeGenerator(generateUnaryExpr, {
       operator: expr.operator,
       operandCode: this.renderUnary(operand),
       minimum,
       complementCast,
+      negation: negation?.name ?? null,
     });
   }
 
@@ -1563,6 +1567,7 @@ class CodeGenWalker {
       lazyTernaries: new Set(),
       narrowings: new Set(),
       overflowChains: new Set(),
+      overflowNegations: new Set(),
       floatBitWrites: new Set(),
       compoundOverflows: new Set(),
       bitmapFieldWrites: new Set(),
@@ -1742,6 +1747,11 @@ class CodeGenWalker {
       CodeGenWalker.decidedSites(this.filePlan.overflowChains),
       this.rendering.overflowChains,
       "overflow chain",
+    );
+    CodeGenWalker.assertAllRendered(
+      this.filePlan.overflowNegations.keys(),
+      this.rendering.overflowNegations,
+      "overflow negation",
     );
     CodeGenWalker.assertAllRendered(
       CodeGenWalker.decidedSites(this.filePlan.floatBitWrites),

@@ -1484,6 +1484,7 @@ class FilePlanner {
       ]),
       safeDivisions,
       overflowChains: clamps.chains,
+      overflowNegations: clamps.negations,
       compoundOverflows: clamps.compound,
       compoundCasts,
       registerAccesses,
@@ -2292,6 +2293,10 @@ class FilePlanner {
     requirements: PlannedRequirements,
   ): {
     readonly chains: ReadonlyMap<TExpression, IPlannedOverflowChain | null>;
+    readonly negations: ReadonlyMap<
+      TExpressionOf<"unary">,
+      IPlannedOverflowHelper
+    >;
     readonly compound: ReadonlyMap<
       IAssignmentSyntax,
       IPlannedOverflowHelper | null
@@ -2301,12 +2306,21 @@ class FilePlanner {
       FilePlanner.useOverflowHelper(helper, cTypes, requirements);
 
     const chains = new Map<TExpression, IPlannedOverflowChain | null>();
+    const negations = new Map<TExpressionOf<"unary">, IPlannedOverflowHelper>();
     for (const expr of [
       ...FilePlanner.writtenExpressions(program, unwritten),
       ...foreignRegisterValues.flatMap((value) =>
         ExpressionNodes.direct(value),
       ),
     ]) {
+      if (expr.kind === "unary") {
+        const negation = this.overflowNegation(expr);
+        if (negation !== null) {
+          negations.set(expr, negation);
+          use(negation);
+        }
+        continue;
+      }
       if (expr.kind !== "binary") continue;
       if (expr.level !== "additive" && expr.level !== "multiplicative") {
         continue;
@@ -2339,7 +2353,33 @@ class FilePlanner {
       use(clamp);
       compound.set(site, clamp);
     }
-    return { chains, compound };
+    return { chains, negations, compound };
+  }
+
+  /**
+   * ADR-044 (#2418): a unary `-` is an operator of its own, so it saturates
+   * or wraps where it stands, by its operand's modifier, as each operator of
+   * a chain does (#1790). A `-` literal is a value, not an operation, and an
+   * operand with no counted leaf keeps C's semantics (#2409).
+   */
+  private overflowNegation(
+    expr: TExpressionOf<"unary">,
+  ): IPlannedOverflowHelper | null {
+    if (expr.operator !== "-" || expr.operand.kind === "literal") return null;
+    const typing = this.state.typingContext();
+    const operandType = OperandTyper.typeOf(expr.operand, typing);
+    if (operandType?.typeName == null || operandType.bitWidth === null) {
+      return null;
+    }
+    const behavior = this.compositeClampBehavior(expr.operand);
+    if (behavior === null) return null;
+    return OverflowHelper.ofNegation(
+      behavior,
+      operandType.typeName,
+      operandType.bitWidth,
+      PlanTyping.constantValue(expr.operand, typing),
+      this.state.debugMode,
+    );
   }
 
   /** ADR-044: an overflow helper the file calls, and the C types it spells */

@@ -102,6 +102,11 @@ interface IFilePlan {
     TExpression,
     IPlannedOverflowChain | null
   >;
+  /** ADR-044 (#2418): each written unary `-` that calls an overflow helper, and that helper */
+  readonly overflowNegations: ReadonlyMap<
+    TExpressionOf<"unary">,
+    IPlannedOverflowHelper
+  >;
   /** ADR-044: each assignment, and the overflow helper it calls (null: none) */
   readonly compoundOverflows: ReadonlyMap<
     IAssignmentSyntax,

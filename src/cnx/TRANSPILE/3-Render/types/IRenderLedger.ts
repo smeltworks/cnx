@@ -20,6 +20,7 @@ interface IRenderLedger {
   readonly lazyTernaries: Set<TExpression>;
   readonly narrowings: Set<TExpression>;
   readonly overflowChains: Set<TExpression>;
+  readonly overflowNegations: Set<TExpression>;
   readonly floatBitWrites: Set<TExpression>;
   readonly compoundOverflows: Set<IAssignmentSyntax>;
   readonly bitmapFieldWrites: Set<IAssignmentSyntax>;

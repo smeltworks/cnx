@@ -13,7 +13,8 @@ const DIVISION_HELPER_FOR_OPERATOR: Readonly<Partial<Record<string, string>>> =
  * helper. A `clamp` `+ - *` saturates. A signed `/` or `%` goes through one
  * under either modifier, because C leaves `MIN / -1` and `MIN % -1` undefined:
  * the quotient is MAX for `clamp` and MIN for `wrap`, the remainder 0 (#1790).
- * Anything else is plain C. 2.1 (E0811) and 2.2 both ask it, so the two
+ * A signed unary `-` is an operator of its own and does the same at `-MIN`:
+ * MAX for `clamp`, MIN for `wrap` (#2418). Anything else is plain C. 2.1 (E0811) and 2.2 both ask it, so the two
  * decide alike.
  */
 class OverflowOperation {
@@ -44,6 +45,22 @@ class OverflowOperation {
       division ??
       (behavior === "clamp" ? CLAMP_HELPER_FOR_OPERATOR[operator] : undefined)
     );
+  }
+
+  /**
+   * A unary `-`'s helper operation, `neg`, or undefined for plain C. `operand`
+   * is its value when known at compile time, else null: only `-MIN`
+   * overflows, so a known operand other than `minimum` is plain C, which
+   * keeps a negated constant a C constant expression (#2418).
+   */
+  static ofNegation(
+    signed: boolean,
+    operand: number | null,
+    minimum: number,
+  ): string | undefined {
+    if (!signed) return undefined;
+    if (operand !== null && operand !== minimum) return undefined;
+    return "neg";
   }
 }
 

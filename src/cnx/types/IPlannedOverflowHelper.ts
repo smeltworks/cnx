@@ -8,7 +8,7 @@ interface IPlannedOverflowHelper {
   /** The C function 2.3 calls */
   readonly name: string;
   readonly behavior: TOverflowBehavior;
-  /** `add`, `sub`, `mul`, `div` or `mod` */
+  /** `add`, `sub`, `mul`, `div`, `mod` or `neg` (unary `-`, #2418) */
   readonly operation: string;
   readonly cnxType: string;
 }

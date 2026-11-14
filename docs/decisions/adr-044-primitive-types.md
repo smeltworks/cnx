@@ -496,6 +496,7 @@ undefined, and on x86 it traps. [Owner ruling, 2026-11-12](https://github.com/sm
 | ---------- | -------------- | -------------- |
 | `MIN / -1` | the type's MAX | the type's MIN |
 | `MIN % -1` | 0              | 0              |
+| `-MIN`     | the type's MAX | the type's MIN |
 
 **The rule behind the table.** `clamp` takes the exact mathematical answer and gives the value
 of the type nearest to it: an answer past the maximum is the maximum, one past the minimum is
@@ -517,7 +518,22 @@ i32 remainderOf(i32 n, i32 d) {
 }
 ```
 
-A value fixed at compile time is different: `MIN / -1` there is rejected, as below.
+**Unary `-` is an operator of its own.** [Owner ruling, 2026-11-14](https://github.com/smeltworks/cnx/issues/2418#issuecomment-6885627043)
+(#2418): `-` saturates or wraps where it stands, as each operator of a chain does. Its one
+overflow is `-MIN`, exactly MAX + 1, so `clamp` gives MAX and `wrap` gives MIN, and under
+`--debug` it panics. The operator that reads a negation gets that value, never C's promoted
+one, so `-n + d` is `(-n) + d`:
+
+```cnx
+i8 negated(i8 n) {
+    return -n; // negated(-128) is 127
+}
+i8 negatedSum(i8 n, i8 d) {
+    return -n + d; // negatedSum(-128, -1) is 126: -n saturates to 127 first
+}
+```
+
+A value fixed at compile time is different: `MIN / -1` and `-MIN` there are rejected, as below.
 
 #### Values fixed at compile time
 

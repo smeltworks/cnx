@@ -30,6 +30,35 @@ class OverflowHelper {
       behavior,
       divisor,
     );
+    return OverflowHelper.planned(behavior, operation, cnxType);
+  }
+
+  /**
+   * A unary `-`'s helper (#2418). `operand` is its value when known at
+   * compile time, else null (`OverflowOperation.ofNegation`).
+   */
+  static ofNegation(
+    declared: TOverflowBehavior,
+    cnxType: string,
+    bitWidth: number,
+    operand: number | null,
+    debugMode: boolean,
+  ): IPlannedOverflowHelper | null {
+    const behavior = OverflowBehaviorUtils.underDebug(declared, debugMode);
+    if (!TypeCheckUtils.isInteger(cnxType)) return null;
+    const operation = OverflowOperation.ofNegation(
+      TypeCheckUtils.isSigned(cnxType),
+      operand,
+      -(2 ** (bitWidth - 1)),
+    );
+    return OverflowHelper.planned(behavior, operation, cnxType);
+  }
+
+  private static planned(
+    behavior: TOverflowBehavior,
+    operation: string | undefined,
+    cnxType: string,
+  ): IPlannedOverflowHelper | null {
     if (operation === undefined) return null;
     return {
       name: ReservedCnxName.overflowHelper(behavior, operation, cnxType),
