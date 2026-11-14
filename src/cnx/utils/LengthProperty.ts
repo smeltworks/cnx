@@ -69,7 +69,6 @@ class LengthProperty {
   static readonly CHAR_COUNT_TYPE = "u32";
   static readonly CHAR_COUNT_C_TYPE =
     CNX_TO_C_TYPE_MAP[LengthProperty.CHAR_COUNT_TYPE];
-  static readonly VALUE_CHAR_COUNT_PROPERTY = "value_char_count";
 
   /** The memory row's cnx type, for every subject and target (#1806 owner ruling) */
   static readonly MEMORY_TYPE = "u32";
