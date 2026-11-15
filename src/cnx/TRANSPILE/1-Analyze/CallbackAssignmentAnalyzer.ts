@@ -49,6 +49,7 @@ import type TExpression from "../../types/syntax/TExpression";
 import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
 import OperandTyper from "../../utils/OperandTyper";
 import type IVariableDeclarationSyntax from "../../types/syntax/IVariableDeclarationSyntax";
+import BindingSite from "./helpers/BindingSite";
 import IFunctionSymbol from "../../types/symbols/IFunctionSymbol";
 import TypeResolver from "../../utils/TypeResolver";
 import CCallbackSignature from "./helpers/CCallbackSignature";
@@ -172,7 +173,7 @@ class CallbackAssignmentCheck {
       CCallbackSignature.compareCnx(expected, actual, this.context) ===
         "mismatch"
     ) {
-      this.reportSignatureMismatch(value, slotTypeText);
+      this.reportSignatureMismatch(value, slotTypeText, expected);
       return;
     }
 
@@ -213,12 +214,13 @@ class CallbackAssignmentCheck {
     ) {
       return;
     }
-    this.reportSignatureMismatch(value, slotTypeText);
+    this.reportSignatureMismatch(value, slotTypeText, expected);
   }
 
   private reportSignatureMismatch(
     value: TExpression,
     slotTypeText: string,
+    callbackType: IFunctionSymbol,
   ): void {
     this.found.push({
       code: "E0879",
@@ -226,6 +228,7 @@ class CallbackAssignmentCheck {
       message: `Function '${value.written}' signature does not match callback type '${slotTypeText}'`,
       helpText:
         "A callback must match its type's signature exactly: return type, parameter count, and each parameter's type, const-ness and array-ness (ADR-029).",
+      declaredAt: BindingSite.ofSymbol(callbackType),
     });
   }
 

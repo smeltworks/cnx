@@ -35,6 +35,7 @@ import IReturnValueUseError from "./types/IReturnValueUseError";
 import type IResolvedSymbols from "../../types/IResolvedSymbols";
 import DeclaredTypeFacts from "../../utils/DeclaredTypeFacts";
 import type IAnalysisContext from "./types/IAnalysisContext";
+import BindingSite from "./helpers/BindingSite";
 import type ISourceSite from "../../types/ISourceSite";
 
 class ReturnValueUseAnalyzer {
@@ -186,13 +187,7 @@ class ReturnValueUseAnalyzer {
           (sym.sourceFile === context.sourceFile ||
             context.program.seesForeignSymbol(context.sourceFile, sym)),
       );
-    return (
-      symbol && {
-        sourcePath: symbol.sourceFile,
-        line: symbol.span.line,
-        column: symbol.span.column,
-      }
-    );
+    return symbol && BindingSite.ofSymbol(symbol);
   }
 
   /** #1991: reads 1.2's syntax, not the parse tree */

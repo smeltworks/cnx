@@ -26,7 +26,6 @@ import OperandTyper from "../../utils/OperandTyper";
 import ConstantFold from "../../utils/ConstantFold";
 import ConstExprLowering from "../../utils/ConstExprLowering";
 import type IAnalysisContext from "./types/IAnalysisContext";
-import type ISourceSite from "../../types/ISourceSite";
 import BindingSite from "./helpers/BindingSite";
 
 /** #1991: reads 1.2's syntax, not the parse tree */
@@ -132,17 +131,6 @@ class DivisionByZeroAnalyzer {
     ];
   }
 
-  /**
-   * #1402: where the first name the divisor reads is declared, for the
-   * matrix's relationship; undefined for a literal divisor
-   */
-  private divisorDeclaration(divisor: TExpression): ISourceSite | undefined {
-    const bound = OperandTyper.valueLeaves(divisor, this.context).find(
-      (leaf) => leaf?.binding != null,
-    );
-    return BindingSite.of(bound?.binding ?? null, this.context);
-  }
-
   private addError(
     operator: string,
     divisor: TExpression,
@@ -162,7 +150,7 @@ class DivisionByZeroAnalyzer {
       helpText: atRunTime
         ? `Consider using ${builtin}(output, numerator, divisor, defaultValue) for runtime safety`
         : "A divisor known at compile time must not be zero",
-      declaredAt: this.divisorDeclaration(divisor),
+      declaredAt: BindingSite.ofOperands([divisor], this.context),
     });
   }
 }
