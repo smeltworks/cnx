@@ -18,6 +18,8 @@ import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import StatementChildren from "../../utils/StatementChildren";
 import TypeParts from "../../utils/TypeParts";
+import OperandTyper from "../../utils/OperandTyper";
+import type TTypeSyntax from "../../types/syntax/TTypeSyntax";
 import IFunctionCallError from "./types/IFunctionCallError";
 import AdrProvenance from "../../instrumentation/AdrProvenance";
 import DynamicAllocation from "./DynamicAllocation";
@@ -71,7 +73,7 @@ class FunctionCallWalk {
     this.analyzer.defineFunction(fullName);
     this.part({ kind: "type", type: fn.returnType }, scope);
     for (const parameter of fn.parameters ?? []) {
-      this.defineIfCallable(parameter.type.text, parameter.name, scope);
+      this.defineIfCallable(parameter.type, parameter.name);
       this.part({ kind: "type", type: parameter.type }, scope);
       for (const part of TypeParts.dimensions(parameter.dimensions)) {
         this.part(part, scope);
@@ -85,17 +87,13 @@ class FunctionCallWalk {
   private statements(statements: readonly TStatement[], scope: string): void {
     for (const statement of statements) {
       if (statement.kind === "variableDeclaration") {
-        this.defineIfCallable(statement.type.text, statement.name, scope);
+        this.defineIfCallable(statement.type, statement.name);
       }
       if (
         statement.kind === "for" &&
         statement.init?.kind === "variableDeclaration"
       ) {
-        this.defineIfCallable(
-          statement.init.type.text,
-          statement.init.name,
-          scope,
-        );
+        this.defineIfCallable(statement.init.type, statement.init.name);
       }
       for (const part of DeclarationParts.statement(statement)) {
         this.part(part, scope);
@@ -137,17 +135,8 @@ class FunctionCallWalk {
   }
 
   /** ADR-040: a variable of a callback, ISR or C function-pointer type */
-  private defineIfCallable(
-    typeName: string,
-    name: string,
-    scope: string,
-  ): void {
-    if (
-      typeName === "ISR" ||
-      this.analyzer.isCallbackMember(scope, typeName) ||
-      this.analyzer.isCallbackType(typeName) ||
-      this.analyzer.isCFunctionPointerTypedef(typeName)
-    ) {
+  private defineIfCallable(type: TTypeSyntax, name: string): void {
+    if (this.analyzer.isCallableType(type)) {
       this.analyzer.defineCallableVariable(name);
     }
   }
@@ -316,11 +305,18 @@ class FunctionCallAnalyzer {
     );
   }
 
-  /** ADR-029: `name`, written in `scope`, names a callback type it declares */
-  public isCallbackMember(scope: string, name: string): boolean {
-    const member = this.memberOf(scope, name);
+  /**
+   * ADR-040: a value of this written type can be called -- an ISR, a callback
+   * type (ADR-029) or a C function-pointer typedef. A named type is resolved by
+   * the one ladder, so `this.T` and `Scope.T` name the function they name
+   * everywhere else rather than a type spelled `this.T` (#1287).
+   */
+  public isCallableType(type: TTypeSyntax): boolean {
+    if (type.text === "ISR") return true;
+    const cName = OperandTyper.namedTypeCName(type, this.context, type.span);
     return (
-      member !== undefined && this.isCallbackType(member.fullyQualifiedCName)
+      (cName !== null && this.isCallbackType(cName)) ||
+      this.isCFunctionPointerTypedef(type.text)
     );
   }
 

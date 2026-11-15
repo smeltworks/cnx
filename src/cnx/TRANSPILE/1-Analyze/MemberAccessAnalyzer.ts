@@ -54,7 +54,7 @@ class MemberAccessAnalyzer {
       {
         code: "E0927",
         span: chain.ops[index].span,
-        message: `'${ExpressionShape.writtenThrough(chain, index)}' is a ${MemberAccessAnalyzer.typeOf(step)} and has no member '${step.member}'`,
+        message: `'${ExpressionShape.writtenThrough(chain, index)}' is a ${this.typeOf(step)} and has no member '${step.member}'`,
         helpText: HELP,
       },
     ];
@@ -86,10 +86,13 @@ class MemberAccessAnalyzer {
     );
   }
 
-  private static typeOf(step: IChainStep): string {
+  /** The type as its author wrote it -- `Timing.Config`, never `Timing__Config` (#1287) */
+  private typeOf(step: IChainStep): string {
     const before = step.before;
     if (before === null) return "value";
-    const name = before.typeName ?? before.bitmapTypeName ?? "value";
+    const cName = before.typeName ?? before.bitmapTypeName ?? "value";
+    const name =
+      this.context.program.symbolByCName(cName)?.cnxScopedName ?? cName;
     return before.dimensions.length > 0
       ? `${name}${before.dimensions.map((d) => `[${d}]`).join("")}`
       : name;
