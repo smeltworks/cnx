@@ -1,0 +1,17 @@
+// test-error
+// test-adr: 029
+// #1287: this.Config names the scope function, so settings is a function
+// pointer and has no member, though a struct Config declares one.
+struct Config {
+    u32 marker;
+}
+
+scope Timing {
+    public u32 Config() {
+        return 7;
+    }
+
+    public u32 read(this.Config settings) {
+        return settings.marker;
+    }
+}

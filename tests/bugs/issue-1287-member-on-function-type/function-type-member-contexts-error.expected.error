@@ -1,0 +1,10 @@
+16:12 error[E0927]: 'g' is a tick and has no member 'marker'
+       help: Only a struct, a bitmap, a scope, a register or a header struct or union has members; any other value answers only its length properties (ADR-058). A local or parameter named like a scope shadows it: reach the scope with global.Scope.member (ADR-057).
+21:12 error[E0927]: 't' is a tick and has no member 'marker'
+       help: Only a struct, a bitmap, a scope, a register or a header struct or union has members; any other value answers only its length properties (ADR-058). A local or parameter named like a scope shadows it: reach the scope with global.Scope.member (ADR-057).
+25:15 error[E0927]: 'h.cb' is a tick and has no member 'marker'
+       help: Only a struct, a bitmap, a scope, a register or a header struct or union has members; any other value answers only its length properties (ADR-058). A local or parameter named like a scope shadows it: reach the scope with global.Scope.member (ADR-057).
+29:8 error[E0927]: 'h.cb' is a tick and has no member 'marker'
+       help: Only a struct, a bitmap, a scope, a register or a header struct or union has members; any other value answers only its length properties (ADR-058). A local or parameter named like a scope shadows it: reach the scope with global.Scope.member (ADR-057).
+33:12 error[E0927]: 'f' is a fn_type_cb_t and has no member 'marker'
+       help: Only a struct, a bitmap, a scope, a register or a header struct or union has members; any other value answers only its length properties (ADR-058). A local or parameter named like a scope shadows it: reach the scope with global.Scope.member (ADR-057).

@@ -1,0 +1,4 @@
+// #1287: a function-as-type declared in another file (ADR-029).
+u32 tick() {
+    return 1;
+}

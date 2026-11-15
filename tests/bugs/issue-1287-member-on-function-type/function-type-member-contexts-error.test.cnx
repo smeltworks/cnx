@@ -1,0 +1,34 @@
+// test-error
+// test-adr: 029
+// #1287: a member of a value whose type is a function, in every context it
+// is reached through: a global, a local, a struct field, a written target,
+// a type declared in an included file, and a C header pointer typedef.
+#include "fn-type-lib.cnx"
+#include "fn-type-cb.h"
+
+struct Holder {
+    tick cb;
+}
+
+tick g <- tick;
+
+u32 useGlobal() {
+    return g.marker;
+}
+
+u32 useLocal() {
+    tick t <- tick;
+    return t.marker;
+}
+
+u32 useField(Holder h) {
+    return h.cb.marker;
+}
+
+void writeField(mut Holder h) {
+    h.cb.marker <- 3;
+}
+
+u32 useHeader(fn_type_cb_t f) {
+    return f.marker;
+}
