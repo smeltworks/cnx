@@ -138,5 +138,12 @@ u32 main() {
     if (sl != -5) {
         return 20;
     }
+
+    // A literal cast counts no more than its literal: `wrap` still wraps
+    mut wrap u8 wrapping <- 255;
+    wrapping <- wrapping + (u8)1;
+    if (wrapping != 0) {
+        return 22;
+    }
     return 0;
 }

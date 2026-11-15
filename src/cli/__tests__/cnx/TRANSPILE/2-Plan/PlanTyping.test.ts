@@ -117,6 +117,8 @@ describe("OverflowBehaviorUtils.ofLeaves (ADR-044)", () => {
     ],
     ["an element counts by its array (#1887)", "u32 r <- arr[0] + 1;", "clamp"],
     ["a literal is not counted", "u32 r <- 1 + 2;", null],
+    ["a literal cast is not counted", "u32 r <- w + (u32)1;", "wrap"],
+    ["a cast's own modifier counts", "u32 r <- w + (clamp u32)1;", "clamp"],
   ])("%s", (_why, body, expected) => {
     expect(overflowOf(`${globals}void main() {\n${body}\n}`)).toBe(expected);
   });

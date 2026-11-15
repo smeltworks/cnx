@@ -213,5 +213,10 @@ int main(void) {
     if (sl != -5) {
         return 20U;
     }
+    uint8_t wrapping = 255U;
+    wrapping = wrapping + (uint8_t)1U;
+    if (wrapping != 0) {
+        return 22U;
+    }
     return 0U;
 }

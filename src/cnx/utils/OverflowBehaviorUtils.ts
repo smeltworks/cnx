@@ -52,7 +52,8 @@ class OverflowBehaviorUtils {
    * (#1681) and a `for` variable (#1667) count by their declarations like any
    * local: a parameter has no modifier in the grammar, so it clamps.
    *
-   * Every integer value but a literal counts. A C or C++ header's value -- a
+   * Every integer value but a literal counts, and a literal cast, `(u8)1`,
+   * is no more counted than its literal. A C or C++ header's value -- a
    * call, a variable, an array's element, a struct's field -- has no `clamp`
    * or `wrap` of its own, and the operator reading it is cnx code, so
    * ADR-044's default decides it: it clamps. C keeps only what is C -- a
@@ -80,6 +81,7 @@ class OverflowBehaviorUtils {
       return undefined;
     }
     if (leaf.form.kind === "literal") return undefined;
+    if (leaf.form.kind === "cast" && leaf.form.ofLiteral) return undefined;
     return OverflowBehaviorUtils.fromModifier(leaf.overflow);
   }
 }

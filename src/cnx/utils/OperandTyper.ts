@@ -1056,7 +1056,13 @@ class OperandTyper {
       overflow: expr.overflow ?? inner?.overflow ?? null,
       binding: null,
       hasSideEffect: inner?.hasSideEffect ?? false,
-      form: { kind: "cast" },
+      form: {
+        kind: "cast",
+        ofLiteral:
+          expr.overflow === null &&
+          (inner?.form.kind === "literal" ||
+            (inner?.form.kind === "cast" && inner.form.ofLiteral)),
+      },
     };
   }
 
