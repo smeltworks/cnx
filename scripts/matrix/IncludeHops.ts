@@ -7,9 +7,8 @@
  * along two paths is as near as its shortest one: a provider gaining an
  * include of its own moves nothing the fixture uses from it.
  *
- * A header a header includes is not in the graph: its declarations reach the
- * fixture as part of the header that included it (ADR-010), and a position
- * declared there has no distance this measures.
+ * A header a header includes is one hop further again (`ISourceGraph.headerEdges`),
+ * so a C++ class reached through a relay header is two hops away (#1523).
  */
 
 function from(
