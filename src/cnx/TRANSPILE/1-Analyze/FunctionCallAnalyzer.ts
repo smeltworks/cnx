@@ -19,6 +19,8 @@ import ExpressionNodes from "../../utils/ExpressionNodes";
 import StatementChildren from "../../utils/StatementChildren";
 import TypeParts from "../../utils/TypeParts";
 import IFunctionCallError from "./types/IFunctionCallError";
+import BindingSite from "./helpers/BindingSite";
+import type ISourceSite from "../../types/ISourceSite";
 import AdrProvenance from "../../instrumentation/AdrProvenance";
 import DynamicAllocation from "./DynamicAllocation";
 import StdlibFunctions from "./StdlibFunctions";
@@ -179,6 +181,12 @@ class FunctionCallAnalyzer {
 
   /** #1456: the 2.1 context is the one channel to the symbol table (#1659). */
   public constructor(private readonly context: IAnalysisContext) {}
+
+  /** #1402: where the function a bare call resolved to is declared */
+  private declarationOf(cName: string): ISourceSite | undefined {
+    const symbol = this.context.program.symbolByCName(cName);
+    return symbol ? BindingSite.ofSymbol(symbol) : undefined;
+  }
 
   /**
    * Analyze a parsed program for function call errors
@@ -422,7 +430,12 @@ class FunctionCallAnalyzer {
         // CONFIRMED, not at `scopeQualifiedCandidate`, which only proposes one:
         // recording the proposal would credit a cell for a name that went on to
         // resolve somewhere else entirely.
-        AdrProvenance.record("057", line, "binds-scope");
+        AdrProvenance.record(
+          "057",
+          line,
+          "binds-scope",
+          this.declarationOf(qualifiedName),
+        );
         return true;
       }
     }
@@ -600,7 +613,12 @@ class FunctionCallAnalyzer {
         return false;
       }
       if (this.namesExternalFunction(scoped)) {
-        AdrProvenance.record("057", line, "binds-scope");
+        AdrProvenance.record(
+          "057",
+          line,
+          "binds-scope",
+          this.declarationOf(scoped),
+        );
         return true;
       }
     }
