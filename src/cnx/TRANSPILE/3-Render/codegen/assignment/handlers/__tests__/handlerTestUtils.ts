@@ -260,12 +260,13 @@ function writtenOf(target: IChainBase): IOperandType | null {
 function plannedClampOf(
   ctx: Pick<IAssignmentContext, "cnxOp" | "valueHasFloatingOperand">,
   target: IChainBase,
-): { operation: string; cnxType: string } | null {
-  return AssignmentClassifier.clampOfWrite(
+): IAssignmentContext["plannedClamp"] {
+  const clamp = AssignmentClassifier.clampOfWrite(
     writtenOf(target),
     ctx.cnxOp,
     ctx.valueHasFloatingOperand,
   );
+  return clamp && { ...clamp, declaredAt: undefined };
 }
 
 /**

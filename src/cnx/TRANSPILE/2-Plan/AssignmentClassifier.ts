@@ -480,7 +480,7 @@ class AssignmentClassifier {
    */
   static compoundClamp(
     ctx: IAssignmentContext,
-  ): { operation: string; cnxType: string } | null {
+  ): IAssignmentContext["plannedClamp"] {
     return ctx.plannedClamp;
   }
 

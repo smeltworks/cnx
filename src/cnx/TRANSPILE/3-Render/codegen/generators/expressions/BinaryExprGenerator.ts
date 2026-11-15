@@ -103,7 +103,7 @@ const tryClampOperands = (
   // #1241: ADR-044's rule -- a `clamp` integer expression is lowered to
   // saturating helper calls rather than plain C arithmetic -- fired in 2.2,
   // which decided this chain's helpers.
-  AdrProvenance.record("044", plan.adrLine);
+  AdrProvenance.record("044", plan.adrLine, undefined, clamp.declaredAt);
 
   let code = operandCodes[0];
   clamp.operations.forEach((operation, index) => {

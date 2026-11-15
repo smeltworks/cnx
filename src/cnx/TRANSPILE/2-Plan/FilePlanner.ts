@@ -1,3 +1,4 @@
+import BindingSite from "../1-Analyze/helpers/BindingSite";
 import ForeignTypeFacts from "../../utils/ForeignTypeFacts";
 import SubscriptDepthValidator from "./SubscriptDepthValidator";
 import UnwrittenIncludes from "./UnwrittenIncludes";
@@ -1142,13 +1143,18 @@ class FilePlanner {
       if (planned === null) continue;
       values.set(value.value, {
         ...planned,
-        clampLines: ExpressionNodes.direct(value.value).flatMap((node) =>
-          node.kind === "binary" &&
-          (node.level === "additive" || node.level === "multiplicative") &&
-          this.clampChain(node) !== null
-            ? [node.span.line]
-            : [],
-        ),
+        clamps: ExpressionNodes.direct(value.value).flatMap((node) => {
+          if (
+            node.kind !== "binary" ||
+            (node.level !== "additive" && node.level !== "multiplicative")
+          ) {
+            return [];
+          }
+          const clamp = this.clampChain(node);
+          return clamp === null
+            ? []
+            : [{ line: node.span.line, declaredAt: clamp.declaredAt }];
+        }),
       });
       if (
         StaticInitializers.readsVariable(
@@ -1172,7 +1178,7 @@ class FilePlanner {
     value: IStaticValue,
     program: IProgram,
     sourceFile: string,
-  ): Omit<IPlannedStaticValue, "clampLines"> | null {
+  ): Omit<IPlannedStaticValue, "clamps"> | null {
     const settled = StaticInitializers.settle(value, program, sourceFile);
     // A value of no number or bool type folds only as the const it names (an
     // enum const, as its member)
@@ -2239,7 +2245,14 @@ class FilePlanner {
           CLAMP_HELPER_FOR_OPERATOR[expr.operators[i] ?? defaultOperator],
       );
     if (!helpers.every((op): op is string => op !== undefined)) return null;
-    return { cnxType, operations: helpers };
+    return {
+      cnxType,
+      operations: helpers,
+      declaredAt: BindingSite.ofOperands(
+        expr.operands,
+        this.state.typingContext(),
+      ),
+    };
   }
 
   /**
@@ -2254,10 +2267,7 @@ class FilePlanner {
     cTypes: Set<string>,
   ): {
     readonly chains: ReadonlyMap<TExpression, IPlannedClamp | null>;
-    readonly compound: ReadonlyMap<
-      IAssignmentSyntax,
-      { operation: string; cnxType: string } | null
-    >;
+    readonly compound: IFilePlan["compoundClamps"];
     readonly ops: ReadonlySet<string>;
   } {
     const ops = new Set<string>();
@@ -2284,7 +2294,9 @@ class FilePlanner {
 
     const compound = new Map<
       IAssignmentSyntax,
-      { operation: string; cnxType: string } | null
+      IFilePlan["compoundClamps"] extends ReadonlyMap<unknown, infer V>
+        ? V
+        : never
     >();
     const typing = this.state.typingContext();
     for (const site of FilePlanner.assignmentSites(program)) {
@@ -2297,7 +2309,10 @@ class FilePlanner {
       );
       if (clamp === null) continue;
       use(clamp.operation, clamp.cnxType);
-      compound.set(site, clamp);
+      compound.set(site, {
+        ...clamp,
+        declaredAt: BindingSite.ofChain(site.target, typing),
+      });
     }
     return { chains, compound, ops };
   }
@@ -2407,7 +2422,12 @@ class FilePlanner {
     for (const site of FilePlanner.assignmentSites(program)) {
       const capacity = OperandTyper.stringCopyCapacity(site.target, typing);
       if (capacity === null) continue;
-      AdrProvenance.record("045", site.operatorSpan.line, "string-copy");
+      AdrProvenance.record(
+        "045",
+        site.operatorSpan.line,
+        "string-copy",
+        BindingSite.ofChain(site.target, typing),
+      );
       copies.set(site, capacity);
       forms.set(site.value, StringValueForm.of(site.value, typing));
     }
@@ -3111,7 +3131,12 @@ class FilePlanner {
     const typing = this.state.typingContext();
     const access = AtomicOwner.ofWrite(site, typing, bitmapField);
     if (access === null) return null;
-    AdrProvenance.record("049", site.target.span.line);
+    AdrProvenance.record(
+      "049",
+      site.target.span.line,
+      undefined,
+      BindingSite.ofChain(site.target, typing),
+    );
     const target = this.state.targetDescription;
     const exclusive =
       target?.ldrex_strex === true ? ExclusiveAccess.of(access) : null;

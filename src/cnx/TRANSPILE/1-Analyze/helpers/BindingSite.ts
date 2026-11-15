@@ -7,7 +7,7 @@
 
 import type ISourceSite from "../../../types/ISourceSite";
 import type TValueBinding from "../../../types/TValueBinding";
-import type IAnalysisContext from "../types/IAnalysisContext";
+import type ITypingContext from "../../../types/ITypingContext";
 import type TExpression from "../../../types/syntax/TExpression";
 import type IFunctionSymbol from "../../../types/symbols/IFunctionSymbol";
 import OperandTyper from "../../../utils/OperandTyper";
@@ -15,7 +15,7 @@ import OperandTyper from "../../../utils/OperandTyper";
 class BindingSite {
   static of(
     binding: TValueBinding | null,
-    context: IAnalysisContext,
+    context: Pick<ITypingContext, "sourceFile">,
   ): ISourceSite | undefined {
     if (binding?.kind === "local") {
       const at = binding.declaration.extent;
@@ -45,7 +45,7 @@ class BindingSite {
   /** #1402: the declaration a chain is rooted in, `a` of `a.b[0].c` */
   static ofChain(
     chain: TExpression,
-    context: IAnalysisContext,
+    context: ITypingContext,
   ): ISourceSite | undefined {
     return BindingSite.of(OperandTyper.rootOfTarget(chain, context), context);
   }
@@ -57,7 +57,7 @@ class BindingSite {
    */
   static ofOperands(
     operands: readonly TExpression[],
-    context: IAnalysisContext,
+    context: ITypingContext,
   ): ISourceSite | undefined {
     const sites = operands
       .flatMap((operand) => OperandTyper.valueLeaves(operand, context))

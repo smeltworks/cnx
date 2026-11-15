@@ -1,3 +1,4 @@
+import type ISourceSite from "../../../types/ISourceSite";
 import type IPlannedCharacterWrite from "./IPlannedCharacterWrite";
 import type TStringValueForm from "../../../types/TStringValueForm";
 import type IPlannedArgument from "./IPlannedArgument";
@@ -100,7 +101,11 @@ interface IFilePlan {
   /** ADR-044: each assignment, and the clamp helper it calls (null: none) */
   readonly compoundClamps: ReadonlyMap<
     IAssignmentSyntax,
-    { operation: string; cnxType: string } | null
+    {
+      operation: string;
+      cnxType: string;
+      declaredAt: ISourceSite | undefined;
+    } | null
   >;
   /** #1081: how each slice write reads its source */
   readonly sliceSources: ReadonlyMap<IAssignmentSyntax, IPlannedSliceSource>;

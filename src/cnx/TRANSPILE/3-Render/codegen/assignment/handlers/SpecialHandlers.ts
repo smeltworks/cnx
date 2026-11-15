@@ -53,7 +53,7 @@ function handleOverflowClamp(ctx: IAssignmentContext): string {
   // (`a <- a + b`) records in BinaryExprGenerator; this is the `a +<- b` path,
   // which reaches a different decision and would otherwise leave every
   // compound-only fixture without a derivable context.
-  AdrProvenance.record("044", ctx.targetLine);
+  AdrProvenance.record("044", ctx.targetLine, undefined, clamp.declaredAt);
   const helper = `cnx_clamp_${clamp.operation}_${clamp.cnxType}`;
   if (!ctx.targetIndexHasSideEffect) {
     return `${target} = ${helper}(${target}, ${ctx.generatedValue});`;
