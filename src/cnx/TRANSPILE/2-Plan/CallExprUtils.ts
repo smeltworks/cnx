@@ -8,7 +8,6 @@ import type IPlannedOverflowHelper from "../../types/IPlannedOverflowHelper";
 import IFunctionSignature from "../../types/IFunctionSignature";
 import type IResolvedSymbols from "../../types/IResolvedSymbols";
 import TypeResolver from "../../utils/TypeResolver";
-import TypeCheckUtils from "../../utils/TypeCheckUtils";
 
 class CallExprUtils {
   /**
@@ -21,19 +20,14 @@ class CallExprUtils {
 
   /**
    * ADR-051: Generate the helper function name for safe_div/safe_mod. One
-   * that divides through a `wrap` helper is its own (#1790), and so is a
-   * signed one with no counted operand, which divides as plain C (#2409).
+   * that divides through a `wrap` helper is its own (#1790).
    */
   static generateSafeDivModHelperName(
     funcName: "safe_div" | "safe_mod",
     cnxType: string,
     inner: IPlannedOverflowHelper | null,
   ): string {
-    let family = "";
-    if (inner?.behavior === "wrap") family = "wrap_";
-    else if (inner === null && TypeCheckUtils.isSigned(cnxType)) {
-      family = "plain_";
-    }
+    const family = inner?.behavior === "wrap" ? "wrap_" : "";
     return `cnx_safe_${family}${SafeDivision.operationOf(funcName)}_${cnxType}`;
   }
 

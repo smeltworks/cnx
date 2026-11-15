@@ -613,25 +613,24 @@ class FilePlanner {
       invariant(cnxType != null, `${call.name}'s output argument is typed`);
       // #1790: a signed quotient divides through ADR-044's helper, whose
       // modifier the numerator and divisor pick as they do for `/`; with
-      // neither counted, it is plain C, as `/` is (#2409)
+      // only literals there, ADR-044's default (#2409)
       const operation = SafeDivision.operationOf(call.name);
-      const behavior = OverflowBehaviorUtils.ofLeaves(
-        call.args
-          .slice(1, 3)
-          .flatMap((arg) => OperandTyper.valueLeaves(arg, typing)),
+      const behavior = OverflowBehaviorUtils.fromModifier(
+        OverflowBehaviorUtils.ofLeaves(
+          call.args
+            .slice(1, 3)
+            .flatMap((arg) => OperandTyper.valueLeaves(arg, typing)),
+        ),
       );
-      const inner =
-        behavior === null
-          ? null
-          : OverflowHelper.of(
-              behavior,
-              operation === "div" ? "/" : "%",
-              cnxType,
-              // One helper body serves every call with its name, so the
-              // MIN / -1 guard cannot depend on this call's divisor (#1790)
-              null,
-              state.debugMode,
-            );
+      const inner = OverflowHelper.of(
+        behavior,
+        operation === "div" ? "/" : "%",
+        cnxType,
+        // One helper body serves every call with its name, so the
+        // MIN / -1 guard cannot depend on this call's divisor (#1790)
+        null,
+        state.debugMode,
+      );
       const name = CallExprUtils.generateSafeDivModHelperName(
         call.name,
         cnxType,
@@ -2357,8 +2356,7 @@ class FilePlanner {
   /**
    * ADR-044 (#2418): a unary `-` is an operator of its own, so it saturates
    * or wraps where it stands, by its operand's modifier, as each operator of
-   * a chain does (#1790). A `-` literal is a value, not an operation, and an
-   * operand with no counted leaf keeps C's semantics (#2409).
+   * a chain does (#1790). A `-` literal is a value, not an operation.
    */
   private overflowNegation(
     expr: TExpressionOf<"unary">,

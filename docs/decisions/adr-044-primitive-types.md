@@ -470,12 +470,15 @@ That is what makes a bounds guard trustworthy when one of its terms can
 saturate -- see #231, where an unclamped `offset + length` wrapped past a guard
 and wrote out of bounds.
 
-**A C value counts for neither.** An operand that comes from a C header -- a
-function's result, a variable, a macro -- has no `clamp` or `wrap`, so it does
-not count, and a literal counts no more than one does. An expression with no
-counted operand keeps C's semantics: `largest() + one()`, two header functions
-returning `INT32_MAX` and `1`, is C's signed overflow, as it is in C
-_([owner ruling](https://github.com/smeltworks/cnx/issues/2409#issuecomment-6859549254), #2409)_.
+**A C value clamps.** An operator written in cnx is cnx code, even when every
+operand comes from a C header -- a function's result, a variable, a macro. Such
+an operand has no `clamp` or `wrap` of its own, so ADR-044's default decides it:
+`largest() + one()`, two header functions returning `INT32_MAX` and `1`, is
+`INT32_MAX`, and under `--debug` it panics. cnx does not change C: a header
+function's body and the arithmetic inside a macro's own expansion keep C's
+semantics, a risk the program takes by including them. A literal does not
+count; an expression of literals alone is folded at compile time
+_([owner ruling](https://github.com/smeltworks/cnx/issues/2409#issuecomment-6895149321), #2409, revising the [earlier one](https://github.com/smeltworks/cnx/issues/2409#issuecomment-6859549254))_.
 `safe_div` and `safe_mod` follow it (ADR-051).
 
 Applies to every `+`, `-` and `*`, wherever it stands in an expression. In a
@@ -607,11 +610,9 @@ The disasters (Ariane 5, Therac-25, Boeing 787) were all **wrap-around bugs**:
 
 #### Debug Mode: `--debug` Flag
 
-When compiled with `--debug`, **every counted** arithmetic operation panics on overflow regardless of
-`clamp`/`wrap` keywords. An operation with no counted operand keeps C's semantics under `--debug` too
-("A C value counts for neither", above), so `largest() + one()` over two C header functions is C's
-signed overflow, not a panic
-_([owner ruling](https://github.com/smeltworks/cnx/issues/2409#issuecomment-6895069926), #2409)_:
+When compiled with `--debug`, **every** arithmetic operation written in cnx panics on overflow regardless
+of `clamp`/`wrap` keywords, one over C header values included ("A C value clamps", above); C's own
+code is left as it is _([owner ruling](https://github.com/smeltworks/cnx/issues/2409#issuecomment-6895149321), #2409)_:
 
 ```cnx
 mut clamp u8 temp <- 255;

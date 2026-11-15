@@ -13,8 +13,14 @@ extern "C" {
 #endif
 
 /* Function prototypes */
-int32_t plainQuotient(void);
-int32_t plainSum(void);
+int32_t headerQuotient(void);
+int32_t headerSum(void);
+int32_t headerOverflowSum(void);
+int32_t headerUnderflowDifference(void);
+int32_t headerOverflowProduct(void);
+int32_t headerMinimumQuotient(void);
+int32_t headerMinimumRemainder(void);
+int32_t headerNegatedMinimum(void);
 
 #ifdef __cplusplus
 }

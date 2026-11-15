@@ -1,67 +1,132 @@
 // test-execution
 // test-adr: 044
-// #2409: arithmetic whose only non-literal operands are C header values
-// keeps C's semantics, so `foreign_seven() / foreign_two()` is plain `/`.
-// `safe_div` and `safe_mod` over the same operands follow it: a zero
-// divisor still gives the default, any other divides as plain C, through
-// `cnx_safe_plain_*` rather than ADR-044's helper. A counted operand in the
-// same file keeps the clamp helper, under its own name.
+// #2409: an operator written in cnx is cnx code even when every operand is
+// a C header value. A C value has no `clamp` or `wrap` of its own, so
+// ADR-044's default decides it: `foreign_max() + foreign_one()` saturates to
+// INT32_MAX (and panics under `--debug`). `safe_div` and `safe_mod` over the
+// same operands divide through ADR-044's clamp helper. What stays C is the
+// header functions' own bodies.
 #include "header_values.h"
 
-i32 plainQuotient() {
+i32 headerQuotient() {
     return foreign_seven() / foreign_two();
 }
 
-i32 plainSum() {
+i32 headerSum() {
     return foreign_seven() + foreign_two();
 }
 
+i32 headerOverflowSum() {
+    return foreign_max() + foreign_one();
+}
+
+i32 headerUnderflowDifference() {
+    return foreign_min() - foreign_one();
+}
+
+i32 headerOverflowProduct() {
+    return foreign_max() * foreign_two();
+}
+
+i32 headerMinimumQuotient() {
+    return foreign_min() / foreign_minus_one();
+}
+
+i32 headerMinimumRemainder() {
+    return foreign_min() % foreign_minus_one();
+}
+
+i32 headerNegatedMinimum() {
+    return -foreign_min();
+}
+
 u32 main() {
-    i32 q <- plainQuotient();
+    // Arithmetic in range is the exact answer
+    i32 q <- headerQuotient();
     if (q != 3) {
         return 1;
     }
-    i32 s <- plainSum();
+    i32 s <- headerSum();
     if (s != 9) {
         return 2;
     }
 
-    mut i32 sq <- 0;
-    bool divFailed <- safe_div(sq, foreign_seven(), foreign_two(), 99);
-    if (divFailed != false) {
+    // Overflow saturates, as for any cnx operator (ADR-044's default)
+    i32 over <- headerOverflowSum();
+    if (over != 2147483647) {
         return 3;
     }
-    if (sq != 3) {
+    i32 under <- headerUnderflowDifference();
+    if (under != -2147483648) {
         return 4;
     }
-
-    mut i32 sr <- 0;
-    bool modFailed <- safe_mod(sr, foreign_seven(), foreign_two(), 99);
-    if (modFailed != false) {
+    i32 product <- headerOverflowProduct();
+    if (product != 2147483647) {
         return 5;
     }
-    if (sr != 1) {
+    i32 minimumQuotient <- headerMinimumQuotient();
+    if (minimumQuotient != 2147483647) {
         return 6;
     }
-
-    mut i32 sz <- 0;
-    bool zeroFailed <- safe_div(sz, foreign_seven(), foreign_zero(), 99);
-    if (zeroFailed != true) {
+    i32 minimumRemainder <- headerMinimumRemainder();
+    if (minimumRemainder != 0) {
         return 7;
     }
-    if (sz != 99) {
+    i32 negated <- headerNegatedMinimum();
+    if (negated != 2147483647) {
         return 8;
     }
 
-    // CONTROL: a counted numerator divides through ADR-044's clamp helper
-    i32 low <- plainQuotient() - 3 - 2147483647 - 1;
-    mut i32 cq <- 0;
-    bool countedFailed <- safe_div(cq, low, -1, 99);
-    if (countedFailed != false) {
+    // safe_div and safe_mod over header values go through the clamp helper
+    mut i32 sq <- 0;
+    bool divFailed <- safe_div(sq, foreign_seven(), foreign_two(), 99);
+    if (divFailed != false) {
         return 9;
     }
-    if (cq != 2147483647) {
+    if (sq != 3) {
         return 10;
+    }
+    mut i32 sr <- 0;
+    bool modFailed <- safe_mod(sr, foreign_seven(), foreign_two(), 99);
+    if (modFailed != false) {
+        return 11;
+    }
+    if (sr != 1) {
+        return 12;
+    }
+    mut i32 sz <- 0;
+    bool zeroFailed <- safe_div(sz, foreign_seven(), foreign_zero(), 99);
+    if (zeroFailed != true) {
+        return 13;
+    }
+    if (sz != 99) {
+        return 14;
+    }
+    mut i32 sm <- 0;
+    bool minimumFailed <- safe_div(sm, foreign_min(), foreign_minus_one(), 99);
+    if (minimumFailed != false) {
+        return 15;
+    }
+    if (sm != 2147483647) {
+        return 16;
+    }
+    mut i32 smr <- 7;
+    bool minimumModFailed <- safe_mod(smr, foreign_min(), foreign_minus_one(), 99);
+    if (minimumModFailed != false) {
+        return 17;
+    }
+    if (smr != 0) {
+        return 18;
+    }
+
+    // A literal-only safe_div is cnx code too, and takes the default
+    mut i32 sl <- 0;
+    bool literalFailed <- safe_div(sl, -10, 2, 99);
+    if (literalFailed != false) {
+        return 19;
+    }
+    if (sl != -5) {
+        return 20;
     }
     return 0;
 }

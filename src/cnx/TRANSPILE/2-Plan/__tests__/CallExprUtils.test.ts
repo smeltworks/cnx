@@ -51,15 +51,6 @@ describe("CallExprUtils", () => {
       ).toBe("cnx_safe_mod_u16");
     });
 
-    it("names a signed helper with no overflow helper apart (#2409)", () => {
-      expect(
-        CallExprUtils.generateSafeDivModHelperName("safe_div", "i64", null),
-      ).toBe("cnx_safe_plain_div_i64");
-      expect(
-        CallExprUtils.generateSafeDivModHelperName("safe_mod", "i16", null),
-      ).toBe("cnx_safe_plain_mod_i16");
-    });
-
     it("names a helper that divides through a wrap helper apart (#1790)", () => {
       expect(
         CallExprUtils.generateSafeDivModHelperName("safe_div", "i32", {

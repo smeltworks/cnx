@@ -422,14 +422,12 @@ bool cnx_safe_div_u32(uint32_t* output, uint32_t numerator, uint32_t divisor, ui
 **Signed overflow:** a signed `MIN / -1` is not a zero divisor, so `safe_div` and `safe_mod`
 return `false` and write what `/` and `%` give, as decided in ADR-044 (#1790): the type's MAX for
 `clamp`, its MIN for `wrap`, and 0 for the remainder.
-Under `--debug` a `MIN / -1` panics here under either modifier (#2408), as every counted overflow does in ADR-044
+Under `--debug` a `MIN / -1` panics here under either modifier (#2408), as every overflow does in ADR-044
 ([owner ruling](https://github.com/smeltworks/cnx/issues/1790#issuecomment-6854471224), #1790); a zero divisor still
 returns `true` and writes the default.
-With no counted operand -- the numerator and divisor are C header values or literals
-(ADR-044, "A C value counts for neither") -- the quotient is C's own `/` and `%`, as it is
-outside `safe_div`; a signed one is written through `cnx_safe_plain_div_*` or `cnx_safe_plain_mod_*`
-([owner ruling](https://github.com/smeltworks/cnx/issues/2409#issuecomment-6859549254), #2409);
-a zero divisor still returns `true` and writes the default.
+A numerator and divisor that are C header values or literals divide through the same `clamp`
+helper (ADR-044, "A C value clamps"): `safe_div` is cnx code, whatever its operands
+([owner ruling](https://github.com/smeltworks/cnx/issues/2409#issuecomment-6895149321), #2409).
 
 **Use case:** Safety-critical calculations where the extra check is worth the cost and a sensible default exists.
 

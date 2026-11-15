@@ -121,6 +121,29 @@ describe("OverflowBehaviorUtils.ofLeaves (ADR-044)", () => {
     expect(overflowOf(`${globals}void main() {\n${body}\n}`)).toBe(expected);
   });
 
+  it("counts a C header's integer value, which clamps (#2409)", () => {
+    const foreign = {
+      typeName: "i32",
+      cType: null,
+      dimensions: [],
+      category: "signed",
+      bitWidth: 32,
+      stringCapacity: null,
+      enumTypeName: null,
+      bitmapTypeName: null,
+      overflow: null,
+      hasSideEffect: true,
+      form: { kind: "foreign", indeterminate: false },
+      binding: null,
+    } as const;
+    expect(OverflowBehaviorUtils.ofLeaves([foreign, foreign])).toBe("clamp");
+    expect(
+      OverflowBehaviorUtils.ofLeaves([
+        { ...foreign, category: "floating", typeName: "f64", bitWidth: null },
+      ]),
+    ).toBeNull();
+  });
+
   it("counts a parameter by its declaration, which clamps (#1681)", () => {
     expect(
       overflowOf("void f(u32 p) {\nu32 r <- p + 1;\n}\nvoid main() {\n}"),
