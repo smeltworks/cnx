@@ -422,7 +422,7 @@ bool cnx_safe_div_u32(uint32_t* output, uint32_t numerator, uint64_t divisor, ui
 ```
 
 **Divisor width:** the divisor is taken in ADR-044's overflow helper's wider type, its `b`
-(#94), decided once in `SafeDivisionTypes.divisorOf`; the output, numerator and default are in
+(#94), one decision shared by both helpers, so they cannot disagree; the output, numerator and default are in
 the output's type. A divisor past the type is not narrowed first, so `safe_div` divides as `/`
 does (ADR-044: `b / 300` is 0, and nothing is rejected): with `#define BIG 300`,
 `safe_div(q, a, BIG, 7)` on an `i8` writes 0, where an `int8_t` divisor would have divided by
