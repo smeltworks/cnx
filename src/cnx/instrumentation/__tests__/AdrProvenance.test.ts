@@ -39,6 +39,22 @@ describe("AdrProvenance", () => {
     expect(AdrProvenance.collect()).toHaveLength(1);
   });
 
+  it("keeps two declarations a rule fired about on one line apart (#1402)", () => {
+    AdrProvenance.beginFile("a.cnx");
+    AdrProvenance.record("045", 9, undefined, {
+      sourcePath: "a.cnx",
+      line: 2,
+      column: 0,
+    });
+    AdrProvenance.record("045", 9, undefined, {
+      sourcePath: "lib.cnx",
+      line: 4,
+      column: 0,
+    });
+
+    expect(AdrProvenance.collect()).toHaveLength(2);
+  });
+
   it("keeps the same line for different ADRs apart", () => {
     AdrProvenance.beginFile("a.cnx");
     AdrProvenance.record("016", 9);

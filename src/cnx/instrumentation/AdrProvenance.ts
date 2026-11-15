@@ -96,7 +96,8 @@ class AdrProvenance {
     const seen = new Set<string>();
     const unique: IRecordedAdrSite[] = [];
     for (const site of this.sites) {
-      const key = `${site.adr} ${site.rule ?? ""} ${site.sourcePath} ${site.line}`;
+      const declared = site.declaredAt;
+      const key = `${site.adr} ${site.rule ?? ""} ${site.sourcePath} ${site.line} ${declared?.sourcePath ?? ""}:${declared?.line ?? ""}:${declared?.column ?? ""}`;
       if (seen.has(key)) {
         continue;
       }
