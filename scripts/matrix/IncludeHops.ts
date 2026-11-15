@@ -7,8 +7,9 @@
  * along two paths is as near as its shortest one: a provider gaining an
  * include of its own moves nothing the fixture uses from it.
  *
- * A header a header includes is one hop further again (`ISourceGraph.headerEdges`),
- * so a C++ class reached through a relay header is two hops away (#1523).
+ * A header that another header includes is one hop further again
+ * (`ISourceGraph.headerEdges`), so a C++ class reached through a relay header
+ * is two hops away (#1523).
  */
 
 function from(
