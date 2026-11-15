@@ -1,7 +1,8 @@
 // test-error
-// test-adr: 029
+// test-adr: 029, 058
 // #1287: this.Config names the scope function, so settings is a function
-// pointer and has no member, though a struct Config declares one.
+// pointer and has no member, though a struct Config declares one. The type
+// is named as written in cnx, Timing.Config, never its C name.
 struct Config {
     u32 marker;
 }
@@ -14,4 +15,14 @@ scope Timing {
     public u32 read(this.Config settings) {
         return settings.marker;
     }
+}
+
+u32 useTopLevel(Timing.Config settings) {
+    return settings.marker;
+}
+
+u32 useForHeader(Timing.Config settings) {
+    u32 passes <- 0;
+    for (mut u32 i <- settings.marker; i < 1; i +<- 1) {}
+    return passes;
 }

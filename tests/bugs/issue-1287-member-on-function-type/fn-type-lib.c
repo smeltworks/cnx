@@ -7,7 +7,14 @@
 
 #include <stdint.h>
 
-// #1287: a function-as-type declared in another file (ADR-029).
+// #1287: a function-as-type declared in another file (ADR-029), at file
+// scope and in a scope, so its cnx name and its C name differ.
 uint32_t tick(void) {
     return 1U;
+}
+
+/* Scope: Clock */
+
+uint32_t Clock__Now(void) {
+    return 2U;
 }

@@ -14,6 +14,7 @@ extern "C" {
 
 /* Function prototypes */
 uint32_t tick(void);
+uint32_t Clock__Now(void);
 
 #ifdef __cplusplus
 }

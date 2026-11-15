@@ -1,0 +1,21 @@
+// test-error
+// test-adr: 058
+// #1287: a function type reached through an include of an include is named
+// as written, Clock.Now, in a function, a scope method and a for header.
+#include "fn-type-mid.cnx"
+
+u32 useScoped(Clock.Now n) {
+    return n.marker;
+}
+
+scope Reader {
+    public u32 read(Clock.Now n) {
+        return n.marker;
+    }
+}
+
+u32 useForHeader(Clock.Now n) {
+    u32 passes <- 0;
+    for (mut u32 i <- n.marker; i < 1; i +<- 1) {}
+    return passes;
+}

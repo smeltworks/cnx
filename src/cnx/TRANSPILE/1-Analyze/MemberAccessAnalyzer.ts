@@ -86,7 +86,7 @@ class MemberAccessAnalyzer {
     );
   }
 
-  /** The type as its author wrote it -- `Timing.Config`, never `Timing__Config` (#1287) */
+  /** The type's cnx name -- `Timing.Config`, never its C name `Timing__Config` (#1287, #1292) */
   private typeOf(step: IChainStep): string {
     const before = step.before;
     if (before === null) return "value";

@@ -1072,32 +1072,6 @@ class OperandTyper {
   }
 
   /**
-   * The C name a written named type -- `this.T`, `global.T`, `Scope.T` or a
-   * bare `T` -- resolves to at `at`, or null for a type that is not a named
-   * one. ADR-057's qualification is the program's one answer, as for every
-   * `TypeNameLadder` caller (#1668 review: the trio was spelled out by hand).
-   */
-  static namedTypeCName(
-    type: TTypeSyntax,
-    ctx: ITypingContext,
-    at: { line: number; column: number },
-  ): string | null {
-    return (
-      TypeNameLadder.classifyNamed(
-        type,
-        ctx.program.lexicalFrameAt(ctx.sourceFile, at).scopePath,
-        {
-          scopeTypeCName: OperandTyper.scopeTypeCNameIn(ctx),
-          qualifiedTypeName: (written: string) =>
-            ctx.program.qualifiedTypeName(ctx.sourceFile, written),
-          memberCName: (scopePath: string, name: string) =>
-            ctx.program.memberOf(scopePath, name)?.fullyQualifiedCName,
-        },
-      )?.name ?? null
-    );
-  }
-
-  /**
    * A written type -- a cast's, a declaration's -- resolved by the one
    * ladder (`TypeNameLadder`), so `this.T`, `global.T`, `Scope.T` and a bare `T`
    * name what they name everywhere else; qualifying the source text by hand
@@ -1136,9 +1110,22 @@ class OperandTyper {
         ctx,
       );
     }
-    // Whether the named type is a cnx type this file sees is
-    // `declaresNamedType`, as in `fromType`
-    const cName = OperandTyper.namedTypeCName(type, ctx, at);
+    // ADR-057's qualification is the program's one answer, as for every
+    // `TypeNameLadder` caller; whether the result is a cnx type this file
+    // sees is `declaresNamedType`, as in `fromType` (#1668 review: the trio
+    // was spelled out here by hand)
+    const cName =
+      TypeNameLadder.classifyNamed(
+        type,
+        ctx.program.lexicalFrameAt(ctx.sourceFile, at).scopePath,
+        {
+          scopeTypeCName: OperandTyper.scopeTypeCNameIn(ctx),
+          qualifiedTypeName: (written: string) =>
+            ctx.program.qualifiedTypeName(ctx.sourceFile, written),
+          memberCName: (scopePath: string, name: string) =>
+            ctx.program.memberOf(scopePath, name)?.fullyQualifiedCName,
+        },
+      )?.name ?? null;
     if (cName !== null && OperandTyper.declaresNamedType(cName, ctx)) {
       return OperandTyper.fromType({ kind: "struct", name: cName }, [], ctx);
     }

@@ -1,0 +1,38 @@
+// test-execution
+// test-adr: 029
+// #2005 control: each function declares its own callable, so both calls bind.
+scope Timing {
+    public u32 Config() {
+        return 7;
+    }
+}
+
+void tick() {}
+
+void a() {
+    ISR handler <- tick;
+    handler();
+}
+
+void b() {
+    ISR handler <- tick;
+    handler();
+}
+
+u32 c(Timing.Config cb) {
+    return cb();
+}
+
+u32 d(Timing.Config cb) {
+    return cb();
+}
+
+u32 main() {
+    a();
+    b();
+    u32 sum <- c(Timing.Config) + d(Timing.Config);
+    if (sum != 14) {
+        return 1;
+    }
+    return 0;
+}

@@ -1,2 +1,6 @@
-15:23 error[E0927]: 'settings' is a Timing.Config and has no member 'marker'
+16:23 error[E0927]: 'settings' is a Timing.Config and has no member 'marker'
+       help: Only a struct, a bitmap, a scope, a register or a header struct or union has members; any other value answers only its length properties (ADR-058). A local or parameter named like a scope shadows it: reach the scope with global.Scope.member (ADR-057).
+21:19 error[E0927]: 'settings' is a Timing.Config and has no member 'marker'
+       help: Only a struct, a bitmap, a scope, a register or a header struct or union has members; any other value answers only its length properties (ADR-058). A local or parameter named like a scope shadows it: reach the scope with global.Scope.member (ADR-057).
+26:30 error[E0927]: 'settings' is a Timing.Config and has no member 'marker'
        help: Only a struct, a bitmap, a scope, a register or a header struct or union has members; any other value answers only its length properties (ADR-058). A local or parameter named like a scope shadows it: reach the scope with global.Scope.member (ADR-057).

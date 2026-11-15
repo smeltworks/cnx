@@ -1,0 +1,28 @@
+// test-error
+// test-adr: 029
+// #2005: a callable declared in one function names nothing in another, so
+// the call there is E0422, whether its type is ISR or a scoped callback.
+scope Timing {
+    public u32 Config() {
+        return 7;
+    }
+}
+
+void tick() {}
+
+void a() {
+    ISR handler <- tick;
+    handler();
+}
+
+void b() {
+    handler();
+}
+
+u32 c(Timing.Config cb) {
+    return cb();
+}
+
+u32 d() {
+    return cb();
+}

@@ -1,3 +1,4 @@
+// test-execution
 // test-adr: 029
 // #1287 negative control: calling a function-typed value is not a member
 // access and stays silent beside the error fixtures.
@@ -32,5 +33,17 @@ u32 useStruct(Config c) {
 u32 main() {
     Holder h <- { cb: tick };
     Config c <- { marker: 2 };
-    return Timing.read(Timing.Config) + useField(h) + useStruct(c);
+    u32 viaScope <- Timing.read(Timing.Config);
+    u32 viaField <- useField(h);
+    u32 viaStruct <- useStruct(c);
+    if (viaScope != 7) {
+        return 1;
+    }
+    if (viaField != 1) {
+        return 2;
+    }
+    if (viaStruct != 2) {
+        return 3;
+    }
+    return 0;
 }
