@@ -238,8 +238,8 @@ wherever the declaration lives — so it is the form of this decision under whic
 the `imported direct` and `imported transitive` rows can fail where `same file`
 succeeds. That is what those two rows are for.
 
-The two provider-side relationships carry no declaration: occupancy for them is
-not derivable, and the report renders them `n/a` rather than counting them empty.
+The two provider-side relationships are measured from where the rule fires: a
+rule firing inside an included file is credited at that file's distance (#1402).
 
 ## References
 

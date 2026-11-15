@@ -2,12 +2,7 @@
 // test-adr: 010
 // ADR-010, the `imported transitive` row of its scope-context matrix.
 //
-// The same four contexts as `adr-010-matrix-direct`, one hop further away. Kept
-// as a separate directory rather than another fixture beside the direct one
-// because of #1402: the relationship axis measures the DEEPEST include chain
-// reachable from a fixture, so a 2-hop fixture sharing a directory is fine but
-// a 2-hop include added to the DIRECT fixture's closure would silently relabel
-// every cell it occupies.
+// The same four contexts as `adr-010-matrix-direct`, one hop further away.
 //
 // This is the row that could not be written at all before #1508: an execution
 // fixture reaching a function two hops away failed to LINK, so the context the

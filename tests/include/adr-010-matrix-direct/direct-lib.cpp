@@ -7,13 +7,10 @@
 
 #include <stdint.h>
 
-// Helper for direct-use.test.cnx. Deliberately includes NOTHING.
+// Helper for direct-use.test.cnx: every name it reaches across one include.
 //
-// #1402: the matrix's relationship axis measures the DEEPEST include chain
-// reachable from a fixture, not the hops to the declaration under test. So a
-// fixture meant to occupy the `imported direct` cells must have no transitive
-// chain anywhere in its closure -- one include added here would silently move
-// every cell its consumer occupies from `direct` to `transitive`.
+// #1402: the matrix measures each position to the declaration it is about, so
+// an include added here would not move its consumer's cells.
 uint32_t readSensor(void) {
     return 42U;
 }

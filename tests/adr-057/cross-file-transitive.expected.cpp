@@ -9,11 +9,8 @@
 // test-adr: 057, 016
 // ADR-057 resolution two hops from the provider (imported transitive).
 //
-// The companion to cross-file-direct: same rule, one include deeper. The
-// relationship axis takes the DEEPEST chain reachable from the fixture, so this
-// file must reach `cross-file-provider.cnx` through `cross-file-middle.cnx`
-// rather than including it directly -- an include added here would collapse the
-// chain and silently move the fixture back into the `direct` column.
+// The companion to cross-file-direct: same rule, one include deeper, reaching
+// `cross-file-provider.cnx` through `cross-file-middle.cnx`.
 #include "cross-file-middle.hpp"
 
 #include <stdint.h>

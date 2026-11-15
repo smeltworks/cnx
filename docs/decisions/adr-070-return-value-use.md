@@ -306,9 +306,10 @@ written for this declaration (`scope-method-imported-discard`,
 `transitive-function-discard`, `transitive-scope-method-discard`); the
 declaration is what showed they were missing.
 
-The two provider-side relationships carry no declaration: `.expected.error`
-holds no file path, so occupancy for them is not derivable and the report
-renders them `n/a` rather than counting them empty.
+The two provider-side relationships are measured from where the rule fires:
+the matrix transpiles every file the fixture includes, so a diagnostic or a
+recording site inside an included file is credited at that file's distance
+(#1402).
 
 #### What this matrix cannot see
 

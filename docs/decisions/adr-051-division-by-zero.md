@@ -714,11 +714,7 @@ Undeclared cells are `off`.
 | scope method       | exercised through chain | warn     |
 | for header         | exercised through chain | warn     |
 
-One limit of the tooling applies to any ADR declaring a matrix, tracked as
-#1402: the relationship axis measures the deepest include chain reachable from
-the fixture rather than the hops to the declaration under test, so a helper that
-gains an unrelated include silently moves the cells its consumers occupy. The two
-provider-side relationships are not derivable for the same reason.
+The relationship axis is measured per position over the resolved include graph (#1402, #1523): a diagnostic is measured to the declaration it is about, and a rule firing inside an included file is measured to that file, which is what the two provider-side relationships record.
 
 A second limit used to sit beside it -- that only a fixture with an
 `.expected.error` could occupy a cell -- and **#1241 removed it** on 2026-08-29.
@@ -753,9 +749,10 @@ occupied while `n / this.ZERO` was accepted and emitted a literal `n / 0`.
 `tests/bugs/issue-1268-qualified-zero-const/` covers each spelling, same-file
 and imported, with nonzero same-named consts in the other scope as controls.
 
-The two provider-side relationships carry no declaration: `.expected.error`
-holds no file path, so occupancy for them is not derivable and the report
-renders them `n/a` rather than counting them empty.
+The two provider-side relationships are measured from where the rule fires:
+the matrix transpiles every file the fixture includes, so a diagnostic or a
+recording site inside an included file is credited at that file's distance
+(#1402).
 
 ### 6. Compound Division and Modulo (Issue #1770)
 

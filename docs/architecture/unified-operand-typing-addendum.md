@@ -397,9 +397,9 @@ The help text is "name one with `#pragma target <name>`, `--target <name>`, or `
 - the harness;
 - `examples-transpile.test.ts:72`;
 - `format-fidelity.ts:135`;
-- `matrix/AdrProvenanceLines.ts:41`.
+- `matrix/FixtureRun.ts:56`.
 
-Provenance returns an empty map for a failed transpile, by design (`AdrProvenanceLines.ts:27-31`). Without a target, a fixture that reaches a header would therefore lose its matrix occupancy without any error.
+Provenance returns an empty map for a failed transpile, by design (`FixtureRun.ts`). Without a target, a fixture that reaches a header would therefore lose its matrix occupancy without any error.
 
 | Fixture                                                                                     | Runs                                                                                                                           |
 | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
