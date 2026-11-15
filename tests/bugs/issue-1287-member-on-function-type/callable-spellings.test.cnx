@@ -1,8 +1,9 @@
 // test-execution
 // test-adr: 029
 // #1287: a value whose type is written this.T, Scope.T or global.T is
-// callable wherever it is declared: a parameter, a local, a for header, a
-// global and a scope member, with the type in this file or an included one,
+// callable wherever it is declared: a parameter, a local, a global and a
+// scope member (a for header's is a unit test: MISRA 14.2, #1539), with the
+// type in this file or an included one,
 // and with struct and mut arguments.
 #include "fn-type-lib.cnx"
 
@@ -56,14 +57,6 @@ scope Timing {
         b(x);
         return x;
     }
-
-    public u32 viaForHeader() {
-        mut u32 total <- 0;
-        for (this.Config f <- this.Config; total < 1; total +<- 1) {
-            total <- f();
-        }
-        return total;
-    }
 }
 
 Timing.Config g <- Timing.Config;
@@ -89,7 +82,6 @@ u32 main() {
     u32 viaGlobalType <- Timing.viaGlobalType(tick2);
     u32 viaStruct <- Timing.viaStructArgument(Timing.Measure);
     u32 viaMut <- Timing.viaMutArgument(Timing.Bump);
-    u32 viaFor <- Timing.viaForHeader();
     if (viaScope != 7) {
         return 1;
     }
@@ -113,9 +105,6 @@ u32 main() {
     }
     if (viaMut != 9) {
         return 8;
-    }
-    if (viaFor != 8) {
-        return 9;
     }
     return 0;
 }

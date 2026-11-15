@@ -10,8 +10,9 @@
 // test-execution
 // test-adr: 029
 // #1287: a value whose type is written this.T, Scope.T or global.T is
-// callable wherever it is declared: a parameter, a local, a for header, a
-// global and a scope member, with the type in this file or an included one,
+// callable wherever it is declared: a parameter, a local, a global and a
+// scope member (a for header's is a unit test: MISRA 14.2, #1539), with the
+// type in this file or an included one,
 // and with struct and mut arguments.
 #include "fn-type-lib.hpp"
 
@@ -77,14 +78,6 @@ uint32_t Timing__viaMutArgument(Timing__Bump_fp b) {
     return x;
 }
 
-uint32_t Timing__viaForHeader(void) {
-    uint32_t total = 0U;
-    for (const Timing__Config_fp f = Timing__Config; total < 1; total = cnx_clamp_add_u32(total, 1U)) {
-        total = f();
-    }
-    return total;
-}
-
 extern const Timing__Config_fp g = Timing__Config;
 
 uint32_t viaScopeType(Timing__Config_fp settings) {
@@ -108,7 +101,6 @@ int main(void) {
     const uint32_t viaGlobalType = Timing__viaGlobalType(tick2);
     const uint32_t viaStruct = Timing__viaStructArgument(Timing__Measure);
     const uint32_t viaMut = Timing__viaMutArgument(Timing__Bump);
-    const uint32_t viaFor = Timing__viaForHeader();
     if (viaScope != 7) {
         return 1U;
     }
@@ -132,9 +124,6 @@ int main(void) {
     }
     if (viaMut != 9) {
         return 8U;
-    }
-    if (viaFor != 8) {
-        return 9U;
     }
     return 0U;
 }

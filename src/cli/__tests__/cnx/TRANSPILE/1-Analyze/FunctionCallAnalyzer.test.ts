@@ -497,6 +497,10 @@ describe("FunctionCallAnalyzer", () => {
         `${timing}}\nTiming.Config g <- Timing.Config;\nu32 read() { return g(); }`,
       ],
       [
+        "a this.T for-header variable",
+        `${timing}  public u32 read() {\n    for (this.Config f <- this.Config; false; f <- this.Config) {\n      f();\n    }\n    return 0;\n  }\n}`,
+      ],
+      [
         "a scope member through this.",
         `u32 millis() { return 1; }\nscope S {\n  public millis tick <- millis;\n  public u32 read() { return this.tick(); }\n}`,
       ],

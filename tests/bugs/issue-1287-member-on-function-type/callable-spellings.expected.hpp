@@ -41,7 +41,6 @@ uint32_t Timing__viaMember(void);
 uint32_t Timing__viaGlobalType(tick2_fp f);
 uint32_t Timing__viaStructArgument(Timing__Measure_fp m);
 uint32_t Timing__viaMutArgument(Timing__Bump_fp b);
-uint32_t Timing__viaForHeader(void);
 uint32_t viaScopeType(Timing__Config_fp settings);
 uint32_t viaIncludedScopeType(Clock__Now_fp n);
 uint32_t viaGlobal(void);
