@@ -136,13 +136,10 @@ function printPositionViolations(
 
 function printSummary(
   violations: ReturnType<typeof MatrixReport.violations>,
-  pending: ReturnType<typeof MatrixReport.undeterminable>,
 ): void {
   const errors = violations.filter((v) => v.severity === "error").length;
   const warnings = violations.length - errors;
-  console.log(
-    `\n${errors} error, ${warnings} warn, ${pending.length} not yet derivable`,
-  );
+  console.log(`\n${errors} error, ${warnings} warn`);
 }
 
 async function main(): Promise<void> {
@@ -164,7 +161,6 @@ async function main(): Promise<void> {
     declarationErrors,
   } = await render();
   const violations = MatrixReport.violations(declarations, occupancy);
-  const pending = MatrixReport.undeterminable(declarations);
   const positionViolations = MatrixReport.positionViolations(
     positionDeclarations,
     occupancy,
@@ -183,7 +179,7 @@ async function main(): Promise<void> {
       printViolations(violations);
     }
     printPositionViolations(positionViolations);
-    printSummary(violations, pending);
+    printSummary(violations);
     return;
   }
 

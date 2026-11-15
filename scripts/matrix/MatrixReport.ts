@@ -74,11 +74,6 @@ function collect(
 
 /**
  * Every unmet obligation across all ADRs, most severe first.
- *
- * A cell whose relationship is not derivable yet is skipped rather than
- * reported: the tool cannot tell an empty provider-side cell from one it simply
- * cannot see, and reporting a gap it cannot substantiate would be a guard that
- * fires on ignorance rather than on evidence.
  */
 function violations(
   declarations: ReadonlyMap<string, IMatrixDeclaration>,
@@ -88,23 +83,11 @@ function violations(
     declarations,
     (relationship, adr, context, severity) =>
       severity !== "off" &&
-      MatrixCell.isDerivable(relationship) &&
       !isOccupied(occupancy.get(adr), context, relationship),
   ).sort((a, b) => {
     if (a.severity !== b.severity) return a.severity === "error" ? -1 : 1;
     return a.adr.localeCompare(b.adr);
   });
-}
-
-/** Cells declared `warn` or `error` whose relationship cannot be derived yet. */
-function undeterminable(
-  declarations: ReadonlyMap<string, IMatrixDeclaration>,
-): IMatrixViolation[] {
-  return collect(
-    declarations,
-    (relationship, _adr, _context, severity) =>
-      severity !== "off" && !MatrixCell.isDerivable(relationship),
-  );
 }
 
 /**
@@ -228,7 +211,6 @@ class MatrixReport {
   static undeclaredRules = undeclaredRules;
   static ungatedCodes = ungatedCodes;
   static violations = violations;
-  static undeterminable = undeterminable;
   static contradictions = contradictions;
   static obligationCount = obligationCount;
 }

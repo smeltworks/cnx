@@ -6,9 +6,8 @@
  * this file and is reached INTO from elsewhere. #1164 is only observable
  * provider-side, which is why the two halves are not redundant.
  *
- * Provider-side derivation needs to know which FILE a construct was emitted
- * from. `.expected.error` carries no path, so it is not derivable today -- see
- * MatrixCell.isDerivable and the tracking issue.
+ * #1402: both halves are measured over the include graph a fixture's run
+ * resolved (MatrixCell.relationshipFor).
  */
 type TMatrixRelationship =
   | "same-file"

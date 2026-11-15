@@ -45,14 +45,6 @@ function isPosition(value: string): value is TMatrixPosition {
   return (POSITIONS as readonly string[]).includes(value);
 }
 
-/**
- * Relationships the tooling can currently establish: every one (#1402). The
- * consumer side is measured from a fixture's own position to the file that
- * declares its construct, and the provider side from the fixture to the
- * included file a rule fired in, both over the include graph the run resolved.
- */
-const DERIVABLE_RELATIONSHIPS: readonly TMatrixRelationship[] = RELATIONSHIPS;
-
 /** Encode a cell as a stable key. Never build this string by hand elsewhere. */
 function key(
   context: TMatrixContext,
@@ -76,11 +68,6 @@ function all(): {
     }
   }
   return cells;
-}
-
-/** Whether the tooling can establish occupancy for this relationship today. */
-function isDerivable(relationship: TMatrixRelationship): boolean {
-  return DERIVABLE_RELATIONSHIPS.includes(relationship);
 }
 
 /**
@@ -108,7 +95,6 @@ class MatrixCell {
   static isPosition = isPosition;
   static key = key;
   static all = all;
-  static isDerivable = isDerivable;
   static relationshipFor = relationshipFor;
 }
 
