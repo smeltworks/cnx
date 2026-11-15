@@ -40,6 +40,8 @@
  * predicate is E0427's, shared rather than restated.
  */
 
+import type ISourceSite from "../../types/ISourceSite";
+import BindingSite from "./helpers/BindingSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import SourceOrder from "../../utils/SourceOrder";
 import type TExpression from "../../types/syntax/TExpression";
@@ -163,6 +165,12 @@ class BareEnumMemberAnalyzer {
     return found.sort(SourceOrder.bySpan);
   }
 
+  /** #1402: where the enum declaring the bare member is declared */
+  private enumDeclaration(enumName: string): ISourceSite | undefined {
+    const symbol = this.context.program.symbolByCName(enumName);
+    return symbol ? BindingSite.ofSymbol(symbol) : undefined;
+  }
+
   private check(
     identifier: TIdentifier,
     expected: TExpected,
@@ -188,6 +196,7 @@ class BareEnumMemberAnalyzer {
     return {
       code: "E0424",
       span: identifier.span,
+      declaredAt: this.enumDeclaration(declaring[0]),
       message: EnumMemberSuggestion.message(name, declaring),
       helpText:
         "A bare enum member is accepted only where its enum is already named -- a declaration or assignment of that type, a return from a function of that type, a field of that type. Elsewhere, qualify it (ADR-017).",

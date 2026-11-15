@@ -26,6 +26,7 @@
  * the list -- it has no controlling expression, which is the point of it.
  */
 
+import type ISourceSite from "../../types/ISourceSite";
 import BindingSite from "./helpers/BindingSite";
 import ExpressionCalls from "../../utils/ExpressionCalls";
 import SourceOrder from "../../utils/SourceOrder";
@@ -164,11 +165,17 @@ class ControllingExpressionCheck {
     });
   }
 
+  /** #1402: where the first function the condition calls is declared */
+  private calleeDeclaration(node: TExpression): ISourceSite | undefined {
+    const [call] = ExpressionCalls.callsIn(node);
+    return call && BindingSite.ofChain(call, this.context);
+  }
+
   private reportCall(node: TExpression, kind: string): void {
     this.found.push({
       code: "E0702",
       span: node.span,
-      declaredAt: BindingSite.ofOperands([node], this.context),
+      declaredAt: this.calleeDeclaration(node),
       message: `${kind} condition may not call a function: '${node.written}'`,
       helpText: `MISRA C:2012 Rule 13.5: ${CALL_HELP}`,
     });

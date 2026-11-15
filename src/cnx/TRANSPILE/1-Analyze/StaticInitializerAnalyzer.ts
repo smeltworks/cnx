@@ -6,6 +6,7 @@
  * before the program runs. C would reject one it could not settle (C11
  * 6.7.9p4); C++ would initialize it at run time.
  */
+import BindingSite from "./helpers/BindingSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IValuePositions from "../../types/IValuePositions";
 import ConstantDiagnostics from "./helpers/ConstantDiagnostics";
@@ -33,6 +34,7 @@ class StaticInitializerAnalyzer {
         errors.push({
           code: "E0910",
           span: value.value.span,
+          declaredAt: BindingSite.ofOperands([value.value], this.context),
           message: `Static initializer overflows ${settled.typeName} at compile time: ${StaticInitializerAnalyzer.overflowCause(form, settled.typeName)}`,
           helpText:
             form === "cast" || form === "name"
@@ -47,6 +49,7 @@ class StaticInitializerAnalyzer {
         errors.push({
           code: "E0909",
           span: value.value.span,
+          declaredAt: BindingSite.ofOperands([value.value], this.context),
           message: `Static initializer must be known at compile time: ${ConstantDiagnostics.why(settled)}, and cnx cannot read its value to check the arithmetic does not clamp or wrap (ADR-044)`,
           helpText:
             "Declare the value in cnx, or #define it as an integer literal cnx can read",
@@ -61,6 +64,7 @@ class StaticInitializerAnalyzer {
         errors.push({
           code: "E0909",
           span: value.value.span,
+          declaredAt: BindingSite.ofOperands([value.value], this.context),
           message: `Static initializer must be known at compile time: ${why}`,
           helpText:
             "A file-scope or scope variable's initializer is a value fixed at compile time (ADR-044), in C++ as in C: literals, read-only bindings that are not `volatile` (ADR-064), length properties (.type_byte_length) and casts",
