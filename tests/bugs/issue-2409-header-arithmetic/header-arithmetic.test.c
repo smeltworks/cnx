@@ -27,6 +27,13 @@
    the check: cnx_clamp_add_u8(0, 256) must saturate to 255, but (uint8_t)256 is 0, so a
    uint8_t parameter would return 0 -- the opposite of saturation. */
 
+static inline int32_t cnx_clamp_add_i32(int32_t a, int64_t b) {
+    int64_t result = (int64_t)a + b;
+    if (result > INT32_MAX) return INT32_MAX;
+    if (result < INT32_MIN) return INT32_MIN;
+    return (int32_t)result;
+}
+
 static inline int32_t cnx_clamp_div_i32(int32_t a, int64_t b) {
     /* ADR-044 / Issue #1790: C leaves MIN / -1 and MIN % -1 undefined, and x86 traps on them. */
     if (b == -1 && a == INT32_MIN) return INT32_MAX;
@@ -43,6 +50,26 @@ static inline int32_t cnx_clamp_mod_i32(int32_t a, int64_t b) {
         return (a == INT32_MIN && b == (int64_t)INT32_MAX + 1) ? 0 : a;
     }
     return (int32_t)(a % (int32_t)b);
+}
+
+static inline int32_t cnx_clamp_mul_i32(int32_t a, int64_t b) {
+    int64_t result = (int64_t)a * b;
+    if (result > INT32_MAX) return INT32_MAX;
+    if (result < INT32_MIN) return INT32_MIN;
+    return (int32_t)result;
+}
+
+static inline int32_t cnx_clamp_neg_i32(int32_t a) {
+    /* ADR-044 / Issue #2418: -MIN is past the type. C leaves it undefined for an int, and narrows it back to MIN for a narrower type. */
+    if (a == INT32_MIN) return INT32_MAX;
+    return (int32_t)(-a);
+}
+
+static inline int32_t cnx_clamp_sub_i32(int32_t a, int64_t b) {
+    int64_t result = (int64_t)a - b;
+    if (result > INT32_MAX) return INT32_MAX;
+    if (result < INT32_MIN) return INT32_MIN;
+    return (int32_t)result;
 }
 
 // ADR-051: Safe division helper functions
@@ -66,35 +93,39 @@ static inline bool cnx_safe_mod_i32(int32_t* output, int32_t numerator, int32_t 
 }
 
 int32_t headerQuotient(void) {
-    return foreign_seven() / foreign_two();
+    return cnx_clamp_div_i32(foreign_seven(), foreign_two());
 }
 
 int32_t headerSum(void) {
-    return foreign_seven() + foreign_two();
+    return cnx_clamp_add_i32(foreign_seven(), foreign_two());
 }
 
 int32_t headerOverflowSum(void) {
-    return foreign_max() + foreign_one();
+    return cnx_clamp_add_i32(foreign_max(), foreign_one());
 }
 
 int32_t headerUnderflowDifference(void) {
-    return foreign_min() - foreign_one();
+    return cnx_clamp_sub_i32(foreign_min(), foreign_one());
 }
 
 int32_t headerOverflowProduct(void) {
-    return foreign_max() * foreign_two();
+    return cnx_clamp_mul_i32(foreign_max(), foreign_two());
 }
 
 int32_t headerMinimumQuotient(void) {
-    return foreign_min() / foreign_minus_one();
+    return cnx_clamp_div_i32(foreign_min(), foreign_minus_one());
 }
 
 int32_t headerMinimumRemainder(void) {
-    return foreign_min() % foreign_minus_one();
+    return cnx_clamp_mod_i32(foreign_min(), foreign_minus_one());
 }
 
 int32_t headerNegatedMinimum(void) {
-    return -foreign_min();
+    return cnx_clamp_neg_i32(foreign_min());
+}
+
+int32_t headerElementQuotient(void) {
+    return cnx_clamp_div_i32(foreign_values[0U], foreign_values[1U]);
 }
 
 int main(void) {
@@ -169,6 +200,10 @@ int main(void) {
     }
     if (smr != 0) {
         return 18U;
+    }
+    const int32_t elementQuotient = headerElementQuotient();
+    if (elementQuotient != 2147483647) {
+        return 21U;
     }
     int32_t sl = 0;
     const bool literalFailed = cnx_safe_div_i32(&sl, -10, 2, 99);

@@ -21,6 +21,7 @@ int32_t headerOverflowProduct(void);
 int32_t headerMinimumQuotient(void);
 int32_t headerMinimumRemainder(void);
 int32_t headerNegatedMinimum(void);
+int32_t headerElementQuotient(void);
 
 #ifdef __cplusplus
 }

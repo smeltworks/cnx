@@ -40,6 +40,10 @@ i32 headerNegatedMinimum() {
     return -foreign_min();
 }
 
+i32 headerElementQuotient() {
+    return foreign_values[0] / foreign_values[1];
+}
+
 u32 main() {
     // Arithmetic in range is the exact answer
     i32 q <- headerQuotient();
@@ -117,6 +121,12 @@ u32 main() {
     }
     if (smr != 0) {
         return 18;
+    }
+
+    // A header array's element is a C value, and clamps the same way
+    i32 elementQuotient <- headerElementQuotient();
+    if (elementQuotient != 2147483647) {
+        return 21;
     }
 
     // A literal-only safe_div is cnx code too, and takes the default

@@ -8,4 +8,5 @@ static inline int32_t foreign_one(void) { return 1; }
 static inline int32_t foreign_minus_one(void) { return -1; }
 static inline int32_t foreign_max(void) { return INT32_MAX; }
 static inline int32_t foreign_min(void) { return INT32_MIN; }
+static const int32_t foreign_values[2] = { INT32_MIN, -1 };
 #endif

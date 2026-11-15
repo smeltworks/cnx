@@ -52,10 +52,11 @@ class OverflowBehaviorUtils {
    * (#1681) and a `for` variable (#1667) count by their declarations like any
    * local: a parameter has no modifier in the grammar, so it clamps.
    *
-   * A C or C++ header's integer value counts too, and it clamps: it has no
-   * `clamp` or `wrap` of its own, and the operator reading it is cnx code, so
-   * ADR-044's default decides it. C keeps only what is C -- a header
-   * function's body, a macro's own expansion (#2409).
+   * Every integer value but a literal counts. A C or C++ header's value -- a
+   * call, a variable, an array's element, a struct's field -- has no `clamp`
+   * or `wrap` of its own, and the operator reading it is cnx code, so
+   * ADR-044's default decides it: it clamps. C keeps only what is C -- a
+   * header function's body, a macro's own expansion (#2409).
    */
   static ofLeaves(
     leaves: ReadonlyArray<IOperandType | null>,
@@ -70,19 +71,16 @@ class OverflowBehaviorUtils {
     return counted ? "wrap" : null;
   }
 
-  /** A leaf's behavior when it counts, null for a counted leaf with none */
+  /** A leaf's behavior when it counts, undefined when it does not */
   private static countedBehavior(
     leaf: IOperandType | null,
-  ): TOverflowBehavior | null | undefined {
+  ): TOverflowBehavior | undefined {
     if (leaf === null) return undefined;
     if (leaf.category !== "signed" && leaf.category !== "unsigned") {
       return undefined;
     }
-    if (leaf.form.kind === "foreign") {
-      return OverflowBehaviorUtils.fromModifier(null);
-    }
-    if (!leaf.binding && leaf.overflow === null) return undefined;
-    return leaf.overflow;
+    if (leaf.form.kind === "literal") return undefined;
+    return OverflowBehaviorUtils.fromModifier(leaf.overflow);
   }
 }
 

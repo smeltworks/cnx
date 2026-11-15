@@ -124,6 +124,10 @@ int32_t headerNegatedMinimum(void) {
     return cnx_clamp_neg_i32(foreign_min());
 }
 
+int32_t headerElementQuotient(void) {
+    return cnx_clamp_div_i32(foreign_values[0U], foreign_values[1U]);
+}
+
 int main(void) {
     const int32_t q = headerQuotient();
     if (q != 3) {
@@ -196,6 +200,10 @@ int main(void) {
     }
     if (smr != 0) {
         return 18U;
+    }
+    const int32_t elementQuotient = headerElementQuotient();
+    if (elementQuotient != 2147483647) {
+        return 21U;
     }
     int32_t sl = 0;
     const bool literalFailed = cnx_safe_div_i32(&sl, -10, 2, 99);
