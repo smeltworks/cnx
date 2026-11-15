@@ -65,6 +65,7 @@ class BitmapAccessCheck {
     this.found.push({
       code: "E0881",
       span: site.value.span,
+      declaredAt: BindingSite.ofChain(site.target, this.context),
       message: `Value ${value} exceeds ${field.layout.width}-bit field '${field.fieldName}' maximum of ${maximum}`,
       helpText: `A ${field.layout.width}-bit field holds 0 through ${maximum}; widen the field in the bitmap declaration, or write a value that fits (ADR-034).`,
     });

@@ -33,6 +33,8 @@
  * keeps one (#1664 box 7).
  */
 
+import type ISourceSite from "../../types/ISourceSite";
+import BindingSite from "./helpers/BindingSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TExpression from "../../types/syntax/TExpression";
@@ -59,6 +61,8 @@ interface IDestination {
 
 class SliceAssignmentListener {
   private readonly found: ISliceAssignmentError[] = [];
+  /** #1402: the declaration of the slice being written */
+  private declaredAt: ISourceSite | undefined;
 
   public constructor(private readonly context: IAnalysisContext) {}
 
@@ -102,6 +106,7 @@ class SliceAssignmentListener {
     declared: IOperandType,
     subscripts: readonly TExpression[],
   ): void {
+    this.declaredAt = BindingSite.ofChain(site.target, this.context);
     const destination = this.destinationOf(name, declared, subscripts[0]);
     if (destination === null) return;
 
@@ -110,6 +115,7 @@ class SliceAssignmentListener {
       this.found.push({
         code: "E0859",
         span: subscripts[0].span,
+        declaredAt: this.declaredAt,
         message: `Slice assignment offset must be a compile-time constant for '${name}'`,
         helpText:
           "A runtime offset cannot be bounds-checked at compile time. Use a literal or a read-only binding whose value is known at compile time.",
@@ -122,6 +128,7 @@ class SliceAssignmentListener {
       this.found.push({
         code: "E0859",
         span: subscripts[1].span,
+        declaredAt: this.declaredAt,
         message: `Slice assignment length must be a compile-time constant for '${name}'`,
         helpText:
           "A runtime length cannot be bounds-checked at compile time. Use a literal or a read-only binding whose value is known at compile time.",
@@ -133,6 +140,7 @@ class SliceAssignmentListener {
       this.found.push({
         code: "E0860",
         span: subscripts[0].span,
+        declaredAt: this.declaredAt,
         message: `Slice assignment offset cannot be negative: ${offset}`,
         helpText:
           "An offset is an element index into the buffer, counted from zero.",
@@ -144,6 +152,7 @@ class SliceAssignmentListener {
       this.found.push({
         code: "E0860",
         span: subscripts[1].span,
+        declaredAt: this.declaredAt,
         message: `Slice assignment length must be positive: ${length}`,
         helpText:
           "A slice writes at least one byte; a zero-length slice writes nothing and is almost certainly a mistake.",
@@ -155,6 +164,7 @@ class SliceAssignmentListener {
       this.found.push({
         code: "E0860",
         span: subscripts[1].span,
+        declaredAt: this.declaredAt,
         message: `Slice assignment length (${length}) must be a multiple of the element size (${destination.elementBytes} bytes) for '${name}'`,
         helpText:
           "The length is a BYTE count and the copy writes whole elements, so it has to divide evenly.",
@@ -167,6 +177,7 @@ class SliceAssignmentListener {
       this.found.push({
         code: "E0860",
         span: subscripts[0].span,
+        declaredAt: this.declaredAt,
         message: `Slice assignment out of bounds: offset(${offset}) + ${elementCount} element(s) = ${offset + elementCount} exceeds buffer capacity(${destination.capacity}) for '${name}'`,
         helpText:
           "The offset is an element index and the capacity an element count, so the span is compared in elements, not bytes.",
@@ -195,6 +206,7 @@ class SliceAssignmentListener {
       this.found.push({
         code: "E0858",
         span: at.span,
+        declaredAt: this.declaredAt,
         message: `Slice assignment is only valid on one-dimensional arrays; '${name}' has ${declared.dimensions.length} dimensions`,
         helpText: `Index the outer dimensions first, e.g. ${name}[index][offset, length].`,
       });
@@ -211,6 +223,7 @@ class SliceAssignmentListener {
       this.found.push({
         code: "E0858",
         span: at.span,
+        declaredAt: this.declaredAt,
         message: `Slice assignment is not supported for element type '${element ?? "unknown"}' of '${name}'`,
         helpText:
           "Only integer and string buffers can be sliced; a float or bool element would need type punning.",
@@ -221,6 +234,7 @@ class SliceAssignmentListener {
       this.found.push({
         code: "E0858",
         span: at.span,
+        declaredAt: this.declaredAt,
         message: `Slice assignment is not supported for element type 'bool' of '${name}'`,
         helpText: "Only integer and string buffers can be sliced.",
       });
@@ -235,6 +249,7 @@ class SliceAssignmentListener {
       this.found.push({
         code: "E0858",
         span: at.span,
+        declaredAt: this.declaredAt,
         message: `Cannot determine the size of '${name}' at compile time`,
         helpText:
           "A sliced buffer needs a dimension that folds at compile time, so the span can be checked.",
@@ -252,12 +267,14 @@ class SliceAssignmentListener {
    * character's never was (owner ruling, 2026-11-05).
    */
   private checkSpan(site: IAssignmentSyntax, span: ICharacterSpan): void {
+    this.declaredAt = BindingSite.ofChain(site.target, this.context);
     const name = AssignmentTarget.parts(site.target).identifier ?? "";
     const offset = this.constantOf(span.start);
     if (offset !== undefined && offset < 0) {
       this.found.push({
         code: "E0860",
         span: span.start.span,
+        declaredAt: this.declaredAt,
         message: `Slice assignment offset cannot be negative: ${offset}`,
         helpText:
           "An offset is an element index into the buffer, counted from zero.",
@@ -270,6 +287,7 @@ class SliceAssignmentListener {
       this.found.push({
         code: "E0860",
         span: span.start.span,
+        declaredAt: this.declaredAt,
         message: `Slice assignment out of bounds: offset(${offset}) + ${span.count} element(s) = ${offset + span.count} exceeds buffer capacity(${capacity}) for '${name}'`,
         helpText:
           "The offset is an element index and the capacity an element count, so the span is compared in elements, not bytes.",
@@ -312,6 +330,7 @@ class SliceAssignmentListener {
         this.found.push({
           code: "E0861",
           span: value.span,
+          declaredAt: this.declaredAt,
           message: `Slice assignment literal value (${literal}) does not fit in the ${length}-byte slice for '${name}'`,
           helpText: "Narrow the value, or widen the slice.",
         });
@@ -333,6 +352,7 @@ class SliceAssignmentListener {
       this.found.push({
         code: "E0861",
         span: value.span,
+        declaredAt: this.declaredAt,
         message: `Slice assignment source must be an integer value; the value assigned to '${name}' has type '${sourceType}'`,
         helpText:
           "A slice copies the source's bytes, so the source has to be an integer.",
@@ -344,6 +364,7 @@ class SliceAssignmentListener {
       this.found.push({
         code: "E0861",
         span: value.span,
+        declaredAt: this.declaredAt,
         message: `Slice assignment length (${length} bytes) exceeds the source value width (${bits / 8} bytes) for '${name}'`,
         helpText:
           "Copying more bytes than the source holds would shift past its width, which is undefined behavior.",

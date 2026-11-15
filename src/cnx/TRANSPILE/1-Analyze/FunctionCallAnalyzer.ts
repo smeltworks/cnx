@@ -184,8 +184,7 @@ class FunctionCallAnalyzer {
 
   /** #1402: where the function a bare call resolved to is declared */
   private declarationOf(cName: string): ISourceSite | undefined {
-    const symbol = this.context.program.symbolByCName(cName);
-    return symbol ? BindingSite.ofSymbol(symbol) : undefined;
+    return BindingSite.ofCName(cName, this.context);
   }
 
   /**

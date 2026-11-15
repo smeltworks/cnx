@@ -23,6 +23,7 @@
  * differs; it does not.
  */
 
+import BindingSite from "./helpers/BindingSite";
 import LengthProperty from "../../utils/LengthProperty";
 import CaseLabelSymbol from "../../utils/CaseLabelSymbol";
 import ScopeUtils from "../../utils/ScopeUtils";
@@ -85,6 +86,7 @@ class SwitchStatementCheck {
       this.found.push({
         code: "E0711",
         span: switchExpr.span,
+        declaredAt: BindingSite.ofOperands([switchExpr], this.context),
         message: "Cannot switch on a boolean",
         helpText:
           "MISRA C:2012 Rule 16.7: a bool has two states and a switch implies more. Use if/else.",
@@ -478,6 +480,7 @@ class SwitchStatementCheck {
         this.found.push({
           code: "E0714",
           span: at,
+          declaredAt: BindingSite.ofCName(enumTypeName, this.context),
           message: `Switch covers ${covered} of ${total} ${enumTypeName} variants (${explicit} explicit + default(${absorbed}))`,
           helpText: `Every variant has to be accounted for exactly once. Expected ${total}.`,
         });
@@ -489,6 +492,7 @@ class SwitchStatementCheck {
       this.found.push({
         code: "E0714",
         span: at,
+        declaredAt: BindingSite.ofCName(enumTypeName, this.context),
         message: `Non-exhaustive switch on ${enumTypeName}: covers ${explicit} of ${total} variants, missing ${total - explicit}`,
         helpText:
           "Add the missing cases, or a `default(N)` stating how many variants it absorbs.",

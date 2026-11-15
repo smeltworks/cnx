@@ -812,11 +812,7 @@ class TranspileState {
    * file's own declaration when it has one, as `isCrossFileDeclaration` reads
    */
   declarationOf(qualifiedCName: string): ISourceSite | undefined {
-    const found = this.symbolTable.getOverloadsByCName(qualifiedCName);
-    const symbol =
-      found.find((candidate) => candidate.sourceFile === this.sourcePath) ??
-      found[0];
-    return symbol && BindingSite.ofSymbol(symbol);
+    return BindingSite.ofCName(qualifiedCName, this.typingContext());
   }
 
   /**

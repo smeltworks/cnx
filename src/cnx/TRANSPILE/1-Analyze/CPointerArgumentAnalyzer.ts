@@ -122,6 +122,7 @@ class CPointerArgumentCheck {
       this.found.push({
         code: "E0915",
         span: arg.span,
+        declaredAt: BindingSite.ofCName(callee.name, this.context),
         message: `cannot pass '${arg.written}' as argument ${index + 1} of '${callee.name}', which its format writes: it is not a variable, so the write would be lost`,
         helpText: `A scanf-family conversion writes its argument (ADR-071 Decision 2); pass a \`mut\` variable.`,
         severity: "error",
@@ -136,6 +137,7 @@ class CPointerArgumentCheck {
       this.found.push({
         code: "E0915",
         span: arg.span,
+        declaredAt: BindingSite.ofCName(callee.name, this.context),
         message: `cannot pass '${arg.written}' as argument ${index + 1} of '${callee.name}', which its format writes: it is ${qualifier.is}, and '${callee.name}' would write it through a plain pointer, so the ${qualifier.write} write would be lost`,
         helpText: `Scan into a \`mut\` local, then assign it to '${arg.written}' (ADR-071 Decision 2, #2398).`,
         severity: "error",

@@ -28,6 +28,7 @@
  * statement and are checked here on the same terms.
  */
 
+import type ISourceSite from "../../types/ISourceSite";
 import OperandTyper from "../../utils/OperandTyper";
 import SourceOrder from "../../utils/SourceOrder";
 import DeclarationParts from "../../utils/DeclarationParts";
@@ -228,7 +229,12 @@ class ConstAssignmentCheck {
       if (param === undefined || param.isConst) return;
       const target = WrittenBinding.ofExpression(arg, this.context);
       if (!MutArgument.isWritable(arg, this.context)) {
-        this.reportNotWritable(arg, param.name, calledAs);
+        this.reportNotWritable(
+          arg,
+          param.name,
+          calledAs,
+          BindingSite.ofSymbol(callee),
+        );
         return;
       }
       this.noteWrite(target?.binding ?? null);
@@ -250,12 +256,14 @@ class ConstAssignmentCheck {
     arg: TExpression,
     parameter: string,
     calledAs: string,
+    declaredAt: ISourceSite,
   ): void {
     const passing = `cannot pass '${arg.written}' to \`mut\` parameter '${parameter}' of function '${calledAs}'`;
     if (MutArgument.headerMacro(arg, this.context) === null) {
       this.found.push({
         code: "E0915",
         span: arg.span,
+        declaredAt: declaredAt,
         message: `${passing}: it is not a variable, so the write would be lost`,
         helpText:
           "A `mut` parameter writes its argument (ADR-006); assign the value to a `mut` variable and pass that.",
@@ -265,6 +273,7 @@ class ConstAssignmentCheck {
     this.found.push({
       code: "E0915",
       span: arg.span,
+      declaredAt: declaredAt,
       message: `${passing}: it is a \`#define\`, not a variable`,
       helpText:
         "A `#define` is text replacement, not a value (ADR-006), so a `mut` parameter cannot take one; pass the variable it names, or a `mut` variable.",

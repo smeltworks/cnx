@@ -172,8 +172,7 @@ class ControllingExpressionCheck {
     const callee = OperandTyper.chainOf(call, this.context).steps.find(
       (step) => step.callee !== null,
     )?.callee;
-    const symbol = callee ? this.context.program.symbolByCName(callee) : null;
-    return symbol ? BindingSite.ofSymbol(symbol) : undefined;
+    return callee ? BindingSite.ofCName(callee, this.context) : undefined;
   }
 
   private reportCall(node: TExpression, kind: string): void {

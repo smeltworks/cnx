@@ -30,6 +30,8 @@
  * two-expression subscript, which is a slice or a bit range (ADR-007).
  */
 
+import type ISourceSite from "../../types/ISourceSite";
+import BindingSite from "./helpers/BindingSite";
 import OperandTyper from "../../utils/OperandTyper";
 import ExpressionShape from "../../utils/ExpressionShape";
 import ElementCount from "../../utils/ElementCount";
@@ -59,6 +61,8 @@ interface ISubscript {
 
 class ArrayIndexBoundsCheck {
   private readonly found: IArrayIndexBoundsError[] = [];
+  /** #1402: the declaration of the array the chain indexes */
+  private declaredAt: ISourceSite | undefined;
 
   public constructor(private readonly context: IAnalysisContext) {}
 
@@ -74,6 +78,7 @@ class ArrayIndexBoundsCheck {
    */
   public checkChain(chain: TExpression): void {
     if (chain.kind !== "postfix") return;
+    this.declaredAt = BindingSite.ofChain(chain, this.context);
     const subscripts = ArrayIndexBoundsCheck.subscriptsOf(chain.ops);
     if (subscripts.length === 0) return;
     const typing = OperandTyper.chainOf(chain, this.context);
@@ -166,6 +171,7 @@ class ArrayIndexBoundsCheck {
       this.found.push({
         code: "E0854",
         span: subscript.at,
+        declaredAt: this.declaredAt,
         message: `Array index out of bounds: ${index} is negative for '${name}' dimension ${subscript.dimension}`,
         helpText: "An index counts from zero (ADR-036).",
       });
@@ -175,6 +181,7 @@ class ArrayIndexBoundsCheck {
       this.found.push({
         code: "E0854",
         span: subscript.at,
+        declaredAt: this.declaredAt,
         message: `Array index out of bounds: ${index} >= ${bound} for '${name}' dimension ${subscript.dimension}`,
         helpText: `The last valid index is ${bound - 1} (ADR-036).`,
       });

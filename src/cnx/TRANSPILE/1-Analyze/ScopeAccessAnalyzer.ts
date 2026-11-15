@@ -34,6 +34,7 @@
  * frames.
  */
 
+import BindingSite from "./helpers/BindingSite";
 import SourceOrder from "../../utils/SourceOrder";
 import OperandTyper from "../../utils/OperandTyper";
 import DeclarationParts from "../../utils/DeclarationParts";
@@ -162,6 +163,11 @@ class ScopeAccessCheck {
     this.found.push({
       code: "E0435",
       span: access.at,
+      declaredAt: BindingSite.ofMember(
+        access.scope,
+        access.member,
+        this.context,
+      ),
       message: `Cannot reference own scope '${access.scope}' by name; use 'this.${access.member}' instead of '${access.scope}.${access.member}'`,
       helpText:
         "Inside a scope its members are reached through `this.`; the scope's name is for the outside. `global.` is allowed when the qualification is deliberate.",
@@ -182,6 +188,11 @@ class ScopeAccessCheck {
     this.found.push({
       code: "E0436",
       span: access.at,
+      declaredAt: BindingSite.ofMember(
+        access.scope,
+        access.member,
+        this.context,
+      ),
       message: `Cannot access private member '${access.member}' of scope '${access.scope}' ${context}`,
       helpText:
         "Only public members are accessible outside their scope. Mark it `public`, or reach it through a public member.",
@@ -222,6 +233,7 @@ class ScopeAccessCheck {
     this.found.push({
       code: "E0437",
       span: access.at,
+      declaredAt: BindingSite.ofCName(access.scope, this.context),
       message: `Use 'global.${access.scope}.${access.member}' to access ${kind} '${access.scope}' from inside scope '${here}' (${why})`,
       helpText:
         "A bare name resolves to the nearest declaration, which here is the shadow. `global.` names the file-scope one unambiguously.",

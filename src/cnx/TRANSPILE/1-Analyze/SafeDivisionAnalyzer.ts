@@ -93,8 +93,7 @@ class SafeDivisionAnalyzer {
 
   /** #1402: where the name passed as the output is declared */
   private declarationOf(name: string): ISourceSite | undefined {
-    const symbol = this.context.program.symbolByCName(name);
-    return symbol ? BindingSite.ofSymbol(symbol) : undefined;
+    return BindingSite.ofCName(name, this.context);
   }
 
   private isDeclared(name: string, at: ISourceSpan): boolean {

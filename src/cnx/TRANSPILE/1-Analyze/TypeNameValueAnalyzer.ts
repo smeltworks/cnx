@@ -67,11 +67,7 @@ class TypeNameValueAnalyzer {
 
   /** #1402: where the type named as a value is declared */
   private typeDeclaration(type: IOperandType): ISourceSite | undefined {
-    const symbol =
-      type.typeName === null
-        ? null
-        : this.context.program.symbolByCName(type.typeName);
-    return symbol ? BindingSite.ofSymbol(symbol) : undefined;
+    return BindingSite.ofCName(type.typeName, this.context);
   }
 
   /** The chain as its source spells it, up to the op where it stops */

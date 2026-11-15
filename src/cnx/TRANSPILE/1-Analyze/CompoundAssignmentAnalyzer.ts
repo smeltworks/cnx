@@ -28,6 +28,7 @@
  * where it decides something.
  */
 
+import BindingSite from "./helpers/BindingSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TExpression from "../../types/syntax/TExpression";
@@ -67,6 +68,7 @@ class CompoundAssignmentCheck {
     this.found.push({
       code: "E0857",
       span: site.span,
+      declaredAt: BindingSite.ofChain(site.target, this.context),
       message: `Compound assignment operators are not supported on a ${reason}`,
       helpText:
         "A compound operator reads, modifies and writes back one storage location. Write the read and the write out separately.",

@@ -5,6 +5,7 @@
  * in an included one.
  */
 
+import type IOperandType from "../../../types/IOperandType";
 import type ISourceSite from "../../../types/ISourceSite";
 import type TValueBinding from "../../../types/TValueBinding";
 import type ITypingContext from "../../../types/ITypingContext";
@@ -42,6 +43,32 @@ class BindingSite {
     };
   }
 
+  /**
+   * #1402: a declaration by its C name -- this file's own first, then the
+   * one an include supplies; undefined for a name nothing declares
+   */
+  static ofCName(
+    cName: string | null,
+    context: Pick<ITypingContext, "program" | "sourceFile">,
+  ): ISourceSite | undefined {
+    if (cName === null) return undefined;
+    const found = context.program.symbolTable().getOverloadsByCName(cName);
+    const symbol =
+      found.find((candidate) => candidate.sourceFile === context.sourceFile) ??
+      found[0];
+    return symbol && BindingSite.ofSymbol(symbol);
+  }
+
+  /** #1402: where `scopePath.name` is declared, by the binder's identity */
+  static ofMember(
+    scopePath: string,
+    name: string,
+    context: Pick<ITypingContext, "program">,
+  ): ISourceSite | undefined {
+    const symbol = context.program.memberOf(scopePath, name);
+    return symbol && BindingSite.ofSymbol(symbol);
+  }
+
   /** #1402: the declaration a chain is rooted in, `a` of `a.b[0].c` */
   static ofChain(
     chain: TExpression,
@@ -61,10 +88,22 @@ class BindingSite {
   ): ISourceSite | undefined {
     const sites = operands
       .flatMap((operand) => OperandTyper.valueLeaves(operand, context))
-      .flatMap((leaf) => BindingSite.of(leaf?.binding ?? null, context) ?? []);
+      .flatMap((leaf) => BindingSite.ofLeaf(leaf, context) ?? []);
     return (
       sites.find((site) => site.sourcePath !== context.sourceFile) ?? sites[0]
     );
+  }
+
+  /** A value leaf's declaration: its binding's, or an enum member's enum's */
+  private static ofLeaf(
+    leaf: IOperandType | null,
+    context: ITypingContext,
+  ): ISourceSite | undefined {
+    if (leaf === null) return undefined;
+    if (leaf.binding !== null) return BindingSite.of(leaf.binding, context);
+    return context.program.symbolByCName(leaf.typeName ?? "")?.kind === "enum"
+      ? BindingSite.ofCName(leaf.typeName, context)
+      : undefined;
   }
 }
 

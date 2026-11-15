@@ -167,8 +167,7 @@ class BareEnumMemberAnalyzer {
 
   /** #1402: where the enum declaring the bare member is declared */
   private enumDeclaration(enumName: string): ISourceSite | undefined {
-    const symbol = this.context.program.symbolByCName(enumName);
-    return symbol ? BindingSite.ofSymbol(symbol) : undefined;
+    return BindingSite.ofCName(enumName, this.context);
   }
 
   private check(

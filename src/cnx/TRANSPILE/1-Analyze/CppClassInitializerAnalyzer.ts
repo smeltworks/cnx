@@ -42,6 +42,7 @@
  * may not import `output/`.
  */
 
+import BindingSite from "./helpers/BindingSite";
 import CppConstructorHelper from "../../utils/CppConstructorHelper";
 import OperandTyper from "../../utils/OperandTyper";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
@@ -82,6 +83,7 @@ class CppClassInitializerCheck {
     this.found.push({
       code: "E0508",
       span: init.span,
+      declaredAt: BindingSite.ofCName(cppClass, this.context),
       message: `C++ class '${cppClass}' has a constructor, so struct initializer syntax cannot be used outside a function body`,
       helpText:
         "A class with a constructor is not an aggregate, so the fields are assigned one at a time -- and a declaration outside a function body has no statement to assign them in. Initialize it inside a function, or use constructor syntax.",

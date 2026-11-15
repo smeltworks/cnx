@@ -46,6 +46,7 @@
  * context and one was missing a line.
  */
 
+import BindingSite from "./helpers/BindingSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import ProgramAccesses from "../../utils/ProgramAccesses";
 import SourceOrder from "../../utils/SourceOrder";
@@ -103,6 +104,7 @@ class StructLiteralCheck {
     this.found.push({
       code: "E0358",
       span: init.span,
+      declaredAt: BindingSite.ofCName(target.typeName, this.context),
       message: `A struct initializer cannot be a value of '${target.typeName}', which is not a struct`,
       helpText: target.isBitmap
         ? `A bitmap's value is its backing integer, set field by field after: '${target.typeName} v <- 0; v.<field> <- true;' (ADR-034).`

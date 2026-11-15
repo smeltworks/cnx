@@ -61,6 +61,7 @@
  * headers included (#1726).
  */
 
+import BindingSite from "./helpers/BindingSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import ProgramAccesses from "../../utils/ProgramAccesses";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
@@ -575,6 +576,7 @@ class IntegerConversionCheck {
     this.found.push({
       code: "E0891",
       span: value.span,
+      declaredAt: BindingSite.ofOperands([value], this.context),
       message: `Implicit conversion from floating ${floating} to integer ${target}`,
       helpText: `Write the conversion as a cast, which saturates: (${target})value (ADR-024)`,
     });
@@ -621,6 +623,7 @@ class IntegerConversionCheck {
       this.found.push({
         code: "E0869",
         span: at.span,
+        declaredAt: BindingSite.ofOperands([at], this.context),
         message: `Cannot ${verb} ${source} to ${target} (narrowing)`,
         helpText: `Use bit indexing to say which bits you mean: ${subject}[0, ${targetWidth}]`,
       });
@@ -630,6 +633,7 @@ class IntegerConversionCheck {
       this.found.push({
         code: "E0869",
         span: at.span,
+        declaredAt: BindingSite.ofOperands([at], this.context),
         message: `Cannot ${verb} ${source} to ${target} (sign change)`,
         helpText: `Use bit indexing to reinterpret the bits explicitly: ${subject}[0, ${targetWidth}]`,
       });

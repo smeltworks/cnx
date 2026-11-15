@@ -39,6 +39,7 @@
  * evaluated once and is not restricted.
  */
 
+import BindingSite from "./helpers/BindingSite";
 import ExpressionShape from "../../utils/ExpressionShape";
 import FloatBits from "../../utils/FloatBits";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
@@ -104,6 +105,7 @@ class BitAccessCheck {
       this.found.push({
         code: "E0890",
         span: index.span,
+        declaredAt: BindingSite.ofChain(target, this.context),
         message: `'${index.written}' would be evaluated twice: '${target.written}' is read and then written back`,
         helpText:
           "A bit, bit-range or bitmap-field write keeps the other bits, so it reads its target and stores it back, and every subscript in the target runs twice. Store the index in a variable first (ADR-007).",
@@ -158,6 +160,7 @@ class BitAccessCheck {
     this.found.push({
       code: "E0888",
       span: chain.span,
+      declaredAt: BindingSite.ofChain(chain, this.context),
       message: `Float bit range '${range}' cannot be read at file scope`,
       helpText:
         "Reading a float's bits copies it through a union (MISRA C:2012 Rule 21.15 forbids the pointer cast), and a copy is a statement -- there is none at file scope. Read it inside a function.",
@@ -198,6 +201,7 @@ class BitAccessCheck {
       this.found.push({
         code: "E0920",
         span: expr.span,
+        declaredAt: BindingSite.ofChain(expr, this.context),
         message: `Bit index out of range in '${written}': ${what}, but the value has ${width} bits (0-${width - 1})`,
         helpText:
           "A bit index counts within the indexed value's own bits: its declared type's, or a bitmap field's (ADR-007, ADR-034). Index a wider value, or a bit that exists.",
@@ -214,6 +218,7 @@ class BitAccessCheck {
       this.found.push({
         code: "E0856",
         span: chain.span,
+        declaredAt: BindingSite.ofChain(chain, this.context),
         message: `too many subscripts on '${ExpressionShape.writtenThrough(chain, run.start)}': it is ${BitAccessCheck.shapeOf(run)}, so it allows at most ${run.allowed}`,
         helpText: BitAccessCheck.depthHelp(chain, run),
       });
