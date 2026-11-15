@@ -3,3 +3,6 @@
 string<16> wideShared <- "wide";
 
 u32 STRING_MARKER <- 1;
+
+// #1402: a narrow destination the cross-file fixtures write into
+mut string<4> narrowShared <- "ab";
