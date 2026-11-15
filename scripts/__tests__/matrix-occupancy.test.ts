@@ -217,7 +217,9 @@ describe("FixtureOccupancy.build", () => {
 
     const occupancy = await occupancyFor("024 E0810", [fixture]);
     expect([...occupancy!.cells.keys()]).toEqual([]);
-  });
+    // the run preprocesses `<math.h>` for its macros, which a CI runner takes
+    // longer than the 5s default to do
+  }, 60_000);
 
   it("counts a C header that declares the construct as an include hop", async () => {
     // #1523: `lib_value` is declared in `lib.h`, so the fixture uses it from
