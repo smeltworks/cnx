@@ -1,0 +1,31 @@
+// test-execution
+// test-adr: 025, 057
+// #1402: a const declared two includes away, named as a case label (ADR-025)
+// and read bare in a top-level function (ADR-057 binds-global) -- both the
+// top-level function / imported transitive cells.
+
+#include "switch-codes-relay.cnx"
+
+u8 classify(u8 v) {
+    mut u8 result <- 0;
+    switch (v) {
+        case LEVEL_A {
+            result <- LEVEL_C;
+        }
+        case LEVEL_C {
+            result <- 9;
+        }
+        default {
+            result <- 0;
+        }
+    }
+    return result;
+}
+
+i32 main() {
+    u8 got <- classify(1);
+    if (got != 2) {
+        return 1;
+    }
+    return 0;
+}
