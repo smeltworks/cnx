@@ -43,6 +43,7 @@
  * their bits reject zero as codegen's `isWriteOnlyRegister` set did.
  */
 
+import BindingSite from "./helpers/BindingSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import ProgramAccesses from "../../utils/ProgramAccesses";
 import type IValuePositions from "../../types/IValuePositions";
@@ -88,6 +89,7 @@ class RegisterAccessCheck {
         message: `cannot assign to read-only register member '${found.member}' (${found.spelling} has 'ro' access modifier)`,
         helpText:
           "An `ro` register member is hardware that cannot be written (ADR-004); the generated C declares it `const`. Write the register's own writable member, or change the declaration if the hardware allows writes.",
+        declaredAt: BindingSite.ofChain(target, this.context),
       });
       return;
     }
@@ -121,6 +123,7 @@ class RegisterAccessCheck {
       message: `Cannot assign ${single ? "false" : "0"} to write-only register ${single ? "bit" : "bits"} ${site.target.written}`,
       helpText:
         "Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.",
+      declaredAt: BindingSite.ofChain(site.target, this.context),
     });
   }
 
@@ -169,6 +172,7 @@ class RegisterAccessCheck {
       message: `cannot read from write-only register member '${found.member}' (${found.spelling} has 'wo' access modifier)`,
       helpText:
         "A `wo` register member is hardware that returns nothing meaningful when read (ADR-004). Read the register's own readable member, or keep a shadow copy of what was written.",
+      declaredAt: BindingSite.ofChain(at, this.context),
     });
   }
 }

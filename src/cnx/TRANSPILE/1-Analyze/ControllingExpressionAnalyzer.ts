@@ -26,6 +26,7 @@
  * the list -- it has no controlling expression, which is the point of it.
  */
 
+import BindingSite from "./helpers/BindingSite";
 import ExpressionCalls from "../../utils/ExpressionCalls";
 import SourceOrder from "../../utils/SourceOrder";
 import OperandTyper from "../../utils/OperandTyper";
@@ -157,6 +158,7 @@ class ControllingExpressionCheck {
     this.found.push({
       code: "E0701",
       span: node.span,
+      declaredAt: BindingSite.ofOperands([node], this.context),
       message: `${kind} condition must be a comparison, not '${node.written}'`,
       helpText: `MISRA C:2012 Rule 14.4: ${this.suggestionFor(node)}`,
     });
@@ -166,6 +168,7 @@ class ControllingExpressionCheck {
     this.found.push({
       code: "E0702",
       span: node.span,
+      declaredAt: BindingSite.ofOperands([node], this.context),
       message: `${kind} condition may not call a function: '${node.written}'`,
       helpText: `MISRA C:2012 Rule 13.5: ${CALL_HELP}`,
     });

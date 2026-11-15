@@ -22,6 +22,7 @@
  * only in the register map. ADR-034 says a bitmap is addressed by named field.
  */
 
+import BindingSite from "./helpers/BindingSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import ProgramAccesses from "../../utils/ProgramAccesses";
 import type IValuePositions from "../../types/IValuePositions";
@@ -90,6 +91,7 @@ class BitmapAccessCheck {
         this.found.push({
           code: "E0921",
           span: node.span,
+          declaredAt: BindingSite.ofChain(node, this.context),
           message: `Field '${step.member}' of an array of '${bitmap}' names no element`,
           helpText: `A field belongs to one '${bitmap}' value; index every dimension first, e.g. NAME[i].${step.member} (ADR-034).`,
         });
@@ -100,6 +102,7 @@ class BitmapAccessCheck {
         this.found.push({
           code: "E0883",
           span: node.span,
+          declaredAt: BindingSite.ofChain(node, this.context),
           message: `Cannot use bracket indexing on bitmap type '${bitmap}'`,
           helpText: `A bitmap is addressed by named field, not by bit index -- write ${BitmapAccessCheck.spellingBefore(node, steps.length, i)}.FIELD_NAME (ADR-034).`,
         });
@@ -117,6 +120,7 @@ class BitmapAccessCheck {
         this.found.push({
           code: "E0882",
           span: node.span,
+          declaredAt: BindingSite.ofChain(node, this.context),
           message: `Unknown bitmap field '${field}' on '${bitmap}'`,
           helpText:
             known.length === 0
