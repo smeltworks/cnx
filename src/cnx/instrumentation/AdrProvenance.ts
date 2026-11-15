@@ -53,6 +53,7 @@
  * belongs here too.
  */
 import type IRecordedAdrSite from "../types/IRecordedAdrSite";
+import type ISourceSite from "../types/ISourceSite";
 
 class AdrProvenance {
   private static sites: IRecordedAdrSite[] = [];
@@ -76,11 +77,18 @@ class AdrProvenance {
     adr: string,
     line: number | null | undefined,
     rule?: string,
+    declaredAt?: ISourceSite,
   ): void {
     if (!this.currentSourcePath || line == null || line <= 0) {
       return;
     }
-    this.sites.push({ adr, sourcePath: this.currentSourcePath, line, rule });
+    this.sites.push({
+      adr,
+      sourcePath: this.currentSourcePath,
+      line,
+      rule,
+      ...(declaredAt && { declaredAt }),
+    });
   }
 
   /** Every site recorded since the last reset, deduplicated. */

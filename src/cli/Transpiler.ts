@@ -209,6 +209,7 @@ class Transpiler {
       );
       this.anchor = discovered.anchor;
       const pipelineInput = discovered.graph;
+      result.includes = Transpiler._includes(pipelineInput);
       if (discovered.errors.length > 0) {
         result.errors.push(...discovered.errors);
         result.success = false;
@@ -691,6 +692,23 @@ class Transpiler {
   /**
    * Initialize a fresh result object
    */
+  /** #1402: the include graph 1.1 resolved, `.cnx` and header edges both */
+  private static _includes(
+    graph: ISourceGraph,
+  ): ReadonlyMap<string, readonly string[]> {
+    return new Map(
+      graph.cnxFiles.map((file) => [
+        file.path,
+        [
+          ...file.cnxIncludes.map((include) => include.path),
+          ...graph.headerIncludes
+            .filter((include) => include.site.sourcePath === file.path)
+            .map((include) => include.header),
+        ],
+      ]),
+    );
+  }
+
   private _initResult(): ITranspilerResult {
     return {
       success: true,

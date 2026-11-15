@@ -1,18 +1,19 @@
 /**
- * The declaration a written binding needs `mut` on (ADR-071). A local's
+ * Where a binding is declared: the declaration a written binding needs `mut`
+ * on (ADR-071), or the one a diagnostic is about (#1402). A local's
  * declaration is in the file being analyzed; a global or a scope member may be
  * in an included one.
  */
 
-import type IMutSite from "../../../types/IMutSite";
+import type ISourceSite from "../../../types/ISourceSite";
 import type TValueBinding from "../../../types/TValueBinding";
 import type IAnalysisContext from "../types/IAnalysisContext";
 
-class MutSite {
+class BindingSite {
   static of(
     binding: TValueBinding | null,
     context: IAnalysisContext,
-  ): IMutSite | undefined {
+  ): ISourceSite | undefined {
     if (binding?.kind === "local") {
       const at = binding.declaration.extent;
       return {
@@ -33,4 +34,4 @@ class MutSite {
   }
 }
 
-export default MutSite;
+export default BindingSite;

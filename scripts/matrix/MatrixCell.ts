@@ -46,21 +46,12 @@ function isPosition(value: string): value is TMatrixPosition {
 }
 
 /**
- * Relationships the tooling can currently establish.
- *
- * The consumer-side three come from the resolved include graph. The
- * provider-side two need to know which FILE a construct was emitted from.
- * `IRecordedAdrSite` has a `sourcePath` slot (#1241), but it does not yet
- * discriminate: provenance is gathered by transpiling the fixture alone, so
- * every site carries the fixture's own path. They therefore stay not-derivable
- * rather than being silently counted as empty -- an undetectable cell and an
- * uncovered cell are different claims and must not render the same. #1402.
+ * Relationships the tooling can currently establish: every one (#1402). The
+ * consumer side is measured from a fixture's own position to the file that
+ * declares its construct, and the provider side from the fixture to the
+ * included file a rule fired in, both over the include graph the run resolved.
  */
-const DERIVABLE_RELATIONSHIPS: readonly TMatrixRelationship[] = [
-  "same-file",
-  "imported-direct",
-  "imported-transitive",
-];
+const DERIVABLE_RELATIONSHIPS: readonly TMatrixRelationship[] = RELATIONSHIPS;
 
 /** Encode a cell as a stable key. Never build this string by hand elsewhere. */
 function key(
@@ -93,16 +84,21 @@ function isDerivable(relationship: TMatrixRelationship): boolean {
 }
 
 /**
- * Map an include-chain depth to its consumer-side relationship.
+ * #1402: one position's relationship, from its include hops.
  *
- * Depth is the longest resolved `#include` chain reachable from the fixture,
- * so 0 means the fixture stands alone and 2+ means a declaration is reached
- * through an intermediate file (the #1178 failure shape).
+ * `consumer`: a position in the fixture, `hops` away from the file declaring
+ * the construct -- 0 is the fixture itself. `provider`: a position in a file
+ * the fixture includes, `hops` away from the fixture (at least 1).
  */
-function relationshipForDepth(depth: number): TMatrixRelationship {
-  if (depth <= 0) return "same-file";
-  if (depth === 1) return "imported-direct";
-  return "imported-transitive";
+function relationshipFor(
+  side: "consumer" | "provider",
+  hops: number,
+): TMatrixRelationship {
+  if (side === "provider") {
+    return hops === 1 ? "exercised-from-one-away" : "exercised-through-chain";
+  }
+  if (hops === 0) return "same-file";
+  return hops === 1 ? "imported-direct" : "imported-transitive";
 }
 
 class MatrixCell {
@@ -113,7 +109,7 @@ class MatrixCell {
   static key = key;
   static all = all;
   static isDerivable = isDerivable;
-  static relationshipForDepth = relationshipForDepth;
+  static relationshipFor = relationshipFor;
 }
 
 export default MatrixCell;

@@ -40,7 +40,7 @@ import type ICCallee from "./types/ICCallee";
 import BoundDeclaration from "./helpers/BoundDeclaration";
 import WrittenBinding from "./helpers/WrittenBinding";
 import MutArgument from "./helpers/MutArgument";
-import MutSite from "./helpers/MutSite";
+import BindingSite from "./helpers/BindingSite";
 import type IVariableSymbol from "../../types/symbols/IVariableSymbol";
 import type IWrittenBinding from "./types/IWrittenBinding";
 import type TValueBinding from "../../types/TValueBinding";
@@ -92,7 +92,7 @@ class ConstAssignmentCheck {
         kind === "parameter"
           ? "A parameter is read-only unless declared `mut` (ADR-071); declare it `mut` if the function must change it."
           : "A binding is read-only unless declared `mut` (ADR-071); declare it `mut` if the value must change.",
-      declaredAt: MutSite.of(target.binding, this.context),
+      declaredAt: BindingSite.of(target.binding, this.context),
     });
   }
 
@@ -140,7 +140,7 @@ class ConstAssignmentCheck {
       message: `cannot store read-only ${kind} '${value.written}' in \`mut\` '${into}': a ${typeName} handle refers to its object`,
       helpText:
         "Through the copy, the object may be written (ADR-030); declare the source `mut` (ADR-071).",
-      declaredAt: MutSite.of(source.binding, this.context),
+      declaredAt: BindingSite.of(source.binding, this.context),
     });
   }
 
@@ -185,7 +185,7 @@ class ConstAssignmentCheck {
       span: call.args[0].span,
       message: `cannot assign to read-only ${kind} '${output}' (${call.name} output)`,
       helpText: `${call.name} writes its result through its first argument, so it must be declared \`mut\` (ADR-071).`,
-      declaredAt: MutSite.of(written.binding, this.context),
+      declaredAt: BindingSite.of(written.binding, this.context),
     });
   }
 
@@ -240,7 +240,7 @@ class ConstAssignmentCheck {
         message: `cannot pass read-only '${argName}' to \`mut\` parameter '${param.name}' of function '${calledAs}'`,
         helpText:
           "The callee writes through that parameter, so the argument must be declared `mut` (ADR-071).",
-        declaredAt: MutSite.of(target?.binding ?? null, this.context),
+        declaredAt: BindingSite.of(target?.binding ?? null, this.context),
       });
     });
   }
@@ -391,7 +391,7 @@ class ConstAssignmentCheck {
       message: `cannot call non-\`const\` method '${method.name}' on read-only ${kind} '${target.name}'`,
       helpText:
         "A C++ method not declared `const` may write its object, so the object must be declared `mut` (ADR-071).",
-      declaredAt: MutSite.of(target.binding, this.context),
+      declaredAt: BindingSite.of(target.binding, this.context),
     });
   }
 

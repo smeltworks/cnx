@@ -31,7 +31,7 @@ import CCallee from "./helpers/CCallee";
 import CArgumentWrite from "./helpers/CArgumentWrite";
 import WrittenBinding from "./helpers/WrittenBinding";
 import BoundDeclaration from "./helpers/BoundDeclaration";
-import MutSite from "./helpers/MutSite";
+import BindingSite from "./helpers/BindingSite";
 import MutArgument from "./helpers/MutArgument";
 import CPointerParameter from "../../utils/CPointerParameter";
 import ScanfFormat from "../../utils/ScanfFormat";
@@ -195,7 +195,7 @@ class CPointerArgumentCheck {
       span: callee.arguments[index].span,
       ...this.readOnlyWriteText(callee, index, parameter, pointee),
       severity: "error",
-      declaredAt: MutSite.of(written, this.context),
+      declaredAt: BindingSite.of(written, this.context),
     });
     return true;
   }

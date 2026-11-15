@@ -35,6 +35,7 @@ import IReturnValueUseError from "./types/IReturnValueUseError";
 import type IResolvedSymbols from "../../types/IResolvedSymbols";
 import DeclaredTypeFacts from "../../utils/DeclaredTypeFacts";
 import type IAnalysisContext from "./types/IAnalysisContext";
+import type ISourceSite from "../../types/ISourceSite";
 
 class ReturnValueUseAnalyzer {
   /**
@@ -168,6 +169,32 @@ class ReturnValueUseAnalyzer {
     return ReturnValueUseAnalyzer.nonVoidCallee(resolved, scopePath, context);
   }
 
+  /**
+   * #1402: where the discarded function is declared -- this file, an included
+   * `.cnx` file or a C/C++ header this file includes -- for the matrix's
+   * relationship. Undefined for a builtin or stdlib function.
+   */
+  private static declarationOf(
+    cName: string,
+    context: IAnalysisContext,
+  ): ISourceSite | undefined {
+    const symbol = context.symbolTable
+      .getOverloadsByCName(cName)
+      .find(
+        (sym) =>
+          sym.kind === "function" &&
+          (sym.sourceFile === context.sourceFile ||
+            context.program.seesForeignSymbol(context.sourceFile, sym)),
+      );
+    return (
+      symbol && {
+        sourcePath: symbol.sourceFile,
+        line: symbol.span.line,
+        column: symbol.span.column,
+      }
+    );
+  }
+
   /** #1991: reads 1.2's syntax, not the parse tree */
   static analyze(
     program: IProgramSyntax,
@@ -188,6 +215,7 @@ class ReturnValueUseAnalyzer {
           code: "E0708",
           message: `Return value of non-void function '${funcName}' is discarded`,
           helpText: `Use the value, or discard it explicitly: (void) ${funcName}(...);`,
+          declaredAt: ReturnValueUseAnalyzer.declarationOf(funcName, context),
         });
       }
     }

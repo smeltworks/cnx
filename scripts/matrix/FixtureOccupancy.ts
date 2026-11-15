@@ -8,18 +8,22 @@
  */
 
 import { existsSync, readFileSync } from "node:fs";
-import { relative } from "node:path";
+import { relative, resolve } from "node:path";
 
 import { ProgramContext } from "../../src/cnx/PARSE/2-Parse/grammar/CnxParser";
 import CnxSourceParser from "../../src/cnx/PARSE/2-Parse/CnxSourceParser";
 import FixtureContext from "./FixtureContext";
 import FixturePosition from "./FixturePosition";
-import IncludeDepth from "./IncludeDepth";
 import MatrixCell from "./MatrixCell";
 import MatrixRule from "./MatrixRule";
 import TestUtils from "../test-utils";
 import DiagnosticManifest from "../diagnostics/DiagnosticManifest";
-import AdrProvenanceLines from "./AdrProvenanceLines";
+import FixtureRun from "./FixtureRun";
+import type IFixtureRun from "../types/IFixtureRun";
+import type ILocatedPosition from "../types/ILocatedPosition";
+import type TMatrixRelationship from "../types/TMatrixRelationship";
+import type IRecordedAdrSite from "../../src/cnx/types/IRecordedAdrSite";
+import type ISourceSite from "../../src/cnx/types/ISourceSite";
 import IMatrixOccupancy from "../types/IMatrixOccupancy";
 import ISourcePosition from "../types/ISourcePosition";
 import TMatrixContext from "../types/TMatrixContext";
@@ -86,15 +90,15 @@ function addPosition(
 
 /** Contexts the given source positions resolve to. Empty when none can be. */
 function contextsAt(
-  tree: ProgramContext,
-  positions: readonly ISourcePosition[],
-): TMatrixContext[] {
-  const contexts: TMatrixContext[] = [];
-  for (const { line, column } of positions) {
+  positions: readonly ILocatedPosition[],
+): Map<string, TMatrixContext> {
+  const keys = new Map<string, TMatrixContext>();
+  for (const { tree, line, column, relationship } of positions) {
     const context = FixtureContext.at(tree, line, column);
-    if (context !== null && !contexts.includes(context)) contexts.push(context);
+    if (context !== null)
+      keys.set(MatrixCell.key(context, relationship), context);
   }
-  return contexts;
+  return keys;
 }
 
 /**
@@ -118,15 +122,102 @@ function recordPositions(
 }
 
 /**
+ * #1402: the relationship of a position in the fixture itself -- the hops to
+ * the file that declares its construct, as the deciding pass recorded it
+ * (`declaredAt`). With no declaration recorded it is `same-file` only where
+ * the fixture includes nothing, so nothing else could have declared it;
+ * otherwise it is not measured, never guessed.
+ */
+function consumerRelationship(
+  run: IFixtureRun,
+  declaredAt: ISourceSite | undefined,
+): TMatrixRelationship | null {
+  if (declaredAt === undefined) {
+    return run.hops.size === 1
+      ? MatrixCell.relationshipFor("consumer", 0)
+      : null;
+  }
+  const hops = run.hops.get(resolve(declaredAt.sourcePath));
+  return hops === undefined
+    ? null
+    : MatrixCell.relationshipFor("consumer", hops);
+}
+
+/** The declaration the run reported for the diagnostic at `position` */
+function declarationAt(
+  run: IFixtureRun,
+  fixture: string,
+  position: ISourcePosition,
+): ISourceSite | undefined {
+  return run.errors.find(
+    (error) =>
+      error.declaredAt !== undefined &&
+      error.sourcePath !== undefined &&
+      resolve(error.sourcePath) === fixture &&
+      error.line === position.line &&
+      error.column === position.column,
+  )?.declaredAt;
+}
+
+/**
+ * Where a recorded site sits. #1402: a site in a file the fixture includes is
+ * the provider side, read from that file's own tree.
+ */
+function locateSite(
+  run: IFixtureRun,
+  fixture: string,
+  site: IRecordedAdrSite,
+  treeOf: (path: string) => ProgramContext | null,
+): ILocatedPosition | null {
+  const path = resolve(site.sourcePath);
+  const tree = treeOf(path);
+  if (tree === null) return null;
+  if (path === fixture) {
+    const relationship = consumerRelationship(run, site.declaredAt);
+    return relationship === null
+      ? null
+      : { tree, line: site.line, relationship };
+  }
+  const hops = run.hops.get(path);
+  return hops === undefined
+    ? null
+    : {
+        tree,
+        line: site.line,
+        relationship: MatrixCell.relationshipFor("provider", hops),
+      };
+}
+
+/** Each file's parse tree, parsed once */
+function treeCache(
+  fixture: string,
+  fixtureTree: ProgramContext,
+): (path: string) => ProgramContext | null {
+  const trees = new Map<string, ProgramContext | null>([
+    [fixture, fixtureTree],
+  ]);
+  return (path) => {
+    if (!trees.has(path)) {
+      trees.set(
+        path,
+        existsSync(path)
+          ? CnxSourceParser.parse(readFileSync(path, "utf-8")).tree
+          : null,
+      );
+    }
+    return trees.get(path)!;
+  };
+}
+
+/**
  * Fold one fixture into the per-ADR occupancy maps.
  */
 function recordFixture(
   fixturePath: string,
   testsDir: string,
-  searchPaths: readonly string[],
   cells: Map<string, Map<string, string[]>>,
   withoutContext: Map<string, string[]>,
-  provenance: ReadonlyMap<string, number[]>,
+  run: IFixtureRun | null,
   positionCells: Map<string, Map<string, string[]>>,
 ): void {
   let source: string;
@@ -139,9 +230,7 @@ function recordFixture(
   const adrs = TestUtils.findAdrReferences(source);
   if (adrs.length === 0) return;
 
-  const relationship = MatrixCell.relationshipForDepth(
-    IncludeDepth.maxDepth(fixturePath, searchPaths),
-  );
+  const fixture = resolve(fixturePath);
   const shortPath = relative(testsDir, fixturePath);
 
   // #1241: a diagnostic's position is ADR-agnostic -- a fixture's `.expected.error`
@@ -150,39 +239,51 @@ function recordFixture(
   const expectedError = fixturePath.replace(/\.test\.cnx$/, ".expected.error");
   const diagnostics = diagnosticPositions(expectedError);
   const { tree } = CnxSourceParser.parse(source);
+  const treeOf = treeCache(fixture, tree);
+
+  const locateDiagnostics = (
+    positions: readonly ISourcePosition[],
+  ): ILocatedPosition[] => {
+    if (run === null) return [];
+    return positions.flatMap((position) => {
+      const relationship = consumerRelationship(
+        run,
+        declarationAt(run, fixture, position),
+      );
+      return relationship === null ? [] : [{ tree, ...position, relationship }];
+    });
+  };
 
   for (const adr of adrs) {
-    const positions = [...(diagnostics.get(null) ?? [])];
-    for (const line of provenance.get(adr) ?? []) {
-      addPosition(positions, { line });
-    }
-
     // #1731 review: a rule with its own table is occupied only by provenance
     // recorded for that rule. #1620: a coded diagnostic occupies only its
     // code's matrix -- never the ADR's own, nor another code's.
-    const matrices: [string, ISourcePosition[]][] = [[adr, positions]];
+    const matrices = new Map<string, ILocatedPosition[]>([
+      [adr, locateDiagnostics(diagnostics.get(null) ?? [])],
+    ]);
     for (const [code, codePositions] of diagnostics) {
       if (code === null) continue;
       const codeId = MatrixRule.id(adr, code);
-      matrices.push([codeId, codePositions]);
+      matrices.set(codeId, locateDiagnostics(codePositions));
       const matrix = positionCells.get(codeId) ?? new Map<string, string[]>();
       recordPositions(tree, codePositions, shortPath, matrix);
       if (matrix.size > 0) positionCells.set(codeId, matrix);
     }
-    for (const [matrixId, ruleLines] of provenance) {
-      if (matrixId !== adr && MatrixRule.adrOf(matrixId) === adr) {
-        matrices.push([matrixId, ruleLines.map((line) => ({ line }))]);
-      }
+    for (const site of run?.sites ?? []) {
+      const matrixId = MatrixRule.id(site.adr, site.rule);
+      if (MatrixRule.adrOf(matrixId) !== adr) continue;
+      const located = locateSite(run!, fixture, site, treeOf);
+      if (located === null) continue;
+      matrices.set(matrixId, [...(matrices.get(matrixId) ?? []), located]);
     }
 
     let placed = false;
     for (const [matrixId, matrixPositions] of matrices) {
-      const contexts = contextsAt(tree, matrixPositions);
-      if (contexts.length === 0) continue;
+      const keys = contextsAt(matrixPositions);
+      if (keys.size === 0) continue;
       placed = true;
       const matrixCells = cells.get(matrixId) ?? new Map<string, string[]>();
-      for (const context of contexts) {
-        const key = MatrixCell.key(context, relationship);
+      for (const key of keys.keys()) {
         const occupants = matrixCells.get(key) ?? [];
         if (!occupants.includes(shortPath)) occupants.push(shortPath);
         matrixCells.set(key, occupants);
@@ -217,17 +318,16 @@ async function build(
     } catch {
       continue;
     }
-    const provenance = TestUtils.findAdrReferences(source).length
-      ? await AdrProvenanceLines.forFixture(fixturePath)
-      : new Map<string, number[]>();
+    const run = TestUtils.findAdrReferences(source).length
+      ? await FixtureRun.of(fixturePath, searchPaths)
+      : null;
 
     recordFixture(
       fixturePath,
       testsDir,
-      searchPaths,
       cells,
       withoutContext,
-      provenance,
+      run,
       positionCells,
     );
   }

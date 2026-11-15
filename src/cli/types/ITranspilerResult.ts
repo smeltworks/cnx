@@ -48,6 +48,14 @@ interface ITranspilerResult {
    * asserts generated C -- rather than a diagnostic -- can occupy a cell.
    */
   adrSites?: readonly IRecordedAdrSite[];
+
+  /**
+   * #1402: each `.cnx` file's direct includes, `.cnx` and C/C++ headers alike,
+   * by the paths 1.1 Discover resolved. The matrix measures how far a
+   * declaration is from a fixture over this graph instead of resolving the
+   * includes a second time.
+   */
+  includes?: ReadonlyMap<string, readonly string[]>;
 }
 
 export default ITranspilerResult;

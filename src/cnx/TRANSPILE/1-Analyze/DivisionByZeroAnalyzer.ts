@@ -12,7 +12,6 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
-import type ISourceSpan from "../../types/ISourceSpan";
 import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
 import type TStatement from "../../types/syntax/TStatement";
@@ -27,6 +26,8 @@ import OperandTyper from "../../utils/OperandTyper";
 import ConstantFold from "../../utils/ConstantFold";
 import ConstExprLowering from "../../utils/ConstExprLowering";
 import type IAnalysisContext from "./types/IAnalysisContext";
+import type ISourceSite from "../../types/ISourceSite";
+import BindingSite from "./helpers/BindingSite";
 
 /** #1991: reads 1.2's syntax, not the parse tree */
 class DivisionByZeroAnalyzer {
@@ -68,7 +69,7 @@ class DivisionByZeroAnalyzer {
       const operator = CompoundOperator.binaryOf(site.operator);
       if (operator !== "/" && operator !== "%") continue;
       if (site.value.kind === "missing" || !this.isZero(site.value)) continue;
-      this.addError(operator, site.value.span, true);
+      this.addError(operator, site.value, true);
     }
   }
 
@@ -77,7 +78,7 @@ class DivisionByZeroAnalyzer {
       if (operator !== "/" && operator !== "%") return;
       const divisor = expr.operands[i + 1];
       if (this.isZero(divisor)) {
-        this.addError(operator, divisor.span, atRunTime);
+        this.addError(operator, divisor, atRunTime);
       }
     });
   }
@@ -131,11 +132,23 @@ class DivisionByZeroAnalyzer {
     ];
   }
 
+  /**
+   * #1402: where the first name the divisor reads is declared, for the
+   * matrix's relationship; undefined for a literal divisor
+   */
+  private divisorDeclaration(divisor: TExpression): ISourceSite | undefined {
+    const bound = OperandTyper.valueLeaves(divisor, this.context).find(
+      (leaf) => leaf?.binding != null,
+    );
+    return BindingSite.of(bound?.binding ?? null, this.context);
+  }
+
   private addError(
     operator: string,
-    span: ISourceSpan,
+    divisor: TExpression,
     atRunTime: boolean,
   ): void {
+    const span = divisor.span;
     const isDivision = operator === "/";
     const code = isDivision ? "E0800" : "E0802";
     const opName = isDivision ? "Division" : "Modulo";
@@ -149,6 +162,7 @@ class DivisionByZeroAnalyzer {
       helpText: atRunTime
         ? `Consider using ${builtin}(output, numerator, divisor, defaultValue) for runtime safety`
         : "A divisor known at compile time must not be zero",
+      declaredAt: this.divisorDeclaration(divisor),
     });
   }
 }

@@ -63,7 +63,7 @@ import SizeofAnalyzer from "./SizeofAnalyzer";
 import StructLiteralAnalyzer from "./StructLiteralAnalyzer";
 import WholeArrayValueAnalyzer from "./WholeArrayValueAnalyzer";
 import ConstAssignmentAnalyzer from "./ConstAssignmentAnalyzer";
-import type IMutSite from "../../types/IMutSite";
+import type ISourceSite from "../../types/ISourceSite";
 import type ISourceSpan from "../../types/ISourceSpan";
 import LoopAnalyzer from "./LoopAnalyzer";
 import SliceAssignmentAnalyzer from "./SliceAssignmentAnalyzer";
@@ -100,7 +100,7 @@ interface IAnalyzerError {
   rule?: string;
   helpText?: string;
   severity?: "error" | "warning";
-  declaredAt?: IMutSite;
+  declaredAt?: ISourceSite;
 }
 
 /**

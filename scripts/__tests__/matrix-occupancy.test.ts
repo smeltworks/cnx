@@ -45,7 +45,7 @@ describe("FixtureOccupancy.build", () => {
       "division.test.cnx",
       "// test-adr: 051\nu32 ZERO <- 0;\nvoid go() {\n    u32 bad <- 10 / ZERO;\n}\n",
     );
-    write("division.expected.error", "4:22 error[E0800]: Division by zero\n");
+    write("division.expected.error", "4:20 error[E0800]: Division by zero\n");
 
     const occupancy = await occupancyFor("051 E0800", [fixture]);
     expect([...occupancy!.cells.keys()]).toEqual([
@@ -126,11 +126,89 @@ describe("FixtureOccupancy.build", () => {
       "consumer.test.cnx",
       '// test-adr: 051\n#include "provider.cnx"\nvoid go() {\n    u32 bad <- 10 / ZERO;\n}\n',
     );
-    write("consumer.expected.error", "4:22 error[E0800]: Division by zero\n");
+    write("consumer.expected.error", "4:20 error[E0800]: Division by zero\n");
 
     const occupancy = await occupancyFor("051 E0800", [fixture]);
     expect([...occupancy!.cells.keys()]).toEqual([
       MatrixCell.key("top-level-function", "imported-direct"),
+    ]);
+  });
+
+  it("does not move a cell when the provider gains an unrelated include", async () => {
+    // #1402: the relationship is the hop count to the declaration under test,
+    // not the deepest chain the fixture happens to reach. `ZERO` is one hop
+    // away whatever `provider.cnx` includes for reasons of its own.
+    write("unrelated.cnx", "u8 OTHER <- 1;\n");
+    write("provider.cnx", '#include "unrelated.cnx"\nu32 ZERO <- 0;\n');
+    const fixture = write(
+      "consumer.test.cnx",
+      '// test-adr: 051\n#include "provider.cnx"\nvoid go() {\n    u32 bad <- 10 / ZERO;\n}\n',
+    );
+    write("consumer.expected.error", "4:20 error[E0800]: Division by zero\n");
+
+    const occupancy = await occupancyFor("051 E0800", [fixture]);
+    expect([...occupancy!.cells.keys()]).toEqual([
+      MatrixCell.key("top-level-function", "imported-direct"),
+    ]);
+  });
+
+  it("measures the nearest include path to a declaration reached two ways", async () => {
+    // #1402: `provider.cnx` is included directly and again through
+    // `middle.cnx`; a declaration the fixture includes itself is one hop away.
+    write("provider.cnx", "u32 ZERO <- 0;\n");
+    write("middle.cnx", '#include "provider.cnx"\nu8 MIDDLE <- 1;\n');
+    const fixture = write(
+      "consumer.test.cnx",
+      '// test-adr: 051\n#include "middle.cnx"\n#include "provider.cnx"\nvoid go() {\n    u32 bad <- 10 / ZERO;\n}\n',
+    );
+    write("consumer.expected.error", "5:20 error[E0800]: Division by zero\n");
+
+    const occupancy = await occupancyFor("051 E0800", [fixture]);
+    expect([...occupancy!.cells.keys()]).toEqual([
+      MatrixCell.key("top-level-function", "imported-direct"),
+    ]);
+  });
+
+  it("counts a C header that declares the construct as an include hop", async () => {
+    // #1523: `lib_value` is declared in `lib.h`, so the fixture uses it from
+    // one include away. It is not a same-file use.
+    write("lib.h", "int lib_value(void);\n");
+    const fixture = write(
+      "external.test.cnx",
+      '// test-adr: 070\n// test-c-only\n#include "lib.h"\nvoid go() {\n    lib_value();\n}\n',
+    );
+    write(
+      "external.expected.error",
+      "5:4 error[E0708]: Return value of non-void function 'lib_value' is discarded\n",
+    );
+
+    const occupancy = await occupancyFor("070 E0708", [fixture]);
+    expect([...occupancy!.cells.keys()]).toEqual([
+      MatrixCell.key("top-level-function", "imported-direct"),
+    ]);
+  });
+
+  it("credits a rule that fires in an included file to the provider side", async () => {
+    // #1402 / #1545: the rule fires inside `counter.cnx`, which the fixture
+    // exercises from one include away. Its context is read from the file the
+    // rule fired in, so the fixture is not left with no derivable context.
+    write(
+      "counter.cnx",
+      "scope Counter {\n" +
+        "    mut u32 value <- 0;\n" +
+        "    public void bump() {\n" +
+        "        value <- value + 1;\n" +
+        "    }\n" +
+        "}\n",
+    );
+    const fixture = write(
+      "exercise.test.cnx",
+      '// test-adr: 057\n#include "counter.cnx"\nvoid go() {\n    Counter.bump();\n}\n',
+    );
+
+    const occupancy = await occupancyFor("057 binds-scope", [fixture]);
+    expect([...occupancy!.cells.keys()]).toEqual([
+      MatrixCell.key("scope-method", "exercised-from-one-away"),
     ]);
   });
 
