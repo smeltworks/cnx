@@ -54,6 +54,8 @@ import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
 import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IOperandType from "../../types/IOperandType";
+import type ISourceSite from "../../types/ISourceSite";
+import BindingSite from "./helpers/BindingSite";
 
 /** The CLI argument vector, which answers only `.type_element_count`. */
 const ARGS_PARAMETER = "args";
@@ -63,8 +65,15 @@ class LengthPropertyCheck {
 
   public constructor(private readonly context: IAnalysisContext) {}
 
+  /** #1402: the declaration the chain being checked is rooted in */
+  private declaredAt: ISourceSite | undefined;
+
   public errors(): ILengthPropertyError[] {
     return this.found;
+  }
+
+  private report(error: ILengthPropertyError): void {
+    this.found.push({ ...error, declaredAt: this.declaredAt });
   }
 
   /** `inFunction`: only a function body runs, so only there can a length be read at runtime */
@@ -76,6 +85,7 @@ class LengthPropertyCheck {
     // Only a property's name can read one; the rest need no typing
     const name = last.name;
     if (!PROPERTY_NAMES.has(name)) return;
+    this.declaredAt = BindingSite.ofChain(chain, this.context);
     // #1976: a literal has no fields, so the name reads the property, and a
     // length property measures a declared value -- owner ruling: never a
     // literal. The typer leaves a string literal untyped, so without this the
@@ -84,7 +94,7 @@ class LengthPropertyCheck {
       if (name === "length") {
         this.reportDeprecatedLength(last);
       } else {
-        this.found.push({
+        this.report({
           code: "E0867",
           span: last.span,
           message: `.${name} is not available on a literal`,
@@ -104,7 +114,7 @@ class LengthPropertyCheck {
     // named one kind of length without saying which
     const replacement = LengthProperty.removedHelp(property);
     if (replacement !== null) {
-      this.found.push({
+      this.report({
         code: "E0886",
         span: last.span,
         message: `'.${property}' is removed`,
@@ -115,7 +125,7 @@ class LengthPropertyCheck {
 
     if (LengthPropertyCheck.subjectIsArgs(chain)) {
       if (LengthProperty.parse(property)?.unit !== "element_count") {
-        this.found.push({
+        this.report({
           code: "E0867",
           span: last.span,
           message: `.${property} is not available on 'args'`,
@@ -160,7 +170,7 @@ class LengthPropertyCheck {
     // has a buffer.
     if (property === "capacity" || property === "size") {
       if (!isString) {
-        this.found.push({
+        this.report({
           code: "E0887",
           span: at.span,
           message: `.${property} is only available on strings, not on '${subject}'`,
@@ -182,7 +192,7 @@ class LengthPropertyCheck {
       )!,
     );
     if (rule.kind === "error") {
-      this.found.push({
+      this.report({
         code: "E0867",
         span: at.span,
         message: rule.message,
@@ -194,7 +204,7 @@ class LengthPropertyCheck {
     // length now is not one: the C was `uint32_t n = strlen(s);`, which gcc
     // rejects
     if (!inFunction && LengthProperty.readsAtRuntime(rule)) {
-      this.found.push({
+      this.report({
         code: "E0867",
         span: at.span,
         message: `.${property} is read at runtime, and a file-scope initializer must be constant`,
@@ -240,7 +250,7 @@ class LengthPropertyCheck {
           ? headerBits(element)
           : LengthProperty.structBits(struct, lookup, headerBits);
       if (bits === null) {
-        this.found.push({
+        this.report({
           code: "E0867",
           span: at.span,
           message: `Cannot determine .${property} for type '${subject}'`,
@@ -257,7 +267,7 @@ class LengthPropertyCheck {
       typed.enumTypeName === null &&
       typed.bitmapTypeName === null
     ) {
-      this.found.push({
+      this.report({
         code: "E0867",
         span: at.span,
         message: `Cannot determine .${property} for type '${subject}'`,
@@ -270,7 +280,7 @@ class LengthPropertyCheck {
   }
 
   private reportDeprecatedLength(at: TPostfixOpSyntax): void {
-    this.found.push({
+    this.report({
       code: "E0886",
       span: at.span,
       message: `'.length' is deprecated`,

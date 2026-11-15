@@ -25,8 +25,9 @@ class BindingSite {
         column: at.column,
       };
     }
-    if (binding?.kind === "variable")
+    if (binding?.kind === "variable" || binding?.kind === "function") {
       return BindingSite.ofSymbol(binding.symbol);
+    }
     return undefined;
   }
 
@@ -39,6 +40,14 @@ class BindingSite {
       line: symbol.span.line,
       column: symbol.span.column,
     };
+  }
+
+  /** #1402: the declaration a chain is rooted in, `a` of `a.b[0].c` */
+  static ofChain(
+    chain: TExpression,
+    context: IAnalysisContext,
+  ): ISourceSite | undefined {
+    return BindingSite.of(OperandTyper.rootOfTarget(chain, context), context);
   }
 
   /**

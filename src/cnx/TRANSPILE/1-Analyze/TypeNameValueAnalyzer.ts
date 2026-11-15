@@ -14,6 +14,9 @@ import ExpressionShape from "../../utils/ExpressionShape";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import OperandTyper from "../../utils/OperandTyper";
 import type ITypeNameValueError from "./types/ITypeNameValueError";
+import type ISourceSite from "../../types/ISourceSite";
+import type IOperandType from "../../types/IOperandType";
+import BindingSite from "./helpers/BindingSite";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TExpression from "../../types/syntax/TExpression";
@@ -58,7 +61,17 @@ class TypeNameValueAnalyzer {
       span: span,
       message: TypeNameValueAnalyzer.message(chain, at),
       helpText: HELP,
+      declaredAt: this.typeDeclaration(misnamed.type),
     };
+  }
+
+  /** #1402: where the type named as a value is declared */
+  private typeDeclaration(type: IOperandType): ISourceSite | undefined {
+    const symbol =
+      type.typeName === null
+        ? null
+        : this.context.program.symbolByCName(type.typeName);
+    return symbol ? BindingSite.ofSymbol(symbol) : undefined;
   }
 
   /** The chain as its source spells it, up to the op where it stops */
