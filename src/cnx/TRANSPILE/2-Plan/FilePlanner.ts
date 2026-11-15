@@ -606,11 +606,9 @@ class FilePlanner {
     )) {
       const call = SafeDivision.callOf(expression);
       if (call === null) continue;
-      const output = call.args[0];
       // E0884 and E0885 stop a call without a typed output before 2.2 runs
-      invariant(output !== undefined, `${call.name} has an output argument`);
-      const cnxType = OperandTyper.typeOf(output, typing)?.typeName;
-      invariant(cnxType != null, `${call.name}'s output argument is typed`);
+      const cnxType = SafeDivision.outputTypeOf(call.args, typing);
+      invariant(cnxType !== null, `${call.name}'s output argument is typed`);
       // #1790: a signed quotient divides through ADR-044's helper, whose
       // modifier the numerator and divisor pick as they do for `/`; with
       // only literals there, ADR-044's default (#2409)
