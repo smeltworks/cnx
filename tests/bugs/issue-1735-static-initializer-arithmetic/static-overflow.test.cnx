@@ -4,23 +4,19 @@
 // initializer is fixed at compile time, so what would clamp or wrap there is
 // rejected rather than saturated. A cast whose value does not fit its type is
 // rejected (ADR-024). (D + 10 at u8 is static-overflow-arithmetic's: since
-// #1618 the integer-conversion stage reports it first.) A header
-// macro cnx can read is checked as a const is: STATIC_BIG is 300, which
-// u8 does not hold, alone or added to. A float whose arithmetic leaves its
-// finite range has no value C can be given.
+// #1618 the integer-conversion stage reports it first; a header macro that
+// does not fit is static-overflow-macro's, for the same reason since #2424.)
+// A float whose arithmetic leaves its finite range has no value C can be
+// given.
 //
 // NEGATIVE CONTROL: W adds at u16, where 260 fits, and must stay silent; so
-// must WM, the macro added at u16, and FW, the float arithmetic that fits.
+// must FW, the float arithmetic that fits.
 
 #include "static-limit.h"
 
 u8 D <- 250;
 u16 W <- (u16)D + 10;
 u8 X <- (u8)300;
-u8 A8 <- 4;
-u8 N8 <- STATIC_BIG + A8;
-u8 Alone <- STATIC_BIG;
-u16 WM <- STATIC_BIG + (u16)A8;
 f32 F <- 3.0e38;
 f32 FO <- F * 10.0;
 f32 FW <- F * 0.5;

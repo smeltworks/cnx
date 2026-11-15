@@ -1,0 +1,19 @@
+// test-error
+// test-adr: 044
+// Issue #1735 / #2424: a header macro cnx can read is the unsuffixed literal
+// it expands to (ADR-024), so it is checked as a literal is, by the
+// integer-conversion stage: STATIC_BIG is 300, which u8 does not hold, alone
+// (E0868, as `u8 Alone <- 300` is) or added to (E0910, ADR-044's static
+// initializer rule).
+//
+// NEGATIVE CONTROL: WM adds the macro at u16, where 304 fits, and must stay
+// silent.
+
+#include "static-limit.h"
+
+u8 A8 <- 4;
+u8 N8 <- STATIC_BIG + A8;
+u8 Alone <- STATIC_BIG;
+u16 WM <- STATIC_BIG + (u16)A8;
+
+void main() {}
