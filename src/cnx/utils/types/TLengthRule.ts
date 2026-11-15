@@ -8,9 +8,7 @@ type TLengthRule =
   | { readonly kind: "logical" }
   /** The characters of the type's name: `u32` is 3 */
   | { readonly kind: "spelling" }
-  /** A string's buffer in chars, its terminator included: `string<8>` is 9 */
-  | { readonly kind: "stringBuffer" }
-  /** C's `sizeof`, for the C compiler to answer */
+  /** C's `sizeof`, for the C compiler to answer; a string's buffer, its terminator included (`string<8>` is 9) */
   | { readonly kind: "memory" }
   /** At runtime: an unsigned value's bits up to its highest 1 */
   | { readonly kind: "bits" }

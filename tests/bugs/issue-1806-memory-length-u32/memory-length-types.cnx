@@ -1,0 +1,11 @@
+// Helper (not a test): types the #1806 fixtures measure from across an include.
+
+struct Shared {
+    u8[300] data;
+}
+
+enum Shade {
+    R,
+    G,
+    B
+}

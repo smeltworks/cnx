@@ -1,0 +1,6 @@
+// Helper (not a test): puts memory-length-types.cnx two hops away. It declares
+// something of its own so a header is written for it (#1234).
+
+#include "memory-length-types.cnx"
+
+u32 MEMORY_LENGTH_RELAY_MARKER <- 2;

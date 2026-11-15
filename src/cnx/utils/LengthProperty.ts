@@ -69,7 +69,45 @@ class LengthProperty {
   static readonly CHAR_COUNT_TYPE = "u32";
   static readonly CHAR_COUNT_C_TYPE =
     CNX_TO_C_TYPE_MAP[LengthProperty.CHAR_COUNT_TYPE];
-  static readonly VALUE_CHAR_COUNT_PROPERTY = "value_char_count";
+
+  /** The memory row's cnx type, for every subject and target (#1806 owner ruling) */
+  static readonly MEMORY_TYPE = "u32";
+  static readonly MEMORY_C_TYPE = CNX_TO_C_TYPE_MAP[LengthProperty.MEMORY_TYPE];
+
+  /**
+   * The cnx type a length property reads as an operand, or null where it has
+   * none. Keyed on `rule`, so a read the rule rejects has no type and its
+   * E0867 is the error reported (#1806 review): the memory row is a
+   * `MEMORY_TYPE` on every subject (#1806), and `.value_char_count` a
+   * `CHAR_COUNT_TYPE` where it counts as the program runs (#1742). A logical
+   * length is a constant; the other runtime ones are not typed yet (#2401).
+   * An element count is never typed, so `isStruct` is not asked, and the
+   * rule's message is not read, so neither is `spelling`.
+   */
+  static operandType(
+    property: string,
+    subject: Omit<ILengthSubject, "isStruct" | "spelling">,
+  ): string | null {
+    const name = LengthProperty.parse(property);
+    if (name === null || name.unit === "element_count") return null;
+    const rule = LengthProperty.rule(name, {
+      ...subject,
+      isStruct: false,
+      spelling: "",
+    });
+    switch (rule.kind) {
+      case "memory":
+        return LengthProperty.MEMORY_TYPE;
+      case "decimal":
+        return LengthProperty.CHAR_COUNT_TYPE;
+      case "string":
+        return name.unit === "char_count"
+          ? LengthProperty.CHAR_COUNT_TYPE
+          : null;
+      default:
+        return null;
+    }
+  }
 
   /** The chars a string holds now, in the count's type: `(uint32_t) strlen(s)` */
   static stringCharsC(operand: string): string {
@@ -81,12 +119,11 @@ class LengthProperty {
   static readonly VALUE_CHAR_COUNT = "cnx_value_char_count";
   static readonly VALUE_CHAR_COUNT_SIGNED = "cnx_value_char_count_signed";
 
-  /** The helper a runtime integer length needs, if any: 2.2 plans it, 2.3 emits it */
   /**
    * ADR-058: C's memory of `dimensions` elements, each `element` -- a
-   * `sizeof`, or a string buffer's chars -- in uint32_t, for the C compiler
-   * to answer for its target. The one C a read (3 Render) and a dimension
-   * (`ConstantNames`) write.
+   * `sizeof`, or a string buffer's chars -- in the memory row's C type
+   * (#1806), for the C compiler to answer for its target. The one C a read
+   * (3 Render) and a dimension (`ConstantNames`) write.
    */
   static memoryC(
     element: string,
@@ -97,7 +134,7 @@ class LengthProperty {
       typeof dim === "number" ? `${dim}U` : `(${dim})`,
     );
     const product = [element, ...factors, ...(bits ? ["8U"] : [])].join(" * ");
-    return `((${LengthProperty.PRODUCT_C_TYPE})${product})`;
+    return `((${LengthProperty.MEMORY_C_TYPE})${product})`;
   }
 
   /** A string buffer's chars, its `\0` included (ADR-045 `.size`) */
@@ -112,6 +149,7 @@ class LengthProperty {
     );
   }
 
+  /** The helper a runtime integer length needs, if any: 2.2 plans it, 2.3 emits it */
   static helperOf(rule: TLengthRule): string | null {
     if (rule.kind === "bits") return LengthProperty.VALUE_BIT_LENGTH;
     if (rule.kind !== "decimal") return null;
@@ -224,7 +262,7 @@ class LengthProperty {
     if (kind === "type") return { kind: "spelling" };
     if (kind === "memory") {
       return scalar && subject.isString
-        ? { kind: "stringBuffer" }
+        ? { kind: "memory" }
         : LengthProperty.error(
             `.memory_char_count is only available on strings, not on '${subject.spelling}'`,
             "Use .memory_byte_length for the memory a value takes.",

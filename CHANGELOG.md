@@ -100,6 +100,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A memory length is a `u32` operand** (ADR-058, ADR-024, Issue #1806). `.memory_bit_length`,
+  `.memory_byte_length` and a string's `.memory_char_count` took the width of the operand beside
+  them: with a `u8[300] buf` and a `u8 b`, `buf.memory_byte_length + b` clamped at `u8` and gave
+  45, not 301. Each is now a `u32` on every subject and target. Code that compiled before is now
+  an error where it narrows one (`u8 n <- buf.memory_byte_length` is E0869) or mixes one with a
+  signed operand (`buf.memory_byte_length < s`, `+ s` or `* k` with an `i32` is E0810); cast
+  explicitly. A string's `.memory_char_count` now sizes an array and initializes a file-scope
+  value as its `.memory_byte_length` does, where it was E0909.
+
 - **A concatenation that fills its `string<N>` compiles under `-Werror`** (ADR-045, Issue
   #1902). Its first part was copied with `strncpy` and each later part appended with `strncat`.
   gcc rejected the generated C with `-Wstringop-truncation` when the first part was exactly

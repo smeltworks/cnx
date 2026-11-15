@@ -1,0 +1,54 @@
+// test-execution
+// Issue #1806: a memory length property takes part in arithmetic at its own
+// width, not the width of the operand beside it. Each sum below exceeds u8.
+
+struct Big {
+    u8[300] data;
+}
+
+u32 main() {
+    u8[300] buf <- [0*];
+    string<300> str <- "a";
+    u8 b <- 1;
+
+    // .memory_byte_length of an array: sizeof, answered by the C compiler.
+    u32 bytes <- buf.memory_byte_length + b;
+    if (bytes != 301) {
+        return 1;
+    }
+
+    // .memory_bit_length: the bytes times 8.
+    u32 bits <- buf.memory_bit_length + b;
+    if (bits != 2401) {
+        return 2;
+    }
+
+    // A string's memory: its buffer, the terminator included.
+    u32 strBytes <- str.memory_byte_length + b;
+    if (strBytes != 302) {
+        return 3;
+    }
+    u32 strChars <- str.memory_char_count + b;
+    if (strChars != 302) {
+        return 4;
+    }
+
+    // A struct's memory, as a value and by its type's name.
+    Big big <- { data: [0*] };
+    u32 structBytes <- big.memory_byte_length + b;
+    if (structBytes != 301) {
+        return 5;
+    }
+    u32 typeBytes <- Big.memory_byte_length + b;
+    if (typeBytes != 301) {
+        return 6;
+    }
+
+    // CONTROL: a sum that fits in u8 is unchanged.
+    u8[4] small <- [0*];
+    u32 fits <- small.memory_byte_length + b;
+    if (fits != 5) {
+        return 7;
+    }
+    return 0;
+}

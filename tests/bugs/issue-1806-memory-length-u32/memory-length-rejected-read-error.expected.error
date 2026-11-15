@@ -1,0 +1,6 @@
+22:21 error[E0867]: .memory_char_count is only available on strings, not on 'u8[4]'
+       help: Use .memory_byte_length for the memory a value takes.
+23:24 error[E0867]: .memory_byte_length is not available on the bit-field 'u8'
+       help: A bit-field shares its storage with its neighbors, so it has no memory of its own; ask the struct or bitmap that holds it.
+24:20 error[E0867]: .value_char_count measures a value, and 'u8' is a type
+       help: Use .type_char_count for the type's length.
