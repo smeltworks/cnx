@@ -3,7 +3,7 @@
 // #1688 (ADR-024, owner decision 2026-10-04): a macro whose replacement
 // tokens are not a literal expression -- a call, a cast, a pointer
 // dereference -- has no type cnx can read. Combined with an integer it
-// asks for a cast: E0811 where the operator reaches an integer clamp helper,
+// asks for a cast: E0811 where the operator reaches an overflow helper,
 // E0812 where C's conversions alone decide the result (#1688 review).
 #include "unreadable_macros.h"
 
