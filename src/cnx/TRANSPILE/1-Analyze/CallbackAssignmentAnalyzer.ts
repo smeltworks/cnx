@@ -192,6 +192,7 @@ class CallbackAssignmentCheck {
         message: `${verb} ${slot.description} (expected ${slotTypeText} type, got ${valueText} type - nominal typing)`,
         helpText:
           "A function used as a struct field's type is its own callback type; only a function that is not itself a type may stand in for another (ADR-029).",
+        declaredAt: BindingSite.ofSymbol(expected),
       });
     }
   }

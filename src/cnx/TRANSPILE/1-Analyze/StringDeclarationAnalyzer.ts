@@ -7,6 +7,7 @@ import OperandTyper from "../../utils/OperandTyper";
 import CharacterWrite from "../../utils/CharacterWrite";
 import IStringDeclarationError from "./types/IStringDeclarationError";
 import ConstantExpression from "./helpers/ConstantExpression";
+import BindingSite from "./helpers/BindingSite";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IVariableDeclarationSyntax from "../../types/syntax/IVariableDeclarationSyntax";
@@ -231,6 +232,7 @@ class StringDeclarationCheck {
       message: `Substring bounds [${start}, ${length}] exceed the source string<${sourceCapacity}>`,
       helpText:
         "The bounds are counted in characters from zero; keep start + length within the source's capacity.",
+      declaredAt: BindingSite.ofChain(part.chain, this.context),
     });
     return true;
   }
