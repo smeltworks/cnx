@@ -7,6 +7,7 @@
  * were in apparent conflict over.
  */
 
+import ClampTypes from "../ClampTypes";
 import EmissionPlan from "../EmissionPlan";
 import type IEmissionFacts from "../../../types/IEmissionFacts";
 
@@ -321,6 +322,7 @@ describe("EmissionPlan (2.2 Plan)", () => {
       behavior: "clamp" as const,
       operation: "add",
       cnxType: "u8",
+      types: ClampTypes.of("u8"),
     };
     const overflowHelpers = new Map([[addU8.name, addU8]]);
 
@@ -381,12 +383,16 @@ describe("EmissionPlan (2.2 Plan)", () => {
         operation: "div" as const,
         cnxType: "u32",
         inner: null,
+        operandType: "uint32_t",
+        divisorType: "uint64_t",
+        divisorLimit: "UINT32_MAX",
       };
       const wrapDivI32 = {
         name: "cnx_wrap_div_i32",
         behavior: "wrap" as const,
         operation: "div",
         cnxType: "i32",
+        types: ClampTypes.of("i32"),
       };
       const plan = EmissionPlan.build(
         facts({

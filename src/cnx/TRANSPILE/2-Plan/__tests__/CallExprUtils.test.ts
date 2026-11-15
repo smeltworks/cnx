@@ -1,3 +1,4 @@
+import ClampTypes from "../ClampTypes";
 import { describe, it, expect, vi } from "vitest";
 import CallExprUtils from "../CallExprUtils";
 
@@ -58,6 +59,7 @@ describe("CallExprUtils", () => {
           behavior: "wrap",
           operation: "div",
           cnxType: "i32",
+          types: ClampTypes.of("i32"),
         }),
       ).toBe("cnx_safe_wrap_div_i32");
       expect(
@@ -66,6 +68,7 @@ describe("CallExprUtils", () => {
           behavior: "clamp",
           operation: "div",
           cnxType: "i32",
+          types: ClampTypes.of("i32"),
         }),
       ).toBe("cnx_safe_div_i32");
     });

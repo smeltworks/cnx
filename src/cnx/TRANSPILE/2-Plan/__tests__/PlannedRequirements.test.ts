@@ -5,6 +5,7 @@
  * controls came with them -- one header per request, not a blanket, and only
  * the two headers whose plan blocks carry sites record one.
  */
+import ClampTypes from "../ClampTypes";
 import { describe, it, expect } from "vitest";
 import PlannedRequirements from "../PlannedRequirements";
 import type TDeferredSiteKey from "../../../types/TDeferredSiteKey";
@@ -79,6 +80,9 @@ describe("PlannedRequirements", () => {
       operation: "mod" as const,
       cnxType: "i16",
       inner: "cnx_clamp_mod_i16",
+      operandType: "int16_t",
+      divisorType: "int32_t",
+      divisorLimit: null,
     };
     requirements.safeDivision(helper);
     expect([...requirements.safeDivisions.values()]).toEqual([helper]);
@@ -93,6 +97,9 @@ describe("PlannedRequirements", () => {
       operation: "div" as const,
       cnxType: "i32",
       inner: "cnx_clamp_div_i32",
+      operandType: "int32_t",
+      divisorType: "int64_t",
+      divisorLimit: null,
     };
     requirements.safeDivision(helper);
     requirements.safeDivision({ ...helper });
@@ -108,12 +115,14 @@ describe("PlannedRequirements", () => {
       behavior: "clamp",
       operation: "mul",
       cnxType: "u8",
+      types: ClampTypes.of("u8"),
     });
     requirements.overflowHelper({
       name: "cnx_wrap_div_i32",
       behavior: "wrap",
       operation: "div",
       cnxType: "i32",
+      types: ClampTypes.of("i32"),
     });
     expect([...requirements.overflowHelpers.keys()]).toEqual([
       "cnx_clamp_mul_u8",

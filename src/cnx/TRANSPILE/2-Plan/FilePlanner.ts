@@ -149,7 +149,6 @@ import type TSymbol from "../../types/symbols/TSymbol";
 import type ICallbackTypeInfo from "../../types/ICallbackTypeInfo";
 import PlannedRequirements from "./PlannedRequirements";
 import PrivateConstSpelling from "./PrivateConstSpelling";
-import ClampTypes from "./ClampTypes";
 import FloatBitType from "./FloatBitType";
 import ArgumentForm from "./ArgumentForm";
 import type TArgumentShape from "./types/TArgumentShape";
@@ -634,18 +633,13 @@ class FilePlanner {
         cnxType,
         inner,
       );
-      const helper: IPlannedSafeDivision = {
-        name,
-        operation,
-        cnxType,
-        inner: inner?.name ?? null,
-      };
+      const helper = SafeDivisionTypes.planned(name, operation, cnxType, inner);
       planned.set(expression, helper);
       requirements.safeDivision(helper);
       if (inner !== null) {
         FilePlanner.useOverflowHelper(inner, cTypes, requirements);
       }
-      SafeDivisionTypes.cTypesOf(cnxType).forEach((t) => cTypes.add(t));
+      SafeDivisionTypes.cTypesOf(helper).forEach((t) => cTypes.add(t));
     }
     return planned;
   }
@@ -2383,7 +2377,8 @@ class FilePlanner {
     requirements: PlannedRequirements,
   ): void {
     requirements.overflowHelper(helper);
-    ClampTypes.cTypesOf(helper.cnxType).forEach((t) => cTypes.add(t));
+    cTypes.add(helper.types.cType);
+    cTypes.add(helper.types.widerType);
   }
 
   /** Every assignment in the file, in source order */

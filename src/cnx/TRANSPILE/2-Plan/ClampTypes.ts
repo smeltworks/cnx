@@ -1,7 +1,8 @@
 import TYPE_MAP from "./types/TYPE_MAP";
 import WIDER_TYPE_MAP from "./types/WIDER_TYPE_MAP";
 import TYPE_LIMITS from "./types/TYPE_LIMITS";
-import type IClampTypeInfo from "./types/IClampTypeInfo";
+import type IClampTypeInfo from "../../types/IClampTypeInfo";
+import invariant from "../../utils/invariant";
 
 /** The C types an overflow helper for a cnx type is written in */
 class ClampTypes {
@@ -34,13 +35,11 @@ class ClampTypes {
     };
   }
 
-  /**
-   * The C types a clamp helper for `cnxType` spells -- its own and its wider
-   * arithmetic type -- so the plan can decide their header (#1927)
-   */
-  static cTypesOf(cnxType: string): string[] {
+  /** An integer type's information, which every integer type has */
+  static of(cnxType: string): IClampTypeInfo {
     const info = ClampTypes.resolve(cnxType);
-    return info === null ? [] : [info.cType, info.widerType];
+    invariant(info !== null, `${cnxType} is an integer type`);
+    return info;
   }
 }
 

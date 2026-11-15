@@ -13,6 +13,10 @@ static inline bool cnx_safe_div_u32(uint32_t* output, uint32_t numerator, uint64
         *output = defaultValue;
         return true;  // Error occurred
     }
+    /* ADR-044 / Issue #2415: the divisor is the WIDER type (Issue #94), so a value past
+       the type reaches here whole. It exceeds every numerator: the quotient is 0 and the
+       remainder the numerator. Below it the divisor fits, so the cast after this is exact
+       and the division stays in the type's own width. */
     if (divisor > UINT32_MAX) {
         *output = 0U;
         return false;  // Success
@@ -26,6 +30,10 @@ static inline bool cnx_safe_mod_u32(uint32_t* output, uint32_t numerator, uint64
         *output = defaultValue;
         return true;  // Error occurred
     }
+    /* ADR-044 / Issue #2415: the divisor is the WIDER type (Issue #94), so a value past
+       the type reaches here whole. It exceeds every numerator: the quotient is 0 and the
+       remainder the numerator. Below it the divisor fits, so the cast after this is exact
+       and the division stays in the type's own width. */
     if (divisor > UINT32_MAX) {
         *output = numerator;
         return false;  // Success

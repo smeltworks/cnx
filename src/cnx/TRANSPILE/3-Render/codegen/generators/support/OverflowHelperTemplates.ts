@@ -8,8 +8,7 @@
  * Issue #707: Extracted from HelperGenerator.ts to reduce code duplication.
  */
 
-import ClampTypes from "../../../../2-Plan/ClampTypes";
-import type IClampTypeInfo from "../../../../2-Plan/types/IClampTypeInfo";
+import type IClampTypeInfo from "../../../../../types/IClampTypeInfo";
 import type IPlannedOverflowHelper from "../../../../../types/IPlannedOverflowHelper";
 import type TOverflowBehavior from "../../../../../types/TOverflowBehavior";
 
@@ -18,8 +17,8 @@ const C_NEWLINE = String.raw`\n`;
 
 /**
  * Every helper's signature. `b` is the wider type for every one (#94), the
- * one fact an atomic's `__operand` (`AtomicOperandType`) and the #94 note
- * above the helpers also read through `ClampTypes`.
+ * one fact 2.2 decides through `ClampTypes`, for an atomic's `__operand`
+ * (`AtomicOperandType`) too, and stores on the planned helper.
  */
 function generateSignature(info: IClampTypeInfo, name: string): string {
   return `static inline ${info.cType} ${name}(${info.cType} a, ${info.widerType} b)`;
@@ -383,10 +382,7 @@ function generateHelper(
 ): string | null {
   const { name, behavior, operation } = helper;
   const debugMode = panic && behavior === "clamp";
-  const info = ClampTypes.resolve(helper.cnxType);
-  if (!info) {
-    return null;
-  }
+  const info = helper.types;
 
   if (!info.isUnsigned && operation === "div") {
     return SignedDivisionTemplates.div(info, name, behavior, debugMode);

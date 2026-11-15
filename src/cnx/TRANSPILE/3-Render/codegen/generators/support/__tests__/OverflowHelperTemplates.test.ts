@@ -19,6 +19,7 @@ const planned = (
   behavior,
   operation,
   cnxType,
+  types: ClampTypes.of(cnxType),
 });
 
 describe("OverflowHelperTemplates", () => {
@@ -53,6 +54,12 @@ describe("OverflowHelperTemplates", () => {
     it("should return null for invalid types", () => {
       const info = ClampTypes.resolve("invalid");
       expect(info).toBeNull();
+    });
+
+    // 2.2 plans a helper only for an integer type, so 2.3 never meets one
+    // without type information
+    it("refuses a planned helper's types for a non-integer type", () => {
+      expect(() => ClampTypes.of("f32")).toThrow("f32 is an integer type");
     });
   });
 

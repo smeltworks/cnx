@@ -1,3 +1,5 @@
+import SafeDivisionTypes from "../../../../../2-Plan/SafeDivisionTypes";
+import ClampTypes from "../../../../../2-Plan/ClampTypes";
 import type IPlannedSafeDivision from "../../../../../../types/IPlannedSafeDivision";
 import type IPlannedOverflowHelper from "../../../../../../types/IPlannedOverflowHelper";
 import ReservedCnxName from "../../../../../../utils/ReservedCnxName";
@@ -19,6 +21,7 @@ const overflowHelpers = (
       behavior,
       operation,
       cnxType,
+      types: ClampTypes.of(cnxType),
     };
   });
 
@@ -29,12 +32,12 @@ const { generateOverflowHelpers, generateSafeDivHelpers, generateCastHelpers } =
 const safeHelpers = (keys: readonly string[]): IPlannedSafeDivision[] =>
   keys.map((key) => {
     const [operation, cnxType] = key.split("_");
-    return {
-      name: `cnx_safe_${key}`,
-      operation: operation as "div" | "mod",
+    return SafeDivisionTypes.planned(
+      `cnx_safe_${key}`,
+      operation as "div" | "mod",
       cnxType,
-      inner: null,
-    };
+      null,
+    );
   });
 
 describe("HelperGenerator - generateOverflowHelpers", () => {
@@ -237,14 +240,6 @@ describe("HelperGenerator - generateOverflowHelpers", () => {
       expect(result.join("\n")).toContain("#include <limits.h>");
       expect(result.join("\n")).not.toContain("cnx_clamp_unknown");
     });
-
-    it("skips unknown types", () => {
-      const result = generateOverflowHelpers(
-        overflowHelpers(["add_float"]),
-        false,
-      );
-      expect(result.join("\n")).not.toContain("cnx_clamp_add_float");
-    });
   });
 });
 
@@ -334,6 +329,9 @@ describe("HelperGenerator - generateSafeDivHelpers", () => {
           operation: "div",
           cnxType: "i32",
           inner: "cnx_wrap_div_i32",
+          operandType: "int32_t",
+          divisorType: "int64_t",
+          divisorLimit: null,
         },
       ]).join("\n");
       expect(code).toContain("cnx_safe_wrap_div_i32(int32_t* output");

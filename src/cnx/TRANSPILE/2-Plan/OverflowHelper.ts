@@ -3,6 +3,7 @@ import OverflowBehaviorUtils from "../../utils/OverflowBehaviorUtils";
 import OverflowOperation from "../../utils/OverflowOperation";
 import ReservedCnxName from "../../utils/ReservedCnxName";
 import TypeCheckUtils from "../../utils/TypeCheckUtils";
+import ClampTypes from "./ClampTypes";
 import type IPlannedOverflowHelper from "../../types/IPlannedOverflowHelper";
 
 /**
@@ -65,6 +66,7 @@ class OverflowHelper {
       behavior,
       operation,
       cnxType,
+      types: ClampTypes.of(cnxType),
     };
   }
 }

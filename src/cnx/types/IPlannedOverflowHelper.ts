@@ -1,3 +1,4 @@
+import type IClampTypeInfo from "./IClampTypeInfo";
 import type TOverflowBehavior from "./TOverflowBehavior";
 
 /**
@@ -11,6 +12,8 @@ interface IPlannedOverflowHelper {
   /** `add`, `sub`, `mul`, `div`, `mod` or `neg` (unary `-`, #2418) */
   readonly operation: string;
   readonly cnxType: string;
+  /** The C types and limits its definition is written in, `b` the wider (#94) */
+  readonly types: IClampTypeInfo;
 }
 
 export default IPlannedOverflowHelper;

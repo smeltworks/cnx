@@ -1,3 +1,4 @@
+import ClampTypes from "../ClampTypes";
 import { readFileSync } from "node:fs";
 import type IOperandType from "../../../types/IOperandType";
 import type TSubscriptKind from "../../../types/TSubscriptKind";
@@ -710,6 +711,7 @@ describe("AssignmentClassifier - Special Compound", () => {
       behavior: "clamp",
       operation: "add",
       cnxType: "u8",
+      types: ClampTypes.of("u8"),
     });
     expect(overflowHelperOf({ ...u8, dimensions: [4] })).toBeNull();
     expect(overflowHelperOf({ ...u8, overflow: "wrap" })).toBeNull();

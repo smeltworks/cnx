@@ -8,6 +8,15 @@ interface IPlannedSafeDivision {
   readonly operation: "div" | "mod";
   readonly cnxType: string;
   readonly inner: string | null;
+  /** The C type of the output, numerator and default */
+  readonly operandType: string;
+  /** The divisor's: ADR-044's overflow helper's `b`, the wider type (#94, #2415) */
+  readonly divisorType: string;
+  /**
+   * The type's maximum when a wider divisor must be compared against it
+   * before an unsigned division in the type's own width (#2415), else null
+   */
+  readonly divisorLimit: string | null;
 }
 
 export default IPlannedSafeDivision;
