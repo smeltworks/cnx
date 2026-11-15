@@ -23,7 +23,7 @@
  * differs; it does not.
  */
 
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import LengthProperty from "../../utils/LengthProperty";
 import CaseLabelSymbol from "../../utils/CaseLabelSymbol";
 import ScopeUtils from "../../utils/ScopeUtils";
@@ -437,6 +437,7 @@ class SwitchStatementCheck {
           this.found.push({
             code: "E0713",
             span: label.span,
+            declaredAt: BindingSite.of(this.labelBinding(label), this.context),
             message: `Duplicate case value '${value}' in switch statement`,
             helpText:
               "Two clauses cannot claim the same value; one of them is unreachable.",

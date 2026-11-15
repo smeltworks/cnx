@@ -31,7 +31,7 @@
  */
 
 import type ISourceSite from "../../types/ISourceSite";
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import OperandTyper from "../../utils/OperandTyper";
 import ExpressionShape from "../../utils/ExpressionShape";
 import ElementCount from "../../utils/ElementCount";

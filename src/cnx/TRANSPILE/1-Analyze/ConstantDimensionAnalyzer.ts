@@ -1,5 +1,5 @@
 import SourceOrder from "../../utils/SourceOrder";
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import type ISourceSpan from "../../types/ISourceSpan";
 /**
  * An array dimension that is not a constant expression: E0909, E0910

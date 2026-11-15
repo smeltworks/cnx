@@ -1,3 +1,4 @@
+import BindingSite from "../../utils/BindingSite";
 import type IConflict from "../../types/IConflict";
 import type IProgram from "../../types/IProgram";
 import type ITargetDescription from "../../types/ITargetDescription";
@@ -114,7 +115,12 @@ class ProgramChecks {
    * printed and then dropped on the way to a snapshot.
    */
   private static conflictToError(conflict: IConflict): ITranspileError {
+    // #1402: the clash is about the definition in another file, if any
+    const other = conflict.definitions.find(
+      (definition) => definition.sourceFile !== conflict.sourceFile,
+    );
     return {
+      declaredAt: other && BindingSite.ofSymbol(other),
       line: conflict.line,
       column: conflict.column,
       sourcePath: conflict.sourceFile,

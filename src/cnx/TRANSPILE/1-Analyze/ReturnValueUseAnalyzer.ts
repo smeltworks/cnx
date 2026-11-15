@@ -35,7 +35,7 @@ import IReturnValueUseError from "./types/IReturnValueUseError";
 import type IResolvedSymbols from "../../types/IResolvedSymbols";
 import DeclaredTypeFacts from "../../utils/DeclaredTypeFacts";
 import type IAnalysisContext from "./types/IAnalysisContext";
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import type ISourceSite from "../../types/ISourceSite";
 
 class ReturnValueUseAnalyzer {

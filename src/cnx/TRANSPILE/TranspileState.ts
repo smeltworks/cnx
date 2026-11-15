@@ -25,7 +25,7 @@ import type IFunctionSignature from "../types/IFunctionSignature";
 import invariant from "../utils/invariant";
 import DeclaredMember from "../utils/DeclaredMember";
 import emittedLocalName from "../utils/emittedLocalName";
-import BindingSite from "./1-Analyze/helpers/BindingSite";
+import BindingSite from "../utils/BindingSite";
 import type ISourceSite from "../types/ISourceSite";
 import AdrProvenance from "../instrumentation/AdrProvenance";
 import type ILocalDeclaration from "../types/ILocalDeclaration";

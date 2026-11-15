@@ -31,7 +31,7 @@ import CCallee from "./helpers/CCallee";
 import CArgumentWrite from "./helpers/CArgumentWrite";
 import WrittenBinding from "./helpers/WrittenBinding";
 import BoundDeclaration from "./helpers/BoundDeclaration";
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import MutArgument from "./helpers/MutArgument";
 import CPointerParameter from "../../utils/CPointerParameter";
 import ScanfFormat from "../../utils/ScanfFormat";

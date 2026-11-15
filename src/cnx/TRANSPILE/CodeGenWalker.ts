@@ -1,4 +1,4 @@
-import BindingSite from "./1-Analyze/helpers/BindingSite";
+import BindingSite from "../utils/BindingSite";
 import InterruptMask from "./3-Render/codegen/helpers/InterruptMask";
 import type IPlannedArgument from "./2-Plan/types/IPlannedArgument";
 import type IPlannedStaticValue from "./2-Plan/types/IPlannedStaticValue";

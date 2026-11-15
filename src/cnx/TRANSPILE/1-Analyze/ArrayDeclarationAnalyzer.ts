@@ -14,7 +14,7 @@
  * that reaches here is one 1.2 judged and accepted.
  */
 
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import ArrayListCount from "./helpers/ArrayListCount";
 import ConstantExpression from "./helpers/ConstantExpression";
 import ForHeaderVariable from "../../utils/ForHeaderVariable";

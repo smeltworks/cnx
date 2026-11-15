@@ -29,7 +29,7 @@ import type TStatement from "../../types/syntax/TStatement";
 import StatementNodes from "../../utils/StatementNodes";
 import BoundDeclaration from "./helpers/BoundDeclaration";
 import IConstructorArgumentError from "./types/IConstructorArgumentError";
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import type IAnalysisContext from "./types/IAnalysisContext";
 
 type TConstructorDeclaration = Extract<

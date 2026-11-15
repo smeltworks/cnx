@@ -26,7 +26,7 @@ import OperandTyper from "../../utils/OperandTyper";
 import ConstantFold from "../../utils/ConstantFold";
 import ConstExprLowering from "../../utils/ConstExprLowering";
 import type IAnalysisContext from "./types/IAnalysisContext";
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 
 /** #1991: reads 1.2's syntax, not the parse tree */
 class DivisionByZeroAnalyzer {

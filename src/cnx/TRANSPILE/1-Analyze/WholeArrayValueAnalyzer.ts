@@ -17,7 +17,7 @@
  * rule; a list is counted by `ArrayListCount`, the declaration's count.
  */
 
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import ArrayListCount from "./helpers/ArrayListCount";
 import SourceOrder from "../../utils/SourceOrder";
 import StructInitializerType from "./helpers/StructInitializerType";

@@ -6,7 +6,7 @@
 import OperandTyper from "../../utils/OperandTyper";
 import type TValueBinding from "../../types/TValueBinding";
 import type ISourcePosition from "../../utils/types/ISourcePosition";
-import BindingSite from "../1-Analyze/helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import AdrProvenance from "../../instrumentation/AdrProvenance";
 // SonarCloud S3776: Extracted literal parsing to reduce complexity
 import invariant from "../../utils/invariant";

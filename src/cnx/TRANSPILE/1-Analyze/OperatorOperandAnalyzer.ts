@@ -31,7 +31,7 @@
  * is reported under one code.
  */
 
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import IOperatorOperandError from "./types/IOperatorOperandError";
 import ComparisonChain from "../../utils/ComparisonChain";
 import OperandTyper from "../../utils/OperandTyper";

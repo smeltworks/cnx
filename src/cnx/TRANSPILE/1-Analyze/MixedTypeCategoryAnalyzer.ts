@@ -46,7 +46,7 @@
 import type TExpression from "../../types/syntax/TExpression";
 import type ISourceSpan from "../../types/ISourceSpan";
 import type ISourceSite from "../../types/ISourceSite";
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import IMixedTypeCategoryError from "./types/IMixedTypeCategoryError";
 import OperatorOperandAnalyzer from "./OperatorOperandAnalyzer";
 import EnumValueResolver from "./EnumValueResolver";

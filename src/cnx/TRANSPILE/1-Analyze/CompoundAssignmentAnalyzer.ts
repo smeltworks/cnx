@@ -28,7 +28,7 @@
  * where it decides something.
  */
 
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TExpression from "../../types/syntax/TExpression";

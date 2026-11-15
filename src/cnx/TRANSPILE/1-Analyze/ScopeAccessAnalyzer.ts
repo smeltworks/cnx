@@ -34,7 +34,7 @@
  * frames.
  */
 
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import SourceOrder from "../../utils/SourceOrder";
 import OperandTyper from "../../utils/OperandTyper";
 import DeclarationParts from "../../utils/DeclarationParts";

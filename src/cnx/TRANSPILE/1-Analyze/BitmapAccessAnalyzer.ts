@@ -22,7 +22,7 @@
  * only in the register map. ADR-034 says a bitmap is addressed by named field.
  */
 
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import ProgramAccesses from "../../utils/ProgramAccesses";
 import type IValuePositions from "../../types/IValuePositions";

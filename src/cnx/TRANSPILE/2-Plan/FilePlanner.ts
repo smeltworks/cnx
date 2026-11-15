@@ -1,4 +1,4 @@
-import BindingSite from "../1-Analyze/helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import ForeignTypeFacts from "../../utils/ForeignTypeFacts";
 import SubscriptDepthValidator from "./SubscriptDepthValidator";
 import UnwrittenIncludes from "./UnwrittenIncludes";

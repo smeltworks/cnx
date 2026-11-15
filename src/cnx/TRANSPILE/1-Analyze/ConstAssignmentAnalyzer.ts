@@ -41,7 +41,7 @@ import type ICCallee from "./types/ICCallee";
 import BoundDeclaration from "./helpers/BoundDeclaration";
 import WrittenBinding from "./helpers/WrittenBinding";
 import MutArgument from "./helpers/MutArgument";
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import type IVariableSymbol from "../../types/symbols/IVariableSymbol";
 import type IWrittenBinding from "./types/IWrittenBinding";
 import type TValueBinding from "../../types/TValueBinding";

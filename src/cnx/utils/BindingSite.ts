@@ -5,13 +5,13 @@
  * in an included one.
  */
 
-import type IOperandType from "../../../types/IOperandType";
-import type ISourceSite from "../../../types/ISourceSite";
-import type TValueBinding from "../../../types/TValueBinding";
-import type ITypingContext from "../../../types/ITypingContext";
-import type TExpression from "../../../types/syntax/TExpression";
-import type IFunctionSymbol from "../../../types/symbols/IFunctionSymbol";
-import OperandTyper from "../../../utils/OperandTyper";
+import type IOperandType from "../types/IOperandType";
+import type ISourceSite from "../types/ISourceSite";
+import type TValueBinding from "../types/TValueBinding";
+import type ITypingContext from "../types/ITypingContext";
+import type TExpression from "../types/syntax/TExpression";
+import type IFunctionSymbol from "../types/symbols/IFunctionSymbol";
+import OperandTyper from "./OperandTyper";
 
 class BindingSite {
   static of(

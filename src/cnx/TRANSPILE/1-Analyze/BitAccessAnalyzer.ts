@@ -39,7 +39,7 @@
  * evaluated once and is not restricted.
  */
 
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import ExpressionShape from "../../utils/ExpressionShape";
 import FloatBits from "../../utils/FloatBits";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";

@@ -19,7 +19,7 @@ import ExpressionNodes from "../../utils/ExpressionNodes";
 import StatementChildren from "../../utils/StatementChildren";
 import TypeParts from "../../utils/TypeParts";
 import IFunctionCallError from "./types/IFunctionCallError";
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import type ISourceSite from "../../types/ISourceSite";
 import AdrProvenance from "../../instrumentation/AdrProvenance";
 import DynamicAllocation from "./DynamicAllocation";

@@ -34,7 +34,7 @@ import SafeDivision from "../../utils/SafeDivision";
 import ISafeDivisionError from "./types/ISafeDivisionError";
 import BoundDeclaration from "./helpers/BoundDeclaration";
 import type ISourceSite from "../../types/ISourceSite";
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import type IAnalysisContext from "./types/IAnalysisContext";
 
 /** `safe_div(output, numerator, divisor, defaultValue)` (ADR-051) */

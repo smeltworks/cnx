@@ -8,7 +8,7 @@ import OperandTyper from "../../utils/OperandTyper";
 import CharacterWrite from "../../utils/CharacterWrite";
 import IStringDeclarationError from "./types/IStringDeclarationError";
 import ConstantExpression from "./helpers/ConstantExpression";
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IVariableDeclarationSyntax from "../../types/syntax/IVariableDeclarationSyntax";

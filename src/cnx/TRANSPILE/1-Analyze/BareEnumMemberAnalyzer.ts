@@ -41,7 +41,7 @@
  */
 
 import type ISourceSite from "../../types/ISourceSite";
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import SourceOrder from "../../utils/SourceOrder";
 import type TExpression from "../../types/syntax/TExpression";

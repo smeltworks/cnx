@@ -16,7 +16,7 @@ import OperandTyper from "../../utils/OperandTyper";
 import type ITypeNameValueError from "./types/ITypeNameValueError";
 import type ISourceSite from "../../types/ISourceSite";
 import type IOperandType from "../../types/IOperandType";
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TExpression from "../../types/syntax/TExpression";

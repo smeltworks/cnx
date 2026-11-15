@@ -6,7 +6,7 @@
  * before the program runs. C would reject one it could not settle (C11
  * 6.7.9p4); C++ would initialize it at run time.
  */
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IValuePositions from "../../types/IValuePositions";
 import ConstantDiagnostics from "./helpers/ConstantDiagnostics";

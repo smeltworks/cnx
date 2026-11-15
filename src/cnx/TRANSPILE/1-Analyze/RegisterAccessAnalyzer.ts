@@ -44,7 +44,7 @@
  */
 
 import type ISourceSite from "../../types/ISourceSite";
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import ProgramAccesses from "../../utils/ProgramAccesses";
 import type IValuePositions from "../../types/IValuePositions";

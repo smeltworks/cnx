@@ -48,7 +48,7 @@
  * read off 1.2's syntax (#1991).
  */
 
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import OperandTyper from "../../utils/OperandTyper";
 import ProgramAccesses from "../../utils/ProgramAccesses";
 import EnumValueResolver from "./EnumValueResolver";

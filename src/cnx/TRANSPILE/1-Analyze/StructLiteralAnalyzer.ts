@@ -46,7 +46,7 @@
  * context and one was missing a line.
  */
 
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import ProgramAccesses from "../../utils/ProgramAccesses";
 import SourceOrder from "../../utils/SourceOrder";

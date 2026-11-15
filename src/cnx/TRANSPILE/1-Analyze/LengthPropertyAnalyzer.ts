@@ -55,7 +55,7 @@ import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IOperandType from "../../types/IOperandType";
 import type ISourceSite from "../../types/ISourceSite";
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 
 /** The CLI argument vector, which answers only `.type_element_count`. */
 const ARGS_PARAMETER = "args";

@@ -49,7 +49,7 @@ import type TExpression from "../../types/syntax/TExpression";
 import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
 import OperandTyper from "../../utils/OperandTyper";
 import type IVariableDeclarationSyntax from "../../types/syntax/IVariableDeclarationSyntax";
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import IFunctionSymbol from "../../types/symbols/IFunctionSymbol";
 import TypeResolver from "../../utils/TypeResolver";
 import CCallbackSignature from "./helpers/CCallbackSignature";

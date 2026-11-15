@@ -42,7 +42,7 @@
  * may not import `output/`.
  */
 
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import CppConstructorHelper from "../../utils/CppConstructorHelper";
 import OperandTyper from "../../utils/OperandTyper";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";

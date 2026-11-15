@@ -61,7 +61,8 @@
  * headers included (#1726).
  */
 
-import BindingSite from "./helpers/BindingSite";
+import type ISourceSite from "../../types/ISourceSite";
+import BindingSite from "../../utils/BindingSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import ProgramAccesses from "../../utils/ProgramAccesses";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
@@ -112,6 +113,10 @@ class IntegerConversionCheck {
 
   private readonly found: IIntegerConversionError[] = [];
 
+  /** #1402: the declaration of what the value is written into */
+
+  private declaredAt: ISourceSite | undefined;
+
   public constructor(
     private readonly context: IAnalysisContext,
     private readonly positions: ReadonlyMap<TExpression, IValuePosition>,
@@ -126,6 +131,7 @@ class IntegerConversionCheck {
     if (this.checkStringsAt(declaration.initializer)) return;
     const target = declaration.type.text;
     if (!TypeCheckUtils.isInteger(target)) return;
+    this.declaredAt = BindingSite.ofSpan(declaration.span, this.context);
     this.check(target, declaration.initializer, true);
   }
 
@@ -163,6 +169,7 @@ class IntegerConversionCheck {
       ValuePositions.at(this.positions, value),
     );
     if (target !== null && TypeCheckUtils.isInteger(target)) {
+      this.declaredAt = undefined;
       this.check(target, value, true);
     }
   }
@@ -186,6 +193,7 @@ class IntegerConversionCheck {
     const targetType =
       OperandTyper.typeOfTarget(target, this.context)?.typeName ?? "";
     if (!TypeCheckUtils.isInteger(targetType)) return;
+    this.declaredAt = BindingSite.ofChain(target, this.context);
     if (site.operator === "<-") {
       this.check(targetType, site.value, true);
       return;
@@ -358,6 +366,7 @@ class IntegerConversionCheck {
       this.found.push({
         code: "E0868",
         span: at.span,
+        declaredAt: this.declaredAt,
         message: `Value ${text} has bits outside ${target}'s ${width} bits`,
         helpText: "Widen the target type, or drop the bits it cannot hold.",
       });
@@ -380,6 +389,8 @@ class IntegerConversionCheck {
       this.found.push({
         code: "E0910",
         span: leaf.span,
+        declaredAt:
+          BindingSite.ofOperands([leaf], this.context) ?? this.declaredAt,
         message: `Value overflows ${result.typeName} at compile time: ${ConstantDiagnostics.OVERFLOW_CAUSE}`,
         helpText: ConstantDiagnostics.OVERFLOW_HELP,
       });
@@ -590,6 +601,7 @@ class IntegerConversionCheck {
       this.found.push({
         code: "E0868",
         span: at.span,
+        declaredAt: this.declaredAt,
         message: `Negative value ${text} cannot be assigned to unsigned type ${target}`,
         helpText: `An unsigned type holds no negative values; use a signed type such as i${TYPE_WIDTH[target]}.`,
       });
@@ -602,6 +614,7 @@ class IntegerConversionCheck {
       this.found.push({
         code: "E0868",
         span: at.span,
+        declaredAt: this.declaredAt,
         message: `Value ${text} exceeds ${target} range (${min} to ${max})`,
         helpText: "Widen the target type, or narrow the value.",
       });

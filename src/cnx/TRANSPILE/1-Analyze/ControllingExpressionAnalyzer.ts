@@ -27,7 +27,7 @@
  */
 
 import type ISourceSite from "../../types/ISourceSite";
-import BindingSite from "./helpers/BindingSite";
+import BindingSite from "../../utils/BindingSite";
 import ExpressionCalls from "../../utils/ExpressionCalls";
 import SourceOrder from "../../utils/SourceOrder";
 import OperandTyper from "../../utils/OperandTyper";
