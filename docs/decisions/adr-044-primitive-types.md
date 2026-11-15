@@ -607,7 +607,11 @@ The disasters (Ariane 5, Therac-25, Boeing 787) were all **wrap-around bugs**:
 
 #### Debug Mode: `--debug` Flag
 
-When compiled with `--debug`, **all** arithmetic operations panic on overflow regardless of `clamp`/`wrap` keywords:
+When compiled with `--debug`, **every counted** arithmetic operation panics on overflow regardless of
+`clamp`/`wrap` keywords. An operation with no counted operand keeps C's semantics under `--debug` too
+("A C value counts for neither", above), so `largest() + one()` over two C header functions is C's
+signed overflow, not a panic
+_([owner ruling](https://github.com/smeltworks/cnx/issues/2409#issuecomment-6895069926), #2409)_:
 
 ```cnx
 mut clamp u8 temp <- 255;
