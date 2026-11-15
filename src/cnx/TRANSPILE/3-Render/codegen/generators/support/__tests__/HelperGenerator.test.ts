@@ -288,7 +288,7 @@ describe("HelperGenerator - generateSafeDivHelpers", () => {
       const code = result.join("\n");
       expect(code).toContain("cnx_safe_mod_u16");
       expect(code).toContain("uint16_t");
-      expect(code).toContain("numerator % divisor");
+      expect(code).toContain("numerator % (uint16_t)divisor");
     });
 
     it("generates i64 mod helper", () => {
@@ -351,7 +351,30 @@ describe("HelperGenerator - generateSafeDivHelpers", () => {
       const result = generateSafeDivHelpers(safeHelpers(["div_u32"]));
       const code = result.join("\n");
       expect(code).toContain("uint32_t* output");
-      expect(code).toContain("*output = numerator / divisor");
+      expect(code).toContain("*output = numerator / (uint32_t)divisor");
+    });
+
+    // #2415: the divisor is the overflow helper's wider `b`, so a divisor
+    // past the operand's type is not narrowed first
+    it("takes the divisor in the overflow helper's wider type", () => {
+      const code = generateSafeDivHelpers(
+        safeHelpers(["div_u8", "div_u32", "div_u64"]),
+      ).join("\n");
+      expect(code).toContain(
+        "cnx_safe_div_u8(uint8_t* output, uint8_t numerator, uint32_t divisor, uint8_t defaultValue)",
+      );
+      expect(code).toContain(
+        "cnx_safe_div_u32(uint32_t* output, uint32_t numerator, uint64_t divisor, uint32_t defaultValue)",
+      );
+      // A divisor past the type is answered by comparison, so the division
+      // stays in the type's own width
+      expect(code).toContain("if (divisor > UINT32_MAX) {");
+      expect(code).toContain("if (divisor > UINT8_MAX) {");
+      // u64 has no wider type, and nothing past it to compare
+      expect(code).toContain(
+        "cnx_safe_div_u64(uint64_t* output, uint64_t numerator, uint64_t divisor, uint64_t defaultValue)",
+      );
+      expect(code).not.toContain("UINT64_MAX");
     });
 
     it("sets default value on error", () => {

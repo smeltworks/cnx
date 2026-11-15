@@ -54,7 +54,7 @@ static inline int16_t cnx_wrap_div_i16(int16_t a, int32_t b) {
 
 // ADR-051: Safe division helper functions
 
-static inline bool cnx_safe_div_i16(int16_t* output, int16_t numerator, int16_t divisor, int16_t defaultValue) {
+static inline bool cnx_safe_div_i16(int16_t* output, int16_t numerator, int32_t divisor, int16_t defaultValue) {
     if (divisor == 0) {
         *output = defaultValue;
         return true;  // Error occurred
@@ -63,7 +63,7 @@ static inline bool cnx_safe_div_i16(int16_t* output, int16_t numerator, int16_t 
     return false;  // Success
 }
 
-static inline bool cnx_safe_wrap_div_i16(int16_t* output, int16_t numerator, int16_t divisor, int16_t defaultValue) {
+static inline bool cnx_safe_wrap_div_i16(int16_t* output, int16_t numerator, int32_t divisor, int16_t defaultValue) {
     if (divisor == 0) {
         *output = defaultValue;
         return true;  // Error occurred
@@ -72,7 +72,7 @@ static inline bool cnx_safe_wrap_div_i16(int16_t* output, int16_t numerator, int
     return false;  // Success
 }
 
-static inline bool cnx_safe_div_i32(int32_t* output, int32_t numerator, int32_t divisor, int32_t defaultValue) {
+static inline bool cnx_safe_div_i32(int32_t* output, int32_t numerator, int64_t divisor, int32_t defaultValue) {
     if (divisor == 0) {
         *output = defaultValue;
         return true;  // Error occurred
@@ -81,7 +81,7 @@ static inline bool cnx_safe_div_i32(int32_t* output, int32_t numerator, int32_t 
     return false;  // Success
 }
 
-static inline bool cnx_safe_mod_i32(int32_t* output, int32_t numerator, int32_t divisor, int32_t defaultValue) {
+static inline bool cnx_safe_mod_i32(int32_t* output, int32_t numerator, int64_t divisor, int32_t defaultValue) {
     if (divisor == 0) {
         *output = defaultValue;
         return true;  // Error occurred

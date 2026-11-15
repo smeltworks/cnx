@@ -10,6 +10,7 @@
  */
 import TYPE_MAP from "../../../../2-Plan/types/TYPE_MAP";
 import SafeDivisionTypes from "../../../../2-Plan/SafeDivisionTypes";
+import ClampTypes from "../../../../2-Plan/ClampTypes";
 import OverflowHelperTemplates from "./OverflowHelperTemplates";
 import SaturatingCast from "../../helpers/SaturatingCast";
 import CppModeHelper from "../../../../2-Plan/CppModeHelper";
@@ -26,25 +27,49 @@ import type IPlannedOverflowHelper from "../../../../../types/IPlannedOverflowHe
  */
 const generateSafeArithmeticHelper = (
   helper: IPlannedSafeDivision,
-  cType: string,
 ): string[] => {
+  const cType = SafeDivisionTypes.operandOf(helper.cnxType);
+  const divisorType = SafeDivisionTypes.divisorOf(helper.cnxType);
   // #1790: a signed quotient goes through ADR-044's helper, so MIN / -1 gives
   // what `/` gives rather than trapping
   const opSymbol = helper.operation === "div" ? "/" : "%";
   const quotient =
     helper.inner === null
-      ? `numerator ${opSymbol} divisor`
+      ? `numerator ${opSymbol} (${cType})divisor`
       : `${helper.inner}(numerator, divisor)`;
   return [
-    `static inline ${SafeDivisionTypes.RESULT_C_TYPE} ${helper.name}(${cType}* output, ${cType} numerator, ${cType} divisor, ${cType} defaultValue) {`,
+    `static inline ${SafeDivisionTypes.RESULT_C_TYPE} ${helper.name}(${cType}* output, ${cType} numerator, ${divisorType} divisor, ${cType} defaultValue) {`,
     `    if (divisor == 0) {`,
     `        *output = defaultValue;`,
     `        return true;  // Error occurred`,
     `    }`,
+    ...unsignedPastType(helper, cType, divisorType),
     `    *output = ${quotient};`,
     `    return false;  // Success`,
     `}`,
     "",
+  ];
+};
+
+/**
+ * #2415: an unsigned divisor past the type is larger than the numerator, so
+ * the quotient is 0 and the remainder the numerator. Answered by comparison,
+ * so the division stays in the type's own width, as ADR-044's signed helpers'
+ * does (#1790 review: no 64-bit library division on the embedded targets).
+ */
+const unsignedPastType = (
+  helper: IPlannedSafeDivision,
+  cType: string,
+  divisorType: string,
+): string[] => {
+  if (helper.inner !== null || divisorType === cType) return [];
+  const info = ClampTypes.resolve(helper.cnxType);
+  if (info === null) return [];
+  return [
+    `    if (divisor > ${info.maxValue}) {`,
+    `        *output = ${helper.operation === "div" ? "0U" : "numerator"};`,
+    `        return false;  // Success`,
+    `    }`,
   ];
 };
 
@@ -136,12 +161,7 @@ const generateSafeDivHelpers = (
   );
 
   for (const helper of ordered) {
-    lines.push(
-      ...generateSafeArithmeticHelper(
-        helper,
-        SafeDivisionTypes.operandOf(helper.cnxType),
-      ),
-    );
+    lines.push(...generateSafeArithmeticHelper(helper));
   }
 
   return lines;

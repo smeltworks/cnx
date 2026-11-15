@@ -60,57 +60,81 @@ static inline int32_t cnx_clamp_mod_i32(int32_t a, int64_t b) {
 
 // ADR-051: Safe division helper functions
 
-static inline bool cnx_safe_div_u8(uint8_t* output, uint8_t numerator, uint8_t divisor, uint8_t defaultValue) {
+static inline bool cnx_safe_div_u8(uint8_t* output, uint8_t numerator, uint32_t divisor, uint8_t defaultValue) {
     if (divisor == 0) {
         *output = defaultValue;
         return true;  // Error occurred
     }
-    *output = numerator / divisor;
+    if (divisor > UINT8_MAX) {
+        *output = 0U;
+        return false;  // Success
+    }
+    *output = numerator / (uint8_t)divisor;
     return false;  // Success
 }
 
-static inline bool cnx_safe_mod_u8(uint8_t* output, uint8_t numerator, uint8_t divisor, uint8_t defaultValue) {
+static inline bool cnx_safe_mod_u8(uint8_t* output, uint8_t numerator, uint32_t divisor, uint8_t defaultValue) {
     if (divisor == 0) {
         *output = defaultValue;
         return true;  // Error occurred
     }
-    *output = numerator % divisor;
+    if (divisor > UINT8_MAX) {
+        *output = numerator;
+        return false;  // Success
+    }
+    *output = numerator % (uint8_t)divisor;
     return false;  // Success
 }
 
-static inline bool cnx_safe_div_u16(uint16_t* output, uint16_t numerator, uint16_t divisor, uint16_t defaultValue) {
+static inline bool cnx_safe_div_u16(uint16_t* output, uint16_t numerator, uint32_t divisor, uint16_t defaultValue) {
     if (divisor == 0) {
         *output = defaultValue;
         return true;  // Error occurred
     }
-    *output = numerator / divisor;
+    if (divisor > UINT16_MAX) {
+        *output = 0U;
+        return false;  // Success
+    }
+    *output = numerator / (uint16_t)divisor;
     return false;  // Success
 }
 
-static inline bool cnx_safe_mod_u16(uint16_t* output, uint16_t numerator, uint16_t divisor, uint16_t defaultValue) {
+static inline bool cnx_safe_mod_u16(uint16_t* output, uint16_t numerator, uint32_t divisor, uint16_t defaultValue) {
     if (divisor == 0) {
         *output = defaultValue;
         return true;  // Error occurred
     }
-    *output = numerator % divisor;
+    if (divisor > UINT16_MAX) {
+        *output = numerator;
+        return false;  // Success
+    }
+    *output = numerator % (uint16_t)divisor;
     return false;  // Success
 }
 
-static inline bool cnx_safe_div_u32(uint32_t* output, uint32_t numerator, uint32_t divisor, uint32_t defaultValue) {
+static inline bool cnx_safe_div_u32(uint32_t* output, uint32_t numerator, uint64_t divisor, uint32_t defaultValue) {
     if (divisor == 0) {
         *output = defaultValue;
         return true;  // Error occurred
     }
-    *output = numerator / divisor;
+    if (divisor > UINT32_MAX) {
+        *output = 0U;
+        return false;  // Success
+    }
+    *output = numerator / (uint32_t)divisor;
     return false;  // Success
 }
 
-static inline bool cnx_safe_mod_u32(uint32_t* output, uint32_t numerator, uint32_t divisor, uint32_t defaultValue) {
+static inline bool cnx_safe_mod_u32(uint32_t* output, uint32_t numerator, uint64_t divisor, uint32_t defaultValue) {
     if (divisor == 0) {
         *output = defaultValue;
         return true;  // Error occurred
     }
-    *output = numerator % divisor;
+    if (divisor > UINT32_MAX) {
+        *output = numerator;
+        return false;  // Success
+    }
+    *output = numerator % (uint32_t)divisor;
     return false;  // Success
 }
 
@@ -119,11 +143,11 @@ static inline bool cnx_safe_div_u64(uint64_t* output, uint64_t numerator, uint64
         *output = defaultValue;
         return true;  // Error occurred
     }
-    *output = numerator / divisor;
+    *output = numerator / (uint64_t)divisor;
     return false;  // Success
 }
 
-static inline bool cnx_safe_div_i8(int8_t* output, int8_t numerator, int8_t divisor, int8_t defaultValue) {
+static inline bool cnx_safe_div_i8(int8_t* output, int8_t numerator, int32_t divisor, int8_t defaultValue) {
     if (divisor == 0) {
         *output = defaultValue;
         return true;  // Error occurred
@@ -132,7 +156,7 @@ static inline bool cnx_safe_div_i8(int8_t* output, int8_t numerator, int8_t divi
     return false;  // Success
 }
 
-static inline bool cnx_safe_div_i16(int16_t* output, int16_t numerator, int16_t divisor, int16_t defaultValue) {
+static inline bool cnx_safe_div_i16(int16_t* output, int16_t numerator, int32_t divisor, int16_t defaultValue) {
     if (divisor == 0) {
         *output = defaultValue;
         return true;  // Error occurred
@@ -141,7 +165,7 @@ static inline bool cnx_safe_div_i16(int16_t* output, int16_t numerator, int16_t 
     return false;  // Success
 }
 
-static inline bool cnx_safe_div_i32(int32_t* output, int32_t numerator, int32_t divisor, int32_t defaultValue) {
+static inline bool cnx_safe_div_i32(int32_t* output, int32_t numerator, int64_t divisor, int32_t defaultValue) {
     if (divisor == 0) {
         *output = defaultValue;
         return true;  // Error occurred
@@ -150,7 +174,7 @@ static inline bool cnx_safe_div_i32(int32_t* output, int32_t numerator, int32_t 
     return false;  // Success
 }
 
-static inline bool cnx_safe_mod_i32(int32_t* output, int32_t numerator, int32_t divisor, int32_t defaultValue) {
+static inline bool cnx_safe_mod_i32(int32_t* output, int32_t numerator, int64_t divisor, int32_t defaultValue) {
     if (divisor == 0) {
         *output = defaultValue;
         return true;  // Error occurred

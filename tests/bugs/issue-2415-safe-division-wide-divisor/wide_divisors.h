@@ -1,0 +1,9 @@
+#ifndef WIDE_DIVISORS_H
+#define WIDE_DIVISORS_H
+#define BIG 300
+#define WIDE_ZERO 256
+#define NEG_BIG (-300)
+#define HUGE 3000000000
+#define U8_WIDE_ONE 257
+#define U32_WIDE_ZERO 4294967296
+#endif

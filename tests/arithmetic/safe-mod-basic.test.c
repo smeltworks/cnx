@@ -10,12 +10,16 @@
 
 // ADR-051: Safe division helper functions
 
-static inline bool cnx_safe_mod_u32(uint32_t* output, uint32_t numerator, uint32_t divisor, uint32_t defaultValue) {
+static inline bool cnx_safe_mod_u32(uint32_t* output, uint32_t numerator, uint64_t divisor, uint32_t defaultValue) {
     if (divisor == 0) {
         *output = defaultValue;
         return true;  // Error occurred
     }
-    *output = numerator % divisor;
+    if (divisor > UINT32_MAX) {
+        *output = numerator;
+        return false;  // Success
+    }
+    *output = numerator % (uint32_t)divisor;
     return false;  // Success
 }
 
