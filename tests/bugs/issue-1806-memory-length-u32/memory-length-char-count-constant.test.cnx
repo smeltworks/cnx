@@ -1,0 +1,23 @@
+// test-execution
+// test-adr: 058
+// Issue #1806 review: a string's .memory_char_count is the memory row, as its
+// .memory_byte_length is, so it sizes an array and initializes a file-scope
+// value the C compiler answers (ADR-058; E0909 only at an enum member's value).
+
+string<8> label <- "ab";
+u8[label.memory_byte_length] byBytes;
+u8[label.memory_char_count] byChars;
+u32 viaChars <- label.memory_char_count;
+
+u32 main() {
+    if (byBytes.memory_byte_length != 9) {
+        return 1;
+    }
+    if (byChars.memory_byte_length != 9) {
+        return 2;
+    }
+    if (viaChars != 9) {
+        return 3;
+    }
+    return 0;
+}

@@ -447,8 +447,9 @@ ADR-029 callback's result, and `-x` or `~x` (the type of `x`) are checked like
 a variable: with a `u32 get()` and a `u32 w`, `u8 n <- get();` and
 `u8 m <- ~w;` both narrow. A `.value_char_count` read at runtime is a `u32`
 operand (ADR-058, #1742), so `u8 n <- s.value_char_count;` narrows, and with
-a `u8 a`, `a + s.value_char_count` is a `u32` composite. The other lengths read
-at runtime have no type yet (#2401).
+a `u8 a`, `a + s.value_char_count` is a `u32` composite. The memory row is a
+`u32` operand too (ADR-058, #1806): `a + buf.memory_byte_length` is a `u32`
+composite. The other lengths read at runtime have no type yet (#2401).
 
 **A composite with a floating operand is not an integer composite** (#1668). It
 is floating arithmetic, so integer saturation (ADR-044) never applies to it, and
