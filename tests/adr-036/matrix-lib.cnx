@@ -9,3 +9,6 @@ u8[4] libTable <- [1, 2, 3, 4];
 struct LibCell {
     u8 v;
 }
+
+// #1402: a writable whole array the for-clause fixtures write
+mut u8[4] libRows <- [0*];

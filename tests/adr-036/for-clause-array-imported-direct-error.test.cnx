@@ -1,0 +1,17 @@
+// test-error
+// test-adr: 036
+// #1402: E0917 where the whole array a `for` clause writes is declared across
+// ONE include hop(s) -- the array the clause cannot copy is the imported one.
+#include "matrix-lib.cnx"
+
+void fill() {
+    u8[4] local <- [0*];
+    for (u32 k <- 0; k < 1; libRows <- local) {}
+}
+
+scope Filler {
+    public void go() {
+        u8[4] local <- [0*];
+        for (u32 k <- 0; k < 1; global.libRows <- local) {}
+    }
+}
