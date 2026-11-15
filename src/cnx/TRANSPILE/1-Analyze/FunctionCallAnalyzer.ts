@@ -18,16 +18,14 @@ import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import StatementChildren from "../../utils/StatementChildren";
 import TypeParts from "../../utils/TypeParts";
-import type TChainRoot from "../../types/TChainRoot";
-import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
 import type TType from "../../types/TType";
-import type TValueBinding from "../../types/TValueBinding";
 import IFunctionCallError from "./types/IFunctionCallError";
 import AdrProvenance from "../../instrumentation/AdrProvenance";
 import DynamicAllocation from "./DynamicAllocation";
 import StdlibFunctions from "./StdlibFunctions";
 import CalleeNameResolver from "./helpers/CalleeNameResolver";
 import IncludeDirective from "./helpers/IncludeDirective";
+import WrittenBinding from "./helpers/WrittenBinding";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import type TSymbol from "../../types/symbols/TSymbol";
 import invariant from "../../utils/invariant";
@@ -267,7 +265,9 @@ class FunctionCallAnalyzer {
   public callsCallableValue(
     expr: Extract<TExpression, { kind: "postfix" }>,
   ): boolean {
-    const binding = this.calleeBinding(expr);
+    const written = WrittenBinding.ofExpression(expr, this.context);
+    if (written?.ops[0]?.kind !== "call") return false;
+    const binding = written.binding;
     if (binding?.kind === "local") {
       return (
         binding.declaration.arrayDimensions.length === 0 &&
@@ -279,50 +279,6 @@ class FunctionCallAnalyzer {
       !binding.symbol.isArray &&
       this.isCallableType(binding.symbol.type)
     );
-  }
-
-  /** What the callee of a call written `name(...)`, `this.name(...)` or `S.name(...)` binds */
-  private calleeBinding(
-    expr: Extract<TExpression, { kind: "postfix" }>,
-  ): TValueBinding | null {
-    const head = FunctionCallAnalyzer.calleeHead(expr);
-    if (head === null) return null;
-    let binding = this.context.program.bindValue(
-      this.context.sourceFile,
-      head.root,
-      head.name,
-      expr.span,
-    );
-    let rest = head.rest;
-    while (binding?.kind === "scope" && rest[0]?.kind === "member") {
-      const member = this.context.program.memberOf(
-        binding.scopePath,
-        rest[0].name,
-      );
-      binding =
-        member?.kind === "variable"
-          ? { kind: "variable", symbol: member }
-          : null;
-      rest = rest.slice(1);
-    }
-    return rest[0]?.kind === "call" ? binding : null;
-  }
-
-  private static calleeHead(expr: Extract<TExpression, { kind: "postfix" }>): {
-    root: TChainRoot;
-    name: string;
-    rest: readonly TPostfixOpSyntax[];
-  } | null {
-    if (expr.primary.kind === "identifier") {
-      return { root: null, name: expr.primary.name, rest: expr.ops };
-    }
-    const first = expr.ops[0];
-    if (expr.primary.kind !== "root" || first?.kind !== "member") return null;
-    return {
-      root: expr.primary.root,
-      name: first.name,
-      rest: expr.ops.slice(1),
-    };
   }
 
   /**
