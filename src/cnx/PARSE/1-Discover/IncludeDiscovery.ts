@@ -270,20 +270,6 @@ class IncludeDiscovery {
   }
 
   /**
-   * Extract #include directives from source code
-   *
-   * Matches both:
-   * - #include "header.h" (local includes)
-   * - #include <header.h> (system includes)
-   *
-   * @param content - Source file content
-   * @returns Array of include paths (for backwards compatibility)
-   */
-  static extractIncludes(content: string): string[] {
-    return this.extractIncludesWithInfo(content).map((info) => info.path);
-  }
-
-  /**
    * Scan `#include` directives, replacing
    * /^\s*#\s*include\s*([<"])([^>"]+)[>"]/gm, which backtracks
    * super-linearly on its whitespace runs (S8786).

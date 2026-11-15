@@ -4,7 +4,7 @@
  * Tests include path discovery functionality:
  * - discoverIncludePaths: Auto-discovery of include directories
  * - findProjectRoot: Project root detection
- * - extractIncludes/extractIncludesWithInfo: Parse #include directives
+ * - extractIncludesWithInfo: Parse #include directives
  * - resolveInclude: Resolve include paths
  * - PlatformIO and Arduino library discovery
  */
@@ -136,17 +136,19 @@ describe("IncludeDiscovery", () => {
   });
 
   // ==========================================================================
-  // extractIncludes
+  // extractIncludesWithInfo paths
   // ==========================================================================
 
-  describe("extractIncludes", () => {
+  describe("extractIncludesWithInfo paths", () => {
     it("extracts local includes with quotes", () => {
       const content = `
         #include "types.h"
         #include "utils/helper.h"
       `;
 
-      const includes = IncludeDiscovery.extractIncludes(content);
+      const includes = IncludeDiscovery.extractIncludesWithInfo(content).map(
+        (info) => info.path,
+      );
 
       expect(includes).toContain("types.h");
       expect(includes).toContain("utils/helper.h");
@@ -158,7 +160,9 @@ describe("IncludeDiscovery", () => {
         #include <Arduino.h>
       `;
 
-      const includes = IncludeDiscovery.extractIncludes(content);
+      const includes = IncludeDiscovery.extractIncludesWithInfo(content).map(
+        (info) => info.path,
+      );
 
       expect(includes).toContain("stdio.h");
       expect(includes).toContain("Arduino.h");
@@ -171,7 +175,9 @@ describe("IncludeDiscovery", () => {
         #include "another/path.h"
       `;
 
-      const includes = IncludeDiscovery.extractIncludes(content);
+      const includes = IncludeDiscovery.extractIncludesWithInfo(content).map(
+        (info) => info.path,
+      );
 
       expect(includes).toHaveLength(3);
     });
@@ -183,7 +189,9 @@ describe("IncludeDiscovery", () => {
         #include  "extra.h"
       `;
 
-      const includes = IncludeDiscovery.extractIncludes(content);
+      const includes = IncludeDiscovery.extractIncludesWithInfo(content).map(
+        (info) => info.path,
+      );
 
       expect(includes).toContain("normal.h");
       expect(includes).toContain("spaced.h");
@@ -197,7 +205,9 @@ describe("IncludeDiscovery", () => {
         }
       `;
 
-      const includes = IncludeDiscovery.extractIncludes(content);
+      const includes = IncludeDiscovery.extractIncludesWithInfo(content).map(
+        (info) => info.path,
+      );
 
       expect(includes).toHaveLength(0);
     });
@@ -205,7 +215,9 @@ describe("IncludeDiscovery", () => {
     it("handles nested paths", () => {
       const content = '#include "deep/nested/path/header.h"';
 
-      const includes = IncludeDiscovery.extractIncludes(content);
+      const includes = IncludeDiscovery.extractIncludesWithInfo(content).map(
+        (info) => info.path,
+      );
 
       expect(includes).toContain("deep/nested/path/header.h");
     });
@@ -213,7 +225,9 @@ describe("IncludeDiscovery", () => {
     it("handles .cnx includes", () => {
       const content = '#include "shared.cnx"';
 
-      const includes = IncludeDiscovery.extractIncludes(content);
+      const includes = IncludeDiscovery.extractIncludesWithInfo(content).map(
+        (info) => info.path,
+      );
 
       expect(includes).toContain("shared.cnx");
     });
