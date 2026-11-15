@@ -238,6 +238,7 @@ class FilePlanner {
       checkNeedsStructKeyword: (name) =>
         this.state.symbolTable.checkNeedsStructKeyword(name),
       isCrossFileDeclaration: (name) => this.state.isCrossFileDeclaration(name),
+      declarationOf: (name) => this.state.declarationOf(name),
     };
   }
 
@@ -373,7 +374,12 @@ class FilePlanner {
     // the two the matrix guidance warns against mixing: neither depends on a
     // diagnostic, and a fixture is credited once per position either way.
     if (resolved !== null && this.state.isCrossFileDeclaration(resolved)) {
-      AdrProvenance.record("010", type.span.line);
+      AdrProvenance.record(
+        "010",
+        type.span.line,
+        undefined,
+        this.state.declarationOf(resolved),
+      );
     }
     return resolved ?? type.text;
   }

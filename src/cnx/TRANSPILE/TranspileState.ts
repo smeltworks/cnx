@@ -25,6 +25,8 @@ import type IFunctionSignature from "../types/IFunctionSignature";
 import invariant from "../utils/invariant";
 import DeclaredMember from "../utils/DeclaredMember";
 import emittedLocalName from "../utils/emittedLocalName";
+import BindingSite from "./1-Analyze/helpers/BindingSite";
+import type ISourceSite from "../types/ISourceSite";
 import AdrProvenance from "../instrumentation/AdrProvenance";
 import type ILocalDeclaration from "../types/ILocalDeclaration";
 import type IVariableDeclarationSyntax from "../types/syntax/IVariableDeclarationSyntax";
@@ -218,7 +220,18 @@ class TranspileState {
   localCName(declaration: ILocalDeclaration, at: ISourcePosition): string {
     const emitted = emittedLocalName(declaration);
     if (emitted !== declaration.name) {
-      AdrProvenance.record("057", at.line, "binds-local");
+      AdrProvenance.record(
+        "057",
+        at.line,
+        "binds-local",
+        this.sourcePath === null
+          ? undefined
+          : {
+              sourcePath: this.sourcePath,
+              line: declaration.extent.line,
+              column: declaration.extent.column,
+            },
+      );
     }
     return emitted;
   }
@@ -792,6 +805,18 @@ class TranspileState {
     return (
       found.length > 0 && found.every((symbol) => symbol.sourceFile !== current)
     );
+  }
+
+  /**
+   * #1402: where the symbol a canonical C name binds to is declared -- this
+   * file's own declaration when it has one, as `isCrossFileDeclaration` reads
+   */
+  declarationOf(qualifiedCName: string): ISourceSite | undefined {
+    const found = this.symbolTable.getOverloadsByCName(qualifiedCName);
+    const symbol =
+      found.find((candidate) => candidate.sourceFile === this.sourcePath) ??
+      found[0];
+    return symbol && BindingSite.ofSymbol(symbol);
   }
 
   /**
