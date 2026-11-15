@@ -218,9 +218,13 @@ class DeferredTypes {
     }
 
     // #1984: a function's name used as a type is a callback, which Declare
-    // could not tell from a struct -- whether a name is a function is known
+    // could not tell from a struct -- or, for an `E[A-Z]` name, from an enum
+    // (TypeResolver.resolve) -- since whether a name is a function is known
     // only over the include closure
-    if (type.kind === "struct" && isFunctionType(type.name)) {
+    if (
+      (type.kind === "struct" || type.kind === "enum") &&
+      isFunctionType(type.name)
+    ) {
       return TTypeUtils.createCallback(type.name);
     }
 

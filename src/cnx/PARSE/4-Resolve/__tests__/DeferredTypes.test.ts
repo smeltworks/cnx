@@ -102,6 +102,30 @@ describe("DeferredTypes.settle", () => {
       expect(unstamped.fields.get("d")?.isOpaqueHandle).toBeUndefined();
     }
   });
+  it("types an E-prefixed function's name used as a type as a callback (#1984)", () => {
+    const code = `u32 ETick() { return 1; }\nstruct Clock { ETick handler; }`;
+    const declared = CnxResolver.resolve(
+      ProgramLowering.program(parse(code), null),
+      "test.cnx",
+      registry,
+    );
+
+    const settled = DeferredTypes.settle(
+      declared.symbols,
+      () => undefined,
+      () => false,
+      (cName) => cName === "ETick",
+    );
+    const clock = settled.find((sym) => sym.name === "Clock");
+    expect(clock?.kind).toBe("struct");
+    if (clock?.kind === "struct") {
+      expect(clock.fields.get("handler")?.type).toEqual({
+        kind: "callback",
+        name: "ETick",
+      });
+    }
+  });
+
   it("types a function's name used as a type as a callback (#1984)", () => {
     const code = `u32 tick() { return 1; }\nstruct Clock { tick handler; tick[2] spares; }`;
     const declared = CnxResolver.resolve(
