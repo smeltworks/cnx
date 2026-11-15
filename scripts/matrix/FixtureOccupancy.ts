@@ -173,46 +173,34 @@ function locateSite(
   treeOf: (path: string) => ProgramContext | null,
 ): ILocatedPosition | null {
   const path = resolve(site.sourcePath);
+  if (path !== fixture) return locateIncluded(run, site, path, treeOf);
   const tree = treeOf(path);
-  if (tree === null) return null;
-  if (path === fixture) {
-    const relationship = consumerRelationship(run, site.declaredAt);
-    return relationship === null
-      ? null
-      : { tree, line: site.line, relationship };
-  }
-  const hops = run.hops.get(path);
-  return hops === undefined
+  const relationship = consumerRelationship(run, site.declaredAt);
+  return tree === null || relationship === null
     ? null
-    : {
-        tree,
-        line: site.line,
-        relationship: MatrixCell.relationshipFor("provider", hops),
-      };
+    : { tree, line: site.line, relationship };
 }
 
 /**
- * #1402: a diagnostic reported inside a file the fixture includes is the
- * provider side, read from that file's own tree
+ * #1402: a position inside a file the fixture includes -- a diagnostic or a
+ * provenance site -- is the provider side, read from that file's own tree
  */
 function locateIncluded(
   run: IFixtureRun,
   position: ISourcePosition,
   path: string,
   treeOf: (path: string) => ProgramContext | null,
-): ILocatedPosition[] {
+): ILocatedPosition | null {
   const tree = treeOf(path);
   const hops = run.hops.get(path);
   return tree === null || hops === undefined
-    ? []
-    : [
-        {
-          tree,
-          line: position.line,
-          column: position.column,
-          relationship: MatrixCell.relationshipFor("provider", hops),
-        },
-      ];
+    ? null
+    : {
+        tree,
+        line: position.line,
+        column: position.column,
+        relationship: MatrixCell.relationshipFor("provider", hops),
+      };
 }
 
 /** Each file's parse tree, parsed once */
@@ -277,7 +265,7 @@ function recordFixture(
         position.sourcePath !== undefined &&
         position.sourcePath !== fixture
       ) {
-        return locateIncluded(run, position, position.sourcePath, treeOf);
+        return locateIncluded(run, position, position.sourcePath, treeOf) ?? [];
       }
       const relationship = consumerRelationship(
         run,
