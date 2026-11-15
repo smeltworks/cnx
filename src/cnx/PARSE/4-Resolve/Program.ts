@@ -490,6 +490,10 @@ class Program {
       files,
       visibleFiles,
     );
+    const isFunctionVisibleFrom = Program.functionVisibility(
+      files,
+      visibleFiles,
+    );
     // Opacity is a fact of the headers alone, so it is ready before the settle,
     // which stamps each opaque parameter with it (#1722).
     const opaqueTypes = Program.deriveOpaqueTypes(foreign);
@@ -557,6 +561,7 @@ class Program {
       files,
       isScopeTypeVisibleFrom,
       opaqueTypes,
+      isFunctionVisibleFrom,
     );
     const foreignNames = new Set([
       ...foreign.c.map((symbol) => symbol.name),
@@ -634,6 +639,7 @@ class Program {
           // (the same set the binder's foreign tier reads)
           (cName) =>
             dimensioned.symbolsByCName.has(cName) || foreignNames.has(cName),
+          (cName) => isFunctionVisibleFrom(file.sourceFile, cName),
           settledLocals,
         ),
       ]),
@@ -916,6 +922,24 @@ class Program {
   }
 
   /**
+   * Whether a C name is a function a file can see: that name written as a type
+   * is a callback there (ADR-029, #1984). Seen the way the binder sees a
+   * declaration (`visibleByCName`), since a function-as-type crosses the
+   * include boundary on the same terms as the function.
+   */
+  private static functionVisibility(
+    files: ReadonlyArray<IFileSymbols>,
+    visibleFiles: ReadonlyMap<string, ReadonlySet<string>>,
+  ): (sourceFile: string, cName: string) => boolean {
+    const declaredByCName = Program.indexByCName(
+      new Map(files.map((file) => [file.sourceFile, file.symbols])),
+    );
+    return (sourceFile, cName) =>
+      Program.visibleByCName(declaredByCName, visibleFiles, sourceFile, cName)
+        ?.kind === "function";
+  }
+
+  /**
    * Settle every file's deferred types, and refuse to hand back a `Program`
    * that still holds one.
    *
@@ -934,6 +958,7 @@ class Program {
       qualifiedName: string,
     ) => boolean,
     opaqueTypes: ReadonlySet<string>,
+    isFunctionVisibleFrom: (sourceFile: string, cName: string) => boolean,
   ): Map<string, ReadonlyArray<TSymbol>> {
     const settledByFile = new Map<string, ReadonlyArray<TSymbol>>();
     const declaredByIdentity = Program.indexByIdentity(
@@ -950,6 +975,7 @@ class Program {
             file.sourceFile,
           ),
           (typeName) => opaqueTypes.has(typeName),
+          (cName) => isFunctionVisibleFrom(file.sourceFile, cName),
         ),
       );
     }
@@ -1552,9 +1578,23 @@ class Program {
     sourceFile: string,
     cName: string,
   ): TSymbol | undefined {
-    const symbol = facts.symbolsByCName.get(cName);
+    return Program.visibleByCName(
+      facts.symbolsByCName,
+      facts.visibleFiles,
+      sourceFile,
+      cName,
+    );
+  }
+
+  private static visibleByCName(
+    symbolsByCName: ReadonlyMap<string, TSymbol>,
+    visibleFiles: ReadonlyMap<string, ReadonlySet<string>>,
+    sourceFile: string,
+    cName: string,
+  ): TSymbol | undefined {
+    const symbol = symbolsByCName.get(cName);
     return symbol !== undefined &&
-      facts.visibleFiles.get(sourceFile)?.has(symbol.sourceFile)
+      visibleFiles.get(sourceFile)?.has(symbol.sourceFile)
       ? symbol
       : undefined;
   }

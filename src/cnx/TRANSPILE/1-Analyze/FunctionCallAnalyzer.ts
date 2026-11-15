@@ -19,6 +19,7 @@ import ExpressionNodes from "../../utils/ExpressionNodes";
 import StatementChildren from "../../utils/StatementChildren";
 import TypeParts from "../../utils/TypeParts";
 import type TType from "../../types/TType";
+import TTypeUtils from "../../utils/TTypeUtils";
 import IFunctionCallError from "./types/IFunctionCallError";
 import AdrProvenance from "../../instrumentation/AdrProvenance";
 import DynamicAllocation from "./DynamicAllocation";
@@ -163,8 +164,7 @@ class FunctionCallAnalyzer {
     this.includedHeaders = new Set();
     this.currentFunctionName = null;
 
-    // First pass: collect scope names, includes, and all local functions --
-    // which ADR-029 also makes the set of callback types (see isCallbackType).
+    // First pass: collect scope names, includes, and all local functions
     this.collectScopes(program);
     this.collectIncludes(program);
     this.collectAllLocalFunctions(program);
@@ -283,52 +283,13 @@ class FunctionCallAnalyzer {
 
   /**
    * ADR-040: a value of this type can be called -- an ISR, a callback type
-   * (ADR-029) or a C function-pointer typedef. Read from the type 1.3/1.4
-   * stored on the declaration, which names a callback type by its C name.
+   * (ADR-029) or a C function-pointer typedef. Read from the type 1.4 stored on
+   * the declaration, which already says whether it is a callback (#1984).
    */
   private isCallableType(type: TType): boolean {
+    if (TTypeUtils.isCallback(type)) return true;
     if (!("name" in type)) return false;
-    return (
-      type.name === "ISR" ||
-      this.isCallbackType(type.name) ||
-      this.isCFunctionPointerTypedef(type.name)
-    );
-  }
-
-  /**
-   * ADR-029: Check if a type name is a callback type (function-as-type).
-   *
-   * Reads `allLocalFunctions` rather than a set of its own. ADR-029 makes EVERY
-   * function declaration a type, so "the callback types this file declares" and
-   * "the functions this file declares" are one fact, and a second derivation of
-   * it could only ever agree by coincidence -- which it did not (#1472). The set
-   * this replaced walked `tree.declaration()` alone, so it silently omitted
-   * every scope member, while the collector it sat beside walked them
-   * correctly.
-   *
-   * #1491: the answer is NOT `allLocalFunctions` alone. That set exists to
-   * EXCLUDE cross-file functions, because ADR-030 define-before-use (#786)
-   * needs exactly that distinction -- so asking it "is this callable here?"
-   * asked one set two questions, and a variable typed by an INCLUDED
-   * function-as-type was rejected with E0422 "called before definition" for
-   * valid cnx. ADR-029 draws no line at the include boundary.
-   *
-   * The second reading is the per-file VISIBLE set, not a second derivation of
-   * the first: `functionReturnTypes` is authored once by TSymbolInfoAdapter for
-   * every function regardless of return type, carried across the include
-   * boundary by `mergeExternalSymbols` on the same terms as the type-forming
-   * kinds (#1333), and keyed by transpiled C name -- which is the key this
-   * method is given. `allLocalFunctions` is left untouched and keeps answering
-   * the ordering question it exists for.
-   *
-   * @param name A C name, as 1.3/1.4 stored it on the callee's type -- see
-   *             `isCallableType`.
-   */
-  public isCallbackType(name: string): boolean {
-    return (
-      this.allLocalFunctions.has(name) ||
-      this.context.symbols.functionReturnTypes.has(name)
-    );
+    return type.name === "ISR" || this.isCFunctionPointerTypedef(type.name);
   }
 
   /**

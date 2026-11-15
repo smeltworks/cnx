@@ -38,6 +38,7 @@ import type IStructFieldSymbol from "../../types/symbols/IStructFieldSymbol";
 import type IRegisterMemberSymbol from "../../types/symbols/IRegisterMemberSymbol";
 import type IFunctionSymbol from "../../types/symbols/IFunctionSymbol";
 import TypeResolver from "../../utils/TypeResolver";
+import TTypeUtils from "../../utils/TTypeUtils";
 import ScopeFunctions from "./ScopeFunctions";
 
 class DeferredTypes {
@@ -52,11 +53,14 @@ class DeferredTypes {
    *   includes (#1724).
    * @param isOpaqueType whether a settled type name is an opaque C typedef, so
    *   a parameter or struct field of it holds a handle (ADR-030, #1722, #1744)
+   * @param isFunctionType whether a settled type name is a function the file
+   *   can see, so the type is a callback (ADR-029, #1984)
    */
   static settle(
     symbols: ReadonlyArray<TSymbol>,
     scopeTypeCName: (scopePath: string, name: string) => string | undefined,
     isOpaqueType: (typeName: string) => boolean,
+    isFunctionType: (cName: string) => boolean,
   ): TSymbol[] {
     // Memoized on the ORIGINAL object, so a symbol reached twice yields one
     // settled object rather than two equal ones. A scope's member function is
@@ -73,6 +77,7 @@ class DeferredTypes {
         symbol,
         scopeTypeCName,
         isOpaqueType,
+        isFunctionType,
       );
       settled.set(symbol, result);
       return result;
@@ -104,9 +109,10 @@ class DeferredTypes {
     symbol: TSymbol,
     scopeTypeCName: (scopePath: string, name: string) => string | undefined,
     isOpaqueType: (typeName: string) => boolean,
+    isFunctionType: (cName: string) => boolean,
   ): TSymbol {
     const settle = (type: TType): TType =>
-      DeferredTypes.settleType(type, scopeTypeCName);
+      DeferredTypes.settleType(type, scopeTypeCName, isFunctionType);
 
     // Identity is preserved wherever nothing was deferred, which is the common
     // case by a wide margin: only a bare name inside a scope can defer, so most
@@ -199,6 +205,7 @@ class DeferredTypes {
   static settleType(
     type: TType,
     scopeTypeCName: (scopePath: string, name: string) => string | undefined,
+    isFunctionType: (cName: string) => boolean,
   ): TType {
     if (type.kind === "deferred") {
       // #2116: the scope type's stored C name, found by identity; a name
@@ -207,13 +214,21 @@ class DeferredTypes {
       // Re-classified from the settled name, because which ARM a name belongs
       // to -- struct, enum, bitmap -- is decided by the name, and Declare could
       // not decide it while the name was still unknown.
-      return DeferredTypes.classify(name);
+      return DeferredTypes.classify(name, isFunctionType);
+    }
+
+    // #1984: a function's name used as a type is a callback, which Declare
+    // could not tell from a struct -- whether a name is a function is known
+    // only over the include closure
+    if (type.kind === "struct" && isFunctionType(type.name)) {
+      return TTypeUtils.createCallback(type.name);
     }
 
     if (type.kind === "array") {
       const elementType = DeferredTypes.settleType(
         type.elementType,
         scopeTypeCName,
+        isFunctionType,
       );
       return elementType === type.elementType ? type : { ...type, elementType };
     }
@@ -263,8 +278,13 @@ class DeferredTypes {
    * re-derived here: which arm a name belongs to is one decision, and a second
    * copy of that heuristic would drift from it without anything noticing.
    */
-  private static classify(name: string): TType {
-    return TypeResolver.resolve(name);
+  private static classify(
+    name: string,
+    isFunctionType: (cName: string) => boolean,
+  ): TType {
+    return isFunctionType(name)
+      ? TTypeUtils.createCallback(name)
+      : TypeResolver.resolve(name);
   }
 }
 

@@ -43,6 +43,7 @@ describe("DeferredTypes.settle", () => {
           ? "Spanned__Point"
           : undefined,
       () => false, // no headers: nothing is opaque (#1722)
+      () => false,
     );
     const origin = settled.find((sym) => sym.name === "origin");
     expect(origin && SymbolGuards.isFunction(origin)).toBe(true);
@@ -55,6 +56,7 @@ describe("DeferredTypes.settle", () => {
     const unqualified = DeferredTypes.settle(
       declared.symbols,
       () => undefined,
+      () => false,
       () => false,
     );
     const bare = unqualified.find((sym) => sym.name === "origin");
@@ -79,6 +81,7 @@ describe("DeferredTypes.settle", () => {
       declared.symbols,
       () => undefined,
       (typeName) => typeName === "Dev",
+      () => false,
     );
     const motor = settled.find((sym) => sym.name === "Motor");
     expect(motor?.kind).toBe("struct");
@@ -92,10 +95,50 @@ describe("DeferredTypes.settle", () => {
       declared.symbols,
       () => undefined,
       () => false,
+      () => false,
     );
     const unstamped = plain.find((sym) => sym.name === "Motor");
     if (unstamped?.kind === "struct") {
       expect(unstamped.fields.get("d")?.isOpaqueHandle).toBeUndefined();
+    }
+  });
+  it("types a function's name used as a type as a callback (#1984)", () => {
+    const code = `u32 tick() { return 1; }\nstruct Clock { tick handler; tick[2] spares; }`;
+    const declared = CnxResolver.resolve(
+      ProgramLowering.program(parse(code), null),
+      "test.cnx",
+      registry,
+    );
+
+    const settled = DeferredTypes.settle(
+      declared.symbols,
+      () => undefined,
+      () => false,
+      (cName) => cName === "tick",
+    );
+    const clock = settled.find((sym) => sym.name === "Clock");
+    expect(clock?.kind).toBe("struct");
+    if (clock?.kind === "struct") {
+      expect(clock.fields.get("handler")?.type).toEqual({
+        kind: "callback",
+        name: "tick",
+      });
+      expect(clock.fields.get("spares")?.type).toEqual({
+        kind: "callback",
+        name: "tick",
+      });
+    }
+
+    // The negative control: a name that is not a function stays a struct.
+    const plain = DeferredTypes.settle(
+      declared.symbols,
+      () => undefined,
+      () => false,
+      () => false,
+    );
+    const unsettled = plain.find((sym) => sym.name === "Clock");
+    if (unsettled?.kind === "struct") {
+      expect(unsettled.fields.get("handler")?.type.kind).toBe("struct");
     }
   });
 });
