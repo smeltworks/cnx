@@ -1,3 +1,4 @@
+import type ISourceSite from "../../types/ISourceSite";
 import ExpressionShape from "../../utils/ExpressionShape";
 import VariableDeclarations from "../../utils/VariableDeclarations";
 import StringUtils from "../../utils/StringUtils";
@@ -63,6 +64,8 @@ type TWrite =
 /** The declarations and assignments 1.2 returned, each whole-string value checked against its capacity */
 class StringDeclarationCheck {
   private readonly found: IStringDeclarationError[] = [];
+  /** #1402: the declaration whose capacity the value is checked against */
+  private declaredAt: ISourceSite | undefined;
 
   public constructor(private readonly context: IAnalysisContext) {}
 
@@ -81,6 +84,7 @@ class StringDeclarationCheck {
       initializer,
       Number.parseInt(type.capacity, 10),
       "declaration",
+      BindingSite.ofSpan(declaration.span, this.context),
     );
   }
 
@@ -96,12 +100,22 @@ class StringDeclarationCheck {
     if (CharacterWrite.of(site.target, site.value, this.context) === "string") {
       const span = OperandTyper.characterSpan(site.target, this.context);
       invariant(span !== null, "a character write has a span");
-      this.checkFit(site.value, span.count, "range");
+      this.checkFit(
+        site.value,
+        span.count,
+        "range",
+        BindingSite.ofChain(site.target, this.context),
+      );
       return;
     }
     const capacity = OperandTyper.stringCopyCapacity(site.target, this.context);
     if (capacity === null) return;
-    this.checkFit(site.value, capacity, "assignment");
+    this.checkFit(
+      site.value,
+      capacity,
+      "assignment",
+      BindingSite.ofChain(site.target, this.context),
+    );
   }
 
   /**
@@ -110,7 +124,7 @@ class StringDeclarationCheck {
    * short (ADR-045, "No Silent Truncation")
    */
   public argument(value: TExpression, capacity: number): void {
-    this.checkFit(value, capacity, "argument");
+    this.checkFit(value, capacity, "argument", undefined);
   }
 
   /**
@@ -118,7 +132,7 @@ class StringDeclarationCheck {
    * so it must fit the return type as a declaration's initializer must
    */
   public returned(value: TExpression, capacity: number): void {
-    this.checkFit(value, capacity, "return");
+    this.checkFit(value, capacity, "return", undefined);
   }
 
   /**
@@ -141,7 +155,7 @@ class StringDeclarationCheck {
       });
       return;
     }
-    this.checkFit(value, capacity, "field");
+    this.checkFit(value, capacity, "field", undefined);
   }
 
   /**
@@ -165,7 +179,13 @@ class StringDeclarationCheck {
   }
 
   /** E0864/E0865 for the form `StringValueForm` gives the value */
-  private checkFit(value: TExpression, capacity: number, write: TWrite): void {
+  private checkFit(
+    value: TExpression,
+    capacity: number,
+    write: TWrite,
+    declaredAt: ISourceSite | undefined,
+  ): void {
+    this.declaredAt = declaredAt;
     const form = StringValueForm.of(value, this.context);
     const parts =
       form.kind === "concat"
@@ -203,6 +223,7 @@ class StringDeclarationCheck {
     this.found.push({
       code: "E0864",
       span: value.span,
+      declaredAt: this.declaredAt,
       message: `String literal (${length} chars) exceeds string<${capacity}> capacity`,
       helpText: StringDeclarationCheck.help(
         write,
@@ -248,6 +269,7 @@ class StringDeclarationCheck {
     this.found.push({
       code: "E0864",
       span: value.span,
+      declaredAt: this.declaredAt,
       message: `Substring length ${length} exceeds destination string<${capacity}> capacity`,
       helpText: StringDeclarationCheck.help(
         write,
@@ -273,6 +295,7 @@ class StringDeclarationCheck {
     this.found.push({
       code: "E0864",
       span: value.span,
+      declaredAt: this.declaredAt,
       message: `String concatenation requires ${least}capacity ${required}, but ${where} is string<${capacity}>`,
       helpText: StringDeclarationCheck.help(
         write,
@@ -293,6 +316,7 @@ class StringDeclarationCheck {
     this.found.push({
       code: "E0864",
       span: value.span,
+      declaredAt: this.declaredAt,
       message: StringDeclarationCheck.copyMessage(
         write,
         sourceCapacity,

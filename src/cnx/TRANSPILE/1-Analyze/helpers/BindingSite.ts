@@ -32,6 +32,18 @@ class BindingSite {
     return undefined;
   }
 
+  /** A declaration in the file being analyzed, at its own position */
+  static ofSpan(
+    span: Pick<ISourceSite, "line" | "column">,
+    context: Pick<ITypingContext, "sourceFile">,
+  ): ISourceSite {
+    return {
+      sourcePath: context.sourceFile,
+      line: span.line,
+      column: span.column,
+    };
+  }
+
   /** Where a symbol is declared, in whichever file declares it */
   static ofSymbol(
     symbol: Pick<IFunctionSymbol, "sourceFile" | "span">,

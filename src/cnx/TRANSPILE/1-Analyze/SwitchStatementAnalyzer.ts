@@ -186,6 +186,7 @@ class SwitchStatementCheck {
         this.found.push({
           code: "E0717",
           span: label.span,
+          declaredAt: BindingSite.of(this.labelBinding(label), this.context),
           message: `Case label '${SwitchStatementCheck.caseLabelValue(label)}' is not a constant`,
           helpText:
             "A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.",
