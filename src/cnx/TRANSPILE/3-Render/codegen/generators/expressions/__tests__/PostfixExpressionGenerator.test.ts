@@ -264,6 +264,7 @@ function memberStep(
     fieldBits: null,
     beforeRegisterMember: null,
     beforeRegister: null,
+    register: null,
     registerMember: null,
     member: null,
   };
@@ -459,6 +460,7 @@ function withPropertySteps(
               fieldBits: null,
               beforeRegisterMember: null,
               beforeRegister: null,
+              register: null,
               registerMember: null,
               member: null,
             },

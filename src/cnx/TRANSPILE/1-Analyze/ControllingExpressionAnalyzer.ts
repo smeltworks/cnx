@@ -168,7 +168,12 @@ class ControllingExpressionCheck {
   /** #1402: where the first function the condition calls is declared */
   private calleeDeclaration(node: TExpression): ISourceSite | undefined {
     const [call] = ExpressionCalls.callsIn(node);
-    return call && BindingSite.ofChain(call, this.context);
+    if (call === undefined) return undefined;
+    const callee = OperandTyper.chainOf(call, this.context).steps.find(
+      (step) => step.callee !== null,
+    )?.callee;
+    const symbol = callee ? this.context.program.symbolByCName(callee) : null;
+    return symbol ? BindingSite.ofSymbol(symbol) : undefined;
   }
 
   private reportCall(node: TExpression, kind: string): void {
