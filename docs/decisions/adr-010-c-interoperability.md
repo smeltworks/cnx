@@ -263,14 +263,14 @@ found along the search path, and an angle include, are unchanged.
 | top-level function | imported transitive     | error    |
 | scope member       | imported transitive     | error    |
 | scope method       | imported transitive     | error    |
-| global variable    | exercised from one away | off      |
-| top-level function | exercised from one away | off      |
-| scope member       | exercised from one away | off      |
-| scope method       | exercised from one away | off      |
-| global variable    | exercised through chain | off      |
-| top-level function | exercised through chain | off      |
-| scope member       | exercised through chain | off      |
-| scope method       | exercised through chain | off      |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | error    |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | error    |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
 
 **Every `same file` cell is `off`, and that is a property of the decision rather
 than a coverage gap.** This ADR's subject is what one file may use from another;
@@ -284,6 +284,11 @@ usable wherever a local one would be, and "wherever" is precisely the context
 axis. A cell left undeclared would read as `off`, which would be the claim that
 an included symbol cannot be used in that position -- the opposite of what this
 ADR decides.
+
+**A declaration an included file uses from its own include is exercised from
+one away or through a chain**, the provider side of the same promise (#1402):
+`warn` until those fixtures exist (#2427), `error` where a fixture already
+occupies the cell.
 
 **A C or C++ header's names are not re-exported by a cnx include** (owner
 ruling on #1881). The promise above is for declarations a `.cnx` file makes. A

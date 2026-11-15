@@ -61,16 +61,17 @@ function diagnosticPositions(
 
   const content = readFileSync(expectedErrorPath, "utf-8");
   for (const text of content.split("\n")) {
-    const match = /^(\d+):(\d+)/.exec(text);
+    const match = /^(?:(\S+?):)?(\d+):(\d+)/.exec(text);
     if (match === null) continue;
-    const line = Number(match[1]);
-    const column = Number(match[2]);
+    const line = Number(match[2]);
+    const column = Number(match[3]);
+    const sourcePath = match[1] === undefined ? undefined : resolve(match[1]);
     if (line === 1 && column === 0) continue;
 
     const codes = DiagnosticManifest.parseCodes(text);
     for (const code of codes.length > 0 ? codes : [null]) {
       const positions = byCode.get(code) ?? [];
-      addPosition(positions, { line, column });
+      addPosition(positions, { line, column, sourcePath });
       byCode.set(code, positions);
     }
   }
@@ -83,7 +84,9 @@ function addPosition(
 ): void {
   const seen = positions.some(
     (position) =>
-      position.line === next.line && position.column === next.column,
+      position.line === next.line &&
+      position.column === next.column &&
+      position.sourcePath === next.sourcePath,
   );
   if (!seen) positions.push(next);
 }
@@ -188,6 +191,30 @@ function locateSite(
       };
 }
 
+/**
+ * #1402: a diagnostic reported inside a file the fixture includes is the
+ * provider side, read from that file's own tree
+ */
+function locateIncluded(
+  run: IFixtureRun,
+  position: ISourcePosition,
+  path: string,
+  treeOf: (path: string) => ProgramContext | null,
+): ILocatedPosition[] {
+  const tree = treeOf(path);
+  const hops = run.hops.get(path);
+  return tree === null || hops === undefined
+    ? []
+    : [
+        {
+          tree,
+          line: position.line,
+          column: position.column,
+          relationship: MatrixCell.relationshipFor("provider", hops),
+        },
+      ];
+}
+
 /** Each file's parse tree, parsed once */
 function treeCache(
   fixture: string,
@@ -246,6 +273,12 @@ function recordFixture(
   ): ILocatedPosition[] => {
     if (run === null) return [];
     return positions.flatMap((position) => {
+      if (
+        position.sourcePath !== undefined &&
+        position.sourcePath !== fixture
+      ) {
+        return locateIncluded(run, position, position.sourcePath, treeOf);
+      }
       const relationship = consumerRelationship(
         run,
         declarationAt(run, fixture, position),
@@ -266,7 +299,16 @@ function recordFixture(
       const codeId = MatrixRule.id(adr, code);
       matrices.set(codeId, locateDiagnostics(codePositions));
       const matrix = positionCells.get(codeId) ?? new Map<string, string[]>();
-      recordPositions(tree, codePositions, shortPath, matrix);
+      recordPositions(
+        tree,
+        codePositions.filter(
+          (position) =>
+            position.sourcePath === undefined ||
+            position.sourcePath === fixture,
+        ),
+        shortPath,
+        matrix,
+      );
       if (matrix.size > 0) positionCells.set(codeId, matrix);
     }
     for (const site of run?.sites ?? []) {

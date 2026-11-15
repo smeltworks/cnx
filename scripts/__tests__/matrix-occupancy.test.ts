@@ -169,6 +169,25 @@ describe("FixtureOccupancy.build", () => {
     ]);
   });
 
+  it("credits a diagnostic reported inside an included file to the provider side", async () => {
+    // #1402: an `.expected.error` line prefixed with another file's path sits
+    // in that file, one include away.
+    const lib = write("lib.cnx", "void fromLib() {\n    u8 v <- this.x;\n}\n");
+    const fixture = write(
+      "consumer.test.cnx",
+      '// test-adr: 016\n#include "lib.cnx"\nu8 main() {\n    return 0;\n}\n',
+    );
+    write(
+      "consumer.expected.error",
+      `${lib}:2:13 error[E0431]: 'this' can only be used inside a scope\n`,
+    );
+
+    const occupancy = await occupancyFor("016 E0431", [fixture]);
+    expect([...occupancy!.cells.keys()]).toEqual([
+      MatrixCell.key("top-level-function", "exercised-from-one-away"),
+    ]);
+  });
+
   it("never guesses a cell for a position with no declaration in a fixture that includes", async () => {
     // #1402: a literal divisor is about no declaration, so with an include in
     // the run there is nothing to measure and the position occupies no cell.
