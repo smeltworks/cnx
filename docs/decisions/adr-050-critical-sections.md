@@ -757,23 +757,35 @@ ADR-102 (v2) will explore compiler-assisted analysis including cycle estimation 
 
 <!-- MATRIX-SEVERITY code: E0853 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| top-level function | same file           | error    |
-| scope method       | same file           | error    |
-| global variable    | same file           | off      |
-| scope member       | same file           | off      |
-| for header         | same file           | off      |
-| top-level function | imported direct     | error    |
-| scope method       | imported direct     | error    |
-| global variable    | imported direct     | off      |
-| scope member       | imported direct     | off      |
-| for header         | imported direct     | off      |
-| top-level function | imported transitive | error    |
-| scope method       | imported transitive | error    |
-| global variable    | imported transitive | off      |
-| scope member       | imported transitive | off      |
-| for header         | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | error    |
+| scope method       | same file               | error    |
+| global variable    | same file               | off      |
+| scope member       | same file               | off      |
+| for header         | same file               | off      |
+| top-level function | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| global variable    | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| top-level function | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| global variable    | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
+
+#1402: the imported columns measure the include hops to the declaration a diagnostic or provenance site is about. E0853 rejects a `return` inside a critical section as written, so it cannot occupy one; its cross-file case is the provider side.
 
 off: `global variable`, `scope member` and `for header` -- a `critical` block and a `return` are statements, so they cannot be written at file scope, as a scope member or inside a `for` header's declaration, which holds only a type, a name and an expression (all parse errors); a `return` in the body of a `for` loop inside a `critical` block is reported in the enclosing function, and E0853 has nowhere else to fire.
 

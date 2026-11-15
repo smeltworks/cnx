@@ -158,63 +158,91 @@ file whose offending `#define` sat on line 7 pointed the reader at line 1.
 
 <!-- MATRIX-SEVERITY -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | off      |
-| top-level function | same file           | off      |
-| scope member       | same file           | off      |
-| scope method       | same file           | off      |
-| global variable    | imported direct     | off      |
-| top-level function | imported direct     | off      |
-| scope member       | imported direct     | off      |
-| scope method       | imported direct     | off      |
-| global variable    | imported transitive | off      |
-| top-level function | imported transitive | off      |
-| scope member       | imported transitive | off      |
-| scope method       | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | off      |
+| top-level function | same file               | off      |
+| scope member       | same file               | off      |
+| scope method       | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | off      |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | off      |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | off      |
 
 <!-- MATRIX-SEVERITY code: E0501 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | off      |
-| top-level function | same file           | off      |
-| scope member       | same file           | off      |
-| scope method       | same file           | off      |
-| for header         | same file           | off      |
-| global variable    | imported direct     | off      |
-| top-level function | imported direct     | off      |
-| scope member       | imported direct     | off      |
-| scope method       | imported direct     | off      |
-| for header         | imported direct     | off      |
-| global variable    | imported transitive | off      |
-| top-level function | imported transitive | off      |
-| scope member       | imported transitive | off      |
-| scope method       | imported transitive | off      |
-| for header         | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | off      |
+| top-level function | same file               | off      |
+| scope member       | same file               | off      |
+| scope method       | same file               | off      |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | off      |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | off      |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | off      |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | off      |
+| for header         | exercised through chain | off      |
 
 - off (same file): E0501 fires only on a function-like `#define` before the first declaration, which no declaration encloses; the same directive inside a function, a scope, a method, an initializer or a `for` header's declaration, or after any declaration, is a syntax error instead.
 - off (imported): an included `.cnx` reports E0501 at its own head, enclosed by no declaration, and a `#define` in an included C header is not checked at all.
 
 <!-- MATRIX-SEVERITY code: E0502 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | off      |
-| top-level function | same file           | off      |
-| scope member       | same file           | off      |
-| scope method       | same file           | off      |
-| for header         | same file           | off      |
-| global variable    | imported direct     | off      |
-| top-level function | imported direct     | off      |
-| scope member       | imported direct     | off      |
-| scope method       | imported direct     | off      |
-| for header         | imported direct     | off      |
-| global variable    | imported transitive | off      |
-| top-level function | imported transitive | off      |
-| scope member       | imported transitive | off      |
-| scope method       | imported transitive | off      |
-| for header         | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | off      |
+| top-level function | same file               | off      |
+| scope member       | same file               | off      |
+| scope method       | same file               | off      |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | off      |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | off      |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | off      |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | off      |
+| for header         | exercised through chain | off      |
 
 - off (same file): E0502 fires only on a `#define` with a value before the first declaration, which no declaration encloses; the same directive inside a function, a scope, a method, an initializer or a `for` header's declaration, or after any declaration, is a syntax error instead.
 - off (imported): an included `.cnx` reports E0502 at its own head, enclosed by no declaration, and a `#define` in an included C header is not checked at all.

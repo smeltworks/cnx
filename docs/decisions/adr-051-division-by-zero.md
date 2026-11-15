@@ -656,43 +656,63 @@ Undeclared cells are `off`.
 
 <!-- MATRIX-SEVERITY code: E0800 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | error    |
-| top-level function | same file           | error    |
-| scope member       | same file           | error    |
-| scope method       | same file           | error    |
-| for header         | same file           | error    |
-| global variable    | imported direct     | error    |
-| top-level function | imported direct     | error    |
-| scope member       | imported direct     | error    |
-| scope method       | imported direct     | error    |
-| for header         | imported direct     | error    |
-| global variable    | imported transitive | error    |
-| top-level function | imported transitive | error    |
-| scope member       | imported transitive | error    |
-| scope method       | imported transitive | error    |
-| for header         | imported transitive | error    |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | error    |
+| top-level function | same file               | error    |
+| scope member       | same file               | error    |
+| scope method       | same file               | error    |
+| for header         | same file               | error    |
+| global variable    | imported direct         | error    |
+| top-level function | imported direct         | error    |
+| scope member       | imported direct         | error    |
+| scope method       | imported direct         | error    |
+| for header         | imported direct         | error    |
+| global variable    | imported transitive     | error    |
+| top-level function | imported transitive     | error    |
+| scope member       | imported transitive     | error    |
+| scope method       | imported transitive     | error    |
+| for header         | imported transitive     | error    |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | warn     |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | warn     |
 
 <!-- MATRIX-SEVERITY code: E0802 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | error    |
-| top-level function | same file           | error    |
-| scope member       | same file           | error    |
-| scope method       | same file           | error    |
-| for header         | same file           | error    |
-| global variable    | imported direct     | error    |
-| top-level function | imported direct     | error    |
-| scope member       | imported direct     | error    |
-| scope method       | imported direct     | error    |
-| for header         | imported direct     | error    |
-| global variable    | imported transitive | error    |
-| top-level function | imported transitive | error    |
-| scope member       | imported transitive | error    |
-| scope method       | imported transitive | error    |
-| for header         | imported transitive | error    |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | error    |
+| top-level function | same file               | error    |
+| scope member       | same file               | error    |
+| scope method       | same file               | error    |
+| for header         | same file               | error    |
+| global variable    | imported direct         | error    |
+| top-level function | imported direct         | error    |
+| scope member       | imported direct         | error    |
+| scope method       | imported direct         | error    |
+| for header         | imported direct         | error    |
+| global variable    | imported transitive     | error    |
+| top-level function | imported transitive     | error    |
+| scope member       | imported transitive     | error    |
+| scope method       | imported transitive     | error    |
+| for header         | imported transitive     | error    |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | warn     |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | warn     |
 
 One limit of the tooling applies to any ADR declaring a matrix, tracked as
 #1402: the relationship axis measures the deepest include chain reachable from
@@ -786,43 +806,65 @@ Severity follows the eslint model: `off` records that a cell **cannot exist**,
 
 <!-- MATRIX-SEVERITY code: E0884 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | error    |
-| top-level function | same file           | error    |
-| scope member       | same file           | error    |
-| scope method       | same file           | error    |
-| for header         | same file           | error    |
-| global variable    | imported direct     | error    |
-| top-level function | imported direct     | error    |
-| scope member       | imported direct     | error    |
-| scope method       | imported direct     | error    |
-| for header         | imported direct     | error    |
-| global variable    | imported transitive | error    |
-| top-level function | imported transitive | error    |
-| scope member       | imported transitive | error    |
-| scope method       | imported transitive | error    |
-| for header         | imported transitive | error    |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | error    |
+| top-level function | same file               | error    |
+| scope member       | same file               | error    |
+| scope method       | same file               | error    |
+| for header         | same file               | error    |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | warn     |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | warn     |
+
+#1402: the imported columns measure the include hops to the declaration a diagnostic or provenance site is about. E0884 counts the arguments written to a safe-division call, so it cannot occupy one; its cross-file case is the provider side.
 
 <!-- MATRIX-SEVERITY code: E0885 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | error    |
-| top-level function | same file           | error    |
-| scope member       | same file           | error    |
-| scope method       | same file           | error    |
-| for header         | same file           | error    |
-| global variable    | imported direct     | error    |
-| top-level function | imported direct     | error    |
-| scope member       | imported direct     | error    |
-| scope method       | imported direct     | error    |
-| for header         | imported direct     | error    |
-| global variable    | imported transitive | error    |
-| top-level function | imported transitive | error    |
-| scope member       | imported transitive | error    |
-| scope method       | imported transitive | error    |
-| for header         | imported transitive | error    |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | error    |
+| top-level function | same file               | error    |
+| scope member       | same file               | error    |
+| scope method       | same file               | error    |
+| for header         | same file               | error    |
+| global variable    | imported direct         | error    |
+| top-level function | imported direct         | error    |
+| scope member       | imported direct         | error    |
+| scope method       | imported direct         | error    |
+| for header         | imported direct         | error    |
+| global variable    | imported transitive     | error    |
+| top-level function | imported transitive     | error    |
+| scope member       | imported transitive     | error    |
+| scope method       | imported transitive     | error    |
+| for header         | imported transitive     | error    |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | warn     |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | warn     |
 
 Both rules are about the call as written -- how many arguments it has, and
 whether its first is a variable -- so each holds wherever a call can stand,

@@ -274,102 +274,160 @@ Could generate prototypes at top of `.c` file to allow any order.
 
 <!-- MATRIX-SEVERITY -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | warn     |
-| top-level function | same file           | warn     |
-| scope member       | same file           | error    |
-| scope method       | same file           | error    |
-| global variable    | imported direct     | warn     |
-| top-level function | imported direct     | warn     |
-| scope member       | imported direct     | warn     |
-| scope method       | imported direct     | warn     |
-| global variable    | imported transitive | warn     |
-| top-level function | imported transitive | warn     |
-| scope member       | imported transitive | warn     |
-| scope method       | imported transitive | warn     |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | warn     |
+| top-level function | same file               | warn     |
+| scope member       | same file               | off      |
+| scope method       | same file               | off      |
+| global variable    | imported direct         | warn     |
+| top-level function | imported direct         | warn     |
+| scope member       | imported direct         | warn     |
+| scope method       | imported direct         | warn     |
+| global variable    | imported transitive     | warn     |
+| top-level function | imported transitive     | warn     |
+| scope member       | imported transitive     | warn     |
+| scope method       | imported transitive     | warn     |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+
+#1402: the imported columns measure the include hops to the declaration a diagnostic or provenance site is about. ADR-030's opaque type is an incomplete C struct, always declared in a header and never in the cnx file, so it cannot occupy one; its cross-file case is the provider side.
 
 <!-- MATRIX-SEVERITY code: E0422 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | error    |
-| top-level function | same file           | error    |
-| scope member       | same file           | error    |
-| scope method       | same file           | error    |
-| for header         | same file           | error    |
-| global variable    | imported direct     | error    |
-| top-level function | imported direct     | error    |
-| scope member       | imported direct     | error    |
-| scope method       | imported direct     | error    |
-| for header         | imported direct     | error    |
-| global variable    | imported transitive | error    |
-| top-level function | imported transitive | error    |
-| scope member       | imported transitive | error    |
-| scope method       | imported transitive | error    |
-| for header         | imported transitive | error    |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | error    |
+| top-level function | same file               | error    |
+| scope member       | same file               | error    |
+| scope method       | same file               | error    |
+| for header         | same file               | error    |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | warn     |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | warn     |
+
+#1402: the imported columns measure the include hops to the declaration a diagnostic or provenance site is about. E0422 reports a call to a name that is not yet declared, so it cannot occupy one; its cross-file case is the provider side.
 
 <!-- MATRIX-SEVERITY code: E0423 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | off      |
-| top-level function | same file           | error    |
-| scope member       | same file           | off      |
-| scope method       | same file           | error    |
-| for header         | same file           | error    |
-| global variable    | imported direct     | off      |
-| top-level function | imported direct     | error    |
-| scope member       | imported direct     | off      |
-| scope method       | imported direct     | error    |
-| for header         | imported direct     | error    |
-| global variable    | imported transitive | off      |
-| top-level function | imported transitive | error    |
-| scope member       | imported transitive | off      |
-| scope method       | imported transitive | error    |
-| for header         | imported transitive | error    |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | off      |
+| top-level function | same file               | error    |
+| scope member       | same file               | off      |
+| scope method       | same file               | error    |
+| for header         | same file               | error    |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | warn     |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | warn     |
+
+#1402: the imported columns measure the include hops to the declaration a diagnostic or provenance site is about. E0423 reports a function calling itself, and that function is always declared in the file being transpiled, so it cannot occupy one; its cross-file case is the provider side.
 
 off: E0423 only fires inside a function body; a global or scope member initializer has no enclosing function to call itself, and a call there is E0909.
 
 <!-- MATRIX-SEVERITY code: E0426 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | error    |
-| top-level function | same file           | error    |
-| scope member       | same file           | error    |
-| scope method       | same file           | error    |
-| for header         | same file           | error    |
-| global variable    | imported direct     | error    |
-| top-level function | imported direct     | error    |
-| scope member       | imported direct     | error    |
-| scope method       | imported direct     | error    |
-| for header         | imported direct     | error    |
-| global variable    | imported transitive | error    |
-| top-level function | imported transitive | error    |
-| scope member       | imported transitive | error    |
-| scope method       | imported transitive | error    |
-| for header         | imported transitive | error    |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | error    |
+| top-level function | same file               | error    |
+| scope member       | same file               | error    |
+| scope method       | same file               | error    |
+| for header         | same file               | error    |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | warn     |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | warn     |
+
+#1402: the imported columns measure the include hops to the declaration a diagnostic or provenance site is about. E0426 reports a type name that nothing declares, so it cannot occupy one; its cross-file case is the provider side.
 
 <!-- MATRIX-SEVERITY code: E0427 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | error    |
-| top-level function | same file           | error    |
-| scope member       | same file           | error    |
-| scope method       | same file           | error    |
-| for header         | same file           | error    |
-| global variable    | imported direct     | error    |
-| top-level function | imported direct     | error    |
-| scope member       | imported direct     | error    |
-| scope method       | imported direct     | error    |
-| for header         | imported direct     | error    |
-| global variable    | imported transitive | error    |
-| top-level function | imported transitive | error    |
-| scope member       | imported transitive | error    |
-| scope method       | imported transitive | error    |
-| for header         | imported transitive | error    |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | error    |
+| top-level function | same file               | error    |
+| scope member       | same file               | error    |
+| scope method       | same file               | error    |
+| for header         | same file               | error    |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | warn     |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | warn     |
+
+#1402: the imported columns measure the include hops to the declaration a diagnostic or provenance site is about. E0427 reports a value name that nothing declares, so it cannot occupy one; its cross-file case is the provider side.
 
 The code tables carry a `for header` row the ADR-wide table predates: each of the four codes fires in a `for` header's declaration.
 

@@ -270,23 +270,33 @@ relationships are `error` in both live rows.
 
 <!-- MATRIX-SEVERITY code: E0708 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | off      |
-| top-level function | same file           | error    |
-| scope member       | same file           | off      |
-| scope method       | same file           | error    |
-| for header         | same file           | off      |
-| global variable    | imported direct     | off      |
-| top-level function | imported direct     | error    |
-| scope member       | imported direct     | off      |
-| scope method       | imported direct     | error    |
-| for header         | imported direct     | off      |
-| global variable    | imported transitive | off      |
-| top-level function | imported transitive | error    |
-| scope member       | imported transitive | off      |
-| scope method       | imported transitive | error    |
-| for header         | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | off      |
+| top-level function | same file               | error    |
+| scope member       | same file               | off      |
+| scope method       | same file               | error    |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | error    |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | error    |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | error    |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | error    |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
 
 off: E0708 cannot fire in a global-variable or scope-member position, because a bare call there is a parse error; nor inside a `for` header's declaration, where a call is the initializer, whose value is used (a bare call as the `for` initializer is itself a parse error).
 

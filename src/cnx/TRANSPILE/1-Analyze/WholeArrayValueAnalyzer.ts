@@ -17,6 +17,7 @@
  * rule; a list is counted by `ArrayListCount`, the declaration's count.
  */
 
+import BindingSite from "./helpers/BindingSite";
 import ArrayListCount from "./helpers/ArrayListCount";
 import SourceOrder from "../../utils/SourceOrder";
 import StructInitializerType from "./helpers/StructInitializerType";
@@ -125,6 +126,7 @@ class WholeArrayValueAnalyzer {
       found.push({
         code: "E0917",
         span: target.span,
+        declaredAt: BindingSite.ofChain(target, this.context),
         message: ForHeaderVariable.assignmentMessage(target.written),
         helpText: ForHeaderVariable.ASSIGNMENT_HELP,
       });

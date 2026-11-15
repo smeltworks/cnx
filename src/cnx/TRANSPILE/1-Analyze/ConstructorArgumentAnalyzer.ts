@@ -64,6 +64,7 @@ class ConstructorArgumentCheck {
         this.found.push({
           code: "E0433",
           span: declaration.span,
+          declaredAt: BindingSite.ofSpan(argument.span, this.context),
           message: `Constructor argument '${name}' is not declared`,
           helpText: `Declare '${name}' before the constructor, or pass a literal.`,
         });

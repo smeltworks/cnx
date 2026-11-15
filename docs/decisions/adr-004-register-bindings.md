@@ -457,65 +457,95 @@ two include hops.
 
 <!-- MATRIX-SEVERITY code: E0870 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| scope member       | same file           | error    |
-| scope method       | same file           | error    |
-| global variable    | same file           | error    |
-| top-level function | same file           | error    |
-| for header         | same file           | error    |
-| scope member       | imported direct     | error    |
-| scope method       | imported direct     | error    |
-| global variable    | imported direct     | error    |
-| top-level function | imported direct     | error    |
-| for header         | imported direct     | error    |
-| scope member       | imported transitive | error    |
-| scope method       | imported transitive | error    |
-| global variable    | imported transitive | error    |
-| top-level function | imported transitive | error    |
-| for header         | imported transitive | error    |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| scope member       | same file               | error    |
+| scope method       | same file               | error    |
+| global variable    | same file               | error    |
+| top-level function | same file               | error    |
+| for header         | same file               | error    |
+| scope member       | imported direct         | error    |
+| scope method       | imported direct         | error    |
+| global variable    | imported direct         | error    |
+| top-level function | imported direct         | error    |
+| for header         | imported direct         | error    |
+| scope member       | imported transitive     | error    |
+| scope method       | imported transitive     | error    |
+| global variable    | imported transitive     | error    |
+| top-level function | imported transitive     | error    |
+| for header         | imported transitive     | error    |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | warn     |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | warn     |
 
 <!-- MATRIX-SEVERITY code: E0871 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| scope member       | same file           | off      |
-| scope method       | same file           | error    |
-| global variable    | same file           | off      |
-| top-level function | same file           | error    |
-| for header         | same file           | off      |
-| scope member       | imported direct     | off      |
-| scope method       | imported direct     | error    |
-| global variable    | imported direct     | off      |
-| top-level function | imported direct     | error    |
-| for header         | imported direct     | off      |
-| scope member       | imported transitive | off      |
-| scope method       | imported transitive | error    |
-| global variable    | imported transitive | off      |
-| top-level function | imported transitive | error    |
-| for header         | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| scope member       | same file               | off      |
+| scope method       | same file               | error    |
+| global variable    | same file               | off      |
+| top-level function | same file               | error    |
+| for header         | same file               | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | error    |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | error    |
+| for header         | imported direct         | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | error    |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | error    |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
 
 off: an assignment is a statement, so it cannot stand in a global or scope member initializer or in a `for` header's declaration (`u32 g <- (HW.STATUS <- 1);` and `for (mut u32 i <- (HW.STATUS <- 1); ...)` are parse errors); a `for` header's first clause written as an assignment, `for (HW.STATUS <- 1; ...)`, is the enclosing function's.
 
 <!-- MATRIX-SEVERITY code: E0872 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| scope member       | same file           | off      |
-| scope method       | same file           | error    |
-| global variable    | same file           | off      |
-| top-level function | same file           | error    |
-| for header         | same file           | off      |
-| scope member       | imported direct     | off      |
-| scope method       | imported direct     | error    |
-| global variable    | imported direct     | off      |
-| top-level function | imported direct     | error    |
-| for header         | imported direct     | off      |
-| scope member       | imported transitive | off      |
-| scope method       | imported transitive | error    |
-| global variable    | imported transitive | off      |
-| top-level function | imported transitive | error    |
-| for header         | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| scope member       | same file               | off      |
+| scope method       | same file               | error    |
+| global variable    | same file               | off      |
+| top-level function | same file               | error    |
+| for header         | same file               | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | error    |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | error    |
+| for header         | imported direct         | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | error    |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | error    |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
 
 off: an assignment is a statement, so it cannot stand in a global or scope member initializer or in a `for` header's declaration (`bool g <- (HW.SET[3] <- false);` and `for (mut bool b <- (HW.SET[3] <- false); ...)` are parse errors); a `for` header's update written as an assignment, `for (...; ...; HW.SET[3] <- false)`, is the enclosing function's.
 
