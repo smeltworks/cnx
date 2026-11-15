@@ -56,6 +56,14 @@ interface ITranspilerResult {
    * includes a second time.
    */
   includes?: ReadonlyMap<string, readonly string[]>;
+
+  /**
+   * #1523: the `.cnx` files whose own `#include` lines name a C/C++ header,
+   * resolved or not (`IPipelineFile.includesForeignHeader`). An unresolved
+   * `<system.h>` is in no include graph, but its names still exist, so a run
+   * with no includes in `includes` may still use a declaration from one.
+   */
+  includesForeignHeader?: ReadonlySet<string>;
 }
 
 export default ITranspilerResult;

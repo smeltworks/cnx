@@ -65,6 +65,8 @@ async function of(
       sites: result.adrSites ?? [],
       errors: result.errors,
       hops: IncludeHops.from(fixture, result.includes ?? new Map()),
+      includesForeignHeader:
+        result.includesForeignHeader?.has(fixture) ?? false,
     };
   } catch {
     return null;

@@ -14,6 +14,12 @@ interface IFixtureRun {
 
   /** Each file's include hops from the fixture (`IncludeHops`) */
   readonly hops: ReadonlyMap<string, number>;
+
+  /**
+   * #1523: whether the fixture names a C/C++ header in its own `#include`
+   * lines, resolved or not (`ITranspilerResult.includesForeignHeader`)
+   */
+  readonly includesForeignHeader: boolean;
 }
 
 export default IFixtureRun;

@@ -202,6 +202,23 @@ describe("FixtureOccupancy.build", () => {
     expect([...occupancy!.cells.keys()]).toEqual([]);
   });
 
+  it("never guesses same-file for a position whose fixture includes a system header", async () => {
+    // #1523: `<math.h>` resolves to no file, so it is in no include graph,
+    // but `M_PI` is still declared there. With no declaration recorded, the
+    // fixture including nothing it can see does not make the position local.
+    const fixture = write(
+      "system.test.cnx",
+      "// test-adr: 024\n#include <math.h>\nvoid go() {\n    u32 i <- 3;\n    f64 x <- i * M_PI;\n}\n",
+    );
+    write(
+      "system.expected.error",
+      "5:13 error[E0810]: Binary operator combines operands of different essential type categories (integer and floating)\n",
+    );
+
+    const occupancy = await occupancyFor("024 E0810", [fixture]);
+    expect([...occupancy!.cells.keys()]).toEqual([]);
+  });
+
   it("counts a C header that declares the construct as an include hop", async () => {
     // #1523: `lib_value` is declared in `lib.h`, so the fixture uses it from
     // one include away. It is not a same-file use.

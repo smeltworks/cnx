@@ -129,14 +129,15 @@ function recordPositions(
  * the file that declares its construct, as the deciding pass recorded it
  * (`declaredAt`). With no declaration recorded it is `same-file` only where
  * the fixture includes nothing, so nothing else could have declared it;
- * otherwise it is not measured, never guessed.
+ * otherwise it is not measured, never guessed. A `<system.h>` that resolved
+ * to no file is in no include graph but is still an include (#1523).
  */
 function consumerRelationship(
   run: IFixtureRun,
   declaredAt: ISourceSite | undefined,
 ): TMatrixRelationship | null {
   if (declaredAt === undefined) {
-    return run.hops.size === 1
+    return run.hops.size === 1 && !run.includesForeignHeader
       ? MatrixCell.relationshipFor("consumer", 0)
       : null;
   }

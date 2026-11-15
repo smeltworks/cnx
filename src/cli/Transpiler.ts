@@ -210,6 +210,11 @@ class Transpiler {
       this.anchor = discovered.anchor;
       const pipelineInput = discovered.graph;
       result.includes = Transpiler._includes(pipelineInput);
+      result.includesForeignHeader = new Set(
+        pipelineInput.cnxFiles
+          .filter((file) => file.includesForeignHeader)
+          .map((file) => file.path),
+      );
       if (discovered.errors.length > 0) {
         result.errors.push(...discovered.errors);
         result.success = false;

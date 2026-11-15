@@ -969,7 +969,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | ok     | warn       | warn        | warn       |
 | for header         | -         | -      | -          | -           | -          |
 
-23 linked fixtures with no derivable context:
+27 linked fixtures with no derivable context:
 
 - `adr-030/imported-direct-e0422.test.cnx`
 - `adr-030/imported-direct-e0423.test.cnx`
@@ -993,7 +993,11 @@ cell is declared by the ADR that owns it.
 - `bugs/issue-1866-scope-member-is-not-external/included-member-from-other-scope.test.cnx`
 - `bugs/issue-1866-scope-member-is-not-external/included-member-from-reopened-scope.test.cnx`
 - `bugs/issue-1953-block-shadow-rename-ends/block-shadow-constructor-reads-outer.test.cnx`
+- `bugs/issue-2019-header-unclosed-name/clamp-forward.test.cnx`
+- `bugs/issue-2019-header-unclosed-name/concatenation-self.test.cnx`
 - `bugs/issue-2019-header-unclosed-name/declared-elsewhere.test.cnx`
+- `bugs/issue-2019-header-unclosed-name/self-local.test.cnx`
+- `bugs/issue-2019-header-unclosed-name/substring-self.test.cnx`
 
 ## ADR-030 E0422
 
@@ -1357,7 +1361,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-14 linked fixtures with no derivable context:
+16 linked fixtures with no derivable context:
 
 - `adr-045/string-imported-global-error.test.cnx`
 - `adr-045/string-imported-transitive-global-error.test.cnx`
@@ -1373,6 +1377,8 @@ cell is declared by the ADR that owns it.
 - `bugs/issue-1373-string-comparison-chain/chain-control.test.cnx`
 - `bugs/issue-1595-cross-file-scope-string-transitive/cross-file-scope-string-transitive.test.cnx`
 - `bugs/issue-2017-integer-string-comparison/string-literal-control.test.cnx`
+- `bugs/issue-2019-header-unclosed-name/concatenation-self.test.cnx`
+- `bugs/issue-2019-header-unclosed-name/substring-self.test.cnx`
 
 ## ADR-045 E0427
 
@@ -1624,10 +1630,11 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-2 linked fixtures with no derivable context:
+3 linked fixtures with no derivable context:
 
 - `bugs/issue-1175-constant-dimensions/enum-zero-divisor.test.cnx`
 - `bugs/issue-1268-qualified-zero-const/length-property-divisor-imported.test.cnx`
+- `bugs/issue-1268-qualified-zero-const/typed-cast-divisor.test.cnx`
 
 ## ADR-051 E0426
 
@@ -1960,7 +1967,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-19 linked fixtures with no derivable context:
+20 linked fixtures with no derivable context:
 
 - `adr-071/c-callback-mut-match.test.cnx`
 - `adr-071/callback-initializer-wiring.test.cnx`
@@ -1981,6 +1988,7 @@ cell is declared by the ADR that owns it.
 - `adr-071/unused-mut-imported-transitive-error.test.cnx`
 - `bugs/issue-2117-address-of/scanf-not-variable-error.test.cnx`
 - `bugs/issue-2117-address-of/scanf-out-parameter.test.cnx`
+- `bugs/issue-2117-address-of/scanf-qualified-target-error.test.cnx`
 
 ## ADR-071 E0879
 
