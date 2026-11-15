@@ -93,6 +93,11 @@
      when it was fixed — that staging is legitimate and documented. Declaring
      `off` because `error` would be red is not.
 
+     The provider-side cells (`exercised from one away`, `exercised through
+     chain`) became measurable with #1402/#1523. Every table declares them
+     `warn` where its same-file cell is `error` or `warn`, and `off` where it
+     is `off`, until their fixtures exist: that staging is #2427.
+
      Mark each fixture with `// test-adr: NNN`. -->
 
 <!-- MATRIX-SEVERITY -->
