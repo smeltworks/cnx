@@ -6,6 +6,19 @@
 #include <stdint.h>
 #include <string.h>
 
+// ADR-044: Overflow helper functions
+#include <limits.h>
+
+/* ADR-044 / Issue #94: the second parameter is the WIDER type, not the value type.
+   Narrowing it first would let an out-of-range operand truncate INTO range and defeat
+   the check: cnx_clamp_add_u8(0, 256) must saturate to 255, but (uint8_t)256 is 0, so a
+   uint8_t parameter would return 0 -- the opposite of saturation. */
+
+static inline uint32_t cnx_clamp_add_u32(uint32_t a, uint64_t b) {
+    if (b > (uint64_t)(UINT32_MAX - a)) return UINT32_MAX;
+    return (uint32_t)(a + (uint32_t)b);
+}
+
 // test-execution
 // Issue #1742: .value_char_count is a u32 operand. Uncached, it is written as
 // (uint32_t) strlen(...), stored without narrowing, and adds as a u32.
@@ -13,7 +26,7 @@ int main(void) {
     const char a[9] = "ab";
     const char b[9] = "xyz";
     const uint32_t first = (uint32_t) strlen(a);
-    const uint32_t total = (uint32_t) strlen(a) + (uint32_t) strlen(b);
+    const uint32_t total = cnx_clamp_add_u32((uint32_t) strlen(a), (uint32_t) strlen(b));
     if (first != 2) {
         return 1U;
     }

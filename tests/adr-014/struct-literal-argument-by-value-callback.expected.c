@@ -31,12 +31,17 @@ static inline uint32_t cnx_clamp_add_u32(uint32_t a, uint64_t b) {
     return (uint32_t)(a + (uint32_t)b);
 }
 
+static inline uint32_t cnx_clamp_mul_u32(uint32_t a, uint64_t b) {
+    if (b != 0 && a > UINT32_MAX / b) return UINT32_MAX;
+    return (uint32_t)(a * (uint32_t)b);
+}
+
 uint32_t vhandler(const VPt p) {
-    return p.x + p.y;
+    return cnx_clamp_add_u32(p.x, p.y);
 }
 
 uint32_t other(const VPt* p) {
-    return p->x * p->y;
+    return cnx_clamp_mul_u32(p->x, p->y);
 }
 
 uint32_t fire(vhandler_fp cb) {

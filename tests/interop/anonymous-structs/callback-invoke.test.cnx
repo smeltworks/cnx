@@ -4,6 +4,9 @@
 // Note: This test validates struct init with anon members AND callback invocation.
 // The callback handler uses const SimpleConfig& in C++ mode, which is compatible
 // with the callback typedef because the struct is passed through the field.
+// The header's `int` fields make the sum's overflow helper the target's
+// `int` width (ADR-044, #2409), so the output is pinned to one target
+#pragma target host
 #include "anon_types.h"
 
 // Global to track callback was called with correct value
