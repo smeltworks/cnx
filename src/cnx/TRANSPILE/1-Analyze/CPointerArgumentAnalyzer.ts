@@ -102,6 +102,8 @@ class CPointerArgumentCheck {
       message: `the format of '${callee.name}' is not a string literal, so cnx cannot tell which arguments '${callee.name}' writes`,
       helpText: `Write the format as a string literal, e.g. ${callee.name}(..., "%d", value).`,
       severity: "error",
+      // #1523: the rule is about the format, so the format's declaration
+      declaredAt: BindingSite.ofOperands([writes.format], this.context),
     });
   }
 
