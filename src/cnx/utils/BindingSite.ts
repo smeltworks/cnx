@@ -90,6 +90,24 @@ class BindingSite {
   }
 
   /**
+   * #1402: the declaration of what a chain's last member names -- the struct
+   * declaring `data` in `shared.data`, wherever that struct is declared; the
+   * chain's root when it names no member
+   */
+  static ofSubject(
+    chain: TExpression,
+    context: ITypingContext,
+  ): ISourceSite | undefined {
+    const owner = OperandTyper.chainOf(chain, context)
+      .steps.filter((step) => step.member !== null && step.property === null)
+      .at(-1)?.before?.typeName;
+    return owner
+      ? (BindingSite.ofCName(owner, context) ??
+          BindingSite.ofChain(chain, context))
+      : BindingSite.ofChain(chain, context);
+  }
+
+  /**
    * #1402: the declaration an operand diagnostic is about -- the first name
    * its operands read that is declared in another file, else the first
    * declared in this one; undefined when they read no declared name

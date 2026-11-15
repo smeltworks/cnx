@@ -85,7 +85,7 @@ class LengthPropertyCheck {
     // Only a property's name can read one; the rest need no typing
     const name = last.name;
     if (!PROPERTY_NAMES.has(name)) return;
-    this.declaredAt = BindingSite.ofChain(chain, this.context);
+    this.declaredAt = BindingSite.ofSubject(chain, this.context);
     // #1976: a literal has no fields, so the name reads the property, and a
     // length property measures a declared value -- owner ruling: never a
     // literal. The typer leaves a string literal untyped, so without this the
