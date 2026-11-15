@@ -169,6 +169,20 @@ describe("FixtureOccupancy.build", () => {
     ]);
   });
 
+  it("never guesses a cell for a position with no declaration in a fixture that includes", async () => {
+    // #1402: a literal divisor is about no declaration, so with an include in
+    // the run there is nothing to measure and the position occupies no cell.
+    write("provider.cnx", "u32 ZERO <- 0;\n");
+    const fixture = write(
+      "consumer.test.cnx",
+      '// test-adr: 051\n#include "provider.cnx"\nvoid go() {\n    u32 bad <- 10 / 0;\n}\n',
+    );
+    write("consumer.expected.error", "4:20 error[E0800]: Division by zero\n");
+
+    const occupancy = await occupancyFor("051 E0800", [fixture]);
+    expect([...occupancy!.cells.keys()]).toEqual([]);
+  });
+
   it("counts a C header that declares the construct as an include hop", async () => {
     // #1523: `lib_value` is declared in `lib.h`, so the fixture uses it from
     // one include away. It is not a same-file use.
