@@ -99,8 +99,8 @@ const INSTRUMENTATION_ROOT = "src/cnx/instrumentation";
  * whatever directory it sits in, and the list is where that gets argued.
  */
 const INSTRUMENTATION_HOLDERS = [
-  "src/cnx/instrumentation/AdrProvenance.ts:58",
   "src/cnx/instrumentation/AdrProvenance.ts:59",
+  "src/cnx/instrumentation/AdrProvenance.ts:60",
 ];
 
 /**

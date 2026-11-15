@@ -165,7 +165,11 @@ class EnumTypeSafetyCheck {
     this.found.push({
       code: "E0434",
       span: expr.operands[1].span,
-      declaredAt: BindingSite.ofOperands(expr.operands, this.context),
+      declaredAt: BindingSite.ofCName(
+        (left.kind === "enum" ? left : right.kind === "enum" ? right : null)
+          ?.typeName ?? null,
+        this.context,
+      ),
       message: `Cannot compare ${EnumTypeSafetyCheck.describe(left)} to ${EnumTypeSafetyCheck.describe(right)}`,
       helpText: COMPARE_HELP,
     });

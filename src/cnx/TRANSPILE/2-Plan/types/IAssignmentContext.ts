@@ -69,6 +69,9 @@ interface IAssignmentContext {
    */
   readonly targetLine: number | undefined;
 
+  /** #1402: where the variable the target is rooted in is declared */
+  readonly targetDeclaredAt: ISourceSite | undefined;
+
   // === The value, as questions rather than as a node ===
 
   /** Whether the assignment has a right-hand side at all. */

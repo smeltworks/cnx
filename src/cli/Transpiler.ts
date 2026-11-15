@@ -696,8 +696,9 @@ class Transpiler {
   private static _includes(
     graph: ISourceGraph,
   ): ReadonlyMap<string, readonly string[]> {
-    return new Map(
-      graph.cnxFiles.map((file) => [
+    return new Map([
+      ...graph.headerEdges,
+      ...graph.cnxFiles.map((file): [string, readonly string[]] => [
         file.path,
         [
           ...file.cnxIncludes.map((include) => include.path),
@@ -706,7 +707,7 @@ class Transpiler {
             .map((include) => include.header),
         ],
       ]),
-    );
+    ]);
   }
 
   private _initResult(): ITranspilerResult {

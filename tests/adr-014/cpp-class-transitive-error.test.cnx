@@ -6,7 +6,8 @@
 // scope member as it does with no include. The included `Cfg` in the same
 // positions and the C++ class inside a method are the controls.
 #include "lib/struct-init-chain.cnx"
-#include "CppTestClass.hpp"
+// #1402: the class two hops away, through a relay header
+#include "CppTestClassRelay.hpp"
 
 CppTestClass atFileScope <- { value: 1 };
 Cfg control <- { word: 1, f: 0 };

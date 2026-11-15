@@ -29,9 +29,9 @@
  *
  * Neither alternative is better. Splitting the sink per pass yields three
  * accumulators where there is one, and the only consumer
- * (`scripts/matrix/AdrProvenanceLines.ts`) reads `adr` and `line` and never
- * `sourcePath`, so the attribution a split changes is unobservable to the only
- * gate watching it. Threading an instance through the call sites contradicts
+ * (`scripts/matrix/FixtureRun.ts`) reads each site's `sourcePath` and
+ * `declaredAt` (#1402) but never which pass recorded it, so the attribution a
+ * split changes is unobservable to the only gate watching it. Threading an instance through the call sites contradicts
  * the paragraph above, which is a recorded design decision, not an oversight.
  *
  * The owner's call, taken 2026-09-23: box 4 governs PROGRAM state. A fact about
