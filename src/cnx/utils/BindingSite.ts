@@ -11,6 +11,7 @@ import type TValueBinding from "../types/TValueBinding";
 import type ITypingContext from "../types/ITypingContext";
 import type TExpression from "../types/syntax/TExpression";
 import type IFunctionSymbol from "../types/symbols/IFunctionSymbol";
+import type TSymbol from "../types/symbols/TSymbol";
 import OperandTyper from "./OperandTyper";
 
 class BindingSite {
@@ -56,15 +57,26 @@ class BindingSite {
   }
 
   /**
-   * #1402: a declaration by its C name -- this file's own first, then the
-   * one an include supplies; undefined for a name nothing declares
+   * #1402: a declaration by its C name -- this file's own first, then one
+   * this file sees (`seesForeignSymbol`: a cnx file, or a header it includes
+   * itself); undefined for a name nothing it sees declares. `kind` keeps only
+   * symbols of that kind.
    */
   static ofCName(
     cName: string | null,
     context: Pick<ITypingContext, "program" | "sourceFile">,
+    kind?: TSymbol["kind"],
   ): ISourceSite | undefined {
     if (cName === null) return undefined;
-    const found = context.program.symbolTable().getOverloadsByCName(cName);
+    const found = context.program
+      .symbolTable()
+      .getOverloadsByCName(cName)
+      .filter(
+        (candidate) =>
+          (kind === undefined || candidate.kind === kind) &&
+          (candidate.sourceFile === context.sourceFile ||
+            context.program.seesForeignSymbol(context.sourceFile, candidate)),
+      );
     const symbol =
       found.find((candidate) => candidate.sourceFile === context.sourceFile) ??
       found[0];

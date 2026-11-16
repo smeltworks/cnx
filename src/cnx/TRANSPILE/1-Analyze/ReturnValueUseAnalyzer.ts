@@ -179,15 +179,7 @@ class ReturnValueUseAnalyzer {
     cName: string,
     context: IAnalysisContext,
   ): ISourceSite | undefined {
-    const symbol = context.symbolTable
-      .getOverloadsByCName(cName)
-      .find(
-        (sym) =>
-          sym.kind === "function" &&
-          (sym.sourceFile === context.sourceFile ||
-            context.program.seesForeignSymbol(context.sourceFile, sym)),
-      );
-    return symbol && BindingSite.ofSymbol(symbol);
+    return BindingSite.ofCName(cName, context, "function");
   }
 
   /** #1991: reads 1.2's syntax, not the parse tree */

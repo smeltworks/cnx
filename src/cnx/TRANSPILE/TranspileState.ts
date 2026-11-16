@@ -226,11 +226,9 @@ class TranspileState {
         "binds-local",
         this.sourcePath === null
           ? undefined
-          : {
-              sourcePath: this.sourcePath,
-              line: declaration.extent.line,
-              column: declaration.extent.column,
-            },
+          : BindingSite.ofSpan(declaration.extent, {
+              sourceFile: this.sourcePath,
+            }),
       );
     }
     return emitted;
@@ -801,10 +799,10 @@ class TranspileState {
     if (!current) {
       return false;
     }
-    const found = this.symbolTable.getOverloadsByCName(qualifiedCName);
-    return (
-      found.length > 0 && found.every((symbol) => symbol.sourceFile !== current)
-    );
+    // #1402 review: `declarationOf` prefers this file's own declaration, so
+    // it is in another file exactly when none here declares the name
+    const declared = this.declarationOf(qualifiedCName);
+    return declared !== undefined && declared.sourcePath !== current;
   }
 
   /**
