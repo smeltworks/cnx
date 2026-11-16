@@ -43,6 +43,7 @@ function planned(
     operandCode,
     minimum: null,
     complementCast,
+    negation: null,
   };
 }
 
@@ -152,6 +153,18 @@ describe("UnaryExprGenerator", () => {
         code: "-(2147483648)",
         effects: [],
       });
+    });
+  });
+
+  describe("overflow negation (ADR-044, #2418)", () => {
+    it("calls the helper 2.2 planned for a `-`", () => {
+      const result = generateUnaryExpr(
+        { ...planned("-", "n"), negation: "cnx_clamp_neg_i8" },
+        mockInput,
+        mockState,
+        mockOrchestrator,
+      );
+      expect(result).toEqual({ code: "cnx_clamp_neg_i8(n)", effects: [] });
     });
   });
 });

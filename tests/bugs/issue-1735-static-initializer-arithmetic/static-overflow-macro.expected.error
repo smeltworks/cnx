@@ -1,0 +1,4 @@
+15:9 error[E0910]: Value overflows u8 at compile time: the arithmetic would clamp or wrap (ADR-044)
+       help: Do the arithmetic at a width that holds the result, for example by casting the operands to a wider type
+16:12 error[E0868]: Value 300 exceeds u8 range (0 to 255)
+       help: Widen the target type, or narrow the value.

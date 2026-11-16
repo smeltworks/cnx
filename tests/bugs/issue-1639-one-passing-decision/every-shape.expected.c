@@ -91,7 +91,7 @@ uint32_t apply(readScalar_fp f, const uint32_t n) {
 
 // #895: used as a C callback whose typedef takes the struct by value
 uint32_t onPoint(const CPt p) {
-    return p.x + p.y;
+    return cnx_clamp_add_u32(p.x, p.y);
 }
 
 int main(void) {

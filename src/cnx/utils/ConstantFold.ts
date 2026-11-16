@@ -16,6 +16,7 @@
  * where it is written, so the environment needs only the file.
  */
 import ConstantEvaluator from "./ConstantEvaluator";
+import ConstExprLowering from "./ConstExprLowering";
 import invariant from "./invariant";
 import ConstExprPrinter from "./ConstExprPrinter";
 import TypeCheckUtils from "./TypeCheckUtils";
@@ -26,6 +27,7 @@ import type IProgram from "../types/IProgram";
 import type TConstExpr from "../types/TConstExpr";
 import type TSettledConst from "../types/TSettledConst";
 import type TType from "../types/TType";
+import type TExpression from "../types/syntax/TExpression";
 
 class ConstantFold {
   /** What a name is worth where it is written in `sourceFile`: the program's answer */
@@ -106,6 +108,23 @@ class ConstantFold {
     return ConstantEvaluator.numberValue(
       expr,
       ConstantFold.environment(program, sourceFile),
+    );
+  }
+
+  /**
+   * An operand's value where it is written, when it is known at compile time:
+   * the one reading 2.1 and 2.2 share, so E0811 and the helper 2.2 plans for a
+   * divisor agree (#1790 review)
+   */
+  static expressionValue(
+    program: IProgram,
+    sourceFile: string,
+    expr: TExpression,
+  ): number | null {
+    return ConstantFold.numberValue(
+      program,
+      sourceFile,
+      ConstExprLowering.lower(expr),
     );
   }
 

@@ -17,7 +17,11 @@ type TOperandForm =
       /** A minus applied to the literal itself, `-5` (not `-(5 + a)`) */
       readonly negated: boolean;
     }
-  | { readonly kind: "cast" }
+  | {
+      readonly kind: "cast";
+      /** A literal cast with no modifier of its own, `(u8)1` (ADR-044) */
+      readonly ofLiteral: boolean;
+    }
   /** One bit of a scalar, `x[3]` */
   | { readonly kind: "bitIndex" }
   /** A bit range of a scalar, `x[0, 8]`; the width when it folds */

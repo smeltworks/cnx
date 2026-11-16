@@ -12,6 +12,8 @@ interface IExecFailure {
   stderr: string | undefined;
   /** The child's exit code, when it ran and exited. */
   status: number | undefined;
+  /** The signal that killed the child (`SIGFPE`), when one did. */
+  signal: string | undefined;
 }
 
 export default IExecFailure;

@@ -15,6 +15,11 @@
    the check: cnx_clamp_add_u8(0, 256) must saturate to 255, but (uint8_t)256 is 0, so a
    uint8_t parameter would return 0 -- the opposite of saturation. */
 
+static inline uint64_t cnx_clamp_mul_u64(uint64_t a, uint64_t b) {
+    if (b != 0 && a > UINT64_MAX / b) return UINT64_MAX;
+    return (uint64_t)(a * (uint64_t)b);
+}
+
 static inline uint64_t cnx_clamp_sub_u64(uint64_t a, uint64_t b) {
     if (b > (uint64_t)a) return 0;
     return (uint64_t)(a - (uint64_t)b);
@@ -39,7 +44,7 @@ uint64_t divideSmall(const uint64_t x) {
     const uint64_t E = cnx_clamp_sub_u64(SMALL, 9007199254740990ULL);
     uint8_t one[1] = {0U};
     one[0] = 1U;
-    return x / E * one[0U];
+    return cnx_clamp_mul_u64(x / E, one[0U]);
 }
 
 int main(void) {

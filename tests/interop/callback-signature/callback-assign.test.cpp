@@ -7,18 +7,36 @@
 
 #include "callback-assign.test.hpp"
 
+#include "callback_types.h"
+
 // test-execution
 // Test: Assigning cnx function to C callback typedef
 // Verifies signature compatibility in both C and C++ modes
-#include "callback_types.h"
+// The header's `int` fields make the sum's overflow helper the target's
+// `int` width (ADR-044, #2409), so the output is pinned to one target
 
 #include <stdint.h>
+
+// ADR-044: Overflow helper functions
+#include <limits.h>
+
+/* ADR-044 / Issue #94: the second parameter is the WIDER type, not the value type.
+   Narrowing it first would let an out-of-range operand truncate INTO range and defeat
+   the check: cnx_clamp_add_u8(0, 256) must saturate to 255, but (uint8_t)256 is 0, so a
+   uint8_t parameter would return 0 -- the opposite of saturation. */
+
+static inline int32_t cnx_clamp_add_i32(int32_t a, int64_t b) {
+    int64_t result = (int64_t)a + b;
+    if (result > INT32_MAX) return INT32_MAX;
+    if (result < INT32_MIN) return INT32_MIN;
+    return (int32_t)result;
+}
 
 int32_t handler_sum = 0;
 
 // cnx function that should be assignable to PointCallback
 void my_point_handler(const Point p) {
-    handler_sum = p.x + p.y;
+    handler_sum = cnx_clamp_add_i32(p.x, p.y);
 }
 
 int main(void) {

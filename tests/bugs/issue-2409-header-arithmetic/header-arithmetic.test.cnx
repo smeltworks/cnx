@@ -1,0 +1,149 @@
+// test-execution
+// test-adr: 044
+// #2409: an operator written in cnx is cnx code even when every operand is
+// a C header value. A C value has no `clamp` or `wrap` of its own, so
+// ADR-044's default decides it: `foreign_max() + foreign_one()` saturates to
+// INT32_MAX (and panics under `--debug`). `safe_div` and `safe_mod` over the
+// same operands divide through ADR-044's clamp helper. What stays C is the
+// header functions' own bodies.
+#include "header_values.h"
+
+i32 headerQuotient() {
+    return foreign_seven() / foreign_two();
+}
+
+i32 headerSum() {
+    return foreign_seven() + foreign_two();
+}
+
+i32 headerOverflowSum() {
+    return foreign_max() + foreign_one();
+}
+
+i32 headerUnderflowDifference() {
+    return foreign_min() - foreign_one();
+}
+
+i32 headerOverflowProduct() {
+    return foreign_max() * foreign_two();
+}
+
+i32 headerMinimumQuotient() {
+    return foreign_min() / foreign_minus_one();
+}
+
+i32 headerMinimumRemainder() {
+    return foreign_min() % foreign_minus_one();
+}
+
+i32 headerNegatedMinimum() {
+    return -foreign_min();
+}
+
+i32 headerElementQuotient() {
+    return foreign_values[0] / foreign_values[1];
+}
+
+u32 main() {
+    // Arithmetic in range is the exact answer
+    i32 q <- headerQuotient();
+    if (q != 3) {
+        return 1;
+    }
+    i32 s <- headerSum();
+    if (s != 9) {
+        return 2;
+    }
+
+    // Overflow saturates, as for any cnx operator (ADR-044's default)
+    i32 over <- headerOverflowSum();
+    if (over != 2147483647) {
+        return 3;
+    }
+    i32 under <- headerUnderflowDifference();
+    if (under != -2147483648) {
+        return 4;
+    }
+    i32 product <- headerOverflowProduct();
+    if (product != 2147483647) {
+        return 5;
+    }
+    i32 minimumQuotient <- headerMinimumQuotient();
+    if (minimumQuotient != 2147483647) {
+        return 6;
+    }
+    i32 minimumRemainder <- headerMinimumRemainder();
+    if (minimumRemainder != 0) {
+        return 7;
+    }
+    i32 negated <- headerNegatedMinimum();
+    if (negated != 2147483647) {
+        return 8;
+    }
+
+    // safe_div and safe_mod over header values go through the clamp helper
+    mut i32 sq <- 0;
+    bool divFailed <- safe_div(sq, foreign_seven(), foreign_two(), 99);
+    if (divFailed != false) {
+        return 9;
+    }
+    if (sq != 3) {
+        return 10;
+    }
+    mut i32 sr <- 0;
+    bool modFailed <- safe_mod(sr, foreign_seven(), foreign_two(), 99);
+    if (modFailed != false) {
+        return 11;
+    }
+    if (sr != 1) {
+        return 12;
+    }
+    mut i32 sz <- 0;
+    bool zeroFailed <- safe_div(sz, foreign_seven(), foreign_zero(), 99);
+    if (zeroFailed != true) {
+        return 13;
+    }
+    if (sz != 99) {
+        return 14;
+    }
+    mut i32 sm <- 0;
+    bool minimumFailed <- safe_div(sm, foreign_min(), foreign_minus_one(), 99);
+    if (minimumFailed != false) {
+        return 15;
+    }
+    if (sm != 2147483647) {
+        return 16;
+    }
+    mut i32 smr <- 7;
+    bool minimumModFailed <- safe_mod(smr, foreign_min(), foreign_minus_one(), 99);
+    if (minimumModFailed != false) {
+        return 17;
+    }
+    if (smr != 0) {
+        return 18;
+    }
+
+    // A header array's element is a C value, and clamps the same way
+    i32 elementQuotient <- headerElementQuotient();
+    if (elementQuotient != 2147483647) {
+        return 21;
+    }
+
+    // A literal-only safe_div is cnx code too, and takes the default
+    mut i32 sl <- 0;
+    bool literalFailed <- safe_div(sl, -10, 2, 99);
+    if (literalFailed != false) {
+        return 19;
+    }
+    if (sl != -5) {
+        return 20;
+    }
+
+    // A literal cast counts no more than its literal: `wrap` still wraps
+    mut wrap u8 wrapping <- 255;
+    wrapping <- wrapping + (u8)1;
+    if (wrapping != 0) {
+        return 22;
+    }
+    return 0;
+}

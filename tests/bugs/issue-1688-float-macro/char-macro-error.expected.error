@@ -1,4 +1,4 @@
 12:19 error[E0810]: Binary operator combines operands of different essential type categories (unsigned and character)
        help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Convert one operand explicitly, e.g. with a cast (ADR-024).
 15:16 error[E0811]: Binary operator combines an integer operand and a header macro whose type cnx cannot read
-       help: ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; this operator would hand it to an integer clamp helper untyped. Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.
+       help: ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; this operator would hand it to an overflow helper untyped. Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.

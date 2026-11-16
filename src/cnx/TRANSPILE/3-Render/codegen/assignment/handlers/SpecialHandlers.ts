@@ -3,7 +3,7 @@
  *
  * Handles special compound assignment operations:
  * - ATOMIC_RMW: atomic counter +<- 1
- * - OVERFLOW_CLAMP: clamp u8 saturated +<- 200
+ * - OVERFLOW_HELPER: clamp u8 saturated +<- 200, wrap i32 q /<- d
  */
 import AssignmentKind from "../../../../../types/AssignmentKind";
 import IAssignmentContext from "../../../../2-Plan/types/IAssignmentContext";
@@ -24,6 +24,11 @@ function handleAtomicRMW(ctx: IAssignmentContext): string {
   const atomic = ctx.atomic;
   invariant(atomic !== null, "2.2 planned every atomic 2.3 writes");
   const target = ctx.renderTarget();
+  // #1790 review: ADR-044's rule firing inside the read-modify-write, as
+  // handleOverflowHelper records it for the plain compound
+  if (AssignmentClassifier.compoundOverflow(ctx) !== null) {
+    AdrProvenance.record("044", ctx.targetLine);
+  }
 
   return ctx.state.requireGenerator().generateAtomicRMW(
     target,
@@ -31,22 +36,25 @@ function handleAtomicRMW(ctx: IAssignmentContext): string {
     ctx.generatedValue,
     // #1179: the value 2.2 found atomic, however the target spells it
     atomic,
-    AssignmentClassifier.compoundClamp(ctx)?.operation ?? null,
+    AssignmentClassifier.compoundOverflow(ctx)?.name ?? null,
   );
 }
 
 const HOISTED_CLAMP_ANNOTATION =
-  "/* ADR-044 / Issue #1887: target reached once through a temp (its subscript has a side effect, and the clamp reads the element as well as writing it). */";
+  "/* ADR-044 / Issue #1887: target reached once through a temp (its subscript has a side effect, and the overflow helper reads the element as well as writing it). */";
 
 /**
  * Handle overflow-clamped compound assignment: clamp u8 saturated +<- 200
  *
- * Generates calls to cnx_clamp_add_u8, cnx_clamp_sub_u8, etc. Classified only
- * when `AssignmentClassifier.compoundClamp` names a helper.
+ * Generates calls to cnx_clamp_add_u8, cnx_wrap_div_i32, etc. Classified only
+ * when `AssignmentClassifier.compoundOverflow` names a helper.
  */
-function handleOverflowClamp(ctx: IAssignmentContext): string {
-  const clamp = AssignmentClassifier.compoundClamp(ctx);
-  invariant(clamp !== null, "OVERFLOW_CLAMP is classified only with a helper");
+function handleOverflowHelper(ctx: IAssignmentContext): string {
+  const overflow = AssignmentClassifier.compoundOverflow(ctx);
+  invariant(
+    overflow !== null,
+    "OVERFLOW_HELPER is classified only with a helper",
+  );
   const target = ctx.renderTarget();
 
   // #1241: ADR-044's rule firing on the COMPOUND form. The expression form
@@ -54,7 +62,7 @@ function handleOverflowClamp(ctx: IAssignmentContext): string {
   // which reaches a different decision and would otherwise leave every
   // compound-only fixture without a derivable context.
   AdrProvenance.record("044", ctx.targetLine);
-  const helper = `cnx_clamp_${clamp.operation}_${clamp.cnxType}`;
+  const helper = overflow.name;
   if (!ctx.targetIndexHasSideEffect) {
     return `${target} = ${helper}(${target}, ${ctx.generatedValue});`;
   }
@@ -62,7 +70,7 @@ function handleOverflowClamp(ctx: IAssignmentContext): string {
   // #1887: `arr[next()] +<- 1` calls next() once, as `+=` did. The element is
   // reached through its address; `volatile` because it may address a volatile
   // element, and adding a qualifier to a pointer is always valid C.
-  const cType = TYPE_MAP[clamp.cnxType] ?? clamp.cnxType;
+  const cType = TYPE_MAP[overflow.cnxType] ?? overflow.cnxType;
   const element = ctx.state.getNextTempVarName();
   return `${HOISTED_CLAMP_ANNOTATION}\n{ volatile ${cType}* ${element} = &${target}; *${element} = ${helper}(*${element}, ${ctx.generatedValue}); }`;
 }
@@ -72,7 +80,7 @@ function handleOverflowClamp(ctx: IAssignmentContext): string {
  */
 const specialHandlers: ReadonlyArray<[AssignmentKind, TAssignmentHandler]> = [
   [AssignmentKind.ATOMIC_RMW, handleAtomicRMW],
-  [AssignmentKind.OVERFLOW_CLAMP, handleOverflowClamp],
+  [AssignmentKind.OVERFLOW_HELPER, handleOverflowHelper],
 ];
 
 export default specialHandlers;

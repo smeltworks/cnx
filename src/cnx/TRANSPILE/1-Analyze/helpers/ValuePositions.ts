@@ -5,6 +5,7 @@ import type TMemberDeclaration from "../../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../../types/syntax/TExpression";
 import type TStatement from "../../../types/syntax/TStatement";
 import OperandTyper from "../../../utils/OperandTyper";
+import SafeDivision from "../../../utils/SafeDivision";
 import StatementNodes from "../../../utils/StatementNodes";
 import TypeResolver from "../../../utils/TypeResolver";
 import FunctionReference from "./FunctionReference";
@@ -250,6 +251,13 @@ class ValuePositionWalk {
     callAt: number,
     index: number,
   ): IValuePosition {
+    const safeDivision = SafeDivision.callOf(chain);
+    if (safeDivision !== null) {
+      const output = SafeDivision.landsInOutput(index)
+        ? SafeDivision.outputTypeOf(safeDivision.args, this.context)
+        : null;
+      return output === null ? NO_TYPE : { ...NO_TYPE, typeText: output };
+    }
     const callee = FunctionReference.ofCall(
       chain,
       OperandTyper.scopePathAt(chain.span, this.context),

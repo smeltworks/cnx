@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-998 fixture(s) assert a diagnostic; 983 carry a code.
+1001 fixture(s) assert a diagnostic; 986 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -225,6 +225,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-024/literal-imported-transitive-error.test.cnx                                                  | E0868                             |
 | tests/adr-024/literal-negative-unsigned-error.test.cnx                                                    | E0868                             |
 | tests/adr-024/literal-overflow-error.test.cnx                                                             | E0868                             |
+| tests/adr-024/macro-literal-range-error.test.cnx                                                          | E0868                             |
 | tests/adr-024/narrowing-assign-error.test.cnx                                                             | E0869                             |
 | tests/adr-024/narrowing-cast-error.test.cnx                                                               | E0869                             |
 | tests/adr-024/sign-assign-error.test.cnx                                                                  | E0869                             |
@@ -805,6 +806,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1728-leading-zero/leading-zero.test.cnx                                                  | E0912                             |
 | tests/bugs/issue-1735-static-initializer-arithmetic/static-not-constant.test.cnx                          | E0909                             |
 | tests/bugs/issue-1735-static-initializer-arithmetic/static-overflow-arithmetic.test.cnx                   | E0910                             |
+| tests/bugs/issue-1735-static-initializer-arithmetic/static-overflow-macro.test.cnx                        | E0868, E0910                      |
 | tests/bugs/issue-1735-static-initializer-arithmetic/static-overflow.test.cnx                              | E0910                             |
 | tests/bugs/issue-1740-reopened-scope-this-call/this-call-undeclared.test.cnx                              | E0422                             |
 | tests/bugs/issue-1742-char-count-u32/char-count-narrowing-error.test.cnx                                  | E0869                             |
@@ -827,6 +829,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1782-whole-array-assignment/for-clause-error.test.cnx                                    | E0917                             |
 | tests/bugs/issue-1782-whole-array-assignment/non-list-error.test.cnx                                      | E0866                             |
 | tests/bugs/issue-1782-whole-array-assignment/transitive-error.test.cnx                                    | E0866                             |
+| tests/bugs/issue-1790-signed-division-macro/signed-division-macro-error.test.cnx                          | E0811, E0812                      |
 | tests/bugs/issue-1800-float-to-integer/for-header-rejected.test.cnx                                       | E0868, E0869, E0891               |
 | tests/bugs/issue-1800-float-to-integer/implicit-rejected.test.cnx                                         | E0891                             |
 | tests/bugs/issue-1800-float-to-integer/positions-rejected.test.cnx                                        | E0891                             |

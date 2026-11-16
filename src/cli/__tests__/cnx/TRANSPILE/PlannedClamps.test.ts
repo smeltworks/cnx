@@ -27,11 +27,29 @@ describe("2.2 plans every clamp helper 2.3 calls", () => {
     expect(code).toContain("static inline uint8_t cnx_clamp_sub_u8(");
   });
 
-  it("a chain with an operator that has no helper stays plain C", async () => {
+  it("an operator with no helper stays plain C where it stands (#1790)", async () => {
     const code = await generate(
       "clamp u8 a <- 1;\nclamp u8 b <- 2;\nmut clamp u8 r;\nvoid f() { r <- a * b / a; }\n",
     );
-    expect(code).not.toContain("cnx_clamp_");
+    expect(code).toContain("r = cnx_clamp_mul_u8(a, b) / a;");
+    expect(code).not.toContain("cnx_clamp_div_");
+  });
+
+  it("a signed division calls its helper under either modifier (#1790)", async () => {
+    const code = await generate(
+      "i32 q(i32 n, i32 d) { return n / d; }\ni32 w(i32 n, i32 d) { wrap i32 wn <- n; wrap i32 wd <- d; return wn % wd; }\n",
+    );
+    expect(code).toContain("return cnx_clamp_div_i32(n, d);");
+    expect(code).toContain("return cnx_wrap_mod_i32(wn, wd);");
+    expect(code).toContain("static inline int32_t cnx_clamp_div_i32(");
+    expect(code).toContain("static inline int32_t cnx_wrap_mod_i32(");
+  });
+
+  it("a compound division of a wrap target calls its helper (#1790)", async () => {
+    const code = await generate(
+      "mut wrap i32 c <- 0;\nvoid f(i32 d) { c /<- d; }\n",
+    );
+    expect(code).toContain("c = cnx_wrap_div_i32(c, d);");
   });
 
   it("a compound write to a clamp target calls its helper", async () => {
@@ -55,5 +73,6 @@ describe("2.2 plans every clamp helper 2.3 calls", () => {
       "mut wrap u8 c <- 0;\nmut wrap u8 d <- 0;\nvoid f() { c +<- 1; d <- c + d; }\n",
     );
     expect(code).not.toContain("cnx_clamp_");
+    expect(code).not.toContain("cnx_wrap_");
   });
 });

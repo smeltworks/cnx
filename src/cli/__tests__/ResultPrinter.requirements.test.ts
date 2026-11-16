@@ -123,7 +123,7 @@ describe("ResultPrinter toolchain requirements", () => {
       { key: "overflow-panic-hosted-libc", sites: [] },
     ]);
     expect(output).toContain(
-      "from transpiling with --debug and using a clamp type",
+      "from transpiling with --debug and using clamp or wrap integer arithmetic",
     );
   });
 

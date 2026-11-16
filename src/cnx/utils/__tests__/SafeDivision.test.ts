@@ -34,6 +34,17 @@ describe("SafeDivision", () => {
     expect(SafeDivision.outputName(call!.args)).toBe("r");
   });
 
+  // #2424: the numerator and default land in the output's type; the
+  // divisor is a `/` divisor (ADR-044) and the output is written through
+  it.each([
+    [0, false],
+    [1, true],
+    [2, false],
+    [3, true],
+  ])("argument %i lands in the output's type: %s", (index, lands) => {
+    expect(SafeDivision.landsInOutput(index)).toBe(lands);
+  });
+
   it("keeps a wrong argument count a safe-division call, for E0884 to report", () => {
     expect(SafeDivision.callOf(lowered("safe_div(r, a)"))?.args).toHaveLength(
       2,

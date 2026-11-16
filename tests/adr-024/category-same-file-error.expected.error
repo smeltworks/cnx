@@ -1,24 +1,24 @@
 19:27 error[E0810]: Binary operator combines operands of different essential type categories (integer and floating)
        help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Convert the integer operand with an explicit cast, e.g. (f32)value (ADR-024).
 20:25 error[E0811]: Binary operator combines an integer operand and a header macro whose type cnx cannot read
-       help: ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; this operator would hand it to an integer clamp helper untyped. Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.
+       help: ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; this operator would hand it to an overflow helper untyped. Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.
 21:30 error[E0812]: Binary operator combines an integer operand and a header macro whose type cnx cannot read
        help: ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; C's usual arithmetic conversions decide this result from the type it really has, which can change a comparison, a bit operation or a quotient (an unsigned 3 < -1 is true). Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.
 25:25 error[E0810]: Binary operator combines operands of different essential type categories (integer and floating)
        help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Convert the integer operand with an explicit cast, e.g. (f32)value (ADR-024).
 26:23 error[E0811]: Binary operator combines an integer operand and a header macro whose type cnx cannot read
-       help: ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; this operator would hand it to an integer clamp helper untyped. Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.
+       help: ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; this operator would hand it to an overflow helper untyped. Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.
 27:28 error[E0812]: Binary operator combines an integer operand and a header macro whose type cnx cannot read
        help: ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; C's usual arithmetic conversions decide this result from the type it really has, which can change a comparison, a bit operation or a quotient (an unsigned 3 < -1 is true). Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.
 35:32 error[E0810]: Binary operator combines operands of different essential type categories (integer and floating)
        help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Convert the integer operand with an explicit cast, e.g. (f32)value (ADR-024).
 36:30 error[E0811]: Binary operator combines an integer operand and a header macro whose type cnx cannot read
-       help: ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; this operator would hand it to an integer clamp helper untyped. Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.
+       help: ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; this operator would hand it to an overflow helper untyped. Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.
 37:35 error[E0812]: Binary operator combines an integer operand and a header macro whose type cnx cannot read
        help: ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; C's usual arithmetic conversions decide this result from the type it really has, which can change a comparison, a bit operation or a quotient (an unsigned 3 < -1 is true). Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.
 41:30 error[E0810]: Binary operator combines operands of different essential type categories (integer and floating)
        help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Convert the integer operand with an explicit cast, e.g. (f32)value (ADR-024).
 42:28 error[E0811]: Binary operator combines an integer operand and a header macro whose type cnx cannot read
-       help: ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; this operator would hand it to an integer clamp helper untyped. Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.
+       help: ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; this operator would hand it to an overflow helper untyped. Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.
 43:33 error[E0812]: Binary operator combines an integer operand and a header macro whose type cnx cannot read
        help: ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; C's usual arithmetic conversions decide this result from the type it really has, which can change a comparison, a bit operation or a quotient (an unsigned 3 < -1 is true). Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.

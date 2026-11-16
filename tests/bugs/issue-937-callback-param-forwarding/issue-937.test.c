@@ -14,11 +14,26 @@
 
 #include <stdint.h>
 
+// ADR-044: Overflow helper functions
+#include <limits.h>
+
+/* ADR-044 / Issue #94: the second parameter is the WIDER type, not the value type.
+   Narrowing it first would let an out-of-range operand truncate INTO range and defeat
+   the check: cnx_clamp_add_u8(0, 256) must saturate to 255, but (uint8_t)256 is 0, so a
+   uint8_t parameter would return 0 -- the opposite of saturation. */
+
+static inline int32_t cnx_clamp_add_i32(int32_t a, int64_t b) {
+    int64_t result = (int64_t)a + b;
+    if (result > INT32_MAX) return INT32_MAX;
+    if (result < INT32_MIN) return INT32_MIN;
+    return (int32_t)result;
+}
+
 /* Scope: Port */
 
 void Port__my_flush(widget_t* w, const rect_t* area, uint8_t* buf) {
-    const int32_t x2 = area->x2 + 1;
-    const int32_t y2 = area->y2 + 1;
+    const int32_t x2 = cnx_clamp_add_i32(area->x2, 1);
+    const int32_t y2 = cnx_clamp_add_i32(area->y2, 1);
     draw_bitmap(0, area->x1, area->y1, x2, y2, buf);
     flush_ready(w);
 }

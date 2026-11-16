@@ -1254,6 +1254,16 @@ cell is declared by the ADR that owns it.
 
 - `bugs/issue-1669-enum-member-values/value-overflow.test.cnx`
 
+## ADR-044 E0868
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | ok        | -      | -          | n/a         | n/a        |
+| top-level function | -         | -      | -          | n/a         | n/a        |
+| scope member       | -         | -      | -          | n/a         | n/a        |
+| scope method       | -         | -      | -          | n/a         | n/a        |
+| for header         | -         | -      | -          | n/a         | n/a        |
+
 ## ADR-044 E0909
 
 | Context            | same file | direct | transitive | from 1 away | thru chain |
@@ -1959,13 +1969,13 @@ ADR declares a position table.
 
 | Position                  | Severity | Fixtures |
 | ------------------------- | -------- | -------- |
-| declaration initializer   | error    | ok (11)  |
+| declaration initializer   | error    | ok (12)  |
 | assignment                | error    | ok (3)   |
 | array element assignment  | error    | ok (1)   |
 | struct field assignment   | error    | ok (1)   |
-| compound assignment       | error    | ok (2)   |
-| return statement          | error    | ok (1)   |
-| call argument             | error    | ok (2)   |
+| compound assignment       | error    | ok (3)   |
+| return statement          | error    | ok (2)   |
+| call argument             | error    | ok (3)   |
 | array element initializer | error    | ok (1)   |
 | struct field initializer  | error    | ok (2)   |
 | ternary branch            | error    | ok (1)   |

@@ -23,6 +23,12 @@ static inline int32_t cnx_clamp_add_i32(int32_t a, int64_t b) {
     return (int32_t)result;
 }
 
+static inline int32_t cnx_clamp_neg_i32(int32_t a) {
+    /* ADR-044 / Issue #2418: -MIN is past the type. C leaves it undefined for an int, and narrows it back to MIN for a narrower type. */
+    if (a == INT32_MIN) return INT32_MAX;
+    return (int32_t)(-a);
+}
+
 // test-execution
 // Tests: i32 array parameter assignment
 // Coverage: Signed integer array parameters with negative values
@@ -38,7 +44,7 @@ int32_t readI32(const int32_t arr[4], const uint32_t index) {
 
 // Negate array element
 void negateI32(int32_t arr[4], const uint32_t index) {
-    arr[index] = -arr[index];
+    arr[index] = cnx_clamp_neg_i32(arr[index]);
 }
 
 // Add to array element

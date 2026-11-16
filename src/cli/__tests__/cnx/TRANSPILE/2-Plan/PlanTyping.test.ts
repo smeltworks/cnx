@@ -9,6 +9,7 @@ import { CnxListener } from "../../../../../cnx/PARSE/2-Parse/grammar/CnxListene
 import * as Parser from "../../../../../cnx/PARSE/2-Parse/grammar/CnxParser";
 import OperandTyper from "../../../../../cnx/utils/OperandTyper";
 import PlanTyping from "../../../../../cnx/TRANSPILE/2-Plan/PlanTyping";
+import OverflowBehaviorUtils from "../../../../../cnx/utils/OverflowBehaviorUtils";
 import testAnalysisContextFor from "../1-Analyze/testAnalysisContextFor";
 
 /** The initializer of `r`, and the context that types it */
@@ -32,7 +33,7 @@ function initializerOf(source: string) {
 /** ADR-044's behavior for the initializer of `r` */
 function overflowOf(source: string): string | null {
   const { expression, context } = initializerOf(source);
-  return PlanTyping.overflowOf(
+  return OverflowBehaviorUtils.ofLeaves(
     OperandTyper.valueLeaves(
       SyntaxLowering.expressionNode(expression),
       context,
@@ -103,7 +104,7 @@ describe("OperandTyper.directTypeName", () => {
   });
 });
 
-describe("PlanTyping.overflowOf (ADR-044)", () => {
+describe("OverflowBehaviorUtils.ofLeaves (ADR-044)", () => {
   const globals = "wrap u32 w <- 1;\nclamp u32 c <- 1;\nu32[2] arr;\n";
 
   it.each([
@@ -116,8 +117,33 @@ describe("PlanTyping.overflowOf (ADR-044)", () => {
     ],
     ["an element counts by its array (#1887)", "u32 r <- arr[0] + 1;", "clamp"],
     ["a literal is not counted", "u32 r <- 1 + 2;", null],
+    ["a literal cast is not counted", "u32 r <- w + (u32)1;", "wrap"],
+    ["a cast's own modifier counts", "u32 r <- w + (clamp u32)1;", "clamp"],
   ])("%s", (_why, body, expected) => {
     expect(overflowOf(`${globals}void main() {\n${body}\n}`)).toBe(expected);
+  });
+
+  it("counts a C header's integer value, which clamps (#2409)", () => {
+    const foreign = {
+      typeName: "i32",
+      cType: null,
+      dimensions: [],
+      category: "signed",
+      bitWidth: 32,
+      stringCapacity: null,
+      enumTypeName: null,
+      bitmapTypeName: null,
+      overflow: null,
+      hasSideEffect: true,
+      form: { kind: "foreign", indeterminate: false },
+      binding: null,
+    } as const;
+    expect(OverflowBehaviorUtils.ofLeaves([foreign, foreign])).toBe("clamp");
+    expect(
+      OverflowBehaviorUtils.ofLeaves([
+        { ...foreign, category: "floating", typeName: "f64", bitWidth: null },
+      ]),
+    ).toBeNull();
   });
 
   it("counts a parameter by its declaration, which clamps (#1681)", () => {

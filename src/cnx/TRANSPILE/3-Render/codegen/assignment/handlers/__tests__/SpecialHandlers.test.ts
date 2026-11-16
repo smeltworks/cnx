@@ -78,11 +78,11 @@ function createMockContext(
   } as IAssignmentContext;
   // #1668 (C7): what the target writes, as the binder would bind it
   const target = overrides.target ?? HandlerTestUtils.targetOf(state, ctx);
-  const plannedClamp =
-    overrides.plannedClamp === undefined
+  const plannedOverflow =
+    overrides.plannedOverflow === undefined
       ? HandlerTestUtils.plannedClampOf(ctx, target)
-      : overrides.plannedClamp;
-  return { ...ctx, target, plannedClamp };
+      : overrides.plannedOverflow;
+  return { ...ctx, target, plannedOverflow };
 }
 
 let state = new TranspileState();
@@ -99,7 +99,7 @@ describe("SpecialHandlers", () => {
       const kinds = specialHandlers.map(([kind]) => kind);
 
       expect(kinds).toContain(AssignmentKind.ATOMIC_RMW);
-      expect(kinds).toContain(AssignmentKind.OVERFLOW_CLAMP);
+      expect(kinds).toContain(AssignmentKind.OVERFLOW_HELPER);
     });
 
     it("exports exactly 2 handlers", () => {
@@ -257,10 +257,10 @@ describe("SpecialHandlers", () => {
     });
   });
 
-  describe("handleOverflowClamp (OVERFLOW_CLAMP)", () => {
+  describe("handleOverflowHelper (OVERFLOW_HELPER)", () => {
     const getHandler = () =>
       specialHandlers.find(
-        ([kind]) => kind === AssignmentKind.OVERFLOW_CLAMP,
+        ([kind]) => kind === AssignmentKind.OVERFLOW_HELPER,
       )?.[1];
 
     it("generates clamp add helper for u8", () => {
@@ -334,7 +334,7 @@ describe("SpecialHandlers", () => {
         generatedValue: "1000.0",
       });
 
-      expect(AssignmentClassifier.compoundClamp(ctx)).toBeNull();
+      expect(AssignmentClassifier.compoundOverflow(ctx)).toBeNull();
     });
 
     it("is not a clamp for an f64 target", () => {
@@ -352,7 +352,7 @@ describe("SpecialHandlers", () => {
         generatedValue: "0.5",
       });
 
-      expect(AssignmentClassifier.compoundClamp(ctx)).toBeNull();
+      expect(AssignmentClassifier.compoundOverflow(ctx)).toBeNull();
     });
 
     it("is not a clamp for an operator with no helper", () => {
@@ -370,7 +370,7 @@ describe("SpecialHandlers", () => {
         generatedValue: "2",
       });
 
-      expect(AssignmentClassifier.compoundClamp(ctx)).toBeNull();
+      expect(AssignmentClassifier.compoundOverflow(ctx)).toBeNull();
     });
 
     it("handles this.member with clamp", () => {
@@ -433,7 +433,7 @@ describe("SpecialHandlers", () => {
         valueHasFloatingOperand: () => true,
       });
 
-      expect(AssignmentClassifier.compoundClamp(ctx)).toBeNull();
+      expect(AssignmentClassifier.compoundOverflow(ctx)).toBeNull();
     });
   });
 
@@ -442,7 +442,7 @@ describe("SpecialHandlers", () => {
       specialHandlers.find(([kind]) => kind === AssignmentKind.ATOMIC_RMW)?.[1];
 
     it.each([
-      ["an integer value", false, "add"],
+      ["an integer value", false, "cnx_clamp_add_u32"],
       ["a floating value", true, null],
     ])(
       "passes the classifier's clamp helper for %s",

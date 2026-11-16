@@ -17,6 +17,8 @@
 
 import type TExpression from "../types/syntax/TExpression";
 import ExpressionShape from "./ExpressionShape";
+import OperandTyper from "./OperandTyper";
+import type ITypingContext from "../types/ITypingContext";
 
 type TSafeDivisionName = "safe_div" | "safe_mod";
 
@@ -51,6 +53,26 @@ class SafeDivision {
   /** The helper family a call is written through: `cnx_safe_div_*` or `cnx_safe_mod_*` */
   static operationOf(name: TSafeDivisionName): "div" | "mod" {
     return OPERATIONS[name];
+  }
+
+  /**
+   * The type a call divides in, its output's: the helper is written in it
+   * (2.2), and the numerator and default land in it as a call argument
+   * lands in its parameter (ADR-024, #2424). The divisor does not land:
+   * it is a `/` divisor (ADR-044) and the helper takes it wider (#2415).
+   */
+  static outputTypeOf(
+    args: readonly TExpression[],
+    ctx: ITypingContext,
+  ): string | null {
+    const output = args[0];
+    if (output === undefined) return null;
+    return OperandTyper.typeOf(output, ctx)?.typeName ?? null;
+  }
+
+  /** Whether argument `index` lands in the output's type: numerator, default */
+  static landsInOutput(index: number): boolean {
+    return index === 1 || index === 3;
   }
 
   static outputName(args: readonly TExpression[]): string | null {
