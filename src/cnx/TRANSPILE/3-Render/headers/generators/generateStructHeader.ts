@@ -11,9 +11,18 @@ import IHeaderTypeInput from "./IHeaderTypeInput";
 /**
  * Resolve the C type for a struct field, checking for callback types first.
  */
-function resolveFieldCType(fieldType: string, input: IHeaderTypeInput): string {
-  // ADR-029: Check if field type is a callback type and use typedef name
-  const callbackInfo = input.callbackTypes?.get(fieldType);
+function resolveFieldCType(
+  structName: string,
+  fieldName: string,
+  fieldType: string,
+  input: IHeaderTypeInput,
+): string {
+  // ADR-029: a callback field is written as its typedef. #1984: whether it is
+  // one is its settled type's answer; the map only spells the typedef.
+  const callbackInfo =
+    input.isCallbackField?.(structName, fieldName) === true
+      ? input.callbackTypes?.get(fieldType)
+      : undefined;
   if (callbackInfo) {
     return callbackInfo.typedefName;
   }
@@ -85,7 +94,7 @@ function generateStructHeader(name: string, input: IHeaderTypeInput): string {
   for (const [fieldName, fieldType] of fields) {
     // #1744: a field of an opaque C type holds the handle
     const cType = DeclaredPointer.spell(
-      resolveFieldCType(fieldType, input),
+      resolveFieldCType(name, fieldName, fieldType, input),
       handles?.has(fieldName) ?? false,
     );
     const dims = dimensions?.get(fieldName);

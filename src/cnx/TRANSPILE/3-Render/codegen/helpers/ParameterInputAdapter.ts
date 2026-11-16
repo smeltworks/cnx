@@ -81,7 +81,10 @@ class ParameterInputAdapter {
     const { name, typeName, mappedType, isConst } = planned;
 
     // Check for callback type
-    const callbackInfo = deps.callbackTypes.get(typeName);
+    // #1984: the planned type's answer; the map only spells the typedef
+    const callbackInfo = planned.isCallback
+      ? deps.callbackTypes.get(typeName)
+      : undefined;
     if (callbackInfo) {
       // ADR-029 decided here: a parameter naming a function-as-type is written
       // as its `_fp` typedef. Recorded at the PARAMETER's position so a

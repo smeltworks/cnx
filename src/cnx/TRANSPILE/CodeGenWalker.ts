@@ -261,9 +261,7 @@ class CodeGenWalker {
     // reference one
     const callbackTypes = this.planner.planCallbackTypes();
     state.useCallbackTypes(callbackTypes);
-    state.useFunctionCatalog(
-      this.planner.functionCatalog(file.program, callbackTypes),
-    );
+    state.useFunctionCatalog(this.planner.functionCatalog(file.program));
     return this.planner.plan(file, options);
   }
 
@@ -1301,6 +1299,8 @@ class CodeGenWalker {
     const typing = this.planner.transpileState.typingContext();
     return this.host.renderStructDefault(
       resolved.name,
+      // #1984: 1.4's answer for this file, not a lookup among the functions
+      this.host.state.isCallbackType(resolved.name),
       written.map((size) =>
         size
           ? (this.planner.constantOf(size) ??
@@ -1408,6 +1408,8 @@ class CodeGenWalker {
 
   private renderDeclaredType(type: TTypeSyntax): string {
     const declared = this.renderType(type);
+    // #1984: whether it is one is the planned type's, from 1.4
+    if (!this.plannedType(type).isCallback) return declared;
     return this.host.getCallbackTypedefName(declared) ?? declared;
   }
 
@@ -2252,6 +2254,7 @@ class CodeGenWalker {
       kind: "regular",
       fullName,
       isPrivate,
+      isCallback: this.plannedType(decl.type).isCallback,
       isConst,
       isArray,
       isPointer: this.host.state.isDeclaredPointer(decl),
@@ -2808,6 +2811,7 @@ class CodeGenWalker {
       isConst: !param.mut,
       typeName: this.plannedParameter(param).typeName,
       mappedType: this.renderType(param.type),
+      isCallback: this.plannedType(param.type).isCallback,
       renderDimensions: arrayType
         ? () =>
             arrayType.dimensions.map((dimension) =>

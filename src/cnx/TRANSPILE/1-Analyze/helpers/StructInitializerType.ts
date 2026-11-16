@@ -121,7 +121,9 @@ class StructInitializerType {
       candidates.some(
         (c) =>
           DeclaredTypeFacts.isEnum(symbols, c) ||
-          symbols.functionReturnTypes.has(c),
+          // #1984: 1.4 settled it as a callback in this file; read, not
+          // decided again by looking the name up among the functions
+          context.program.isCallbackType(context.sourceFile, c),
       ) ||
       ForeignTypeFacts.isForeignType(
         typeName,

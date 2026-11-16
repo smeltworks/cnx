@@ -24,6 +24,7 @@ describe("TypeGenerationHelper", () => {
   function plan(overrides: Partial<IPlannedType> = {}): IPlannedType {
     return {
       named: null,
+      isCallback: false,
       isString: false,
       stringTypeText: undefined,
       primitiveName: null,

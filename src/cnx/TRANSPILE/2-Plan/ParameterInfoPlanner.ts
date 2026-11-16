@@ -34,7 +34,6 @@ class ParameterInfoPlanner {
     const typeInfo = ParameterInfoPlanner.resolveParameterTypeInfo(
       param.type,
       callbacks,
-      state,
     );
 
     // #1639: pointer or value, as the signature, the prototype and every
@@ -128,7 +127,6 @@ class ParameterInfoPlanner {
   static resolveParameterTypeInfo(
     type: IPlannedType,
     callbacks: IFunctionContextCallbacks,
-    state: TranspileState,
   ): IParameterTypeInfo {
     if (type.isString) {
       return {
@@ -165,7 +163,7 @@ class ParameterInfoPlanner {
     return {
       typeName,
       isStruct: callbacks.isKnownStruct(typeName),
-      isCallback: state.callbackTypes.has(typeName),
+      isCallback: type.isCallback,
       isString: false,
     };
   }

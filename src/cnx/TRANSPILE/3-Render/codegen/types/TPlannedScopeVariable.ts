@@ -33,6 +33,8 @@ type TPlannedScopeVariable =
       readonly kind: "regular";
       readonly fullName: string;
       readonly isPrivate: boolean;
+      /** #1984: 1.4 settled the member's type as a callback (ADR-029) */
+      readonly isCallback: boolean;
       readonly isConst: boolean;
       readonly isArray: boolean;
       /** #1668: the declaration's `DeclaredPointer` answer, which writes its `*` */

@@ -36,6 +36,7 @@
  * ahead of them -- and in C++ that shifts `getNextTempVarName` allocation
  * between initializers and bodies, which renames temps in the emitted C.
  */
+import SettledCallback from "../../../../../utils/SettledCallback";
 import IGeneratorInput from "../IGeneratorInput";
 import IGeneratorState from "../IGeneratorState";
 import IGeneratorOutput from "../IGeneratorOutput";
@@ -95,6 +96,9 @@ function renderTypeDefinitions(
     ...symbols,
     symbolTable: state.symbolTable,
     callbackTypes: state.callbackTypes,
+    isCallbackField: (structName, fieldName) =>
+      state.program !== null &&
+      SettledCallback.isField(state.program, structName, fieldName),
   };
 
   return [
@@ -144,7 +148,10 @@ function renderRegularVariable(
   // Issue #1200: a callback-typed scope member renders as its function-pointer
   // typedef. Without this the raw function name was emitted as the type, which
   // collides with the function of the same name.
-  const callbackTypedef = orchestrator.getCallbackTypedefName(type);
+  // #1984: whether it is one is the planned type's, from 1.4
+  const callbackTypedef = plan.isCallback
+    ? orchestrator.getCallbackTypedefName(type)
+    : null;
   if (callbackTypedef !== null) {
     type = callbackTypedef;
   }

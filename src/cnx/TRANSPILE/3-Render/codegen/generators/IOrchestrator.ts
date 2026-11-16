@@ -80,6 +80,7 @@ interface IOrchestrator extends IPlanQueries {
    */
   renderStructDefault(
     structName: string,
+    isCallback: boolean,
     counts: readonly (number | null)[],
   ): string | null;
 

@@ -12,6 +12,7 @@ import type ICallbackShapeFacts from "./types/ICallbackShapeFacts";
 import ParameterConst from "./ParameterConst";
 import TypeCheckUtils from "./TypeCheckUtils";
 import SymbolTypeResolver from "./TypeResolver";
+import SettledCallback from "./SettledCallback";
 
 /**
  * ADR-029 + ADR-006: what a cnx function's `_fp` typedef says -- its return
@@ -55,9 +56,6 @@ class CallbackParameterShape {
   }
 
   /** ADR-029: a function this file declares or includes is a type too (#1491) */
-  static isFunctionType(typeName: string, facts: ICallbackShapeFacts): boolean {
-    return facts.symbols.functionReturnTypes.has(typeName);
-  }
 
   static returnType(
     symbol: IFunctionSymbol,
@@ -77,11 +75,14 @@ class CallbackParameterShape {
     const byValueFacts = CallbackParameterShape.byValueFacts(facts);
     return symbol.parameters.map((param, index) => {
       const typeName = SymbolTypeResolver.getTypeName(param.type);
+      // #1984: 1.4 settled the parameter's type; a callback is read off it
+      const isCallback = SettledCallback.isType(param.type);
       // Spread, not re-listed: a field the shape gains reaches the typedef
       // (#1552 was a builder dropping one).
       const shape = CallbackParameterShape.shape(
         typeName,
         param.isArray,
+        isCallback,
         facts,
       );
       // #1290 review: the typedef names a parameter as its prototype does
@@ -92,11 +93,7 @@ class CallbackParameterShape {
       return {
         name: param.emittedName,
         ...shape,
-        isConst: ParameterConst.isWritten(
-          param.isConst,
-          typeName,
-          CallbackParameterShape.isFunctionType(typeName, facts),
-        ),
+        isConst: ParameterConst.isWritten(param.isConst, typeName, isCallback),
         isArray: param.isArray,
         // ADR-071 Q6: a `mut` scalar is a pointer, as in its prototype
         // #1639: from the declaration, as a call through the type passes it
@@ -120,7 +117,6 @@ class CallbackParameterShape {
   private static byValueFacts(facts: ICallbackShapeFacts): IByValueFacts {
     return {
       program: facts.program,
-      callbackTypes: facts.symbols.functionReturnTypes,
       isKnownStruct: (typeName) =>
         DeclaredTypeFacts.isStruct(facts.symbols, facts.symbolTable, typeName),
     };
@@ -129,6 +125,7 @@ class CallbackParameterShape {
   private static shape(
     typeName: string,
     isArray: boolean,
+    isCallback: boolean,
     facts: ICallbackShapeFacts,
   ): {
     type: string;
@@ -145,7 +142,7 @@ class CallbackParameterShape {
     );
 
     // ADR-029: a parameter whose type is itself a function-as-type.
-    if (CallbackParameterShape.isFunctionType(typeName, facts)) {
+    if (isCallback) {
       // Function pointers are already pointers.
       return {
         type: CallbackParameterShape.typedefName(typeName),

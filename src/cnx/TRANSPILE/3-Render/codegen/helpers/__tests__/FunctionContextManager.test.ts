@@ -48,6 +48,7 @@ function createMockCallbacks(): IFunctionContextCallbacks {
 function plannedType(overrides: Partial<IPlannedType> = {}): IPlannedType {
   return {
     named: null,
+    isCallback: false,
     isString: false,
     stringTypeText: undefined,
     primitiveName: null,
@@ -410,7 +411,6 @@ describe("FunctionContextManager", () => {
       const result = ParameterInfoPlanner.resolveParameterTypeInfo(
         plannedType({ primitiveName: "u32", text: "u32" }),
         createMockCallbacks(),
-        state,
       );
 
       expect(result.typeName).toBe("u32");
@@ -428,7 +428,6 @@ describe("FunctionContextManager", () => {
       const result = ParameterInfoPlanner.resolveParameterTypeInfo(
         plannedType({ named: named("bare", "Point"), text: "Point" }),
         callbacks,
-        state,
       );
 
       expect(result.typeName).toBe("Point");
@@ -457,7 +456,6 @@ describe("FunctionContextManager", () => {
       const result = ParameterInfoPlanner.resolveParameterTypeInfo(
         plannedType({ named: resolution, text: resolution.written }),
         createMockCallbacks(),
-        state,
       );
 
       expect(result.typeName).toBe(expected);
@@ -471,7 +469,6 @@ describe("FunctionContextManager", () => {
           text: "string<32>",
         }),
         createMockCallbacks(),
-        state,
       );
 
       // The capacity travels separately, through stringCapacities.
@@ -488,7 +485,6 @@ describe("FunctionContextManager", () => {
           text: "string<32>[5]",
         }),
         createMockCallbacks(),
-        state,
       );
 
       expect(result.typeName).toBe("string<32>");
@@ -499,7 +495,6 @@ describe("FunctionContextManager", () => {
       const result = ParameterInfoPlanner.resolveParameterTypeInfo(
         plannedType({ primitiveName: "u8", isArray: true, text: "u8[10]" }),
         createMockCallbacks(),
-        state,
       );
 
       expect(result.typeName).toBe("u8");
@@ -519,7 +514,6 @@ describe("FunctionContextManager", () => {
           text: "Point[5]",
         }),
         callbacks,
-        state,
       );
 
       expect(result.typeName).toBe("Point");
@@ -530,7 +524,6 @@ describe("FunctionContextManager", () => {
       const result = ParameterInfoPlanner.resolveParameterTypeInfo(
         plannedType({ text: "SomeUnknownType" }),
         createMockCallbacks(),
-        state,
       );
 
       expect(result.typeName).toBe("SomeUnknownType");

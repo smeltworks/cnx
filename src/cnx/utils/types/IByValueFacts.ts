@@ -4,7 +4,6 @@ import type IProgram from "../../types/IProgram";
 interface IByValueFacts {
   readonly program: IProgram | null;
   /** The callback types the reader has registered so far */
-  readonly callbackTypes: { has(typeName: string): boolean };
   isKnownStruct(typeName: string): boolean;
 }
 

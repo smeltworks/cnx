@@ -50,6 +50,8 @@ interface ISettledFiles {
   readonly visibility: IVisibilityInput;
   /** The run's target, which a header's length properties are folded for; null with none */
   readonly target: TRunTarget | null;
+  /** #1984: per file, the type names 1.4 settled as callbacks */
+  readonly callbackTypesByFile: ReadonlyMap<string, ReadonlySet<string>>;
 }
 
 export default ISettledFiles;

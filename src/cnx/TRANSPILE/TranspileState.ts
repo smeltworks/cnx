@@ -829,6 +829,12 @@ class TranspileState {
     };
   }
 
+  /** #1984: 1.4's answer -- did it settle `cName`, in this file, as a callback? */
+  isCallbackType(cName: string): boolean {
+    const bound = this.boundProgram();
+    return bound.program.isCallbackType(bound.sourcePath, cName);
+  }
+
   /** The program and the file a type binding reads from; set before any is read. */
   private boundProgram(): { program: IProgram; sourcePath: string } {
     invariant(

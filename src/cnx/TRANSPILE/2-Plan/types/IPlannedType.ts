@@ -27,6 +27,12 @@ interface IPlannedType {
    */
   readonly named: INamedTypeResolution | null;
 
+  /**
+   * #1984: the named type is a function used as a type. 1.4 settled it so;
+   * this is its answer, read for the file the type is written in.
+   */
+  readonly isCallback: boolean;
+
   /** `string<N>` or a bare `string`, whose element type is `char`. */
   readonly isString: boolean;
 
