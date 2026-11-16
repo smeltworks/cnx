@@ -276,8 +276,8 @@ Could generate prototypes at top of `.c` file to allow any order.
 
 | Context            | Relationship            | Severity |
 | ------------------ | ----------------------- | -------- |
-| global variable    | same file               | warn     |
-| top-level function | same file               | warn     |
+| global variable    | same file               | off      |
+| top-level function | same file               | off      |
 | scope member       | same file               | off      |
 | scope method       | same file               | off      |
 | global variable    | imported direct         | warn     |
@@ -297,7 +297,7 @@ Could generate prototypes at top of `.c` file to allow any order.
 | scope member       | exercised through chain | warn     |
 | scope method       | exercised through chain | warn     |
 
-#1402: the imported columns measure the include hops to the declaration a diagnostic or provenance site is about. ADR-030's opaque type is an incomplete C struct, always declared in a header and never in the cnx file, so it cannot occupy one; its cross-file case is the provider side.
+#1402: the imported columns measure the include hops to the declaration a diagnostic or provenance site is about. ADR-030's opaque type is an incomplete C struct, always declared in a header and never in the cnx file, so no context can occupy `same file`; its cross-file case is the provider side.
 
 <!-- MATRIX-SEVERITY code: E0422 -->
 

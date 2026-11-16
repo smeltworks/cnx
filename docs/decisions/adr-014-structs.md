@@ -495,7 +495,7 @@ Severity follows the eslint model: `off` records that a cell **cannot exist**,
 | scope method       | exercised through chain | off      |
 | for header         | exercised through chain | off      |
 
-#1402: the imported columns measure the include hops to the declaration a diagnostic or provenance site is about. E0508's C++ class is always declared in a header, never in the cnx file itself, so it cannot occupy one; its cross-file case is the provider side.
+#1402: the imported columns measure the include hops to the declaration a diagnostic or provenance site is about. E0508's C++ class is always declared in a header, never in the cnx file itself, so it cannot occupy `same file`; its cross-file case is the provider side.
 
 off: E0508 only fires outside a function body; inside a function or a method the fields are assigned as statements. A `for` header is inside a function: its object is built before the loop and the loop variable starts as a copy (#2304, owner ruling 2026-10-24).
 

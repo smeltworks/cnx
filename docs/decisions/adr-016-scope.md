@@ -733,7 +733,7 @@ off: this table now holds only the composition rule, which is decided once per s
 
 #1402: the imported columns measure the include hops to the declaration a diagnostic is about. E0425 reports at the first of the clashing definitions: when both are in the file being transpiled it is `same file`, and when one is in an included file the report lands in that file (#1408), which is the provider side. No position in the including file is about a definition elsewhere, so these cells cannot be occupied.
 
-off: E0425 is reported at the later of two declarations sharing one scope, and a `for` header declares one variable in a scope of its own that opens before its body, so nothing in the header can be the second; a parameter or a body local of the same name is shadowing, as in C, and any report of it would sit at that later declaration, not in the header (#2307: in the C++ output the body local is a redeclaration).
+off: inside a function, E0425 is reported at the later of two declarations sharing one scope (a clash between file-scope definitions reports at the first, above), and a `for` header declares one variable in a scope of its own that opens before its body, so nothing in the header can be the second; a parameter or a body local of the same name is shadowing, as in C, and any report of it would sit at that later declaration, not in the header (#2307: in the C++ output the body local is a redeclaration).
 
 <!-- MATRIX-SEVERITY code: E0430 -->
 
