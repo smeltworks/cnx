@@ -30,6 +30,7 @@
  * two-expression subscript, which is a slice or a bit range (ADR-007).
  */
 
+import BindingSite from "../../utils/BindingSite";
 import OperandTyper from "../../utils/OperandTyper";
 import ExpressionShape from "../../utils/ExpressionShape";
 import ElementCount from "../../utils/ElementCount";
@@ -89,6 +90,7 @@ class ArrayIndexBoundsCheck {
           chain,
           chain.ops.length - subscript.opsAfter - 1,
         ),
+        chain,
       );
     }
   }
@@ -155,6 +157,7 @@ class ArrayIndexBoundsCheck {
     subscript: ISubscript,
     bound: number | null,
     name: string,
+    chain: TChain,
   ): void {
     if (bound === null || subscript.expressions.length !== 1) return;
     const index = ConstantExpression.valueAt(
@@ -166,6 +169,8 @@ class ArrayIndexBoundsCheck {
       this.found.push({
         code: "E0854",
         span: subscript.at,
+        // #1402: the declaration of the array the chain indexes
+        declaredAt: BindingSite.ofChain(chain, this.context),
         message: `Array index out of bounds: ${index} is negative for '${name}' dimension ${subscript.dimension}`,
         helpText: "An index counts from zero (ADR-036).",
       });
@@ -175,6 +180,8 @@ class ArrayIndexBoundsCheck {
       this.found.push({
         code: "E0854",
         span: subscript.at,
+        // #1402: the declaration of the array the chain indexes
+        declaredAt: BindingSite.ofChain(chain, this.context),
         message: `Array index out of bounds: ${index} >= ${bound} for '${name}' dimension ${subscript.dimension}`,
         helpText: `The last valid index is ${bound - 1} (ADR-036).`,
       });

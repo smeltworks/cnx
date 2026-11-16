@@ -1,4 +1,4 @@
-import type IMutSite from "./IMutSite";
+import type ISourceSite from "./ISourceSite";
 
 /**
  * Represents an error or warning from the transpiler
@@ -25,10 +25,20 @@ interface ITranspileError {
    */
   helpText?: string;
   /**
-   * E0900 and E0879: where the binding is declared, so a tool can add its `mut`
-   * (ADR-071). Not printed; the message names the binding.
+   * Where the declaration the diagnostic is about sits, in the file that
+   * declares it. E0900 and E0879: the binding, so a tool can add its `mut`
+   * (ADR-071). #1402: the matrix measures a diagnostic's relationship from it.
+   * Not printed; the message names the declaration.
    */
-  declaredAt?: IMutSite;
+  declaredAt?: ISourceSite;
+  /**
+   * #1402: the diagnostic is about what is written at its own position -- a
+   * syntax rule, a declaration's own modifiers, a name nothing declares -- so
+   * no other file can supply its subject, and the matrix measures it `same
+   * file` whatever the fixture includes. Distinct from no `declaredAt`, which
+   * is a declaration not recorded, and is never guessed.
+   */
+  aboutItsPosition?: true;
 }
 
 export default ITranspileError;

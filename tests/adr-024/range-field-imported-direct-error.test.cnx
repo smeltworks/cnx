@@ -1,0 +1,11 @@
+// test-error
+// test-adr: 024
+// #1402 review: E0868 where a struct literal's field is declared across
+// ONE include hop(s) -- the `u8` the literal must fit is the imported field.
+#include "range-field-struct.cnx"
+
+Cfg atFileScope <- { label: 300 };
+
+scope Holder {
+    Cfg member <- { label: 300 };
+}

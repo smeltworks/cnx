@@ -4,7 +4,7 @@
  * All analyzer error interfaces extend this common base,
  * providing a consistent structure for error reporting.
  */
-import type IMutSite from "../../../types/IMutSite";
+import type ISourceSite from "../../../types/ISourceSite";
 import type ISourceSpan from "../../../types/ISourceSpan";
 
 interface IBaseAnalysisError {
@@ -18,8 +18,10 @@ interface IBaseAnalysisError {
   helpText?: string;
   /** A warning is reported and the file still compiles (E0896) */
   severity?: "error" | "warning";
-  /** E0900 and E0879: where `mut` belongs on the binding (ADR-071) */
-  declaredAt?: IMutSite;
+  /** Where the declaration the error is about sits (`ITranspileError`) */
+  declaredAt?: ISourceSite;
+  /** About what is written at its own position (`ITranspileError`) */
+  aboutItsPosition?: true;
 }
 
 export default IBaseAnalysisError;

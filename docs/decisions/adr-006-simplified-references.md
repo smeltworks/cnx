@@ -455,23 +455,33 @@ Severity follows the eslint model: `off` records that a cell **cannot exist**,
 
 <!-- MATRIX-SEVERITY code: E0915 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| top-level function | same file           | error    |
-| scope method       | same file           | error    |
-| global variable    | same file           | error    |
-| scope member       | same file           | error    |
-| top-level function | imported direct     | error    |
-| scope method       | imported direct     | error    |
-| global variable    | imported direct     | error    |
-| scope member       | imported direct     | error    |
-| top-level function | imported transitive | error    |
-| scope method       | imported transitive | error    |
-| global variable    | imported transitive | error    |
-| scope member       | imported transitive | error    |
-| for header         | same file           | error    |
-| for header         | imported direct     | error    |
-| for header         | imported transitive | error    |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | error    |
+| scope method       | same file               | error    |
+| global variable    | same file               | error    |
+| scope member       | same file               | error    |
+| top-level function | imported direct         | error    |
+| scope method       | imported direct         | error    |
+| global variable    | imported direct         | error    |
+| scope member       | imported direct         | error    |
+| top-level function | imported transitive     | error    |
+| scope method       | imported transitive     | error    |
+| global variable    | imported transitive     | error    |
+| scope member       | imported transitive     | error    |
+| for header         | same file               | error    |
+| for header         | imported direct         | error    |
+| for header         | imported transitive     | error    |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | warn     |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | warn     |
 
 The rule is about a call's argument, so every place a call can be written can
 break it: a function or scope method body, a global variable's or scope

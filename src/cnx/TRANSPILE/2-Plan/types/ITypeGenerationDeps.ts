@@ -1,6 +1,8 @@
 /**
  * Dependencies required for type generation that involve external state.
  */
+import type ISourceSite from "../../../types/ISourceSite";
+
 interface ITypeGenerationDeps {
   checkNeedsStructKeyword: (name: string) => boolean;
   /**
@@ -13,6 +15,7 @@ interface ITypeGenerationDeps {
    * two sites emit the wrong header extension (#1319).
    */
   isCrossFileDeclaration: (typeName: string) => boolean;
+  declarationOf: (typeName: string) => ISourceSite | undefined;
 }
 
 export default ITypeGenerationDeps;

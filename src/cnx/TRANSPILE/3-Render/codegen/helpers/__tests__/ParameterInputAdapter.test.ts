@@ -85,6 +85,7 @@ function createDefaultASTDeps(overrides?: {
   callbackTypes?: ReadonlyMap<string, ICallbackTypeInfo>;
 }) {
   return {
+    declarationOf: () => undefined,
     callbackTypes:
       overrides?.callbackTypes ?? new Map<string, ICallbackTypeInfo>(),
     isModified: overrides?.isModified ?? false,

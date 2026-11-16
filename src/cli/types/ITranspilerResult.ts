@@ -48,6 +48,23 @@ interface ITranspilerResult {
    * asserts generated C -- rather than a diagnostic -- can occupy a cell.
    */
   adrSites?: readonly IRecordedAdrSite[];
+
+  /**
+   * #1402: each file's direct includes, by the paths 1.1 Discover resolved: a
+   * `.cnx` file's `.cnx` and C/C++ header includes, and a header's own
+   * includes (`ISourceGraph.headerEdges`). The matrix measures how far a
+   * declaration is from a fixture over this graph instead of resolving the
+   * includes a second time.
+   */
+  includes?: ReadonlyMap<string, readonly string[]>;
+
+  /**
+   * #1523: the `.cnx` files whose own `#include` lines name a C/C++ header,
+   * resolved or not (`IPipelineFile.includesForeignHeader`). An unresolved
+   * `<system.h>` is in no include graph, but its names still exist, so a run
+   * with no includes in `includes` may still use a declaration from one.
+   */
+  includesForeignHeader?: ReadonlySet<string>;
 }
 
 export default ITranspilerResult;

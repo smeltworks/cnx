@@ -6,6 +6,7 @@
 import OperandTyper from "../../utils/OperandTyper";
 import type TValueBinding from "../../types/TValueBinding";
 import type ISourcePosition from "../../utils/types/ISourcePosition";
+import BindingSite from "../../utils/BindingSite";
 import AdrProvenance from "../../instrumentation/AdrProvenance";
 // SonarCloud S3776: Extracted literal parsing to reduce complexity
 import invariant from "../../utils/invariant";
@@ -128,7 +129,12 @@ class TypeValidator {
       (binding?.kind === "variable" || binding?.kind === "function") &&
       binding.symbol.scopePath !== ""
     ) {
-      AdrProvenance.record("057", at.line, "binds-scope");
+      AdrProvenance.record(
+        "057",
+        at.line,
+        "binds-scope",
+        BindingSite.ofSymbol(binding.symbol),
+      );
       return binding.symbol.fullyQualifiedCName;
     }
 
@@ -146,7 +152,15 @@ class TypeValidator {
         state,
       );
       if (scopeResolved) {
-        AdrProvenance.record("057", at.line, "binds-scope");
+        const member = state
+          .typingContext()
+          .program.symbolByCName(scopeResolved);
+        AdrProvenance.record(
+          "057",
+          at.line,
+          "binds-scope",
+          member && BindingSite.ofSymbol(member),
+        );
         return scopeResolved;
       }
     }
@@ -156,7 +170,16 @@ class TypeValidator {
       binding?.kind === "function" ||
       binding?.kind === "foreign";
     // The binder's last tier: nothing local or in the scope took the name
-    if (isGlobalValue) AdrProvenance.record("057", at.line, "binds-global");
+    if (isGlobalValue) {
+      AdrProvenance.record(
+        "057",
+        at.line,
+        "binds-global",
+        binding.kind === "foreign"
+          ? undefined
+          : BindingSite.ofSymbol(binding.symbol),
+      );
+    }
     if (
       isGlobalValue ||
       TypeValidator._isKnownGlobalIdentifier(

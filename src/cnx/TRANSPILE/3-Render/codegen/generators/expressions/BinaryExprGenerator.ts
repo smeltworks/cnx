@@ -112,7 +112,7 @@ const tryOverflowOperands = (
   // #1241: ADR-044's rule -- an integer expression is lowered to its
   // overflow helper calls rather than plain C arithmetic -- fired in 2.2,
   // which decided this chain's helpers.
-  AdrProvenance.record("044", plan.adrLine);
+  AdrProvenance.record("044", plan.adrLine, undefined, overflow.declaredAt);
 
   // #1790: an operator with no helper stays plain C where it stands, so
   // `a * b / c` is `cnx_clamp_mul_u32(a, b) / c`
@@ -183,7 +183,7 @@ const renderComparison = (
   // unchanged from C and is not ADR-001's doing, so the planner leaves
   // `adrLine` undefined for a comparison that uses only `!=` -- occupancy must
   // not be invented for a cell where this ADR's rule never fired.
-  AdrProvenance.record("001", plan.adrLine);
+  AdrProvenance.record("001", plan.adrLine, undefined, "its-position");
 
   if (plan.strcmp) {
     // ADR-045: string comparison lowers to strcmp. 2.2 required <string.h>

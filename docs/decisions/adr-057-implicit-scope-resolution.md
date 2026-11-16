@@ -183,60 +183,86 @@ enclosing scope there is no scope tier, so `binds-scope` cannot occur outside on
 
 <!-- MATRIX-SEVERITY rule: binds-local -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | off      |
-| top-level function | same file           | error    |
-| scope member       | same file           | off      |
-| scope method       | same file           | error    |
-| global variable    | imported direct     | off      |
-| top-level function | imported direct     | error    |
-| scope member       | imported direct     | off      |
-| scope method       | imported direct     | error    |
-| global variable    | imported transitive | off      |
-| top-level function | imported transitive | error    |
-| scope member       | imported transitive | off      |
-| scope method       | imported transitive | warn     |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | off      |
+| top-level function | same file               | error    |
+| scope member       | same file               | off      |
+| scope method       | same file               | error    |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | warn     |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | warn     |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | warn     |
+
+#1402: the imported columns measure the include hops to the declaration a diagnostic or provenance site is about. A local is always declared in the function that binds it, so it cannot occupy one; its cross-file case is the provider side.
 
 off: a local is declared only in a function body, so a file-scope or scope
 member's initializer has none to bind.
 
 <!-- MATRIX-SEVERITY rule: binds-scope -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | off      |
-| top-level function | same file           | off      |
-| scope member       | same file           | error    |
-| scope method       | same file           | error    |
-| global variable    | imported direct     | off      |
-| top-level function | imported direct     | off      |
-| scope member       | imported direct     | error    |
-| scope method       | imported direct     | error    |
-| global variable    | imported transitive | off      |
-| top-level function | imported transitive | off      |
-| scope member       | imported transitive | error    |
-| scope method       | imported transitive | error    |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | off      |
+| top-level function | same file               | off      |
+| scope member       | same file               | error    |
+| scope method       | same file               | error    |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | error    |
+| scope method       | imported direct         | error    |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | error    |
+| scope method       | imported transitive     | error    |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | off      |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | off      |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
 
 off: the scope tier is the enclosing scope's, and a global's initializer or a
 top-level function has none.
 
 <!-- MATRIX-SEVERITY rule: binds-global -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | warn     |
-| top-level function | same file           | error    |
-| scope member       | same file           | error    |
-| scope method       | same file           | error    |
-| global variable    | imported direct     | warn     |
-| top-level function | imported direct     | error    |
-| scope member       | imported direct     | warn     |
-| scope method       | imported direct     | warn     |
-| global variable    | imported transitive | warn     |
-| top-level function | imported transitive | error    |
-| scope member       | imported transitive | warn     |
-| scope method       | imported transitive | warn     |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | warn     |
+| top-level function | same file               | error    |
+| scope member       | same file               | error    |
+| scope method       | same file               | error    |
+| global variable    | imported direct         | warn     |
+| top-level function | imported direct         | error    |
+| scope member       | imported direct         | warn     |
+| scope method       | imported direct         | warn     |
+| global variable    | imported transitive     | warn     |
+| top-level function | imported transitive     | error    |
+| scope member       | imported transitive     | warn     |
+| scope method       | imported transitive     | warn     |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
 
 The `warn` cells are coverage, not possibility. The three `global variable` rows
 need a recording site for a file-scope declaration's initializer, which is never

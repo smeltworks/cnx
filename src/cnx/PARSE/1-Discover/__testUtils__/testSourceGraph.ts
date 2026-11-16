@@ -21,6 +21,7 @@ function testSourceGraph(
   | "headerFiles"
   | "headerTexts"
   | "headerIncludes"
+  | "headerEdges"
   | "headerUnit"
   | "headerSearchPaths"
   | "includeSearchPaths"
@@ -42,6 +43,7 @@ function testSourceGraph(
     headerFiles: [],
     headerTexts: new Map(),
     headerIncludes: [],
+    headerEdges: new Map(),
     headerUnit: { directives: [], sites: new Map(), unresolvedSystem: [] },
     headerSearchPaths: new Map(),
     includeSearchPaths: [],

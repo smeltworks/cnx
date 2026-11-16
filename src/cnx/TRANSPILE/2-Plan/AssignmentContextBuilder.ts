@@ -20,6 +20,7 @@
  * carrier. They hold no nodes now, and the two modules that did name types are
  * out of the population for real rather than by spelling.
  */
+import BindingSite from "../../utils/BindingSite";
 import AssignmentTarget from "../../utils/AssignmentTarget";
 import type TExpression from "../../types/syntax/TExpression";
 import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
@@ -324,6 +325,10 @@ function buildAssignmentContext(
     analyzeTargetForBitAccess: () =>
       deps.analyzeMemberChainForBitAccess(targetExpr, deps.target.last),
     targetLine: targetExpr.span.line,
+    targetDeclaredAt: BindingSite.of(
+      deps.target.root,
+      deps.state.typingContext(),
+    ),
     floatBits: deps.floatBits,
     bitmapField: deps.bitmapField,
     atomic: deps.atomic,

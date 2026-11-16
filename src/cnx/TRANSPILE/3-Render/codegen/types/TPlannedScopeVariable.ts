@@ -1,3 +1,5 @@
+import type ISourceSite from "../../../../types/ISourceSite";
+
 /**
  * How an ADR-016 scope member that declares a VARIABLE is emitted.
  *
@@ -39,6 +41,8 @@ type TPlannedScopeVariable =
       readonly isPointer: boolean;
       /** ADR-030 provenance is recorded at the DECLARATION's position. */
       readonly declarationLine: number | undefined;
+      /** #1402: where the member's type -- an opaque one for ADR-030 -- is declared */
+      readonly declaredAt: ISourceSite | undefined;
       /** Rendered `atomic`/`volatile` prefixes; at most one is non-empty. */
       readonly atomic: string;
       readonly volatile: string;

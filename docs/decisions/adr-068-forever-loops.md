@@ -414,67 +414,103 @@ exist**, `warn` that it should be covered and is not, `error` that it must be.
 
 <!-- MATRIX-SEVERITY code: E0705 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| top-level function | same file           | error    |
-| scope method       | same file           | error    |
-| global variable    | same file           | off      |
-| scope member       | same file           | off      |
-| for header         | same file           | off      |
-| top-level function | imported direct     | error    |
-| scope method       | imported direct     | error    |
-| global variable    | imported direct     | off      |
-| scope member       | imported direct     | off      |
-| for header         | imported direct     | off      |
-| top-level function | imported transitive | error    |
-| scope method       | imported transitive | error    |
-| global variable    | imported transitive | off      |
-| scope member       | imported transitive | off      |
-| for header         | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | error    |
+| scope method       | same file               | error    |
+| global variable    | same file               | off      |
+| scope member       | same file               | off      |
+| for header         | same file               | off      |
+| top-level function | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| global variable    | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| top-level function | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| global variable    | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
+
+#1402: the imported columns measure the include hops to the declaration a diagnostic or provenance site is about. E0705 rejects the `forever` keyword as written, so it cannot occupy one; its cross-file case is the provider side.
 
 off: a loop is a statement, so it cannot stand in a global or scope-member declaration (`forever`, `for` and `while` at file or scope level are parse errors), nor in a `for` header's declaration, whose initializer is an expression (`for (mut u32 i <- forever {}; ...)` is a parse error).
 
 <!-- MATRIX-SEVERITY code: E0707 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| top-level function | same file           | error    |
-| scope method       | same file           | error    |
-| global variable    | same file           | off      |
-| scope member       | same file           | off      |
-| for header         | same file           | off      |
-| top-level function | imported direct     | error    |
-| scope method       | imported direct     | error    |
-| global variable    | imported direct     | off      |
-| scope member       | imported direct     | off      |
-| for header         | imported direct     | off      |
-| top-level function | imported transitive | error    |
-| scope method       | imported transitive | error    |
-| global variable    | imported transitive | off      |
-| scope member       | imported transitive | off      |
-| for header         | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | error    |
+| scope method       | same file               | error    |
+| global variable    | same file               | off      |
+| scope member       | same file               | off      |
+| for header         | same file               | off      |
+| top-level function | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| global variable    | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| top-level function | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| global variable    | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
+
+#1402: the imported columns measure the include hops to the declaration a diagnostic or provenance site is about. E0707 rejects `for (;;)` as written, so it cannot occupy one; its cross-file case is the provider side.
 
 off: a loop is a statement, so it cannot stand in a global or scope-member declaration (`forever`, `for` and `while` at file or scope level are parse errors), nor in a `for` header's declaration. E0707 is reported at the `for` keyword or at the condition, and neither is inside the declaration.
 
 <!-- MATRIX-SEVERITY code: E0715 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| top-level function | same file           | error    |
-| scope method       | same file           | error    |
-| global variable    | same file           | off      |
-| scope member       | same file           | off      |
-| for header         | same file           | off      |
-| top-level function | imported direct     | error    |
-| scope method       | imported direct     | error    |
-| global variable    | imported direct     | off      |
-| scope member       | imported direct     | off      |
-| for header         | imported direct     | off      |
-| top-level function | imported transitive | error    |
-| scope method       | imported transitive | error    |
-| global variable    | imported transitive | off      |
-| scope member       | imported transitive | off      |
-| for header         | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | error    |
+| scope method       | same file               | error    |
+| global variable    | same file               | off      |
+| scope member       | same file               | off      |
+| for header         | same file               | off      |
+| top-level function | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| global variable    | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| top-level function | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| global variable    | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
+
+#1402: the imported columns measure the include hops to the declaration a diagnostic or provenance site is about. E0715 rejects a for-header's shape as written, whatever its parts name, so it cannot occupy one; its cross-file case is the provider side.
 
 off: a loop is a statement, so it cannot stand in a global or scope-member declaration (`forever`, `for` and `while` at file or scope level are parse errors). A `for` header exists only in a function body. Its declaration is not an assignment. Its initializer is a C initialization, so `for (atomic u64 i <- big; ...)` lowers to one C declaration. A string or array declared there is E0917, and a slice or bit write cannot be written in a declaration.
 

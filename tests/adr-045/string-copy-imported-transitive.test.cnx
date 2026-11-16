@@ -1,0 +1,21 @@
+// test-execution
+// test-adr: 045
+// #1402: ADR-045's string copy where the DESTINATION is declared across TWO
+// include hop(s); the copy is bounded by the imported declaration's capacity.
+#include "string-relay.cnx"
+
+void fill() {
+    narrowShared <- "abc";
+}
+
+scope Writer {
+    public void go() {
+        global.narrowShared <- "xy";
+    }
+}
+
+i32 main() {
+    fill();
+    Writer.go();
+    return 0;
+}

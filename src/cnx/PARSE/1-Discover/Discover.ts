@@ -408,6 +408,7 @@ class Discover {
         ]),
       ),
       headerIncludes: files.headerIncludes,
+      headerEdges: files.headerEdges,
       headerUnit: unit,
       headerSearchPaths: files.headerSearchPaths,
       includeSearchPaths: files.includeSearchPaths,

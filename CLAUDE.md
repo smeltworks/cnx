@@ -777,11 +777,13 @@ generator (#1489 deleted the one that duplicated this).
   cannot appear in a file-scope initializer), which is why exemptions live in the ADR where
   they get reviewed. `npm run coverage:matrix:check` gates in the `lint` job and fails on an
   unoccupied `error` cell or a stale `docs/scope-context-matrix.md`
-- **The relationship axis counts cnx include hops.** A C header is not a hop, so a fact
-  about a foreign type occupies `same file` however many headers the fixture includes: the
-  cell is about how far the cnx program reaches to USE a name, not where the name is
-  declared. #1511 declared ADR-030's `same file` cells `off` on the opposite reading, with a
-  plausible justification, and `npm run coverage:matrix` disproved it on the first run.
+- **The relationship axis counts include hops to the declaration a position is about**
+  (#1402, #1523): per position, over the include graph 1.1 Discover resolved, `.cnx` and
+  `.h`/`.hpp` edges alike, nearest path first. The deciding pass records the declaration
+  (`declaredAt`), or that the position is about itself (`aboutItsPosition`: a syntax rule, a
+  name nothing declares), which is `same file` whatever the fixture includes; a position
+  with neither occupies no cell in a fixture that includes anything. A rule firing inside an
+  included file is the provider side. See `docs/decisions/TEMPLATE.md`.
   Adding `// test-adr: NNN` also changes generated output — ADR-043 carries a fixture's
   comments into it — so marking fixtures needs `npm run test:update` and a re-run after
 - **Matrix limits, and what #1241 already fixed**: #1241 landed 2026-08-29 (`6192279d`,
@@ -792,13 +794,6 @@ generator (#1489 deleted the one that duplicated this).
   nothing, and only ADR-016, ADR-044 and ADR-057 have one today (2026-09-05). Do not read `warn` on an existing
   matrix as "cannot be covered" — a `warn` declaration is an obligation, not a verdict on
   reachability; `docs/scope-context-matrix.md` is what says whether a cell is occupied.
-  What remains is tracked as **#1402**: the relationship axis still measures the
-  deepest include chain reachable from the fixture rather than the hops to the declaration
-  under test, so **a helper feeding a matrix fixture cannot gain an include without silently
-  moving cells**; and the two provider-side relationships stay not-derivable. Both need the
-  provenance run to cover the include chain first: `IRecordedAdrSite.sourcePath` has a slot
-  for the file, but provenance transpiles the fixture alone, so every site carries the
-  fixture's own path and the field discriminates nothing yet
 - **Presence is not proof**: a cell showing `ok` means a fixture reaches it, not that the
   fixture would **fail** if the feature broke. #1222 is exactly that — regression fixtures
   that cannot fail if the fix is reverted. Mutation-check anything you add: break the thing

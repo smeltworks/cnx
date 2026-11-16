@@ -31,6 +31,7 @@
  * is reported under one code.
  */
 
+import BindingSite from "../../utils/BindingSite";
 import IOperatorOperandError from "./types/IOperatorOperandError";
 import ComparisonChain from "../../utils/ComparisonChain";
 import OperandTyper from "../../utils/OperandTyper";
@@ -449,7 +450,7 @@ class OperatorOperandAnalyzer {
   }
 
   public addError(
-    at: { readonly span: ISourceSpan },
+    at: TExpression,
     operator: string,
     rejection: TRejection,
     isTarget = false,
@@ -482,6 +483,7 @@ class OperatorOperandAnalyzer {
     this.errors.push({
       code: "E0925",
       span,
+      declaredAt: BindingSite.ofOperands([at], this.context),
       message: `Operator '${operator}' is not valid on ${NOUNS[rejection]}`,
       // A target cannot be cast, so its help is the written-out form
       helpText: isTarget

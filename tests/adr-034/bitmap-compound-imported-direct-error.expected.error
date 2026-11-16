@@ -1,0 +1,4 @@
+14:8 error[E0857]: Compound assignment operators are not supported on a bitmap field
+       help: A compound operator reads, modifies and writes back one storage location. Write the read and the write out separately.
+23:4 error[E0857]: Compound assignment operators are not supported on a bitmap field
+       help: A compound operator reads, modifies and writes back one storage location. Write the read and the write out separately.

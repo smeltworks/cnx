@@ -38,7 +38,12 @@ class ExpressionCalls {
    * `while ((i < 3) && (arr[w({ ... })] = 1))` is a call in the condition)
    */
   static callsAnywhere(expr: TExpression): boolean {
-    return ExpressionNodes.direct(expr).some(
+    return ExpressionCalls.callsIn(expr).length > 0;
+  }
+
+  /** The calls `callsAnywhere` finds, in source order */
+  static callsIn(expr: TExpression): TExpression[] {
+    return ExpressionNodes.direct(expr).filter(
       (node) =>
         node.kind === "postfix" && node.ops.some((op) => op.kind === "call"),
     );

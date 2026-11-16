@@ -198,20 +198,30 @@ context with nothing in the corpus going red.
 
 <!-- MATRIX-SEVERITY -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | error    |
-| top-level function | same file           | error    |
-| scope member       | same file           | error    |
-| scope method       | same file           | error    |
-| global variable    | imported direct     | error    |
-| top-level function | imported direct     | error    |
-| scope member       | imported direct     | error    |
-| scope method       | imported direct     | error    |
-| global variable    | imported transitive | error    |
-| top-level function | imported transitive | error    |
-| scope member       | imported transitive | error    |
-| scope method       | imported transitive | error    |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | error    |
+| top-level function | same file               | error    |
+| scope member       | same file               | error    |
+| scope method       | same file               | error    |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+
+#1402: the imported columns measure the include hops to the declaration a diagnostic or provenance site is about. ADR-001's operators are decided by their spelling alone and are about no declaration, so it cannot occupy one; its cross-file case is the provider side.
 
 All twelve are occupied — see `docs/scope-context-matrix.md`.
 
@@ -228,8 +238,8 @@ wherever the declaration lives — so it is the form of this decision under whic
 the `imported direct` and `imported transitive` rows can fail where `same file`
 succeeds. That is what those two rows are for.
 
-The two provider-side relationships carry no declaration: occupancy for them is
-not derivable, and the report renders them `n/a` rather than counting them empty.
+The two provider-side relationships are measured from where the rule fires: a
+rule firing inside an included file is credited at that file's distance (#1402).
 
 ## References
 

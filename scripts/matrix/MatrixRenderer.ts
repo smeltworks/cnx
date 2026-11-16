@@ -35,14 +35,7 @@ const ROW_LABELS: Record<TMatrixContext, string> = {
   "for-header": "for header",
 };
 
-/**
- * One cell's rendering.
- *
- * `n/a` and `-` are different claims and must not look alike: `-` means the
- * cell carries no obligation, `n/a` means the tool cannot yet see whether it is
- * occupied. Rendering both as blank is how an unmeasured cell starts reading as
- * a satisfied one.
- */
+/** One cell's rendering. */
 function renderCell(
   declaration: IMatrixDeclaration | undefined,
   occupancy: IMatrixOccupancy | undefined,
@@ -55,12 +48,6 @@ function renderCell(
       : AdrMatrixDeclaration.severityOf(declaration, context, relationship);
   const occupied = MatrixReport.isOccupied(occupancy, context, relationship);
 
-  // The `occupied` arm is unreachable today: FixtureOccupancy only ever writes
-  // keys built from MatrixCell.relationshipForDepth, which returns one of the
-  // three derivable relationships, so no provider-side cell can carry an
-  // occupant until #1402 lands. Kept because it is the correct behavior then,
-  // not because anything currently exercises it.
-  if (!MatrixCell.isDerivable(relationship)) return occupied ? "ok" : "n/a";
   if (occupied) return "ok";
   if (severity === "error") return "**MISSING**";
   if (severity === "warn") return "warn";
@@ -106,7 +93,6 @@ function renderDocument(
     "| `**MISSING**` | the ADR declared `error` and nothing occupies it |",
     "| `warn` | the ADR declared `warn` and nothing occupies it |",
     "| `-` | no obligation declared (`off`) |",
-    "| `n/a` | not derivable yet -- provider-side relationships need the emitting file (#1219) |",
     "",
   ];
 

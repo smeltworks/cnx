@@ -22,6 +22,8 @@ import TypeText from "../../../utils/TypeText";
 import type IAnalysisContext from "../types/IAnalysisContext";
 import type IValuePosition from "../../../types/IValuePosition";
 import type ISourcePosition from "../../../utils/types/ISourcePosition";
+import type ISourceSite from "../../../types/ISourceSite";
+import BindingSite from "../../../utils/BindingSite";
 
 /** What an establishing position gives the value under it */
 
@@ -141,6 +143,24 @@ class StructInitializerType {
    * float reaches an integer parameter, return, field or element only
    * through a cast, as it reaches a declaration.
    */
+  /**
+   * #1402: the declaration of the struct a struct initializer builds, where
+   * its position names one -- where its fields, and their types, are declared
+   */
+  static declarationOf(
+    position: Pick<IValuePosition, "typeText" | "isArray" | "inList">,
+    at: ISourcePosition,
+    context: IAnalysisContext,
+  ): ISourceSite | undefined {
+    const typeText = StructInitializerType.valueTypeAt(position);
+    return typeText === null
+      ? undefined
+      : BindingSite.ofCName(
+          context.program.cTypeNameAt(context.sourceFile, typeText, at),
+          context,
+        );
+  }
+
   static valueTypeAt(
     established: Pick<IValuePosition, "typeText" | "isArray" | "inList">,
   ): string | null {

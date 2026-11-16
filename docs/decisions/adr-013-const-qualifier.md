@@ -446,45 +446,67 @@ Severity follows the eslint model: `off` records that a cell **cannot exist**,
 
 <!-- MATRIX-SEVERITY code: E0432 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| top-level function | same file           | error    |
-| scope method       | same file           | error    |
-| global variable    | same file           | error    |
-| scope member       | same file           | error    |
-| top-level function | imported direct     | error    |
-| scope method       | imported direct     | error    |
-| global variable    | imported direct     | error    |
-| scope member       | imported direct     | error    |
-| top-level function | imported transitive | error    |
-| scope method       | imported transitive | error    |
-| global variable    | imported transitive | error    |
-| scope member       | imported transitive | error    |
-| for header         | same file           | off      |
-| for header         | imported direct     | off      |
-| for header         | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | error    |
+| scope method       | same file               | error    |
+| global variable    | same file               | error    |
+| scope member       | same file               | error    |
+| top-level function | imported direct         | error    |
+| scope method       | imported direct         | error    |
+| global variable    | imported direct         | error    |
+| scope member       | imported direct         | error    |
+| top-level function | imported transitive     | error    |
+| scope method       | imported transitive     | error    |
+| global variable    | imported transitive     | error    |
+| scope member       | imported transitive     | error    |
+| for header         | same file               | off      |
+| for header         | imported direct         | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
 
 off: E0432 is asked only of a constructor declaration (`Type name(arg);`), and a `for` header's declaration has no constructor form (`for (Adafruit_MAX31856 s(PIN); ...)` is a parse error).
 
 <!-- MATRIX-SEVERITY code: E0433 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| top-level function | same file           | error    |
-| scope method       | same file           | error    |
-| global variable    | same file           | error    |
-| scope member       | same file           | error    |
-| top-level function | imported direct     | error    |
-| scope method       | imported direct     | error    |
-| global variable    | imported direct     | error    |
-| scope member       | imported direct     | error    |
-| top-level function | imported transitive | error    |
-| scope method       | imported transitive | error    |
-| global variable    | imported transitive | error    |
-| scope member       | imported transitive | error    |
-| for header         | same file           | off      |
-| for header         | imported direct     | off      |
-| for header         | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | error    |
+| scope method       | same file               | error    |
+| global variable    | same file               | error    |
+| scope member       | same file               | error    |
+| top-level function | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| global variable    | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| top-level function | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| global variable    | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| for header         | same file               | off      |
+| for header         | imported direct         | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
+
+#1402: the imported columns measure the include hops to the declaration a diagnostic or provenance site is about. E0433 reports a constructor argument that names no declaration, so it cannot occupy one; its cross-file case is the provider side.
 
 off: E0433 is asked only of a constructor declaration (`Type name(arg);`), and a `for` header's declaration has no constructor form (`for (Adafruit_MAX31856 s(PIN); ...)` is a parse error).
 

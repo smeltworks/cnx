@@ -31,7 +31,7 @@ import CCallee from "./helpers/CCallee";
 import CArgumentWrite from "./helpers/CArgumentWrite";
 import WrittenBinding from "./helpers/WrittenBinding";
 import BoundDeclaration from "./helpers/BoundDeclaration";
-import MutSite from "./helpers/MutSite";
+import BindingSite from "../../utils/BindingSite";
 import MutArgument from "./helpers/MutArgument";
 import CPointerParameter from "../../utils/CPointerParameter";
 import ScanfFormat from "../../utils/ScanfFormat";
@@ -102,6 +102,8 @@ class CPointerArgumentCheck {
       message: `the format of '${callee.name}' is not a string literal, so cnx cannot tell which arguments '${callee.name}' writes`,
       helpText: `Write the format as a string literal, e.g. ${callee.name}(..., "%d", value).`,
       severity: "error",
+      // #1523: the rule is about the format, so the format's declaration
+      declaredAt: BindingSite.ofOperands([writes.format], this.context),
     });
   }
 
@@ -122,6 +124,8 @@ class CPointerArgumentCheck {
       this.found.push({
         code: "E0915",
         span: arg.span,
+        // #1402: about the argument the format writes
+        declaredAt: BindingSite.ofChain(arg, this.context),
         message: `cannot pass '${arg.written}' as argument ${index + 1} of '${callee.name}', which its format writes: it is not a variable, so the write would be lost`,
         helpText: `A scanf-family conversion writes its argument (ADR-071 Decision 2); pass a \`mut\` variable.`,
         severity: "error",
@@ -136,6 +140,8 @@ class CPointerArgumentCheck {
       this.found.push({
         code: "E0915",
         span: arg.span,
+        // #1402: about the argument the format writes
+        declaredAt: BindingSite.ofChain(arg, this.context),
         message: `cannot pass '${arg.written}' as argument ${index + 1} of '${callee.name}', which its format writes: it is ${qualifier.is}, and '${callee.name}' would write it through a plain pointer, so the ${qualifier.write} write would be lost`,
         helpText: `Scan into a \`mut\` local, then assign it to '${arg.written}' (ADR-071 Decision 2, #2398).`,
         severity: "error",
@@ -195,7 +201,7 @@ class CPointerArgumentCheck {
       span: callee.arguments[index].span,
       ...this.readOnlyWriteText(callee, index, parameter, pointee),
       severity: "error",
-      declaredAt: MutSite.of(written, this.context),
+      declaredAt: BindingSite.of(written, this.context),
     });
     return true;
   }

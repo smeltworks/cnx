@@ -1,0 +1,2 @@
+13:9 error[E0917]: An array is not a for loop variable: declare 'b' before the loop
+       help: A for header declares one scalar loop variable (ADR-036); declare it before the loop and use it inside.

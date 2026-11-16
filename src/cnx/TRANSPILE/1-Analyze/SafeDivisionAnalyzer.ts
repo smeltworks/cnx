@@ -33,6 +33,8 @@ import ExpressionNodes from "../../utils/ExpressionNodes";
 import SafeDivision from "../../utils/SafeDivision";
 import ISafeDivisionError from "./types/ISafeDivisionError";
 import BoundDeclaration from "./helpers/BoundDeclaration";
+import type ISourceSite from "../../types/ISourceSite";
+import BindingSite from "../../utils/BindingSite";
 import type IAnalysisContext from "./types/IAnalysisContext";
 
 /** `safe_div(output, numerator, divisor, defaultValue)` (ADR-051) */
@@ -85,7 +87,13 @@ class SafeDivisionAnalyzer {
       message: `${call.name} writes its result to the first argument, and '${output}' is not a variable`,
       helpText:
         "The generated helper takes the output's address. Declare a variable of the result's type and pass that (ADR-051).",
+      declaredAt: this.declarationOf(output),
     });
+  }
+
+  /** #1402: where the name passed as the output is declared */
+  private declarationOf(name: string): ISourceSite | undefined {
+    return BindingSite.ofCName(name, this.context);
   }
 
   private isDeclared(name: string, at: ISourceSpan): boolean {

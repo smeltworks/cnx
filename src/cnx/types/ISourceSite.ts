@@ -1,5 +1,6 @@
 /**
- * A point in a named file: where a diagnostic is reported.
+ * A point in a named file: where a diagnostic is reported, or where the
+ * declaration it is about sits (`ITranspileError.declaredAt`).
  *
  * #1844: shared by RunTarget's pragmas and 1.1's E0507, which is reported at
  * the `.cnx` include that reached a C++ header rather than at `1:0`.

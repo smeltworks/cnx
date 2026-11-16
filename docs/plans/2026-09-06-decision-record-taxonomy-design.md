@@ -432,8 +432,9 @@ CLAUDE.md and CONTRIBUTING.md before anyone noticed (#1403).
 ## Follow-up
 
 The C/C++ interop testing matrix is the sibling project this unblocks. The scope-context matrix
-measures only `.cnx` include hops — `IncludeDepth.resolveCnxInclude` returns null for any path
-not ending `.cnx` — so all 168 fixtures that include a C or C++ header measure as `same-file`,
+measured only `.cnx` include hops when this was written — `IncludeDepth.resolveCnxInclude`
+returned null for any path not ending `.cnx`, until #1523 measured each position over the
+resolved include graph, headers included — so all 168 fixtures that include a C or C++ header measure as `same-file`,
 including the two tagged ones. No interop ADR declares a single obligation today. That work
 declares `MATRIX-SEVERITY` rows on ADR-010, 046, 047 and 061, which is why ADR-010's category
 had to be settled first.

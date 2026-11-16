@@ -1,4 +1,5 @@
 import type IPlannedOverflowHelper from "../../../types/IPlannedOverflowHelper";
+import type ISourceSite from "../../../types/ISourceSite";
 
 /**
  * ADR-044: the overflow helper 2.2 decided each operator of an integer chain
@@ -7,6 +8,8 @@ import type IPlannedOverflowHelper from "../../../types/IPlannedOverflowHelper";
  */
 interface IPlannedOverflowChain {
   readonly operations: readonly (IPlannedOverflowHelper | null)[];
+  /** #1402: the declaration whose overflow type decided the chain */
+  readonly declaredAt: ISourceSite | undefined;
 }
 
 export default IPlannedOverflowChain;

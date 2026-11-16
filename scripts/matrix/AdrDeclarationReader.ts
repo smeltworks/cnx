@@ -29,13 +29,12 @@ const ADR_FILENAME = /^adr-(\d{3})-.*\.md$/;
  * malformed table removes every obligation without a word.
  */
 /**
- * #1620 review: a code table declares every derivable cell. A cell left out
+ * #1620 review: a code table declares every cell. A cell left out
  * reads as `off` with no note, which is how a context added later (`for
  * header`, #1646) went unexamined in 67 tables.
  */
 function undeclaredCells(table: IMatrixDeclaration): string[] {
   return MatrixCell.all()
-    .filter(({ relationship }) => MatrixCell.isDerivable(relationship))
     .filter(
       ({ context, relationship }) =>
         !table.severities.has(MatrixCell.key(context, relationship)),

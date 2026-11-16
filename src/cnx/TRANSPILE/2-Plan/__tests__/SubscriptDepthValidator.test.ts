@@ -36,6 +36,7 @@ const step = (before: IOperandType | null): IChainStep => ({
   fieldBits: null,
   beforeRegisterMember: null,
   beforeRegister: null,
+  register: null,
   registerMember: null,
 });
 

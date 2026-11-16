@@ -45,6 +45,8 @@
 
 import type TExpression from "../../types/syntax/TExpression";
 import type ISourceSpan from "../../types/ISourceSpan";
+import type ISourceSite from "../../types/ISourceSite";
+import BindingSite from "../../utils/BindingSite";
 import IMixedTypeCategoryError from "./types/IMixedTypeCategoryError";
 import OperatorOperandAnalyzer from "./OperatorOperandAnalyzer";
 import EnumValueResolver from "./EnumValueResolver";
@@ -169,6 +171,10 @@ class MixedCategoryCheck {
           } else {
             this.analyzer.addError(
               operands[i].span,
+              BindingSite.ofOperands(
+                [operands[i - 1], operands[i]],
+                this.context,
+              ),
               running!,
               right!,
               "binary",
@@ -198,6 +204,10 @@ class MixedCategoryCheck {
     const pairs = ComparisonChain.pairs(expr, this.context);
     this.analyzer.addChainError(
       expr.operands[i].span,
+      BindingSite.ofOperands(
+        [expr.operands[i - 1], expr.operands[i]],
+        this.context,
+      ),
       ComparisonChain.message(expr, i),
       pairs === null
         ? "MISRA C:2012 Rule 10.4: both operands must share an essential type category."
@@ -299,7 +309,13 @@ class MixedCategoryCheck {
     ) {
       return;
     }
-    this.analyzer.addError(expr.whenFalse.span, left, right, "conditional");
+    this.analyzer.addError(
+      expr.whenFalse.span,
+      BindingSite.ofOperands([expr.whenTrue, expr.whenFalse], this.context),
+      left,
+      right,
+      "conditional",
+    );
   }
 
   public checkCompound(site: IAssignmentSyntax): void {
@@ -320,7 +336,14 @@ class MixedCategoryCheck {
     const left = EssentialCategory.ofType(target);
     const right = this.operandCategory(value, null);
     if (EssentialCategory.differ(left, right, operator)) {
-      this.analyzer.addError(value.span, left!, right!, "compound", operator);
+      this.analyzer.addError(
+        value.span,
+        BindingSite.ofOperands([site.target, value], this.context),
+        left!,
+        right!,
+        "compound",
+        operator,
+      );
     }
   }
 }
@@ -395,6 +418,7 @@ class MixedTypeCategoryAnalyzer {
 
   public addError(
     span: ISourceSpan,
+    declaredAt: ISourceSite | undefined,
     left: string,
     right: string,
     what: TOperatorSite = "binary",
@@ -405,7 +429,7 @@ class MixedTypeCategoryAnalyzer {
       left === EssentialCategory.UNREADABLE_MACRO ||
       right === EssentialCategory.UNREADABLE_MACRO
     ) {
-      this.addUnreadableMacroError(span, what, operator);
+      this.addUnreadableMacroError(span, declaredAt, what, operator);
       return;
     }
     const integer = (c: string) => c === "signed" || c === "unsigned";
@@ -435,20 +459,23 @@ class MixedTypeCategoryAnalyzer {
       span,
       message: MixedTypeCategoryAnalyzer.message(what, pair),
       helpText,
+      declaredAt,
     });
   }
 
   public addChainError(
     span: ISourceSpan,
+    declaredAt: ISourceSite | undefined,
     message: string,
     helpText: string,
   ): void {
-    this.errors.push({ code: "E0810", span, message, helpText });
+    this.errors.push({ code: "E0810", span, message, helpText, declaredAt });
   }
 
   /** E0811 or E0812: an integer beside a header macro cnx cannot type (#1688, ADR-024) */
   private addUnreadableMacroError(
     span: ISourceSpan,
+    declaredAt: ISourceSite | undefined,
     what: TOperatorSite,
     operator: string | undefined,
   ): void {
@@ -466,6 +493,7 @@ class MixedTypeCategoryAnalyzer {
       code: helped ? "E0811" : "E0812",
       span,
       message: MixedTypeCategoryAnalyzer.unreadableMacroMessage(what),
+      declaredAt,
       helpText: `ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; ${why}. Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.`,
     });
   }

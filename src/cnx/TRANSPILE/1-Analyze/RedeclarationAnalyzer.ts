@@ -51,6 +51,7 @@ class RedeclarationAnalyzer {
         this.found.push({
           code: "E0425",
           span: declaration.span,
+          aboutItsPosition: true,
           message: `'${declaration.name}' is already declared in this scope`,
           helpText:
             "Rename one declaration; a function's parameters and its outermost block share one scope, as in C",

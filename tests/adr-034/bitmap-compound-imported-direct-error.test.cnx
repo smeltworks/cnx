@@ -1,0 +1,25 @@
+// test-error
+// test-adr: 034
+// E0857 on a bitmap declared ONE include hop away, in the contexts it can fire
+// in -- the imported-transitive column of E0857's own matrix (#1620).
+
+#include "bitmap-codes-declarations.cnx"
+
+scope Sc {
+    // CONTEXT: scope method
+    public void bump() {
+        // NEGATIVE CONTROL -- a plain write to the same field
+        fl.Mode <- 1;
+
+        fl.Mode +<- 1;
+    }
+}
+
+// CONTEXT: top-level function
+u32 main() {
+    // NEGATIVE CONTROL -- a plain write to the same field
+    fl.Mode <- 1;
+
+    fl.Mode +<- 1;
+    return 0;
+}

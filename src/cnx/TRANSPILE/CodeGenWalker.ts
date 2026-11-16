@@ -1,3 +1,4 @@
+import BindingSite from "../utils/BindingSite";
 import InterruptMask from "./3-Render/codegen/helpers/InterruptMask";
 import type IPlannedSafeDivision from "../types/IPlannedSafeDivision";
 import type IPlannedArgument from "./2-Plan/types/IPlannedArgument";
@@ -385,14 +386,18 @@ class CodeGenWalker {
     expr: TExpression,
     folded: IPlannedStaticValue,
   ): void {
-    for (const line of folded.clampLines) AdrProvenance.record("044", line);
+    for (const clamp of folded.clamps) {
+      AdrProvenance.record("044", clamp.line, undefined, clamp.declaredAt);
+    }
     for (const node of ExpressionNodes.direct(expr)) {
       if (node.kind !== "binary") continue;
       const equality =
         node.level === "equality"
           ? BinaryExprUtils.equalityAdrLine(node.operators, node.span.line)
           : undefined;
-      if (equality !== undefined) AdrProvenance.record("001", equality);
+      if (equality !== undefined) {
+        AdrProvenance.record("001", equality, undefined, "its-position");
+      }
     }
     for (const name of StaticInitializers.bareNames(expr)) {
       TypeValidator.resolveBareIdentifier(
@@ -2256,6 +2261,9 @@ class CodeGenWalker {
       isArray,
       isPointer: this.host.state.isDeclaredPointer(decl),
       declarationLine: decl.span.line,
+      declaredAt: this.host.state.declarationOf(
+        this.host.state.ownTypeInfo(decl)?.baseType ?? fullName,
+      ),
       atomic: modifiers.atomic,
       volatile: modifiers.volatile,
       renderType: () => this.renderType(decl.type),
@@ -2772,6 +2780,7 @@ class CodeGenWalker {
         callbackTypes: this.host.state.callbackTypes,
         passing,
         isOpaqueHandle: registered.isOpaqueHandle ?? false,
+        declarationOf: (typeName) => this.host.state.declarationOf(typeName),
       },
     );
 
@@ -2835,7 +2844,12 @@ class CodeGenWalker {
   private renderLoweredDimension(expression: TExpression): string {
     // ADR-036: a dimension is a constant expression in every context, so a
     // fixture occupies the matrix cell it is written in
-    AdrProvenance.record("036", expression.span.line);
+    AdrProvenance.record(
+      "036",
+      expression.span.line,
+      undefined,
+      BindingSite.ofOperands([expression], this.host.state.typingContext()),
+    );
     const dimension = ConstantFold.settled(
       ConstExprLowering.lower(expression),
       dimensionEvalOptions(this.planner.transpileState),
@@ -4159,7 +4173,12 @@ class CodeGenWalker {
     if (constant !== null) {
       // ADR-025's const label, recorded where it is written as its value so
       // a codegen-only fixture occupies its matrix cell (#1241)
-      AdrProvenance.record("025", at.line);
+      AdrProvenance.record(
+        "025",
+        at.line,
+        undefined,
+        BindingSite.of(binding, this.host.state.typingContext()),
+      );
       this.host.applyEffects(constant.effects);
       return constant.code;
     }

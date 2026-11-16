@@ -142,7 +142,12 @@ function handleRegisterMemberBitmapField(ctx: IAssignmentContext): string {
  */
 function recordingAdr034(handler: TAssignmentHandler): TAssignmentHandler {
   return (ctx) => {
-    AdrProvenance.record("034", ctx.targetLine);
+    AdrProvenance.record(
+      "034",
+      ctx.targetLine,
+      undefined,
+      ctx.targetDeclaredAt,
+    );
     return handler(ctx);
   };
 }

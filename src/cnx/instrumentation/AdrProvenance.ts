@@ -29,9 +29,9 @@
  *
  * Neither alternative is better. Splitting the sink per pass yields three
  * accumulators where there is one, and the only consumer
- * (`scripts/matrix/AdrProvenanceLines.ts`) reads `adr` and `line` and never
- * `sourcePath`, so the attribution a split changes is unobservable to the only
- * gate watching it. Threading an instance through the call sites contradicts
+ * (`scripts/matrix/FixtureRun.ts`) reads each site's `sourcePath` and
+ * `declaredAt` (#1402) but never which pass recorded it, so the attribution a
+ * split changes is unobservable to the only gate watching it. Threading an instance through the call sites contradicts
  * the paragraph above, which is a recorded design decision, not an oversight.
  *
  * The owner's call, taken 2026-09-23: box 4 governs PROGRAM state. A fact about
@@ -53,6 +53,7 @@
  * belongs here too.
  */
 import type IRecordedAdrSite from "../types/IRecordedAdrSite";
+import type ISourceSite from "../types/ISourceSite";
 
 class AdrProvenance {
   private static sites: IRecordedAdrSite[] = [];
@@ -76,11 +77,20 @@ class AdrProvenance {
     adr: string,
     line: number | null | undefined,
     rule?: string,
+    declaredAt?: ISourceSite | "its-position",
   ): void {
     if (!this.currentSourcePath || line == null || line <= 0) {
       return;
     }
-    this.sites.push({ adr, sourcePath: this.currentSourcePath, line, rule });
+    this.sites.push({
+      adr,
+      sourcePath: this.currentSourcePath,
+      line,
+      rule,
+      ...(declaredAt === "its-position"
+        ? { aboutItsPosition: true as const }
+        : declaredAt && { declaredAt }),
+    });
   }
 
   /** Every site recorded since the last reset, deduplicated. */
@@ -88,7 +98,8 @@ class AdrProvenance {
     const seen = new Set<string>();
     const unique: IRecordedAdrSite[] = [];
     for (const site of this.sites) {
-      const key = `${site.adr} ${site.rule ?? ""} ${site.sourcePath} ${site.line}`;
+      const declared = site.declaredAt;
+      const key = `${site.adr} ${site.rule ?? ""} ${site.sourcePath} ${site.line} ${declared?.sourcePath ?? ""}:${declared?.line ?? ""}:${declared?.column ?? ""} ${site.aboutItsPosition ?? ""}`;
       if (seen.has(key)) {
         continue;
       }

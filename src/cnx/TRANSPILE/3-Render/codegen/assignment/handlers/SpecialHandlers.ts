@@ -27,7 +27,12 @@ function handleAtomicRMW(ctx: IAssignmentContext): string {
   // #1790 review: ADR-044's rule firing inside the read-modify-write, as
   // handleOverflowHelper records it for the plain compound
   if (AssignmentClassifier.compoundOverflow(ctx) !== null) {
-    AdrProvenance.record("044", ctx.targetLine);
+    AdrProvenance.record(
+      "044",
+      ctx.targetLine,
+      undefined,
+      ctx.targetDeclaredAt,
+    );
   }
 
   return ctx.state.requireGenerator().generateAtomicRMW(
@@ -61,7 +66,7 @@ function handleOverflowHelper(ctx: IAssignmentContext): string {
   // (`a <- a + b`) records in BinaryExprGenerator; this is the `a +<- b` path,
   // which reaches a different decision and would otherwise leave every
   // compound-only fixture without a derivable context.
-  AdrProvenance.record("044", ctx.targetLine);
+  AdrProvenance.record("044", ctx.targetLine, undefined, ctx.targetDeclaredAt);
   const helper = overflow.name;
   if (!ctx.targetIndexHasSideEffect) {
     return `${target} = ${helper}(${target}, ${ctx.generatedValue});`;

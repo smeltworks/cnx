@@ -45,7 +45,7 @@ describe("FixtureOccupancy.build", () => {
       "division.test.cnx",
       "// test-adr: 051\nu32 ZERO <- 0;\nvoid go() {\n    u32 bad <- 10 / ZERO;\n}\n",
     );
-    write("division.expected.error", "4:22 error[E0800]: Division by zero\n");
+    write("division.expected.error", "4:20 error[E0800]: Division by zero\n");
 
     const occupancy = await occupancyFor("051 E0800", [fixture]);
     expect([...occupancy!.cells.keys()]).toEqual([
@@ -126,11 +126,204 @@ describe("FixtureOccupancy.build", () => {
       "consumer.test.cnx",
       '// test-adr: 051\n#include "provider.cnx"\nvoid go() {\n    u32 bad <- 10 / ZERO;\n}\n',
     );
-    write("consumer.expected.error", "4:22 error[E0800]: Division by zero\n");
+    write("consumer.expected.error", "4:20 error[E0800]: Division by zero\n");
 
     const occupancy = await occupancyFor("051 E0800", [fixture]);
     expect([...occupancy!.cells.keys()]).toEqual([
       MatrixCell.key("top-level-function", "imported-direct"),
+    ]);
+  });
+
+  it("does not move a cell when the provider gains an unrelated include", async () => {
+    // #1402: the relationship is the hop count to the declaration under test,
+    // not the deepest chain the fixture happens to reach. `ZERO` is one hop
+    // away whatever `provider.cnx` includes for reasons of its own.
+    write("unrelated.cnx", "u8 OTHER <- 1;\n");
+    write("provider.cnx", '#include "unrelated.cnx"\nu32 ZERO <- 0;\n');
+    const fixture = write(
+      "consumer.test.cnx",
+      '// test-adr: 051\n#include "provider.cnx"\nvoid go() {\n    u32 bad <- 10 / ZERO;\n}\n',
+    );
+    write("consumer.expected.error", "4:20 error[E0800]: Division by zero\n");
+
+    const occupancy = await occupancyFor("051 E0800", [fixture]);
+    expect([...occupancy!.cells.keys()]).toEqual([
+      MatrixCell.key("top-level-function", "imported-direct"),
+    ]);
+  });
+
+  it("measures the nearest include path to a declaration reached two ways", async () => {
+    // #1402: `provider.cnx` is included directly and again through
+    // `middle.cnx`; a declaration the fixture includes itself is one hop away.
+    write("provider.cnx", "u32 ZERO <- 0;\n");
+    write("middle.cnx", '#include "provider.cnx"\nu8 MIDDLE <- 1;\n');
+    const fixture = write(
+      "consumer.test.cnx",
+      '// test-adr: 051\n#include "middle.cnx"\n#include "provider.cnx"\nvoid go() {\n    u32 bad <- 10 / ZERO;\n}\n',
+    );
+    write("consumer.expected.error", "5:20 error[E0800]: Division by zero\n");
+
+    const occupancy = await occupancyFor("051 E0800", [fixture]);
+    expect([...occupancy!.cells.keys()]).toEqual([
+      MatrixCell.key("top-level-function", "imported-direct"),
+    ]);
+  });
+
+  it("credits a diagnostic reported inside an included file to the provider side", async () => {
+    // #1402: an `.expected.error` line prefixed with another file's path sits
+    // in that file, one include away.
+    const lib = write("lib.cnx", "void fromLib() {\n    u8 v <- this.x;\n}\n");
+    const fixture = write(
+      "consumer.test.cnx",
+      '// test-adr: 016\n#include "lib.cnx"\nu8 main() {\n    return 0;\n}\n',
+    );
+    write(
+      "consumer.expected.error",
+      `${lib}:2:13 error[E0431]: 'this' can only be used inside a scope\n`,
+    );
+
+    const occupancy = await occupancyFor("016 E0431", [fixture]);
+    expect([...occupancy!.cells.keys()]).toEqual([
+      MatrixCell.key("top-level-function", "exercised-from-one-away"),
+    ]);
+  });
+
+  it("never guesses a cell for a position whose declaration was not recorded, in a fixture that includes", async () => {
+    // #1402: a cast leaf carries no binding (#2429), so the pass records no
+    // declaration; with an include in the run the position occupies no cell.
+    write("provider.cnx", "u32 ZERO <- 0;\n");
+    const fixture = write(
+      "consumer.test.cnx",
+      '// test-adr: 051\n#include "provider.cnx"\nvoid go() {\n    u32 bad <- 10 / (u32)ZERO;\n}\n',
+    );
+    write("consumer.expected.error", "4:20 error[E0800]: Division by zero\n");
+
+    const occupancy = await occupancyFor("051 E0800", [fixture]);
+    expect([...occupancy!.cells.keys()]).toEqual([]);
+  });
+
+  it("measures a position about itself as same-file whatever the fixture includes", async () => {
+    // #1402 review: a literal divisor is about no declaration, so an
+    // unrelated include moves nothing
+    write("provider.cnx", "u32 ZERO <- 0;\n");
+    const fixture = write(
+      "literal.test.cnx",
+      '// test-adr: 051\n#include "provider.cnx"\nvoid go() {\n    u32 bad <- 10 / 0;\n}\n',
+    );
+    write("literal.expected.error", "4:20 error[E0800]: Division by zero\n");
+
+    const occupancy = await occupancyFor("051 E0800", [fixture]);
+    expect([...occupancy!.cells.keys()]).toEqual([
+      "top-level-function|same-file",
+    ]);
+  });
+
+  it("measures a conflict between two definitions in the fixture as same-file beside an unrelated include", async () => {
+    write("unrelated.cnx", "u32 OTHER <- 1;\n");
+    const fixture = write(
+      "dup.test.cnx",
+      '// test-adr: 016\n#include "unrelated.cnx"\nu32 twiceVar <- 1;\nu32 twiceVar <- 2;\n',
+    );
+    write("dup.expected.error", "3:0 error[E0425]: Symbol conflict\n");
+
+    const occupancy = await occupancyFor("016 E0425", [fixture]);
+    expect([...occupancy!.cells.keys()]).toEqual(["global-variable|same-file"]);
+  });
+
+  it("measures a file-scope struct literal's field to the struct's declaration", async () => {
+    // #1402 review: the string<4> E0864 overflows is the imported field
+    write("cfg.cnx", "struct Cfg {\n    string<4> label;\n}\n");
+    const fixture = write(
+      "field.test.cnx",
+      '// test-adr: 045\n#include "cfg.cnx"\nCfg g <- { label: "tooLong" };\n',
+    );
+    write(
+      "field.expected.error",
+      "3:18 error[E0864]: String literal (7 chars) exceeds string<4> capacity\n",
+    );
+
+    const occupancy = await occupancyFor("045 E0864", [fixture]);
+    expect([...occupancy!.cells.keys()]).toEqual([
+      "global-variable|imported-direct",
+    ]);
+  });
+
+  it("measures an integer struct field's range error to the struct's declaration", async () => {
+    write("cfg.cnx", "struct Cfg {\n    u8 label;\n}\n");
+    const fixture = write(
+      "range.test.cnx",
+      '// test-adr: 024\n#include "cfg.cnx"\nCfg g <- { label: 300 };\n',
+    );
+    write(
+      "range.expected.error",
+      "3:18 error[E0868]: Value 300 exceeds u8 range (0 to 255)\n",
+    );
+
+    const occupancy = await occupancyFor("024 E0868", [fixture]);
+    expect([...occupancy!.cells.keys()]).toEqual([
+      "global-variable|imported-direct",
+    ]);
+  });
+
+  it("never guesses same-file for a position whose fixture includes a system header", async () => {
+    // #1523: `<math.h>` resolves to no file, so it is in no include graph,
+    // but `M_PI` is still declared there. With no declaration recorded, the
+    // fixture including nothing it can see does not make the position local.
+    const fixture = write(
+      "system.test.cnx",
+      "// test-adr: 024\n#include <math.h>\nvoid go() {\n    u32 i <- 3;\n    f64 x <- i * M_PI;\n}\n",
+    );
+    write(
+      "system.expected.error",
+      "5:13 error[E0810]: Binary operator combines operands of different essential type categories (integer and floating)\n",
+    );
+
+    const occupancy = await occupancyFor("024 E0810", [fixture]);
+    expect([...occupancy!.cells.keys()]).toEqual([]);
+    // the run preprocesses `<math.h>` for its macros, which a CI runner takes
+    // longer than the 5s default to do
+  }, 60_000);
+
+  it("counts a C header that declares the construct as an include hop", async () => {
+    // #1523: `lib_value` is declared in `lib.h`, so the fixture uses it from
+    // one include away. It is not a same-file use.
+    write("lib.h", "int lib_value(void);\n");
+    const fixture = write(
+      "external.test.cnx",
+      '// test-adr: 070\n// test-c-only\n#include "lib.h"\nvoid go() {\n    lib_value();\n}\n',
+    );
+    write(
+      "external.expected.error",
+      "5:4 error[E0708]: Return value of non-void function 'lib_value' is discarded\n",
+    );
+
+    const occupancy = await occupancyFor("070 E0708", [fixture]);
+    expect([...occupancy!.cells.keys()]).toEqual([
+      MatrixCell.key("top-level-function", "imported-direct"),
+    ]);
+  });
+
+  it("credits a rule that fires in an included file to the provider side", async () => {
+    // #1402 / #1545: the rule fires inside `counter.cnx`, which the fixture
+    // exercises from one include away. Its context is read from the file the
+    // rule fired in, so the fixture is not left with no derivable context.
+    write(
+      "counter.cnx",
+      "scope Counter {\n" +
+        "    mut u32 value <- 0;\n" +
+        "    public void bump() {\n" +
+        "        value <- value + 1;\n" +
+        "    }\n" +
+        "}\n",
+    );
+    const fixture = write(
+      "exercise.test.cnx",
+      '// test-adr: 057\n#include "counter.cnx"\nvoid go() {\n    Counter.bump();\n}\n',
+    );
+
+    const occupancy = await occupancyFor("057 binds-scope", [fixture]);
+    expect([...occupancy!.cells.keys()]).toEqual([
+      MatrixCell.key("scope-method", "exercised-from-one-away"),
     ]);
   });
 

@@ -125,7 +125,12 @@ class TypeGenerationHelper {
     // #1508: ADR-010's promise -- a type declared in an included file is
     // usable where a local one is -- firing at a position.
     if (deps.isCrossFileDeclaration(named.name)) {
-      AdrProvenance.record("010", line);
+      AdrProvenance.record(
+        "010",
+        line,
+        undefined,
+        deps.declarationOf(named.name),
+      );
     }
 
     if (named.name !== named.written) {
@@ -133,7 +138,12 @@ class TypeGenerationHelper {
       // firing, observably, at a position. Recorded so a codegen-only fixture
       // can occupy a matrix cell; without it ADR-057's eleven fixtures were
       // invisible because they assert generated C and emit no diagnostic.
-      AdrProvenance.record("057", line, "binds-scope");
+      AdrProvenance.record(
+        "057",
+        line,
+        "binds-scope",
+        deps.declarationOf(named.name),
+      );
       return named.name;
     }
 

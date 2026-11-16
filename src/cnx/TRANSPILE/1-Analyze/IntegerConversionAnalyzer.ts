@@ -61,6 +61,8 @@
  * headers included (#1726).
  */
 
+import type ISourceSite from "../../types/ISourceSite";
+import BindingSite from "../../utils/BindingSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import ProgramAccesses from "../../utils/ProgramAccesses";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
@@ -131,7 +133,12 @@ class IntegerConversionCheck {
     if (this.checkStringsAt(declaration.initializer)) return;
     const target = declaration.type.text;
     if (!TypeCheckUtils.isInteger(target)) return;
-    this.check(target, declaration.initializer, true);
+    this.check(
+      target,
+      declaration.initializer,
+      true,
+      BindingSite.ofSpan(declaration.span, this.context),
+    );
   }
 
   /** The values typed by their position: arguments, fields, elements (#1618) */
@@ -143,9 +150,16 @@ class IntegerConversionCheck {
           for (const argument of op.arguments) this.checkAt(argument);
         }
         return;
-      case "structInitializer":
-        for (const field of expr.fields) this.checkAt(field.value);
+      case "structInitializer": {
+        // #1402: a field is declared by the struct the initializer builds
+        const struct = StructInitializerType.declarationOf(
+          ValuePositions.at(this.positions, expr),
+          expr.span,
+          this.context,
+        );
+        for (const field of expr.fields) this.checkAt(field.value, struct);
         return;
+      }
       case "arrayInitializer":
         if (expr.fill) this.checkAt(expr.fill);
         for (const element of expr.elements) this.checkAt(element);
@@ -162,13 +176,13 @@ class IntegerConversionCheck {
    * E0914, then every integer rule, for a value at the type its position
    * gives it: a return value, an argument, a field, an element (#1618)
    */
-  public checkAt(value: TExpression): void {
+  public checkAt(value: TExpression, declaredAt?: ISourceSite): void {
     if (this.checkStringsAt(value)) return;
     const target = StructInitializerType.valueTypeAt(
       ValuePositions.at(this.positions, value),
     );
     if (target !== null && TypeCheckUtils.isInteger(target)) {
-      this.check(target, value, true);
+      this.check(target, value, true, declaredAt);
     }
   }
 
@@ -191,11 +205,12 @@ class IntegerConversionCheck {
     const targetType =
       OperandTyper.typeOfTarget(target, this.context)?.typeName ?? "";
     if (!TypeCheckUtils.isInteger(targetType)) return;
+    const declaredAt = BindingSite.ofChain(target, this.context);
     if (site.operator === "<-") {
-      this.check(targetType, site.value, true);
+      this.check(targetType, site.value, true, declaredAt);
       return;
     }
-    this.checkCompound(targetType, site);
+    this.checkCompound(targetType, site, declaredAt);
   }
 
   /**
@@ -203,7 +218,11 @@ class IntegerConversionCheck {
    * composite of the two, typed as any composite is. A shift's count is no
    * leaf of it, so `y <<<- n` lands `y`'s own type.
    */
-  private checkCompound(targetType: string, site: IAssignmentSyntax): void {
+  private checkCompound(
+    targetType: string,
+    site: IAssignmentSyntax,
+    declaredAt: ISourceSite | undefined,
+  ): void {
     const binary = CompoundOperator.binaryOf(site.operator);
     const shift = binary === "<<" || binary === ">>";
     const source = CompositeType.integerOf([
@@ -215,6 +234,7 @@ class IntegerConversionCheck {
         targetType,
         site.value,
         IntegerConversionCheck.roleOf(binary, null),
+        declaredAt,
       );
     }
     if (source !== null) {
@@ -235,6 +255,7 @@ class IntegerConversionCheck {
     target: string,
     value: TExpression,
     role: TLiteralRole,
+    declaredAt: ISourceSite | undefined,
   ): void {
     const roles = new Map<TExpression, TLiteralRole>([[value, role]]);
     // The range a `+ - *` literal must fit: the narrower of the target and
@@ -272,10 +293,13 @@ class IntegerConversionCheck {
     for (const leaf of OperandTyper.valueLeafExpressions(value, isLeaf)) {
       const leafRole = roles.get(leaf) ?? "value";
       if (leafRole === "exempt") continue;
-      const text = this.knownText(target, leaf, fold(leaf));
+      const text = this.knownText(target, leaf, fold(leaf), declaredAt);
       if (text === null) continue;
-      if (leafRole === "bits") this.checkBits(target, text, leaf);
-      else this.checkLiteral(ranges.get(leaf) ?? target, text, leaf);
+      if (leafRole === "bits") {
+        this.checkBits(target, text, leaf, declaredAt);
+      } else {
+        this.checkLiteral(ranges.get(leaf) ?? target, text, leaf, declaredAt);
+      }
     }
   }
 
@@ -352,7 +376,12 @@ class IntegerConversionCheck {
   }
 
   /** E0868 for a bit pattern wider than its target: `u8 a <- b | 0x100` */
-  private checkBits(target: string, text: string, at: TExpression): void {
+  private checkBits(
+    target: string,
+    text: string,
+    at: TExpression,
+    declaredAt: ISourceSite | undefined,
+  ): void {
     const value = IntegerConversionCheck.literalValue(text);
     const width = TYPE_WIDTH[target];
     const fits =
@@ -363,6 +392,7 @@ class IntegerConversionCheck {
       this.found.push({
         code: "E0868",
         span: at.span,
+        declaredAt,
         message: `Value ${text} has bits outside ${target}'s ${width} bits`,
         helpText: "Widen the target type, or drop the bits it cannot hold.",
       });
@@ -378,6 +408,7 @@ class IntegerConversionCheck {
     target: string,
     leaf: TExpression,
     result: TFold | null,
+    declaredAt: ISourceSite | undefined,
   ): string | null {
     const literal = IntegerConversionCheck.integerLiteralText(leaf);
     if (literal !== null || result === null) return literal;
@@ -385,6 +416,7 @@ class IntegerConversionCheck {
       this.found.push({
         code: "E0910",
         span: leaf.span,
+        declaredAt: BindingSite.ofOperands([leaf], this.context) ?? declaredAt,
         message: `Value overflows ${result.typeName} at compile time: ${ConstantDiagnostics.OVERFLOW_CAUSE}`,
         helpText: ConstantDiagnostics.OVERFLOW_HELP,
       });
@@ -536,20 +568,21 @@ class IntegerConversionCheck {
     target: string,
     value: TExpression,
     typeComposites: boolean,
+    declaredAt: ISourceSite | undefined,
   ): void {
     const text = IntegerConversionCheck.integerLiteralText(value);
     if (text !== null) {
-      this.checkLiteral(target, text, value);
+      this.checkLiteral(target, text, value, declaredAt);
       return;
     }
     if (this.checkFloating(target, value)) return;
     const ternary = IntegerConversionCheck.ternaryOf(value);
     if (ternary !== null) {
-      this.check(target, ternary.whenTrue, typeComposites);
-      this.check(target, ternary.whenFalse, typeComposites);
+      this.check(target, ternary.whenTrue, typeComposites, declaredAt);
+      this.check(target, ternary.whenFalse, typeComposites, declaredAt);
       return;
     }
-    this.checkLiteralLeaves(target, value, "value");
+    this.checkLiteralLeaves(target, value, "value", declaredAt);
     const source = this.conversionSource(value, typeComposites);
     if (source !== null) this.checkConversion(target, source, value, "assign");
   }
@@ -581,19 +614,26 @@ class IntegerConversionCheck {
     this.found.push({
       code: "E0891",
       span: value.span,
+      declaredAt: BindingSite.ofOperands([value], this.context),
       message: `Implicit conversion from floating ${floating} to integer ${target}`,
       helpText: `Write the conversion as a cast, which saturates: (${target})value (ADR-024)`,
     });
     return true;
   }
 
-  private checkLiteral(target: string, text: string, at: TExpression): void {
+  private checkLiteral(
+    target: string,
+    text: string,
+    at: TExpression,
+    declaredAt: ISourceSite | undefined,
+  ): void {
     const value = IntegerConversionCheck.literalValue(text);
 
     if (TypeCheckUtils.isUnsigned(target) && value < 0n) {
       this.found.push({
         code: "E0868",
         span: at.span,
+        declaredAt,
         message: `Negative value ${text} cannot be assigned to unsigned type ${target}`,
         helpText: `An unsigned type holds no negative values; use a signed type such as i${TYPE_WIDTH[target]}.`,
       });
@@ -606,6 +646,7 @@ class IntegerConversionCheck {
       this.found.push({
         code: "E0868",
         span: at.span,
+        declaredAt,
         message: `Value ${text} exceeds ${target} range (${min} to ${max})`,
         helpText: "Widen the target type, or narrow the value.",
       });
@@ -627,6 +668,7 @@ class IntegerConversionCheck {
       this.found.push({
         code: "E0869",
         span: at.span,
+        declaredAt: BindingSite.ofOperands([at], this.context),
         message: `Cannot ${verb} ${source} to ${target} (narrowing)`,
         helpText: `Use bit indexing to say which bits you mean: ${subject}[0, ${targetWidth}]`,
       });
@@ -636,6 +678,7 @@ class IntegerConversionCheck {
       this.found.push({
         code: "E0869",
         span: at.span,
+        declaredAt: BindingSite.ofOperands([at], this.context),
         message: `Cannot ${verb} ${source} to ${target} (sign change)`,
         helpText: `Use bit indexing to reinterpret the bits explicitly: ${subject}[0, ${targetWidth}]`,
       });

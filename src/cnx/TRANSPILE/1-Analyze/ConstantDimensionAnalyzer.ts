@@ -1,4 +1,5 @@
 import SourceOrder from "../../utils/SourceOrder";
+import BindingSite from "../../utils/BindingSite";
 import type ISourceSpan from "../../types/ISourceSpan";
 /**
  * An array dimension that is not a constant expression: E0909, E0910
@@ -116,6 +117,7 @@ class ConstantDimensionCheck {
       this.found.push({
         code: "E0910",
         span: expression.span,
+        declaredAt: BindingSite.ofOperands([expression], this.context),
         message: `Array dimension overflows ${result.typeName} at compile time: ${ConstantDiagnostics.OVERFLOW_CAUSE}`,
         helpText: ConstantDiagnostics.OVERFLOW_HELP,
       });
@@ -140,6 +142,7 @@ class ConstantDimensionCheck {
     this.found.push({
       code: "E0909",
       span: expression.span,
+      declaredAt: BindingSite.ofOperands([expression], this.context),
       message: `Array dimension must be known at compile time: ${why}`,
       helpText:
         "An array's size is built from literals, read-only bindings that are not `volatile` (ADR-064), length properties (.type_byte_length) and casts (ADR-058). cnx has no variable-length arrays",
