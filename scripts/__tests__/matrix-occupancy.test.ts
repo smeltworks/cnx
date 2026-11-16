@@ -235,7 +235,7 @@ describe("FixtureOccupancy.build", () => {
     write("cfg.cnx", "struct Cfg {\n    string<4> label;\n}\n");
     const fixture = write(
       "field.test.cnx",
-      '// test-adr: 045\n#include "cfg.cnx"\nCfg g <- { label: "toolong" };\n',
+      '// test-adr: 045\n#include "cfg.cnx"\nCfg g <- { label: "tooLong" };\n',
     );
     write(
       "field.expected.error",
