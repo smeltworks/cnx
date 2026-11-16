@@ -42,7 +42,7 @@ interface IContextBuilderDeps extends Pick<
   | "floatBits"
   | "bitmapField"
   | "atomic"
-  | "plannedClamp"
+  | "plannedOverflow"
   | "plannedSliceSource"
   | "plannedStringCapacity"
   | "plannedStringParts"
@@ -332,7 +332,7 @@ function buildAssignmentContext(
     floatBits: deps.floatBits,
     bitmapField: deps.bitmapField,
     atomic: deps.atomic,
-    plannedClamp: deps.plannedClamp,
+    plannedOverflow: deps.plannedOverflow,
     plannedSliceSource: deps.plannedSliceSource,
     plannedStringCapacity: deps.plannedStringCapacity,
     plannedStringParts: deps.plannedStringParts,

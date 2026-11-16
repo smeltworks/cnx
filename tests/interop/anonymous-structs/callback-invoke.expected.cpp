@@ -7,21 +7,39 @@
 
 #include "callback-invoke.test.hpp"
 
+#include "anon_types.h"
+
 // test-cpp-only
 // test-execution
 // Test: Callback invocation with struct containing anonymous member
 // Note: This test validates struct init with anon members AND callback invocation.
 // The callback handler uses const SimpleConfig& in C++ mode, which is compatible
 // with the callback typedef because the struct is passed through the field.
-#include "anon_types.h"
+// The header's `int` fields make the sum's overflow helper the target's
+// `int` width (ADR-044, #2409), so the output is pinned to one target
 
 #include <stdint.h>
+
+// ADR-044: Overflow helper functions
+#include <limits.h>
+
+/* ADR-044 / Issue #94: the second parameter is the WIDER type, not the value type.
+   Narrowing it first would let an out-of-range operand truncate INTO range and defeat
+   the check: cnx_clamp_add_u8(0, 256) must saturate to 255, but (uint8_t)256 is 0, so a
+   uint8_t parameter would return 0 -- the opposite of saturation. */
+
+static inline int32_t cnx_clamp_add_i32(int32_t a, int64_t b) {
+    int64_t result = (int64_t)a + b;
+    if (result > INT32_MAX) return INT32_MAX;
+    if (result < INT32_MIN) return INT32_MIN;
+    return (int32_t)result;
+}
 
 // Global to track callback was called with correct value
 int32_t g_callback_value = 0;
 
 void my_config_handler(const SimpleConfig& cfg) {
-    g_callback_value = cfg.value + cfg.flags.flag_a;
+    g_callback_value = cnx_clamp_add_i32(cfg.value, cfg.flags.flag_a);
 }
 
 int main(void) {

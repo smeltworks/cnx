@@ -100,10 +100,10 @@ class EmissionPlan {
       isrTypedef:
         facts.needsISR &&
         !HeaderOwnership.ownsDeclarations(facts.selfIncludeAdded),
-      clampOps: [...facts.clampOps],
+      overflowHelpers: [...facts.overflowHelpers.values()],
       stringCopyHelper: facts.stringCopyHelper,
       panicOverflowHelpers: EmissionPlan.decidePanicOverflowHelpers(facts),
-      safeDivOps: [...facts.safeDivOps],
+      safeDivOps: [...facts.safeDivOps.values()],
       castHelpers: [...facts.castHelpers].sort((a, b) => a.localeCompare(b)),
       lengthHelpers: [...facts.lengthHelpers].sort((a, b) =>
         a.localeCompare(b),
@@ -208,7 +208,7 @@ class EmissionPlan {
   private static decidePanicOverflowHelpers(
     facts: IEmissionFacts,
   ): IPlannedBlock | null {
-    if (!facts.debugMode || facts.clampOps.size === 0) return null;
+    if (!facts.debugMode || facts.overflowHelpers.size === 0) return null;
     return {
       keyword: null,
       requirements: ["overflow-panic-hosted-libc"],

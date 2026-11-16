@@ -1,3 +1,5 @@
+import type IPlannedSafeDivision from "./IPlannedSafeDivision";
+import type IPlannedOverflowHelper from "./IPlannedOverflowHelper";
 import type IPlannedBlock from "./IPlannedBlock";
 import type IRecordedRequirement from "./IRecordedRequirement";
 
@@ -63,8 +65,8 @@ interface IEmissionPlan {
    */
   readonly isrTypedef: boolean;
 
-  /** ADR-044 overflow-clamp helper keys (`"add_u32"`), in emission order. */
-  readonly clampOps: readonly string[];
+  /** ADR-044: the overflow helpers 2.2 planned, each with the name it decided */
+  readonly overflowHelpers: readonly IPlannedOverflowHelper[];
 
   /** #2207: whether the file defines `cnx_string_copy` */
   readonly stringCopyHelper: boolean;
@@ -77,8 +79,8 @@ interface IEmissionPlan {
    */
   readonly panicOverflowHelpers: IPlannedBlock | null;
 
-  /** ADR-051 safe-division helper keys (`"div_u32"`), in emission order. */
-  readonly safeDivOps: readonly string[];
+  /** ADR-051 safe-division helpers, in emission order. */
+  readonly safeDivOps: readonly IPlannedSafeDivision[];
 
   /** #1668: single-evaluation saturating cast keys (`"f32_u8"`), in emission order. */
   readonly castHelpers: readonly string[];

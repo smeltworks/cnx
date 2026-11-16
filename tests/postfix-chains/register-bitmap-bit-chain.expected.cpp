@@ -8,6 +8,19 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+// ADR-044: Overflow helper functions
+#include <limits.h>
+
+/* ADR-044 / Issue #94: the second parameter is the WIDER type, not the value type.
+   Narrowing it first would let an out-of-range operand truncate INTO range and defeat
+   the check: cnx_clamp_add_u8(0, 256) must saturate to 255, but (uint8_t)256 is 0, so a
+   uint8_t parameter would return 0 -- the opposite of saturation. */
+
+static inline uint8_t cnx_clamp_mul_u8(uint8_t a, uint32_t b) {
+    if (b != 0 && a > UINT8_MAX / b) return UINT8_MAX;
+    return (uint8_t)(a * (uint8_t)b);
+}
+
 // Postfix Chain Test: Register + Bitmap + Bit Indexing
 // Tests: Complex chains mixing hardware registers, bitmap fields, and bit access
 // HIGH RISK AREA: Lines 5850-6285 in CodeGenerator.ts
@@ -31,5 +44,5 @@ int main(void) {
     if (((MOTOR__STATUS >> 0) & 1) == true) {
         MOTOR__CONTROL = (uint16_t)((MOTOR__CONTROL & ~(1U << 0)) | (1U << 0));
     }
-    const uint8_t doubleSpeed = static_cast<uint8_t>(((MOTOR__CONTROL >> 2) & 0xFF)) * 2U;
+    const uint8_t doubleSpeed = cnx_clamp_mul_u8(static_cast<uint8_t>(((MOTOR__CONTROL >> 2) & 0xFF)), 2U);
 }

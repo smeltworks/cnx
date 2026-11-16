@@ -11,14 +11,27 @@
 #include <stdint.h>
 #include <string.h>
 
+// ADR-044: Overflow helper functions
+#include <limits.h>
+
+/* ADR-044 / Issue #94: the second parameter is the WIDER type, not the value type.
+   Narrowing it first would let an out-of-range operand truncate INTO range and defeat
+   the check: cnx_clamp_add_u8(0, 256) must saturate to 255, but (uint8_t)256 is 0, so a
+   uint8_t parameter would return 0 -- the opposite of saturation. */
+
+static inline uint32_t cnx_clamp_sub_u32(uint32_t a, uint64_t b) {
+    if (b > (uint64_t)a) return 0;
+    return (uint32_t)(a - (uint32_t)b);
+}
+
 char userName[51] = "";
 
 int main(int argc, char *argv[]) {
     static_cast<void>(printf("What is your name in 50 characters or less? "));
     const char* c_result = fgets(userName, 51, stdin);
     if (c_result != nullptr) {
-        if ((uint32_t) strlen(userName) > 0 && userName[(uint32_t) strlen(userName) - 1U] == '\n') {
-            userName[(uint32_t) strlen(userName) - 1] = '\0';
+        if ((uint32_t) strlen(userName) > 0 && userName[cnx_clamp_sub_u32((uint32_t) strlen(userName), 1U)] == '\n') {
+            userName[cnx_clamp_sub_u32((uint32_t) strlen(userName), 1)] = '\0';
         }
     }
     const uint8_t whoAmIByte = argv[0U][0U];

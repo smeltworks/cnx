@@ -241,6 +241,11 @@ const generatePostfixExpression = (
           orchestrator.state.declarationOf(tracking.result),
         );
       }
+      // #1790 review: a safe_div/safe_mod that divides through ADR-044's
+      // overflow helper, as 2.2 planned it
+      if (op.safeDivisionHelper?.inner != null) {
+        AdrProvenance.record("044", op.line);
+      }
       const temporary =
         op.returnBuffer === null || op.into !== null
           ? null
@@ -253,7 +258,7 @@ const generatePostfixExpression = (
         // generator name no parse type.
         op.planArguments(),
         state,
-        op.safeDivisionHelper,
+        op.safeDivisionHelper?.name ?? null,
         buffer,
       );
       applyAccessEffects(callResult.effects, effects);

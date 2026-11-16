@@ -53,6 +53,30 @@ static inline uint8_t cnx_clamp_mul_u8(uint8_t a, uint32_t b) {
     return (uint8_t)(a * (uint8_t)b);
 }
 
+static inline int16_t cnx_clamp_neg_i16(int16_t a) {
+    /* ADR-044 / Issue #2418: -MIN is past the type. C leaves it undefined for an int, and narrows it back to MIN for a narrower type. */
+    if (a == INT16_MIN) return INT16_MAX;
+    return (int16_t)(-a);
+}
+
+static inline int32_t cnx_clamp_neg_i32(int32_t a) {
+    /* ADR-044 / Issue #2418: -MIN is past the type. C leaves it undefined for an int, and narrows it back to MIN for a narrower type. */
+    if (a == INT32_MIN) return INT32_MAX;
+    return (int32_t)(-a);
+}
+
+static inline int64_t cnx_clamp_neg_i64(int64_t a) {
+    /* ADR-044 / Issue #2418: -MIN is past the type. C leaves it undefined for an int, and narrows it back to MIN for a narrower type. */
+    if (a == INT64_MIN) return INT64_MAX;
+    return (int64_t)(-a);
+}
+
+static inline int8_t cnx_clamp_neg_i8(int8_t a) {
+    /* ADR-044 / Issue #2418: -MIN is past the type. C leaves it undefined for an int, and narrows it back to MIN for a narrower type. */
+    if (a == INT8_MIN) return INT8_MAX;
+    return (int8_t)(-a);
+}
+
 // test-execution
 // Tests: Pass-by-value for all primitive types
 // Coverage: u8, u16, u32, u64, i8, i16, i32, i64, bool
@@ -74,19 +98,19 @@ uint64_t doubleU64(const uint64_t val) {
 }
 
 int8_t negateI8(const int8_t val) {
-    return -val;
+    return cnx_clamp_neg_i8(val);
 }
 
 int16_t negateI16(const int16_t val) {
-    return -val;
+    return cnx_clamp_neg_i16(val);
 }
 
 int32_t negateI32(const int32_t val) {
-    return -val;
+    return cnx_clamp_neg_i32(val);
 }
 
 int64_t negateI64(const int64_t val) {
-    return -val;
+    return cnx_clamp_neg_i64(val);
 }
 
 bool flipBool(const bool val) {

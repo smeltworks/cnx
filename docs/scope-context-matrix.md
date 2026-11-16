@@ -1315,11 +1315,22 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | warn   | warn       | ok          | warn       |
 | for header         | -         | -      | -          | -           | -          |
 
-3 linked fixtures with no derivable context:
+4 linked fixtures with no derivable context:
 
 - `adr-044/e0912-imported-direct.test.cnx`
 - `adr-044/e0912-imported-transitive.test.cnx`
 - `bugs/issue-1669-enum-member-values/value-overflow.test.cnx`
+- `bugs/issue-2409-header-arithmetic/header-arithmetic.test.cnx`
+
+## ADR-044 E0868
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | ok        | -      | -          | -           | -          |
+| top-level function | -         | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
 
 ## ADR-044 E0909
 
@@ -2069,13 +2080,13 @@ ADR declares a position table.
 
 | Position                  | Severity | Fixtures |
 | ------------------------- | -------- | -------- |
-| declaration initializer   | error    | ok (11)  |
+| declaration initializer   | error    | ok (12)  |
 | assignment                | error    | ok (3)   |
 | array element assignment  | error    | ok (1)   |
 | struct field assignment   | error    | ok (1)   |
-| compound assignment       | error    | ok (2)   |
-| return statement          | error    | ok (1)   |
-| call argument             | error    | ok (2)   |
+| compound assignment       | error    | ok (3)   |
+| return statement          | error    | ok (2)   |
+| call argument             | error    | ok (3)   |
 | array element initializer | error    | ok (1)   |
 | struct field initializer  | error    | ok (2)   |
 | ternary branch            | error    | ok (1)   |

@@ -1,0 +1,132 @@
+// test-execution
+// Tests: #2418 / ADR-044 -- a unary `-` saturates or wraps by itself.
+// clamp -MIN is MAX, wrap -MIN is MIN, and the operator that reads the
+// negation gets that value, never C's promoted one.
+
+i8 negI8(i8 n) {
+    return -n;
+}
+i16 negI16(i16 n) {
+    return -n;
+}
+i32 negI32(i32 n) {
+    return -n;
+}
+i64 negI64(i64 n) {
+    return -n;
+}
+
+i8 wrapNegI8(i8 n) {
+    wrap i8 w <- n;
+    return -w;
+}
+i32 wrapNegI32(i32 n) {
+    wrap i32 w <- n;
+    return -w;
+}
+
+// -n + d: -(-128) saturates to 127 before + -1
+i8 negPlus(i8 n, i8 d) {
+    return -n + d;
+}
+// -n / d: -(-128) saturates to 127 before / 2
+i8 negOver(i8 n, i8 d) {
+    return -n / d;
+}
+// wrap -n / d: -(-128) wraps to -128 before / 2
+i8 wrapNegOver(i8 n, i8 d) {
+    wrap i8 w <- n;
+    wrap i8 wd <- d;
+    return -w / wd;
+}
+
+bool isPositive(i8 v) {
+    return v > 0;
+}
+
+// An assignment, a compound write, an argument and a condition. `n` is a
+// parameter, so the negation happens at run time.
+u32 negationContexts(i8 n) {
+    mut i8 j <- 0;
+    j <- -n;
+    if (j != 127) {
+        return 10;
+    }
+    mut i8 k <- -1;
+    k +<- -n;
+    if (k != 126) {
+        return 11;
+    }
+    bool positive <- isPositive(-n);
+    if (positive = false) {
+        return 12;
+    }
+    if (-n < 0) {
+        return 13;
+    }
+
+    return 0;
+}
+
+u32 main() {
+    i8 minI8 <- -127 - 1;
+    i16 minI16 <- -32767 - 1;
+    i32 minI32 <- -2147483648;
+    i64 minI64 <- -9223372036854775807 - 1;
+
+    i8 a <- negI8(minI8);
+    if (a != 127) {
+        return 1;
+    }
+    i16 b <- negI16(minI16);
+    if (b != 32767) {
+        return 2;
+    }
+    i32 c <- negI32(minI32);
+    if (c != 2147483647) {
+        return 3;
+    }
+    i64 d <- negI64(minI64);
+    if (d != 9223372036854775807) {
+        return 4;
+    }
+
+    i8 e <- wrapNegI8(minI8);
+    if (e != -128) {
+        return 5;
+    }
+    i32 f <- wrapNegI32(minI32);
+    if (f != -2147483647 - 1) {
+        return 6;
+    }
+
+    i8 g <- negPlus(minI8, -1);
+    if (g != 126) {
+        return 7;
+    }
+    i8 h <- negOver(minI8, 2);
+    if (h != 63) {
+        return 8;
+    }
+    i8 i <- wrapNegOver(minI8, 2);
+    if (i != -64) {
+        return 9;
+    }
+
+    u32 context <- negationContexts(minI8);
+    if (context != 0) {
+        return context;
+    }
+
+    // A value other than MIN negates as C does
+    i8 five <- negI8(5);
+    if (five != -5) {
+        return 14;
+    }
+    i8 m <- negI8(-127);
+    if (m != 127) {
+        return 15;
+    }
+
+    return 0;
+}

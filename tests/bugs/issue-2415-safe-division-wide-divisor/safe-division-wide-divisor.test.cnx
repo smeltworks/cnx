@@ -1,0 +1,124 @@
+// test-execution
+// #2415 (ADR-051, ADR-044): safe_div and safe_mod take the divisor in the
+// overflow helper's wider type, so a header macro past the operand's type
+// divides whole, as `/` does, rather than narrowing first: 300 is not 44, and
+// 256 is not a zero divisor
+#include "wide_divisors.h"
+
+i8 identityI8(i8 v) {
+    return v;
+}
+
+i32 identityI32(i32 v) {
+    return v;
+}
+
+u8 identityU8(u8 v) {
+    return v;
+}
+
+u32 identityU32(u32 v) {
+    return v;
+}
+
+u32 main() {
+    i8 a <- identityI8(100);
+
+    mut i8 q <- 5;
+    bool failed <- safe_div(q, a, BIG, 7);
+    if (failed = true) {
+        return 1;
+    }
+    if (q != 0) {
+        return 2;
+    }
+
+    // 256 narrowed to an i8 is 0: it must not read as a zero divisor
+    mut i8 z <- 5;
+    bool zeroFailed <- safe_div(z, a, WIDE_ZERO, 7);
+    if (zeroFailed = true) {
+        return 3;
+    }
+    if (z != 0) {
+        return 4;
+    }
+
+    mut i8 m <- 5;
+    bool modFailed <- safe_mod(m, a, BIG, 7);
+    if (modFailed = true) {
+        return 5;
+    }
+    if (m != 100) {
+        return 6;
+    }
+
+    mut i8 n <- 5;
+    bool negFailed <- safe_div(n, a, NEG_BIG, 7);
+    if (negFailed = true) {
+        return 7;
+    }
+    if (n != 0) {
+        return 8;
+    }
+
+    i32 big <- identityI32(2000000000);
+    mut i32 h <- 5;
+    bool hugeFailed <- safe_div(h, big, HUGE, 7);
+    if (hugeFailed = true) {
+        return 9;
+    }
+    if (h != 0) {
+        return 10;
+    }
+
+    // An unsigned quotient divides in plain C, at the divisor's width
+    u8 b <- identityU8(200);
+    mut u8 uq <- 5;
+    bool uFailed <- safe_div(uq, b, U8_WIDE_ONE, 7);
+    if (uFailed = true) {
+        return 11;
+    }
+    if (uq != 0) {
+        return 12;
+    }
+
+    mut u8 um <- 5;
+    bool umFailed <- safe_mod(um, b, WIDE_ZERO, 7);
+    if (umFailed = true) {
+        return 13;
+    }
+    if (um != 200) {
+        return 14;
+    }
+
+    u32 c <- identityU32(4000000000);
+    mut u32 wq <- 5;
+    bool wFailed <- safe_div(wq, c, U32_WIDE_ZERO, 7);
+    if (wFailed = true) {
+        return 15;
+    }
+    if (wq != 0) {
+        return 16;
+    }
+
+    // A divisor in range still divides, and a zero one still takes the default
+    mut i8 inRange <- 5;
+    bool inRangeFailed <- safe_div(inRange, a, 7, 9);
+    if (inRangeFailed = true) {
+        return 17;
+    }
+    if (inRange != 14) {
+        return 18;
+    }
+    i8 zero <- identityI8(0);
+    mut i8 byZero <- 5;
+    bool byZeroFailed <- safe_div(byZero, a, zero, 9);
+    if (byZeroFailed = false) {
+        return 19;
+    }
+    if (byZero != 9) {
+        return 20;
+    }
+
+    return 0;
+}

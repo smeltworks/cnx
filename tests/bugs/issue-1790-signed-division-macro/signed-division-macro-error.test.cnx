@@ -1,0 +1,41 @@
+// test-error
+// test-adr: 024
+// #1790 review: ADR-024 splits E0811 from E0812 by operator, not by which
+// overflow helper 2.2 plans. A signed `/` and `%` now call a helper for
+// MIN / -1, yet a header macro cnx cannot type beside one is still E0812, as
+// beside an unsigned `/` or a known divisor. A `wrap` `*` calls no helper
+// outside `--debug`, yet beside one, and in `*<-`, is still E0811.
+#include "division_macros.h"
+
+i32 signedQuotient(i32 n) {
+    return n / SCALED_CALL;
+}
+
+i32 signedRemainder(i32 n) {
+    return n % SCALED_CALL;
+}
+
+u32 unsignedQuotient(u32 n) {
+    return n / SCALED_CALL;
+}
+
+i32 wrapProduct(i32 n) {
+    wrap i32 wn <- n;
+    return wn * SCALED_CALL;
+}
+
+i32 wrapQuotient(i32 n) {
+    wrap i32 wn <- n;
+    return wn / SCALED_CALL;
+}
+
+i32 wrapCompoundProduct(i32 n) {
+    mut wrap i32 wn <- n;
+    wn *<- SCALED_CALL;
+    return wn;
+}
+
+i32 knownDivisor() {
+    i32 two <- 2;
+    return SCALED_CALL / two;
+}

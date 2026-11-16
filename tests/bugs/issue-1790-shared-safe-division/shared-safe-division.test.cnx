@@ -1,0 +1,91 @@
+// test-execution
+// test-adr: 044
+// #1790 review: every safe_div or safe_mod call of one type shares one helper,
+// and its body kept whichever call came last. A constant divisor planned no
+// MIN / -1 guard, so a constant call after a run-time one left the run-time
+// call trapping on x86. The guard no longer depends on one call's divisor.
+// Each run-time call comes first, its constant call after it.
+
+i32 safeQuotient(i32 n, i32 d) {
+    mut i32 q <- 0;
+    bool failed <- safe_div(q, n, d, 7);
+    if (failed = true) {
+        return -1;
+    }
+    return q;
+}
+
+i32 halve(i32 n) {
+    mut i32 h <- 0;
+    bool failed <- safe_div(h, n, 2, 7);
+    if (failed = true) {
+        return -1;
+    }
+    return h;
+}
+
+i32 safeRemainder(i32 n, i32 d) {
+    mut i32 r <- 0;
+    bool failed <- safe_mod(r, n, d, 7);
+    if (failed = true) {
+        return -1;
+    }
+    return r;
+}
+
+i32 parity(i32 n) {
+    mut i32 p <- 0;
+    bool failed <- safe_mod(p, n, 2, 7);
+    if (failed = true) {
+        return -1;
+    }
+    return p;
+}
+
+i16 safeQuotient16(i16 n, i16 d) {
+    mut i16 q <- 0;
+    bool failed <- safe_div(q, n, d, 7);
+    if (failed = true) {
+        return -1;
+    }
+    return q;
+}
+
+i16 wrapHalve16(i16 n) {
+    wrap i16 wn <- n;
+    mut i16 h <- 0;
+    bool failed <- safe_div(h, wn, 2, 7);
+    if (failed = true) {
+        return -1;
+    }
+    return h;
+}
+
+u32 main() {
+    i32 r1 <- safeQuotient(-2147483647 - 1, -1);
+    if (r1 != 2147483647) {
+        return 1;
+    }
+    i32 r2 <- halve(-9);
+    if (r2 != -4) {
+        return 2;
+    }
+    i32 r3 <- safeRemainder(-2147483647 - 1, -1);
+    if (r3 != 0) {
+        return 3;
+    }
+    i32 r4 <- parity(-9);
+    if (r4 != -1) {
+        return 4;
+    }
+    // A `wrap` constant call after a `clamp` run-time one of the same type
+    i16 r5 <- safeQuotient16(-32767 - 1, -1);
+    if (r5 != 32767) {
+        return 5;
+    }
+    i16 r6 <- wrapHalve16(-9);
+    if (r6 != -4) {
+        return 6;
+    }
+    return 0;
+}

@@ -7,6 +7,20 @@
 
 #include <stdint.h>
 
+// ADR-044: Overflow helper functions
+#include <limits.h>
+
+/* ADR-044 / Issue #94: the second parameter is the WIDER type, not the value type.
+   Narrowing it first would let an out-of-range operand truncate INTO range and defeat
+   the check: cnx_clamp_add_u8(0, 256) must saturate to 255, but (uint8_t)256 is 0, so a
+   uint8_t parameter would return 0 -- the opposite of saturation. */
+
+static inline int64_t cnx_clamp_neg_i64(int64_t a) {
+    /* ADR-044 / Issue #2418: -MIN is past the type. C leaves it undefined for an int, and narrows it back to MIN for a narrower type. */
+    if (a == INT64_MIN) return INT64_MAX;
+    return (int64_t)(-a);
+}
+
 // test-execution
 // ADR-022: Ternary operator test for i64
 // Tests: ternary with i64 in conditions and branches, including negative values
@@ -19,7 +33,7 @@ int64_t getMin(const int64_t a, const int64_t b) {
 }
 
 int64_t getAbs(const int64_t x) {
-    return (x < 0) ? -x : x;
+    return (x < 0) ? cnx_clamp_neg_i64(x) : x;
 }
 
 int main(void) {

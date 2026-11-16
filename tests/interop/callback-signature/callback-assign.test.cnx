@@ -1,6 +1,9 @@
 // test-execution
 // Test: Assigning cnx function to C callback typedef
 // Verifies signature compatibility in both C and C++ modes
+// The header's `int` fields make the sum's overflow helper the target's
+// `int` width (ADR-044, #2409), so the output is pinned to one target
+#pragma target host
 #include "callback_types.h"
 
 mut i32 handler_sum <- 0;

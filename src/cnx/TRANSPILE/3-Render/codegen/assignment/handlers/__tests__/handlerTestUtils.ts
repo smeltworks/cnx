@@ -3,6 +3,7 @@
  * Provides common mock setup functions to reduce duplication.
  */
 
+import type IPlannedOverflowHelper from "../../../../../../types/IPlannedOverflowHelper";
 import TestSymbolTable from "../../../../../__tests__/TestSymbolTable";
 import { vi } from "vitest";
 import createMockSymbols from "../../../../../../types/__testUtils__/codeGenSymbolsHelpers";
@@ -260,13 +261,14 @@ function writtenOf(target: IChainBase): IOperandType | null {
 function plannedClampOf(
   ctx: Pick<IAssignmentContext, "cnxOp" | "valueHasFloatingOperand">,
   target: IChainBase,
-): IAssignmentContext["plannedClamp"] {
-  const clamp = AssignmentClassifier.clampOfWrite(
+): IPlannedOverflowHelper | null {
+  return AssignmentClassifier.overflowOfWrite(
     writtenOf(target),
     ctx.cnxOp,
     ctx.valueHasFloatingOperand,
+    null,
+    false,
   );
-  return clamp && { ...clamp, declaredAt: undefined };
 }
 
 /**

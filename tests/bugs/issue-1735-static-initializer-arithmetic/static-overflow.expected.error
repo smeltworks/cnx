@@ -1,8 +1,4 @@
 19:8 error[E0910]: Static initializer overflows u8 at compile time: the value cast to u8 does not fit it (ADR-024, ADR-044)
        help: Write a value the type holds, or cast to a type wide enough for it
-21:9 error[E0910]: Static initializer overflows u8 at compile time: the arithmetic would clamp or wrap (ADR-044)
-       help: Do the arithmetic at a width that holds the result, for example by casting the operands to a wider type
-22:12 error[E0910]: Static initializer overflows u8 at compile time: the value does not fit it (ADR-044)
-       help: Write a value the type holds, or cast to a type wide enough for it
-25:10 error[E0910]: Static initializer overflows f32 at compile time: the arithmetic is past its finite range (ADR-044)
+21:10 error[E0910]: Static initializer overflows f32 at compile time: the arithmetic is past its finite range (ADR-044)
        help: Do the arithmetic at a width that holds the result, for example by casting the operands to a wider type

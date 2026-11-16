@@ -91,8 +91,14 @@ const INTEGER_LITERAL = /^-?(?:\d+|0[xX][0-9a-fA-F]+|0[bB][01]+)$/;
 /** What a literal operand must fit: the range, the width, or nothing */
 type TLiteralRole = "value" | "bits" | "exempt";
 
-/** The expressions that build a value rather than name one (#1618). */
+/**
+ * The expressions that build a value rather than name one (#1618), and a
+ * name: an integer header macro is the unsuffixed literal it expands to
+ * (ADR-024, #2424), and a typed name's value is its type's, which E0869
+ * judges (`knownText`).
+ */
 const CONSTANT_FORMS: ReadonlySet<TExpression["kind"]> = new Set([
+  "identifier",
   "literal",
   "unary",
   "parenthesized",

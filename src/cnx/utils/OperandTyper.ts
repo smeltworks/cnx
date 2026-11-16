@@ -284,6 +284,9 @@ class OperandTyper {
   /**
    * The evaluator's whole answer for `expr`, folded in `context` (a type
    * name) when given: an `overflow` is a known value that does not fit (#1618).
+   * An integer header macro cnx can read is known, as the unsuffixed literal
+   * its handling is (ADR-024, #2424): `i8 n <- BIG` with `#define BIG 300`
+   * is E0868, as `i8 n <- 300` is.
    */
   static constantResultOf(
     expr: TExpression,
@@ -292,7 +295,7 @@ class OperandTyper {
   ): ReturnType<typeof ConstantEvaluator.evaluate> {
     return ConstantEvaluator.evaluate(
       ConstExprLowering.lower(expr),
-      ConstantFold.environment(ctx.program, ctx.sourceFile),
+      ConstantFold.readingHeaderMacros(ctx.program, ctx.sourceFile),
       context,
     );
   }
@@ -1058,7 +1061,13 @@ class OperandTyper {
       overflow: expr.overflow ?? inner?.overflow ?? null,
       binding: null,
       hasSideEffect: inner?.hasSideEffect ?? false,
-      form: { kind: "cast" },
+      form: {
+        kind: "cast",
+        ofLiteral:
+          expr.overflow === null &&
+          (inner?.form.kind === "literal" ||
+            (inner?.form.kind === "cast" && inner.form.ofLiteral)),
+      },
     };
   }
 

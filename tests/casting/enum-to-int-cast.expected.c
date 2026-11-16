@@ -7,6 +7,19 @@
 
 #include <stdint.h>
 
+// ADR-044: Overflow helper functions
+#include <limits.h>
+
+/* ADR-044 / Issue #94: the second parameter is the WIDER type, not the value type.
+   Narrowing it first would let an out-of-range operand truncate INTO range and defeat
+   the check: cnx_clamp_add_u8(0, 256) must saturate to 255, but (uint8_t)256 is 0, so a
+   uint8_t parameter would return 0 -- the opposite of saturation. */
+
+static inline uint32_t cnx_clamp_add_u32(uint32_t a, uint64_t b) {
+    if (b > (uint64_t)(UINT32_MAX - a)) return UINT32_MAX;
+    return (uint32_t)(a + (uint32_t)b);
+}
+
 // test-coverage: 22-enum-to-int-cast
 // test-execution
 // Tests: Explicit enum to integer cast
@@ -32,7 +45,7 @@ int main(void) {
     if (pVal != 10) {
         return 5U;
     }
-    const uint32_t sum = (uint32_t)Priority__LOW + (uint32_t)Priority__MEDIUM;
+    const uint32_t sum = cnx_clamp_add_u32((uint32_t)Priority__LOW, (uint32_t)Priority__MEDIUM);
     if (sum != 6) {
         return 6U;
     }
@@ -44,7 +57,7 @@ int main(void) {
     if (writeFlag != 2) {
         return 8U;
     }
-    const uint32_t combined = (uint32_t)Flags__READ + (uint32_t)Flags__WRITE;
+    const uint32_t combined = cnx_clamp_add_u32((uint32_t)Flags__READ, (uint32_t)Flags__WRITE);
     if (combined != 3) {
         return 9U;
     }
