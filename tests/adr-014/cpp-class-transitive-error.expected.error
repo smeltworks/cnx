@@ -1,4 +1,4 @@
-11:28 error[E0508]: C++ class 'CppTestClass' has a constructor, so struct initializer syntax cannot be used outside a function body
+12:28 error[E0508]: C++ class 'CppTestClass' has a constructor, so struct initializer syntax cannot be used outside a function body
        help: A class with a constructor is not an aggregate, so the fields are assigned one at a time -- and a declaration outside a function body has no statement to assign them in. Initialize it inside a function, or use constructor syntax.
-15:35 error[E0508]: C++ class 'CppTestClass' has a constructor, so struct initializer syntax cannot be used outside a function body
+16:35 error[E0508]: C++ class 'CppTestClass' has a constructor, so struct initializer syntax cannot be used outside a function body
        help: A class with a constructor is not an aggregate, so the fields are assigned one at a time -- and a declaration outside a function body has no statement to assign them in. Initialize it inside a function, or use constructor syntax.

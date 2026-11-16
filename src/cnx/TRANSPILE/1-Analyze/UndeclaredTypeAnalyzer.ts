@@ -40,6 +40,7 @@
 
 import BUILTIN_TYPE_NAMES from "./BUILTIN_TYPE_NAMES";
 import IUndeclaredTypeError from "./types/IUndeclaredTypeError";
+import BindingSite from "../../utils/BindingSite";
 import NameExistence from "../../PARSE/3-Declare/NameExistence";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionChildren from "../../utils/ExpressionChildren";
@@ -313,7 +314,9 @@ class UndeclaredTypeAnalyzer {
    * that is not a type.
    */
   addError(typeName: string, span: ISourceSpan): void {
-    this._push("E0426", typeName, span, `type '${typeName}' is not defined`);
+    this._push("E0426", typeName, span, `type '${typeName}' is not defined`, {
+      aboutItsPosition: true,
+    });
   }
 
   /** E0426 for a use of this file's type before its definition closes */
@@ -331,6 +334,7 @@ class UndeclaredTypeAnalyzer {
       typeName,
       span,
       `type '${typeName}' is not defined here: it is used ${where} (ADR-030: define before use)`,
+      { declaredAt: BindingSite.ofSpan(definition, this.context) },
     );
   }
 
@@ -349,6 +353,7 @@ class UndeclaredTypeAnalyzer {
       typeName,
       span,
       `'${typeName}' is a register, not a type`,
+      {},
     );
   }
 
@@ -357,8 +362,9 @@ class UndeclaredTypeAnalyzer {
     typeName: string,
     span: ISourceSpan,
     message: string,
+    subject: Pick<IUndeclaredTypeError, "declaredAt" | "aboutItsPosition">,
   ): void {
-    this.errors.push({ code, typeName, span, message });
+    this.errors.push({ code, typeName, span, message, ...subject });
   }
 }
 

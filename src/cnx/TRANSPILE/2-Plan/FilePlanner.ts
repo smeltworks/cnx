@@ -1,3 +1,4 @@
+import BindingSite from "../../utils/BindingSite";
 import ForeignTypeFacts from "../../utils/ForeignTypeFacts";
 import SubscriptDepthValidator from "./SubscriptDepthValidator";
 import UnwrittenIncludes from "./UnwrittenIncludes";
@@ -234,6 +235,7 @@ class FilePlanner {
       checkNeedsStructKeyword: (name) =>
         this.state.symbolTable.checkNeedsStructKeyword(name),
       isCrossFileDeclaration: (name) => this.state.isCrossFileDeclaration(name),
+      declarationOf: (name) => this.state.declarationOf(name),
     };
   }
 
@@ -371,7 +373,12 @@ class FilePlanner {
     // the two the matrix guidance warns against mixing: neither depends on a
     // diagnostic, and a fixture is credited once per position either way.
     if (resolved !== null && this.state.isCrossFileDeclaration(resolved)) {
-      AdrProvenance.record("010", type.span.line);
+      AdrProvenance.record(
+        "010",
+        type.span.line,
+        undefined,
+        this.state.declarationOf(resolved),
+      );
     }
     return resolved ?? type.text;
   }
@@ -1138,13 +1145,18 @@ class FilePlanner {
       if (planned === null) continue;
       values.set(value.value, {
         ...planned,
-        clampLines: ExpressionNodes.direct(value.value).flatMap((node) =>
-          node.kind === "binary" &&
-          (node.level === "additive" || node.level === "multiplicative") &&
-          this.overflowChain(node) !== null
-            ? [node.span.line]
-            : [],
-        ),
+        clamps: ExpressionNodes.direct(value.value).flatMap((node) => {
+          if (
+            node.kind !== "binary" ||
+            (node.level !== "additive" && node.level !== "multiplicative")
+          ) {
+            return [];
+          }
+          const overflow = this.overflowChain(node);
+          return overflow === null
+            ? []
+            : [{ line: node.span.line, declaredAt: overflow.declaredAt }];
+        }),
       });
       if (
         StaticInitializers.readsVariable(
@@ -1168,7 +1180,7 @@ class FilePlanner {
     value: IStaticValue,
     program: IProgram,
     sourceFile: string,
-  ): Omit<IPlannedStaticValue, "clampLines"> | null {
+  ): Omit<IPlannedStaticValue, "clamps"> | null {
     const settled = StaticInitializers.settle(value, program, sourceFile);
     // A value of no number or bool type folds only as the const it names (an
     // enum const, as its member)
@@ -2250,7 +2262,10 @@ class FilePlanner {
       ),
     );
     if (operations.every((helper) => helper === null)) return null;
-    return { operations };
+    return {
+      operations,
+      declaredAt: BindingSite.ofOperands(expr.operands, typing),
+    };
   }
 
   /**
@@ -2470,7 +2485,12 @@ class FilePlanner {
     for (const site of FilePlanner.assignmentSites(program)) {
       const capacity = OperandTyper.stringCopyCapacity(site.target, typing);
       if (capacity === null) continue;
-      AdrProvenance.record("045", site.operatorSpan.line, "string-copy");
+      AdrProvenance.record(
+        "045",
+        site.operatorSpan.line,
+        "string-copy",
+        BindingSite.ofChain(site.target, typing),
+      );
       copies.set(site, capacity);
       forms.set(site.value, StringValueForm.of(site.value, typing));
     }
@@ -3174,7 +3194,12 @@ class FilePlanner {
     const typing = this.state.typingContext();
     const access = AtomicOwner.ofWrite(site, typing, bitmapField);
     if (access === null) return null;
-    AdrProvenance.record("049", site.target.span.line);
+    AdrProvenance.record(
+      "049",
+      site.target.span.line,
+      undefined,
+      BindingSite.ofChain(site.target, typing),
+    );
     const target = this.state.targetDescription;
     const exclusive =
       target?.ldrex_strex === true ? ExclusiveAccess.of(access) : null;

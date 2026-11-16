@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1002 fixture(s) assert a diagnostic; 987 carry a code.
+1012 fixture(s) assert a diagnostic; 997 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -228,6 +228,8 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-024/macro-literal-range-error.test.cnx                                                          | E0868                             |
 | tests/adr-024/narrowing-assign-error.test.cnx                                                             | E0869                             |
 | tests/adr-024/narrowing-cast-error.test.cnx                                                               | E0869                             |
+| tests/adr-024/range-field-imported-direct-error.test.cnx                                                  | E0868                             |
+| tests/adr-024/range-field-imported-transitive-error.test.cnx                                              | E0868                             |
 | tests/adr-024/sign-assign-error.test.cnx                                                                  | E0869                             |
 | tests/adr-024/sign-cast-error.test.cnx                                                                    | E0869                             |
 | tests/adr-025/switch-codes-imported-direct.test.cnx                                                       | E0711, E0712, E0713, E0714, E0717 |
@@ -282,6 +284,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-034/bitmap-codes-imported-direct-error.test.cnx                                                 | E0881, E0882, E0883, E0921        |
 | tests/adr-034/bitmap-codes-imported-transitive-error.test.cnx                                             | E0881, E0882, E0883, E0921        |
 | tests/adr-034/bitmap-codes-same-file-error.test.cnx                                                       | E0881, E0882, E0883, E0921        |
+| tests/adr-034/bitmap-compound-imported-direct-error.test.cnx                                              | E0857                             |
 | tests/adr-034/bitmap-compound-imported-transitive-error.test.cnx                                          | E0857                             |
 | tests/adr-034/bitmap-compound-same-file-error.test.cnx                                                    | E0857                             |
 | tests/adr-034/bitmap-error-overflow.test.cnx                                                              | E0881                             |
@@ -302,10 +305,13 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-036/bounds-error.test.cnx                                                                       | E0854                             |
 | tests/adr-036/c-style-error.test.cnx                                                                      | E0874                             |
 | tests/adr-036/c-style-trailing-bracket-rejected.test.cnx                                                  | E0874                             |
+| tests/adr-036/for-clause-array-imported-direct-error.test.cnx                                             | E0917                             |
+| tests/adr-036/for-clause-array-imported-transitive-error.test.cnx                                         | E0917                             |
 | tests/adr-036/for-header-array-cpp-error.test.cnx                                                         | E0917                             |
 | tests/adr-036/for-header-array-error.test.cnx                                                             | E0917                             |
 | tests/adr-036/for-header-typedef-array-cpp-error.test.cnx                                                 | E0917                             |
 | tests/adr-036/for-header-typedef-array-error.test.cnx                                                     | E0917                             |
+| tests/adr-036/for-header-typedef-array-transitive-error.test.cnx                                          | E0917                             |
 | tests/adr-036/init-bounds-error.test.cnx                                                                  | E0854                             |
 | tests/adr-036/matrix-bounds-direct-error.test.cnx                                                         | E0854                             |
 | tests/adr-036/matrix-bounds-for-header-error.test.cnx                                                     | E0854                             |
@@ -340,6 +346,8 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-044/static-initializer-imported-direct.test.cnx                                                 | E0909                             |
 | tests/adr-044/static-initializer-imported-transitive.test.cnx                                             | E0909                             |
 | tests/adr-045/string-array-init-error-mismatch.test.cnx                                                   | E0866                             |
+| tests/adr-045/string-destination-imported-direct-error.test.cnx                                           | E0864                             |
+| tests/adr-045/string-destination-imported-transitive-error.test.cnx                                       | E0864                             |
 | tests/adr-045/string-error-concat-global.test.cnx                                                         | E0863                             |
 | tests/adr-045/string-error-concat-overflow.test.cnx                                                       | E0864                             |
 | tests/adr-045/string-error-const-no-init.test.cnx                                                         | E0862                             |
@@ -354,6 +362,8 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-045/string-error-substring-global.test.cnx                                                      | E0863                             |
 | tests/adr-045/string-error-uncovered-fit.test.cnx                                                         | E0864                             |
 | tests/adr-045/string-error-uncovered-forms.test.cnx                                                       | E0862                             |
+| tests/adr-045/string-field-imported-direct-error.test.cnx                                                 | E0864                             |
+| tests/adr-045/string-field-imported-transitive-error.test.cnx                                             | E0864                             |
 | tests/adr-045/string-fit-rules-contexts-error.test.cnx                                                    | E0865                             |
 | tests/adr-045/string-fit-rules-for-header-error.test.cnx                                                  | E0864, E0865                      |
 | tests/adr-045/string-fit-rules-for-header-imported-direct-error.test.cnx                                  | E0864, E0865                      |

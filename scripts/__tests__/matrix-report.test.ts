@@ -68,35 +68,6 @@ describe("MatrixReport.violations", () => {
     expect(MatrixReport.violations(declarations, new Map())).toEqual([]);
   });
 
-  it("does not report a cell whose relationship cannot be derived yet", () => {
-    // Provider-side relationships need the emitting file, which
-    // `.expected.error` does not carry. Reporting these as gaps would fire the
-    // gate on the tool's blindness rather than on missing coverage.
-    const declarations = new Map([
-      [
-        "051",
-        MatrixTestHelpers.declare("051", [
-          ["top-level-function", "exercised-from-one-away", "error"],
-        ]),
-      ],
-    ]);
-    expect(MatrixReport.violations(declarations, new Map())).toEqual([]);
-  });
-
-  it("surfaces those cells separately so they are not silently dropped", () => {
-    const declarations = new Map([
-      [
-        "051",
-        MatrixTestHelpers.declare("051", [
-          ["top-level-function", "exercised-from-one-away", "error"],
-        ]),
-      ],
-    ]);
-    const pending = MatrixReport.undeterminable(declarations);
-    expect(pending).toHaveLength(1);
-    expect(pending[0].relationship).toBe("exercised-from-one-away");
-  });
-
   it("orders errors before warnings", () => {
     const declarations = new Map([
       [

@@ -1,8 +1,8 @@
 /**
  * Issue #1219: The scope-context matrix vocabulary.
  *
- * One place decides what a cell IS, how it is spelled, and whether the tooling
- * can currently derive it. Every consumer reads that decision rather than
+ * One place decides what a cell IS, how it is spelled, and which relationship
+ * an include distance is (#1402). Every consumer reads that decision rather than
  * re-deriving it -- a second list of contexts that agreed with this one only by
  * coincidence is exactly the divergence the project forbids.
  */
@@ -45,23 +45,6 @@ function isPosition(value: string): value is TMatrixPosition {
   return (POSITIONS as readonly string[]).includes(value);
 }
 
-/**
- * Relationships the tooling can currently establish.
- *
- * The consumer-side three come from the resolved include graph. The
- * provider-side two need to know which FILE a construct was emitted from.
- * `IRecordedAdrSite` has a `sourcePath` slot (#1241), but it does not yet
- * discriminate: provenance is gathered by transpiling the fixture alone, so
- * every site carries the fixture's own path. They therefore stay not-derivable
- * rather than being silently counted as empty -- an undetectable cell and an
- * uncovered cell are different claims and must not render the same. #1402.
- */
-const DERIVABLE_RELATIONSHIPS: readonly TMatrixRelationship[] = [
-  "same-file",
-  "imported-direct",
-  "imported-transitive",
-];
-
 /** Encode a cell as a stable key. Never build this string by hand elsewhere. */
 function key(
   context: TMatrixContext,
@@ -87,22 +70,22 @@ function all(): {
   return cells;
 }
 
-/** Whether the tooling can establish occupancy for this relationship today. */
-function isDerivable(relationship: TMatrixRelationship): boolean {
-  return DERIVABLE_RELATIONSHIPS.includes(relationship);
-}
-
 /**
- * Map an include-chain depth to its consumer-side relationship.
+ * #1402: one position's relationship, from its include hops.
  *
- * Depth is the longest resolved `#include` chain reachable from the fixture,
- * so 0 means the fixture stands alone and 2+ means a declaration is reached
- * through an intermediate file (the #1178 failure shape).
+ * `consumer`: a position in the fixture, `hops` away from the file declaring
+ * the construct -- 0 is the fixture itself. `provider`: a position in a file
+ * the fixture includes, `hops` away from the fixture (at least 1).
  */
-function relationshipForDepth(depth: number): TMatrixRelationship {
-  if (depth <= 0) return "same-file";
-  if (depth === 1) return "imported-direct";
-  return "imported-transitive";
+function relationshipFor(
+  side: "consumer" | "provider",
+  hops: number,
+): TMatrixRelationship {
+  if (side === "provider") {
+    return hops === 1 ? "exercised-from-one-away" : "exercised-through-chain";
+  }
+  if (hops === 0) return "same-file";
+  return hops === 1 ? "imported-direct" : "imported-transitive";
 }
 
 class MatrixCell {
@@ -112,8 +95,7 @@ class MatrixCell {
   static isPosition = isPosition;
   static key = key;
   static all = all;
-  static isDerivable = isDerivable;
-  static relationshipForDepth = relationshipForDepth;
+  static relationshipFor = relationshipFor;
 }
 
 export default MatrixCell;

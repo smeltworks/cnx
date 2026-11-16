@@ -1,0 +1,4 @@
+8:20 error[E0864]: String literal (7 chars) exceeds string<4> capacity
+       help: Widen the target to string<7>, or shorten the literal.
+13:31 error[E0864]: String literal (7 chars) exceeds string<4> capacity
+       help: Widen the target to string<7>, or shorten the literal.

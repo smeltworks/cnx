@@ -48,6 +48,7 @@
  * read off 1.2's syntax (#1991).
  */
 
+import BindingSite from "../../utils/BindingSite";
 import OperandTyper from "../../utils/OperandTyper";
 import ProgramAccesses from "../../utils/ProgramAccesses";
 import EnumValueResolver from "./EnumValueResolver";
@@ -138,6 +139,7 @@ class EnumTypeSafetyCheck {
     this.found.push({
       code: "E0428",
       span: value.span,
+      declaredAt: BindingSite.ofCName(targetType, this.context),
       message: `Cannot assign ${EnumTypeSafetyCheck.describe(verdict)} to ${targetType} enum`,
       helpText: ASSIGN_HELP,
     });
@@ -163,6 +165,11 @@ class EnumTypeSafetyCheck {
     this.found.push({
       code: "E0434",
       span: expr.operands[1].span,
+      declaredAt: BindingSite.ofCName(
+        (left.kind === "enum" ? left : right.kind === "enum" ? right : null)
+          ?.typeName ?? null,
+        this.context,
+      ),
       message: `Cannot compare ${EnumTypeSafetyCheck.describe(left)} to ${EnumTypeSafetyCheck.describe(right)}`,
       helpText: COMPARE_HELP,
     });

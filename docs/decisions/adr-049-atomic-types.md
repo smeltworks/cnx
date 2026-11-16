@@ -727,20 +727,28 @@ Severity follows the eslint model: `off` records that a cell **cannot exist**,
 
 <!-- MATRIX-SEVERITY -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| top-level function | same file           | error    |
-| scope method       | same file           | error    |
-| global variable    | same file           | off      |
-| scope member       | same file           | off      |
-| top-level function | imported direct     | error    |
-| scope method       | imported direct     | error    |
-| global variable    | imported direct     | off      |
-| scope member       | imported direct     | off      |
-| top-level function | imported transitive | error    |
-| scope method       | imported transitive | error    |
-| global variable    | imported transitive | off      |
-| scope member       | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | error    |
+| scope method       | same file               | error    |
+| global variable    | same file               | off      |
+| scope member       | same file               | off      |
+| top-level function | imported direct         | error    |
+| scope method       | imported direct         | error    |
+| global variable    | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| top-level function | imported transitive     | error    |
+| scope method       | imported transitive     | error    |
+| global variable    | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | warn     |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | warn     |
 
 This table is the atomic form of a read-modify-write (Q2, Q6, #2200, #1179),
 the one rule of this ADR with no diagnostic code. It fires at the WRITE, in a
@@ -754,23 +762,35 @@ off: a global's or a scope member's initializer cannot hold a write (`u32 b <- a
 
 <!-- MATRIX-SEVERITY code: E0889 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| top-level function | same file           | error    |
-| scope method       | same file           | error    |
-| global variable    | same file           | error    |
-| scope member       | same file           | error    |
-| for header         | same file           | error    |
-| top-level function | imported direct     | error    |
-| scope method       | imported direct     | error    |
-| global variable    | imported direct     | error    |
-| scope member       | imported direct     | error    |
-| for header         | imported direct     | error    |
-| top-level function | imported transitive | error    |
-| scope method       | imported transitive | error    |
-| global variable    | imported transitive | error    |
-| scope member       | imported transitive | error    |
-| for header         | imported transitive | error    |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | error    |
+| scope method       | same file               | error    |
+| global variable    | same file               | error    |
+| scope member       | same file               | error    |
+| for header         | same file               | error    |
+| top-level function | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| global variable    | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| top-level function | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| global variable    | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | warn     |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | warn     |
+
+#1402: the imported columns measure the include hops to the declaration a diagnostic or provenance site is about. E0889 rejects a declaration's own `atomic volatile` modifiers, and that declaration is in the file being transpiled, so it cannot occupy one; its cross-file case is the provider side.
 
 The rule reads only the declaration, so it fires in a file that includes others as in one that includes nothing; `atomic-modifiers-imported-direct-error` and `atomic-modifiers-imported-transitive-error` assert it in every context there.
 
@@ -781,23 +801,35 @@ and on a loop variable by `atomic-volatile-in-for-header-error`.
 
 <!-- MATRIX-SEVERITY code: E0919 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| top-level function | same file           | error    |
-| scope method       | same file           | error    |
-| global variable    | same file           | error    |
-| scope member       | same file           | error    |
-| for header         | same file           | error    |
-| top-level function | imported direct     | error    |
-| scope method       | imported direct     | error    |
-| global variable    | imported direct     | error    |
-| scope member       | imported direct     | error    |
-| for header         | imported direct     | error    |
-| top-level function | imported transitive | error    |
-| scope method       | imported transitive | error    |
-| global variable    | imported transitive | error    |
-| scope member       | imported transitive | error    |
-| for header         | imported transitive | error    |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | error    |
+| scope method       | same file               | error    |
+| global variable    | same file               | error    |
+| scope member       | same file               | error    |
+| for header         | same file               | error    |
+| top-level function | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| global variable    | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| top-level function | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| global variable    | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | warn     |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | warn     |
+
+#1402: the imported columns measure the include hops to the declaration a diagnostic or provenance site is about. E0919 rejects a declaration's own `atomic mut` modifiers, and that declaration is in the file being transpiled, so it cannot occupy one; its cross-file case is the provider side.
 
 The rule reads only the declaration, so it fires in a file that includes others as in one that includes nothing; `atomic-modifiers-imported-direct-error` and `atomic-modifiers-imported-transitive-error` assert it in every context there.
 
@@ -807,133 +839,193 @@ and on a loop variable by `atomic-mut-in-for-header-error`.
 
 <!-- MATRIX-SEVERITY code: E0510 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| top-level function | same file           | off      |
-| scope method       | same file           | off      |
-| global variable    | same file           | off      |
-| scope member       | same file           | off      |
-| for header         | same file           | off      |
-| top-level function | imported direct     | off      |
-| scope method       | imported direct     | off      |
-| global variable    | imported direct     | off      |
-| scope member       | imported direct     | off      |
-| for header         | imported direct     | off      |
-| top-level function | imported transitive | off      |
-| scope method       | imported transitive | off      |
-| global variable    | imported transitive | off      |
-| scope member       | imported transitive | off      |
-| for header         | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | off      |
+| scope method       | same file               | off      |
+| global variable    | same file               | off      |
+| scope member       | same file               | off      |
+| for header         | same file               | off      |
+| top-level function | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| global variable    | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| top-level function | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| global variable    | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | off      |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | off      |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | off      |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | off      |
+| for header         | exercised through chain | off      |
 
 off: E0510 is reported at a `#pragma`, which stands only at file scope (a pragma inside a function or a scope is a parse error), or on the entry file, so it lies in no declaration context.
 
 <!-- MATRIX-SEVERITY code: E0511 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| top-level function | same file           | off      |
-| scope method       | same file           | off      |
-| global variable    | same file           | off      |
-| scope member       | same file           | off      |
-| for header         | same file           | off      |
-| top-level function | imported direct     | off      |
-| scope method       | imported direct     | off      |
-| global variable    | imported direct     | off      |
-| scope member       | imported direct     | off      |
-| for header         | imported direct     | off      |
-| top-level function | imported transitive | off      |
-| scope method       | imported transitive | off      |
-| global variable    | imported transitive | off      |
-| scope member       | imported transitive | off      |
-| for header         | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | off      |
+| scope method       | same file               | off      |
+| global variable    | same file               | off      |
+| scope member       | same file               | off      |
+| for header         | same file               | off      |
+| top-level function | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| global variable    | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| top-level function | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| global variable    | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | off      |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | off      |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | off      |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | off      |
+| for header         | exercised through chain | off      |
 
 off: E0511 is reported at a `#pragma`, which stands only at file scope (a pragma inside a function or a scope is a parse error), or on the entry file, so it lies in no declaration context.
 
 <!-- MATRIX-SEVERITY code: E0512 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| top-level function | same file           | off      |
-| scope method       | same file           | off      |
-| global variable    | same file           | off      |
-| scope member       | same file           | off      |
-| for header         | same file           | off      |
-| top-level function | imported direct     | off      |
-| scope method       | imported direct     | off      |
-| global variable    | imported direct     | off      |
-| scope member       | imported direct     | off      |
-| for header         | imported direct     | off      |
-| top-level function | imported transitive | off      |
-| scope method       | imported transitive | off      |
-| global variable    | imported transitive | off      |
-| scope member       | imported transitive | off      |
-| for header         | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | off      |
+| scope method       | same file               | off      |
+| global variable    | same file               | off      |
+| scope member       | same file               | off      |
+| for header         | same file               | off      |
+| top-level function | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| global variable    | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| top-level function | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| global variable    | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | off      |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | off      |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | off      |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | off      |
+| for header         | exercised through chain | off      |
 
 off: E0512 is reported at a `#pragma`, which stands only at file scope (a pragma inside a function or a scope is a parse error), or on the entry file, so it lies in no declaration context.
 
 <!-- MATRIX-SEVERITY code: E0513 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| top-level function | same file           | off      |
-| scope method       | same file           | off      |
-| global variable    | same file           | off      |
-| scope member       | same file           | off      |
-| for header         | same file           | off      |
-| top-level function | imported direct     | off      |
-| scope method       | imported direct     | off      |
-| global variable    | imported direct     | off      |
-| scope member       | imported direct     | off      |
-| for header         | imported direct     | off      |
-| top-level function | imported transitive | off      |
-| scope method       | imported transitive | off      |
-| global variable    | imported transitive | off      |
-| scope member       | imported transitive | off      |
-| for header         | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | off      |
+| scope method       | same file               | off      |
+| global variable    | same file               | off      |
+| scope member       | same file               | off      |
+| for header         | same file               | off      |
+| top-level function | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| global variable    | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| top-level function | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| global variable    | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | off      |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | off      |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | off      |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | off      |
+| for header         | exercised through chain | off      |
 
 off: E0513 is reported at a `#pragma`, which stands only at file scope (a pragma inside a function or a scope is a parse error), or on the entry file, so it lies in no declaration context.
 
 <!-- MATRIX-SEVERITY code: E0514 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| top-level function | same file           | off      |
-| scope method       | same file           | off      |
-| global variable    | same file           | off      |
-| scope member       | same file           | off      |
-| for header         | same file           | off      |
-| top-level function | imported direct     | off      |
-| scope method       | imported direct     | off      |
-| global variable    | imported direct     | off      |
-| scope member       | imported direct     | off      |
-| for header         | imported direct     | off      |
-| top-level function | imported transitive | off      |
-| scope method       | imported transitive | off      |
-| global variable    | imported transitive | off      |
-| scope member       | imported transitive | off      |
-| for header         | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | off      |
+| scope method       | same file               | off      |
+| global variable    | same file               | off      |
+| scope member       | same file               | off      |
+| for header         | same file               | off      |
+| top-level function | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| global variable    | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| top-level function | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| global variable    | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | off      |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | off      |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | off      |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | off      |
+| for header         | exercised through chain | off      |
 
 off: E0514 is reported at a `#pragma`, which stands only at file scope (a pragma inside a function or a scope is a parse error), or on the entry file, so it lies in no declaration context.
 
 <!-- MATRIX-SEVERITY code: E0515 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| top-level function | same file           | off      |
-| scope method       | same file           | off      |
-| global variable    | same file           | off      |
-| scope member       | same file           | off      |
-| for header         | same file           | off      |
-| top-level function | imported direct     | off      |
-| scope method       | imported direct     | off      |
-| global variable    | imported direct     | off      |
-| scope member       | imported direct     | off      |
-| for header         | imported direct     | off      |
-| top-level function | imported transitive | off      |
-| scope method       | imported transitive | off      |
-| global variable    | imported transitive | off      |
-| scope member       | imported transitive | off      |
-| for header         | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | off      |
+| scope method       | same file               | off      |
+| global variable    | same file               | off      |
+| scope member       | same file               | off      |
+| for header         | same file               | off      |
+| top-level function | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| global variable    | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| top-level function | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| global variable    | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | off      |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | off      |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | off      |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | off      |
+| for header         | exercised through chain | off      |
 
 off: E0515 is reported on the entry file (1:0), not at any declaration, so it lies in no declaration context.
 

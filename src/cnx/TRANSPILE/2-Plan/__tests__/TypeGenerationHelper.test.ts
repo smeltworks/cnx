@@ -87,6 +87,7 @@ describe("TypeGenerationHelper", () => {
     const defaultDeps = {
       checkNeedsStructKeyword: () => false,
       isCrossFileDeclaration: () => false,
+      declarationOf: () => undefined,
     };
 
     it.each([

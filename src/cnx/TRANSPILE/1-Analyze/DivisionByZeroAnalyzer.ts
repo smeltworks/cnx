@@ -12,7 +12,6 @@
  */
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
-import type ISourceSpan from "../../types/ISourceSpan";
 import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
 import type TStatement from "../../types/syntax/TStatement";
@@ -27,6 +26,7 @@ import OperandTyper from "../../utils/OperandTyper";
 import ConstantFold from "../../utils/ConstantFold";
 import ConstExprLowering from "../../utils/ConstExprLowering";
 import type IAnalysisContext from "./types/IAnalysisContext";
+import BindingSite from "../../utils/BindingSite";
 
 /** #1991: reads 1.2's syntax, not the parse tree */
 class DivisionByZeroAnalyzer {
@@ -68,7 +68,7 @@ class DivisionByZeroAnalyzer {
       const operator = CompoundOperator.binaryOf(site.operator);
       if (operator !== "/" && operator !== "%") continue;
       if (site.value.kind === "missing" || !this.isZero(site.value)) continue;
-      this.addError(operator, site.value.span, true);
+      this.addError(operator, site.value, true);
     }
   }
 
@@ -77,7 +77,7 @@ class DivisionByZeroAnalyzer {
       if (operator !== "/" && operator !== "%") return;
       const divisor = expr.operands[i + 1];
       if (this.isZero(divisor)) {
-        this.addError(operator, divisor.span, atRunTime);
+        this.addError(operator, divisor, atRunTime);
       }
     });
   }
@@ -133,9 +133,10 @@ class DivisionByZeroAnalyzer {
 
   private addError(
     operator: string,
-    span: ISourceSpan,
+    divisor: TExpression,
     atRunTime: boolean,
   ): void {
+    const span = divisor.span;
     const isDivision = operator === "/";
     const code = isDivision ? "E0800" : "E0802";
     const opName = isDivision ? "Division" : "Modulo";
@@ -149,6 +150,11 @@ class DivisionByZeroAnalyzer {
       helpText: atRunTime
         ? `Consider using ${builtin}(output, numerator, divisor, defaultValue) for runtime safety`
         : "A divisor known at compile time must not be zero",
+      declaredAt: BindingSite.ofOperands([divisor], this.context),
+      // a literal divisor is about no declaration
+      ...(OperandTyper.valueLeafExpressions(divisor).every(
+        (leaf) => leaf.kind === "literal",
+      ) && { aboutItsPosition: true }),
     });
   }
 }

@@ -7,6 +7,8 @@
 interface ISourcePosition {
   line: number;
   column?: number;
+  /** #1402: the file a diagnostic sits in, when it is not the fixture */
+  sourcePath?: string;
 }
 
 export default ISourcePosition;

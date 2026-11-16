@@ -5,6 +5,7 @@
  * code for an assignment. Built once by the context extractor, then used
  * by the classifier and handlers.
  */
+import type ISourceSite from "../../../types/ISourceSite";
 import type IPlannedOverflowHelper from "../../../types/IPlannedOverflowHelper";
 import type TRenderedStringPart from "../../../types/TRenderedStringPart";
 import type IPlannedFloatBits from "./IPlannedFloatBits";
@@ -68,6 +69,9 @@ interface IAssignmentContext {
    * one. This is the only thing any consumer asked the target's start for.
    */
   readonly targetLine: number | undefined;
+
+  /** #1402: where the variable the target is rooted in is declared */
+  readonly targetDeclaredAt: ISourceSite | undefined;
 
   // === The value, as questions rather than as a node ===
 

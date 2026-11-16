@@ -1,0 +1,4 @@
+7:28 error[E0868]: Value 300 exceeds u8 range (0 to 255)
+       help: Widen the target type, or narrow the value.
+10:27 error[E0868]: Value 300 exceeds u8 range (0 to 255)
+       help: Widen the target type, or narrow the value.

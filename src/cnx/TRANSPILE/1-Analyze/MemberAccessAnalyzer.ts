@@ -17,6 +17,7 @@
  * Error code:
  * - E0927: a member of a value whose type has none
  */
+import BindingSite from "../../utils/BindingSite";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import ExpressionShape from "../../utils/ExpressionShape";
@@ -24,6 +25,7 @@ import ForeignTypeFacts from "../../utils/ForeignTypeFacts";
 import OperandTyper from "../../utils/OperandTyper";
 import type IChainStep from "../../types/IChainStep";
 import type IOperandType from "../../types/IOperandType";
+import type ISourceSite from "../../types/ISourceSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import type IAnalysisContext from "./types/IAnalysisContext";
@@ -56,8 +58,21 @@ class MemberAccessAnalyzer {
         span: chain.ops[index].span,
         message: `'${ExpressionShape.writtenThrough(chain, index)}' is a ${this.typeOf(step)} and has no member '${step.member}'`,
         helpText: HELP,
+        declaredAt: this.typeDeclaredAt(step, chain),
       },
     ];
+  }
+
+  /** #1402: the declaration E0927 is about -- the type that has no members, wherever it is declared */
+  private typeDeclaredAt(
+    step: IChainStep,
+    chain: TExpression,
+  ): ISourceSite | undefined {
+    const cName = step.before?.typeName ?? step.before?.bitmapTypeName ?? null;
+    return (
+      BindingSite.ofCName(cName, this.context) ??
+      BindingSite.ofChain(chain, this.context)
+    );
   }
 
   /** A `.name` step on a settled value whose type declares no members */

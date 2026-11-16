@@ -1,0 +1,7 @@
+// Helper (not a test): puts string-field-struct.cnx two hops away, covering the
+// `imported transitive` column. It declares something of its own so a header
+// is written for it (#1234).
+
+#include "string-field-struct.cnx"
+
+u32 STRING_FIELD_RELAY_MARKER <- 2;

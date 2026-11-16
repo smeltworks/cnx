@@ -436,6 +436,7 @@ class UndeclaredValueAnalyzer {
       code: "E0427",
       identifier,
       span,
+      aboutItsPosition: true,
       message: `'${identifier}' is not defined`,
     });
   }

@@ -43,6 +43,8 @@
  * their bits reject zero as codegen's `isWriteOnlyRegister` set did.
  */
 
+import type ISourceSite from "../../types/ISourceSite";
+import BindingSite from "../../utils/BindingSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import ProgramAccesses from "../../utils/ProgramAccesses";
 import type IValuePositions from "../../types/IValuePositions";
@@ -88,6 +90,7 @@ class RegisterAccessCheck {
         message: `cannot assign to read-only register member '${found.member}' (${found.spelling} has 'ro' access modifier)`,
         helpText:
           "An `ro` register member is hardware that cannot be written (ADR-004); the generated C declares it `const`. Write the register's own writable member, or change the declaration if the hardware allows writes.",
+        declaredAt: this.declarationOf(found.register, found.key),
       });
       return;
     }
@@ -121,6 +124,7 @@ class RegisterAccessCheck {
       message: `Cannot assign ${single ? "false" : "0"} to write-only register ${single ? "bit" : "bits"} ${site.target.written}`,
       helpText:
         "Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.",
+      declaredAt: this.declarationOf(step.beforeRegister, member),
     });
   }
 
@@ -153,6 +157,7 @@ class RegisterAccessCheck {
     // what step 0 applies to
     return {
       key,
+      register: step.register ?? "",
       access,
       member,
       spelling: root + names.slice(0, at + 2).join("."),
@@ -160,6 +165,22 @@ class RegisterAccessCheck {
   }
 
   // --- Reporting ----------------------------------------------------------
+
+  /** #1402: where the register member a diagnostic is about is declared */
+  private declarationOf(
+    register: string | null,
+    key: string,
+  ): ISourceSite | undefined {
+    const owner =
+      register === null
+        ? undefined
+        : this.context.program.symbolByCName(register);
+    if (owner?.kind !== "register") return undefined;
+    const symbol = [...owner.members.values()].find(
+      (candidate) => candidate.fullyQualifiedCName === key,
+    );
+    return symbol ? BindingSite.ofSymbol(symbol) : undefined;
+  }
 
   private reportRead(found: IRegisterMember, at: TExpression): void {
     if (found.access !== "wo") return;
@@ -169,6 +190,7 @@ class RegisterAccessCheck {
       message: `cannot read from write-only register member '${found.member}' (${found.spelling} has 'wo' access modifier)`,
       helpText:
         "A `wo` register member is hardware that returns nothing meaningful when read (ADR-004). Read the register's own readable member, or keep a shadow copy of what was written.",
+      declaredAt: this.declarationOf(found.register, found.key),
     });
   }
 }

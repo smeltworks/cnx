@@ -1,0 +1,15 @@
+// test-error
+// test-adr: 045
+// #1402: E0864 where the DESTINATION is declared across ONE include hop(s) --
+// the capacity the value must fit is the imported declaration's.
+#include "string-declarations.cnx"
+
+void fill() {
+    narrowShared <- "toolong";
+}
+
+scope Writer {
+    public void go() {
+        global.narrowShared <- "toolong";
+    }
+}

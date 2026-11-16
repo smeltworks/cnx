@@ -54,6 +54,8 @@ import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
 import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type IOperandType from "../../types/IOperandType";
+import type ISourceSite from "../../types/ISourceSite";
+import BindingSite from "../../utils/BindingSite";
 
 /** The CLI argument vector, which answers only `.type_element_count`. */
 const ARGS_PARAMETER = "args";
@@ -67,6 +69,14 @@ class LengthPropertyCheck {
     return this.found;
   }
 
+  /** #1402: `declaredAt`, the declaration the chain being checked is about */
+  private report(
+    declaredAt: ISourceSite | undefined,
+    error: ILengthPropertyError,
+  ): void {
+    this.found.push({ ...error, declaredAt });
+  }
+
   /** `inFunction`: only a function body runs, so only there can a length be read at runtime */
   public expression(chain: TExpression, inFunction: boolean): void {
     if (chain.kind !== "postfix") return;
@@ -76,15 +86,16 @@ class LengthPropertyCheck {
     // Only a property's name can read one; the rest need no typing
     const name = last.name;
     if (!PROPERTY_NAMES.has(name)) return;
+    const declaredAt = BindingSite.ofSubject(chain, this.context);
     // #1976: a literal has no fields, so the name reads the property, and a
     // length property measures a declared value -- owner ruling: never a
     // literal. The typer leaves a string literal untyped, so without this the
     // chain had no subject and its C was `"Hello".value_char_count`.
     if (LengthPropertyCheck.rootsAtLiteral(chain)) {
       if (name === "length") {
-        this.reportDeprecatedLength(last);
+        this.reportDeprecatedLength(last, declaredAt);
       } else {
-        this.found.push({
+        this.report(declaredAt, {
           code: "E0867",
           span: last.span,
           message: `.${name} is not available on a literal`,
@@ -104,7 +115,7 @@ class LengthPropertyCheck {
     // named one kind of length without saying which
     const replacement = LengthProperty.removedHelp(property);
     if (replacement !== null) {
-      this.found.push({
+      this.report(declaredAt, {
         code: "E0886",
         span: last.span,
         message: `'.${property}' is removed`,
@@ -115,7 +126,7 @@ class LengthPropertyCheck {
 
     if (LengthPropertyCheck.subjectIsArgs(chain)) {
       if (LengthProperty.parse(property)?.unit !== "element_count") {
-        this.found.push({
+        this.report(declaredAt, {
           code: "E0867",
           span: last.span,
           message: `.${property} is not available on 'args'`,
@@ -132,7 +143,7 @@ class LengthPropertyCheck {
     // subject, and no property rule applies.
     if (step?.before == null) return; // unresolved -- another diagnostic's to report
 
-    this.check(last, property, step, inFunction);
+    this.check(last, property, step, inFunction, declaredAt);
   }
 
   private check(
@@ -140,6 +151,7 @@ class LengthPropertyCheck {
     property: string,
     step: IChainStep,
     inFunction: boolean,
+    declaredAt: ISourceSite | undefined,
   ): void {
     const typed = step.before!;
     const subject = LengthSubject.spelling(typed);
@@ -151,7 +163,7 @@ class LengthPropertyCheck {
     // say which was meant. Rejected wherever it appears, so there is no
     // subject to judge.
     if (property === "length") {
-      this.reportDeprecatedLength(at);
+      this.reportDeprecatedLength(at, declaredAt);
       return;
     }
 
@@ -160,7 +172,7 @@ class LengthPropertyCheck {
     // has a buffer.
     if (property === "capacity" || property === "size") {
       if (!isString) {
-        this.found.push({
+        this.report(declaredAt, {
           code: "E0887",
           span: at.span,
           message: `.${property} is only available on strings, not on '${subject}'`,
@@ -182,7 +194,7 @@ class LengthPropertyCheck {
       )!,
     );
     if (rule.kind === "error") {
-      this.found.push({
+      this.report(declaredAt, {
         code: "E0867",
         span: at.span,
         message: rule.message,
@@ -194,7 +206,7 @@ class LengthPropertyCheck {
     // length now is not one: the C was `uint32_t n = strlen(s);`, which gcc
     // rejects
     if (!inFunction && LengthProperty.readsAtRuntime(rule)) {
-      this.found.push({
+      this.report(declaredAt, {
         code: "E0867",
         span: at.span,
         message: `.${property} is read at runtime, and a file-scope initializer must be constant`,
@@ -212,6 +224,7 @@ class LengthPropertyCheck {
         typed,
         LengthProperty.struct(typed.typeName ?? "", lookup),
         lookup,
+        declaredAt,
       );
     }
   }
@@ -222,6 +235,7 @@ class LengthPropertyCheck {
     typed: IOperandType,
     struct: ReturnType<typeof LengthProperty.struct>,
     lookup: Parameters<typeof LengthProperty.struct>[1],
+    declaredAt: ISourceSite | undefined,
   ): void {
     const subject = LengthSubject.spelling(typed);
     const element = typed.typeName ?? "";
@@ -240,7 +254,7 @@ class LengthPropertyCheck {
           ? headerBits(element)
           : LengthProperty.structBits(struct, lookup, headerBits);
       if (bits === null) {
-        this.found.push({
+        this.report(declaredAt, {
           code: "E0867",
           span: at.span,
           message: `Cannot determine .${property} for type '${subject}'`,
@@ -257,7 +271,7 @@ class LengthPropertyCheck {
       typed.enumTypeName === null &&
       typed.bitmapTypeName === null
     ) {
-      this.found.push({
+      this.report(declaredAt, {
         code: "E0867",
         span: at.span,
         message: `Cannot determine .${property} for type '${subject}'`,
@@ -269,8 +283,11 @@ class LengthPropertyCheck {
     }
   }
 
-  private reportDeprecatedLength(at: TPostfixOpSyntax): void {
-    this.found.push({
+  private reportDeprecatedLength(
+    at: TPostfixOpSyntax,
+    declaredAt: ISourceSite | undefined,
+  ): void {
+    this.report(declaredAt, {
       code: "E0886",
       span: at.span,
       message: `'.length' is deprecated`,

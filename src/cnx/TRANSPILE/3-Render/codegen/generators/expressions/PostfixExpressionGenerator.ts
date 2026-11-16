@@ -234,7 +234,12 @@ const generatePostfixExpression = (
       // nothing to ask it. The use site is enclosed by a declaration like any
       // other expression, which is what makes the cell derivable at all.
       if (orchestrator.state.isCrossFileDeclaration(tracking.result)) {
-        AdrProvenance.record("010", op.line);
+        AdrProvenance.record(
+          "010",
+          op.line,
+          undefined,
+          orchestrator.state.declarationOf(tracking.result),
+        );
       }
       // #1790 review: a safe_div/safe_mod that divides through ADR-044's
       // overflow helper, as 2.2 planned it

@@ -20,6 +20,7 @@
  * one defect rather than three bugs. Filed as #1639.
  */
 
+import type ISourceSite from "../../../../types/ISourceSite";
 import AdrProvenance from "../../../../instrumentation/AdrProvenance";
 import IParameterInput from "../types/IParameterInput";
 import type IPlannedParameter from "../types/IPlannedParameter";
@@ -48,6 +49,9 @@ interface IFromASTDeps {
    * An opaque handle takes pointer syntax.
    */
   isOpaqueHandle: boolean;
+
+  /** #1402: where a parameter's type is declared, for ADR-029/030 provenance */
+  declarationOf: (typeName: string) => ISourceSite | undefined;
 }
 
 /**
@@ -91,7 +95,12 @@ class ParameterInputAdapter {
       // codegen-only fixture occupies the enclosing function's matrix cell
       // (#1929); ADR-029 had no recording site, so its typedef fixtures were
       // listed as having no derivable context.
-      AdrProvenance.record("029", planned.line);
+      AdrProvenance.record(
+        "029",
+        planned.line,
+        undefined,
+        deps.declarationOf(typeName),
+      );
       return this._buildCallbackInput(
         name,
         typeName,
@@ -134,7 +143,12 @@ class ParameterInputAdapter {
       // #1445: the position comes from the planned parameter now. It is the
       // same position -- `ctx.start?.line` of the parameter context -- read
       // once by the planner instead of here.
-      AdrProvenance.record("030", planned.line);
+      AdrProvenance.record(
+        "030",
+        planned.line,
+        undefined,
+        deps.declarationOf(typeName),
+      );
     }
     return this._buildScalarInput(
       name,
@@ -297,7 +311,12 @@ class ParameterInputAdapter {
     // scalar branch records it for one handle: the element is held through a
     // pointer. Recorded at the parameter's position, like that branch.
     if (deps.isOpaqueHandle) {
-      AdrProvenance.record("030", planned.line);
+      AdrProvenance.record(
+        "030",
+        planned.line,
+        undefined,
+        deps.declarationOf(typeName),
+      );
     }
 
     // Issue #1159 is decided by the planner: a dimension that is a

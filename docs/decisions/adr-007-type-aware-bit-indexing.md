@@ -612,175 +612,255 @@ folds (E0858), the offset and length must fold (E0859), the span must fit
 
 <!-- MATRIX-SEVERITY code: E0856 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | error    |
-| top-level function | same file           | error    |
-| scope member       | same file           | error    |
-| scope method       | same file           | error    |
-| for header         | same file           | error    |
-| global variable    | imported direct     | error    |
-| top-level function | imported direct     | error    |
-| scope member       | imported direct     | error    |
-| scope method       | imported direct     | error    |
-| for header         | imported direct     | error    |
-| global variable    | imported transitive | error    |
-| top-level function | imported transitive | error    |
-| scope member       | imported transitive | error    |
-| scope method       | imported transitive | error    |
-| for header         | imported transitive | error    |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | error    |
+| top-level function | same file               | error    |
+| scope member       | same file               | error    |
+| scope method       | same file               | error    |
+| for header         | same file               | error    |
+| global variable    | imported direct         | error    |
+| top-level function | imported direct         | error    |
+| scope member       | imported direct         | error    |
+| scope method       | imported direct         | error    |
+| for header         | imported direct         | error    |
+| global variable    | imported transitive     | error    |
+| top-level function | imported transitive     | error    |
+| scope member       | imported transitive     | error    |
+| scope method       | imported transitive     | error    |
+| for header         | imported transitive     | error    |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | warn     |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | warn     |
 
 <!-- MATRIX-SEVERITY code: E0858 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | off      |
-| top-level function | same file           | error    |
-| scope member       | same file           | off      |
-| scope method       | same file           | error    |
-| for header         | same file           | off      |
-| global variable    | imported direct     | off      |
-| top-level function | imported direct     | error    |
-| scope member       | imported direct     | off      |
-| scope method       | imported direct     | error    |
-| for header         | imported direct     | off      |
-| global variable    | imported transitive | off      |
-| top-level function | imported transitive | error    |
-| scope member       | imported transitive | off      |
-| scope method       | imported transitive | error    |
-| for header         | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | off      |
+| top-level function | same file               | error    |
+| scope member       | same file               | off      |
+| scope method       | same file               | error    |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | error    |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | error    |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | error    |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | error    |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
 
 off: E0858 is asked of a slice assignment, a statement, so it only fires in a function body (a `for` header's declaration writes no target).
 
 <!-- MATRIX-SEVERITY code: E0859 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | off      |
-| top-level function | same file           | error    |
-| scope member       | same file           | off      |
-| scope method       | same file           | error    |
-| for header         | same file           | off      |
-| global variable    | imported direct     | off      |
-| top-level function | imported direct     | error    |
-| scope member       | imported direct     | off      |
-| scope method       | imported direct     | error    |
-| for header         | imported direct     | off      |
-| global variable    | imported transitive | off      |
-| top-level function | imported transitive | error    |
-| scope member       | imported transitive | off      |
-| scope method       | imported transitive | error    |
-| for header         | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | off      |
+| top-level function | same file               | error    |
+| scope member       | same file               | off      |
+| scope method       | same file               | error    |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | error    |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | error    |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | error    |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | error    |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
 
 off: E0859 is asked of a slice assignment, a statement, so it only fires in a function body (a `for` header's declaration writes no target).
 
 <!-- MATRIX-SEVERITY code: E0860 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | off      |
-| top-level function | same file           | error    |
-| scope member       | same file           | off      |
-| scope method       | same file           | error    |
-| for header         | same file           | off      |
-| global variable    | imported direct     | off      |
-| top-level function | imported direct     | error    |
-| scope member       | imported direct     | off      |
-| scope method       | imported direct     | error    |
-| for header         | imported direct     | off      |
-| global variable    | imported transitive | off      |
-| top-level function | imported transitive | error    |
-| scope member       | imported transitive | off      |
-| scope method       | imported transitive | error    |
-| for header         | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | off      |
+| top-level function | same file               | error    |
+| scope member       | same file               | off      |
+| scope method       | same file               | error    |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | error    |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | error    |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | error    |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | error    |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
 
 off: E0860 is asked of a slice assignment, a statement, so it only fires in a function body (a `for` header's declaration writes no target).
 
 <!-- MATRIX-SEVERITY code: E0861 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | off      |
-| top-level function | same file           | error    |
-| scope member       | same file           | off      |
-| scope method       | same file           | error    |
-| for header         | same file           | off      |
-| global variable    | imported direct     | off      |
-| top-level function | imported direct     | error    |
-| scope member       | imported direct     | off      |
-| scope method       | imported direct     | error    |
-| for header         | imported direct     | off      |
-| global variable    | imported transitive | off      |
-| top-level function | imported transitive | error    |
-| scope member       | imported transitive | off      |
-| scope method       | imported transitive | error    |
-| for header         | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | off      |
+| top-level function | same file               | error    |
+| scope member       | same file               | off      |
+| scope method       | same file               | error    |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | error    |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | error    |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | error    |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | error    |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
 
 off: E0861 is asked of a slice assignment, a statement, so it only fires in a function body (a `for` header's declaration writes no target).
 
 <!-- MATRIX-SEVERITY code: E0888 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | error    |
-| top-level function | same file           | off      |
-| scope member       | same file           | error    |
-| scope method       | same file           | off      |
-| for header         | same file           | off      |
-| global variable    | imported direct     | error    |
-| top-level function | imported direct     | off      |
-| scope member       | imported direct     | error    |
-| scope method       | imported direct     | off      |
-| for header         | imported direct     | off      |
-| global variable    | imported transitive | error    |
-| top-level function | imported transitive | off      |
-| scope member       | imported transitive | error    |
-| scope method       | imported transitive | off      |
-| for header         | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | error    |
+| top-level function | same file               | off      |
+| scope member       | same file               | error    |
+| scope method       | same file               | off      |
+| for header         | same file               | off      |
+| global variable    | imported direct         | error    |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | error    |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | error    |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | error    |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | off      |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | off      |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | off      |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | off      |
+| for header         | exercised through chain | off      |
 
 off: E0888 only fires at file scope; in a function body, `for` header included, the union copy is a statement and the read is accepted.
 
 <!-- MATRIX-SEVERITY code: E0890 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | off      |
-| top-level function | same file           | error    |
-| scope member       | same file           | off      |
-| scope method       | same file           | error    |
-| for header         | same file           | off      |
-| global variable    | imported direct     | off      |
-| top-level function | imported direct     | error    |
-| scope member       | imported direct     | off      |
-| scope method       | imported direct     | error    |
-| for header         | imported direct     | off      |
-| global variable    | imported transitive | off      |
-| top-level function | imported transitive | error    |
-| scope member       | imported transitive | off      |
-| scope method       | imported transitive | error    |
-| for header         | imported transitive | off      |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | off      |
+| top-level function | same file               | error    |
+| scope member       | same file               | off      |
+| scope method       | same file               | error    |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | error    |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | error    |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | error    |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | error    |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
 
 off: E0890 is asked of a bit write's target, a statement, so it only fires in a function body; an initializer only reads (a call there is E0909).
 
 <!-- MATRIX-SEVERITY code: E0920 -->
 
-| Context            | Relationship        | Severity |
-| ------------------ | ------------------- | -------- |
-| global variable    | same file           | error    |
-| top-level function | same file           | error    |
-| scope member       | same file           | error    |
-| scope method       | same file           | error    |
-| for header         | same file           | error    |
-| global variable    | imported direct     | error    |
-| top-level function | imported direct     | error    |
-| scope member       | imported direct     | error    |
-| scope method       | imported direct     | error    |
-| for header         | imported direct     | error    |
-| global variable    | imported transitive | error    |
-| top-level function | imported transitive | error    |
-| scope member       | imported transitive | error    |
-| scope method       | imported transitive | error    |
-| for header         | imported transitive | error    |
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | error    |
+| top-level function | same file               | error    |
+| scope member       | same file               | error    |
+| scope method       | same file               | error    |
+| for header         | same file               | error    |
+| global variable    | imported direct         | error    |
+| top-level function | imported direct         | error    |
+| scope member       | imported direct         | error    |
+| scope method       | imported direct         | error    |
+| for header         | imported direct         | error    |
+| global variable    | imported transitive     | error    |
+| top-level function | imported transitive     | error    |
+| scope member       | imported transitive     | error    |
+| scope method       | imported transitive     | error    |
+| for header         | imported transitive     | error    |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | warn     |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | warn     |
 
 A slice assignment is a **statement**. It appears in a function body and
 nowhere else, so the two declaration contexts cannot hold one -- the same shape

@@ -19,9 +19,11 @@ u32 okAccess() {
 // ASSERTION 1 -- global variable initializer (E0870).
 u32 globalRead <- HW.COMMAND;
 
-// ASSERTION 2 -- top-level function (E0871).
+// ASSERTION 2 -- top-level function (E0871, E0870, E0872).
 void main() {
     HW.STATUS <- 1;
+    u32 fnRead <- HW.COMMAND;
+    HW.SET[2] <- false;
 }
 
 scope Board {

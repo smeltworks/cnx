@@ -140,8 +140,9 @@ describe("AdrDeclarationReader.read code tables (#1620)", () => {
       "| Context | Relationship | Severity |",
       "| ------- | ------------ | -------- |",
       ...MatrixCell.CONTEXTS.flatMap((context) =>
-        MatrixCell.RELATIONSHIPS.filter(MatrixCell.isDerivable)
-          .map((relationship) => `${context} / ${relationship}`)
+        MatrixCell.RELATIONSHIPS.map(
+          (relationship) => `${context} / ${relationship}`,
+        )
           .filter((cell) => !omit.includes(cell))
           .map((cell) => `| ${cell.replace(" / ", " | ")} | off |`),
       ),

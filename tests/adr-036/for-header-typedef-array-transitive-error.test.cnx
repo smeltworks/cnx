@@ -1,0 +1,15 @@
+// test-error
+// test-adr: 036
+// #1402: E0917 for a header typedef that names an array, reached through a
+// relay header -- two include hops, the for-header / imported transitive cell.
+
+#include "for-header-typedef-relay.h"
+
+u32 main() {
+    mut u32 n <- 0;
+    // NEGATIVE CONTROL -- a header typedef of a scalar.
+    for (mut Byte k <- 0; k < 3; k <- k + 1) {}
+
+    for (mut Buf b; n < 1; n <- n + 1) {}
+    return 0;
+}

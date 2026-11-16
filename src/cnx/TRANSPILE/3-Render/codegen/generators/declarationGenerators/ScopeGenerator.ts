@@ -174,7 +174,12 @@ function renderRegularVariable(
     // which reports nothing. The ADR's other half raises E0422/E0423/E0426/E0427
     // and its fixtures occupy cells here on their own reported positions (#1582),
     // so an occupied cell is not evidence that this line still exists.
-    AdrProvenance.record("030", plan.declarationLine);
+    AdrProvenance.record(
+      "030",
+      plan.declarationLine,
+      undefined,
+      plan.declaredAt,
+    );
     type = spelled;
     // A call site reads the same fact from the member's declared type
     // (`DeclaredPointer`), so nothing is recorded here for it: the set of
@@ -269,7 +274,7 @@ function renderScopeMember(
   // member, here. Recorded for EVERY member, including the ones nothing is
   // emitted for, because the occupancy it feeds is about where the decision was
   // taken and not about whether that decision produced text.
-  AdrProvenance.record("016", member.adrLine);
+  AdrProvenance.record("016", member.adrLine, undefined, "its-position");
 
   switch (member.kind) {
     case "variable": {

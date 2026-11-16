@@ -45,6 +45,9 @@ interface ISourceGraph {
   /** #1844: every `.cnx` file's header includes, in discovery order */
   readonly headerIncludes: readonly IHeaderInclude[];
 
+  /** #1402: each header's own resolved includes, the header-to-header edges */
+  readonly headerEdges: ReadonlyMap<string, readonly string[]>;
+
   /** Issue #985: the run's C includes as one translation unit */
   readonly headerUnit: IHeaderUnit;
 

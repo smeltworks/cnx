@@ -93,6 +93,7 @@ function regular(
     isArray: false,
     isPointer: false,
     declarationLine: 3,
+    declaredAt: undefined,
     atomic: "",
     volatile: "",
     renderType: () => "uint32_t",

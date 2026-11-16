@@ -9,9 +9,8 @@
  * deliberate mutation before these tests existed.
  *
  * They are the two that matter most: `**MISSING**` is how a cell that is FAILING
- * its declared obligation appears, and the `-` / `n/a` split is the distinction
- * the renderer's own header calls out -- collapsing them is how an unmeasured
- * cell starts reading as a satisfied one.
+ * its declared obligation appears, and `-` is how one carrying none
+ * does.
  */
 
 import MatrixCell from "../matrix/MatrixCell";
@@ -73,58 +72,7 @@ describe("MatrixRenderer.renderCell", () => {
     ).toBe("-");
   });
 
-  it("renders an unoccupied cell the tool cannot yet see as 'n/a'", () => {
-    expect(
-      MatrixRenderer.renderCell(
-        MatrixTestHelpers.declare("051", []),
-        EMPTY,
-        "global-variable",
-        "exercised-from-one-away",
-      ),
-    ).toBe("n/a");
-  });
-
-  it("keeps 'no obligation' and 'not derivable' distinct", () => {
-    // Collapsing these is the failure the renderer's header names: `-` is a
-    // reviewed claim that the cell carries no obligation, `n/a` is the tool
-    // admitting it cannot tell. They must never render alike.
-    const noObligation = MatrixRenderer.renderCell(
-      MatrixTestHelpers.declare("051", []),
-      EMPTY,
-      "global-variable",
-      "same-file",
-    );
-    const notDerivable = MatrixRenderer.renderCell(
-      MatrixTestHelpers.declare("051", []),
-      EMPTY,
-      "global-variable",
-      "exercised-from-one-away",
-    );
-    expect(noObligation).not.toBe(notDerivable);
-  });
-
-  it("reports a non-derivable cell as n/a even when the ADR declared it error", () => {
-    // Otherwise the gate would fire on the tool's blindness rather than on
-    // missing coverage.
-    expect(
-      MatrixRenderer.renderCell(
-        MatrixTestHelpers.declare("051", [
-          ["scope-method", "exercised-through-chain", "error"],
-        ]),
-        EMPTY,
-        "scope-method",
-        "exercised-through-chain",
-      ),
-    ).toBe("n/a");
-  });
-
-  // NOTE: this state is unreachable through the real pipeline. FixtureOccupancy
-  // only writes keys built from MatrixCell.relationshipForDepth, which returns
-  // one of the three derivable relationships, so no provider-side cell can
-  // carry an occupant until #1402 lands. Unlike every other case in this file
-  // it therefore cannot fail for a reason the corpus could produce -- it pins
-  // the behavior for when #1402 arrives, not behavior anything exercises now.
-  it("renders an occupied non-derivable cell as ok", () => {
+  it("renders an occupied provider-side cell as ok", () => {
     expect(
       MatrixRenderer.renderCell(
         MatrixTestHelpers.declare("051", []),

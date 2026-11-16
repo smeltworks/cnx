@@ -22,6 +22,7 @@
  * only in the register map. ADR-034 says a bitmap is addressed by named field.
  */
 
+import BindingSite from "../../utils/BindingSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import ProgramAccesses from "../../utils/ProgramAccesses";
 import type IValuePositions from "../../types/IValuePositions";
@@ -64,6 +65,7 @@ class BitmapAccessCheck {
     this.found.push({
       code: "E0881",
       span: site.value.span,
+      declaredAt: BindingSite.ofChain(site.target, this.context),
       message: `Value ${value} exceeds ${field.layout.width}-bit field '${field.fieldName}' maximum of ${maximum}`,
       helpText: `A ${field.layout.width}-bit field holds 0 through ${maximum}; widen the field in the bitmap declaration, or write a value that fits (ADR-034).`,
     });
@@ -90,6 +92,7 @@ class BitmapAccessCheck {
         this.found.push({
           code: "E0921",
           span: node.span,
+          declaredAt: BindingSite.ofChain(node, this.context),
           message: `Field '${step.member}' of an array of '${bitmap}' names no element`,
           helpText: `A field belongs to one '${bitmap}' value; index every dimension first, e.g. NAME[i].${step.member} (ADR-034).`,
         });
@@ -100,6 +103,8 @@ class BitmapAccessCheck {
         this.found.push({
           code: "E0883",
           span: node.span,
+          // #1402: about the bitmap type, wherever it is declared
+          declaredAt: BindingSite.ofCName(bitmap, this.context),
           message: `Cannot use bracket indexing on bitmap type '${bitmap}'`,
           helpText: `A bitmap is addressed by named field, not by bit index -- write ${BitmapAccessCheck.spellingBefore(node, steps.length, i)}.FIELD_NAME (ADR-034).`,
         });
@@ -117,6 +122,7 @@ class BitmapAccessCheck {
         this.found.push({
           code: "E0882",
           span: node.span,
+          declaredAt: BindingSite.ofChain(node, this.context),
           message: `Unknown bitmap field '${field}' on '${bitmap}'`,
           helpText:
             known.length === 0

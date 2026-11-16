@@ -1,0 +1,6 @@
+// Helper (not a test): a struct whose field a fixture's struct literal
+// writes from across an include (#1402 review).
+
+struct Cfg {
+    u8 label;
+}

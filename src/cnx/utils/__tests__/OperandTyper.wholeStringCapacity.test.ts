@@ -45,6 +45,7 @@ function step(
     fieldBits: null,
     beforeRegisterMember: null,
     beforeRegister: null,
+    register: null,
     registerMember: null,
     member: subscript === null ? "name" : null,
   };

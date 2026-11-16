@@ -93,6 +93,11 @@
      when it was fixed — that staging is legitimate and documented. Declaring
      `off` because `error` would be red is not.
 
+     The provider-side cells (`exercised from one away`, `exercised through
+     chain`) became measurable with #1402/#1523. Every table declares them
+     `warn` where its same-file cell is `error` or `warn`, and `off` where it
+     is `off`, until their fixtures exist: that staging is #2427.
+
      Mark each fixture with `// test-adr: NNN`. -->
 
 <!-- MATRIX-SEVERITY -->
@@ -112,14 +117,19 @@
 | scope member       | imported transitive |          |
 | scope method       | imported transitive |          |
 
-<!-- One tooling limit applies to every matrix, tracked as #1402:
+<!-- How the relationship axis is measured (#1402, #1523):
 
-     The relationship axis measures the DEEPEST include chain reachable from
-     the fixture, not the hops to the declaration under test. So a helper
-     that gains an unrelated include silently moves the cells its consumers
-     occupy. When you need a transitive fixture, build it a NEW chain rather
-     than adding an include to a helper other fixtures already use. The two
-     provider-side relationships are not derivable for the same reason.
+     Per position, over the include graph the transpiler resolved -- `.cnx`,
+     `.h` and `.hpp` edges alike, nearest path first. A diagnostic or a
+     recording site in the fixture is measured to the declaration it is about
+     (`declaredAt`, set by the pass that decided it): 0 hops is `same file`,
+     1 is `imported direct`, 2 or more is `imported transitive`. A rule that
+     fires inside an included file is measured to that file: 1 hop is
+     `exercised from one away`, 2 or more `exercised through chain`. A
+     position with no declaration measures `same file` only in a fixture that
+     includes nothing; anywhere else it occupies no cell, it is never guessed.
+     So declare an imported cell `off` when the diagnostic can only be about
+     a declaration in the file being transpiled, and say why under the table.
 
      A codegen-only ADR CAN occupy a cell — #1241 (2026-08-29) made occupancy
      derive from diagnostic positions union ADR provenance. It costs one line
@@ -127,15 +137,12 @@
      no recording site occupies nothing, so declare `error` and add the
      recording site rather than declaring `warn` and calling it a tooling gap.
 
-     Three things the axes cannot see at all, worth knowing before you trust a
+     Two things the axes cannot see at all, worth knowing before you trust a
      green row:
 
      - SYNTACTIC FORM. A bare `read()` and a qualified `this.read()` inside the
        same scope method derive the same cell. A rule enforced on one spelling
        and not the other shows green. This has happened twice (#1210, #1260).
-     - EXTERNAL-HEADER PROVENANCE. The relationship axis counts `.cnx` hops
-       only, so a symbol from a `.h` or a `.hpp` is indistinguishable from a
-       same-file one — and those are two separate symbol indexes.
      - DECLARATION KIND. A local, a parameter and a `for` variable doing the
        same thing in the same function derive the same cell, and they reach
        codegen by different paths. ADR-057's scope-method row was green from

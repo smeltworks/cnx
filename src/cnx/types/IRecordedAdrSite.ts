@@ -13,6 +13,8 @@
  * eleven of them could not occupy a single cell. Recording where the rule fired
  * gives those fixtures a position without asking them to declare one.
  */
+import type ISourceSite from "./ISourceSite";
+
 interface IRecordedAdrSite {
   /** ADR number as it appears in `// test-adr:`, e.g. "057". */
   readonly adr: string;
@@ -30,6 +32,19 @@ interface IRecordedAdrSite {
    * another rule must fill.
    */
   readonly rule?: string;
+
+  /**
+   * #1402: the declaration of the construct the rule fired on, in the file
+   * that declares it, when it has one. The matrix measures the consumer-side
+   * relationship from it.
+   */
+  readonly declaredAt?: ISourceSite;
+
+  /**
+   * #1402: the construct is what is written at the site itself, so no other
+   * file supplies it (`ITranspileError.aboutItsPosition`)
+   */
+  readonly aboutItsPosition?: true;
 }
 
 export default IRecordedAdrSite;

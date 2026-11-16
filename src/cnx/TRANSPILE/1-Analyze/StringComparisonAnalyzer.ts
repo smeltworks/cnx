@@ -21,6 +21,8 @@ import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import type TBinaryExpression from "../../types/syntax/TBinaryExpression";
 import type ISourceSpan from "../../types/ISourceSpan";
+import type ISourceSite from "../../types/ISourceSite";
+import BindingSite from "../../utils/BindingSite";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import ComparisonChain from "../../utils/ComparisonChain";
 import ExpressionChildren from "../../utils/ExpressionChildren";
@@ -62,7 +64,12 @@ class StringComparisonAnalyzer {
     if (leftIsString !== rightIsString) {
       const other = leftIsString ? operands[1] : operands[0];
       if (!this.cannotType(other)) {
-        this.report(other.span, this.notAString(other), RULE);
+        this.report(
+          other.span,
+          this.notAString(other),
+          RULE,
+          BindingSite.ofOperands([other], this.context),
+        );
         return;
       }
     }
@@ -80,12 +87,14 @@ class StringComparisonAnalyzer {
           comparison,
           ComparisonChain.message(level, i, "the string "),
           pairs === null ? RULE : `ADR-045: did you mean '${pairs}'?`,
+          BindingSite.ofOperands(operands, this.context),
         );
       } else {
         this.report(
           comparison,
           ComparisonChain.message(level, i),
           `ADR-045: a string comparison takes two operands. Did you mean '${StringComparisonAnalyzer.intent(level, i)}'?`,
+          BindingSite.ofOperands(operands, this.context),
         );
       }
       return;
@@ -141,8 +150,13 @@ class StringComparisonAnalyzer {
     return type.typeName + type.dimensions.map((d) => `[${d}]`).join("");
   }
 
-  private report(span: ISourceSpan, message: string, helpText: string): void {
-    this.found.push({ code: "E0929", span, message, helpText });
+  private report(
+    span: ISourceSpan,
+    message: string,
+    helpText: string,
+    declaredAt: ISourceSite | undefined,
+  ): void {
+    this.found.push({ code: "E0929", span, message, helpText, declaredAt });
   }
 }
 

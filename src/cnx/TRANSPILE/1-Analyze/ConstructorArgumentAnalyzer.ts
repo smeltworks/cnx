@@ -29,6 +29,7 @@ import type TStatement from "../../types/syntax/TStatement";
 import StatementNodes from "../../utils/StatementNodes";
 import BoundDeclaration from "./helpers/BoundDeclaration";
 import IConstructorArgumentError from "./types/IConstructorArgumentError";
+import BindingSite from "../../utils/BindingSite";
 import type IAnalysisContext from "./types/IAnalysisContext";
 
 type TConstructorDeclaration = Extract<
@@ -51,19 +52,19 @@ class ConstructorArgumentCheck {
       // What the name binds to before this declaration, through Program's
       // one binder (#1668): a const local, member or global, this file's or
       // an included one's
-      const declared = BoundDeclaration.of(
-        this.context.program.bindValue(
-          this.context.sourceFile,
-          null,
-          name,
-          argument.span,
-        ),
+      const binding = this.context.program.bindValue(
+        this.context.sourceFile,
+        null,
+        name,
+        argument.span,
       );
+      const declared = BoundDeclaration.of(binding);
 
       if (!declared) {
         this.found.push({
           code: "E0433",
           span: declaration.span,
+          aboutItsPosition: true,
           message: `Constructor argument '${name}' is not declared`,
           helpText: `Declare '${name}' before the constructor, or pass a literal.`,
         });
@@ -76,6 +77,7 @@ class ConstructorArgumentCheck {
           message: `Constructor argument '${name}' must be read-only`,
           helpText:
             "A C++ constructor runs during static initialization, before main, so it may only read a value fixed at compile time. Remove `mut` from the argument's declaration.",
+          declaredAt: BindingSite.of(binding, this.context),
         });
       }
     }

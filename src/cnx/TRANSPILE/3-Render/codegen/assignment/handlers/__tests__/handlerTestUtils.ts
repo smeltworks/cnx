@@ -341,6 +341,7 @@ function bitWriteOf(
       fieldBits: null,
       beforeRegisterMember: null,
       beforeRegister: null,
+      register: null,
       registerMember: null,
       member: null,
     },

@@ -46,6 +46,7 @@ const step = (
   fieldBits: null,
   beforeRegisterMember: null,
   beforeRegister: null,
+  register: null,
   registerMember: null,
 });
 

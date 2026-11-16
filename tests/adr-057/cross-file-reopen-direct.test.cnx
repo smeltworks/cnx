@@ -1,0 +1,25 @@
+// test-execution
+// test-adr: 057
+// #1402: ADR-057's scope-first resolution of names DECLARED one include(s) away.
+// The fixture reopens the provider's `Sensor`, so a bare `offset` in a member
+// initializer and a bare `raw()` in a method bind declarations in
+// cross-file-provider.cnx -- the binds-scope cells of the imported columns.
+
+#include "cross-file-provider.cnx"
+
+scope Sensor {
+    mut u32 shifted <- offset;
+
+    public u32 doubled() {
+        shifted <- shifted + 1;
+        return raw() + raw();
+    }
+}
+
+i32 main() {
+    u32 v <- Sensor.doubled();
+    if (v != 14) {
+        return 1;
+    }
+    return 0;
+}

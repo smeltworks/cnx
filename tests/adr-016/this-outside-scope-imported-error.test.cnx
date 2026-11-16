@@ -1,9 +1,8 @@
 // test-error
 // test-adr: 016
 // E0431 across one include hop: `this.` in a top-level function of an
-// included file, as a value and as a case label (#2075). It fills no matrix
-// cell yet: the diagnostic's line is in the included file, which the matrix
-// does not resolve (#1408).
+// included file, as a value and as a case label (#2075). The diagnostic is in
+// the included file, so it occupies `exercised from one away` (#1402).
 #include "this-outside-scope-lib.cnx"
 
 u8 main() {

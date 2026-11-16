@@ -45,6 +45,8 @@ interface IChainStep {
    * names, as the renderer does, rather than resolving the spelling again.
    */
   readonly registerMember: string | null;
+  /** The C name of the register `registerMember` belongs to */
+  readonly register: string | null;
   readonly after: IOperandType | null;
   /** A call's: the C name of the function it calls, when the chain names one (#1991) */
   readonly callee: string | null;
