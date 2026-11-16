@@ -146,6 +146,7 @@ class ThisOutsideScopeAnalyzer {
     this.found.push({
       code: "E0431",
       span: span,
+      aboutItsPosition: true,
       ...text,
     });
   }

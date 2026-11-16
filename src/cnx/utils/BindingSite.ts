@@ -81,12 +81,21 @@ class BindingSite {
     return symbol && BindingSite.ofSymbol(symbol);
   }
 
-  /** #1402: the declaration a chain is rooted in, `a` of `a.b[0].c` */
+  /**
+   * #1402: the declaration a chain is rooted in, `a` of `a.b[0].c`; for a
+   * scope root, the member it names, `label` of `Store.label`
+   */
   static ofChain(
     chain: TExpression,
     context: ITypingContext,
   ): ISourceSite | undefined {
-    return BindingSite.of(OperandTyper.rootOfTarget(chain, context), context);
+    const typing = OperandTyper.chainOf(chain, context);
+    const root = typing.root;
+    if (root?.kind !== "scope") return BindingSite.of(root, context);
+    const member = typing.steps[0]?.member;
+    return member
+      ? BindingSite.ofMember(root.scopePath, member, context)
+      : undefined;
   }
 
   /**

@@ -101,6 +101,7 @@ interface IAnalyzerError {
   helpText?: string;
   severity?: "error" | "warning";
   declaredAt?: ISourceSite;
+  aboutItsPosition?: true;
 }
 
 /**
@@ -126,6 +127,7 @@ function collectErrors<E extends IAnalyzerError>(
       severity: err.severity ?? "error",
       helpText: err.helpText,
       ...(err.declaredAt && { declaredAt: err.declaredAt }),
+      ...(err.aboutItsPosition && { aboutItsPosition: true }),
     });
   }
   return analyzerErrors.some((err) => err.severity !== "warning");

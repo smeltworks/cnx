@@ -39,6 +39,12 @@ interface IRecordedAdrSite {
    * relationship from it.
    */
   readonly declaredAt?: ISourceSite;
+
+  /**
+   * #1402: the construct is what is written at the site itself, so no other
+   * file supplies it (`ITranspileError.aboutItsPosition`)
+   */
+  readonly aboutItsPosition?: true;
 }
 
 export default IRecordedAdrSite;

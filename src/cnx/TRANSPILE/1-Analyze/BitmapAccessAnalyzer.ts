@@ -103,7 +103,8 @@ class BitmapAccessCheck {
         this.found.push({
           code: "E0883",
           span: node.span,
-          declaredAt: BindingSite.ofChain(node, this.context),
+          // #1402: about the bitmap type, wherever it is declared
+          declaredAt: BindingSite.ofCName(bitmap, this.context),
           message: `Cannot use bracket indexing on bitmap type '${bitmap}'`,
           helpText: `A bitmap is addressed by named field, not by bit index -- write ${BitmapAccessCheck.spellingBefore(node, steps.length, i)}.FIELD_NAME (ADR-034).`,
         });

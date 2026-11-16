@@ -834,12 +834,12 @@ off: E0863 is a file-scope rule; inside a function or method a string may be cop
 | scope member       | same file               | error    |
 | top-level function | imported direct         | error    |
 | scope method       | imported direct         | error    |
-| global variable    | imported direct         | off      |
-| scope member       | imported direct         | off      |
+| global variable    | imported direct         | error    |
+| scope member       | imported direct         | error    |
 | top-level function | imported transitive     | error    |
 | scope method       | imported transitive     | error    |
-| global variable    | imported transitive     | off      |
-| scope member       | imported transitive     | off      |
+| global variable    | imported transitive     | error    |
+| scope member       | imported transitive     | error    |
 | for header         | same file               | error    |
 | for header         | imported direct         | off      |
 | for header         | imported transitive     | off      |
@@ -854,7 +854,7 @@ off: E0863 is a file-scope rule; inside a function or method a string may be cop
 | scope method       | exercised through chain | warn     |
 | for header         | exercised through chain | warn     |
 
-#1402: the imported columns measure the include hops to the declaration a diagnostic is about. E0864 is about the `string<N>` the value is written into, and in a global variable, a scope member or a for header that is always the declaration being initialized, in the file being transpiled, so those cells cannot be occupied; an imported destination is written only by an assignment, inside a function or method.
+#1402: the imported columns measure the include hops to the declaration a diagnostic is about. E0864 is about the `string<N>` the value is written into. In a for header that is always the declaration being initialized, in the file being transpiled, so those cells cannot be occupied; a global variable or a scope member reaches an imported one through a struct literal's field (`string-field-imported-*-error`, #1402 review).
 
 <!-- MATRIX-SEVERITY code: E0865 -->
 

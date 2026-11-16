@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1003 fixture(s) assert a diagnostic; 988 carry a code.
+1007 fixture(s) assert a diagnostic; 992 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -228,6 +228,8 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-024/macro-literal-range-error.test.cnx                                                          | E0868                             |
 | tests/adr-024/narrowing-assign-error.test.cnx                                                             | E0869                             |
 | tests/adr-024/narrowing-cast-error.test.cnx                                                               | E0869                             |
+| tests/adr-024/range-field-imported-direct-error.test.cnx                                                  | E0868                             |
+| tests/adr-024/range-field-imported-transitive-error.test.cnx                                              | E0868                             |
 | tests/adr-024/sign-assign-error.test.cnx                                                                  | E0869                             |
 | tests/adr-024/sign-cast-error.test.cnx                                                                    | E0869                             |
 | tests/adr-025/switch-codes-imported-direct.test.cnx                                                       | E0711, E0712, E0713, E0714, E0717 |
@@ -360,6 +362,8 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-045/string-error-substring-global.test.cnx                                                      | E0863                             |
 | tests/adr-045/string-error-uncovered-fit.test.cnx                                                         | E0864                             |
 | tests/adr-045/string-error-uncovered-forms.test.cnx                                                       | E0862                             |
+| tests/adr-045/string-field-imported-direct-error.test.cnx                                                 | E0864                             |
+| tests/adr-045/string-field-imported-transitive-error.test.cnx                                             | E0864                             |
 | tests/adr-045/string-fit-rules-contexts-error.test.cnx                                                    | E0865                             |
 | tests/adr-045/string-fit-rules-for-header-error.test.cnx                                                  | E0864, E0865                      |
 | tests/adr-045/string-fit-rules-for-header-imported-direct-error.test.cnx                                  | E0864, E0865                      |

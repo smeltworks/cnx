@@ -1,8 +1,8 @@
 /**
  * Issue #1219: The scope-context matrix vocabulary.
  *
- * One place decides what a cell IS, how it is spelled, and whether the tooling
- * can currently derive it. Every consumer reads that decision rather than
+ * One place decides what a cell IS, how it is spelled, and which relationship
+ * an include distance is (#1402). Every consumer reads that decision rather than
  * re-deriving it -- a second list of contexts that agreed with this one only by
  * coincidence is exactly the divergence the project forbids.
  */

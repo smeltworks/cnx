@@ -50,8 +50,9 @@ interface ITranspilerResult {
   adrSites?: readonly IRecordedAdrSite[];
 
   /**
-   * #1402: each `.cnx` file's direct includes, `.cnx` and C/C++ headers alike,
-   * by the paths 1.1 Discover resolved. The matrix measures how far a
+   * #1402: each file's direct includes, by the paths 1.1 Discover resolved: a
+   * `.cnx` file's `.cnx` and C/C++ header includes, and a header's own
+   * includes (`ISourceGraph.headerEdges`). The matrix measures how far a
    * declaration is from a fixture over this graph instead of resolving the
    * includes a second time.
    */

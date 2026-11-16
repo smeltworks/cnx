@@ -23,7 +23,7 @@ import type IFixtureRun from "../types/IFixtureRun";
 import type ILocatedPosition from "../types/ILocatedPosition";
 import type TMatrixRelationship from "../types/TMatrixRelationship";
 import type IRecordedAdrSite from "../../src/cnx/types/IRecordedAdrSite";
-import type ISourceSite from "../../src/cnx/types/ISourceSite";
+import type ITranspileError from "../../src/cnx/types/ITranspileError";
 import IMatrixOccupancy from "../types/IMatrixOccupancy";
 import ISourcePosition from "../types/ISourcePosition";
 import TMatrixContext from "../types/TMatrixContext";
@@ -41,13 +41,8 @@ import TMatrixContext from "../types/TMatrixContext";
  * placeholder invents occupancy for a cell nothing exercises. Once #1235 lands
  * the position is unambiguous and this exclusion should go.
  *
- * KNOWN GAP (#1408): the path prefix is discarded, so a position naming ANOTHER
- * file is still resolved against this fixture's parse tree. Harmless today --
- * the one fixture that reports a foreign path (#1334's cross-file conflict,
- * which reports at the FIRST definition) lands on a comment and yields no
- * context -- but there is no guard, and every diagnostic that gains a real
- * cross-file position turns a skipped 1:0 into a real number aimed at the wrong
- * tree.
+ * #1408: a path prefix is kept, so a position naming ANOTHER file is resolved
+ * against that file's own parse tree, as the provider side (#1402).
  *
  * #1620: positions are grouped by the code each line asserts, so a cell is
  * occupied for that code alone. A line asserting no code (a parse error) is
@@ -127,15 +122,20 @@ function recordPositions(
 /**
  * #1402: the relationship of a position in the fixture itself -- the hops to
  * the file that declares its construct, as the deciding pass recorded it
- * (`declaredAt`). With no declaration recorded it is `same-file` only where
- * the fixture includes nothing, so nothing else could have declared it;
- * otherwise it is not measured, never guessed. A `<system.h>` that resolved
- * to no file is in no include graph but is still an include (#1523).
+ * (`declaredAt`). A position the pass recorded as about itself
+ * (`aboutItsPosition`: a syntax rule, a name nothing declares) is `same-file`
+ * whatever the fixture includes. With no declaration recorded it is
+ * `same-file` only where the fixture includes nothing, so nothing else could
+ * have declared it; otherwise it is not measured, never guessed. A
+ * `<system.h>` that resolved to no file is in no include graph but is still
+ * an include (#1523).
  */
 function consumerRelationship(
   run: IFixtureRun,
-  declaredAt: ISourceSite | undefined,
+  fact: Pick<ITranspileError, "declaredAt" | "aboutItsPosition"> | undefined,
 ): TMatrixRelationship | null {
+  if (fact?.aboutItsPosition) return MatrixCell.relationshipFor("consumer", 0);
+  const declaredAt = fact?.declaredAt;
   if (declaredAt === undefined) {
     return run.hops.size === 1 && !run.includesForeignHeader
       ? MatrixCell.relationshipFor("consumer", 0)
@@ -147,20 +147,26 @@ function consumerRelationship(
     : MatrixCell.relationshipFor("consumer", hops);
 }
 
-/** The declaration the run reported for the diagnostic at `position` */
-function declarationAt(
+/**
+ * The diagnostic the run reported at `position` with `code` (any code for a
+ * line asserting none), and so what it recorded it is about
+ */
+function reportedAt(
   run: IFixtureRun,
   fixture: string,
   position: ISourcePosition,
-): ISourceSite | undefined {
+  code: string | null,
+): ITranspileError | undefined {
   return run.errors.find(
     (error) =>
-      error.declaredAt !== undefined &&
+      (error.declaredAt !== undefined || error.aboutItsPosition) &&
       error.sourcePath !== undefined &&
       resolve(error.sourcePath) === fixture &&
       error.line === position.line &&
-      error.column === position.column,
-  )?.declaredAt;
+      error.column === position.column &&
+      (code === null ||
+        DiagnosticManifest.parseCodes(error.message).includes(code)),
+  );
 }
 
 /**
@@ -176,7 +182,7 @@ function locateSite(
   const path = resolve(site.sourcePath);
   if (path !== fixture) return locateIncluded(run, site, path, treeOf);
   const tree = treeOf(path);
-  const relationship = consumerRelationship(run, site.declaredAt);
+  const relationship = consumerRelationship(run, site);
   return tree === null || relationship === null
     ? null
     : { tree, line: site.line, relationship };
@@ -259,6 +265,7 @@ function recordFixture(
 
   const locateDiagnostics = (
     positions: readonly ISourcePosition[],
+    code: string | null,
   ): ILocatedPosition[] => {
     if (run === null) return [];
     return positions.flatMap((position) => {
@@ -270,7 +277,7 @@ function recordFixture(
       }
       const relationship = consumerRelationship(
         run,
-        declarationAt(run, fixture, position),
+        reportedAt(run, fixture, position, code),
       );
       return relationship === null ? [] : [{ tree, ...position, relationship }];
     });
@@ -281,12 +288,12 @@ function recordFixture(
     // recorded for that rule. #1620: a coded diagnostic occupies only its
     // code's matrix -- never the ADR's own, nor another code's.
     const matrices = new Map<string, ILocatedPosition[]>([
-      [adr, locateDiagnostics(diagnostics.get(null) ?? [])],
+      [adr, locateDiagnostics(diagnostics.get(null) ?? [], null)],
     ]);
     for (const [code, codePositions] of diagnostics) {
       if (code === null) continue;
       const codeId = MatrixRule.id(adr, code);
-      matrices.set(codeId, locateDiagnostics(codePositions));
+      matrices.set(codeId, locateDiagnostics(codePositions, code));
       const matrix = positionCells.get(codeId) ?? new Map<string, string[]>();
       recordPositions(
         tree,

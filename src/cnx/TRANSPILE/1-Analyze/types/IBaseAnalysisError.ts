@@ -20,6 +20,8 @@ interface IBaseAnalysisError {
   severity?: "error" | "warning";
   /** Where the declaration the error is about sits (`ITranspileError`) */
   declaredAt?: ISourceSite;
+  /** About what is written at its own position (`ITranspileError`) */
+  aboutItsPosition?: true;
 }
 
 export default IBaseAnalysisError;

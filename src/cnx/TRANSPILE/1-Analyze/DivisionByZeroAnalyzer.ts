@@ -151,6 +151,10 @@ class DivisionByZeroAnalyzer {
         ? `Consider using ${builtin}(output, numerator, divisor, defaultValue) for runtime safety`
         : "A divisor known at compile time must not be zero",
       declaredAt: BindingSite.ofOperands([divisor], this.context),
+      // a literal divisor is about no declaration
+      ...(OperandTyper.valueLeafExpressions(divisor).every(
+        (leaf) => leaf.kind === "literal",
+      ) && { aboutItsPosition: true }),
     });
   }
 }

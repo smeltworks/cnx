@@ -694,9 +694,6 @@ class Transpiler {
   // Pipeline Helper Methods
   // ===========================================================================
 
-  /**
-   * Initialize a fresh result object
-   */
   /** #1402: the include graph 1.1 resolved, `.cnx` and header edges both */
   private static _includes(
     graph: ISourceGraph,
@@ -715,6 +712,9 @@ class Transpiler {
     ]);
   }
 
+  /**
+   * Initialize a fresh result object
+   */
   private _initResult(): ITranspilerResult {
     return {
       success: true,

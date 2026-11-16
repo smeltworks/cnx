@@ -183,7 +183,7 @@ const renderComparison = (
   // unchanged from C and is not ADR-001's doing, so the planner leaves
   // `adrLine` undefined for a comparison that uses only `!=` -- occupancy must
   // not be invented for a cell where this ADR's rule never fired.
-  AdrProvenance.record("001", plan.adrLine);
+  AdrProvenance.record("001", plan.adrLine, undefined, "its-position");
 
   if (plan.strcmp) {
     // ADR-045: string comparison lowers to strcmp. 2.2 required <string.h>

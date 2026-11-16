@@ -468,6 +468,7 @@ class FunctionCallAnalyzer {
         code: "E0423",
         functionName: name,
         span,
+        declaredAt: BindingSite.ofCName(name, this.context),
         message: `recursive call to '${writtenName}' is forbidden (MISRA C:2012 Rule 17.2)`,
       });
       return;
@@ -548,6 +549,10 @@ class FunctionCallAnalyzer {
       code: "E0422",
       functionName: name ?? writtenName,
       span,
+      // a function this file defines later, or one nothing declares
+      ...(isLocalFunction
+        ? { declaredAt: BindingSite.ofCName(name, this.context) }
+        : { aboutItsPosition: true }),
       message,
     });
   }

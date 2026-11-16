@@ -1,0 +1,11 @@
+// test-error
+// test-adr: 045
+// #1402 review: E0864 where a struct literal's field is declared across
+// ONE include hop(s) -- the `string<4>` the literal must fit is the imported field.
+#include "string-field-struct.cnx"
+
+Cfg atFileScope <- { label: "toolong" };
+
+scope Holder {
+    Cfg member <- { label: "toolong" };
+}

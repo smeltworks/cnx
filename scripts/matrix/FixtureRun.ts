@@ -19,7 +19,7 @@
  * its includes for symbols only, so every site carried the fixture's own path.
  */
 
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -29,7 +29,7 @@ import IncludeHops from "./IncludeHops";
 import NodeFileSystem from "../../src/cnx/PARSE/1-Discover/NodeFileSystem";
 import type IFixtureRun from "../types/IFixtureRun";
 
-/** Throwaway output directory; the matrix cares about provenance, not files. */
+/** Throwaway output directory, removed after the run; the matrix cares about provenance, not files. */
 function scratchDir(): string {
   return mkdtempSync(join(tmpdir(), "cnx-matrix-"));
 }
@@ -46,12 +46,13 @@ async function of(
   includeDirs: readonly string[],
 ): Promise<IFixtureRun | null> {
   const fixture = resolve(fixturePath);
+  const outDir = scratchDir();
   try {
     const source = readFileSync(fixture, "utf-8");
     const transpiler = new Transpiler(
       {
         input: fixture,
-        outDir: scratchDir(),
+        outDir,
         includeDirs: [...includeDirs],
         target: TestUtils.harnessTarget(source),
         // #1844 review: the mode of the harness's first run of this fixture,
@@ -70,6 +71,8 @@ async function of(
     };
   } catch {
     return null;
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
   }
 }
 

@@ -395,7 +395,9 @@ class CodeGenWalker {
         node.level === "equality"
           ? BinaryExprUtils.equalityAdrLine(node.operators, node.span.line)
           : undefined;
-      if (equality !== undefined) AdrProvenance.record("001", equality);
+      if (equality !== undefined) {
+        AdrProvenance.record("001", equality, undefined, "its-position");
+      }
     }
     for (const name of StaticInitializers.bareNames(expr)) {
       TypeValidator.resolveBareIdentifier(

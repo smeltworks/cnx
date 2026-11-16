@@ -1,4 +1,6 @@
 import type ISourceSite from "../../types/ISourceSite";
+import ValuePositions from "./helpers/ValuePositions";
+import StructInitializerType from "./helpers/StructInitializerType";
 import ExpressionShape from "../../utils/ExpressionShape";
 import VariableDeclarations from "../../utils/VariableDeclarations";
 import StringUtils from "../../utils/StringUtils";
@@ -64,8 +66,6 @@ type TWrite =
 /** The declarations and assignments 1.2 returned, each whole-string value checked against its capacity */
 class StringDeclarationCheck {
   private readonly found: IStringDeclarationError[] = [];
-  /** #1402: the declaration whose capacity the value is checked against */
-  private declaredAt: ISourceSite | undefined;
 
   public constructor(private readonly context: IAnalysisContext) {}
 
@@ -131,8 +131,12 @@ class StringDeclarationCheck {
    * #1209: a returned value is copied into the caller's `string<N>` buffer,
    * so it must fit the return type as a declaration's initializer must
    */
-  public returned(value: TExpression, capacity: number): void {
-    this.checkFit(value, capacity, "return", undefined);
+  public returned(
+    value: TExpression,
+    capacity: number,
+    declaredAt: ISourceSite | undefined,
+  ): void {
+    this.checkFit(value, capacity, "return", declaredAt);
   }
 
   /**
@@ -144,18 +148,20 @@ class StringDeclarationCheck {
     value: TExpression,
     capacity: number,
     atFileScope: boolean,
+    declaredAt: ISourceSite | undefined,
   ): void {
     if (atFileScope && !ExpressionShape.isStringLiteral(value)) {
       this.found.push({
         code: "E0863",
         span: value.span,
+        declaredAt,
         message: `A string field at file scope may only be initialized by a literal, not '${value.written}'`,
         helpText:
           "Copying, concatenating and extracting a substring all need runtime calls, which C cannot make before `main`. Move the declaration into a function, or initialize the field empty and assign it later.",
       });
       return;
     }
-    this.checkFit(value, capacity, "field", undefined);
+    this.checkFit(value, capacity, "field", declaredAt);
   }
 
   /**
@@ -185,7 +191,6 @@ class StringDeclarationCheck {
     write: TWrite,
     declaredAt: ISourceSite | undefined,
   ): void {
-    this.declaredAt = declaredAt;
     const form = StringValueForm.of(value, this.context);
     const parts =
       form.kind === "concat"
@@ -198,16 +203,16 @@ class StringDeclarationCheck {
     }
     switch (form.kind) {
       case "literal":
-        this.checkLiteral(value, form.literal, capacity, write);
+        this.checkLiteral(value, form.literal, capacity, write, declaredAt);
         return;
       case "substring":
-        this.checkSubstring(value, form.part, capacity, write);
+        this.checkSubstring(value, form.part, capacity, write, declaredAt);
         return;
       case "concat":
-        this.checkConcat(value, form.parts, capacity, write);
+        this.checkConcat(value, form.parts, capacity, write, declaredAt);
         return;
       case "copy":
-        this.checkCopy(value, form.value, capacity, write);
+        this.checkCopy(value, form.value, capacity, write, declaredAt);
         return;
     }
   }
@@ -217,13 +222,14 @@ class StringDeclarationCheck {
     literal: TExpression,
     capacity: number,
     write: TWrite,
+    declaredAt: ISourceSite | undefined,
   ): void {
     const length = StringUtils.literalLength(literal.written);
     if (length <= capacity) return;
     this.found.push({
       code: "E0864",
       span: value.span,
-      declaredAt: this.declaredAt,
+      declaredAt,
       message: `String literal (${length} chars) exceeds string<${capacity}> capacity`,
       helpText: StringDeclarationCheck.help(
         write,
@@ -263,13 +269,14 @@ class StringDeclarationCheck {
     part: Extract<TStringPart, { kind: "substring" }>,
     capacity: number,
     write: TWrite,
+    declaredAt: ISourceSite | undefined,
   ): void {
     const length = this.lengthOf(part);
     if (length === null || length <= capacity) return;
     this.found.push({
       code: "E0864",
       span: value.span,
-      declaredAt: this.declaredAt,
+      declaredAt,
       message: `Substring length ${length} exceeds destination string<${capacity}> capacity`,
       helpText: StringDeclarationCheck.help(
         write,
@@ -284,6 +291,7 @@ class StringDeclarationCheck {
     parts: readonly TStringPart[],
     capacity: number,
     write: TWrite,
+    declaredAt: ISourceSite | undefined,
   ): void {
     // A part of unknown length (a C string, an unsized `string`) is bounded
     // when it is built; the parts that can be measured still have to fit
@@ -295,7 +303,7 @@ class StringDeclarationCheck {
     this.found.push({
       code: "E0864",
       span: value.span,
-      declaredAt: this.declaredAt,
+      declaredAt,
       message: `String concatenation requires ${least}capacity ${required}, but ${where} is string<${capacity}>`,
       helpText: StringDeclarationCheck.help(
         write,
@@ -310,13 +318,14 @@ class StringDeclarationCheck {
     source: TExpression,
     capacity: number,
     write: TWrite,
+    declaredAt: ISourceSite | undefined,
   ): void {
     const sourceCapacity = this.capacityOf({ kind: "whole", value: source });
     if (sourceCapacity === null || sourceCapacity <= capacity) return;
     this.found.push({
       code: "E0864",
       span: value.span,
-      declaredAt: this.declaredAt,
+      declaredAt,
       message: StringDeclarationCheck.copyMessage(
         write,
         sourceCapacity,
@@ -426,9 +435,30 @@ class StringDeclarationAnalyzer {
     for (const entry of program.members) visit(entry.declaration);
     for (const { value, write, capacity } of StringWriteSites.of(positions)) {
       if (write === "field") {
-        check.field(value, capacity, fileScope.has(value));
+        // #1402: a field is declared by the struct the initializer builds
+        const site = positions.sites.get(value)?.site;
+        check.field(
+          value,
+          capacity,
+          fileScope.has(value),
+          site?.kind === "field"
+            ? StructInitializerType.declarationOf(
+                ValuePositions.at(positions.positions, site.initializer),
+                site.initializer.span,
+                this.context,
+              )
+            : undefined,
+        );
       } else if (write === "return") {
-        check.returned(value, capacity);
+        // #1402: the function whose return type the value is copied into
+        const site = positions.sites.get(value)?.site;
+        check.returned(
+          value,
+          capacity,
+          site?.kind === "return"
+            ? BindingSite.ofSpan(site.function.span, this.context)
+            : undefined,
+        );
       } else {
         check.argument(value, capacity);
       }

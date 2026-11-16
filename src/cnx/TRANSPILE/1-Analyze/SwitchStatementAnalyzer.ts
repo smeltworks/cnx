@@ -145,6 +145,7 @@ class SwitchStatementCheck {
     this.found.push({
       code: "E0424",
       span: label.span,
+      declaredAt: BindingSite.ofCName(declaring[0], this.context),
       message: EnumMemberSuggestion.message(name, declaring),
       helpText:
         switchEnum === null

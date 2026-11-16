@@ -79,6 +79,7 @@ class StructLiteralCheck {
       this.found.push({
         code: "E0357",
         span: init.span,
+        aboutItsPosition: true,
         message:
           "Cannot infer struct type: nothing here says which struct this is",
         helpText:

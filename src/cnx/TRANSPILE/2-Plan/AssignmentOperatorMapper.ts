@@ -42,7 +42,7 @@ class AssignmentOperatorMapper {
    * question for the tree that a string and a number cannot answer.
    */
   static toCOperator(cnxOp: string, line: number | undefined): string {
-    AdrProvenance.record("001", line);
+    AdrProvenance.record("001", line, undefined, "its-position");
     const cOp = ASSIGNMENT_OPERATOR_MAP[cnxOp];
     invariant(
       cOp !== undefined,

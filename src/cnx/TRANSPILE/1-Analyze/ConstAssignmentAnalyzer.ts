@@ -353,6 +353,7 @@ class ConstAssignmentCheck {
       this.found.push({
         code: "E0899",
         span: at,
+        aboutItsPosition: true,
         message: `'${name}' is never written; remove \`atomic\``,
         helpText:
           "`atomic` makes a binding writable, and only a value something writes needs a read or write that cannot be torn (ADR-049, ADR-071).",
@@ -362,6 +363,7 @@ class ConstAssignmentCheck {
     this.found.push({
       code: "E0899",
       span: at,
+      aboutItsPosition: true,
       message: `'${name}' is never written; remove \`mut\``,
       helpText:
         "A binding is declared `mut` only when something writes it (ADR-071).",

@@ -88,6 +88,7 @@ class CriticalSectionAnalyzer {
       this.found.push({
         code: "E0853",
         span: statement.span,
+        aboutItsPosition: true,
         message:
           "Cannot use 'return' inside critical section - would leave interrupts disabled",
         helpText:

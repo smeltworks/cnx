@@ -85,6 +85,7 @@ class LoopCheck {
     this.found.push({
       code: "E0703",
       span: expr.span,
+      aboutItsPosition: true,
       message: `'${expr.name}' is not supported in cnx - use structured conditions instead`,
       helpText:
         "ADR-026 rejects `break` and `continue`: an early exit hides the loop's real condition. Fold the exit into the loop condition, or split the body into a function that returns.",
@@ -99,6 +100,7 @@ class LoopCheck {
         this.found.push({
           code: "E0705",
           span: statement.span,
+          aboutItsPosition: true,
           message: "forever loop in non-void function",
           helpText:
             "a forever loop never returns a value; make the function return void, or use a while loop with an exit condition",
@@ -130,6 +132,7 @@ class LoopCheck {
       this.found.push({
         code: "E0707",
         span: statement.span,
+        aboutItsPosition: true,
         message: "for-loop has no controlling expression (infinite loop)",
         helpText: FOREVER_HELP,
       });
@@ -145,6 +148,7 @@ class LoopCheck {
     this.found.push({
       code: "E0715",
       span: site.span,
+      aboutItsPosition: true,
       message: `a for-loop header cannot hold this assignment: ${form}`,
       helpText: help,
     });
@@ -157,6 +161,7 @@ class LoopCheck {
     this.found.push({
       code: "E0707",
       span: condition.span,
+      aboutItsPosition: true,
       message: `loop condition '${condition.written}' is always true`,
       helpText: FOREVER_HELP,
     });

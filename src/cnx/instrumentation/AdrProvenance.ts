@@ -77,7 +77,7 @@ class AdrProvenance {
     adr: string,
     line: number | null | undefined,
     rule?: string,
-    declaredAt?: ISourceSite,
+    declaredAt?: ISourceSite | "its-position",
   ): void {
     if (!this.currentSourcePath || line == null || line <= 0) {
       return;
@@ -87,7 +87,9 @@ class AdrProvenance {
       sourcePath: this.currentSourcePath,
       line,
       rule,
-      ...(declaredAt && { declaredAt }),
+      ...(declaredAt === "its-position"
+        ? { aboutItsPosition: true as const }
+        : declaredAt && { declaredAt }),
     });
   }
 
@@ -97,7 +99,7 @@ class AdrProvenance {
     const unique: IRecordedAdrSite[] = [];
     for (const site of this.sites) {
       const declared = site.declaredAt;
-      const key = `${site.adr} ${site.rule ?? ""} ${site.sourcePath} ${site.line} ${declared?.sourcePath ?? ""}:${declared?.line ?? ""}:${declared?.column ?? ""}`;
+      const key = `${site.adr} ${site.rule ?? ""} ${site.sourcePath} ${site.line} ${declared?.sourcePath ?? ""}:${declared?.line ?? ""}:${declared?.column ?? ""} ${site.aboutItsPosition ?? ""}`;
       if (seen.has(key)) {
         continue;
       }

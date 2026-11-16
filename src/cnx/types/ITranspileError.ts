@@ -31,6 +31,14 @@ interface ITranspileError {
    * Not printed; the message names the declaration.
    */
   declaredAt?: ISourceSite;
+  /**
+   * #1402: the diagnostic is about what is written at its own position -- a
+   * syntax rule, a declaration's own modifiers, a name nothing declares -- so
+   * no other file can supply its subject, and the matrix measures it `same
+   * file` whatever the fixture includes. Distinct from no `declaredAt`, which
+   * is a declaration not recorded, and is never guessed.
+   */
+  aboutItsPosition?: true;
 }
 
 export default ITranspileError;

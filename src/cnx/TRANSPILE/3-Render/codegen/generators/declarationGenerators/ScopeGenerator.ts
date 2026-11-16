@@ -266,7 +266,7 @@ function renderScopeMember(
   // member, here. Recorded for EVERY member, including the ones nothing is
   // emitted for, because the occupancy it feeds is about where the decision was
   // taken and not about whether that decision produced text.
-  AdrProvenance.record("016", member.adrLine);
+  AdrProvenance.record("016", member.adrLine, undefined, "its-position");
 
   switch (member.kind) {
     case "variable": {

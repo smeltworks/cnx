@@ -99,6 +99,7 @@ class TypeDeclarationAnalyzer {
           : {
               code: "E0894",
               span: member.span,
+              aboutItsPosition: true,
               message: `Negative values not allowed in enum (found ${settled.value} in ${named})`,
               helpText:
                 "An enum member's value is 0 or more (ADR-017). Use a non-negative value",
@@ -120,6 +121,7 @@ class TypeDeclarationAnalyzer {
         return {
           code: "E0910",
           span: member.span,
+          aboutItsPosition: true,
           message: `Enum member value overflows ${settled.typeName} at compile time (${named}): the arithmetic would clamp or wrap (ADR-044)`,
           helpText: ConstantDiagnostics.OVERFLOW_HELP,
         };
@@ -127,6 +129,7 @@ class TypeDeclarationAnalyzer {
         return {
           code: "E0911",
           span: member.span,
+          aboutItsPosition: true,
           message: `Enum member value does not fit i32 (found ${settled.value} in ${named})`,
           helpText:
             "A member's value is an i32 (ADR-017). Use a value of at most 2147483647",
