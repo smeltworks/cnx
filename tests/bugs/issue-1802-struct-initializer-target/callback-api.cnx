@@ -1,0 +1,6 @@
+// Helper for imported-callback-argument: a function-as-type used only here.
+void tick() {}
+
+void runTick(tick cb) {
+    cb();
+}

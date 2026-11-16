@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1001 fixture(s) assert a diagnostic; 986 carry a code.
+1002 fixture(s) assert a diagnostic; 987 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -834,6 +834,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1800-float-to-integer/implicit-rejected.test.cnx                                         | E0891                             |
 | tests/bugs/issue-1800-float-to-integer/positions-rejected.test.cnx                                        | E0891                             |
 | tests/bugs/issue-1802-struct-initializer-target/header-scalar.test.cnx                                    | E0358                             |
+| tests/bugs/issue-1802-struct-initializer-target/imported-callback-argument.test.cnx                       | E0358                             |
 | tests/bugs/issue-1802-struct-initializer-target/non-struct-targets.test.cnx                               | E0358                             |
 | tests/bugs/issue-1802-struct-initializer-target/pointer-and-function-types.test.cnx                       | E0358                             |
 | tests/bugs/issue-1802-struct-initializer-target/whole-array-positions.test.cnx                            | E0866                             |
