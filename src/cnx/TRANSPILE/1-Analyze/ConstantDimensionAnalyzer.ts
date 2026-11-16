@@ -173,7 +173,7 @@ class ConstantDimensionAnalyzer {
    */
   private unreadableCounts(): IConstantDimensionError[] {
     const { program, sourceFile, symbols } = this.context;
-    const facts = StructDefault.factsOf(symbols);
+    const facts = StructDefault.factsOf(symbols, program);
     const found: IConstantDimensionError[] = [];
     const checkArray = (
       type: TType,

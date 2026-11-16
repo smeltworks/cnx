@@ -24,6 +24,9 @@ interface IPlannedParameter {
   /** The mapped C type. */
   readonly mappedType: string;
 
+  /** #1984: 1.4 settled the parameter's type as a callback (ADR-029) */
+  readonly isCallback: boolean;
+
   /**
    * The array dimensions, rendered on demand, or null when the parameter is
    * not an array.

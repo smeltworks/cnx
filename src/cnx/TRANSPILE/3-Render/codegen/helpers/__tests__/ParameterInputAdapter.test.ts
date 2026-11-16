@@ -46,6 +46,7 @@ function planned(
   return {
     isConst: false,
     mappedType: mapTypeName(overrides.typeName),
+    isCallback: false,
     renderDimensions: null,
     isString: false,
     stringCapacity: undefined,
@@ -462,6 +463,7 @@ describe("ParameterInputAdapter", () => {
         planned({
           name: "onClick",
           typeName: "handleClick",
+          isCallback: true,
           renderDimensions: () => {
             rendered += 1;
             return ["4"];
@@ -508,7 +510,7 @@ describe("ParameterInputAdapter", () => {
       ]);
 
       const result = ParameterInputAdapter.fromAST(
-        planned({ name: "onClick", typeName: "handleClick" }),
+        planned({ name: "onClick", typeName: "handleClick", isCallback: true }),
         createDefaultASTDeps({ callbackTypes }),
       );
 

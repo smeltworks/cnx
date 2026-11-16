@@ -5,6 +5,7 @@ import SymbolGuards from "../types/symbols/SymbolGuards";
 import CNX_TO_C_TYPE_MAP from "./constants/TypeMappings";
 import invariant from "./invariant";
 import SymbolTypeResolver from "./TypeResolver";
+import SettledCallback from "./SettledCallback";
 
 /**
  * #1639: whether a cnx function's parameter is passed by value, decided from
@@ -53,6 +54,7 @@ class ParameterByValue {
       SymbolTypeResolver.getTypeName(param.type),
       param.isArray,
       param.isOpaqueHandle === true,
+      SettledCallback.isType(param.type),
       facts,
       isDirectCall,
     );
@@ -64,6 +66,7 @@ class ParameterByValue {
     typeName: string,
     isArray: boolean,
     isOpaqueHandle: boolean,
+    isCallback: boolean,
     facts: IByValueFacts,
     isDirectCall: boolean,
   ): boolean {
@@ -75,14 +78,11 @@ class ParameterByValue {
       return true;
     }
 
-    // ADR-029: a function pointer is a value. The settled program names the
-    // function even before this file registers its callback type, as for the
-    // `_fp` typedef of a function declared ahead of the one it takes (#1929).
-    const typeSymbol = program?.symbolByCName(typeName);
-    if (
-      facts.callbackTypes.has(typeName) ||
-      (typeSymbol !== undefined && SymbolGuards.isFunction(typeSymbol))
-    ) {
+    // ADR-029: a function pointer is a value. 1.4 settled the parameter's
+    // type as a callback, so this holds even before this file registers its
+    // callback type, as for the `_fp` typedef of a function declared ahead
+    // of the one it takes (#1929) -- and is read, not decided again (#1984).
+    if (isCallback) {
       return true;
     }
 

@@ -47,6 +47,8 @@ interface ISettleFacts {
     name: string,
   ) => string | undefined;
   readonly isFileScopeName: (cName: string) => boolean;
+  /** Whether a type name is a function the file can see (#1984) */
+  readonly isFunctionType: (cName: string) => boolean;
   readonly env: IConstantEnvironment;
   readonly settledOf: Map<ILocalDeclaration, ILocalDeclaration>;
   /** The file's unsettled frames, which the binder walks */
@@ -70,6 +72,8 @@ class LexicalFrames {
     isTypeName: IConstantEnvironment["isTypeName"],
     /** Whether a C identifier is a file-scope symbol's, in any file or header */
     isFileScopeName: (cName: string) => boolean,
+    /** Whether a type name is a function the file can see (#1984) */
+    isFunctionType: (cName: string) => boolean,
     /**
      * Filled with each declaration's settled copy, for a caller that must read
      * the same answer -- a function's parameters, which the header writes
@@ -86,6 +90,7 @@ class LexicalFrames {
     return LexicalFrames.settleFrame(frame, null, {
       scopeTypeCName,
       isFileScopeName,
+      isFunctionType,
       env,
       settledOf,
       root: frame,
@@ -259,7 +264,7 @@ class LexicalFrames {
   private static settleDeclaration(
     declaration: ILocalDeclaration,
     functionCName: string | null,
-    { scopeTypeCName, env, isFileScopeName }: ISettleFacts,
+    { scopeTypeCName, env, isFileScopeName, isFunctionType }: ISettleFacts,
     /** The settled local its own name binds to inside it, if any */
     shadowed: ILocalDeclaration | undefined,
   ): ILocalDeclaration {
@@ -267,7 +272,11 @@ class LexicalFrames {
       const expr = declaration.arrayDimensionExprs[i];
       return expr ? ConstantFold.dimension(expr, env) : dimension;
     });
-    const type = DeferredTypes.settleType(declaration.type, scopeTypeCName);
+    const type = DeferredTypes.settleType(
+      declaration.type,
+      scopeTypeCName,
+      isFunctionType,
+    );
     const constValue =
       ConstantFold.hasCompileTimeValue(declaration) &&
       declaration.initialValueExpr !== null &&

@@ -31,13 +31,14 @@ class StructDefaultInitializer {
    */
   static render(
     structName: string,
+    isCallback: boolean,
     counts: readonly (number | null)[],
     ctx: IStructDefaultRenderContext,
   ): string | null {
     // #1971: an enum array lists its zero enumerator in every element; a
     // scalar enum's zero is the declaration's own (ADR-017).
     // The declaration's own default: the decision E0381 and E0359 read too
-    const value = StructDefault.defaultOf(structName, ctx);
+    const value = StructDefault.defaultOf(structName, isCallback, ctx);
     switch (value?.kind) {
       // ADR-029: a callback variable, or every element of an array of one,
       // holds the function its type was defined from (never null)

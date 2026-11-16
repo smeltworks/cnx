@@ -243,8 +243,10 @@ class FilePlanner {
     const element = type.kind === "array" ? type.element : type;
     const deps = this.state.typeBindingDeps();
 
+    const named = TypeNameLadder.classifyNamed(element, scopePath, deps);
     return {
-      named: TypeNameLadder.classifyNamed(element, scopePath, deps),
+      named,
+      isCallback: named !== null && this.state.isCallbackType(named.name),
       isString: element.kind === "string",
       stringTypeText: element.kind === "string" ? element.text : undefined,
       primitiveName: element.kind === "primitive" ? element.text : null,
@@ -446,10 +448,8 @@ class FilePlanner {
     program: IProgramSyntax,
     unwritten: IUnwrittenSyntax,
   ): ReadonlyMap<TTypeSyntax, IPlannedType> {
-    const unwrittenTypes = this.unwrittenTypes(program);
     const planned = new Map<TTypeSyntax, IPlannedType>();
     for (const { type, scope } of TypeSites.of(program, unwritten)) {
-      if (unwrittenTypes.has(type)) continue;
       planned.set(type, this.planType(type, this.state.scopePathOf(scope)));
     }
     return planned;
@@ -826,8 +826,9 @@ class FilePlanner {
       head.ops.forEach((op, i) => {
         const step = steps[i - head.opsConsumed];
         if (op.kind !== "call" || step === undefined) return;
-        // A function, or an ADR-029 callback: its type names the function
-        const callee = step.callee ?? step.before?.typeName ?? null;
+        // A function, or an ADR-029 callback: 1.4 settled its type as the
+        // function (#1984)
+        const callee = step.callee ?? step.before?.callbackTypeName ?? null;
         if (callee === null) return;
         const symbol = typing.program.symbolByCName(callee);
         if (symbol?.kind !== "function") return;
@@ -1095,25 +1096,6 @@ class FilePlanner {
         ? WrittenParts.nodes(part.expression, unwritten)
         : [],
     );
-  }
-
-  /**
-   * Types in a written declaration that 2.3 spells some other way: a callback
-   * field by its typedef (ADR-029).
-   */
-  private unwrittenTypes(program: IProgramSyntax): ReadonlySet<TTypeSyntax> {
-    const unwritten = new Set<TTypeSyntax>();
-    for (const { declaration } of program.declarations) {
-      if (declaration.kind !== "struct") continue;
-      for (const field of declaration.fields) {
-        if (
-          this.state.callbackFieldTypes.has(`${declaration.name}.${field.name}`)
-        ) {
-          unwritten.add(field.type);
-        }
-      }
-    }
-    return unwritten;
   }
 
   /**
@@ -1583,7 +1565,7 @@ class FilePlanner {
     const step = this.callStepAt(site);
     const input = this.state;
     const callbackTypeFunction = CallArgumentPassing.callbackFunction(
-      step?.before?.typeName ?? null,
+      step?.before?.callbackTypeName ?? null,
       input,
     );
     return CallArgumentPassing.of(
@@ -1894,6 +1876,8 @@ class FilePlanner {
       if (forInits.has(declaration)) {
         if (planned === undefined) return null;
         const declared = this.cTypeOf(planned);
+        // #1984: whether it is one is the planned type's, from 1.4
+        if (!planned.isCallback) return declared;
         return this.queries.getCallbackTypedefName(declared) ?? declared;
       }
       return (
@@ -3397,11 +3381,8 @@ class FilePlanner {
    * Issue #60: Symbol collection extracted to SymbolCollector.
    * This method handles function signatures and callback types (not yet extracted).
    */
-  functionCatalog(
-    program: IProgramSyntax,
-    callbackTypes: ReadonlyMap<string, ICallbackTypeInfo>,
-  ): FunctionCatalog {
-    const catalog = new FunctionCatalog(callbackTypes);
+  functionCatalog(program: IProgramSyntax): FunctionCatalog {
+    const catalog = new FunctionCatalog();
     for (const { declaration } of program.declarations) {
       if (declaration.kind === "scope") {
         this._collectScopeFunctions(catalog, declaration);
@@ -3415,7 +3396,7 @@ class FilePlanner {
       ) {
         // #1562: a file-scope variable is declared `extern` in the header,
         // so the header owns the typedef its type names
-        catalog.notePublicReference(this.typeNameIn(declaration.type, ""));
+        this.noteCallbackReference(catalog, declaration.type, "", true);
       }
     }
     return catalog;
@@ -3447,8 +3428,11 @@ class FilePlanner {
         declaration.kind === "variableDeclaration" ||
         declaration.kind === "constructorDeclaration"
       ) {
-        catalog.notePublicReference(
-          this.typeNameIn(declaration.type, typeScopePath),
+        this.noteCallbackReference(
+          catalog,
+          declaration.type,
+          typeScopePath,
+          true,
         );
       }
     }
@@ -3487,18 +3471,36 @@ class FilePlanner {
     );
   }
 
-  /**
-   * Collect callback field types from struct declaration
-   */
+  /** ADR-029: a struct's callback fields name types its header must typedef */
   private _collectStructCallbackFields(
     catalog: FunctionCatalog,
     structDecl: IStructDeclarationSyntax,
     scopePath: string,
   ): void {
     for (const field of structDecl.fields) {
+      if (!this.planType(field.type, scopePath).isCallback) continue;
       const fieldType = this.typeNameIn(field.type, scopePath);
-      catalog.noteStructField(`${structDecl.name}.${field.name}`, fieldType);
       catalog.notePublicReference(fieldType);
+    }
+  }
+
+  /**
+   * ADR-029: record a written type the typedef pass must cover. Only a type
+   * 1.4 settled as a callback is one (#1984) -- read from its plan, not
+   * decided again here by looking its name up among the functions.
+   */
+  private noteCallbackReference(
+    catalog: FunctionCatalog,
+    type: TTypeSyntax,
+    scopePath: string,
+    isPublic: boolean,
+  ): void {
+    if (!this.planType(type, scopePath).isCallback) return;
+    const typeName = this.typeNameIn(type, scopePath);
+    if (isPublic) {
+      catalog.notePublicReference(typeName);
+    } else {
+      catalog.noteReference(typeName);
     }
   }
 
@@ -3671,7 +3673,7 @@ class FilePlanner {
         const baseType = this.typeNameIn(param.type, scopePath);
         // Issue #1201: a parameter naming a callback type needs that type's
         // typedef emitted, exactly as a struct field does.
-        catalog.notePublicReference(baseType);
+        this.noteCallbackReference(catalog, param.type, scopePath, true);
         parameters.push({ name: paramName, baseType, isConst, isArray });
       }
     }
@@ -3715,7 +3717,7 @@ class FilePlanner {
     switch (statement.kind) {
       case "variableDeclaration":
       case "constructorDeclaration":
-        catalog.noteReference(this.typeNameIn(statement.type, scopePath));
+        this.noteCallbackReference(catalog, statement.type, scopePath, false);
         return;
       case "for":
         if (statement.init?.kind === "variableDeclaration")

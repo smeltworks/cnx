@@ -5,6 +5,7 @@
  * to IHeaderSymbol for header generation.
  */
 
+import SettledCallback from "../../../../utils/SettledCallback";
 import ReturnBuffer from "../../../../utils/ReturnBuffer";
 import DeclaredTypeInfo from "../../../../PARSE/3-Declare/DeclaredTypeInfo";
 import TSymbol from "../../../../types/symbols/TSymbol";
@@ -120,9 +121,13 @@ class HeaderSymbolAdapter {
 
     // ADR-057: the symbol layer already qualified scope-local type names.
     // ADR-029 (#1562): a function-as-type is spelled by its `_fp` typedef, the
-    // name the .c declares the same variable with
+    // name the .c declares the same variable with. #1984: whether it is one
+    // is 1.4's settled type, read here; the map only spells the typedef.
     const declared = TypeResolver.getTypeName(variable.type);
-    const typeStr = state.callbackTypes.get(declared)?.typedefName ?? declared;
+    const callback = SettledCallback.isType(variable.type)
+      ? state.callbackTypes.get(declared)
+      : undefined;
+    const typeStr = callback?.typedefName ?? declared;
 
     // #1175: 1.4 settled each dimension to its value, or, for one only C can
     // evaluate (a header macro), to its C -- there is nothing left to resolve

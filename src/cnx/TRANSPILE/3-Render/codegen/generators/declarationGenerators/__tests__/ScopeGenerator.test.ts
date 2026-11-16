@@ -88,6 +88,7 @@ function regular(
     kind: "regular",
     fullName: "Driver__counter",
     isPrivate: false,
+    isCallback: false,
     isConst: false,
     isArray: false,
     isPointer: false,
@@ -346,7 +347,10 @@ describe("ScopeGenerator", () => {
         scope({
           members: [
             member({
-              variable: regular({ renderType: () => "onTick" }),
+              variable: regular({
+                renderType: () => "onTick",
+                isCallback: true,
+              }),
             }),
           ],
         }),

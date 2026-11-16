@@ -32,7 +32,8 @@ function ctx(cppMode: boolean): IStructDefaultRenderContext {
       if (structName === "Sized") return [null];
       return [];
     },
-    isCallbackType: (typeName) => typeName === "onTick",
+    isCallbackField: (_structName, fieldName) =>
+      ["handler", "handlers"].includes(fieldName),
     cppMode,
     enumZeroOf: (typeName) => (typeName === "Mode" ? "Mode__IDLE" : null),
   };
@@ -40,37 +41,43 @@ function ctx(cppMode: boolean): IStructDefaultRenderContext {
 
 describe("StructDefaultInitializer", () => {
   it("is null for a struct whose default is all zero", () => {
-    expect(StructDefaultInitializer.render("Plain", [], ctx(false))).toBeNull();
+    expect(
+      StructDefaultInitializer.render("Plain", false, [], ctx(false)),
+    ).toBeNull();
   });
 
   it("names only the non-zero fields by designator in C", () => {
-    expect(StructDefaultInitializer.render("Ticker", [], ctx(false))).toBe(
-      "{ .handler = onTick, .mode = Mode__IDLE }",
-    );
+    expect(
+      StructDefaultInitializer.render("Ticker", false, [], ctx(false)),
+    ).toBe("{ .handler = onTick, .mode = Mode__IDLE }");
   });
 
   it("spells every field in order in C++, zero fields as {}", () => {
-    expect(StructDefaultInitializer.render("Ticker", [], ctx(true))).toBe(
-      "{ onTick, {}, Mode__IDLE }",
-    );
+    expect(
+      StructDefaultInitializer.render("Ticker", false, [], ctx(true)),
+    ).toBe("{ onTick, {}, Mode__IDLE }");
   });
 
   it("fills every element of a callback array and nests structs", () => {
     // #1565 / #1570
-    expect(StructDefaultInitializer.render("Outer", [], ctx(false))).toBe(
+    expect(
+      StructDefaultInitializer.render("Outer", false, [], ctx(false)),
+    ).toBe(
       "{ .handlers = { onTick, onTick }, .inner = { .handler = onTick, .mode = Mode__IDLE } }",
     );
   });
 
   it("repeats the default over every element of a declared array", () => {
-    expect(StructDefaultInitializer.render("Ticker", [2, 1], ctx(true))).toBe(
+    expect(
+      StructDefaultInitializer.render("Ticker", false, [2, 1], ctx(true)),
+    ).toBe(
       "{ { { onTick, {}, Mode__IDLE } }, { { onTick, {}, Mode__IDLE } } }",
     );
   });
 
   it("asserts 2.1 rejected an array size it cannot count (E0359)", () => {
     expect(() =>
-      StructDefaultInitializer.render("Sized", [], ctx(false)),
+      StructDefaultInitializer.render("Sized", false, [], ctx(false)),
     ).toThrow("E0359");
   });
 });

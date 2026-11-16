@@ -42,6 +42,13 @@ interface IHeaderTypeInput {
 
   /** Callback types: functionName -> typedef info for header generation */
   readonly callbackTypes?: ReadonlyMap<string, IHeaderCallbackType>;
+
+  /**
+   * #1984: the fields whose type 1.4 settled as a callback, structName ->
+   * fieldNames. Absent, no field is one; `callbackTypes` only spells the
+   * typedef of one that is.
+   */
+  readonly callbackFields?: ReadonlyMap<string, ReadonlySet<string>>;
 }
 
 export default IHeaderTypeInput;

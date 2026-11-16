@@ -1233,6 +1233,8 @@ class OperandTyper {
       case "enum":
       case "bitmap":
         return { ...base, ...OperandTyper.namedFacts(type.name, ctx) };
+      case "callback":
+        return { ...base, callbackTypeName: type.name };
       default:
         return base;
     }
@@ -2168,9 +2170,9 @@ class OperandTyper {
         },
       };
     }
-    if (current.k === "value" && current.t.typeName !== null) {
-      // An ADR-029 callback: its type names the function that defines it
-      const definer = ctx.program.symbolByCName(current.t.typeName);
+    if (current.k === "value" && current.t.callbackTypeName !== null) {
+      // An ADR-029 callback: 1.4 settled its type as the function defining it
+      const definer = ctx.program.symbolByCName(current.t.callbackTypeName);
       if (definer?.kind === "function") {
         return {
           k: "value",
@@ -2268,6 +2270,7 @@ class OperandTyper {
       stringCapacity: null,
       enumTypeName: null,
       bitmapTypeName: null,
+      callbackTypeName: null,
       overflow: null,
       hasSideEffect: false,
       form: DECLARED,

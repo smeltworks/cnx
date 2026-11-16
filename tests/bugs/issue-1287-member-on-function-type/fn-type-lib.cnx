@@ -1,0 +1,11 @@
+// #1287: a function-as-type declared in another file (ADR-029), at file
+// scope and in a scope, so its cnx name and its C name differ.
+u32 tick() {
+    return 1;
+}
+
+scope Clock {
+    public u32 Now() {
+        return 2;
+    }
+}

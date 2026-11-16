@@ -1,4 +1,3 @@
-import type ICallbackTypeInfo from "../../types/ICallbackTypeInfo";
 import type IFunctionSignature from "../../types/IFunctionSignature";
 import type IFunctionCatalog from "../types/IFunctionCatalog";
 
@@ -7,35 +6,22 @@ import type IFunctionCatalog from "../types/IFunctionCatalog";
  * each function and callback reference onto TranspileState as it finds it.
  */
 class FunctionCatalog implements IFunctionCatalog {
-  private readonly callbackTypes: ReadonlyMap<string, ICallbackTypeInfo>;
   private readonly known = new Set<string>();
   private readonly signatures = new Map<string, IFunctionSignature>();
-  private readonly fieldTypes = new Map<string, string>();
   private readonly references = new Set<string>();
   private readonly publicReferences = new Set<string>();
-
-  constructor(callbackTypes: ReadonlyMap<string, ICallbackTypeInfo>) {
-    this.callbackTypes = callbackTypes;
-  }
 
   addFunction(name: string, signature: IFunctionSignature): void {
     this.known.add(name);
     this.signatures.set(name, signature);
   }
 
-  /** ADR-029: a struct field whose type is a callback type */
-  noteStructField(fieldKey: string, typeName: string): void {
-    if (this.callbackTypes.has(typeName)) {
-      this.fieldTypes.set(fieldKey, typeName);
-    }
-  }
-
-  /** A type named inside a function body */
+  /** A callback type named inside a function body */
   noteReference(typeName: string): void {
     this.references.add(typeName);
   }
 
-  /** A type named by a declaration another file can see */
+  /** A callback type named by a declaration another file can see */
   notePublicReference(typeName: string): void {
     this.references.add(typeName);
     this.publicReferences.add(typeName);
@@ -47,10 +33,6 @@ class FunctionCatalog implements IFunctionCatalog {
 
   get functionSignatures(): ReadonlyMap<string, IFunctionSignature> {
     return this.signatures;
-  }
-
-  get callbackFieldTypes(): ReadonlyMap<string, string> {
-    return this.fieldTypes;
   }
 
   get callbackTypeReferences(): ReadonlySet<string> {

@@ -690,12 +690,13 @@ Rejected: cnx has no `sizeof` operator.
 
 ## Diagnostics
 
-| Code  | Reported when                                                                                                                                       | Asserted by                                                                                                                                |
-| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| E0867 | A shape property is asked of a subject that cannot answer it (a pointer, a header union, bit-field or other layout cnx cannot sum), or of a literal | `tests/explicit-length/`, `tests/adr-058/`                                                                                                 |
-| E0886 | `.length` is used at all                                                                                                                            | `tests/adr-058/`                                                                                                                           |
-| E0909 | A memory size is where cnx needs the number itself, as an enum member's value (the C compiler decides it for the target)                            | `tests/adr-058/kinds-memory-dimension-error.test.cnx`                                                                                      |
-| E0897 | A chain that names a type does not end in a length property                                                                                         | `tests/bugs/issue-1975-header-struct-byte-length/type-named-as-value-error.test.cnx`, `tests/adr-058/type-named-as-value-*-error.test.cnx` |
+| Code  | Reported when                                                                                                                                            | Asserted by                                                                                                                                |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| E0867 | A shape property is asked of a subject that cannot answer it (a pointer, a header union, bit-field or other layout cnx cannot sum), or of a literal      | `tests/explicit-length/`, `tests/adr-058/`                                                                                                 |
+| E0886 | `.length` is used at all                                                                                                                                 | `tests/adr-058/`                                                                                                                           |
+| E0909 | A memory size is where cnx needs the number itself, as an enum member's value (the C compiler decides it for the target)                                 | `tests/adr-058/kinds-memory-dimension-error.test.cnx`                                                                                      |
+| E0897 | A chain that names a type does not end in a length property                                                                                              | `tests/bugs/issue-1975-header-struct-byte-length/type-named-as-value-error.test.cnx`, `tests/adr-058/type-named-as-value-*-error.test.cnx` |
+| E0927 | A member other than a length property is asked of a value whose type declares no members -- a primitive, a string, an enum, a function-as-type (ADR-029) | `tests/bugs/issue-1805-member-on-primitive/`, `tests/bugs/issue-1287-member-on-function-type/`                                             |
 
 `.length` is rejected by NAME and needs no subject: naming a different thing on
 a string, an array and a scalar is what these four properties replaced.
@@ -834,6 +835,46 @@ wherever a shape property can.
 | for header         | exercised through chain | off      |
 
 off: E0909's memory-size form fires only at an enum member's value, at file scope or in a scope, which is none of these contexts; a memory size initializing a file-scope or scope variable, a `for` header's loop variable, or sizing an array (a cast's array type in a `for` header included), is the C compiler's to answer and is accepted (probed).
+
+<!-- MATRIX-SEVERITY code: E0927 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | error    |
+| scope method       | same file               | error    |
+| global variable    | same file               | off      |
+| scope member       | same file               | off      |
+| top-level function | imported direct         | error    |
+| scope method       | imported direct         | error    |
+| global variable    | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| top-level function | imported transitive     | error    |
+| scope method       | imported transitive     | error    |
+| global variable    | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| for header         | same file               | error    |
+| for header         | imported direct         | error    |
+| for header         | imported transitive     | error    |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | warn     |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | warn     |
+
+_Clarified 2026-11-15 (#1287):_ only a struct, a bitmap, a scope, a register or
+a header struct or union has members; any other value answers only its length
+properties, so asking it for a member is E0927. The value's type may be
+declared one or two includes away, and the diagnostic names it as written in
+cnx (`Timing.Config`), never by its C name. off: a file-scope or scope
+variable's initializer is fixed at compile time, so a member read there is
+E0909 before it is E0927 (probed). Measured to the value's type (#1402):
+the provider-side cells are staged `warn` where the same-file cell is `error`
+and `off` where it is `off`, as every table is until #2427.
 
 A length property is an EXPRESSION, so it reaches an initializer as well as a
 function body -- all four same-file contexts, probed rather than assumed.

@@ -1279,6 +1279,7 @@ scope Gauge {
         "headerMacro",
         "headerMacrosUnread",
         "hidesHeaderName",
+        "isCallbackType",
         "isOpaqueType",
         "isScopeTypeVisibleFrom",
         "isTypeNameAt",

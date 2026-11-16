@@ -123,6 +123,9 @@ class StructInitializerType {
       candidates.some(
         (c) =>
           DeclaredTypeFacts.isEnum(symbols, c) ||
+          // ADR-029: a function name is a type name. This asks whether the
+          // name exists, not whether this file settled it as a callback --
+          // the type may be written only in an included file (#1984 review)
           symbols.functionReturnTypes.has(c),
       ) ||
       ForeignTypeFacts.isForeignType(

@@ -1,0 +1,39 @@
+// test-execution
+// test-adr: 029
+// #1275: a callback-typed scope member is a value, called as this.tick(),
+// bare tick(), S.tick() and global.S.tick().
+u32 millis() {
+    return 1;
+}
+
+u32 tickSource() {
+    return 0;
+}
+
+scope S {
+    public tickSource tick <- millis;
+
+    public u32 viaThis() {
+        return this.tick();
+    }
+
+    public u32 viaBare() {
+        return tick();
+    }
+}
+
+u32 viaGlobal() {
+    return global.S.tick();
+}
+
+u32 viaScope() {
+    return S.tick();
+}
+
+u32 main() {
+    u32 total <- viaGlobal() + viaScope() + S.viaThis() + S.viaBare();
+    if (total != 4) {
+        return 1;
+    }
+    return 0;
+}

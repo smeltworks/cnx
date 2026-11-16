@@ -2,6 +2,8 @@ import { basename } from "node:path";
 
 import type IHeaderCallbackType from "../../../types/IHeaderCallbackType";
 import type TSymbol from "../../../types/symbols/TSymbol";
+import SymbolGuards from "../../../types/symbols/SymbolGuards";
+import SettledCallback from "../../../utils/SettledCallback";
 import CnxSourcePath from "../../../utils/CnxSourcePath";
 import IncludePath from "../../../utils/IncludePath";
 import HeaderIncludes from "../../2-Plan/HeaderIncludes";
@@ -120,6 +122,10 @@ class HeaderEmissionCapture {
       ...request.typeInput,
       symbolTable: state.symbolTable,
       callbackTypes: callbackTypesForHeader,
+      callbackFields: SettledCallback.fieldsOf(
+        program,
+        request.typeInput.structFields,
+      ),
     };
 
     const headerSymbols = HeaderEmissionCapture.convertToHeaderSymbols(
@@ -227,7 +233,15 @@ class HeaderEmissionCapture {
         // function name as a type ("const onReceive*"), which both contradicts
         // the .c's "onReceive_fp" and collides with the function's own
         // prototype ("redeclared as different kind of symbol").
-        const callbackType = state.callbackTypes.get(param.type ?? "");
+        // #1984: whether it is one is the parameter's settled type; the map
+        // only spells the typedef
+        const settled = SymbolGuards.isFunction(symbol)
+          ? symbol.parameters[index]
+          : undefined;
+        const callbackType =
+          settled !== undefined && SettledCallback.isType(settled.type)
+            ? state.callbackTypes.get(param.type ?? "")
+            : undefined;
         if (callbackType) {
           return {
             ...param,

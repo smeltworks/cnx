@@ -1,0 +1,33 @@
+// test-execution
+// test-adr: 029
+// #1984: a function whose name looks like an enum (`E[A-Z]`) is still a
+// callback type when written as one, and a value of it can be called.
+u32 ETick() {
+    return 3;
+}
+
+struct Clock {
+    ETick handler;
+}
+
+u32 run(ETick cb) {
+    return cb();
+}
+
+u32 main() {
+    ETick local <- ETick;
+    Clock clock <- { handler: ETick };
+    u32 viaParam <- run(ETick);
+    u32 viaLocal <- local();
+    u32 viaField <- clock.handler();
+    if (viaParam != 3) {
+        return 1;
+    }
+    if (viaLocal != 3) {
+        return 2;
+    }
+    if (viaField != 3) {
+        return 3;
+    }
+    return 0;
+}

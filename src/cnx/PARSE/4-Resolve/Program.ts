@@ -203,6 +203,7 @@ class Program {
     const visibility = settled.visibility;
     const visibleFiles = settled.visibleFiles;
     const isScopeTypeVisibleFrom = settled.isScopeTypeVisibleFrom;
+    const callbackTypesByFile = settled.callbackTypesByFile;
     const opaqueTypes = settled.opaqueTypes;
     const fileFacts = settled.fileFacts;
     const foreignNames = settled.foreignNames;
@@ -273,6 +274,8 @@ class Program {
         symbolsByIdentity.get(Program.identityKey(scopePath, name)),
       qualifiedTypeName: (sourceFile: string, written: string): string =>
         fileFacts.qualifiedTypeName(sourceFile, written),
+      isCallbackType: (sourceFile: string, cName: string): boolean =>
+        callbackTypesByFile.get(sourceFile)?.has(cName) ?? false,
       scopeTypeOf: (
         sourceFile: string,
         scopePath: string,
@@ -490,6 +493,23 @@ class Program {
       files,
       visibleFiles,
     );
+    const isFunctionVisibleFrom = Program.functionVisibility(
+      files,
+      visibleFiles,
+    );
+    // #1984: each name the settle below types as a callback, per file -- the
+    // stored answer 2.2 reads, so no later pass asks the visibility again
+    const callbackTypesByFile = new Map<string, Set<string>>();
+    const settlesAsCallback = (sourceFile: string, cName: string): boolean => {
+      if (!isFunctionVisibleFrom(sourceFile, cName)) return false;
+      let inFile = callbackTypesByFile.get(sourceFile);
+      if (inFile === undefined) {
+        inFile = new Set();
+        callbackTypesByFile.set(sourceFile, inFile);
+      }
+      inFile.add(cName);
+      return true;
+    };
     // Opacity is a fact of the headers alone, so it is ready before the settle,
     // which stamps each opaque parameter with it (#1722).
     const opaqueTypes = Program.deriveOpaqueTypes(foreign);
@@ -557,6 +577,7 @@ class Program {
       files,
       isScopeTypeVisibleFrom,
       opaqueTypes,
+      settlesAsCallback,
     );
     const foreignNames = new Set([
       ...foreign.c.map((symbol) => symbol.name),
@@ -634,6 +655,7 @@ class Program {
           // (the same set the binder's foreign tier reads)
           (cName) =>
             dimensioned.symbolsByCName.has(cName) || foreignNames.has(cName),
+          (cName) => settlesAsCallback(file.sourceFile, cName),
           settledLocals,
         ),
       ]),
@@ -662,6 +684,7 @@ class Program {
       foreign,
       visibility,
       target,
+      callbackTypesByFile,
     };
   }
 
@@ -916,6 +939,24 @@ class Program {
   }
 
   /**
+   * Whether a C name is a function a file can see: that name written as a type
+   * is a callback there (ADR-029, #1984). Seen the way the binder sees a
+   * declaration (`visibleByCName`), since a function-as-type crosses the
+   * include boundary on the same terms as the function.
+   */
+  private static functionVisibility(
+    files: ReadonlyArray<IFileSymbols>,
+    visibleFiles: ReadonlyMap<string, ReadonlySet<string>>,
+  ): (sourceFile: string, cName: string) => boolean {
+    const declaredByCName = Program.indexByCName(
+      new Map(files.map((file) => [file.sourceFile, file.symbols])),
+    );
+    return (sourceFile, cName) =>
+      Program.visibleByCName(declaredByCName, visibleFiles, sourceFile, cName)
+        ?.kind === "function";
+  }
+
+  /**
    * Settle every file's deferred types, and refuse to hand back a `Program`
    * that still holds one.
    *
@@ -934,6 +975,7 @@ class Program {
       qualifiedName: string,
     ) => boolean,
     opaqueTypes: ReadonlySet<string>,
+    isFunctionVisibleFrom: (sourceFile: string, cName: string) => boolean,
   ): Map<string, ReadonlyArray<TSymbol>> {
     const settledByFile = new Map<string, ReadonlyArray<TSymbol>>();
     const declaredByIdentity = Program.indexByIdentity(
@@ -950,6 +992,7 @@ class Program {
             file.sourceFile,
           ),
           (typeName) => opaqueTypes.has(typeName),
+          (cName) => isFunctionVisibleFrom(file.sourceFile, cName),
         ),
       );
     }
@@ -1552,9 +1595,23 @@ class Program {
     sourceFile: string,
     cName: string,
   ): TSymbol | undefined {
-    const symbol = facts.symbolsByCName.get(cName);
+    return Program.visibleByCName(
+      facts.symbolsByCName,
+      facts.visibleFiles,
+      sourceFile,
+      cName,
+    );
+  }
+
+  private static visibleByCName(
+    symbolsByCName: ReadonlyMap<string, TSymbol>,
+    visibleFiles: ReadonlyMap<string, ReadonlySet<string>>,
+    sourceFile: string,
+    cName: string,
+  ): TSymbol | undefined {
+    const symbol = symbolsByCName.get(cName);
     return symbol !== undefined &&
-      facts.visibleFiles.get(sourceFile)?.has(symbol.sourceFile)
+      visibleFiles.get(sourceFile)?.has(symbol.sourceFile)
       ? symbol
       : undefined;
   }

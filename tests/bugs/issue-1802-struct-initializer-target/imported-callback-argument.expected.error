@@ -1,0 +1,2 @@
+9:12 error[E0358]: A struct initializer cannot be a value of 'tick', which is not a struct
+       help: Give a value of type 'tick'; only a struct takes '{ field: value }' (ADR-014).

@@ -864,7 +864,7 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | ok     | ok         | warn        | warn       |
 | for header         | -         | -      | -          | -           | -          |
 
-20 linked fixtures with no derivable context:
+21 linked fixtures with no derivable context:
 
 - `adr-029/callback-assign.test.cnx`
 - `adr-029/callback-basic.test.cnx`
@@ -872,6 +872,7 @@ cell is declared by the ADR that owns it.
 - `adr-029/callback-param-types.test.cnx`
 - `adr-029/callback-return-types.test.cnx`
 - `adr-029/callback-struct-member.test.cnx`
+- `bugs/issue-1275-callback-scope-member-call/scope-member-call.test.cnx`
 - `bugs/issue-1283-adr029-init-at-declaration/callback-array-field.test.cnx`
 - `bugs/issue-1283-adr029-init-at-declaration/every-position.test.cnx`
 - `bugs/issue-1283-adr029-init-at-declaration/macro-sized-callback-array.test.cnx`
@@ -886,6 +887,16 @@ cell is declared by the ADR that owns it.
 - `bugs/issue-1566-struct-init-all-fields/struct-init-all-fields.test.cnx`
 - `bugs/issue-1568-init-designated-position/init-designated-position.test.cnx`
 - `bugs/issue-2157-array-parameter-list/chained-call.test.cnx`
+
+## ADR-029 E0422
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | ok        | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
 
 ## ADR-029 E0879
 
@@ -906,6 +917,16 @@ cell is declared by the ADR that owns it.
 | scope member       | ok        | ok     | ok         | warn        | warn       |
 | scope method       | ok        | ok     | ok         | warn        | warn       |
 | for header         | ok        | ok     | ok         | warn        | warn       |
+
+## ADR-029 E0927
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | ok        | ok     | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | ok        | ok     | -          | -           | -          |
+| for header         | ok        | ok     | -          | -           | -          |
 
 ## ADR-030
 
@@ -1798,6 +1819,16 @@ cell is declared by the ADR that owns it.
 | scope member       | -         | -      | -          | -           | -          |
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
+
+## ADR-058 E0927
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | ok        | ok     | ok         | warn        | warn       |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | ok        | ok     | ok         | warn        | warn       |
+| for header         | ok        | ok     | ok         | warn        | warn       |
 
 ## ADR-064
 

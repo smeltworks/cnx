@@ -166,7 +166,6 @@ function createMockInput(
     knownScopes: new Set<string>(),
     constValues: new Map(),
     callbackTypes: new Map(),
-    callbackFieldTypes: new Map(),
     program: stubProgram(
       () => facts.functionSignatures,
       () => facts.symbolTable,

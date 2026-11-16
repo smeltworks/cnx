@@ -20,6 +20,9 @@ import type IStructDefaultFacts from "../types/IStructDefaultFacts";
 import type IStructFieldDefault from "../types/IStructFieldDefault";
 import type ICodeGenSymbols from "../types/ICodeGenSymbols";
 import type TType from "../types/TType";
+import type IProgram from "../types/IProgram";
+import TTypeUtils from "./TTypeUtils";
+import SettledCallback from "./SettledCallback";
 import EnumZeroValue from "./EnumZeroValue";
 
 class StructDefault {
@@ -38,7 +41,11 @@ class StructDefault {
     }
     const result: IStructFieldDefault[] = [];
     for (const [fieldName, typeName] of fields) {
-      const value = StructDefault.defaultOf(typeName, facts);
+      const value = StructDefault.defaultOf(
+        typeName,
+        facts.isCallbackField(structName, fieldName),
+        facts,
+      );
       if (value !== null) {
         result.push({ fieldName, value });
       }
@@ -55,16 +62,14 @@ class StructDefault {
   static factsOf(
     symbols: Pick<
       ICodeGenSymbols,
-      | "structFields"
-      | "functionReturnTypes"
-      | "knownEnums"
-      | "enumMembers"
-      | "memberCNames"
+      "structFields" | "knownEnums" | "enumMembers" | "memberCNames"
     >,
+    program: Pick<IProgram, "symbolByCName">,
   ): IStructDefaultFacts {
     return {
       structFields: symbols.structFields,
-      isCallbackType: (typeName) => symbols.functionReturnTypes.has(typeName),
+      isCallbackField: (structName, fieldName) =>
+        SettledCallback.isField(program, structName, fieldName),
       enumZeroOf: (typeName) =>
         symbols.knownEnums.has(typeName)
           ? EnumZeroValue.of(symbols, typeName)
@@ -85,7 +90,11 @@ class StructDefault {
     if (!("name" in element)) {
       return null;
     }
-    return StructDefault.defaultOf(element.name, facts) === null
+    return StructDefault.defaultOf(
+      element.name,
+      TTypeUtils.isCallback(element),
+      facts,
+    ) === null
       ? null
       : element.name;
   }
@@ -98,9 +107,10 @@ class StructDefault {
   /** A value of `typeName`'s non-zero default, or null when it is zero. */
   static defaultOf(
     typeName: string,
+    isCallback: boolean,
     facts: IStructDefaultFacts,
   ): IStructFieldDefault["value"] | null {
-    if (facts.isCallbackType(typeName)) {
+    if (isCallback) {
       return { kind: "callback", functionName: typeName };
     }
     const enumerator = facts.enumZeroOf(typeName);

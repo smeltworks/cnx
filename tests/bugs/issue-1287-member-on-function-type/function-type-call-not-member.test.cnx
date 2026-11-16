@@ -1,0 +1,49 @@
+// test-execution
+// test-adr: 029
+// #1287 negative control: calling a function-typed value is not a member
+// access and stays silent beside the error fixtures.
+#include "fn-type-lib.cnx"
+
+struct Config {
+    u32 marker;
+}
+
+struct Holder {
+    tick cb;
+}
+
+scope Timing {
+    public u32 Config() {
+        return 7;
+    }
+
+    public u32 read(this.Config settings) {
+        return settings();
+    }
+}
+
+u32 useField(Holder h) {
+    return h.cb();
+}
+
+u32 useStruct(Config c) {
+    return c.marker;
+}
+
+u32 main() {
+    Holder h <- { cb: tick };
+    Config c <- { marker: 2 };
+    u32 viaScope <- Timing.read(Timing.Config);
+    u32 viaField <- useField(h);
+    u32 viaStruct <- useStruct(c);
+    if (viaScope != 7) {
+        return 1;
+    }
+    if (viaField != 1) {
+        return 2;
+    }
+    if (viaStruct != 2) {
+        return 3;
+    }
+    return 0;
+}

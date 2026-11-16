@@ -107,7 +107,6 @@ export default class CodeGenerator implements IOrchestrator {
       knownFunctions: this.state.knownFunctions,
       knownStructs: this.state.symbols?.knownStructs ?? new Set(),
       callbackTypes: this.state.callbackTypes,
-      callbackFieldTypes: this.state.callbackFieldTypes,
       program: this.state.program,
     };
   }
@@ -269,6 +268,7 @@ export default class CodeGenerator implements IOrchestrator {
    */
   renderStructDefault(
     structName: string,
+    isCallback: boolean,
     counts: readonly (number | null)[],
   ): string | null {
     const symbols = this.state.symbols;
@@ -277,8 +277,8 @@ export default class CodeGenerator implements IOrchestrator {
       symbols && program,
       "an ADR-029 default is rendered from the resolved program and its symbols, which generate() sets before any declaration (#1283)",
     );
-    return StructDefaultInitializer.render(structName, counts, {
-      ...StructDefault.factsOf(symbols),
+    return StructDefaultInitializer.render(structName, isCallback, counts, {
+      ...StructDefault.factsOf(symbols, program),
       fieldElementCounts: (owner, fieldName) =>
         CodeGenerator.fieldElementCounts(program, owner, fieldName),
       cppMode: this.state.cppMode,

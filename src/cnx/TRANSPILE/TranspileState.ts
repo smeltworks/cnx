@@ -347,16 +347,14 @@ class TranspileState {
   emissionPlanOrNull: IEmissionPlan | null = null;
   /** ADR-013: Track function parameter const-ness for call-site validation */
   functionSignatures: Map<string, IFunctionSignature> = new Map();
-  /** Callback field types: "Struct.field" -> callbackTypeName */
-  callbackFieldTypes: Map<string, string> = new Map();
   /**
    * ADR-029 / Issues #1200, #1201: every type name referenced by a field or a
    * parameter, wherever it appears -- top-level struct, scope-nested struct,
    * scope member, or function parameter.
    *
    * Emitting a callback's `_fp` typedef is one decision, and it used to be
-   * derived from callbackFieldTypes alone. That map is populated only while
-   * walking TOP-LEVEL struct declarations, so a callback used anywhere else was
+   * derived from the callback field types alone, which were collected only
+   * while walking TOP-LEVEL struct declarations, so a callback used anywhere else was
    * registered as known, referenced in the output, and never given a typedef --
    * generated C that does not compile.
    *
@@ -848,6 +846,12 @@ class TranspileState {
     };
   }
 
+  /** #1984: 1.4's answer -- did it settle `cName`, in this file, as a callback? */
+  isCallbackType(cName: string): boolean {
+    const bound = this.boundProgram();
+    return bound.program.isCallbackType(bound.sourcePath, cName);
+  }
+
   /** The program and the file a type binding reads from; set before any is read. */
   private boundProgram(): { program: IProgram; sourcePath: string } {
     invariant(
@@ -1048,7 +1052,6 @@ class TranspileState {
   useFunctionCatalog(catalog: IFunctionCatalog): void {
     this.knownFunctions = new Set(catalog.knownFunctions);
     this.functionSignatures = new Map(catalog.functionSignatures);
-    this.callbackFieldTypes = new Map(catalog.callbackFieldTypes);
     this.callbackTypeReferences = new Set(catalog.callbackTypeReferences);
     this.publicCallbackTypeReferences = new Set(
       catalog.publicCallbackTypeReferences,
@@ -1090,7 +1093,6 @@ class TranspileState {
       knownFunctions: new Set(this.knownFunctions),
       functionSignatures: new Map(this.functionSignatures),
       callbackTypes: new Map(this.callbackTypes),
-      callbackFieldTypes: new Map(this.callbackFieldTypes),
       callbackTypeReferences: new Set(this.callbackTypeReferences),
       publicCallbackTypeReferences: new Set(this.publicCallbackTypeReferences),
       scopeMembers: new Map(
@@ -1166,7 +1168,6 @@ class TranspileState {
     this.expectedType = null;
     this.suppressBareEnumResolution = false;
     this.functionSignatures = new Map();
-    this.callbackFieldTypes = new Map();
     this.callbackTypeReferences = new Set();
     this.publicCallbackTypeReferences = new Set();
     this.declarationPlanOrNull = null;

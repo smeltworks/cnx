@@ -67,6 +67,14 @@ interface IProgram {
   qualifiedTypeName(sourceFile: string, written: string): string;
 
   /**
+   * Whether 1.4 settled the type named `cName` in `sourceFile` as a callback
+   * -- a function this file can see, used as a type (#1984). The stored
+   * answer, so a later pass reads it rather than asking which functions the
+   * file sees again.
+   */
+  isCallbackType(sourceFile: string, cName: string): boolean;
+
+  /**
    * The type `name` declared in `scopePath` that `sourceFile` can see, found
    * by identity; undefined when ADR-057 leaves a bare `name` the file's own.
    * Read `.fullyQualifiedCName` from it rather than encoding one (#2116).

@@ -30,9 +30,6 @@ interface IGeneratorInput {
   /** Callback/function-as-type definitions */
   readonly callbackTypes: ReadonlyMap<string, ICallbackTypeInfo>;
 
-  /** Callback types used as struct field types: "StructName.fieldName" -> callback type name */
-  readonly callbackFieldTypes: ReadonlyMap<string, string>;
-
   /** The program's declarations, by C name -- a struct's fields (#1535) */
   readonly program: IProgram | null;
 }

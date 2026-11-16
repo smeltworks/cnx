@@ -464,6 +464,72 @@ describe("FunctionCallAnalyzer", () => {
 
       expect(errors).toHaveLength(0);
     });
+
+    // #1287, #2005, #1275: the callee is bound where the call is written
+    function callErrors(code: string) {
+      const { syntax, analyzer } = analyzerFor(code);
+      return analyzer
+        .analyze(syntax)
+        .map((e) => [e.code, e.functionName, e.span.line]);
+    }
+
+    const timing = `scope Timing {\n  public u32 Config() { return 7; }\n`;
+
+    it.each([
+      [
+        "a this.T parameter",
+        `${timing}  public u32 read(this.Config s) { return s(); }\n}`,
+      ],
+      [
+        "a Scope.T parameter",
+        `${timing}}\nu32 read(Timing.Config s) { return s(); }`,
+      ],
+      [
+        "a global.T parameter",
+        `u32 tick() { return 1; }\n${timing}  public u32 tick() { return 2; }\n  public u32 read(global.tick f) { return f(); }\n}`,
+      ],
+      [
+        "a this.T local",
+        `${timing}  public u32 read() {\n    this.Config local <- this.Config;\n    return local();\n  }\n}`,
+      ],
+      [
+        "a Scope.T global",
+        `${timing}}\nTiming.Config g <- Timing.Config;\nu32 read() { return g(); }`,
+      ],
+      [
+        "a this.T for-header variable",
+        `${timing}  public u32 read() {\n    for (this.Config f <- this.Config; false; f <- this.Config) {\n      f();\n    }\n    return 0;\n  }\n}`,
+      ],
+      [
+        "a scope member through this.",
+        `u32 millis() { return 1; }\nscope S {\n  public millis tick <- millis;\n  public u32 read() { return this.tick(); }\n}`,
+      ],
+      [
+        "a scope member through global.S.",
+        `u32 millis() { return 1; }\nscope S {\n  public millis tick <- millis;\n}\nu32 read() { return global.S.tick(); }`,
+      ],
+    ])("calls %s", (_label, code) => {
+      expect(callErrors(code)).toEqual([]);
+    });
+
+    it("rejects a callable declared in another function (#2005)", () => {
+      expect(
+        callErrors(
+          `void tick() { }\nvoid a() {\n  ISR handler <- tick;\n  handler();\n}\nvoid b() {\n  handler();\n}`,
+        ),
+      ).toEqual([["E0422", "handler", 7]]);
+    });
+
+    it.each([
+      ["a struct", `struct Cfg { u32 x; }\nu32 read(Cfg c) { return c(); }`],
+      [
+        "an array of callbacks",
+        `u32 tick() { return 1; }\nu32 read() {\n  tick[2] cbs;\n  return cbs();\n}`,
+      ],
+      ["a primitive", `u32 read() {\n  u32 v <- 5;\n  return v();\n}`],
+    ])("does not call %s", (_label, code) => {
+      expect(callErrors(code).map(([code]) => code)).toEqual(["E0422"]);
+    });
   });
 
   // ========================================================================

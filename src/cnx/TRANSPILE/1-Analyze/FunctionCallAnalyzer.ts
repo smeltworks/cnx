@@ -18,6 +18,8 @@ import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import StatementChildren from "../../utils/StatementChildren";
 import TypeParts from "../../utils/TypeParts";
+import type TType from "../../types/TType";
+import TTypeUtils from "../../utils/TTypeUtils";
 import IFunctionCallError from "./types/IFunctionCallError";
 import BindingSite from "../../utils/BindingSite";
 import type ISourceSite from "../../types/ISourceSite";
@@ -26,6 +28,7 @@ import DynamicAllocation from "./DynamicAllocation";
 import StdlibFunctions from "./StdlibFunctions";
 import CalleeNameResolver from "./helpers/CalleeNameResolver";
 import IncludeDirective from "./helpers/IncludeDirective";
+import WrittenBinding from "./helpers/WrittenBinding";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import type TSymbol from "../../types/symbols/TSymbol";
 import invariant from "../../utils/invariant";
@@ -39,9 +42,9 @@ const CNX_BUILTINS: Set<string> = new Set(StdlibFunctions.builtinNames());
 
 /**
  * #1991: walks 1.2's syntax, not the parse tree, in source order -- a function
- * is defined from its own declaration onward (ADR-030), and a callable
- * variable from its declaration onward (ADR-040), so each call is checked
- * against only what precedes it.
+ * is defined from its own declaration onward (ADR-030), so each call is
+ * checked against only what precedes it. A callable variable (ADR-040) is
+ * bound where it is called, not collected here (#2005).
  */
 class FunctionCallWalk {
   constructor(private readonly analyzer: FunctionCallAnalyzer) {}
@@ -73,7 +76,6 @@ class FunctionCallWalk {
     this.analyzer.defineFunction(fullName);
     this.part({ kind: "type", type: fn.returnType }, scope);
     for (const parameter of fn.parameters ?? []) {
-      this.defineIfCallable(parameter.type.text, parameter.name, scope);
       this.part({ kind: "type", type: parameter.type }, scope);
       for (const part of TypeParts.dimensions(parameter.dimensions)) {
         this.part(part, scope);
@@ -83,22 +85,8 @@ class FunctionCallWalk {
     this.analyzer.exitFunction();
   }
 
-  /** Each declaration defines its callable name before its own initializer */
   private statements(statements: readonly TStatement[], scope: string): void {
     for (const statement of statements) {
-      if (statement.kind === "variableDeclaration") {
-        this.defineIfCallable(statement.type.text, statement.name, scope);
-      }
-      if (
-        statement.kind === "for" &&
-        statement.init?.kind === "variableDeclaration"
-      ) {
-        this.defineIfCallable(
-          statement.init.type.text,
-          statement.init.name,
-          scope,
-        );
-      }
       for (const part of DeclarationParts.statement(statement)) {
         this.part(part, scope);
       }
@@ -118,6 +106,7 @@ class FunctionCallWalk {
   ): void {
     const baseName = CalleeNameResolver.baseName(expr.primary);
     if (!baseName) return;
+    if (this.analyzer.callsCallableValue(expr)) return;
     const target = CalleeNameResolver.resolveCallTarget(
       expr.ops,
       baseName,
@@ -136,22 +125,6 @@ class FunctionCallWalk {
       scope,
       target.isGlobalCall,
     );
-  }
-
-  /** ADR-040: a variable of a callback, ISR or C function-pointer type */
-  private defineIfCallable(
-    typeName: string,
-    name: string,
-    scope: string,
-  ): void {
-    if (
-      typeName === "ISR" ||
-      this.analyzer.isCallbackMember(scope, typeName) ||
-      this.analyzer.isCallbackType(typeName) ||
-      this.analyzer.isCFunctionPointerTypedef(typeName)
-    ) {
-      this.analyzer.defineCallableVariable(name);
-    }
   }
 }
 
@@ -176,9 +149,6 @@ class FunctionCallAnalyzer {
   /** Current function being defined (for self-recursion detection) */
   private currentFunctionName: string | null = null;
 
-  /** ADR-040: Variables of type ISR or callback types that can be invoked */
-  private callableVariables: Set<string> = new Set();
-
   /** #1456: the 2.1 context is the one channel to the symbol table (#1659). */
   public constructor(private readonly context: IAnalysisContext) {}
 
@@ -200,10 +170,8 @@ class FunctionCallAnalyzer {
     this.knownScopes = new Set();
     this.includedHeaders = new Set();
     this.currentFunctionName = null;
-    this.callableVariables = new Set();
 
-    // First pass: collect scope names, includes, and all local functions --
-    // which ADR-029 also makes the set of callback types (see isCallbackType).
+    // First pass: collect scope names, includes, and all local functions
     this.collectScopes(program);
     this.collectIncludes(program);
     this.collectAllLocalFunctions(program);
@@ -284,35 +252,6 @@ class FunctionCallAnalyzer {
   }
 
   /**
-   * ADR-029: Check if a type name is a callback type (function-as-type).
-   *
-   * Reads `allLocalFunctions` rather than a set of its own. ADR-029 makes EVERY
-   * function declaration a type, so "the callback types this file declares" and
-   * "the functions this file declares" are one fact, and a second derivation of
-   * it could only ever agree by coincidence -- which it did not (#1472). The set
-   * this replaced walked `tree.declaration()` alone, so it silently omitted
-   * every scope member, while the collector it sat beside walked them
-   * correctly.
-   *
-   * #1491: the answer is NOT `allLocalFunctions` alone. That set exists to
-   * EXCLUDE cross-file functions, because ADR-030 define-before-use (#786)
-   * needs exactly that distinction -- so asking it "is this callable here?"
-   * asked one set two questions, and a variable typed by an INCLUDED
-   * function-as-type was rejected with E0422 "called before definition" for
-   * valid cnx. ADR-029 draws no line at the include boundary.
-   *
-   * The second reading is the per-file VISIBLE set, not a second derivation of
-   * the first: `functionReturnTypes` is authored once by TSymbolInfoAdapter for
-   * every function regardless of return type, carried across the include
-   * boundary by `mergeExternalSymbols` on the same terms as the type-forming
-   * kinds (#1333), and keyed by transpiled C name -- which is the key this
-   * method is given. `allLocalFunctions` is left untouched and keeps answering
-   * the ordering question it exists for.
-   *
-   * @param name The lookup key, already qualified by the caller -- see
-   *             `FunctionCallListener.isCallbackTypeHere`.
-   */
-  /**
    * The symbol 3-Declare made for `name` in `scope` ("" for file scope), so a
    * site reads its `fullyQualifiedCName` instead of encoding one (#2116).
    */
@@ -323,19 +262,41 @@ class FunctionCallAnalyzer {
     );
   }
 
-  /** ADR-029: `name`, written in `scope`, names a callback type it declares */
-  public isCallbackMember(scope: string, name: string): boolean {
-    const member = this.memberOf(scope, name);
+  /**
+   * ADR-040: whether `expr` calls a value -- a local, parameter, global or
+   * scope member of a callable type. The callee is bound where the call is
+   * written (ADR-057), so a callable declared in another function names
+   * nothing here (#2005), and `this.cb()` or `global.S.cb()` binds the member
+   * (#1275).
+   */
+  public callsCallableValue(
+    expr: Extract<TExpression, { kind: "postfix" }>,
+  ): boolean {
+    const written = WrittenBinding.ofExpression(expr, this.context);
+    if (written?.ops[0]?.kind !== "call") return false;
+    const binding = written.binding;
+    if (binding?.kind === "local") {
+      return (
+        binding.declaration.arrayDimensions.length === 0 &&
+        this.isCallableType(binding.declaration.type)
+      );
+    }
     return (
-      member !== undefined && this.isCallbackType(member.fullyQualifiedCName)
+      binding?.kind === "variable" &&
+      !binding.symbol.isArray &&
+      this.isCallableType(binding.symbol.type)
     );
   }
 
-  public isCallbackType(name: string): boolean {
-    return (
-      this.allLocalFunctions.has(name) ||
-      this.context.symbols.functionReturnTypes.has(name)
-    );
+  /**
+   * ADR-040: a value of this type can be called -- an ISR, a callback type
+   * (ADR-029) or a C function-pointer typedef. Read from the type 1.4 stored on
+   * the declaration, which already says whether it is a callback (#1984).
+   */
+  private isCallableType(type: TType): boolean {
+    if (TTypeUtils.isCallback(type)) return true;
+    if (!("name" in type)) return false;
+    return type.name === "ISR" || this.isCFunctionPointerTypedef(type.name);
   }
 
   /**
@@ -345,13 +306,6 @@ class FunctionCallAnalyzer {
    */
   public isCFunctionPointerTypedef(typeName: string): boolean {
     return this.context.symbolTable.isCFunctionPointerTypedef(typeName);
-  }
-
-  /**
-   * ADR-040: Register a variable that holds a callable (ISR or callback)
-   */
-  public defineCallableVariable(name: string): void {
-    this.callableVariables.add(name);
   }
 
   /**
@@ -408,11 +362,6 @@ class FunctionCallAnalyzer {
     if (CNX_BUILTINS.has(name)) {
       return true;
     }
-    // ADR-040: an ISR or callback variable being invoked.
-    if (this.callableVariables.has(name)) {
-      return true;
-    }
-
     // ADR-057: an unqualified call to a member of the enclosing scope --
     // `helper()` for `this.helper()`. Skipped for `global.` calls, which
     // explicitly mean global scope.

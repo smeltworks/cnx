@@ -1,0 +1,7 @@
+// #1287: one file between a fixture and fn-type-lib.cnx, so a function type
+// from there is reached transitively (ADR-058's E0927 matrix).
+#include "fn-type-lib.cnx"
+
+u32 midNow() {
+    return Clock.Now();
+}

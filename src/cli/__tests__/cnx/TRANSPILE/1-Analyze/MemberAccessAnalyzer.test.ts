@@ -81,4 +81,29 @@ describe("MemberAccessAnalyzer", () => {
       "'Motor' is a u8 and has no member 'get'",
     ]);
   });
+
+  it("measures E0927 to the type that has no members (#1402)", () => {
+    const analysis = testAnalysisContextFor(
+      "u32 read(Clock.Now n, u32 v) {\n    return n.marker + v.bar;\n}\n",
+      {
+        helpers: {
+          "clock.cnx": "scope Clock {\n    public u32 Now() { return 1; }\n}\n",
+        },
+        cppMode: false,
+      },
+    );
+    const found = new MemberAccessAnalyzer(analysis.context).analyze(
+      analysis.syntax,
+    );
+    expect(
+      found.map((e) => [
+        e.message,
+        e.declaredAt?.sourcePath,
+        e.declaredAt?.line,
+      ]),
+    ).toEqual([
+      ["'n' is a Clock.Now and has no member 'marker'", "clock.cnx", 2],
+      ["'v' is a u32 and has no member 'bar'", "test.cnx", 1],
+    ]);
+  });
 });

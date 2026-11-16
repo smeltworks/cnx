@@ -1,0 +1,2 @@
+19:4 error[E0422]: function 'handler' called before definition
+27:11 error[E0422]: function 'cb' called before definition

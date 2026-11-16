@@ -1,0 +1,110 @@
+// test-execution
+// test-adr: 029
+// #1287: a value whose type is written this.T, Scope.T or global.T is
+// callable wherever it is declared: a parameter, a local, a global and a
+// scope member (a for header's is a unit test: MISRA 14.2, #1539), with the
+// type in this file or an included one,
+// and with struct and mut arguments.
+#include "fn-type-lib.cnx"
+
+struct Point {
+    u32 x;
+}
+
+u32 tick2() {
+    return 3;
+}
+
+scope Timing {
+    public u32 Config() {
+        return 7;
+    }
+
+    public u32 Measure(Point p) {
+        return p.x;
+    }
+
+    public void Bump(mut u32 v) {
+        v +<- 1;
+    }
+
+    public u32 tick2() {
+        return 4;
+    }
+
+    this.Config member <- this.Config;
+
+    public u32 viaThisLocal() {
+        this.Config local <- this.Config;
+        return local();
+    }
+
+    public u32 viaMember() {
+        return member();
+    }
+
+    public u32 viaGlobalType(global.tick2 f) {
+        return f();
+    }
+
+    public u32 viaStructArgument(this.Measure m) {
+        Point p <- { x: 5 };
+        return m(p);
+    }
+
+    public u32 viaMutArgument(this.Bump b) {
+        mut u32 x <- 8;
+        b(x);
+        return x;
+    }
+}
+
+Timing.Config g <- Timing.Config;
+
+u32 viaScopeType(Timing.Config settings) {
+    return settings();
+}
+
+u32 viaIncludedScopeType(Clock.Now n) {
+    return n();
+}
+
+u32 viaGlobal() {
+    return g();
+}
+
+u32 main() {
+    u32 viaScope <- viaScopeType(Timing.Config);
+    u32 viaIncluded <- viaIncludedScopeType(Clock.Now);
+    u32 viaGlobalValue <- viaGlobal();
+    u32 viaLocal <- Timing.viaThisLocal();
+    u32 viaMember <- Timing.viaMember();
+    u32 viaGlobalType <- Timing.viaGlobalType(tick2);
+    u32 viaStruct <- Timing.viaStructArgument(Timing.Measure);
+    u32 viaMut <- Timing.viaMutArgument(Timing.Bump);
+    if (viaScope != 7) {
+        return 1;
+    }
+    if (viaIncluded != 2) {
+        return 2;
+    }
+    if (viaGlobalValue != 7) {
+        return 3;
+    }
+    if (viaLocal != 7) {
+        return 4;
+    }
+    if (viaMember != 7) {
+        return 5;
+    }
+    if (viaGlobalType != 3) {
+        return 6;
+    }
+    if (viaStruct != 5) {
+        return 7;
+    }
+    if (viaMut != 9) {
+        return 8;
+    }
+    return 0;
+}

@@ -5,6 +5,7 @@
 import { describe, it, expect } from "vitest";
 import StructDefault from "../StructDefault";
 import type IStructDefaultFacts from "../../types/IStructDefaultFacts";
+import type TSymbol from "../../types/symbols/TSymbol";
 
 function facts(
   structs: Record<string, Record<string, string>>,
@@ -17,7 +18,8 @@ function facts(
         new Map(Object.entries(fields)),
       ]),
     ),
-    isCallbackType: (typeName) => callbacks.includes(typeName),
+    isCallbackField: (structName, fieldName) =>
+      callbacks.includes(structs[structName]?.[fieldName] ?? ""),
     enumZeroOf: (typeName) => (typeName === "Mode" ? "Mode__IDLE" : null),
   };
 }
@@ -71,21 +73,36 @@ describe("StructDefault", () => {
     expect(StructDefault.hasDefault("u32", f)).toBe(false);
   });
   describe("factsOf (#1283 review: one builder for every reader)", () => {
-    it("reads the struct table and the cnx functions", () => {
+    it("reads the struct table and each field's settled type (#1984)", () => {
       const structFields = new Map([
         ["Ticker", new Map([["handler", "onTick"]])],
       ]);
-      const f = StructDefault.factsOf({
-        structFields,
-        functionReturnTypes: new Map([["onTick", "u32"]]),
-        knownEnums: new Set(["Mode"]),
-        enumMembers: new Map([["Mode", new Map([["IDLE", 0]])]]),
-        memberCNames: new Map([["Mode", new Map([["IDLE", "Mode__IDLE"]])]]),
-      });
+      const ticker = {
+        kind: "struct",
+        fields: new Map([
+          ["handler", { type: { kind: "callback", name: "onTick" } }],
+          ["count", { type: { kind: "primitive", primitive: "u32" } }],
+          // a struct-typed field named like a function is not a callback
+          ["named", { type: { kind: "struct", name: "onTick" } }],
+        ]),
+      } as unknown as TSymbol;
+      const f = StructDefault.factsOf(
+        {
+          structFields,
+          knownEnums: new Set(["Mode"]),
+          enumMembers: new Map([["Mode", new Map([["IDLE", 0]])]]),
+          memberCNames: new Map([["Mode", new Map([["IDLE", "Mode__IDLE"]])]]),
+        },
+        {
+          symbolByCName: (cName) => (cName === "Ticker" ? ticker : undefined),
+        },
+      );
 
       expect(f.structFields).toBe(structFields);
-      expect(f.isCallbackType("onTick")).toBe(true);
-      expect(f.isCallbackType("Ticker")).toBe(false);
+      expect(f.isCallbackField("Ticker", "handler")).toBe(true);
+      expect(f.isCallbackField("Ticker", "count")).toBe(false);
+      expect(f.isCallbackField("Ticker", "named")).toBe(false);
+      expect(f.isCallbackField("Other", "handler")).toBe(false);
       expect(f.enumZeroOf("Mode")).toBe("Mode__IDLE");
       expect(f.enumZeroOf("Ticker")).toBeNull();
     });
@@ -99,7 +116,8 @@ describe("StructDefault", () => {
     });
 
     it.each([
-      [{ kind: "struct", name: "onTick" }, "onTick"],
+      [{ kind: "callback", name: "onTick" }, "onTick"],
+      [{ kind: "struct", name: "onTick" }, null],
       [{ kind: "struct", name: "Ticker" }, "Ticker"],
       [
         {

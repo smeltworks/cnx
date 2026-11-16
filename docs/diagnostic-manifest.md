@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1007 fixture(s) assert a diagnostic; 992 carry a code.
+1012 fixture(s) assert a diagnostic; 997 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -661,6 +661,9 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1283-adr029-init-at-declaration/macro-index-bounds.test.cnx                              | E0854                             |
 | tests/bugs/issue-1283-adr029-init-at-declaration/non-callback-field-read.test.cnx                         | E0381                             |
 | tests/bugs/issue-1283-adr029-init-at-declaration/unreadable-macro-size.test.cnx                           | E0359                             |
+| tests/bugs/issue-1287-member-on-function-type/function-type-member-contexts-error.test.cnx                | E0927                             |
+| tests/bugs/issue-1287-member-on-function-type/function-type-member-transitive-error.test.cnx              | E0927                             |
+| tests/bugs/issue-1287-member-on-function-type/scope-function-type-member-error.test.cnx                   | E0927                             |
 | tests/bugs/issue-1306-nested-scope-diagnostic/cross-file-nested.test.cnx                                  | E0430                             |
 | tests/bugs/issue-1307-external-identifier-significance/colliding-scope-members.test.cnx                   | E0204                             |
 | tests/bugs/issue-1307-external-identifier-significance/cross-file-collision.test.cnx                      | E0204                             |
@@ -841,6 +844,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1800-float-to-integer/implicit-rejected.test.cnx                                         | E0891                             |
 | tests/bugs/issue-1800-float-to-integer/positions-rejected.test.cnx                                        | E0891                             |
 | tests/bugs/issue-1802-struct-initializer-target/header-scalar.test.cnx                                    | E0358                             |
+| tests/bugs/issue-1802-struct-initializer-target/imported-callback-argument.test.cnx                       | E0358                             |
 | tests/bugs/issue-1802-struct-initializer-target/non-struct-targets.test.cnx                               | E0358                             |
 | tests/bugs/issue-1802-struct-initializer-target/pointer-and-function-types.test.cnx                       | E0358                             |
 | tests/bugs/issue-1802-struct-initializer-target/whole-array-positions.test.cnx                            | E0866                             |
@@ -892,6 +896,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-2001-qualified-write-initializes-local/this-write-local-shadow.test.cnx                  | E0381                             |
 | tests/bugs/issue-2004-initialization-binds-through-1-4/for-variable-write-reader-after.test.cnx           | E0381                             |
 | tests/bugs/issue-2004-initialization-binds-through-1-4/for-variable-write-reader-before.test.cnx          | E0381                             |
+| tests/bugs/issue-2005-callable-variable-scope/other-function-error.test.cnx                               | E0422                             |
 | tests/bugs/issue-2011-redeclaration-in-one-scope/local-redeclares-parameter.test.cnx                      | E0425                             |
 | tests/bugs/issue-2011-redeclaration-in-one-scope/local-redeclares-shadowing-parameter.test.cnx            | E0425                             |
 | tests/bugs/issue-2011-redeclaration-in-one-scope/two-locals-one-block.test.cnx                            | E0425                             |

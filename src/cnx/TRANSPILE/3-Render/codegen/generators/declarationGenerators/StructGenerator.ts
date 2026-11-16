@@ -146,7 +146,7 @@ const generateStruct: TGeneratorFn<IPlannedStruct> = (
   // #1283/#1570: a struct gets one exactly when its default is not all zero,
   // which includes a struct whose only callback is in a nested struct field.
   const initFunction: string[] = [];
-  const defaultBrace = orchestrator.renderStructDefault(name, []);
+  const defaultBrace = orchestrator.renderStructDefault(name, false, []);
   if (defaultBrace !== null) {
     initFunction.push(StructInitFunction.definition(name, defaultBrace));
     effects.push({ type: "register-struct-init", structName: name });
