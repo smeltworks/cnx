@@ -407,17 +407,41 @@ bool safe_mod(output, numerator, divisor, defaultIfZero);
 **Generated C implementation (example for u32):**
 
 ```c
-bool cnx_safe_div_u32(uint32_t* output, uint32_t numerator, uint32_t divisor, uint32_t defaultIfZero) {
+bool cnx_safe_div_u32(uint32_t* output, uint32_t numerator, uint64_t divisor, uint32_t defaultIfZero) {
     if (divisor == 0) {
         *output = defaultIfZero;
         return true;  // Error: used default
     }
-    *output = numerator / divisor;
+    if (divisor > UINT32_MAX) {
+        *output = 0U;
+        return false;  // Success: the divisor is past the numerator
+    }
+    *output = numerator / (uint32_t)divisor;
     return false;  // Success: performed division
 }
 ```
 
+**Divisor width:** the divisor is taken in ADR-044's overflow helper's wider type, its `b`
+(#94), one decision shared by both helpers, so they cannot disagree; the output, numerator and default are in
+the output's type. A divisor past the type is not narrowed first, so `safe_div` divides as `/`
+does (ADR-044: `b / 300` is 0, and nothing is rejected): with `#define BIG 300`,
+`safe_div(q, a, BIG, 7)` on an `i8` writes 0, where an `int8_t` divisor would have divided by
+44, and `#define WIDE_ZERO 256` is no zero divisor, where it would have narrowed to 0 (#2415).
+An unsigned divisor past the type writes 0 for `safe_div` and the numerator for `safe_mod`,
+answered by comparison so the division stays in the type's own width; a signed one goes
+through ADR-044's division helper, which does the same.
+
 **Type variants:** Generated for all integer types: `u8`, `u16`, `u32`, `u64`, `i8`, `i16`, `i32`, `i64`
+
+**Signed overflow:** a signed `MIN / -1` is not a zero divisor, so `safe_div` and `safe_mod`
+return `false` and write what `/` and `%` give, as decided in ADR-044 (#1790): the type's MAX for
+`clamp`, its MIN for `wrap`, and 0 for the remainder.
+Under `--debug` a `MIN / -1` panics here under either modifier (#2408), as every overflow does in ADR-044
+([owner ruling](https://github.com/smeltworks/cnx/issues/1790#issuecomment-6854471224), #1790); a zero divisor still
+returns `true` and writes the default.
+A numerator and divisor that are C header values or literals divide through the same `clamp`
+helper (ADR-044, "A C value clamps"): `safe_div` is cnx code, whatever its operands
+([owner ruling](https://github.com/smeltworks/cnx/issues/2409#issuecomment-6895149321), #2409).
 
 **Use case:** Safety-critical calculations where the extra check is worth the cost and a sensible default exists.
 
@@ -859,12 +883,16 @@ compile time; a runtime-valued divisor is Phase 2's problem, not this one.
 ```c
 // Division by zero safety helpers (ADR-051)
 static inline bool cnx_safe_div_u32(uint32_t* output, uint32_t numerator,
-                                     uint32_t divisor, uint32_t defaultIfZero) {
+                                     uint64_t divisor, uint32_t defaultIfZero) {
     if (divisor == 0) {
         *output = defaultIfZero;
         return true;  // Error occurred
     }
-    *output = numerator / divisor;
+    if (divisor > UINT32_MAX) {
+        *output = 0U;
+        return false;  // Success
+    }
+    *output = numerator / (uint32_t)divisor;
     return false;  // Success
 }
 

@@ -62,6 +62,9 @@ interface IPlannedUnary {
 
   /** 2.2's decision: the unsigned C type this `~` is cast back to (MISRA 10.1) */
   readonly complementCast: string | null;
+
+  /** 2.2's decision: the overflow helper this `-` calls (ADR-044, #2418) */
+  readonly negation: string | null;
 }
 
 const generateUnaryExpr: TGeneratorFn<IPlannedUnary> = (
@@ -80,6 +83,9 @@ const generateUnaryExpr: TGeneratorFn<IPlannedUnary> = (
         code: `(${unary.minimum})${MINIMUM_MACRO[unary.minimum]}`,
         effects: [],
       };
+    }
+    if (unary.negation !== null) {
+      return { code: `${unary.negation}(${inner})`, effects: [] };
     }
     invariant(
       !OVERFLOWING_LITERALS.has(inner),

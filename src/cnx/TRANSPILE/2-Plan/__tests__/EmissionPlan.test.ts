@@ -7,6 +7,7 @@
  * were in apparent conflict over.
  */
 
+import ClampTypes from "../ClampTypes";
 import EmissionPlan from "../EmissionPlan";
 import type IEmissionFacts from "../../../types/IEmissionFacts";
 
@@ -22,11 +23,11 @@ const NOTHING: IEmissionFacts = {
   needsISR: false,
   selfIncludeAdded: false,
   existingIncludeTargets: [],
-  clampOps: new Set<string>(),
+  overflowHelpers: new Map(),
   stringCopyHelper: false,
   castHelpers: new Set<string>(),
   lengthHelpers: new Set<string>(),
-  safeDivOps: new Set<string>(),
+  safeDivOps: new Map(),
   floatAssertSites: [],
   irqWrapperSites: [],
   debugMode: false,
@@ -316,10 +317,19 @@ describe("EmissionPlan (2.2 Plan)", () => {
   // #1997: one decision -- Render picks the panic templates from this block,
   // and the block carries what they cost.
   describe("panicking overflow helpers", () => {
-    const clampOps = new Set(["add_u8"]);
+    const addU8 = {
+      name: "cnx_clamp_add_u8",
+      behavior: "clamp" as const,
+      operation: "add",
+      cnxType: "u8",
+      types: ClampTypes.of("u8"),
+    };
+    const overflowHelpers = new Map([[addU8.name, addU8]]);
 
     it("cost a hosted libc, as a planned block", () => {
-      const plan = EmissionPlan.build(facts({ debugMode: true, clampOps }));
+      const plan = EmissionPlan.build(
+        facts({ debugMode: true, overflowHelpers }),
+      );
 
       expect(plan.panicOverflowHelpers).toEqual({
         keyword: null,
@@ -334,7 +344,10 @@ describe("EmissionPlan (2.2 Plan)", () => {
     });
 
     it.each([
-      ["clamping helpers outside debug mode", { debugMode: false, clampOps }],
+      [
+        "clamping helpers outside debug mode",
+        { debugMode: false, overflowHelpers },
+      ],
       ["debug mode with no helper emitted", { debugMode: true }],
     ] as const)("are absent for %s", (_label, over) => {
       expect(EmissionPlan.build(facts(over)).panicOverflowHelpers).toBeNull();
@@ -365,15 +378,31 @@ describe("EmissionPlan (2.2 Plan)", () => {
     });
 
     it("carries helper keys as decided lists", () => {
+      const safeDivU32 = {
+        name: "cnx_safe_div_u32",
+        operation: "div" as const,
+        cnxType: "u32",
+        inner: null,
+        operandType: "uint32_t",
+        divisorType: "uint64_t",
+        divisorLimit: "UINT32_MAX",
+      };
+      const wrapDivI32 = {
+        name: "cnx_wrap_div_i32",
+        behavior: "wrap" as const,
+        operation: "div",
+        cnxType: "i32",
+        types: ClampTypes.of("i32"),
+      };
       const plan = EmissionPlan.build(
         facts({
-          clampOps: new Set(["add_u32"]),
-          safeDivOps: new Set(["div_u32"]),
+          overflowHelpers: new Map([[wrapDivI32.name, wrapDivI32]]),
+          safeDivOps: new Map([["cnx_safe_div_u32", safeDivU32]]),
         }),
       );
 
-      expect(plan.clampOps).toEqual(["add_u32"]);
-      expect(plan.safeDivOps).toEqual(["div_u32"]);
+      expect(plan.overflowHelpers).toEqual([wrapDivI32]);
+      expect(plan.safeDivOps).toEqual([safeDivU32]);
     });
   });
 });

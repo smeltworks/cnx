@@ -12,7 +12,8 @@ import type IOperandType from "../../types/IOperandType";
 import OperandTyper from "../../utils/OperandTyper";
 import TypeCheckUtils from "../../utils/TypeCheckUtils";
 import CompoundOperator from "../../utils/CompoundOperator";
-import CLAMP_HELPER_FOR_OPERATOR from "../../types/CLAMP_HELPER_FOR_OPERATOR";
+import OverflowHelper from "./OverflowHelper";
+import type IPlannedOverflowHelper from "../../types/IPlannedOverflowHelper";
 
 /**
  * Classifies assignment statements by analyzing their structure. What is
@@ -454,20 +455,21 @@ class AssignmentClassifier {
       return AssignmentKind.ATOMIC_RMW;
     }
 
-    if (AssignmentClassifier.compoundClamp(ctx) !== null) {
-      return AssignmentKind.OVERFLOW_CLAMP;
+    if (AssignmentClassifier.compoundOverflow(ctx) !== null) {
+      return AssignmentKind.OVERFLOW_HELPER;
     }
 
     return null;
   }
 
   /**
-   * ADR-044: the saturating helper operation (`add`, `sub`, `mul`) that a
-   * compound assignment lowers to, or null when it is plain C arithmetic.
+   * ADR-044: the overflow helper (`cnx_clamp_add_u8`, `cnx_wrap_div_i32`, ...)
+   * that a compound assignment lowers to, or null when it is plain C arithmetic.
    *
-   * Only a `clamp` integer target qualifies, and only for the arithmetic
-   * operators that can overflow; a bitwise compound cannot, so it stays plain.
-   * This is the one decision: the classifier asks it to pick OVERFLOW_CLAMP,
+   * A `clamp` integer target qualifies for `+<- -<- *<-`, and a signed one of
+   * either modifier for `/<-` and `%<-` (#1790), as `OverflowOperation` rules.
+   * A bitwise compound cannot overflow, so it stays plain.
+   * This is the one decision: the classifier asks it to pick OVERFLOW_HELPER,
    * the overflow handler asks it for the helper, and the atomic handler asks it
    * for the inner operation of its read-modify-write. The atomic generator used
    * to decide the same thing from its own operator map and its own integer test.
@@ -478,50 +480,66 @@ class AssignmentClassifier {
    *
    * `cnxType` is the type the helper saturates at: the written value's.
    */
-  static compoundClamp(
+  static compoundOverflow(
     ctx: IAssignmentContext,
-  ): { operation: string; cnxType: string } | null {
-    return ctx.plannedClamp;
+  ): IPlannedOverflowHelper | null {
+    return ctx.plannedOverflow;
   }
 
   /**
-   * 2.2's one decision behind `compoundClamp`: the helper a compound `cOp`
+   * 2.2's one decision behind `compoundOverflow`: the helper a compound `cOp`
    * write calls, from the type the write stores -- the typer's
    * `OperandTyper.writtenType`, which the string copy reads too (#1731 review).
    * A field (`p.x`) or an element (`levels[1]`) carries its own overflow
    * behavior (#1411, #1887), and a whole array is no integer the clamp
    * can saturate.
    */
-  static clampOfWrite(
+  static overflowOfWrite(
     written: IOperandType | null,
     cnxOp: string,
     hasFloatingOperand: () => boolean,
-  ): { operation: string; cnxType: string } | null {
+    divisor: number | null,
+    debugMode: boolean,
+  ): IPlannedOverflowHelper | null {
     if (written?.typeName == null || written.dimensions.length > 0) {
       return null;
     }
-    return AssignmentClassifier.clampOf(
+    return AssignmentClassifier.overflowHelperOf(
       written.typeName,
       written.overflow,
       cnxOp,
       hasFloatingOperand,
+      divisor,
+      debugMode,
     );
   }
 
-  /** ADR-044: the clamp helper a compound `cnxOp` write of this type calls, or null */
-  static clampOf(
+  /**
+   * ADR-044: the overflow helper a compound `cnxOp` write of this type calls,
+   * or null -- `OverflowHelper`'s decision for the operator it compounds;
+   * `divisor` is the written value when it is known at compile time
+   */
+  static overflowHelperOf(
     baseType: string,
     overflowBehavior: TOverflowBehavior | null,
     cnxOp: string,
     hasFloatingOperand: () => boolean,
-  ): { operation: string; cnxType: string } | null {
-    if (overflowBehavior !== "clamp") return null;
+    divisor: number | null,
+    debugMode: boolean,
+  ): IPlannedOverflowHelper | null {
+    if (overflowBehavior === null) return null;
     if (!TypeCheckUtils.isInteger(baseType)) return null;
     if (hasFloatingOperand()) return null;
     const operator = CompoundOperator.binaryOf(cnxOp);
-    const operation =
-      operator === null ? undefined : CLAMP_HELPER_FOR_OPERATOR[operator];
-    return operation ? { operation, cnxType: baseType } : null;
+    return operator === null
+      ? null
+      : OverflowHelper.of(
+          overflowBehavior,
+          operator,
+          baseType,
+          divisor,
+          debugMode,
+        );
   }
 }
 

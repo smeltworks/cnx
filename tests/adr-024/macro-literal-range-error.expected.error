@@ -1,0 +1,14 @@
+16:11 error[E0868]: Value 300 exceeds i8 range (-128 to 127)
+       help: Widen the target type, or narrow the value.
+20:19 error[E0868]: Value 300 exceeds i8 range (-128 to 127)
+       help: Widen the target type, or narrow the value.
+22:10 error[E0868]: Value 300 exceeds i8 range (-128 to 127)
+       help: Widen the target type, or narrow the value.
+23:28 error[E0868]: Value 301 exceeds i8 range (-128 to 127)
+       help: Widen the target type, or narrow the value.
+25:34 error[E0868]: Value 300 exceeds i8 range (-128 to 127)
+       help: Widen the target type, or narrow the value.
+26:39 error[E0868]: Value 300 exceeds i8 range (-128 to 127)
+       help: Widen the target type, or narrow the value.
+27:46 error[E0868]: Value 300 exceeds i8 range (-128 to 127)
+       help: Widen the target type, or narrow the value.

@@ -1,0 +1,31 @@
+// test-error
+// test-adr: 024
+// #2424: an integer header macro keeps an unsuffixed literal's handling
+// (ADR-024), so a macro whose value does not fit its target is E0868 at every
+// position its literal is: a declaration, a compound assignment, a call
+// argument, a return value, and safe_div's numerator and default, which land
+// in its output's type. A divisor is exempt (ADR-044: `b / 300` is 0), so
+// the last two lines compile.
+#include "range_macros.h"
+
+i8 identity(i8 v) {
+    return v;
+}
+
+i8 returned() {
+    return BIG;
+}
+
+u32 main() {
+    i8 declared <- BIG;
+    mut i8 m <- identity(1);
+    m +<- BIG;
+    i8 argument <- identity(BIG_SUM);
+    mut i8 q <- 0;
+    bool numerator <- safe_div(q, BIG, m, 1);
+    bool fallback <- safe_div(q, m, 1, 300);
+    bool literalFallback <- safe_div(q, m, 1, BIG);
+    bool divisor <- safe_div(q, m, BIG, 1);
+    i8 quotient <- m / BIG;
+    return 0;
+}

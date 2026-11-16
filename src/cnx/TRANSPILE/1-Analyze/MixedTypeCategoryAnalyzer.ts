@@ -452,16 +452,18 @@ class MixedTypeCategoryAnalyzer {
     what: TOperatorSite,
     operator: string | undefined,
   ): void {
-    // An operator that hands an integer operand to a clamp helper (ADR-044)
-    // makes an unreadable macro beside it E0811; any other makes it E0812
-    const clamped =
+    // ADR-024's split, by operator: `+ - *` (and their compound forms) make
+    // an unreadable macro beside an integer E0811, any other operator E0812.
+    // It does not follow which helper 2.2 plans, so a line's code does not
+    // change with its modifier or `--debug` (#1790 review).
+    const helped =
       operator !== undefined &&
       CLAMP_HELPER_FOR_OPERATOR[operator] !== undefined;
-    const why = clamped
-      ? "this operator would hand it to an integer clamp helper untyped"
+    const why = helped
+      ? "this operator would hand it to an overflow helper untyped"
       : "C's usual arithmetic conversions decide this result from the type it really has, which can change a comparison, a bit operation or a quotient (an unsigned 3 < -1 is true)";
     this.errors.push({
-      code: clamped ? "E0811" : "E0812",
+      code: helped ? "E0811" : "E0812",
       span,
       message: MixedTypeCategoryAnalyzer.unreadableMacroMessage(what),
       helpText: `ADR-024: a header macro is typed from its replacement tokens, and this one's are not a literal expression; ${why}. Cast the macro to the type it has, e.g. (u32)MACRO or (f32)MACRO.`,

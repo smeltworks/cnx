@@ -5,6 +5,7 @@
  * code for an assignment. Built once by the context extractor, then used
  * by the classifier and handlers.
  */
+import type IPlannedOverflowHelper from "../../../types/IPlannedOverflowHelper";
 import type TRenderedStringPart from "../../../types/TRenderedStringPart";
 import type IPlannedFloatBits from "./IPlannedFloatBits";
 import type IPlannedSliceSource from "./IPlannedSliceSource";
@@ -79,7 +80,7 @@ interface IAssignmentContext {
   /** 2.2's decision: how this write is atomic (ADR-049), or null if it is not */
   readonly atomic: IPlannedAtomic | null;
   /** 2.2's decision: the ADR-044 helper this compound write calls, or null */
-  readonly plannedClamp: { operation: string; cnxType: string } | null;
+  readonly plannedOverflow: IPlannedOverflowHelper | null;
   /** 2.2's decision: how a slice write reads its source (#1081), or null */
   readonly plannedSliceSource: IPlannedSliceSource | null;
   /** 2.2's decision: the capacity of the one `string<N>` this write copies, or null (#1731) */

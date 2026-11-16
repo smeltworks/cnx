@@ -9,6 +9,19 @@
 #include <stdbool.h>
 #include <string.h>
 
+// ADR-044: Overflow helper functions
+#include <limits.h>
+
+/* ADR-044 / Issue #94: the second parameter is the WIDER type, not the value type.
+   Narrowing it first would let an out-of-range operand truncate INTO range and defeat
+   the check: cnx_clamp_add_u8(0, 256) must saturate to 255, but (uint8_t)256 is 0, so a
+   uint8_t parameter would return 0 -- the opposite of saturation. */
+
+static inline uint32_t cnx_clamp_mul_u32(uint32_t a, uint64_t b) {
+    if (b != 0 && a > UINT32_MAX / b) return UINT32_MAX;
+    return (uint32_t)(a * (uint32_t)b);
+}
+
 // test-execution
 // test-adr: 058
 // The memory row (#1975 review 2): C's layout, sizeof in the generated C for
@@ -19,7 +32,7 @@ int main(void) {
     if (((uint32_t)sizeof(Cfg)) < 5) {
         return 1U;
     }
-    if (((uint32_t)sizeof(Cfg) * 8U) != ((uint32_t)sizeof(Cfg)) * 8) {
+    if (((uint32_t)sizeof(Cfg) * 8U) != cnx_clamp_mul_u32(((uint32_t)sizeof(Cfg)), 8)) {
         return 2U;
     }
     if (((uint32_t)sizeof(bool)) != 1) {
@@ -53,7 +66,7 @@ int main(void) {
         return 11U;
     }
     const Cfg two[2] = {0};
-    if (((uint32_t)sizeof(Cfg) * 2U) != ((uint32_t)sizeof(Cfg)) * 2) {
+    if (((uint32_t)sizeof(Cfg) * 2U) != cnx_clamp_mul_u32(((uint32_t)sizeof(Cfg)), 2)) {
         return 12U;
     }
     if (2 != 2) {
