@@ -20,7 +20,7 @@ function resolveFieldCType(
   // ADR-029: a callback field is written as its typedef. #1984: whether it is
   // one is its settled type's answer; the map only spells the typedef.
   const callbackInfo =
-    input.isCallbackField?.(structName, fieldName) === true
+    input.callbackFields?.get(structName)?.has(fieldName) === true
       ? input.callbackTypes?.get(fieldType)
       : undefined;
   if (callbackInfo) {

@@ -441,10 +441,8 @@ class FilePlanner {
     program: IProgramSyntax,
     unwritten: IUnwrittenSyntax,
   ): ReadonlyMap<TTypeSyntax, IPlannedType> {
-    const unwrittenTypes = this.unwrittenTypes(program);
     const planned = new Map<TTypeSyntax, IPlannedType>();
     for (const { type, scope } of TypeSites.of(program, unwritten)) {
-      if (unwrittenTypes.has(type)) continue;
       planned.set(type, this.planType(type, this.state.scopePathOf(scope)));
     }
     return planned;
@@ -821,8 +819,9 @@ class FilePlanner {
       head.ops.forEach((op, i) => {
         const step = steps[i - head.opsConsumed];
         if (op.kind !== "call" || step === undefined) return;
-        // A function, or an ADR-029 callback: its type names the function
-        const callee = step.callee ?? step.before?.typeName ?? null;
+        // A function, or an ADR-029 callback: 1.4 settled its type as the
+        // function (#1984)
+        const callee = step.callee ?? step.before?.callbackTypeName ?? null;
         if (callee === null) return;
         const symbol = typing.program.symbolByCName(callee);
         if (symbol?.kind !== "function") return;
@@ -1090,25 +1089,6 @@ class FilePlanner {
         ? WrittenParts.nodes(part.expression, unwritten)
         : [],
     );
-  }
-
-  /**
-   * Types in a written declaration that 2.3 spells some other way: a callback
-   * field by its typedef (ADR-029).
-   */
-  private unwrittenTypes(program: IProgramSyntax): ReadonlySet<TTypeSyntax> {
-    const unwritten = new Set<TTypeSyntax>();
-    for (const { declaration } of program.declarations) {
-      if (declaration.kind !== "struct") continue;
-      for (const field of declaration.fields) {
-        if (
-          this.state.callbackFieldTypes.has(`${declaration.name}.${field.name}`)
-        ) {
-          unwritten.add(field.type);
-        }
-      }
-    }
-    return unwritten;
   }
 
   /**
@@ -1573,7 +1553,7 @@ class FilePlanner {
     const step = this.callStepAt(site);
     const input = this.state;
     const callbackTypeFunction = CallArgumentPassing.callbackFunction(
-      step?.before?.typeName ?? null,
+      step?.before?.callbackTypeName ?? null,
       input,
     );
     return CallArgumentPassing.of(
@@ -3466,9 +3446,7 @@ class FilePlanner {
     );
   }
 
-  /**
-   * Collect callback field types from struct declaration
-   */
+  /** ADR-029: a struct's callback fields name types its header must typedef */
   private _collectStructCallbackFields(
     catalog: FunctionCatalog,
     structDecl: IStructDeclarationSyntax,
@@ -3477,7 +3455,6 @@ class FilePlanner {
     for (const field of structDecl.fields) {
       if (!this.planType(field.type, scopePath).isCallback) continue;
       const fieldType = this.typeNameIn(field.type, scopePath);
-      catalog.noteCallbackField(`${structDecl.name}.${field.name}`, fieldType);
       catalog.notePublicReference(fieldType);
     }
   }

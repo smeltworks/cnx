@@ -77,7 +77,6 @@ function createMockInput(overrides?: {
     knownScopes: new Set<string>(),
     constValues: new Map(),
     callbackTypes: new Map(),
-    callbackFieldTypes: new Map(),
     program: null,
   } as IGeneratorInput;
 }
@@ -239,6 +238,7 @@ function typed(
     stringCapacity: null,
     enumTypeName: null,
     bitmapTypeName: null,
+    callbackTypeName: null,
     overflow: null,
     hasSideEffect: false,
     form: { kind: "declared" },

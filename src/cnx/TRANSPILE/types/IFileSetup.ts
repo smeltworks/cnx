@@ -26,7 +26,6 @@ interface IFileSetup {
   readonly knownFunctions: ReadonlySet<string>;
   readonly functionSignatures: ReadonlyMap<string, IFunctionSignature>;
   readonly callbackTypes: ReadonlyMap<string, ICallbackTypeInfo>;
-  readonly callbackFieldTypes: ReadonlyMap<string, string>;
   readonly callbackTypeReferences: ReadonlySet<string>;
   readonly publicCallbackTypeReferences: ReadonlySet<string>;
   readonly scopeMembers: ReadonlyMap<string, ReadonlySet<string>>;

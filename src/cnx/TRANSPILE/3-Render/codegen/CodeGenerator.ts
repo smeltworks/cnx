@@ -107,7 +107,6 @@ export default class CodeGenerator implements IOrchestrator {
       knownFunctions: this.state.knownFunctions,
       knownStructs: this.state.symbols?.knownStructs ?? new Set(),
       callbackTypes: this.state.callbackTypes,
-      callbackFieldTypes: this.state.callbackFieldTypes,
       program: this.state.program,
     };
   }

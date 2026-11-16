@@ -96,9 +96,10 @@ function renderTypeDefinitions(
     ...symbols,
     symbolTable: state.symbolTable,
     callbackTypes: state.callbackTypes,
-    isCallbackField: (structName, fieldName) =>
-      state.program !== null &&
-      SettledCallback.isField(state.program, structName, fieldName),
+    callbackFields:
+      state.program === null
+        ? undefined
+        : SettledCallback.fieldsOf(state.program, symbols.structFields),
   };
 
   return [

@@ -7,8 +7,6 @@ import type IFunctionSignature from "../../types/IFunctionSignature";
 interface IFunctionCatalog {
   readonly knownFunctions: ReadonlySet<string>;
   readonly functionSignatures: ReadonlyMap<string, IFunctionSignature>;
-  /** `Struct.field` to the callback type the field holds */
-  readonly callbackFieldTypes: ReadonlyMap<string, string>;
   readonly callbackTypeReferences: ReadonlySet<string>;
   readonly publicCallbackTypeReferences: ReadonlySet<string>;
 }

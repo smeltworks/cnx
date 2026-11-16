@@ -18,6 +18,7 @@ const value = (typeName: string, dimensions: number[] = []): IOperandType => ({
   stringCapacity: null,
   enumTypeName: null,
   bitmapTypeName: null,
+  callbackTypeName: null,
   overflow: null,
   hasSideEffect: false,
   form: { kind: "declared" },

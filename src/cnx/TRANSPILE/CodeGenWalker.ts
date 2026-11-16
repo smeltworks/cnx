@@ -1299,8 +1299,8 @@ class CodeGenWalker {
     const typing = this.planner.transpileState.typingContext();
     return this.host.renderStructDefault(
       resolved.name,
-      // #1984: 1.4's answer for this file, not a lookup among the functions
-      this.host.state.isCallbackType(resolved.name),
+      // #1984: 1.4's answer, carried by the planned type
+      this.plannedType(type).isCallback,
       written.map((size) =>
         size
           ? (this.planner.constantOf(size) ??
@@ -1417,7 +1417,7 @@ class CodeGenWalker {
    * Issues #1200, #1201: does this callback type need its `_fp` typedef emitted?
    *
    * True when the type is referenced by any field or parameter, not only by a
-   * field of a top-level struct. Reading callbackFieldTypes alone missed
+   * field of a top-level struct. Reading the top-level callback fields alone missed
    * scope-nested struct fields, scope members and parameters, each of which
    * produced C that referenced a typedef nothing had emitted.
    *
@@ -2400,15 +2400,15 @@ class CodeGenWalker {
       name: struct.name,
       fields: struct.fields.map((field) => {
         const arrayType = field.type.kind === "array" ? field.type : null;
-        // a callback field is written through its typedef, so 2.2 names it
-        // in its callback field types rather than in the written types
-        const callbackType = this.host.state.callbackFieldTypes.get(
-          `${struct.name}.${field.name}`,
-        );
+        // #1984: whether it is a callback is the planned type's, from 1.4.
+        // A callback field is written through its typedef, which is how 2.3
+        // renders that type.
+        const isCallback = this.plannedType(field.type).isCallback;
+        if (isCallback) this.rendering.types.add(field.type);
         return {
           name: field.name,
-          typeName: callbackType ?? this.typeNameOf(field.type),
-          isCallback: callbackType !== undefined,
+          typeName: this.typeNameOf(field.type),
+          isCallback,
           hasNameDimensions: field.dimensions.length > 0,
           hasTypeDimensions: arrayType !== null,
           renderCType: () => this.renderType(field.type),

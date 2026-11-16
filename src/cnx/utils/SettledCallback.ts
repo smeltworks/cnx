@@ -26,6 +26,23 @@ class SettledCallback {
       struct?.kind === "struct" ? struct.fields.get(fieldName) : undefined;
     return field !== undefined && SettledCallback.isType(field.type);
   }
+
+  /** Each struct's callback fields, structName -> fieldNames */
+  static fieldsOf(
+    program: Pick<IProgram, "symbolByCName">,
+    structFields: ReadonlyMap<string, ReadonlyMap<string, string>>,
+  ): ReadonlyMap<string, ReadonlySet<string>> {
+    const result = new Map<string, ReadonlySet<string>>();
+    for (const [structName, fields] of structFields) {
+      const callbacks = new Set(
+        [...fields.keys()].filter((fieldName) =>
+          SettledCallback.isField(program, structName, fieldName),
+        ),
+      );
+      if (callbacks.size > 0) result.set(structName, callbacks);
+    }
+    return result;
+  }
 }
 
 export default SettledCallback;

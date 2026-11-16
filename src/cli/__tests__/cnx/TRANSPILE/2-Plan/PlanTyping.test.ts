@@ -133,6 +133,7 @@ describe("OverflowBehaviorUtils.ofLeaves (ADR-044)", () => {
       stringCapacity: null,
       enumTypeName: null,
       bitmapTypeName: null,
+      callbackTypeName: null,
       overflow: null,
       hasSideEffect: true,
       form: { kind: "foreign", indeterminate: false },

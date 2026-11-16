@@ -128,6 +128,7 @@ function typedLast(
     stringCapacity: null,
     enumTypeName: null,
     bitmapTypeName: null,
+    callbackTypeName: null,
     overflow: null,
     hasSideEffect: false,
     form: { kind: "declared" },

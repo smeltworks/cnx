@@ -39,8 +39,7 @@ interface IPlannedStructField {
 
   /**
    * ADR-029: the field's type is a callback, spelled with its typedef name.
-   * 2.2 decides it before 2.3 renders, as the same `callbackFieldTypes` entry
-   * that callback-field assignments are checked against.
+   * 2.2's planned type carries 1.4's settled answer (#1984).
    */
   readonly isCallback: boolean;
 

@@ -36,7 +36,6 @@ function createMockInput(
     knownStructs: new Set(),
     constValues: new Map(),
     callbackTypes: new Map(),
-    callbackFieldTypes: new Map(),
     program: null,
   } as unknown as IGeneratorInput;
 }

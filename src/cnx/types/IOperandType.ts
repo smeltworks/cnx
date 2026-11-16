@@ -85,6 +85,11 @@ interface IOperandType {
   /** The bitmap's C name, for a whole bitmap value */
   readonly bitmapTypeName: string | null;
   /**
+   * ADR-029: the function that is the value's type, for a value 1.4 settled
+   * as a callback (#1984) -- read off its `TType`, never its name
+   */
+  readonly callbackTypeName: string | null;
+  /**
    * ADR-044 overflow behavior: a named variable's, parameter's or member's,
    * a struct field's own (#1411), an element's array's (#1887), a cnx call's
    * return type's, or a cast's own else its operand's (#1703). A

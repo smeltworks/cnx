@@ -419,7 +419,6 @@ describe("CodeGenWalker", () => {
         expect(input.knownFunctions).toBeInstanceOf(Set);
         expect(input.knownStructs).toBeInstanceOf(Set);
         expect(input.callbackTypes).toBeInstanceOf(Map);
-        expect(input.callbackFieldTypes).toBeInstanceOf(Map);
       });
     });
 

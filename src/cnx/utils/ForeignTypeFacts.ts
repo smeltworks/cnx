@@ -219,6 +219,7 @@ class ForeignTypeFacts {
       stringCapacity: null,
       enumTypeName: null,
       bitmapTypeName: null,
+      callbackTypeName: null,
       overflow: null,
       // #1760 review: a volatile header value's read has a side effect, so a
       // saturating cast of it reads it once, through its helper
@@ -531,6 +532,7 @@ class ForeignTypeFacts {
     stringCapacity: null,
     enumTypeName: null,
     bitmapTypeName: null,
+    callbackTypeName: null,
     overflow: null,
     hasSideEffect: false,
     form: { kind: "foreign", indeterminate: false },

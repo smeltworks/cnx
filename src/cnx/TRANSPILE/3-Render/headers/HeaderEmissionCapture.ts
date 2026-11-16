@@ -122,8 +122,10 @@ class HeaderEmissionCapture {
       ...request.typeInput,
       symbolTable: state.symbolTable,
       callbackTypes: callbackTypesForHeader,
-      isCallbackField: (structName: string, fieldName: string) =>
-        SettledCallback.isField(program, structName, fieldName),
+      callbackFields: SettledCallback.fieldsOf(
+        program,
+        request.typeInput.structFields,
+      ),
     };
 
     const headerSymbols = HeaderEmissionCapture.convertToHeaderSymbols(

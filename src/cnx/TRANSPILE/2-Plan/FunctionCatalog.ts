@@ -8,21 +8,12 @@ import type IFunctionCatalog from "../types/IFunctionCatalog";
 class FunctionCatalog implements IFunctionCatalog {
   private readonly known = new Set<string>();
   private readonly signatures = new Map<string, IFunctionSignature>();
-  private readonly fieldTypes = new Map<string, string>();
   private readonly references = new Set<string>();
   private readonly publicReferences = new Set<string>();
 
   addFunction(name: string, signature: IFunctionSignature): void {
     this.known.add(name);
     this.signatures.set(name, signature);
-  }
-
-  /**
-   * ADR-029: a struct field whose type is a callback type. The planner
-   * notes only those 1.4 settled as callbacks (#1984); this decides nothing.
-   */
-  noteCallbackField(fieldKey: string, typeName: string): void {
-    this.fieldTypes.set(fieldKey, typeName);
   }
 
   /** A callback type named inside a function body */
@@ -42,10 +33,6 @@ class FunctionCatalog implements IFunctionCatalog {
 
   get functionSignatures(): ReadonlyMap<string, IFunctionSignature> {
     return this.signatures;
-  }
-
-  get callbackFieldTypes(): ReadonlyMap<string, string> {
-    return this.fieldTypes;
   }
 
   get callbackTypeReferences(): ReadonlySet<string> {

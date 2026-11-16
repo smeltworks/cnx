@@ -32,7 +32,6 @@ function createMockInput(): IGeneratorInput {
     knownScopes: new Set<string>(),
     constValues: new Map(),
     callbackTypes: new Map(),
-    callbackFieldTypes: new Map(),
     program: null,
   } as unknown as IGeneratorInput;
 }
