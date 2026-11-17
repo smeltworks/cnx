@@ -38,73 +38,101 @@ The transpiler already knows type information:
 
 **Why not expose this to the programmer?**
 
+### One subscript, not two (#1691)
+
+A subscript written with one index and a subscript written with two were once two
+constructs, so every feature had to be built for both. A feature built for only one left
+the other wrong. A float's bits were read through a union for `a[1, 1]` but not for `a[1]`,
+so this shifted the float, and the transpiler exited 0:
+
+```cnx
+f32 a <- 2.5;
+
+void main() {
+    bool b <- a[1];
+}
+```
+
+```c
+bool b = ((((a >> 1U) & 1)) != 0U); /* gcc: invalid operands to binary >> (have 'float' ...) */
+```
+
+§1 makes the two spellings one expression.
+
 ---
 
 ## Decision
 
-### The Subscript Rule: `x[a]` is `x[a, 1]`
+### 1. A subscript is `x[start, length]`, and `length` defaults to 1
 
-**`x[a]` is syntactic sugar for `x[a, 1]`, for every value** (owner ruling, 2026-11-16, #1691).
-There is one subscript, `[start, count]`. Writing one index only leaves the count at its
-default, 1. Nothing about a one-index subscript is decided separately: its type, its bounds,
-its lowering and its diagnostics are those of `x[a, 1]`, in a read, a write, a compound
-write and a `for` header.
+**`x[start]` is syntactic sugar for `x[start, 1]`, for every value** (owner ruling,
+2026-11-16, #1691). A subscript is
 
-What `count` counts is decided by what `x` is: bits for an integer, a float, a register
-member or a bitmap field; characters for a `string<N>` (ADR-045); elements for an array.
+```ebnf
+subscript = "[" start [ "," length ] "]" ;
+```
 
-| written                 | is                    | yields                                      |
-| ----------------------- | --------------------- | ------------------------------------------- |
-| `flags[3]` (a `u8`)     | `flags[3, 1]`         | one bit                                     |
-| `flags[3] <- true`      | `flags[3, 1] <- true` | a write of one bit                          |
-| `f[31]` (an `f32`)      | `f[31, 1]`            | one bit, read through the union (see Float) |
-| `GPIO7.DR[3]`           | `GPIO7.DR[3, 1]`      | one bit of the register member              |
-| `s.Mode[1]`             | `s.Mode[1, 1]`        | one bit of the bitmap field                 |
-| `name[2]` (`string<8>`) | `name[2, 1]`          | a `string<1>` (ADR-045)                     |
-| `arr[2]` (`u32[8]`)     | `arr[2, 1]`           | one element, a `u32`                        |
-| `grid[1]` (`u8[4][8]`)  | `grid[1, 1]`          | one row, a `u8[8]`                          |
+read as `index(start, length = 1)`. `x[start]` and `x[start, 1]` are one expression: the
+same type, bounds, behavior and diagnostics, in a read, a write, a compound write and a
+`for` header. There is no single-bit or single-element access distinct from a range.
 
-A bit is a bit range one bit wide, and an element is a slice one element long. There is no
-"single bit" or "single element" access distinct from a range: an implementation that keeps
-one as its own kind has two code paths for one construct, and the second path drifts
-(#1691: the float union was built for `f[a, n]` only, so `f[a]` shifted a float).
+What one unit of `length` is, and what a subscript yields, depends only on the type of `x`:
 
-### 1. Integers Are Indexable as Bit Arrays
+| `x` is                                                                     | one unit                          | `x[start]`, which is `x[start, 1]` | `x[start, n]`, n > 1                                   |
+| -------------------------------------------------------------------------- | --------------------------------- | ---------------------------------- | ------------------------------------------------------ |
+| an integer, a float, a register member, or a bitmap field wider than 1 bit | a bit                             | a `bool`                           | the smallest unsigned type holding n bits, zero-padded |
+| a `string<N>`                                                              | a character                       | a `string<1>` (ADR-045)            | a `string<n>` (ADR-045)                                |
+| an array `T[N]`, of any element type and any dimension                     | an element of its first dimension | the element, a `T` (ADR-036)       | a `T[n]` (Array Slices, below)                         |
 
-Any integer type can be indexed to access individual bits:
+The bit rows type a range as a bitmap field of the same width reads (ADR-034): one bit is a
+`bool`, and more bits are unsigned. A write `x[start, n] <-` takes what the read yields: n
+bits take an integer that fits them, and one bit takes a `bool` as well; a string range
+takes what ADR-045 lists; an array range takes exactly its own type.
+
+| written                                       | is               | yields                                            |
+| --------------------------------------------- | ---------------- | ------------------------------------------------- |
+| `flags[3]` (`u8 flags`)                       | `flags[3, 1]`    | a `bool`, bit 3                                   |
+| `flags[4, 4]`                                 |                  | a `u8`, bits 4-7                                  |
+| `f[31]` (`f32 f`)                             | `f[31, 1]`       | a `bool`, the sign bit (Float Bit Indexing below) |
+| `GPIO7.DR[3]` (`DR` a `u32` register member)  | `GPIO7.DR[3, 1]` | a `bool`, bit 3                                   |
+| `s.Mode[1]` (`Mode[3]`, a 3-bit bitmap field) | `s.Mode[1, 1]`   | a `bool`, bit 1 of the field                      |
+| `name[2]` (`string<8> name`)                  | `name[2, 1]`     | a `string<1>`                                     |
+| `arr[2]` (`u32[8] arr`)                       | `arr[2, 1]`      | a `u32`, element 2                                |
+| `grid[1]` (`u8[4][8] grid`)                   | `grid[1, 1]`     | a `u8[8]`, row 1                                  |
+| `grid[1, 2]`                                  |                  | a `u8[2][8]`, rows 1 and 2                        |
+
+The range works on everything except one bit (owner ruling, 2026-09-27, #1757). A `bool`,
+a 1-bit bitmap field, a `char` and what a one-bit subscript yields take no subscript of any
+length (E0856, below).
+
+**A compound operator** (`+<-` and the others) takes an array subscript of length 1, which is
+one element (ADR-036). On a bit subscript of any length, and on an array subscript longer
+than 1, it is E0857.
+
+**A constant subscript is checked at any length** against what it indexes: past an integer's
+or a float's width it is E0920, past an array's dimension E0854 (ADR-036), and past a
+string's `char[N + 1]` E0860 (ADR-045).
+
+### 2. Bits of an Integer
 
 ```cnx
 mut u8 flags <- 0;
-flags[3] <- true; // Set bit 3
-flags[3] <- false; // Clear bit 3
-bool isSet <- flags[3]; // Read bit 3
+flags[3] <- true; // flags[3, 1]: set bit 3
+flags[3] <- false; // clear bit 3
+bool isSet <- flags[3]; // read bit 3
+flags[0, 3] <- 5; // bits 0-2 hold 5
+u8 field <- flags[4, 4]; // bits 4-7
 ```
 
 **Generated C:**
 
 ```c
-uint8_t flags = 0;
-flags = (flags & ~(1 << 3)) | ((1) << 3);   // Set
-flags = (flags & ~(1 << 3)) | ((0) << 3);   // Clear
-bool isSet = ((flags >> 3) & 1);             // Read
-```
-
-### 2. Bit Range Syntax: [start, width]
-
-Access multiple bits with `[start, width]` syntax:
-
-```cnx
-mut u8 flags <- 0;
-flags[0, 3] <- 5; // Set 3 bits starting at bit 0 to value 5
-u8 field <- flags[4, 4]; // Read 4 bits starting at bit 4
-```
-
-**Generated C:**
-
-```c
-uint8_t flags = 0;
-flags = (flags & ~(((1 << 3) - 1) << 0)) | ((5 & ((1 << 3) - 1)) << 0);
-uint8_t field = ((flags >> 4) & ((1 << 4) - 1));
+uint8_t flags = 0U;
+flags = (uint8_t)((flags & ~(1U << 3)) | (1U << 3));
+flags = (uint8_t)((flags & ~(1U << 3)) | (0U << 3));
+const bool isSet = ((((flags >> 3U) & 1)) != 0U);
+flags = (uint8_t)((flags & ~(0x7U << 0)) | ((5U & 0x7U) << 0));
+const uint8_t field = (uint8_t)((flags >> 4U) & 0xFU);
 ```
 
 ### 3. Length Properties
@@ -115,7 +143,7 @@ Superseded by [ADR-058](adr-058-explicit-length-properties.md), which defines ev
 
 ## Syntax Rationale
 
-### Why [start, width] Instead of [high:low]?
+### Why [start, length] Instead of [high:low]?
 
 We considered several alternatives from other languages:
 
@@ -127,12 +155,12 @@ We considered several alternatives from other languages:
 | Ada      | `(4..7)`         | Range with dots        |
 | Rust     | `bits.get(4..8)` | Method call with range |
 
-**Decision:** `[start, width]` because:
+**Decision:** `[start, length]` because:
 
 1. **Intuitive for C programmers** — Matches how you think about bit fields
-2. **Matches shift operations** — `value >> start` shifts to position, `& ((1 << width) - 1)` masks
-3. **No confusion about inclusive/exclusive** — Width is always exact
-4. **Comma separator** — The count follows the start; leaving it out means a count of 1 (`[n]` is `[n, 1]`)
+2. **Matches shift operations** — `value >> start` shifts to position, `& ((1 << length) - 1)` masks
+3. **No confusion about inclusive/exclusive** — The length is always exact
+4. **Comma separator** — The length follows the start; leaving it out means a length of 1 (`[n]` is `[n, 1]`)
 
 ### Why Not Variable Indices Initially?
 
@@ -147,13 +175,6 @@ Variable indices are supported but not compile-time validated. Future work may a
 ---
 
 ## Implementation Details
-
-### One Subscript Kind
-
-The transpiler has one subscript: a start and a count. `[a]` is typed as `[a, 1]` the
-moment its operand's type is known, and no pass may branch on how many indexes were
-written. What varies is only what the count counts (bits, characters, elements), which the
-operand's type decides once.
 
 ### Type Tracking
 
@@ -230,7 +251,7 @@ config[6] <- false; // Interrupt: bit 6
 
 ### Float Bit Indexing (IEEE-754 Byte Access)
 
-Float types (`f32`, `f64`) support bit indexing for type-safe access to their underlying IEEE-754 representation. Unlike integer bit indexing which uses direct bitwise operations, float bit indexing copies the float into a union with an unsigned integer of the same width, because MISRA C:2012 Rule 21.15 forbids the pointer cast (and `memcpy` would pass incompatible pointer types). One bit, `value[31]`, is `value[31, 1]` and goes through the same union.
+Float types (`f32`, `f64`) support bit indexing of their IEEE-754 binary32/binary64 encoding: bit 0 is the least significant bit of the significand, and bit 31 (`f32`) or 63 (`f64`) is the sign. One bit, `value[31]`, is `value[31, 1]`: bit 31 of that encoding.
 
 ```cnx
 // Build an f32 from little-endian bytes
@@ -295,8 +316,8 @@ u8 intValue <- ((u32)temperature)[0, 8];  // 25 (truncated integer value)
 
 Choose the appropriate method based on your use case:
 
-- **Binary protocols/serialization**: Use `floatVar[offset, width]` for raw bytes
-- **Numeric value extraction**: Use `((u32)floatVar)[offset, width]` for truncated integer
+- **Binary protocols/serialization**: Use `floatVar[start, length]` for raw bytes
+- **Numeric value extraction**: Use `((u32)floatVar)[start, length]` for truncated integer
 
 ---
 
@@ -318,12 +339,12 @@ rather than a write into the next field. A runtime index is not checked.
 
 ### Implemented: subscript depth (E0856, Issue #1106)
 
-A neighboring check does exist. Bit-index _bounds_ (above) remain future work, but
-subscript _depth_ is validated today: since a scalar may be bit-indexed **once**, and
-ADR-036 peels one array dimension per subscript, an integer or float base accepts at
-most `arrayDimensions + 1` subscripts (a `bool`, a `char` and a 1-bit field take none
-for a bit, below). A deeper chain indexes a value that is not an array
-and is rejected with **E0856**.
+A neighboring check does exist: a subscript written on a value that takes none is
+**E0856**. What each subscript yields decides what the next one may be (§1): on an array,
+a length of 1 yields the element and a longer length an array of that length; on an
+integer or a float, a subscript yields bits; and a `bool`, a `char`, a 1-bit field and
+what a one-bit subscript yields take no subscript of any length. So `flags[4][3]` and
+`flags[4, 1][3]` are both E0856, while `grid[0, 2][1]` on a `u8[4][8]` is `grid[1]`, a row.
 
 ```cnx
 mut u8 flags <- 0;
@@ -354,13 +375,15 @@ void setBits() {
 }
 ```
 
-A `bool` takes no bit index: it is already one bit wide, so indexing it makes no sense
+A `bool` takes no subscript of any length: it is already one bit wide, so `done[0]` and
+`done[0, 1]` make no sense
 (owner ruling, Issue #2354). It takes one subscript per array dimension and nothing more.
 Before this, `done[1] <- true` was accepted and set the whole bool, and `done[1]` always
 read 0.
 
-A bitmap field follows the same rule by its declared width. A 1-bit field is a single
-bit, so it takes no bit index; a wider field takes one, like a scalar:
+A bitmap field follows the same rule by its declared width. A 1-bit field is one bit
+wide, so it takes no subscript of any length (`s.Ready[0]` and `s.Ready[0, 1]` are E0856);
+a wider field takes one, like a scalar:
 
 ```cnx
 bitmap8 Status { Ready, Mode[3], Rest[4] }
@@ -377,7 +400,7 @@ A C struct's bit-field is measured the same way, by its declared width: in
 `struct { unsigned int one : 1; unsigned int three : 3; } cs`, `cs.one[0]` is E0856
 and `cs.three[1]` reads one bit.
 
-A `char` takes no bit index either. A bit index shifts and masks, and ADR-045 forbids
+A `char` takes no subscript either. A bit index shifts and masks, and ADR-045 forbids
 both on a character (MISRA C:2012 Rule 10.1), so `name[1][2]` on a `char[4]` is E0856.
 Cast the character to an integer type to read its bits, which makes the intent explicit
 (owner ruling, Issue #1114 review):
@@ -412,7 +435,7 @@ void flags() {
 ### Disadvantages
 
 1. **Verbose output** — Generated C is more complex than hand-written
-2. **New syntax** — Programmers must learn `[start, width]`
+2. **New syntax** — Programmers must learn `[start, length]`
 3. **Limited validation** — Variable indices can't be checked at compile time
 
 ---
@@ -445,153 +468,96 @@ namespace LED {
 }
 ```
 
-### Array Slice Assignment (Issue #234, #1081)
+### Array Slices (Issue #234, #1081, #1757)
 
-The `[offset, length]` syntax has a different meaning when applied to arrays versus scalars:
+A subscript means the same thing on every operand: a run of units starting at a given unit.
+The operand's type decides only what one unit is:
 
-| Context                                 | Syntax                    | Meaning                                                                   |
-| --------------------------------------- | ------------------------- | ------------------------------------------------------------------------- |
-| Scalar (u8, u32, etc.)                  | `value[start, width]`     | Bit range manipulation                                                    |
-| Array (any element type, any dimension) | `bufArray[offset, count]` | `count` elements from element `offset`; `bufArray[i]` is `bufArray[i, 1]` |
-| String (`string<N>`)                    | `s[offset, count]`        | `count` characters (ADR-045)                                              |
+| Operand                                 | Syntax                 | Selects                                                                                |
+| --------------------------------------- | ---------------------- | -------------------------------------------------------------------------------------- |
+| Scalar (`u8`, `u32`, `f32`, ...)        | `value[start, length]` | `length` bits from bit `start`                                                         |
+| Array (any element type, any dimension) | `buf[start, length]`   | `length` elements of the first dimension from element `start`; `buf[i]` is `buf[i, 1]` |
+| String (`string<N>`)                    | `s[start, length]`     | `length` characters (ADR-045)                                                          |
 
-**Revised (owner ruling, 2026-11-16, #1691): an array slice counts elements.** Before this,
-`length` was a byte count, a slice was a write-only integer serialization, and only a
-one-dimensional array could be sliced. Each of those made `arr[i]` and `arr[i, 1]` two
-different things, which the Subscript Rule forbids.
+**An array subscript selects a sub-array** (owner ruling, 2026-09-27, #1757: "the [] syntax
+should work on everything except a single bit, it simply narrows to the lower building
+block"). It keeps the element type and shrinks the first dimension, the one `buf[i]` peels
+(ADR-036). Its length counts elements (owner ruling, 2026-11-16, #1691).
 
-- **Read:** `arr[off, n]` is `n` elements, a `T[n]`, as `s[i, n]` is a `string<n>`. `n = 1`
-  is the element itself: `arr[i]`.
-- **Write:** `arr[off, n] <-` takes a `T[n]`, an element when `n = 1` (`arr[i, 1] <- x` is
-  `arr[i] <- x`), or an integer split across the `n` elements least-significant first, as
-  below (`s[0, 2] <- 0x4241` does the same with characters).
-- **Every dimension:** a subscript indexes one dimension and yields the nested type
-  (ADR-036). `grid[i]` is `grid[i, 1]`, one row; `grid[i, 2]` is two rows.
-- **Offset and count:** the offset may be a runtime value, as `arr[i]`'s index always could,
-  and is evaluated once; a runtime offset is bounds-checked as an index is (ADR-036). The
-  count must be a compile-time constant, so the type `T[n]` is known.
+With `u8[8][8][8] r`, `u8[8] buf`, `u8[4] four` and `u32 magic`:
 
-The integer-split write below is what the earlier, byte-counted construct did. Its lowering
-is unchanged; only its count is now elements.
+| expression                 | type or result                                |
+| -------------------------- | --------------------------------------------- |
+| `r[2]`, which is `r[2, 1]` | `u8[8][8]`, the element `r[2]` (ADR-036)      |
+| `r[2, 2]`                  | `u8[2][8][8]`, the elements `r[2]` and `r[3]` |
+| `r[2, 2][1]`               | `u8[8][8]`, which is `r[3]`                   |
+| `r[0][0][0][0, 4]`         | `u8`: bits 0-3 of `r[0][0][0]`, zero-padded   |
+| `buf[0, 4] <- four`        | allowed: a `u8[4]` written into a `u8[4]`     |
+| `buf[0, 4] <- magic`       | E0861: a `u32` is not a `u8[4]`               |
+| `buf[0, 1] <- 7`           | `buf[0] <- 7`, one element                    |
 
-#### Superseded: `memcpy` lowering (MISRA C:2012 Rule 21.15)
+- **Type:** on an array, a length of 1 yields the element, never a one-element array:
+  `buf[i, 1]` is `buf[i]`, a `u8`. A length of n > 1 yields an array whose first dimension
+  is n. A string differs only because its unit is itself a string: `s[i, 1]` is a
+  `string<1>` (ADR-045).
+- **The elements themselves:** a slice names elements of its array, as `buf[i]` names one.
+  Passed to a `mut u8[4]` parameter, `buf[0, 4]` is written by the callee, as `buf[i]`
+  passed to a `mut u8` parameter is. A declaration initialized from a slice copies it:
+  `u8[4] head <- buf[0, 4];`. Read at file scope, a slice is E0909, as an element is.
+- **Write:** `x[start, n] <-` takes exactly its own type: the same element type and every
+  dimension equal, with no widening or padding (#1757). A length of 1 takes what
+  `x[start] <-` takes, the element type. An integer is not an array, so an integer is
+  serialized into bytes with bit ranges, written out:
 
-Earlier versions lowered an array slice to a single `memcpy`:
+  ```cnx
+  buf[0] <- magic[0, 8];
+  buf[1] <- magic[8, 8];
+  buf[2] <- magic[16, 8];
+  buf[3] <- magic[24, 8];
+  ```
 
-```c
-/* Superseded — no longer generated */
-memcpy(&packetArray[0], &magic, 4);
-```
-
-This form was **superseded** (Issue #1081) for two reasons:
-
-1. **MISRA C:2012 Rule 21.15 violation** — `memcpy` was handed incompatible pointer types: the destination was a byte buffer (`uint8_t *`) while the source was a wider integer (`uint32_t *`). Rule 21.15 requires the pointer arguments of `memcpy`/`memmove`/`memcmp` to point to compatible types.
-2. **Non-deterministic byte order** — `memcpy` copied the value in the host's native byte order, so the same source produced different bytes on a big-endian target than on a little-endian target.
-
-#### Current behavior: per-element little-endian unrolled writes
-
-An array slice now lowers to fully-unrolled, per-element writes. Each destination element receives one slice of the source, extracted with an explicit right shift, so the bytes are written **least-significant-first (little-endian) on every target**, regardless of host endianness.
-
-**Units (exactly as the transpiler treats them):**
-
-- **`offset` is an element index** — `bufArray[2, 4]` begins writing at element `2`, not byte 2. For a `u8[]` an element is one byte, so the element index and the byte offset coincide; for wider arrays they differ.
-- **`count` is an element count** — the number of destination elements written; an integer source is split into `count` elements, so it supplies `count * elementSize` bytes.
-- **Bounds are checked as an element span**: `offset + count <= capacity`. An in-bounds slice at a non-zero offset into a `u16[]`/`u32[]`/`u64[]` is accepted.
-- The **source is evaluated exactly once**: it is materialized into a single unsigned temporary before the writes, so an impure source such as `packetArray[0, 4] <- readSensor()` calls `readSensor()` once, not once per byte. (A single-element slice, where the value is used only once, skips the temporary.) Shifting the unsigned temporary also keeps every write MISRA C:2012 Rule 10.1-clean.
-
-The Rule 21.15 comment is emitted only when an equivalent `memcpy` would genuinely have passed incompatible pointer types: the source type is **known**, **differs** from the destination element type (the comment names the two types, e.g. `uint8_t* vs uint32_t*`), and **more than one element** is written. A same-type slice (`u32[] <- u32`), a single-element write, or a source whose type cannot be resolved at compile time omits the comment — the citation is never asserted where the incompatibility cannot be proven.
-
-**`u8[]` slice (one byte per element):**
+- **Every base:** a variable, a struct field, a row (`grid[1][0, 4]`), an element of an
+  array of structs (`packets[i].payload[0, 4]`), a register array and an array from a C header
+  are all arrays, and each is sliced the same way.
+- **Start and length:** the start may be a runtime value, as `buf[i]`'s index always could,
+  and is read once. The characters of a `string<N>` were ruled this way first (owner
+  ruling, 2026-11-05, #2385). The length must be a compile-time constant (E0859), because it
+  is part of the slice's type.
+- **Bounds:** a constant start whose span runs past the dimension is E0854, at any length,
+  as a constant index past it is (ADR-036). A runtime start is checked at run time, as
+  ADR-036 checks a runtime index (#2435).
 
 ```cnx
 mut u8[256] packetArray;
-u32 value32 <- 0x12345678;
-packetArray[0, 4] <- value32;
+u8[4] header <- [0xCA, 0xFE, 0xBA, 0xBE];
+u32 HEADER_OFFSET <- 4;
+
+void fill(u32 offset) {
+    packetArray[0, 4] <- header; // VALID: a u8[4] into a u8[4]
+    packetArray[HEADER_OFFSET, 4] <- header; // VALID: a read-only start
+    packetArray[offset, 4] <- header; // VALID: a runtime start, read once
+    packetArray[0, offset] <- header; // ERROR E0859: the length must be a compile-time constant
+    packetArray[254, 4] <- header; // ERROR E0854: elements 254-257 run past 255
+}
 ```
 
-Generated C:
+#### Rejected: integer serialization (#234, #1081, #272)
 
-```c
-uint8_t packetArray[256] = {0};
-uint32_t value32 = 0x12345678U;
-/* MISRA C:2012 Rule 21.15: slice copy unrolled to per-element writes (memcpy would pass incompatible pointer types: uint8_t* vs uint32_t*). */
-const uint32_t _tmp0 = (uint32_t)(value32);
-packetArray[0] = (uint8_t)(_tmp0);
-packetArray[1] = (uint8_t)(_tmp0 >> 8U);
-packetArray[2] = (uint8_t)(_tmp0 >> 16U);
-packetArray[3] = (uint8_t)(_tmp0 >> 24U);
-```
+Before #1757, `buf[offset, length] <- value` serialized an integer's bytes into the array,
+least significant first, and `length` counted bytes: with `u32 value32`,
+`packetArray[0, 4] <- value32` wrote its four bytes into `packetArray[0]` to
+`packetArray[3]`. It could only be written, and only a one-dimensional array could be
+sliced. That made `buf[i]` and `buf[i, 1]` two different things, which §1 forbids, and an
+integer is not a `u8[4]`. The explicit bit-range form above replaces it. Two of its
+lowerings were rejected along the way:
 
-**`u16[]` slice (element offset, whole `uint16_t` writes):**
-
-```cnx
-mut u16[8] wordArray;
-u32 v <- 0x11223344;
-wordArray[2, 2] <- v;
-```
-
-Generated C:
-
-```c
-uint16_t wordArray[8] = {0};
-uint32_t v = 0x11223344U;
-/* MISRA C:2012 Rule 21.15: slice copy unrolled to per-element writes (memcpy would pass incompatible pointer types: uint16_t* vs uint32_t*). */
-const uint32_t _tmp0 = (uint32_t)(v);
-wordArray[2] = (uint16_t)(_tmp0);
-wordArray[3] = (uint16_t)(_tmp0 >> 16U);
-```
-
-Here `offset = 2` is an element index (writing starts at `wordArray[2]`) and `count = 2` is an element count, so the four bytes of `v` land in two `uint16_t` elements (`wordArray[2]` and `wordArray[3]`), each shifted into little-endian order.
-
-**Issue #234: Compile-Time Safety Requirements**
-
-Array slice assignment enforces strict compile-time safety:
-
-1. **Offset may be a runtime value** (revised, #1691) — `arr[i]` always took a runtime index and is `arr[i, 1]`; a folded offset is bounds-checked at compile time, a runtime one as an index is (ADR-036).
-2. **Count must be a compile-time constant** — literals or read-only bindings with a literal value.
-3. **Bounds checked** — `offset + count <= capacity`.
-4. **Any dimension** (revised, #1691) — `grid[i, n]` is `n` rows.
-5. **Source** — a `T[n]`, an element when `count` is 1, or an integer split across the elements; an integer may not be wider than `count * elementSize` bytes. A bare integer **literal** source is contextually typed to the slice width (ADR-052) and must fit in `length` bytes — e.g. `packetArray[0, 2] <- 0x12345678` is a compile error (a 4-byte value will not fit a 2-byte slice).
-
-```cnx
-// VALID: compile-time constants
-packetArray[0, 4] <- magic;
-packetArray[HEADER_OFFSET, 4] <- magic;  // const variable
-
-// VALID: runtime offset, constant count (revised, #1691)
-u32 offset <- 0;
-packetArray[offset, 4] <- magic;
-
-// VALID: an outer dimension -- board[0, 1] is board[0], one row (revised, #1691)
-mut u8[4][8] board;
-board[0, 1] <- row;  // row is a u8[8]
-
-// INVALID: runtime count
-packetArray[0, offset] <- magic;  // ERROR E0859: the count must be a compile-time constant
-```
-
-**Design Rationale (Issue #272):**
-
-The compile-time-constant requirement is a deliberate safety design choice. An earlier implementation emitted a runtime-bounds-checked `memcpy` that was _silently skipped_ when the bounds check failed, producing subtle bugs (e.g. incorrect CRC checksums from skipped writes). Two things removed that hazard:
-
-1. **No `memcpy` at all.** The current lowering is unrolled per-element writes, so there is no `memcpy` call that can be silently skipped — the "silent skip" failure mode described in #272 is now moot.
-2. **Compile-time bounds.** Requiring compile-time constants lets the element-span bound be verified before the code runs: if it compiles, it cannot overflow at runtime, which aligns with MISRA and similar safety-critical coding standards.
-
-A runtime count is rejected, because the slice's type `T[count]` and its span must be known at compile time. A runtime offset is accepted (revised, #1691): `arr[i]` is `arr[i, 1]`, and one element has always taken a runtime index. The characters of a `string<N>` were ruled this way first (owner ruling, 2026-11-05, #2385); arrays now follow the same rule.
-
-**Named Compile-Time Offsets**
-
-When a struct layout is fixed, the offsets are known at compile time. Use read-only bindings (no `mut`, ADR-071) to keep the writes readable while preserving compile-time safety:
-
-```cnx
-u32 OFFSET_FIELD1 <- 0;
-u32 OFFSET_FIELD2 <- 4;
-u32 OFFSET_FIELD3 <- 6;
-
-packetArray[OFFSET_FIELD1, 4] <- data.field1;
-packetArray[OFFSET_FIELD2, 2] <- data.field2;
-packetArray[OFFSET_FIELD3, 1] <- data.field3;
-```
+1. **One `memcpy`** (`memcpy(&packetArray[0], &magic, 4);`, #1081). It passed `memcpy`
+   incompatible pointer types, `uint8_t *` and `uint32_t *` (MISRA C:2012 Rule 21.15), and
+   it copied in the host's byte order, so one source produced different bytes on big- and
+   little-endian targets.
+2. **A runtime-bounds-checked `memcpy`** (#272). When the check failed, the copy was
+   silently skipped; an incorrect CRC from a skipped write was the reported symptom. A
+   constant length and a compile-time span check replaced it.
 
 ---
 
@@ -601,35 +567,36 @@ packetArray[OFFSET_FIELD3, 1] <- data.field3;
 2. `flags[0, 3] <- 5` compiles to correct bit-range C code
 3. Bit access works with register members
 4. blink.cnx works on Teensy MicroMod with new syntax
-5. `packetArray[0, 4] <- value` generates per-element little-endian unrolled writes — one shifted byte/element write per destination element, no memcpy (Issue #234, #1081)
-6. Runtime offsets in slice assignment produce compile-time errors (Issue #234)
-7. Multi-dimensional array outer-dimension slicing produces compile-time errors (Issue #234)
+5. `buf[0, 4] <- four` (a `u8[4]`) writes four elements, and `buf[0, 4] <- magic` (a `u32`) is E0861 (#1757)
+6. A runtime start in an array slice is accepted, and a runtime length is E0859 (revised, #1691)
+7. Any dimension can be sliced: `r[2, 2]` of a `u8[8][8][8]` is a `u8[2][8][8]` (revised, #1757)
+8. `x[a]` and `x[a, 1]` have the same type, behavior and diagnostics on every operand (#1691)
 
 ---
 
 ## Diagnostics: bit access
 
-| Code  | Reported when                                      | Asserted by                                                            |
-| ----- | -------------------------------------------------- | ---------------------------------------------------------------------- |
-| E0856 | A base is subscripted deeper than its shape allows | `tests/adr-007/subscript-depth-*-error.test.cnx`                       |
-| E0888 | A float's bits are read at file scope              | `tests/adr-007/float-bit-range-global-scope-error.test.cnx`            |
-| E0890 | A read-modify-write target has a side effect       | `tests/adr-007/rmw-side-effect-*error.test.cnx`                        |
-| E0858 | A slice target cannot be sliced (element type)     | `tests/adr-007/slice-outer-dim-error.test.cnx`                         |
-| E0859 | A slice assignment offset or length does not fold  | `tests/adr-007/slice-runtime-offsets.test.cnx`                         |
-| E0860 | A slice assignment span does not fit the buffer    | `tests/adr-007/slice-bounds-violation.test.cnx`                        |
-| E0861 | A slice assignment source does not fit the slice   | `tests/adr-007/slice-length-exceeds-source.test.cnx`                   |
-| E0920 | A constant bit index is past the value's width     | `tests/bugs/issue-1808-bit-index-width/bit-index-width-error.test.cnx` |
+| Code  | Reported when                                                                                                         | Asserted by                                                            |
+| ----- | --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| E0856 | A base is subscripted deeper than its shape allows                                                                    | `tests/adr-007/subscript-depth-*-error.test.cnx`                       |
+| E0888 | A float's bits are read at file scope, at any length (revised, #1691: the fixture's one-bit control becomes an error) | `tests/adr-007/float-bit-range-global-scope-error.test.cnx`            |
+| E0890 | A read-modify-write target has a side effect                                                                          | `tests/adr-007/rmw-side-effect-*error.test.cnx`                        |
+| E0858 | Retired (#1757): every array dimension can be sliced, so the fixture's error goes                                     | `tests/adr-007/slice-outer-dim-error.test.cnx`                         |
+| E0859 | A subscript's length does not fold (revised, #1691: the fixture's runtime start becomes valid)                        | `tests/adr-007/slice-runtime-offsets.test.cnx`                         |
+| E0860 | A string subscript's constant span is past its `char[N + 1]` (ADR-045); an array's is E0854 (revised, #1691)          | `tests/adr-007/slice-bounds-violation.test.cnx`                        |
+| E0861 | A slice's source is not exactly the slice's type (revised, #1757)                                                     | `tests/adr-007/slice-length-exceeds-source.test.cnx`                   |
+| E0920 | A constant bit index is past the value's width                                                                        | `tests/bugs/issue-1808-bit-index-width/bit-index-width-error.test.cnx` |
 
-An array takes one subscript per dimension (ADR-036) and a bit-indexable scalar
-element one more, for the bit. A third subscript on a one-dimensional array is
-therefore indexing a value that is not an array, and the spelling the author
-usually wanted is the bit range.
+Each subscript is judged on what the one before it yielded (§1), and a subscript written
+on a value that takes none is E0856. On a one-dimensional integer array, `a[i][b]` reads
+bit `b` of an element, so a third subscript, `a[i][b][c]`, is written on one bit; the
+spelling the author usually wanted is the bit range `a[i][b, n]`.
 
-Reading a float's bits copies it through a union, because MISRA C:2012 Rule
-21.15 forbids the pointer cast. A copy is a statement, and file scope has none
--- which makes E0888 the one rule here about WHERE the access is written rather
-than what it is written on. `f[a]` is `f[a, 1]`, so one bit goes through the
-union too and is restricted the same way.
+Reading a float's bits copies the float into a union (the generated C under Float Bit
+Indexing): a pointer cast between the float and an integer would break MISRA C:2012 Rule
+11.3, and a `memcpy` between them Rule 21.15. A copy is a statement, and file scope has
+none -- which makes E0888 the one rule here about WHERE the access is written rather
+than what it is written on. `f[a]` is `f[a, 1]`, so it is restricted the same way.
 
 Both are asked of an expression and of an assignment TARGET. They are different
 node types, and both fixtures for E0856 are writes.
@@ -650,17 +617,16 @@ arr[idx()] <- 7;         // OK: a whole-element write evaluates its target once
 ```
 
 A write-1 register member (`wo`, `w1s`, `w1c`, ADR-004) is written without being
-read, so its bit writes are not restricted. A compound operator on a bit is
-already E0857.
+read, so its bit writes are not restricted. A compound operator on a bit subscript is
+E0857 (§1).
 
 ## Scope-context matrix
 
 Declared per diagnostic code (#1620): each code in the table above has its own
-matrix, occupied only by fixtures asserting that code. The four slice codes are
-**array slice assignment**'s rules (the section above), which #1322 moved out of
-codegen: the target must be a one-dimensional integer or string buffer whose size
-folds (E0858), the offset and length must fold (E0859), the span must fit
-(E0860), and the source must fit the span (E0861).
+matrix, occupied only by fixtures asserting that code. The slice codes are
+**array slice** rules (the section above), which #1322 moved out of codegen: the
+length must fold (E0859), a string's span must fit (E0860), and the source must be
+exactly the slice's type (E0861). E0858 is retired (#1757).
 
 <!-- MATRIX-SEVERITY code: E0856 -->
 
@@ -916,7 +882,8 @@ off: E0890 is asked of a bit write's target, a statement, so it only fires in a 
 
 A slice assignment is a **statement**. It appears in a function body and
 nowhere else, so the two declaration contexts cannot hold one -- the same shape
-as a `critical` block, and for the same reason.
+as a `critical` block, and for the same reason. A slice read there is E0909, as
+an element read is, so no slice reaches them as a value either.
 
 The imported columns are `error` for both function contexts because the rules are
 checked against the buffer's DECLARATION, which may live in another file. That

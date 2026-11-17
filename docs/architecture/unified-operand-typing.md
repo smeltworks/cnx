@@ -409,6 +409,13 @@ The walker's three call sites pass the node's position. The emitted names are ex
 | Bitmap field `fg.Mode` | Width from `symbols.bitmapFields`. 1 bit is boolean; a wider field is unsigned of that width (ruling: "however reached").                                                                                                                                                                                                                                                                                                                                          |
 | Register member `R.M`  | `symbols.registerMemberCTypes`, a bitmap when that name is in the visible `knownBitmaps` (#1514), with `overflow: null` (fixes C11). The inverse C-name map goes in `utils/constants`, not `BitUtils`.                                                                                                                                                                                                                                                             |
 
+**One subscript (ADR-007 §1, #1691).** `x[start]` is `x[start, 1]`, so a subscript has one
+kind per operand type -- bits, characters or elements -- and a length, 1 when none is
+written. The typer decides both once, and no pass branches on how many indexes were
+written. `SubscriptClassifier`'s `subscriptCount === 2 ? "bit_range" : "bit_single"` (and
+its `array_slice`/`array_element` twin) is the arity branch this retires. #1691 is what it
+produced: the float union was built for the two-index read only, so `f[1]` shifted a float.
+
 ### 3.5 Foreign (C/C++) facts, in one place
 
 `ForeignTypeFacts.operandType(nameOrPath, lookup)` replaces both `typeNameOf` (C then C++, `DeclaredVariableFacts.ts:154`) and `typeInfoOf` (C only, `:207-208`). One lookup fixes C16 and C22.
