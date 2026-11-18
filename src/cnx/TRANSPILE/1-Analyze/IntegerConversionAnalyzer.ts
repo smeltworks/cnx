@@ -196,8 +196,9 @@ class IntegerConversionCheck {
     const target = site.target;
     if (
       target.kind === "postfix" &&
-      target.ops.some(
-        (op) => op.kind === "subscript" && op.indexes.length === 2,
+      OperandTyper.chainOf(target, this.context).steps.some(
+        (step) =>
+          step.subscript === "bit_range" || step.subscript === "array_slice",
       )
     ) {
       return;
@@ -711,7 +712,7 @@ class IntegerConversionCheck {
     if (t.form.kind === "composite") {
       return composites && t.bitWidth !== null ? t.typeName : null;
     }
-    if (t.form.kind === "bitRange" || t.form.kind === "bitIndex") return null;
+    if (t.form.kind === "bitRange") return null;
     return IntegerConversionCheck.integerName(t);
   }
 

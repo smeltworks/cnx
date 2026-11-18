@@ -229,7 +229,9 @@ class ValuePositionWalk {
     const indexed: IValueSite = { site: { kind: "index" }, outer: site };
     chain.ops.forEach((op, opIndex) => {
       if (op.kind === "subscript") {
-        for (const index of op.indexes) this.place(index, NOWHERE, indexed);
+        for (const index of [op.start, op.length]) {
+          this.place(index, NOWHERE, indexed);
+        }
       } else if (op.kind === "call") {
         op.arguments.forEach((argument, index) =>
           this.place(argument, this.parameter(chain, opIndex, index), {

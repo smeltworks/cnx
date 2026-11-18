@@ -13,10 +13,13 @@ type TPostfixOpSyntax = ISyntaxNode &
       }
     | {
         readonly kind: "subscript";
-        /** `[i]` is one index; a bit range `[start, width]` is two */
-        readonly indexes:
-          | readonly [TExpression]
-          | readonly [TExpression, TExpression];
+        /**
+         * `x[start, length]` (ADR-007 §1). `x[start]` is `x[start, 1]`, so a
+         * length left out is lowered as the literal `1`: no pass can tell the
+         * two spellings apart, and none may.
+         */
+        readonly start: TExpression;
+        readonly length: TExpression;
       }
     | { readonly kind: "call"; readonly arguments: readonly TExpression[] }
     /** Where the parser recovered from an error; see `TExpression`'s */

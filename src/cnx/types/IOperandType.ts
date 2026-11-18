@@ -23,7 +23,6 @@ type TOperandForm =
       readonly ofLiteral: boolean;
     }
   /** One bit of a scalar, `x[3]` */
-  | { readonly kind: "bitIndex" }
   /** A bit range of a scalar, `x[0, 8]`; the width when it folds */
   | { readonly kind: "bitRange"; readonly width: number | null }
   /** An applied `||`, `&&`, `=`, `!=`, `<`, `>`, `<=`, `>=`, or `!` */

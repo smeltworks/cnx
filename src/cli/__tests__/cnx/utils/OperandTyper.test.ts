@@ -489,10 +489,14 @@ void main() {
     );
   });
 
-  it("types one bit of a scalar as a bit index, not a Boolean", () => {
-    const t = typeOf(inMain("u32 w <- 1;\nbool r <- w[3];"));
-    expect(t?.form.kind).toBe("bitIndex");
-    expect(OperandTyper.isBoolean(t)).toBe(false);
+  it("types one bit of a scalar as a bit range of 1, not a Boolean", () => {
+    // ADR-007 §1: `w[3]` is `w[3, 1]` -- the same type, spelled either way
+    for (const read of ["w[3]", "w[3, 1]"]) {
+      const t = typeOf(inMain(`u32 w <- 1;\nbool r <- ${read};`));
+      expect(t?.typeName).toBe("bool");
+      expect(t?.form).toEqual({ kind: "bitRange", width: 1 });
+      expect(OperandTyper.isBoolean(t)).toBe(false);
+    }
   });
 
   it("gives an element read the side effect of its index (#1668, C26)", () => {
@@ -931,7 +935,7 @@ void main() {
     mut P p;
     p.word[3] <- true;
 }`);
-    expect(chain.steps.at(-1)?.subscript).toBe("bit_single");
+    expect(chain.steps.at(-1)?.subscript).toBe("bit_range");
   });
 
   // #2158/#2185: the register member a step's prefix is, however the
@@ -975,7 +979,7 @@ scope Drive {
       const step = lastOf(body);
       expect(step?.beforeRegisterMember).toBe(member);
       expect(step?.beforeRegister).toBe(register);
-      expect(step?.subscript).toBe("bit_single");
+      expect(step?.subscript).toBe("bit_range");
     });
 
     // #2275: `this.` through a scope spanned from an un-included file still
@@ -1054,17 +1058,13 @@ typedef struct { uint8_t v; } pod_t;
 extern pod_t pod;`);
 
     it.each([
-      [
-        "a scalar integer is bits (ADR-024)",
-        "bool r <- word[4];",
-        "bit_single",
-      ],
+      ["a scalar integer is bits (ADR-024)", "bool r <- word[4];", "bit_range"],
       ["an unsized array is elements", "u8 r <- buf[3];", "array_element"],
       ["a pointer is elements", "u8 r <- ptr[1];", "array_element"],
       // #1760 review: a header float is a float (ADR-024), and a float's
       // subscript is a bit (ADR-007). This row said "left to C", and C got
       // `cf[1]`, a subscript of a float, which it rejects
-      ["a float is bits (ADR-007)", "bool r <- cf[1];", "bit_single"],
+      ["a float is bits (ADR-007)", "bool r <- cf[1];", "bit_range"],
       ["a struct is left to C", "u8 r <- pod[1];", "array_element"],
     ])("%s", (_why, body, expected) => {
       expect(subscriptOf(body, c)).toBe(expected);
@@ -1113,7 +1113,7 @@ extern Frame frame;`,
       // The control: the header rule does not reach cnx's own values
       expect(
         subscriptOf("u32 w <- 16;\nbool r <- w[4];", new SymbolTable()),
-      ).toBe("bit_single");
+      ).toBe("bit_range");
     });
   });
 

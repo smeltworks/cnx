@@ -98,7 +98,7 @@ class BitAccessCheck {
   ): void {
     if (site.operator !== "<-" || !this.isReadModifyWrite(steps)) return;
     const indices = target.ops.flatMap((op) =>
-      op.kind === "subscript" ? op.indexes : [],
+      op.kind === "subscript" ? [op.start, op.length] : [],
     );
     for (const index of indices) {
       if (!OperandTyper.hasSideEffect(index, this.context)) continue;
@@ -153,7 +153,7 @@ class BitAccessCheck {
     steps: readonly IChainStep[],
   ): void {
     const first = chain.ops.length - steps.length;
-    const at = steps.findIndex((step) => FloatBits.rangeTypeOf(step) !== null);
+    const at = steps.findIndex((step) => FloatBits.typeOf(step) !== null);
     if (at === -1) return;
     // The float ranged, not the chain's root (#1099): `r.field`, not `r`
     const range = ExpressionShape.writtenThrough(chain, first + at + 1);
@@ -161,9 +161,9 @@ class BitAccessCheck {
       code: "E0888",
       span: chain.span,
       declaredAt: BindingSite.ofChain(chain, this.context),
-      message: `Float bit range '${range}' cannot be read at file scope`,
+      message: `Float bits '${range}' cannot be read at file scope`,
       helpText:
-        "Reading a float's bits copies it through a union (MISRA C:2012 Rule 21.15 forbids the pointer cast), and a copy is a statement -- there is none at file scope. Read it inside a function.",
+        "Reading a float's bits copies it through a union (a pointer cast would break MISRA C:2012 Rule 11.3), and a copy is a statement -- there is none at file scope. Read it inside a function.",
     });
   }
 
@@ -181,23 +181,18 @@ class BitAccessCheck {
     steps.forEach((step, at) => {
       const op = ops[at];
       if (op?.kind !== "subscript") return;
-      if (step.subscript !== "bit_single" && step.subscript !== "bit_range") {
-        return;
-      }
+      if (step.subscript !== "bit_range") return;
       const width = step.before?.bitWidth ?? null;
       if (width === null) return;
-      const start = ConstantExpression.valueAt(op.indexes[0], this.context);
+      const start = ConstantExpression.valueAt(op.start, this.context);
       if (start === null) return;
-      const count =
-        op.indexes.length === 2
-          ? ConstantExpression.valueAt(op.indexes[1], this.context)
-          : 1;
+      const count = ConstantExpression.valueAt(op.length, this.context);
       if (count === null || start + count <= width) return;
       const written = expr.written;
       const what =
-        op.indexes.length === 2
-          ? `bit range [${start}, ${count}] ends at bit ${start + count - 1}`
-          : `bit ${start}`;
+        count === 1
+          ? `bit ${start}`
+          : `bit range [${start}, ${count}] ends at bit ${start + count - 1}`;
       this.found.push({
         code: "E0920",
         span: expr.span,

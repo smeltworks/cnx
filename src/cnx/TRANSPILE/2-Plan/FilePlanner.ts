@@ -560,7 +560,7 @@ class FilePlanner {
       const head = ExpressionShape.headOf(expression);
       const steps = OperandTyper.chainOf(expression, typing).steps;
       head.ops.forEach((op, i) => {
-        const floatType = FloatBits.rangeTypeOf(steps[i - head.opsConsumed]);
+        const floatType = FloatBits.typeOf(steps[i - head.opsConsumed]);
         if (op.kind !== "subscript" || floatType === null) return;
         // #2057, #1099: the ranged value's type, not the root's, which sent a
         // member's, a field's or an element's bits down the integer path
@@ -1037,7 +1037,7 @@ class FilePlanner {
     const children: Array<[TExpression, boolean]> = [[expr.primary, plain]];
     for (const op of expr.ops) {
       if (op.kind === "subscript") {
-        op.indexes.forEach((index) => children.push([index, plain]));
+        children.push([op.start, plain], [op.length, plain]);
       } else if (op.kind === "call") {
         op.arguments.forEach((argument) => children.push([argument, false]));
       }
@@ -2002,7 +2002,7 @@ class FilePlanner {
         !member ||
         !register ||
         range?.kind !== "subscript" ||
-        range.indexes.length !== 2
+        BitmapFieldStep.writesOneBit(step, null)
       ) {
         continue;
       }
@@ -2016,8 +2016,8 @@ class FilePlanner {
         continue;
       }
       const accessType = RegisterMmio.accessType(
-        this.tryEvaluateConstant(range.indexes[0]),
-        this.tryEvaluateConstant(range.indexes[1]),
+        this.tryEvaluateConstant(range.start),
+        this.tryEvaluateConstant(range.length),
       );
       if (accessType === null) continue;
       accesses.set(site, accessType);
@@ -2188,10 +2188,10 @@ class FilePlanner {
         cTypes.add(TYPE_MAP[element] ?? "uint8_t");
         const slice = AssignmentTarget.parts(site.target).ops.at(-1);
         invariant(
-          slice?.kind === "subscript" && slice.indexes.length === 2,
-          "a slice write ends in a two-index subscript",
+          slice?.kind === "subscript",
+          "a slice write ends in a subscript",
         );
-        const lengthValue = this.tryEvaluateConstant(slice.indexes[1]);
+        const lengthValue = this.tryEvaluateConstant(slice.length);
         invariant(
           lengthValue !== undefined,
           "2.1 folded the slice length (E0859)",
@@ -2927,11 +2927,10 @@ class FilePlanner {
       const steps = OperandTyper.chainOf(node, typing).steps;
       return steps.flatMap((step, index): Array<[number, string]> => {
         const from = step.before?.typeName ?? null;
-        if (step.subscript === "bit_single") return [[index, "int"]];
         if (step.subscript === "bit_range") {
           // A float's bits are read through a union's integer member, which
           // is not promoted (ADR-007)
-          return from === null || FloatBits.rangeTypeOf(step) !== null
+          return from === null || FloatBits.typeOf(step) !== null
             ? []
             : [[index, NarrowingCastHelper.getPromotedType(from)]];
         }

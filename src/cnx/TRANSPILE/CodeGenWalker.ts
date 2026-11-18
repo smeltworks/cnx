@@ -755,11 +755,9 @@ class CodeGenWalker {
           narrowing,
         };
       case "subscript": {
-        const indexes = op.indexes;
-        // Issue #1094: the final index is the WIDTH on the two-index arm, and
-        // folding it is what gets a const or macro width a precomputed mask
-        // rather than a runtime one.
-        const widthExpr = indexes.at(-1);
+        const indexes = [op.start, op.length];
+        // Issue #1094: folding the length is what gets a const or macro width
+        // a precomputed mask rather than a runtime one
         // The typer types every subscript it walks, an untyped value's
         // included (the classifier's default for an unknown type)
         invariant(typedAs !== null, "the typer typed this subscript");
@@ -768,10 +766,7 @@ class CodeGenWalker {
           indexCount: indexes.length,
           renderIndexes: () =>
             indexes.map((index) => this.renderExpression(index)),
-          foldWidth: () =>
-            widthExpr === undefined
-              ? undefined
-              : this.planner.constantOf(widthExpr),
+          foldWidth: () => this.planner.constantOf(op.length),
           typedAs,
           step,
           floatBits: this.filePlan.floatBitReads.get(op) ?? null,
@@ -3326,7 +3321,7 @@ class CodeGenWalker {
       target,
       AssignmentTarget.parts(target).ops.length - 1,
     );
-    const start = last.indexes[0];
+    const start = last.start;
     const lines: string[] = [];
     let from: string | null = null;
     if (write.startCType !== null) {
@@ -3595,13 +3590,15 @@ class CodeGenWalker {
       return { kind: "member", name: op.name };
     }
 
-    const indexes = op.kind === "subscript" ? op.indexes : [];
+    const indexes = op.kind === "subscript" ? [op.start, op.length] : [];
     return {
       kind: "subscript",
       indexCount: indexes.length,
       renderIndexes: () => indexes.map((index) => this.renderExpression(index)),
       foldWidth: () =>
-        indexes.length === 2 ? this.planner.constantOf(indexes[1]) : undefined,
+        op.kind === "subscript"
+          ? this.planner.constantOf(op.length)
+          : undefined,
     };
   }
 
@@ -3744,7 +3741,9 @@ class CodeGenWalker {
     rootOp: TPostfixOpSyntax | null,
   ): IPostfixOperation[] {
     return postfixOps.map((op) => {
-      const expressions = op.kind === "subscript" ? op.indexes : [];
+      // A target's text names an element, `arr[i]`: its bits or a slice of it
+      // are written by their handler, which renders the target without them
+      const expressions = op.kind === "subscript" ? [op.start] : [];
       return {
         memberName: op.kind === "member" ? op.name : null,
         appliesToRoot: op === rootOp,

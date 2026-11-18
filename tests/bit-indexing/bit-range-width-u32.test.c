@@ -11,7 +11,7 @@
 int main(void) {
     uint32_t value = 0U;
     value = 0U;
-    value = (value & ~((uint32_t)0x1U << 0)) | ((1U & (uint32_t)0x1U) << 0);
+    value = (value & ~((uint32_t)1U << 0)) | ((uint32_t)1U << 0);
     if (value != 0x00000001) {
         return 1U;
     }

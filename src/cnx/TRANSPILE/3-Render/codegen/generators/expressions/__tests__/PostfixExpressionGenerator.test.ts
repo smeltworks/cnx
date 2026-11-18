@@ -1342,8 +1342,8 @@ describe("PostfixExpressionGenerator", () => {
       ]);
       const ctx = createMockPostfixExpressionContext("val", [
         createMockPostfixOp({
-          expressions: [createMockExpression("3")],
-          typedAs: "bit_single",
+          expressions: [createMockExpression("3"), createMockExpression("1")],
+          typedAs: "bit_range",
         }),
       ]);
       const input = createMockInput({ typeRegistry });
@@ -1354,7 +1354,7 @@ describe("PostfixExpressionGenerator", () => {
       });
 
       const result = runPostfix(ctx, input, state, orchestrator);
-      expect(result.code).toBe("((val >> 3) & 1)");
+      expect(result.code).toBe("((val >> 3) & 0x1U)");
     });
 
     it("generates register bit access", () => {
@@ -1362,7 +1362,10 @@ describe("PostfixExpressionGenerator", () => {
         knownRegisters: new Set(["GPIO"]),
       });
       const ctx = createMockPostfixExpressionContext("GPIO", [
-        createMockPostfixOp({ expressions: [createMockExpression("0")] }),
+        createMockPostfixOp({
+          expressions: [createMockExpression("0"), createMockExpression("1")],
+          typedAs: "bit_range",
+        }),
       ]);
       const input = createMockInput({ symbols });
       const state = createMockState();
@@ -1373,7 +1376,7 @@ describe("PostfixExpressionGenerator", () => {
 
       const result = runPostfix(ctx, input, state, orchestrator);
       // Optimization: no shift when index is 0
-      expect(result.code).toBe("((GPIO) & 1)");
+      expect(result.code).toBe("((GPIO) & 0x1U)");
     });
 
     it("asserts the invariant for bracket indexing on a bitmap type", () => {
@@ -1827,8 +1830,8 @@ describe("PostfixExpressionGenerator", () => {
       ]);
       const ctx = createMockPostfixExpressionContext("val", [
         createMockPostfixOp({
-          expressions: [createMockExpression("3")],
-          typedAs: "bit_single",
+          expressions: [createMockExpression("3"), createMockExpression("1")],
+          typedAs: "bit_range",
         }),
       ]);
       const input = createMockInput({ typeRegistry });
@@ -1839,7 +1842,7 @@ describe("PostfixExpressionGenerator", () => {
       });
 
       const result = runPostfix(ctx, input, state, orchestrator);
-      expect(result.code).toBe("((val >> 3) & 1)");
+      expect(result.code).toBe("((val >> 3) & 0x1U)");
     });
   });
 

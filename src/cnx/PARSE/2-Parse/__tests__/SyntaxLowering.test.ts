@@ -41,7 +41,7 @@ function shape(e: TExpression): string {
         .map((op) => {
           if (op.kind === "member") return `.${op.name}`;
           if (op.kind === "subscript") {
-            return `[${op.indexes.map(shape).join(", ")}]`;
+            return `[${shape(op.start)}, ${shape(op.length)}]`;
           }
           if (op.kind === "missing") return "<missing op>";
           return `(${op.arguments.map(shape).join(", ")})`;
@@ -90,7 +90,7 @@ describe("SyntaxLowering", () => {
     ["1 - -1", "additive(integer:1 - -integer:1)"],
     ["this.n", "this.n"],
     ["global.s.n", "global.s.n"],
-    ["arr[i][0, 4]", "arr[i][integer:0, integer:4]"],
+    ["arr[i][0, 4]", "arr[i, integer:1][integer:0, integer:4]"],
     ["f()", "f()"],
     ["s.f(a, 1)", "s.f(a, integer:1)"],
     ["(x)", "paren(x)"],

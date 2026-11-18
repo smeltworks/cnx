@@ -9,6 +9,7 @@ import invariant from "../../utils/invariant";
 import TTypeInfo from "../../types/TTypeInfo";
 import type TOverflowBehavior from "../../types/TOverflowBehavior";
 import type IOperandType from "../../types/IOperandType";
+import BitmapFieldStep from "../../utils/BitmapFieldStep";
 import OperandTyper from "../../utils/OperandTyper";
 import TypeCheckUtils from "../../utils/TypeCheckUtils";
 import CompoundOperator from "../../utils/CompoundOperator";
@@ -192,14 +193,10 @@ class AssignmentClassifier {
     if (!step?.beforeRegisterMember) {
       return null;
     }
-    switch (step.subscript) {
-      case "bit_single":
-        return AssignmentKind.REGISTER_BIT;
-      case "bit_range":
-        return AssignmentKind.REGISTER_BIT_RANGE;
-      default:
-        return null;
-    }
+    if (step.subscript !== "bit_range") return null;
+    return BitmapFieldStep.writesOneBit(step, null)
+      ? AssignmentKind.REGISTER_BIT
+      : AssignmentKind.REGISTER_BIT_RANGE;
   }
 
   /**
@@ -413,14 +410,14 @@ class AssignmentClassifier {
     const indexesAnElement = ctx.subscriptCount > ctx.lastSubscriptExprCount;
 
     switch (subscriptKind) {
-      case "bit_single":
-        if (!indexesAnElement) return AssignmentKind.INTEGER_BIT;
-        // e.g. matrix[i][j][bit] on an integer array's element
-        return OperandTyper.hasWritableBits(last?.before ?? null)
-          ? AssignmentKind.ARRAY_ELEMENT_BIT
-          : AssignmentKind.MULTI_DIM_ARRAY_ELEMENT;
-
       case "bit_range":
+        if (BitmapFieldStep.writesOneBit(last, null)) {
+          if (!indexesAnElement) return AssignmentKind.INTEGER_BIT;
+          // e.g. matrix[i][j][bit] on an integer array's element
+          return OperandTyper.hasWritableBits(last?.before ?? null)
+            ? AssignmentKind.ARRAY_ELEMENT_BIT
+            : AssignmentKind.MULTI_DIM_ARRAY_ELEMENT;
+        }
         return indexesAnElement
           ? AssignmentKind.ARRAY_ELEMENT_BIT_RANGE
           : AssignmentKind.INTEGER_BIT_RANGE;

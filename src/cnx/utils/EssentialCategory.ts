@@ -34,7 +34,7 @@ class EssentialCategory {
     if (t.dimensions.length > 0) return null;
     // A subscript into a scalar is a bit index or range, not arithmetic
     // on the scalar's category (ADR-024)
-    if (t.form.kind === "bitIndex" || t.form.kind === "bitRange") return null;
+    if (t.form.kind === "bitRange") return null;
     // Which overload a call selects is C++'s decision, not ours (C03)
     if (t.form.kind === "foreign" && t.form.indeterminate) return null;
     if (t.form.kind === "unreadableMacro") {

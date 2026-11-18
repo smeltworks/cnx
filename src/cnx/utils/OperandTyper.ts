@@ -704,12 +704,12 @@ class OperandTyper {
     if (capacity === null || target.kind !== "postfix") return null;
     const last = target.ops.at(-1);
     if (last?.kind !== "subscript") return null;
-    const start = last.indexes[0];
+    const start = last.start;
     if (step?.subscript === "array_element") {
       return { start, count: 1, capacity };
     }
     if (step?.subscript !== "array_slice") return null;
-    const count = OperandTyper.foldedWidth(last.indexes[1], ctx);
+    const count = OperandTyper.foldedWidth(last.length, ctx);
     return count === null ? null : { start, count, capacity };
   }
 
@@ -805,7 +805,7 @@ class OperandTyper {
     if (t === null || t.dimensions.length > 0) return false;
     return (
       t.form.kind === "boolean" ||
-      (t.typeName === "bool" && t.form.kind !== "bitIndex")
+      (t.typeName === "bool" && t.form.kind !== "bitRange")
     );
   }
 
@@ -1616,7 +1616,7 @@ class OperandTyper {
           subscript: null,
         };
       case "subscript":
-        return OperandTyper.subscriptOf(current, op.indexes, ctx);
+        return OperandTyper.subscriptOf(current, op, ctx);
       case "call":
         return { next: OperandTyper.callOf(current, ctx), subscript: null };
       case "missing":
@@ -1852,7 +1852,7 @@ class OperandTyper {
     subscript: TSubscriptKind | null,
     ctx: ITypingContext,
   ): IFieldBits | null {
-    if (subscript !== "bit_single" && subscript !== "bit_range") return null;
+    if (subscript !== "bit_range") return null;
     const bitmap = fieldStep?.before?.bitmapTypeName ?? null;
     const name = fieldStep?.member ?? null;
     if (bitmap === null || name === null) return null;
@@ -2037,13 +2037,15 @@ class OperandTyper {
 
   private static subscriptOf(
     current: TChainValue,
-    indices: readonly TExpression[],
+    op: Extract<TPostfixOpSyntax, { kind: "subscript" }>,
     ctx: ITypingContext,
   ): { next: TChainValue; subscript: TSubscriptKind | null } {
+    const indices = [op.start, op.length];
+    const length = OperandTyper.foldedWidth(op.length, ctx);
     const t = current.k === "value" ? current.t : null;
     const subscript = SubscriptClassifier.classify({
       typeInfo: OperandTyper.subscriptedShape(t),
-      subscriptCount: indices.length,
+      length,
       isRegisterAccess:
         current.k === "value" && current.registerMember !== null,
     });
@@ -2104,23 +2106,25 @@ class OperandTyper {
             t: { ...t, overflow: null, binding: null, ...keep },
           },
         };
-      case "bit_single":
-        return {
-          subscript,
-          next: {
-            k: "value",
-            registerMember: null,
-            t: {
-              ...OperandTyper.plain("bool"),
-              category: "boolean",
-              form: { kind: "bitIndex" },
-              ...keep,
-            },
-          },
-        };
       case "bit_range": {
-        const width = OperandTyper.foldedWidth(indices[1], ctx);
-        // The unsigned type that holds the bits, as 2.2 always typed a range
+        // ADR-007 §1: one bit is a bool, as a 1-bit field is (ADR-034); more
+        // bits are the unsigned type that holds them
+        const width = length;
+        if (width === 1) {
+          return {
+            subscript,
+            next: {
+              k: "value",
+              registerMember: null,
+              t: {
+                ...OperandTyper.plain("bool"),
+                category: "boolean",
+                form: { kind: "bitRange", width },
+                ...keep,
+              },
+            },
+          };
+        }
         const typeName =
           width === null ? null : OperandTyper.unsignedFor(width);
         return {

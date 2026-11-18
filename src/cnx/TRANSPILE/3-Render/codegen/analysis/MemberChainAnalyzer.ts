@@ -43,9 +43,7 @@ class MemberChainAnalyzer {
       return { isBitAccess: false };
     }
     const indexed = lastStep?.before ?? null;
-    const isBits =
-      lastStep?.subscript === "bit_single" ||
-      lastStep?.subscript === "bit_range";
+    const isBits = lastStep?.subscript === "bit_range";
     if (!isBits || indexed === null) {
       return { isBitAccess: false };
     }

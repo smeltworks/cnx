@@ -39,7 +39,9 @@ class IndexTypeCheck {
     if (expr.kind !== "postfix") return;
     for (const op of expr.ops) {
       if (op.kind !== "subscript") continue;
-      for (const index of op.indexes) this.validateIndexExpression(index);
+      for (const index of [op.start, op.length]) {
+        this.validateIndexExpression(index);
+      }
     }
   }
 

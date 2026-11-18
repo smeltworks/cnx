@@ -11,10 +11,10 @@
 // Tests: reading individual bits from integer
 int main(void) {
     const uint8_t flags = 0b01010101U;
-    const bool b0 = ((((flags) & 1)) != 0U);
-    const bool b1 = ((((flags >> 1U) & 1)) != 0U);
-    const bool b2 = ((((flags >> 2U) & 1)) != 0U);
-    const bool b7 = ((((flags >> 7U) & 1)) != 0U);
+    const bool b0 = ((((flags) & 0x1U)) != 0U);
+    const bool b1 = ((((flags >> 1U) & 0x1U)) != 0U);
+    const bool b2 = ((((flags >> 2U) & 0x1U)) != 0U);
+    const bool b7 = ((((flags >> 7U) & 0x1U)) != 0U);
     if (b0 == true && b1 == false && b2 == true && b7 == false) {
         return 0U;
     }

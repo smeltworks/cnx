@@ -332,8 +332,8 @@ function bitWriteOf(
         .join(""),
     last: {
       before: baseType === null ? null : operandOf(baseType, integer, signed),
-      subscript: lastIndexCount === 2 ? "bit_range" : "bit_single",
-      after: null,
+      subscript: "bit_range",
+      after: lastIndexCount === 2 ? null : HandlerTestUtils.oneBit(),
       property: null,
       callee: null,
       beforeNamesType: false,
@@ -365,10 +365,19 @@ function withPlannedBitmapField(
   };
 }
 
+/** ADR-007 §1: what `x[a]`, which is `x[a, 1]`, reads -- one bit */
+function oneBit(): IOperandType {
+  return {
+    ...operandOf("u8", true, false),
+    form: { kind: "bitRange", width: 1 },
+  };
+}
+
 export default class HandlerTestUtils {
   static readonly withPlannedBitmapField = withPlannedBitmapField;
   static readonly bitWriteOf = bitWriteOf;
   static readonly operandOf = operandOf;
+  static readonly oneBit = oneBit;
   static readonly plannedClampOf = plannedClampOf;
   static readonly setupMockSymbols = setupMockSymbols;
   static readonly setupMockGenerator = setupMockGenerator;

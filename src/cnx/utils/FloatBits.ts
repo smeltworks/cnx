@@ -3,7 +3,7 @@ import type IChainHead from "../types/IChainHead";
 import invariant from "./invariant";
 
 /**
- * ADR-007: whether a bit index or bit range reaches a float's bits, which C
+ * ADR-007: whether a subscript reaches a float's bits, which C
  * cannot shift or mask, so they go through a union. Asked of the value the
  * subscript applies to -- the typer's step -- never of the chain's root, which
  * a field, an element or a `this.`/`global.` member is not (#2057, #1099). 2.1's
@@ -12,9 +12,7 @@ import invariant from "./invariant";
 class FloatBits {
   /** The float's cnx type, or null when the step reads no float's bits */
   static typeOf(step: IChainStep | undefined): string | null {
-    if (step?.subscript !== "bit_single" && step?.subscript !== "bit_range") {
-      return null;
-    }
+    if (step?.subscript !== "bit_range") return null;
     if (step.before?.category !== "floating") return null;
     invariant(step.before.typeName !== null, "the typer names a float's type");
     return step.before.typeName;
@@ -30,11 +28,6 @@ class FloatBits {
    */
   static sharesShadow(head: IChainHead, index: number): boolean {
     return head.root === null && head.identifier !== null && index === 0;
-  }
-
-  /** The float type a bit RANGE reads through a union, or null */
-  static rangeTypeOf(step: IChainStep | undefined): string | null {
-    return step?.subscript === "bit_range" ? FloatBits.typeOf(step) : null;
   }
 }
 

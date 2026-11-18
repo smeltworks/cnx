@@ -187,14 +187,25 @@ function processPostfixOps(
   extraction: ITargetExtraction,
   deps: IContextBuilderDeps,
 ): void {
-  for (const op of postfixOps) {
+  // ADR-007 §1: the typer's kind decides what a subscript's expressions are,
+  // never how many were written. Only the final op can be bits or a slice:
+  // any subscript before it indexes an element (E0856 rejects the rest).
+  const lastKind = deps.target.last?.subscript ?? null;
+  const ranged = lastKind === "bit_range" || lastKind === "array_slice";
+  postfixOps.forEach((op, at) => {
     if (op.kind === "member") {
       const name = op.name;
       extraction.identifiers.push(name);
       extraction.hasMemberAccess = true;
       extraction.ops.push({ kind: "member", name });
     } else {
-      const exprs = op.kind === "subscript" ? op.indexes : [];
+      const isRange = ranged && at === postfixOps.length - 1;
+      const exprs =
+        op.kind !== "subscript"
+          ? []
+          : isRange
+            ? [op.start, op.length]
+            : [op.start];
       for (const expr of exprs) {
         extraction.subscripts.push(expr);
       }
@@ -209,10 +220,12 @@ function processPostfixOps(
         // front would queue a pending temp for every chain it then rejects.
         renderIndexes: () => exprs.map((expr) => deps.generateExpression(expr)),
         foldWidth: () =>
-          exprs.length === 2 ? deps.tryEvaluateConstant(exprs[1]) : undefined,
+          op.kind === "subscript" && isRange
+            ? deps.tryEvaluateConstant(op.length)
+            : undefined,
       });
     }
-  }
+  });
 }
 
 /**

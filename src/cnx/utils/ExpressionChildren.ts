@@ -44,7 +44,7 @@ class ExpressionChildren {
   private static opChildren(op: TPostfixOpSyntax): readonly TExpression[] {
     switch (op.kind) {
       case "subscript":
-        return op.indexes;
+        return [op.start, op.length];
       case "call":
         return op.arguments;
       case "member":

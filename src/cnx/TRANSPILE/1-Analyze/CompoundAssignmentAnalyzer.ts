@@ -89,10 +89,14 @@ class CompoundAssignmentCheck {
   public rejectionFor(target: TExpression): TRejection | null {
     // A range or a slice is never one storage location, whatever it
     // indexes, so this needs no resolved shape.
+    const typing = OperandTyper.chainOf(target, this.context);
+    const oneBit = (step: (typeof typing.steps)[number]): boolean =>
+      BitmapFieldStep.writesOneBit(step, null);
     if (
-      target.kind === "postfix" &&
-      target.ops.some(
-        (op) => op.kind === "subscript" && op.indexes.length === 2,
+      typing.steps.some(
+        (step) =>
+          step.subscript === "array_slice" ||
+          (step.subscript === "bit_range" && !oneBit(step)),
       )
     ) {
       return "bit range or slice";
@@ -102,8 +106,7 @@ class CompoundAssignmentCheck {
     if (OperandTyper.wholeArrayDimensions(target, this.context).length > 0) {
       return "whole array";
     }
-    const typing = OperandTyper.chainOf(target, this.context);
-    if (typing.steps.some((step) => step.subscript === "bit_single")) {
+    if (typing.steps.some((step) => step.subscript === "bit_range")) {
       return "bit index";
     }
     // #2159: a bitmap field is a bit or a run of bits of its backing value, as

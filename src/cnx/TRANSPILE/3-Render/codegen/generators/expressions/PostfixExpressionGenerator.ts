@@ -72,37 +72,6 @@ interface ITrackingState {
 }
 
 /**
- * The C expression that reads ONE bit, narrowed per MISRA 10.3.
- *
- * #1450: written out three times -- for a register access, a primitive int
- * member, and a `bit_single` subscript -- byte-identical each time, and
- * reported by `analyze:duplication` as a three-way clone. The three callers
- * differ only in what they do with `output` afterwards, which is why the
- * expression is what is shared and the assignment is not.
- *
- * Two decisions live here, and both are the reason it is one function:
- * shifting is skipped at index 0 (`0` or the MISRA-suffixed `0U`, since the
- * suffix is applied before this runs), and the `& 1` result is an `int` by C's
- * integer promotions, so a narrower target needs the cast MISRA 10.3 requires.
- * Changing either used to mean finding all three.
- *
- * @param base generated C for the value being read from
- * @param index generated C for the bit index
- */
-const singleBitRead = (
-  base: string,
-  index: string,
-  narrowing: TPlannedNarrowing | null,
-  orchestrator: IOrchestrator,
-): string => {
-  const expr =
-    index === "0" || index === "0U"
-      ? `((${base}) & 1)`
-      : `((${base} >> ${index}) & 1)`;
-  return NarrowingCastHelper.apply(expr, narrowing, orchestrator.state);
-};
-
-/**
  * Initialize tracking state from the primary expression.
  */
 const initializeTrackingState = (
@@ -1177,59 +1146,38 @@ const generateSubscriptAccess = (
     subscriptDepth: ctx.subscriptDepth,
   };
 
-  // The arity is checked BEFORE anything renders: the grammar admits only one
-  // or two indexes, and the old shape returned without generating for any
-  // other count.
-  const indexCount = ctx.subscript.indexCount;
-  if (indexCount !== 1 && indexCount !== 2) {
-    return output;
-  }
-
   // 2.2 plans each index against size_t (unsigned) per MISRA 7.2, which is
   // what gives an index literal its U suffix regardless of element type (#1991)
   const indexes = ctx.subscript.renderIndexes();
 
-  if (indexCount === 1) {
-    return handleSingleSubscript(ctx, indexes[0], input, orchestrator, output);
+  // ADR-007 §1: what the typer typed the subscript, never how many indexes
+  // were written -- `x[a]` is `x[a, 1]`
+  if (ctx.subscript.typedAs === "array_element") {
+    return handleElementSubscript(ctx, indexes[0], input, output);
   }
 
+  validateNotBitmapMember(ctx, input);
   return handleBitRangeSubscript(ctx, indexes, state, orchestrator, output);
 };
 
 /**
- * Handle single-index subscript (arr[i] or value[bit]).
- *
- * #1668 (C12): an element access or a bit read, as the one operand typer
- * typed the subscript (`typedAs`) -- the answer 2.1's bit rules read. This
- * walked the chain itself: whether the current member was an array, how many
- * of the root's dimensions remained, whether the member's type was an
- * integer, and only then fell back to the typer. Every branch emitted one of
- * the same two texts.
+ * An element, `arr[i]` (which is `arr[i, 1]`), as the one operand typer typed
+ * the subscript (#1668, C12). A register member's subscript is its bits.
  */
-const handleSingleSubscript = (
+const handleElementSubscript = (
   ctx: ISubscriptAccessContext,
   index: string,
   input: IGeneratorInput,
-  orchestrator: IOrchestrator,
   output: SubscriptAccessResult,
 ): SubscriptAccessResult => {
   // Check if result is a register member with bitmap type (throws)
   validateNotBitmapMember(ctx, input);
-
+  invariant(
+    !checkRegisterAccess(ctx, input),
+    `the typer types a register member's subscript as bits (${ctx.result})`,
+  );
   // #1322: constant index bounds (ADR-036, E0854) are checked in pass 2.1,
   // in value position and in a target alike.
-  if (
-    checkRegisterAccess(ctx, input) ||
-    ctx.subscript.typedAs === "bit_single"
-  ) {
-    output.result = singleBitRead(
-      ctx.result,
-      index,
-      ctx.subscript.narrowing,
-      orchestrator,
-    );
-    return output;
-  }
   output.result = `${ctx.result}[${index}]`;
   output.subscriptDepth = ctx.subscriptDepth + 1;
   return output;

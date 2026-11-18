@@ -114,9 +114,15 @@ function withPlannedCopy(
  * the classifier reads for a subscript's kind -- the case's INPUT, the way a
  * declared type is, not a re-derivation of it.
  */
+/**
+ * A subscript kind, or `"one_bit"`: a `bit_range` one bit long, which is
+ * `x[a]` (ADR-007 §1) -- the typer types it `bool`
+ */
+type TTestSubscript = TSubscriptKind | "one_bit";
+
 function typedLast(
   ctx: IAssignmentContext,
-  subscript: TSubscriptKind,
+  kind: TTestSubscript,
   typeName = "u8",
 ): IAssignmentContext {
   const before: IOperandType = {
@@ -140,8 +146,14 @@ function typedLast(
       ...ctx.target,
       last: {
         before,
-        subscript,
-        after: null,
+        subscript: kind === "one_bit" ? "bit_range" : kind,
+        after:
+          kind === "one_bit"
+            ? ({
+                ...before,
+                form: { kind: "bitRange", width: 1 },
+              } as IOperandType)
+            : null,
         property: null,
         callee: null,
         beforeNamesType: false,
@@ -164,7 +176,7 @@ function typedLast(
 function registerStep(
   ctx: IAssignmentContext,
   member: string,
-  subscript: "bit_single" | "bit_range",
+  subscript: TTestSubscript,
 ): IAssignmentContext {
   const typed = typedLast(ctx, subscript);
   return {
@@ -397,7 +409,7 @@ describe("AssignmentClassifier - Bitmap Fields", () => {
         ],
       }),
       { before: bitmapOperand() },
-      "bit_single",
+      "one_bit",
     );
 
     expect(classify(ctx)).not.toBe(AssignmentKind.BITMAP_FIELD);
@@ -495,7 +507,7 @@ describe("AssignmentClassifier - Integer Bit Access", () => {
         hasArrayAccess: true,
         isSimpleIdentifier: false,
       }),
-      "bit_single",
+      "one_bit",
     );
 
     expect(classify(ctx)).toBe(AssignmentKind.INTEGER_BIT);
@@ -898,7 +910,7 @@ describe("AssignmentClassifier - Prefix Patterns", () => {
         isSimpleIdentifier: false,
         lastSubscriptExprCount: 1, // single bit
       }),
-      "bit_single",
+      "one_bit",
     );
 
     expect(classify(ctx)).toBe(AssignmentKind.INTEGER_BIT);
@@ -979,7 +991,7 @@ describe("AssignmentClassifier - Register Bit Access", () => {
       isSimpleIdentifier: false,
     });
 
-    expect(classify(registerStep(ctx, "GPIO7__DR_SET", "bit_single"))).toBe(
+    expect(classify(registerStep(ctx, "GPIO7__DR_SET", "one_bit"))).toBe(
       AssignmentKind.REGISTER_BIT,
     );
   });
@@ -1018,7 +1030,7 @@ describe("AssignmentClassifier - Register Bit Access", () => {
     });
 
     expect(
-      classify(registerStep(ctx, "Teensy4__GPIO7__DR_SET", "bit_single")),
+      classify(registerStep(ctx, "Teensy4__GPIO7__DR_SET", "one_bit")),
     ).toBe(AssignmentKind.REGISTER_BIT);
   });
 });
@@ -1135,7 +1147,7 @@ describe("AssignmentClassifier - Register Bit via MemberWithSubscript", () => {
       isSimpleIdentifier: false,
     });
 
-    expect(classify(registerStep(ctx, "TIMER__CTRL", "bit_single"))).toBe(
+    expect(classify(registerStep(ctx, "TIMER__CTRL", "one_bit"))).toBe(
       AssignmentKind.REGISTER_BIT,
     );
   });
@@ -1176,7 +1188,7 @@ describe("AssignmentClassifier - Register Bit via MemberWithSubscript", () => {
     });
 
     expect(
-      classify(registerStep(ctx, "Teensy4__GPIO7__DR_SET", "bit_single")),
+      classify(registerStep(ctx, "Teensy4__GPIO7__DR_SET", "one_bit")),
     ).toBe(AssignmentKind.REGISTER_BIT);
   });
 });
@@ -1222,7 +1234,7 @@ describe("AssignmentClassifier - Bare Scope-Qualified Subscripts", () => {
       const subscript =
         expected === AssignmentKind.REGISTER_BIT_RANGE
           ? "bit_range"
-          : "bit_single";
+          : "one_bit";
       expect(classify(registerStep(ctx, "Hw__GPIO__Mode", subscript))).toBe(
         expected,
       );
@@ -1238,7 +1250,7 @@ describe("AssignmentClassifier - Bare Scope-Qualified Subscripts", () => {
     arrayDimensions: [16],
   });
   const scopeVariableCases: ReadonlyArray<
-    readonly [string, TTypeInfo, number, number, TSubscriptKind, AssignmentKind]
+    readonly [string, TTypeInfo, number, number, TTestSubscript, AssignmentKind]
   > = [
     [
       "bit range on a scalar",
@@ -1253,7 +1265,7 @@ describe("AssignmentClassifier - Bare Scope-Qualified Subscripts", () => {
       u8Array,
       2,
       1,
-      "bit_single",
+      "one_bit",
       AssignmentKind.ARRAY_ELEMENT_BIT,
     ],
     [

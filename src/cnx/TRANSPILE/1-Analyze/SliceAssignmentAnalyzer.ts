@@ -83,8 +83,12 @@ class SliceAssignmentListener {
     const ops = rooted ? target.ops.slice(1) : target.ops;
     if (ops.length !== 1) return;
     const op = ops[0];
-    if (op.kind !== "subscript" || op.indexes.length !== 2) return;
-    const subscripts = op.indexes;
+    if (op.kind !== "subscript") return;
+    const kind = OperandTyper.chainOf(target, this.context).steps.at(
+      -1,
+    )?.subscript;
+    if (kind !== "array_slice") return;
+    const subscripts = [op.start, op.length] as const;
     const head = rooted ? target.ops[0] : undefined;
     let name: string | undefined;
     if (head?.kind === "member") name = head.name;

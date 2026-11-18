@@ -198,7 +198,7 @@ class StringLengthCounter {
     }
     for (const op of expr.ops) {
       if (op.kind === "subscript") {
-        for (const index of op.indexes) {
+        for (const index of [op.start, op.length]) {
           StringLengthCounter.walkExpression(index, counts, state);
         }
       }
@@ -231,7 +231,7 @@ class StringLengthCounter {
     }
     for (const op of target.ops) {
       if (op.kind === "subscript") {
-        for (const index of op.indexes) {
+        for (const index of [op.start, op.length]) {
           StringLengthCounter.walkExpression(index, counts, state);
         }
       }

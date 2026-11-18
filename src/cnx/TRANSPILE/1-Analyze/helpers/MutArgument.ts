@@ -29,7 +29,7 @@ class MutArgument {
     if (chain.endsOnBitField) return false;
     if (chain.steps.some((step) => step.property !== null)) return false;
     const form = OperandTyper.typeOf(arg, context)?.form.kind;
-    return form !== "enumMember" && form !== "bitIndex" && form !== "bitRange";
+    return form !== "enumMember" && form !== "bitRange";
   }
 
   /**
