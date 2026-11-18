@@ -2,12 +2,10 @@
  * One step of an assignment target's postfix chain, reduced to what the
  * bit-access analysis asks of it.
  *
- * #1445: `postfixTargetOp` has exactly three alternatives -- `.IDENTIFIER`,
- * `[expression]` and `[expression, expression]` -- so "is this a member access"
- * and "how many indexes" are the only two questions the walk ever asked of a
- * node. As a union the second question answers itself, which is why the
- * producer's `op.expression().length > 0` filter is gone: it distinguished a
- * subscript from a member access, and `kind` does that now.
+ * #1445: `postfixTargetOp` is `.IDENTIFIER` or `[start, length]`, where
+ * `[start]` is `[start, 1]` (ADR-007 §1) -- so "is this a member access" is
+ * the only question the walk asks of a node, and `kind` answers it. What a
+ * subscript IS is the typer's answer, never how many indexes were written.
  *
  * ## The indexes are a thunk
  *
@@ -25,10 +23,8 @@ type TPlannedTargetOp =
     }
   | {
       readonly kind: "subscript";
-      /** 1 for `[i]`, 2 for `[start, width]`. The grammar admits no other. */
-      readonly indexCount: number;
       readonly renderIndexes: () => readonly string[];
-      /** A `[start, width]` width folded to a constant; undefined otherwise */
+      /** The length folded to a constant (`[start]`'s is `1`); undefined otherwise */
       readonly foldWidth: () => number | undefined;
     };
 

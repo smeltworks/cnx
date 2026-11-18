@@ -69,20 +69,30 @@ describe("BitAccessAnalyzer (E0888)", () => {
     expect(found.message).toContain("value[0, 8]");
   });
 
-  it("accepts the same range inside a function, and a single bit anywhere", () => {
-    // A single bit index needs no union, so it is not restricted by scope.
+  it("accepts the same bits inside a function, at any length", () => {
     expect(
       errors(
         [
-          "f32 value <- 1.5;",
-          "bool topBit <- value[31];",
           "void f() {",
           "    f32 local <- 1.5;",
           "    u32 bits <- local[0, 8];",
+          "    bool topBit <- local[31];",
           "}",
         ].join("\n"),
       ),
     ).toEqual([]);
+  });
+
+  it("rejects one bit at file scope, spelled either way (#1691)", () => {
+    // ADR-007 §1: `value[31]` is `value[31, 1]`, read through the same union
+    const found = errors(
+      [
+        "f32 value <- 1.5;",
+        "bool topBit <- value[31];",
+        "bool same <- value[31, 1];",
+      ].join("\n"),
+    );
+    expect(found.map((e) => e.code)).toEqual(["E0888", "E0888"]);
   });
 });
 

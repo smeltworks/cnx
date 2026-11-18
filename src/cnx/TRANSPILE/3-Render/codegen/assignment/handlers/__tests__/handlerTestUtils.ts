@@ -301,13 +301,11 @@ function bitWriteOf(
       : [
           ...Array.from({ length: leading }, (_, index) => ({
             kind: "subscript" as const,
-            indexCount: 1,
             renderIndexes: () => [ctx.renderSubscript(index)],
             foldWidth: () => undefined,
           })),
           {
             kind: "subscript" as const,
-            indexCount: lastIndexCount,
             renderIndexes: () =>
               Array.from({ length: lastIndexCount }, (_, i) =>
                 ctx.renderSubscript(leading + i),

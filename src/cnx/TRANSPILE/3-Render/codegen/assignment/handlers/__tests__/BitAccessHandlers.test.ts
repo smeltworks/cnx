@@ -570,7 +570,6 @@ describe("BitAccessHandlers", () => {
       const mockPostfixOps = [
         {
           kind: "subscript" as const,
-          indexCount: 1,
           renderIndexes: () => [
             HandlerTestUtils.planner().generateExpression(null as never),
           ],
@@ -578,7 +577,6 @@ describe("BitAccessHandlers", () => {
         { kind: "member" as const, name: "control" },
         {
           kind: "subscript" as const,
-          indexCount: 2,
           renderIndexes: () => [
             HandlerTestUtils.planner().generateExpression(null as never),
             HandlerTestUtils.planner().generateExpression(null as never),

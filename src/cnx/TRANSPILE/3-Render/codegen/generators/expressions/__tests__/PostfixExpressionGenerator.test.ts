@@ -300,7 +300,6 @@ function createMockPostfixOp(options?: {
   if (expressions.length > 0) {
     return {
       kind: "subscript",
-      indexCount: expressions.length,
       renderIndexes: () => expressions.map((expr) => expr.getText()),
       // Rebound by `runPostfix` to the orchestrator's `tryEvaluateConstant`,
       // which is where these cases configure the Issue #1094 fold.

@@ -402,7 +402,6 @@ describe("AssignmentClassifier - Bitmap Fields", () => {
           { kind: "member", name: "Running" },
           {
             kind: "subscript",
-            indexCount: 1,
             renderIndexes: () => ["0"],
             foldWidth: () => undefined,
           },
@@ -1121,7 +1120,6 @@ describe("AssignmentClassifier - Scoped Register Bit Range", () => {
         // token that happens to be present.
         {
           kind: "subscript",
-          indexCount: 2,
           renderIndexes: () => ["0", "1"],
           foldWidth: () => undefined,
         } as IAssignmentContext["postfixOps"][0],

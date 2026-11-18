@@ -70,7 +70,6 @@ function analyze(statement: string): {
     const indexes = op.expression();
     return {
       kind: "subscript",
-      indexCount: indexes.length,
       renderIndexes: () => {
         rendered += 1;
         return indexes.map((index) => index.getText());

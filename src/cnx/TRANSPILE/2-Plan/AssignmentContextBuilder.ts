@@ -214,7 +214,6 @@ function processPostfixOps(
       extraction.lastSubscriptExprCount = exprs.length;
       extraction.ops.push({
         kind: "subscript",
-        indexCount: exprs.length,
         // A thunk: most chains are not bit accesses, and the walk that reads
         // these decides that from `CodeGenState` alone. Generating an index up
         // front would queue a pending temp for every chain it then rejects.

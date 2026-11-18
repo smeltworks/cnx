@@ -46,9 +46,9 @@ describe("2.2 plans every string written into one character", () => {
     expect(code).toContain(
       "const char cnx_tmp0 = one[0];\n        if (cnx_tmp0 != '\\0') {\n            s[3] = cnx_tmp0;",
     );
-    expect(code).toContain("const char cnx_tmp1 = t[1U];");
-    expect(code).toContain("s[4] = cnx_tmp1;");
-    expect(code).toMatch(/const char cnx_tmp2 = \(.*"a".*"b".*\)\[0\];/);
+    // ADR-045: `t[1, 1]` is `t[1]`, written as `t[0]` is
+    expect(code).toContain("s[4] = t[1U];");
+    expect(code).toMatch(/const char cnx_tmp\d = \(.*"a".*"b".*\)\[0\];/);
     expect(code).toContain("s[6] = t[0U];");
   });
 

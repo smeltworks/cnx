@@ -68,30 +68,17 @@ class PostfixChainBuilder {
   }
 
   /**
-   * Process a subscript operation ([expr] or [expr, expr])
+   * Process a subscript: the target names an element, `arr[i]`. Its bits or
+   * a slice of it are written by their own handler (ADR-007 §1).
    */
   private static processSubscript(
     result: string,
     op: IPostfixOperation,
   ): string {
-    // #1652: the count decides, and only then does the render happen -- inside
-    // the branch, never before it. Rendering an index queues a pending temp
-    // declaration, so hoisting these calls above the `if` would queue one for
-    // the shape that returns `result` unchanged.
-    if (op.indexCount === 1) {
-      // Single subscript: array access or single bit
-      const [indexExpr] = op.renderIndexes();
-      return `${result}[${indexExpr}]`;
-    }
-
-    if (op.indexCount === 2) {
-      // Bit range: [start, width]
-      const [start, width] = op.renderIndexes();
-      return `${result}[${start}, ${width}]`;
-    }
-
-    // No expressions - shouldn't happen, but handle gracefully
-    return result;
+    // #1652: rendered here, behind the member/subscript branch -- rendering an
+    // index queues a pending temp declaration
+    const [index] = op.renderIndexes();
+    return index === undefined ? result : `${result}[${index}]`;
   }
 }
 

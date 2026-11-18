@@ -763,7 +763,6 @@ class CodeGenWalker {
         invariant(typedAs !== null, "the typer typed this subscript");
         return {
           kind: "subscript",
-          indexCount: indexes.length,
           renderIndexes: () =>
             indexes.map((index) => this.renderExpression(index)),
           foldWidth: () => this.planner.constantOf(op.length),
@@ -3593,7 +3592,6 @@ class CodeGenWalker {
     const indexes = op.kind === "subscript" ? [op.start, op.length] : [];
     return {
       kind: "subscript",
-      indexCount: indexes.length,
       renderIndexes: () => indexes.map((index) => this.renderExpression(index)),
       foldWidth: () =>
         op.kind === "subscript"
@@ -3747,7 +3745,6 @@ class CodeGenWalker {
       return {
         memberName: op.kind === "member" ? op.name : null,
         appliesToRoot: op === rootOp,
-        indexCount: expressions.length,
         // #1652: the nodes stay closed over HERE, in the walk. What crosses
         // into the render layer is a count and a function returning strings.
         renderIndexes: () =>

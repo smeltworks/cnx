@@ -137,8 +137,8 @@ class AssignmentClassifier {
       return scopeQualifiedKind;
     }
 
-    // Check for bit range through struct chain: devices[0].control[0, 4]
-    // Detected by last subscript having 2 expressions (start, width)
+    // Bits through a struct chain: devices[0].control[0, 4], or control[3],
+    // which is control[3, 1] -- the typer typed the last subscript a range
     if (ctx.lastSubscriptExprCount === 2) {
       return AssignmentKind.STRUCT_CHAIN_BIT_RANGE;
     }

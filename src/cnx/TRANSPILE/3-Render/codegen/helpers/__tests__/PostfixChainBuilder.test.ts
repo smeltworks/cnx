@@ -17,14 +17,12 @@ describe("PostfixChainBuilder", () => {
   ): IPostfixOperation => ({
     memberName,
     appliesToRoot,
-    indexCount: 0,
     renderIndexes: vi.fn(() => []),
   });
 
   const subscriptOp = (...indexes: string[]): IPostfixOperation => ({
     memberName: null,
     appliesToRoot: false,
-    indexCount: indexes.length,
     renderIndexes: vi.fn(() => indexes),
   });
 
@@ -120,14 +118,15 @@ describe("PostfixChainBuilder", () => {
       expect(ops[0].renderIndexes).toHaveBeenCalledTimes(1);
     });
 
-    it("should handle bit range subscript", () => {
+    it("names the element a subscript indexes, once", () => {
       const deps = createMockDeps();
-      const ops: IPostfixOperation[] = [subscriptOp("0", "4")];
+      const ops: IPostfixOperation[] = [subscriptOp("0")];
 
       const result = PostfixChainBuilder.build("flags", "flags", ops, deps);
 
-      expect(result).toBe("flags[0, 4]");
-      // One call yielding both indexes, not one call per index.
+      // ADR-007 §1: a target's bits or slice are written by their handler, so
+      // the chain only names the element
+      expect(result).toBe("flags[0]");
       expect(ops[0].renderIndexes).toHaveBeenCalledTimes(1);
     });
 

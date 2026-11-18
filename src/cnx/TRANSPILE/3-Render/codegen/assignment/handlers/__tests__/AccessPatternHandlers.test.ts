@@ -311,7 +311,6 @@ describe("AccessPatternHandlers", () => {
     };
     const index = (text: string): TPlannedTargetOp => ({
       kind: "subscript",
-      indexCount: 1,
       renderIndexes: () => [text],
       foldWidth: () => undefined,
     });
