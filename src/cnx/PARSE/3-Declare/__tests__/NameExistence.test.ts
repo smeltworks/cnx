@@ -116,14 +116,14 @@ describe("the type / value position split (#1336)", () => {
     createMockSymbols({ knownRegisters: new Set(["GPIO"]) });
 
   /**
-   * The tripwire for ADR-111. While that ADR is `Research`, ADR-004 governs and
+   * The tripwire for ADR-072. While that ADR is `Research`, ADR-004 governs and
    * a register is not a type: `TYPE_FORMING_KINDS` excludes the `register` kind
    * for this reason, and `isTypeName` is the per-file view of the same
    * decision. It once disagreed, which is exactly how `Control c;` reached
    * codegen with no typedef behind it and the C compiler rejected the output at
    * exit 0.
    *
-   * If ADR-111 is IMPLEMENTED this expectation inverts -- deliberately, in that
+   * If ADR-072 is IMPLEMENTED this expectation inverts -- deliberately, in that
    * ADR's own work, together with E0429's retirement. It failing for any other
    * reason means the two answers have drifted apart again.
    */

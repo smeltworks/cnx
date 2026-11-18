@@ -81,11 +81,11 @@ class NameExistence {
    * it -- exit 0, then `unknown type name 'Control'` from the C compiler.
    *
    * ADR-004 is what makes the exclusion correct today: a register declares a
-   * variable at an address, not a type. ADR-111 would make a register name a
+   * variable at an address, not a type. ADR-072 would make a register name a
    * type, but it is `Research`, and its own header states that while it is
    * Research "a register is still not a type".
    *
-   * ADR-111: when it is IMPLEMENTED (not merely Accepted), add `knownRegisters`
+   * ADR-072: when it is IMPLEMENTED (not merely Accepted), add `knownRegisters`
    * back here, drop `isValueName` and `isRegisterName`, and retire E0429.
    */
   static isTypeName(
@@ -119,7 +119,7 @@ class NameExistence {
    * `knownVariables` set this read had no position, so a second answer here
    * accepted `u32 a <- b + 1` above `b` while binding found nothing.
    *
-   * ADR-111: if a register becomes a type, this collapses into `isTypeName`.
+   * ADR-072: if a register becomes a type, this collapses into `isTypeName`.
    */
   static isValueName(
     name: string,
@@ -142,7 +142,7 @@ class NameExistence {
    * *why* is what makes the diagnostic worth reading, since the register is
    * declared right there in the file.
    *
-   * ADR-111: retire this along with E0429 when a register becomes a type.
+   * ADR-072: retire this along with E0429 when a register becomes a type.
    */
   static isRegisterName(name: string, symbols: ICodeGenSymbols): boolean {
     return symbols.knownRegisters.has(name);

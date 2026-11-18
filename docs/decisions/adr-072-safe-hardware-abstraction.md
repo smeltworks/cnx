@@ -1,4 +1,4 @@
-# ADR-111: Safe Hardware Abstraction Primitives
+# ADR-072: Safe Hardware Abstraction Primitives
 
 **Status:** Research
 **Date:** 2026-02-20 (revised 2026-07-04: simplified register syntax; added Parts 4–5)
@@ -680,7 +680,7 @@ bitmaps cover the format completely.
 ### Open questions
 
 - **Backing model.** An _owned_ buffer (the instance allocates its own bytes at a
-  compile-time address; a received frame is copied in before reading) keeps ADR-111's
+  compile-time address; a received frame is copied in before reading) keeps ADR-072's
   zero-cost / compile-time model. A _view_ over an existing runtime buffer avoids the
   copy but holds a runtime pointer and needs a lifetime story. Owned-first is the minimal
   safe start.

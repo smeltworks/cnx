@@ -29,8 +29,8 @@ pass — which is why the obligation is to _declare honestly_, not to be green.
 
 | Band  | Work performed during | Release gate                          | Allocated so far                                        |
 | ----- | --------------------- | ------------------------------------- | ------------------------------------------------------- |
-| `0xx` | v0.x                  | All must be implemented to cut **v1** | 001–058, 060–071 (011, 012, 048, 055, 060, 065 retired) |
-| `1xx` | v1.x                  | All must be implemented to cut **v2** | 100–106, 111                                            |
+| `0xx` | v0.x                  | All must be implemented to cut **v1** | 001–058, 060–072 (011, 012, 048, 055, 060, 065 retired) |
+| `1xx` | v1.x                  | All must be implemented to cut **v2** | 100–106                                                 |
 | `2xx` | v2.x                  | All must be implemented to cut **v3** | none yet                                                |
 
 ### Choosing a band for a new ADR
@@ -48,6 +48,8 @@ toward its band's gate.
 ### Numbers are never reused
 
 Gaps are intentional and permanent. `059` and `107` were never allocated; neither will be filled.
+`111` is the one exception: it was a filing mistake, so when it moved to `072` every reference
+was rewritten and the number was freed for reuse.
 `053` was withdrawn on 2026-08-28 -- it described the transpiler's pipeline rather than deciding
 anything about the language, so it did not meet the definition of an ADR. The number stays retired.
 
@@ -164,6 +166,7 @@ they were written. This table is how those references stay resolvable.
 | ADR-113 | ADR-068 | Forever Loops               | 2026-08-23 | v0 work mis-filed in the `1xx` band          |
 | ADR-114 | ADR-069 | Dead-Code / Reachability    | 2026-08-23 | Required for v1; mis-filed in the `1xx` band |
 | ADR-115 | ADR-070 | Return-Value Use            | 2026-08-23 | Required for v1; mis-filed in the `1xx` band |
+| ADR-111 | ADR-072 | Safe Hardware Abstraction   | 2026-11-18 | Required for v1; mis-filed in the `1xx` band |
 
 A changed file stem is not a renumbering and does not belong in this table. ADR-022 was
 rewritten in place in commit `1f56e2d8` (`adr-022-ternary-operator.md` was replaced by

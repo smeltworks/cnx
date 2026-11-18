@@ -2,7 +2,7 @@
 // Issue #1336: a register name used in a TYPE position.
 //
 // ADR-004 (Implemented) defines a register as a memory-mapped binding, not a type.
-// ADR-111 would make a register name a type, but is Status: Research, and its own
+// ADR-072 would make a register name a type, but is Status: Research, and its own
 // header states that while it is Research "a register is still not a type".
 //
 // Before the fix this transpiled at exit 0 and emitted `Control c = {0};`,

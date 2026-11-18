@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **ADR-111 (Safe Hardware Abstraction) is now ADR-072**: it is v1-gating work that was mis-filed
+  in the `1xx` band. Every reference, including older entries in this changelog, now uses the new
+  number, and `111` is free to reuse.
 - **The library reports a cnx symbol's language as `"cnx"`** (Issue #2173). `TLanguage`, the
   type of `ISymbolInfo.language`, is `"cnx" | "c" | "cpp"`. Code that compares `language` with
   the cnx value must compare it with `"cnx"`.
@@ -412,7 +415,7 @@ ruling on #1933, 2026-10-17).
   ADR-113 → ADR-068, ADR-114 → ADR-069, ADR-115 → ADR-070. Older entries in this changelog and
   all cross-references were updated to the new numbers; the old→new mapping table lives in
   `docs/decisions/README.md`, because existing GitHub issues and merged PRs still cite the old
-  numbers. The `1xx` band now holds only the v2 roadmap (ADR-100–106, ADR-111), which is what it
+  numbers. The `1xx` band now holds only the v2 roadmap (ADR-100–106), which is what it
   was created for.
 - ADR-065 (CodeGenerator Decomposition) status corrected from `Research` to `WIP` — its
   classifier + handler + utils pattern shipped in PR #447, but the decomposition it prescribes
@@ -674,7 +677,7 @@ ruling on #1933, 2026-10-17).
 - Unsigned array index restriction — `ArrayIndexTypeAnalyzer` enforces signed types cannot index arrays (E0850) (Issue #888)
 - Callback-compatible function detection in `FunctionCallAnalyzer` for parameter signature matching
 - `callbackCompatibleFunctions` state tracking in `CodeGenState`
-- ADR-111: Safe hardware abstraction primitives design document
+- ADR-072: Safe hardware abstraction primitives design document
 
 ### Changed
 

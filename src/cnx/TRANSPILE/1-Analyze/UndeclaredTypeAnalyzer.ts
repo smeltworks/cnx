@@ -300,7 +300,7 @@ class UndeclaredTypeAnalyzer {
    * same `knownRegisters` set this reads, and E0429 begins firing there with no
    * change here.
    *
-   * ADR-111: retire this with E0429 when a register becomes a type -- at which
+   * ADR-072: retire this with E0429 when a register becomes a type -- at which
    * point `denotesType` answers yes and this is never reached.
    */
   denotesRegister(spellings: ReadonlyArray<string>): boolean {
@@ -342,7 +342,7 @@ class UndeclaredTypeAnalyzer {
    * E0429: the name is declared, but as a register, and a register is not a
    * type (ADR-004).
    *
-   * ADR-111: this code exists only for as long as that is true. When ADR-111 is
+   * ADR-072: this code exists only for as long as that is true. When ADR-072 is
    * IMPLEMENTED, `Control c;` becomes the instantiation form it designs and
    * this diagnostic is retired outright -- delete the method, its call site,
    * `NameExistence.isRegisterName`, the fixture, and the E0429 registry row.

@@ -15,7 +15,7 @@ v2 (so "Research (v2 Roadmap)" holds `1xx` ADRs).
 | ADR                                                        | Title                      | Description                                                                      |
 | ---------------------------------------------------------- | -------------------------- | -------------------------------------------------------------------------------- |
 | [ADR-001](decisions/adr-001-assignment-operator.md)        | Assignment Operator        | `<-` for assignment, `=` for comparison                                          |
-| [ADR-004](decisions/adr-004-register-bindings.md)          | Register Bindings          | Type-safe hardware access (ADR-111 supersedes on acceptance)                     |
+| [ADR-004](decisions/adr-004-register-bindings.md)          | Register Bindings          | Type-safe hardware access (ADR-072 supersedes on acceptance)                     |
 | [ADR-007](decisions/adr-007-type-aware-bit-indexing.md)    | Type-Aware Bit Indexing    | Integers as bit arrays (`.length` superseded by ADR-058)                         |
 | [ADR-010](decisions/adr-010-c-interoperability.md)         | C Interoperability         | Unified ANTLR parser architecture                                                |
 | [ADR-014](decisions/adr-014-structs.md)                    | Structs                    | Data containers without methods                                                  |
@@ -79,27 +79,27 @@ v2 (so "Research (v2 Roadmap)" holds `1xx` ADRs).
 
 ## Research (v1 Roadmap)
 
-| ADR                                                     | Title                         | Description                                      |
-| ------------------------------------------------------- | ----------------------------- | ------------------------------------------------ |
-| [ADR-008](decisions/adr-008-language-bug-prevention.md) | Language-Level Bug Prevention | Top 15 embedded bugs and prevention              |
-| [ADR-009](decisions/adr-009-isr-safety.md)              | ISR Safety                    | Safe interrupts without `unsafe` blocks          |
-| [ADR-054](decisions/adr-054-array-index-overflow.md)    | Array Index Overflow          | Overflow semantics for array index expressions   |
-| [ADR-056](decisions/adr-056-cast-overflow-behavior.md)  | Cast Overflow Behavior        | Consistent overflow semantics for type casts     |
-| [ADR-066](decisions/adr-066-do178c-compliance.md)       | DO-178C Compliance            | Safety-critical software certification framework |
-| [ADR-069](decisions/adr-069-dead-code-reachability.md)  | Dead-Code / Reachability      | Reject unreachable code (MISRA 2.1/2.2, DO-178C) |
+| ADR                                                       | Title                         | Description                                      |
+| --------------------------------------------------------- | ----------------------------- | ------------------------------------------------ |
+| [ADR-008](decisions/adr-008-language-bug-prevention.md)   | Language-Level Bug Prevention | Top 15 embedded bugs and prevention              |
+| [ADR-009](decisions/adr-009-isr-safety.md)                | ISR Safety                    | Safe interrupts without `unsafe` blocks          |
+| [ADR-054](decisions/adr-054-array-index-overflow.md)      | Array Index Overflow          | Overflow semantics for array index expressions   |
+| [ADR-056](decisions/adr-056-cast-overflow-behavior.md)    | Cast Overflow Behavior        | Consistent overflow semantics for type casts     |
+| [ADR-066](decisions/adr-066-do178c-compliance.md)         | DO-178C Compliance            | Safety-critical software certification framework |
+| [ADR-069](decisions/adr-069-dead-code-reachability.md)    | Dead-Code / Reachability      | Reject unreachable code (MISRA 2.1/2.2, DO-178C) |
+| [ADR-072](decisions/adr-072-safe-hardware-abstraction.md) | Safe Hardware Abstraction     | Type-safe hardware abstraction primitives        |
 
 ## Research (v2 Roadmap)
 
-| ADR                                                        | Title                      | Description                               |
-| ---------------------------------------------------------- | -------------------------- | ----------------------------------------- |
-| [ADR-100](decisions/adr-100-multi-core-synchronization.md) | Multi-Core Synchronization | ESP32/RP2040 spinlock patterns            |
-| [ADR-101](decisions/adr-101-heap-allocation.md)            | Heap Allocation            | Dynamic memory for desktop targets        |
-| [ADR-102](decisions/adr-102-critical-section-analysis.md)  | Critical Section Analysis  | Complexity warnings and cycle analysis    |
-| [ADR-103](decisions/adr-103-stream-handling.md)            | Stream Handling            | FILE\* and fopen patterns for file I/O    |
-| [ADR-104](decisions/adr-104-isr-queues.md)                 | ISR-Safe Queues            | Producer-consumer patterns for ISR/main   |
-| [ADR-105](decisions/adr-105-prefixed-includes.md)          | Prefixed Includes          | Namespace control for includes            |
-| [ADR-106](decisions/adr-106-isr-vector-bindings.md)        | Vector Table Bindings      | Register bindings for ISR vector tables   |
-| [ADR-111](decisions/adr-111-safe-hardware-abstraction.md)  | Safe Hardware Abstraction  | Type-safe hardware abstraction primitives |
+| ADR                                                        | Title                      | Description                             |
+| ---------------------------------------------------------- | -------------------------- | --------------------------------------- |
+| [ADR-100](decisions/adr-100-multi-core-synchronization.md) | Multi-Core Synchronization | ESP32/RP2040 spinlock patterns          |
+| [ADR-101](decisions/adr-101-heap-allocation.md)            | Heap Allocation            | Dynamic memory for desktop targets      |
+| [ADR-102](decisions/adr-102-critical-section-analysis.md)  | Critical Section Analysis  | Complexity warnings and cycle analysis  |
+| [ADR-103](decisions/adr-103-stream-handling.md)            | Stream Handling            | FILE\* and fopen patterns for file I/O  |
+| [ADR-104](decisions/adr-104-isr-queues.md)                 | ISR-Safe Queues            | Producer-consumer patterns for ISR/main |
+| [ADR-105](decisions/adr-105-prefixed-includes.md)          | Prefixed Includes          | Namespace control for includes          |
+| [ADR-106](decisions/adr-106-isr-vector-bindings.md)        | Vector Table Bindings      | Register bindings for ISR vector tables |
 
 ## Rejected
 
