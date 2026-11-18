@@ -16,7 +16,7 @@ int main(void) {
     /* MISRA C:2012 Rule 21.15: float bits accessed through a union (memcpy would pass incompatible pointer types: float* vs uint32_t*). */
     union { float f; uint32_t u; } __bits_testVal;
     __bits_testVal.f = testVal;
-    const uint8_t byte3 = static_cast<uint8_t>(((__bits_testVal.u >> 24U) & 0xFFU));
+    const uint8_t byte3 = ((__bits_testVal.u >> 24U) & 0xFFU);
     if (byte3 != 0x3F) {
         return 1U;
     }

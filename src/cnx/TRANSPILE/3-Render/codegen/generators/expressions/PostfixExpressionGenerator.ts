@@ -1239,22 +1239,16 @@ const handleBitRangeSubscript = (
 
   const floatBits = ctx.subscript.floatBits;
   if (floatBits !== null) {
-    // MISRA 10.3: the union's integer member against the type the value sits
-    // in -- a `bool` compares it, as one bit of an integer does (#1691)
-    output.result = NarrowingCastHelper.apply(
-      handleFloatBitRange(
-        {
-          result: ctx.result,
-          rootIdentifier: ctx.rootIdentifier,
-          floatBits,
-          start,
-          maskWidth,
-        },
-        state,
-        orchestrator,
-      ),
-      ctx.subscript.narrowing,
-      orchestrator.state,
+    output.result = handleFloatBitRange(
+      {
+        result: ctx.result,
+        rootIdentifier: ctx.rootIdentifier,
+        floatBits,
+        start,
+        maskWidth,
+      },
+      state,
+      orchestrator,
     );
   } else {
     invariant(
