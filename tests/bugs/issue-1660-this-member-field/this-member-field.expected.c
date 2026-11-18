@@ -23,7 +23,7 @@ void S__run(void) {
 }
 
 bool S__flag(void) {
-    const bool v = ((((S__local.flags >> 4U) & 1)) != 0U);
+    const bool v = ((((S__local.flags >> 4U) & 0x1U)) != 0U);
     return v;
 }
 

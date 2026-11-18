@@ -44,7 +44,7 @@ int main(void) {
     if (element != 42) {
         return 4;
     }
-    const bool bit = ((((g.cells[1U][2U] >> 3U) & 1)) != 0U);
+    const bool bit = ((((g.cells[1U][2U] >> 3U) & 0x1U)) != 0U);
     if (bit != true) {
         return 5;
     }

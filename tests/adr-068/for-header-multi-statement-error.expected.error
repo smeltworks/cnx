@@ -1,30 +1,30 @@
-35:9 error[E0715]: a for-loop header cannot hold this assignment: a string copy, which ADR-068 keeps out of a header (#2234)
+37:9 error[E0715]: a for-loop header cannot hold this assignment: a string copy, which ADR-068 keeps out of a header (#2234)
        help: assign before the loop and leave the init clause empty
-35:28 error[E0715]: a for-loop header cannot hold this assignment: a string copy, which ADR-068 keeps out of a header (#2234)
+37:28 error[E0715]: a for-loop header cannot hold this assignment: a string copy, which ADR-068 keeps out of a header (#2234)
        help: assign at the end of the loop body and write it as a while loop
-44:9 error[E0715]: a for-loop header cannot hold this assignment: a string copy, which ADR-068 keeps out of a header (#2234)
+46:9 error[E0715]: a for-loop header cannot hold this assignment: a string copy, which ADR-068 keeps out of a header (#2234)
        help: assign before the loop and leave the init clause empty
-54:9 error[E0715]: a for-loop header cannot hold this assignment: a slice write is more than one statement
+56:9 error[E0715]: a for-loop header cannot hold this assignment: a slice write is more than one statement
        help: assign before the loop and leave the init clause empty
-54:32 error[E0715]: a for-loop header cannot hold this assignment: a slice write is more than one statement
+56:32 error[E0715]: a for-loop header cannot hold this assignment: a slice write is more than one statement
        help: assign at the end of the loop body and write it as a while loop
-64:9 error[E0715]: a for-loop header cannot hold this assignment: an atomic store is more than one statement
+66:9 error[E0715]: a for-loop header cannot hold this assignment: an atomic store is more than one statement
        help: assign before the loop and leave the init clause empty
-64:36 error[E0715]: a for-loop header cannot hold this assignment: an atomic read-modify-write is more than one statement
-       help: assign at the end of the loop body and write it as a while loop
-80:9 error[E0715]: a for-loop header cannot hold this assignment: a float bit write is more than one statement
-       help: assign before the loop and leave the init clause empty
-80:31 error[E0715]: a for-loop header cannot hold this assignment: a float bit write is more than one statement
-       help: assign at the end of the loop body and write it as a while loop
-81:24 error[E0715]: a for-loop header cannot hold this assignment: a float bit write is more than one statement
+66:36 error[E0715]: a for-loop header cannot hold this assignment: an atomic read-modify-write is more than one statement
        help: assign at the end of the loop body and write it as a while loop
 82:9 error[E0715]: a for-loop header cannot hold this assignment: a float bit write is more than one statement
        help: assign before the loop and leave the init clause empty
-104:24 error[E0715]: a for-loop header cannot hold this assignment: an atomic read-modify-write is more than one statement
+82:31 error[E0715]: a for-loop header cannot hold this assignment: a float bit write is more than one statement
        help: assign at the end of the loop body and write it as a while loop
-107:9 error[E0715]: a for-loop header cannot hold this assignment: an atomic read-modify-write is more than one statement
+83:24 error[E0715]: a for-loop header cannot hold this assignment: a float bit write is more than one statement
+       help: assign at the end of the loop body and write it as a while loop
+84:9 error[E0715]: a for-loop header cannot hold this assignment: a float bit write is more than one statement
        help: assign before the loop and leave the init clause empty
-107:33 error[E0715]: a for-loop header cannot hold this assignment: an atomic read-modify-write is more than one statement
+106:24 error[E0715]: a for-loop header cannot hold this assignment: an atomic read-modify-write is more than one statement
        help: assign at the end of the loop body and write it as a while loop
-110:9 error[E0715]: a for-loop header cannot hold this assignment: an atomic read-modify-write is more than one statement
+109:9 error[E0715]: a for-loop header cannot hold this assignment: an atomic read-modify-write is more than one statement
+       help: assign before the loop and leave the init clause empty
+109:33 error[E0715]: a for-loop header cannot hold this assignment: an atomic read-modify-write is more than one statement
+       help: assign at the end of the loop body and write it as a while loop
+112:9 error[E0715]: a for-loop header cannot hold this assignment: an atomic read-modify-write is more than one statement
        help: assign before the loop and leave the init clause empty

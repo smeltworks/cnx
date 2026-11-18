@@ -268,8 +268,7 @@ assignmentTarget
 // Unified postfix operation for assignment targets (Issue #387)
 postfixTargetOp
     : '.' IDENTIFIER                           // Member access
-    | '[' expression ']'                       // Array subscript / single bit
-    | '[' expression ',' expression ']'        // Bit range [start, width]
+    | '[' expression (',' expression)? ']'     // ADR-007: [start, length]; [start] is [start, 1]
     ;
 
 expressionStatement
@@ -418,8 +417,7 @@ postfixExpression
 
 postfixOp
     : '.' IDENTIFIER                           // Member access
-    | '[' expression ']'                       // Array subscript / single bit
-    | '[' expression ',' expression ']'        // Bit range [start, width]
+    | '[' expression (',' expression)? ']'     // ADR-007: [start, length]; [start] is [start, 1]
     | '(' argumentList? ')'                    // Function call
     ;
 

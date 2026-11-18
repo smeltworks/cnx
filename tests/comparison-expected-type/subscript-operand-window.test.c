@@ -42,7 +42,7 @@ int main(void) {
     const uint8_t arr[4] = {5U, 6U, 7U, 8U};
     const uint8_t flags = 9U;
     const uint32_t a = (arr[0U] == 5) ? 1U : 0U;
-    const uint32_t b = (((flags) & 1) == 1) ? 1U : 0U;
+    const uint32_t b = (((flags) & 0x1U) == 1) ? 1U : 0U;
     const uint32_t c = 5U;
     if (a != 1) {
         return 1U;

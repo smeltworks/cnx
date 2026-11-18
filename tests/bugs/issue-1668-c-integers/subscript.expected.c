@@ -27,11 +27,11 @@ int main(void) {
     if (p != 21) {
         return 3U;
     }
-    const bool d = ((((word >> 4U) & 1)) != 0U);
+    const bool d = ((((word >> 4U) & 0x1U)) != 0U);
     if (d != true) {
         return 4U;
     }
-    const bool z = ((((word >> 3U) & 1)) != 0U);
+    const bool z = ((((word >> 3U) & 0x1U)) != 0U);
     if (z != false) {
         return 5U;
     }

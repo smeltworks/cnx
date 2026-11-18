@@ -29,11 +29,11 @@ int main(void) {
     buffer[6] = (uint8_t)(cnx_tmp2);
     buffer[7] = (uint8_t)(cnx_tmp2 >> 8U);
     const uint8_t flags = 0x0FU;
-    buffer[8] = (uint8_t)(flags);
+    buffer[8] = flags;
     const uint8_t reserved = 0U;
-    buffer[9] = (uint8_t)(reserved);
-    buffer[10] = (uint8_t)(reserved);
-    buffer[11] = (uint8_t)(reserved);
+    buffer[9] = reserved;
+    buffer[10] = reserved;
+    buffer[11] = reserved;
     const uint64_t data = 0x0102030405060708ULL;
     /* MISRA C:2012 Rule 21.15: slice copy unrolled to per-element writes (memcpy would pass incompatible pointer types: uint8_t* vs uint64_t*). */
     const uint64_t cnx_tmp3 = (uint64_t)(data);

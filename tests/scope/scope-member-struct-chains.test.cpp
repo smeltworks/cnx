@@ -64,7 +64,7 @@ uint32_t S__inside(void) {
     if (a != 7) {
         return 1U;
     }
-    const bool b = ((((S__cfg.word >> 3U) & 1)) != 0U);
+    const bool b = ((((S__cfg.word >> 3U) & 0x1U)) != 0U);
     if (b != true) {
         return 2U;
     }
@@ -76,7 +76,7 @@ uint32_t S__inside(void) {
     if (fa != true) {
         return 4U;
     }
-    const bool z = ((((S__cfg.word >> 2U) & 1)) != 0U);
+    const bool z = ((((S__cfg.word >> 2U) & 0x1U)) != 0U);
     if (z != false) {
         return 5U;
     }
@@ -93,7 +93,7 @@ int main(void) {
     if (a != 7) {
         return 2U;
     }
-    const bool b = ((((S__cfg.word >> 3U) & 1)) != 0U);
+    const bool b = ((((S__cfg.word >> 3U) & 0x1U)) != 0U);
     if (b != true) {
         return 3U;
     }

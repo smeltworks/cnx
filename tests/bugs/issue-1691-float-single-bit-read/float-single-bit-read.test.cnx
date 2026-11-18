@@ -1,0 +1,85 @@
+// test-execution
+// test-target-xfail: atmega328p #1709 "Float bit indexing requires 64-bit double"
+// #1691: a single-bit read of a float reads its IEEE-754 bits through a union,
+// as a bit range does, instead of shifting the float.
+// 2.5f is 0x40200000 and -2.5f is 0xC0200000.
+// 2.5 is 0x4004000000000000 and -2.5 is 0xC004000000000000.
+f32 gPositive32 <- 2.5;
+f32 gNegative32 <- -2.5;
+f64 gPositive64 <- 2.5;
+f64 gNegative64 <- -2.5;
+
+u32 main() {
+    f32 positive32 <- 2.5;
+    f32 negative32 <- -2.5;
+    f64 positive64 <- 2.5;
+    f64 negative64 <- -2.5;
+
+    // f32 locals: sign bit, a set low bit, a clear low bit
+    if (positive32[31] != false) {
+        return 1;
+    }
+    if (negative32[31] != true) {
+        return 2;
+    }
+    if (positive32[21] != true) {
+        return 3;
+    }
+    if (positive32[0] != false) {
+        return 4;
+    }
+
+    // f32 globals
+    if (gPositive32[31] != false) {
+        return 5;
+    }
+    if (gNegative32[31] != true) {
+        return 6;
+    }
+    if (gPositive32[21] != true) {
+        return 7;
+    }
+    if (gPositive32[0] != false) {
+        return 8;
+    }
+
+    // f64 locals
+    if (positive64[63] != false) {
+        return 9;
+    }
+    if (negative64[63] != true) {
+        return 10;
+    }
+    if (positive64[50] != true) {
+        return 11;
+    }
+    if (positive64[0] != false) {
+        return 12;
+    }
+
+    // f64 globals
+    if (gPositive64[63] != false) {
+        return 13;
+    }
+    if (gNegative64[63] != true) {
+        return 14;
+    }
+    if (gPositive64[50] != true) {
+        return 15;
+    }
+    if (gPositive64[0] != false) {
+        return 16;
+    }
+
+    // A bit read into a bool, and a runtime index
+    bool sign <- negative32[31];
+    if (sign != true) {
+        return 17;
+    }
+    u8 at <- 30;
+    if (positive32[at] != true) {
+        return 18;
+    }
+
+    return 0;
+}

@@ -30,7 +30,7 @@ int main(void) {
     const uint16_t cnx_tmp1 = (uint16_t)(config.version);
     buffer[4] = (uint8_t)(cnx_tmp1);
     buffer[5] = (uint8_t)(cnx_tmp1 >> 8U);
-    buffer[6] = (uint8_t)(config.flags);
+    buffer[6] = config.flags;
     /* MISRA C:2012 Rule 21.15: slice copy unrolled to per-element writes (memcpy would pass incompatible pointer types: uint8_t* vs uint64_t*). */
     const uint64_t cnx_tmp2 = (uint64_t)(config.timestamp);
     buffer[7] = (uint8_t)(cnx_tmp2);

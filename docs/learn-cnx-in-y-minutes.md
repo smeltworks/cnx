@@ -428,6 +428,7 @@ mut u8 flags <- 0;
 flags[0] <- true;               // Set bit 0
 flags[3] <- true;               // Set bit 3
 bool isSet <- flags[0];         // Read bit 0
+bool same <- flags[0, 1];       // The same read: x[a] is x[a, 1]
 
 // Multi-bit fields
 flags[4, 3] <- 5;               // Set 3 bits starting at bit 4

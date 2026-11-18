@@ -27,11 +27,11 @@ int main(void) {
     if (((p >> 4) & 0x7) != 2) {
         return 1U;
     }
-    const bool b1 = ((((((p >> 4) & 0x7) >> 1U) & 1)) != 0U);
+    const bool b1 = ((((((p >> 4) & 0x7) >> 1U) & 0x1U)) != 0U);
     if (b1 != true) {
         return 2U;
     }
-    const bool b0 = ((((((p >> 4) & 0x7)) & 1)) != 0U);
+    const bool b0 = ((((((p >> 4) & 0x7)) & 0x1U)) != 0U);
     if (b0 != false) {
         return 3U;
     }

@@ -26,10 +26,10 @@ u32 inFunction() {
     return other[4, 12];
 }
 
-// NEGATIVE CONTROL -- a single bit INDEX at file scope. A single bit is read
-// with a mask and a shift, not through a union, so it needs no statement and
-// no function to sit in. Only a RANGE is restricted. Without this line, a rule
-// that treated any subscript as a range passed every fixture.
+// #1691: `value[31]` is `value[31, 1]` (ADR-007 §1), so it is read through
+// the same union as a wider range and is rejected at file scope too. Before
+// the fix this line passed and generated `value >> 31U`; it must report
+// E0888 exactly as `value[0, 8]` below does, at any length.
 bool topBit <- value[31];
 
 // THE ASSERTION -- a float bit range at file scope.

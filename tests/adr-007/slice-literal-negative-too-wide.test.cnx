@@ -1,11 +1,11 @@
 // test-error
 // test-adr: 007
-// Issue #1085 review: a negative integer literal slice source must be fit-checked
-// just like a positive one. -300 cannot be represented in a 1-byte slice
-// (-300 < -128), so it is a compile error rather than a silent (uint8_t)(-300)
-// truncation. Mirrors slice-literal-too-wide.test.cnx for the positive overflow.
-// NEGATIVE CONTROL -- the most negative value a 1-byte slice CAN hold. -300 is
-// rejected; -128 is exactly the two's-complement lower bound and must not be.
+// Issue #1085 review: a negative literal written to one u8 must be rejected,
+// not truncated as (uint8_t)(-300). ADR-007 §1: `buf[0, 1]` is `buf[0]`, one
+// u8 element, so each write is checked as an element write is: E0868, a
+// negative value into an unsigned type -- -128 included, exactly as
+// `ok[0] <- -128` is. A 1-byte slice no longer serializes a signed integer.
+// Mirrors slice-literal-too-wide.test.cnx for the positive overflow.
 u32 fits() {
     u8[8] ok;
     ok[0, 1] <- -128;

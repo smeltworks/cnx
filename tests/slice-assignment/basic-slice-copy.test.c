@@ -66,7 +66,7 @@ int main(void) {
         return 12U;
     }
     const uint8_t value8 = 0xABU;
-    buffer[20] = (uint8_t)(value8);
+    buffer[20] = value8;
     if (buffer[20U] != 0xAB) {
         return 13U;
     }

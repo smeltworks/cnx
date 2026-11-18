@@ -86,20 +86,23 @@ function writeBits(ctx: IAssignmentContext): string {
     widthText === undefined
       ? undefined
       : { text: widthText, folded: last.foldWidth() };
+  // ADR-007 §1: one bit long, however it was spelled -- a `bool` stored with
+  // no mask, where a wider range masks its value
+  const step = ctx.target.last;
+  const oneBit = BitmapFieldStep.writesOneBit(step, null);
   const floatBits = ctx.floatBits;
   if (floatBits !== null) {
     return ctx.state.requireGenerator().generateFloatBitWrite({
       target: base,
       floatType: floatBits.floatType,
       bitIndex: start,
-      width: width ?? null,
+      width: oneBit ? null : (width ?? null),
       value: ctx.generatedValue,
       folded: ctx.foldValue(),
       isVariable: floatBits.shared,
       atomic: ctx.atomic,
     });
   }
-  const step = ctx.target.last;
   const value = step?.fieldBits
     ? step.fieldBits.storage
     : (step?.before ?? null);
@@ -108,7 +111,7 @@ function writeBits(ctx: IAssignmentContext): string {
     "2.2 planned every float bit write 2.3 writes",
   );
   const storage = BitUtils.storageOf(value);
-  if (BitmapFieldStep.writesOneBit(step, null)) {
+  if (oneBit) {
     return storeBits(ctx, base, (read, bit, folded) =>
       BitUtils.singleBitValue(read, start, bit, storage, folded),
     );

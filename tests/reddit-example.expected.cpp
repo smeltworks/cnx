@@ -22,11 +22,11 @@ int main(void) {
     if (priority != 2) {
         return 2U;
     }
-    const bool encrypted = ((((header >> 6U) & 1)) != 0U);
+    const bool encrypted = ((((header >> 6U) & 0x1U)) != 0U);
     if (encrypted != true) {
         return 3U;
     }
-    const bool compressed = ((((header >> 7U) & 1)) != 0U);
+    const bool compressed = ((((header >> 7U) & 0x1U)) != 0U);
     if (compressed != false) {
         return 4U;
     }

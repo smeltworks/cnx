@@ -66,7 +66,7 @@ uint8_t getHighByte(const uint16_t value) {
 // This tests the currentStructType fix for primitive array elements
 // matrix[i][j] is array access, then [BIT] should be bit access
 uint8_t getArrayBit(const uint8_t matrix[2][2], const uint32_t row, const uint32_t col, const uint32_t bit) {
-    return (uint8_t)((matrix[row][col] >> bit) & 1);
+    return (uint8_t)((matrix[row][col] >> bit) & 0x1U);
 }
 
 void setArrayBit(uint8_t matrix[2][2], const uint32_t row, const uint32_t col, const uint32_t bit, const bool val) {

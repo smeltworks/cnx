@@ -25,6 +25,6 @@ int main(void) {
     points[0].y = 15;
     const int32_t px = points[0U].x;
     GPIO__DR = (GPIO__DR & ~((uint32_t)1U << 3)) | ((uint32_t)1U << 3);
-    const bool bit = ((((GPIO__DR >> 5U) & 1)) != 0U);
+    const bool bit = ((((GPIO__DR >> 5U) & 0x1U)) != 0U);
     GPIO__DR_SET = ((uint32_t)1U << 7);
 }

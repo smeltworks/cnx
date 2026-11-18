@@ -408,8 +408,16 @@ describe("AssignmentClassifier - Bitmap Fields", () => {
           },
         ],
       }),
-      { before: bitmapOperand() },
-      "one_bit",
+      {
+        before: bitmapOperand(),
+        after: {
+          ...bitmapOperand(),
+          typeName: "bool",
+          category: "boolean",
+          form: { kind: "bitRange", width: 1 },
+        },
+      },
+      "bit_range",
     );
 
     expect(classify(ctx)).not.toBe(AssignmentKind.BITMAP_FIELD);

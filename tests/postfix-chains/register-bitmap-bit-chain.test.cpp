@@ -39,8 +39,8 @@ int main(void) {
     MOTOR__DATA = (MOTOR__DATA & ~((uint32_t)1U << 0)) | ((uint32_t)1U << 0);
     MOTOR__DATA = (MOTOR__DATA & ~((uint32_t)1U << 15)) | ((uint32_t)0U << 15);
     MOTOR__DATA = (MOTOR__DATA & ~((uint32_t)1U << 31)) | ((uint32_t)1U << 31);
-    const bool bit0 = ((((MOTOR__DATA) & 1)) != 0U);
-    const bool bit15 = ((((MOTOR__DATA >> 15U) & 1)) != 0U);
+    const bool bit0 = ((((MOTOR__DATA) & 0x1U)) != 0U);
+    const bool bit15 = ((((MOTOR__DATA >> 15U) & 0x1U)) != 0U);
     if (((MOTOR__STATUS >> 0) & 1) == true) {
         MOTOR__CONTROL = (uint16_t)((MOTOR__CONTROL & ~(1U << 0)) | (1U << 0));
     }

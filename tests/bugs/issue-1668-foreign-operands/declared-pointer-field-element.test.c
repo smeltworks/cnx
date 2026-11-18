@@ -17,5 +17,5 @@
 void read(void) {
     const uint8_t v = dops.buf[2U];
     const uint8_t e = dops.arr[2U];
-    const bool b = ((((dops.flags >> 2U) & 1)) != 0U);
+    const bool b = ((((dops.flags >> 2U) & 0x1U)) != 0U);
 }
