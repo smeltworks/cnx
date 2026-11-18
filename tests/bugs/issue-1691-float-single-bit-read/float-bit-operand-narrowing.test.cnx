@@ -1,0 +1,32 @@
+// test-execution
+// test-target-xfail: atmega328p #1709 "Float bit indexing requires 64-bit double"
+// #1691 review: a bit read that is an operand of `>>`, `/` or `%` is not
+// narrowed itself, only the result is -- cast to u8 before
+// `>> 8`, the high byte reads zero. A float's bits (now narrowed, MISRA 10.3)
+// and an integer's are narrowed alike. 2.5f is 0x40200000.
+u32 main() {
+    f32 fl <- 2.5;
+    u32 n <- 0x12345678;
+    u8 floatHigh <- (u8)(fl[16, 16] >> 8);
+    if (floatHigh != 0x40) {
+        return 1;
+    }
+    u8 intHigh <- (u8)(n[16, 16] >> 8);
+    if (intHigh != 0x12) {
+        return 2;
+    }
+    u8 intDivided <- (u8)(n[0, 16] / 256);
+    if (intDivided != 0x56) {
+        return 3;
+    }
+    u8 intRemainder <- (u8)(n[0, 16] % 0x100);
+    if (intRemainder != 0x78) {
+        return 5;
+    }
+    // A bitwise operand keeps its low bits either way
+    u8 masked <- n[0, 8] | n[8, 8];
+    if (masked != 0x7E) {
+        return 4;
+    }
+    return 0;
+}

@@ -2949,10 +2949,24 @@ class FilePlanner {
           : [];
       });
     };
+    // An operand of `>>`, `/` or `%` is computed on in its promoted width,
+    // whatever its planned type: casting it first loses its high bits
+    const widened = new Set<TExpression>();
+    const widen = (node: TExpression): void => {
+      widened.add(node);
+      if (node.kind === "parenthesized") {
+        ExpressionChildren.of(node).forEach(widen);
+      }
+    };
+    for (const node of expectedTypes.keys()) {
+      if (NarrowingCastHelper.computesInPromotedWidth(node)) {
+        ExpressionChildren.of(node).forEach(widen);
+      }
+    }
     const narrowings = new Map<TExpression, Map<number, TPlannedNarrowing>>();
     for (const [value, planned] of expectedTypes) {
       const target = planned.type;
-      if (target === null) continue;
+      if (target === null || widened.has(value)) continue;
       const visit = (node: TExpression): void => {
         if (node !== value && expectedTypes.has(node)) return;
         for (const [index, source] of promotedSources(node)) {
@@ -2963,6 +2977,7 @@ class FilePlanner {
           narrowings.set(node, steps);
           if (narrowing.kind === "cast") cTypes.add(narrowing.cType);
         }
+        if (NarrowingCastHelper.computesInPromotedWidth(node)) return;
         ExpressionChildren.of(node).forEach(visit);
       };
       visit(value);

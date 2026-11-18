@@ -8,6 +8,7 @@
  * which MISRA flags when assigned back to narrower types without explicit cast.
  */
 
+import type TExpression from "../../types/syntax/TExpression";
 import type TPlannedNarrowing from "./types/TPlannedNarrowing";
 import type TranspileState from "../TranspileState";
 import CppModeHelper from "./CppModeHelper";
@@ -72,6 +73,18 @@ class NarrowingCastHelper {
     // Bool target: use comparison instead of cast (MISRA 10.5)
     if (targetType === "bool") return { kind: "compare" };
     return { kind: "cast", cType: TYPE_MAP[targetType] ?? targetType };
+  }
+
+  /**
+   * Whether `node` reads its operands' high bits, so narrowing an operand
+   * changes the result: `(u8)(n[16, 16] >> 8)` cast before the shift reads
+   * zero. `*`, `<<` and the bitwise operators keep the low bits either way.
+   */
+  static computesInPromotedWidth(node: TExpression): boolean {
+    if (node.kind !== "binary") return false;
+    return node.operators.some(
+      (operator) => operator === ">>" || operator === "/" || operator === "%",
+    );
   }
 
   /** Write `expr` in 2.2's planned narrowing form */
