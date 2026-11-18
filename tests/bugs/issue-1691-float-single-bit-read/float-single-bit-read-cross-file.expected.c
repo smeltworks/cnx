@@ -22,30 +22,30 @@ int main(void) {
     /* MISRA C:2012 Rule 21.15: float bits accessed through a union (memcpy would pass incompatible pointer types: float* vs uint32_t*). */
     union { float f; uint32_t u; } __bits_headerFloat;
     __bits_headerFloat.f = headerFloat;
-    const bool headerSign = ((__bits_headerFloat.u >> 31U) & 0x1U);
+    const bool headerSign = ((((__bits_headerFloat.u >> 31U) & 0x1U)) != 0U);
     if (headerSign == false) {
         return 1U;
     }
-    const bool headerLow = ((__bits_headerFloat.u >> 21U) & 0x1U);
+    const bool headerLow = ((((__bits_headerFloat.u >> 21U) & 0x1U)) != 0U);
     if (headerLow == false) {
         return 2U;
     }
-    const bool headerZero = (__bits_headerFloat.u & 0x1U);
+    const bool headerZero = (((__bits_headerFloat.u & 0x1U)) != 0U);
     if (headerZero == true) {
         return 3U;
     }
     /* MISRA C:2012 Rule 21.15: float bits accessed through a union (memcpy would pass incompatible pointer types: float* vs uint32_t*). */
     union { float f; uint32_t u; } __bits_sharedFloat;
     __bits_sharedFloat.f = sharedFloat;
-    const bool sharedSign = ((__bits_sharedFloat.u >> 31U) & 0x1U);
+    const bool sharedSign = ((((__bits_sharedFloat.u >> 31U) & 0x1U)) != 0U);
     if (sharedSign == true) {
         return 4U;
     }
-    const bool sharedHigh = ((__bits_sharedFloat.u >> 30U) & 0x1U);
+    const bool sharedHigh = ((((__bits_sharedFloat.u >> 30U) & 0x1U)) != 0U);
     if (sharedHigh == false) {
         return 5U;
     }
-    const bool sharedHighRange = ((__bits_sharedFloat.u >> 30U) & 0x1U);
+    const bool sharedHighRange = ((((__bits_sharedFloat.u >> 30U) & 0x1U)) != 0U);
     if (sharedHighRange != sharedHigh) {
         return 6U;
     }

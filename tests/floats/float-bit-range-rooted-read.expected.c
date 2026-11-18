@@ -30,7 +30,7 @@ uint8_t Sensor__topByte(void) {
     /* MISRA C:2012 Rule 21.15: float bits accessed through a union (memcpy would pass incompatible pointer types: float* vs uint32_t*). */
     union { float f; uint32_t u; } cnx_tmp0;
     cnx_tmp0.f = Sensor__reading;
-    const uint8_t b = ((cnx_tmp0.u >> 24U) & 0xFFU);
+    const uint8_t b = (uint8_t)((cnx_tmp0.u >> 24U) & 0xFFU);
     return b;
 }
 
@@ -62,7 +62,7 @@ uint8_t globalTopByte(void) {
     /* MISRA C:2012 Rule 21.15: float bits accessed through a union (memcpy would pass incompatible pointer types: float* vs uint32_t*). */
     union { float f; uint32_t u; } cnx_tmp1;
     cnx_tmp1.f = g;
-    const uint8_t b = ((cnx_tmp1.u >> 24U) & 0xFFU);
+    const uint8_t b = (uint8_t)((cnx_tmp1.u >> 24U) & 0xFFU);
     return b;
 }
 
@@ -80,14 +80,14 @@ int main(void) {
     /* MISRA C:2012 Rule 21.15: float bits accessed through a union (memcpy would pass incompatible pointer types: float* vs uint32_t*). */
     union { float f; uint32_t u; } cnx_tmp2;
     cnx_tmp2.f = r.value;
-    const uint8_t field = ((cnx_tmp2.u >> 24U) & 0xFFU);
+    const uint8_t field = (uint8_t)((cnx_tmp2.u >> 24U) & 0xFFU);
     if (field != 0x3F) {
         return 3U;
     }
     /* MISRA C:2012 Rule 21.15: float bits accessed through a union (memcpy would pass incompatible pointer types: float* vs uint32_t*). */
     union { float f; uint32_t u; } cnx_tmp3;
     cnx_tmp3.f = values[1U];
-    const uint8_t element = ((cnx_tmp3.u >> 24U) & 0xFFU);
+    const uint8_t element = (uint8_t)((cnx_tmp3.u >> 24U) & 0xFFU);
     if (element != 0x3F) {
         return 4U;
     }
@@ -98,7 +98,7 @@ int main(void) {
     /* MISRA C:2012 Rule 21.15: float bits accessed through a union (memcpy would pass incompatible pointer types: float* vs uint32_t*). */
     union { float f; uint32_t u; } __bits_g;
     __bits_g.f = g;
-    const uint8_t bare = ((__bits_g.u >> 24U) & 0xFFU);
+    const uint8_t bare = (uint8_t)((__bits_g.u >> 24U) & 0xFFU);
     if (bare != 0x3F) {
         return 5U;
     }

@@ -102,7 +102,7 @@ int main(void) {
     if ((__bits_gPositive64.u & 0x1U) != false) {
         return 16U;
     }
-    const bool sign = ((__bits_negative32.u >> 31U) & 0x1U);
+    const bool sign = ((((__bits_negative32.u >> 31U) & 0x1U)) != 0U);
     if (sign != true) {
         return 17U;
     }

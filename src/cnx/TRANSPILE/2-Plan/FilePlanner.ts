@@ -2928,11 +2928,15 @@ class FilePlanner {
       return steps.flatMap((step, index): Array<[number, string]> => {
         const from = step.before?.typeName ?? null;
         if (step.subscript === "bit_range") {
-          // A float's bits are read through a union's integer member, which
-          // is not promoted (ADR-007)
-          return from === null || FloatBits.typeOf(step) !== null
-            ? []
-            : [[index, NarrowingCastHelper.getPromotedType(from)]];
+          if (from === null) return [];
+          // A float's bits are read through a union's integer member (ADR-007),
+          // which is not promoted: it is the source as it stands -- a `bool`
+          // compares it, as one bit of an integer is (#1691)
+          const floatType = FloatBits.typeOf(step);
+          if (floatType !== null) {
+            return [[index, floatType === "f64" ? "u64" : "u32"]];
+          }
+          return [[index, NarrowingCastHelper.getPromotedType(from)]];
         }
         // A field's bits (#2251) are read off the field, which is promoted
         // only where it is the value
