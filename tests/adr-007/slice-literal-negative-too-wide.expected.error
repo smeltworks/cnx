@@ -1,4 +1,2 @@
-11:16 error[E0868]: Negative value -128 cannot be assigned to unsigned type u8
-       help: An unsigned type holds no negative values; use a signed type such as i8.
-17:17 error[E0868]: Negative value -300 cannot be assigned to unsigned type u8
-       help: An unsigned type holds no negative values; use a signed type such as i8.
+18:17 error[E0861]: Slice assignment literal value (-40000) does not fit in the 2-byte slice for 'buf'
+       help: Narrow the value, or widen the slice.
