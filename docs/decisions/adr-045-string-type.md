@@ -292,7 +292,7 @@ A range write `s[i, n] <- value` takes a character, a string or an integer (owne
 ruling, 2026-10-30, #2373). A character is written into the range's first
 character. A string must fit `n` characters (E0864) and is copied in
 character by character: `s[0, 2] <- "AB"` writes `'A'` and `'B'`. An integer is
-split into bytes, as ADR-007's slice write does: `s[0, 2] <- 0x4241` writes the
+split into bytes, least significant first: `s[0, 2] <- 0x4241` writes the
 same two characters. Any other value is E0928.
 Its start may be a runtime value, as one character's always could (owner ruling,
 2026-11-05), and is read once; its length must fold. A start that folds is

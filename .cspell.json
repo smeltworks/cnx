@@ -493,6 +493,7 @@
     "shlex",
     "signbit",
     "signedness",
+    "significand",
     "simpleenums",
     "smeltworks",
     "snprintf",
