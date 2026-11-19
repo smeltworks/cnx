@@ -146,6 +146,22 @@ memberName
 registerInstantiation
     : type IDENTIFIER ( '(' address ')' )? ';'   // address -> MMIO; omitted -> data register (Part 4)
     ;
+
+byteOffset : constantExpression ;
+address    : constantExpression ;
+```
+
+A field offset and an instance address are compile-time constant expressions: literals,
+named constants and arithmetic on them (ruling 5 on #2449). The compiler evaluates each one
+and emits the value as a plain number, so no address is computed at runtime. An expression
+the compiler cannot evaluate is an error, as is an address that does not fit the target's
+pointer width.
+
+```cnx
+u32 GPIO_BASE <- 0x401B8000;
+
+GpioPort GPIO1(GPIO_BASE);            // 0x401B8000
+GpioPort GPIO2(GPIO_BASE + 0x4000);   // 0x401BC000
 ```
 
 Single-instance peripherals simply have one instantiation:
