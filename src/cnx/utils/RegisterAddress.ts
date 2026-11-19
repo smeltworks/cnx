@@ -6,7 +6,7 @@
 class RegisterAddress {
   /** `0x` and upper-case hex, at least two digits: `0x00`, `0x401B8000` */
   static render(value: bigint): string {
-    return `0x${value.toString(16).toUpperCase().padStart(2, "0")}`;
+    return `0x${value.toString(16).toUpperCase().padStart(2, "0")}U`;
   }
 }
 

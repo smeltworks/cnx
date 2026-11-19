@@ -39,17 +39,14 @@ class RegisterUtils {
     if (base === undefined || offset === undefined) {
       return { success: false };
     }
-    // The same renderer the register macro spells them with (#1991)
-    const baseAddr = RegisterAddress.render(base);
-    const memberOffset = RegisterAddress.render(offset);
-
-    const byteOffset = startConst! / 8;
-    const totalOffset =
-      byteOffset === 0 ? memberOffset : `${memberOffset} + ${byteOffset}`;
+    // The same renderer and folding the register macro uses (#1991, ADR-072)
+    const address = RegisterAddress.render(
+      base + offset + BigInt(startConst! / 8),
+    );
 
     return {
       success: true,
-      statement: `*((volatile ${accessType}*)(${baseAddr} + ${totalOffset})) = (${value});`,
+      statement: `*((volatile ${accessType}*)(${address})) = (${value});`,
     };
   }
   /**

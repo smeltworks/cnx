@@ -1,0 +1,23 @@
+// test-error
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072, E0931: every byte of a register member must fit the target's
+// pointers. Folding the address at compile time is what makes this checkable;
+// C would wrap 0xFFFFFFF0 + 0x18 to 0x08 silently.
+
+register GpioPort {
+    0x00 rw u32 DR,
+    0x18 w1c u32 ISR,
+}
+
+GpioPort WRAPS(0xFFFFFFF0);
+GpioPort HIGH(0x100000000);
+
+// Negative control: the last member ends exactly at the top of the range
+GpioPort TOP(0xFFFFFFE4);
+
+void main() {
+    WRAPS.DR <- 1;
+    HIGH.DR <- 1;
+    TOP.ISR <- 1;
+}

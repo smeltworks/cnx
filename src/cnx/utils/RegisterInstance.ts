@@ -24,9 +24,19 @@ class RegisterInstance {
     scope: string | null,
     name: string,
   ): IRegisterSymbol | null {
-    const scopePath =
-      scope === null ? "" : (program?.scopePathOf(scope) ?? scope);
-    return RegisterInstance.atPath(program, scopePath, name);
+    return RegisterInstance.atPath(
+      program,
+      RegisterInstance.scopePathOf(program, scope),
+      name,
+    );
+  }
+
+  /** The path of the scope a program member records (null is global) */
+  static scopePathOf(
+    program: IProgram | null | undefined,
+    scope: string | null,
+  ): string {
+    return scope === null ? "" : (program?.scopePathOf(scope) ?? scope);
   }
 }
 

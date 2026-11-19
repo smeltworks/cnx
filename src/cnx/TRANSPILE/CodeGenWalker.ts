@@ -2419,7 +2419,9 @@ class CodeGenWalker {
           cName: member.fullyQualifiedCName,
           cType,
           access: member.access,
-          offset: RegisterAddress.render(member.offsetValue),
+          address: RegisterAddress.render(
+            instance.baseAddress! + member.offsetValue,
+          ),
         };
       }),
     };

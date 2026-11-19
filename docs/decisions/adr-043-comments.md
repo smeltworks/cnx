@@ -77,7 +77,7 @@ Generates:
 
 ```c
 /* Initialize the LED controller */
-#define GPIO7_DR_SET (*(volatile uint32_t*)(0x42004000 + 0x84))  /* Atomic set register */
+#define GPIO7_DR_SET (*(volatile uint32_t*)(0x42004084U))  /* Atomic set register */
 
 /**
  * Toggle the onboard LED

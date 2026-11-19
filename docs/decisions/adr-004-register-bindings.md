@@ -16,7 +16,7 @@
 > `## Open Questions (Research Needed)`. A register emits one `#define` per field:
 >
 > ```c
-> #define Teensy4__GPIO7__DR (*(volatile uint32_t*)(0x42004000 + 0x00))
+> #define Teensy4__GPIO7__DR (*(volatile uint32_t*)(0x42004000U))
 > ```
 >
 > So **a register is not a type** in the language as shipped, and that is enforced:

@@ -283,10 +283,10 @@ Transpiles to:
 
 ```c
 /* Register: Teensy4__GPIO7 @ 0x42004000 */
-#define Teensy4__GPIO7__DR (*(volatile uint32_t*)(0x42004000 + 0x00))
-#define Teensy4__GPIO7__DR_SET (*(volatile uint32_t*)(0x42004000 + 0x84))
-#define Teensy4__GPIO7__DR_CLEAR (*(volatile uint32_t*)(0x42004000 + 0x88))
-#define Teensy4__GPIO7__DR_TOGGLE (*(volatile uint32_t*)(0x42004000 + 0x8C))
+#define Teensy4__GPIO7__DR (*(volatile uint32_t*)(0x42004000U))
+#define Teensy4__GPIO7__DR_SET (*(volatile uint32_t*)(0x42004084U))
+#define Teensy4__GPIO7__DR_CLEAR (*(volatile uint32_t*)(0x42004088U))
+#define Teensy4__GPIO7__DR_TOGGLE (*(volatile uint32_t*)(0x4200408CU))
 
 void Teensy4__blinkLed(void) {
     Teensy4__GPIO7__DR_TOGGLE = ((uint32_t)1U << 3U);
@@ -461,7 +461,7 @@ scope Motor {
 ```c
 const uint8_t defaultValue = 3U;
 
-#define GPIO7__DR_SET (*(volatile uint32_t*)(0x42004000 + 0x84))
+#define GPIO7__DR_SET (*(volatile uint32_t*)(0x42004084U))
 
 typedef enum {
     Motor__State__IDLE = 0,

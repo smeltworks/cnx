@@ -73,7 +73,7 @@ const generateRegister: TGeneratorFn<IPlannedRegister> = (
 
   const lines: string[] = [
     `/* Register: ${fullName} @ ${planned.baseAddress} */`,
-    ...generateRegisterMacros(planned.members, planned.baseAddress),
+    ...generateRegisterMacros(planned.members),
     "",
   ];
 

@@ -14,6 +14,11 @@ import type TTypeSyntax from "../../types/syntax/TTypeSyntax";
 import type IBaseAnalysisError from "./types/IBaseAnalysisError";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import SourceOrder from "../../utils/SourceOrder";
+import RegisterAddress from "../../utils/RegisterAddress";
+import RegisterInstance from "../../utils/RegisterInstance";
+import TYPE_WIDTH from "../../types/TYPE_WIDTH";
+import type IRegisterSymbol from "../../types/symbols/IRegisterSymbol";
+import type IRegisterMemberSymbol from "../../types/symbols/IRegisterMemberSymbol";
 import StatementNodes from "../../utils/StatementNodes";
 
 class RegisterInstanceAnalyzer {
@@ -22,10 +27,10 @@ class RegisterInstanceAnalyzer {
   public analyze(program: IProgramSyntax): IBaseAnalysisError[] {
     const found: IBaseAnalysisError[] = [];
     for (const { declaration, scope } of program.members) {
-      const scopePath =
-        scope === null
-          ? ""
-          : (this.context.program.scopePathOf(scope) ?? scope);
+      const scopePath = RegisterInstance.scopePathOf(
+        this.context.program,
+        scope,
+      );
       if (declaration.kind === "function") {
         for (const parameter of declaration.parameters ?? []) {
           if (!this.isRegisterType(parameter.type, scopePath)) continue;
@@ -113,6 +118,8 @@ class RegisterInstanceAnalyzer {
             helpText:
               "A register instance's address is resolved at compile time (ADR-072). Use a literal, a const, or arithmetic over them.",
           });
+        } else {
+          found.push(...this.beyondPointers(declaration, symbol));
         }
         continue;
       }
@@ -132,6 +139,45 @@ class RegisterInstanceAnalyzer {
       }
     }
     return found.sort(SourceOrder.bySpan);
+  }
+
+  /**
+   * E0931: a member whose last byte lies past the target's pointer range. The
+   * address is folded here, so C would otherwise wrap it silently.
+   */
+  private beyondPointers(
+    declaration: {
+      readonly name: string;
+      readonly span: IBaseAnalysisError["span"];
+    },
+    instance: IRegisterSymbol,
+  ): IBaseAnalysisError[] {
+    const target = this.context.program.target();
+    if (target.kind !== "resolved" || instance.baseAddress === null) return [];
+    const bits = target.description.pointer_bits;
+    const limit = 1n << BigInt(bits);
+    const found: IBaseAnalysisError[] = [];
+    for (const member of instance.members.values()) {
+      if (member.offsetValue === null || member.offsetValue < 0n) continue;
+      const last =
+        instance.baseAddress + member.offsetValue + this.bytesOf(member) - 1n;
+      if (last < limit) continue;
+      found.push({
+        code: "E0931",
+        span: declaration.span,
+        message: `register member '${declaration.name}.${member.name}' ends at ${RegisterAddress.render(last)}, past the target's ${bits}-bit address range`,
+        helpText:
+          "Every byte of a register member must be addressable on the target (ADR-072). Check the instance's address against the datasheet.",
+      });
+    }
+    return found;
+  }
+
+  private bytesOf(member: IRegisterMemberSymbol): bigint {
+    const name = "name" in member.type ? String(member.type.name) : "";
+    const bits =
+      TYPE_WIDTH[name] ?? this.context.symbols.bitmapBitWidth.get(name) ?? 8;
+    return BigInt(Math.ceil(bits / 8));
   }
 
   /** E0936: a register type anywhere but a one-address instance */

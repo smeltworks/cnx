@@ -227,11 +227,11 @@ Transpiles to:
 
 ```c
 // Each instance gets its own macro set with computed addresses
-#define GPIO1__DR   (*(volatile uint32_t*)(0x401B8000 + 0x00))
-#define GPIO1__GDIR (*(volatile uint32_t*)(0x401B8000 + 0x04))
+#define GPIO1__DR   (*(volatile uint32_t*)(0x401B8000U))
+#define GPIO1__GDIR (*(volatile uint32_t*)(0x401B8004U))
 
-#define GPIO2__DR   (*(volatile uint32_t*)(0x401BC000 + 0x00))
-#define GPIO2__GDIR (*(volatile uint32_t*)(0x401BC000 + 0x04))
+#define GPIO2__DR   (*(volatile uint32_t*)(0x401BC000U))
+#define GPIO2__GDIR (*(volatile uint32_t*)(0x401BC004U))
 ```
 
 #### Implementation Notes

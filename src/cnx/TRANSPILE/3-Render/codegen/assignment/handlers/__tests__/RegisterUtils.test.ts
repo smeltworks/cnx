@@ -151,7 +151,7 @@ describe("RegisterUtils", () => {
 
       expect(result.success).toBe(true);
       expect(result.statement).toBe(
-        "*((volatile uint8_t*)(0x401B8000 + 0x00)) = (0xFF);",
+        "*((volatile uint8_t*)(0x401B8000U)) = (0xFF);",
       );
     });
 
@@ -174,7 +174,7 @@ describe("RegisterUtils", () => {
 
       expect(result.success).toBe(true);
       expect(result.statement).toBe(
-        "*((volatile uint16_t*)(0x401B8000 + 0x00 + 1)) = (0xABCD);",
+        "*((volatile uint16_t*)(0x401B8001U)) = (0xABCD);",
       );
     });
 
@@ -197,7 +197,7 @@ describe("RegisterUtils", () => {
 
       expect(result.success).toBe(true);
       expect(result.statement).toBe(
-        "*((volatile uint32_t*)(0x401B8000 + 0x00)) = (0xDEADBEEF);",
+        "*((volatile uint32_t*)(0x401B8000U)) = (0xDEADBEEF);",
       );
     });
   });
