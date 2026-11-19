@@ -34,15 +34,15 @@ class BinaryExprUtils {
   }
 
   /**
-   * ADR-045: Generate strcmp comparison code for string equality.
+   * ADR-045: Generate strcmp comparison code for a string comparison,
+   * `operator` being the C operator (`==`, `!=`, `<`, `>`, `<=`, `>=`).
    */
   static generateStrcmpCode(
     left: string,
     right: string,
-    isNotEqual: boolean,
+    operator: string,
   ): string {
-    const cmpOp = isNotEqual ? "!= 0" : "== 0";
-    return `strcmp(${left}, ${right}) ${cmpOp}`;
+    return `strcmp(${left}, ${right}) ${operator} 0`;
   }
 }
 

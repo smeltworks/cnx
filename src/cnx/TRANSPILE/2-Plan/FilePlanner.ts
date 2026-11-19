@@ -456,8 +456,9 @@ class FilePlanner {
   }
 
   /**
-   * ADR-045: 2.2 decides, for every `=`/`!=` comparison 2.3 writes, whether it
-   * compares strings, so 2.3 writes strcmp from that decision
+   * ADR-045: 2.2 decides, for every `=`/`!=` and `<`/`>`/`<=`/`>=` comparison
+   * 2.3 writes, whether it compares strings, so 2.3 writes strcmp from that
+   * decision (#1956)
    */
   private planComparisons(
     program: IProgramSyntax,
@@ -468,7 +469,10 @@ class FilePlanner {
       program,
       unwritten,
     )) {
-      if (expression.kind === "binary" && expression.level === "equality") {
+      if (
+        expression.kind === "binary" &&
+        (expression.level === "equality" || expression.level === "relational")
+      ) {
         planned.set(
           expression,
           StringOperand.comparesContents(

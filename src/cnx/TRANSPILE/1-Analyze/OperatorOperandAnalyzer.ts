@@ -35,6 +35,7 @@ import BindingSite from "../../utils/BindingSite";
 import IOperatorOperandError from "./types/IOperatorOperandError";
 import ComparisonChain from "../../utils/ComparisonChain";
 import OperandTyper from "../../utils/OperandTyper";
+import StringOperand from "../../utils/StringOperand";
 import CompoundAssignmentAnalyzer from "./CompoundAssignmentAnalyzer";
 import CompoundOperator from "../../utils/CompoundOperator";
 import EnumMemberValue from "./EnumMemberValue";
@@ -121,7 +122,7 @@ const HELP: Readonly<
     "a char takes only binary '+' and '-' and the comparisons. Cast it to an integer type first, e.g. (u8)value.",
   enum: "an enum is not a number (ADR-017). Cast it to an unsigned type first, e.g. (u8)value.",
   string:
-    "a string is not a number. Join strings with '+' and compare them with '=' / '!='.",
+    "a string is not a number. Join strings with '+' and compare them with '=', '!=', '<', '>', '<=' or '>='.",
   struct: "a struct is not a number. Use one of its fields.",
   other: "this operator takes numbers only.",
 };
@@ -182,6 +183,16 @@ class OperatorOperandCheck {
       if (admits === undefined) return;
       const left = level.operands[i];
       const right = level.operands[i + 1];
+      // ADR-045 (#1956): two strings are ordered by content, and a string
+      // beside anything else is E0929's (StringComparisonAnalyzer)
+      if (
+        level.level === "relational" &&
+        i === 0 &&
+        (StringOperand.is(left, this.context) ||
+          StringOperand.is(right, this.context))
+      ) {
+        return;
+      }
       if (level.level === "relational" && i > 0) {
         // One error per chain: addError keeps the first at a position
         const comparison = SourceSpanRange.between(
@@ -297,6 +308,14 @@ class OperatorOperandAnalyzer {
       OperatorOperandAnalyzer.rejection(operator, admits, operand, context) ===
         null
     );
+  }
+
+  /**
+   * No MISRA rule governs a cnx string, which has no essential type, so its
+   * rejection cites ADR-045, as E0929 does
+   */
+  private static citation(rejection: TRejection): string {
+    return rejection === "string" ? "ADR-045" : "MISRA C:2012 Rule 10.1";
   }
 
   /** Why `operand` is outside `admits`, or null when it is in it */
@@ -488,7 +507,7 @@ class OperatorOperandAnalyzer {
       // A target cannot be cast, so its help is the written-out form
       helpText: isTarget
         ? "MISRA C:2012 Rule 10.1: a compound target cannot be cast. Write the read and the write out separately, casting the read, e.g. x <- (u8)x * 2."
-        : `MISRA C:2012 Rule 10.1: ${HELP[rejection]}`,
+        : `${OperatorOperandAnalyzer.citation(rejection)}: ${HELP[rejection]}`,
     });
   }
 

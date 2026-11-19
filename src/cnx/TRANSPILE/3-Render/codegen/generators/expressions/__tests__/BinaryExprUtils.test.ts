@@ -64,20 +64,29 @@ describe("BinaryExprUtils", () => {
 
   describe("generateStrcmpCode", () => {
     it("generates strcmp equality check", () => {
-      expect(BinaryExprUtils.generateStrcmpCode("str1", "str2", false)).toBe(
+      expect(BinaryExprUtils.generateStrcmpCode("str1", "str2", "==")).toBe(
         "strcmp(str1, str2) == 0",
       );
     });
 
     it("generates strcmp inequality check", () => {
-      expect(BinaryExprUtils.generateStrcmpCode("str1", "str2", true)).toBe(
+      expect(BinaryExprUtils.generateStrcmpCode("str1", "str2", "!=")).toBe(
         "strcmp(str1, str2) != 0",
+      );
+    });
+
+    it("generates strcmp ordering checks (#1956)", () => {
+      expect(BinaryExprUtils.generateStrcmpCode("a", "b", "<")).toBe(
+        "strcmp(a, b) < 0",
+      );
+      expect(BinaryExprUtils.generateStrcmpCode("a", "b", ">=")).toBe(
+        "strcmp(a, b) >= 0",
       );
     });
 
     it("handles complex expressions as operands", () => {
       expect(
-        BinaryExprUtils.generateStrcmpCode("getName()", '"test"', false),
+        BinaryExprUtils.generateStrcmpCode("getName()", '"test"', "=="),
       ).toBe('strcmp(getName(), "test") == 0');
     });
   });
