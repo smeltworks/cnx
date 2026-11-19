@@ -22,8 +22,10 @@ type TOperandForm =
       /** A literal cast with no modifier of its own, `(u8)1` (ADR-044) */
       readonly ofLiteral: boolean;
     }
-  /** One bit of a scalar, `x[3]` */
-  /** A bit range of a scalar, `x[0, 8]`; the width when it folds */
+  /**
+   * A bit range of a scalar, `x[0, 8]`; the width when it folds. `x[3]` is
+   * `x[3, 1]`, a range one bit wide, typed `bool` (ADR-007 §1)
+   */
   | { readonly kind: "bitRange"; readonly width: number | null }
   /** An applied `||`, `&&`, `=`, `!=`, `<`, `>`, `<=`, `>=`, or `!` */
   | { readonly kind: "boolean" }
