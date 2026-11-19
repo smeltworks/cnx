@@ -119,8 +119,10 @@ class NameExistence {
     symbolTable: IResolvedSymbols,
     sees: TSeesForeign,
   ): boolean {
+    // A register TYPE is no value: only its instances have members to reach
     return (
-      NameExistence.isTypeName(name, symbols, symbolTable, sees) ||
+      (NameExistence.isTypeName(name, symbols, symbolTable, sees) &&
+        !symbols.knownRegisterTypes.has(name)) ||
       NameExistence.isRegisterName(name, symbols)
     );
   }
