@@ -1,3 +1,4 @@
+import RegisterInstance from "../../utils/RegisterInstance";
 import BindingSite from "../../utils/BindingSite";
 import ForeignTypeFacts from "../../utils/ForeignTypeFacts";
 import SubscriptDepthValidator from "./SubscriptDepthValidator";
@@ -1114,11 +1115,8 @@ class FilePlanner {
     program: IProgramSyntax,
   ): readonly TDeclarationSyntax[] {
     return program.members.flatMap(({ declaration, scope }) => {
-      if (declaration.kind !== "constructorDeclaration") return [];
-      const scopePath =
-        scope === null ? "" : (this.state.program?.scopePathOf(scope) ?? scope);
-      const symbol = this.state.program?.memberOf(scopePath, declaration.name);
-      return symbol?.kind === "register" && symbol.registerType !== null
+      return declaration.kind === "constructorDeclaration" &&
+        RegisterInstance.inScope(this.state.program, scope, declaration.name)
         ? [declaration]
         : [];
     });

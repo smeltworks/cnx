@@ -45,6 +45,7 @@ import CriticalSectionAnalyzer from "./CriticalSectionAnalyzer";
 import ResolvedTarget from "../../utils/ResolvedTarget";
 import EnumTypeSafetyAnalyzer from "./EnumTypeSafetyAnalyzer";
 import ScopeAccessAnalyzer from "./ScopeAccessAnalyzer";
+import RegisterInstanceAnalyzer from "./RegisterInstanceAnalyzer";
 import RegisterAccessAnalyzer from "./RegisterAccessAnalyzer";
 import BracedBodyAnalyzer from "./BracedBodyAnalyzer";
 import RedeclarationAnalyzer from "./RedeclarationAnalyzer";
@@ -444,6 +445,10 @@ function runAnalyzers(
     {
       label: "scope access (ADR-016, E0435-E0437)",
       run: () => new ScopeAccessAnalyzer(context).analyze(parsed.program),
+    },
+    {
+      label: "register instances (ADR-072, E0931-E0933)",
+      run: () => new RegisterInstanceAnalyzer(context).analyze(parsed.program),
     },
     {
       label: "register access modifiers (ADR-004, E0870-E0872)",

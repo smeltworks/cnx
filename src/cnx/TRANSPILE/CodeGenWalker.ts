@@ -1,3 +1,4 @@
+import RegisterInstance from "../utils/RegisterInstance";
 import BindingSite from "../utils/BindingSite";
 import InterruptMask from "./3-Render/codegen/helpers/InterruptMask";
 import type IPlannedSafeDivision from "../types/IPlannedSafeDivision";
@@ -2367,10 +2368,7 @@ class CodeGenWalker {
     scopePath: string,
     name: string,
   ): IRegisterSymbol | null {
-    const symbol = this.host.state.program?.memberOf(scopePath, name);
-    return symbol?.kind === "register" && symbol.registerType !== null
-      ? symbol
-      : null;
+    return RegisterInstance.atPath(this.host.state.program, scopePath, name);
   }
 
   /**
