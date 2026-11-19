@@ -133,10 +133,11 @@ describe("CnxResolver Integration", () => {
 
     it("resolves top-level register", () => {
       const code = `
-        register GPIO @ 0x40000000 {
-          DATA: u32 rw @ 0x00,
-          DIR:  u32 rw @ 0x04,
+        register GpioPort {
+          0x00 rw u32 DATA,
+          0x04 rw u32 DIR,
         }
+        GpioPort GPIO(0x40000000);
       `;
       const tree = parse(code);
       const symbols = CnxResolver.resolve(
@@ -248,9 +249,10 @@ describe("CnxResolver Integration", () => {
           reserved[5]
         }
 
-        register GPIO @ 0x40000000 {
-          STATUS: StatusFlags rw @ 0x00,
+        register GpioPort {
+          0x00 rw StatusFlags STATUS,
         }
+        GpioPort GPIO(0x40000000);
       `;
       const tree = parse(code);
       const symbols = CnxResolver.resolve(
@@ -280,9 +282,10 @@ describe("CnxResolver Integration", () => {
             reserved[5]
           }
 
-          register CTRL @ 0x40001000 {
-            FLAGS: CtrlFlags rw @ 0x00,
+          register ControlBlock {
+            0x00 rw CtrlFlags FLAGS,
           }
+          ControlBlock CTRL(0x40001000);
         }
       `;
       const tree = parse(code);
@@ -360,10 +363,11 @@ describe("CnxResolver Integration", () => {
           reserved[6]
         }
 
-        register GPIO @ 0x40000000 {
-          DATA: u32 rw @ 0x00,
-          DIR:  u32 rw @ 0x04,
+        register GpioPort {
+          0x00 rw u32 DATA,
+          0x04 rw u32 DIR,
         }
+        GpioPort GPIO(0x40000000);
 
         scope Motor {
           u32 position;
@@ -668,9 +672,10 @@ describe("CnxResolver Integration", () => {
         scope Local {
           public struct S { u8 a; }
           public enum E { x, y }
-          public register GPIO @ 0x40000000 {
-            DATA: u32 rw @ 0x00,
+          public register GpioPort {
+            0x00 rw u32 DATA,
           }
+          public GpioPort GPIO(0x40000000);
         }
       `;
       const declared = CnxResolver.resolve(

@@ -188,7 +188,7 @@ scope C {
       ["a function body", `void main() {\n    scope B { u8 x <- 1; }\n}`],
       [
         "a register body",
-        `register R @ 0x40000000 {\n    scope B { u8 x <- 1; }\n}`,
+        `register R {\n    scope B { u8 x <- 1; }\n}`,
       ],
     ])(
       "does not claim a nested scope for a scope keyword in %s",
@@ -211,7 +211,7 @@ scope C {
     public enum Mode { OFF, ON }
     public struct Point { u32 x; }
     public bitmap8 Flags { Alpha, Rest[7] }
-    register CTRL @ 0x40000000 { DR: u32 rw @ 0x00, }
+    register ControlBlock { 0x00 rw u32 DR, } ControlBlock CTRL(0x40000000);
     public u8 read() { return this.plainValue; }
 }`;
 

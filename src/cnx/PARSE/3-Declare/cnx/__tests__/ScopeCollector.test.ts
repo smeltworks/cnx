@@ -277,10 +277,11 @@ describe("ScopeCollector", () => {
     it("collects scope with nested register", () => {
       const code = `
         scope Motor {
-          register CTRL @ 0x40001000 {
-            STATUS: u32 rw @ 0x00,
-            COMMAND: u32 wo @ 0x04,
+          register ControlBlock {
+            0x00 rw u32 STATUS,
+            0x04 wo u32 COMMAND,
           }
+          ControlBlock CTRL(0x40001000);
         }
       `;
       const tree = parse(code);
@@ -350,9 +351,10 @@ describe("ScopeCollector", () => {
     it("resolves scoped bitmap types in registers", () => {
       const code = `
         scope Motor {
-          register CTRL @ 0x40001000 {
-            FLAGS: MotorFlags rw @ 0x00,
+          register ControlBlock {
+            0x00 rw MotorFlags FLAGS,
           }
+          ControlBlock CTRL(0x40001000);
         }
       `;
       const tree = parse(code);
@@ -385,9 +387,10 @@ describe("ScopeCollector", () => {
     it("keeps an explicit global. bitmap out of the scope's reach", () => {
       const code = `
         scope Motor {
-          register CTRL @ 0x40001000 {
+          register ControlBlock {
             FLAGS: global.MotorFlags rw @ 0x00,
           }
+          ControlBlock CTRL(0x40001000);
         }
       `;
       const tree = parse(code);

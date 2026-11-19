@@ -19,7 +19,7 @@ const errors = (source: string) => {
   return new ScopeAccessAnalyzer(context).analyze(syntax);
 };
 
-const GPIO = "register GPIO @ 0x40000000 {\n    DR: u32 rw @ 0x00,\n}\n";
+const GPIO = "register GpioPort {\n    0x00 rw u32 DR,\n}\nGpioPort GPIO(0x40000000);\n";
 
 describe("ScopeAccessAnalyzer", () => {
   describe("E0435 -- own scope by name", () => {

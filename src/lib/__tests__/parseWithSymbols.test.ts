@@ -141,9 +141,10 @@ describe("parseWithSymbols", () => {
       // Use valid cnx register syntax with proper fields
       const source = `
         scope Board {
-          register GPIO @ 0x40000000 {
-            DR: u32 rw @ 0x00,
+          register GpioPort {
+            0x00 rw u32 DR,
           }
+          GpioPort GPIO(0x40000000);
         }
       `;
 
@@ -385,9 +386,10 @@ describe("parseWithSymbols", () => {
     it("register in scope has nested id path", () => {
       const source = `
         scope Board {
-          register GPIO @ 0x40000000 {
-            DR: u32 rw @ 0x00,
+          register GpioPort {
+            0x00 rw u32 DR,
           }
+          GpioPort GPIO(0x40000000);
         }
       `;
 
@@ -403,9 +405,10 @@ describe("parseWithSymbols", () => {
     it("register member has id=Scope.Register.member", () => {
       const source = `
         scope Board {
-          register GPIO @ 0x40000000 {
-            DR: u32 rw @ 0x00,
+          register GpioPort {
+            0x00 rw u32 DR,
           }
+          GpioPort GPIO(0x40000000);
         }
       `;
 
@@ -547,11 +550,12 @@ struct Point {
 
     it("register members", () => {
       const result = parseWithSymbols(`
-register GPIO @ 0x40000000 {
-  DR: u32 rw @ 0x00,
-  DIR: u32 rw @ 0x04,
-  MASK: u32 rw @ 0x08,
+register GpioPort {
+  0x00 rw u32 DR,
+  0x04 rw u32 DIR,
+  0x08 rw u32 MASK,
 }
+GpioPort GPIO(0x40000000);
 `);
       const parent = result.symbols.find((s) => s.kind === "register")!;
       const members = result.symbols.filter((s) => s.kind === "registerMember");

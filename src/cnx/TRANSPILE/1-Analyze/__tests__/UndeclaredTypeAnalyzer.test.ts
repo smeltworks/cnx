@@ -55,7 +55,7 @@ function analyze(source: string) {
   ).analyze(ProgramLowering.program(tree, null));
 }
 
-const REGISTER = `register Control @ 0x40000000 { DR: u32 rw @ 0x00, }`;
+const REGISTER = `register ControlBlock { 0x00 rw u32 DR, } ControlBlock Control(0x40000000);`;
 
 let registry = new SymbolRegistry();
 
@@ -98,7 +98,7 @@ describe("UndeclaredTypeAnalyzer", () => {
       // the bare one.
       const errors = analyze(`
         scope Board {
-            public register Control @ 0x40000000 { DR: u32 rw @ 0x00, }
+            public register ControlBlock { 0x00 rw u32 DR, } public ControlBlock Control(0x40000000);
             public void go() {
                 Control c;
             }
@@ -240,10 +240,10 @@ describe("UndeclaredTypeAnalyzer", () => {
   describe("a qualified type form (#1458)", () => {
     it("rejects a register named by global., this. or Scope. as E0429", () => {
       const errors = analyze(`
-        register Control @ 0x40000000 { DR: u32 rw @ 0x00, }
+        register ControlBlock { 0x00 rw u32 DR, } ControlBlock Control(0x40000000);
         scope Board {
-            register Pins @ 0x40001000 { DR: u32 rw @ 0x00, }
-            public register Leds @ 0x40002000 { DR: u32 rw @ 0x00, }
+            register PortPins { 0x00 rw u32 DR, } PortPins Pins(0x40001000);
+            public register LedBank { 0x00 rw u32 DR, } public LedBank Leds(0x40002000);
             public void go() {
                 global.Control gc;
                 this.Pins tc;

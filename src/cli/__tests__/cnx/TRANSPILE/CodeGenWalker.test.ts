@@ -1690,9 +1690,10 @@ describe("CodeGenWalker", () => {
   describe("Register declarations", () => {
     it("should generate register definition", () => {
       const source = `
-        register GPIO @ 0x40020000 {
+        register GpioPort {
           rw u32 DATA @ 0x00
         }
+        GpioPort GPIO(0x40020000);
         void main() { }
       `;
       const { tree, program } = CnxSourceParser.parse(source);
@@ -7475,9 +7476,10 @@ describe("CodeGenWalker", () => {
     describe("Register bit access (assignment targets)", () => {
       it("should generate single bit write to register", () => {
         const source = `
-          register GPIO @ 0x40000000 {
-              DR: u32 rw @ 0x00,
+          register GpioPort {
+              0x00 rw u32 DR,
           }
+          GpioPort GPIO(0x40000000);
           void main() {
               GPIO.DR[3] <- true;
           }
@@ -7503,9 +7505,10 @@ describe("CodeGenWalker", () => {
 
       it("should generate bit range write to register", () => {
         const source = `
-          register TIMER @ 0x40010000 {
-              CTRL: u32 rw @ 0x00,
+          register Timer {
+              0x00 rw u32 CTRL,
           }
+          Timer TIMER(0x40010000);
           void main() {
               TIMER.CTRL[4] <- 0x0F;
           }
@@ -7532,9 +7535,10 @@ describe("CodeGenWalker", () => {
     describe("Plain register access (assignment targets)", () => {
       it("should generate register member write as underscore-joined", () => {
         const source = `
-          register GPIO @ 0x40000000 {
-              DR: u32 rw @ 0x00,
+          register GpioPort {
+              0x00 rw u32 DR,
           }
+          GpioPort GPIO(0x40000000);
           void main() {
               GPIO.DR <- 0xFF;
           }
@@ -7559,9 +7563,10 @@ describe("CodeGenWalker", () => {
 
       it("should allow write to write-only register member", () => {
         const source = `
-          register CONTROL @ 0x40000000 {
-              COMMAND: u32 wo @ 0x00,
+          register CONTROLLayout {
+              0x00 wo u32 COMMAND,
           }
+          CONTROLLayout CONTROL(0x40000000);
           void main() {
               CONTROL.COMMAND <- 0x42;
           }
@@ -7762,9 +7767,10 @@ describe("CodeGenWalker", () => {
       it("should allow bare register access from inside scope when NOT shadowed", () => {
         // Issue #779: Ambiguity-aware validation - allow unambiguous access
         const source = `
-          register GPIO @ 0x40000000 {
-              DR: u32 rw @ 0x00,
+          register GpioPort {
+              0x00 rw u32 DR,
           }
+          GpioPort GPIO(0x40000000);
           scope Motor {
               public void init() {
                   GPIO.DR <- 0xFF;
@@ -15601,9 +15607,10 @@ describe("CodeGenWalker", () => {
     describe("register generation", () => {
       it("should generate register comment", () => {
         const source = `
-          register GPIO7 @ 0x42004000 {
+          register GpioPort {
             rw u32 DR @ 0x00;
           }
+          GpioPort GPIO7(0x42004000);
         `;
         const { tree, program } = CnxSourceParser.parse(source);
         // #1445 box 3: the walk and the render-side services are two objects now.
@@ -15628,9 +15635,10 @@ describe("CodeGenWalker", () => {
       it("should generate scoped register comment", () => {
         const source = `
           scope Teensy4 {
-            register GPIO7 @ 0x42004000 {
+            register GpioPort {
               rw u32 DR @ 0x00;
             }
+            GpioPort GPIO7(0x42004000);
           }
         `;
         const { tree, program } = CnxSourceParser.parse(source);

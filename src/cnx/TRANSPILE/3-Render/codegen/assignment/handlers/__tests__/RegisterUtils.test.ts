@@ -46,12 +46,8 @@ describe("RegisterUtils", () => {
     beforeEach(() => {
       state = new TranspileState();
       HandlerTestUtils.setupMockSymbols(state, {
-        registerBaseAddresses: new Map([
-          ["GPIO7", 0x401b8000n],
-        ]),
-        registerMemberOffsets: new Map([
-          ["GPIO7_DR", 0n],
-        ]),
+        registerBaseAddresses: new Map([["GPIO7", 0x401b8000n]]),
+        registerMemberOffsets: new Map([["GPIO7_DR", 0n]]),
       });
     });
 
@@ -121,9 +117,7 @@ describe("RegisterUtils", () => {
       });
       HandlerTestUtils.setupMockSymbols(state, {
         registerBaseAddresses: new Map(), // No base address
-        registerMemberOffsets: new Map([
-          ["GPIO7_DR", 0n],
-        ]),
+        registerMemberOffsets: new Map([["GPIO7_DR", 0n]]),
       });
 
       const result = RegisterUtils.tryGenerateMMIO(

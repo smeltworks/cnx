@@ -689,9 +689,10 @@ describe("CodeGenWalker Coverage Tests", () => {
     it("should generate scope with register member", () => {
       const source = `
         scope GPIO {
-          public register PORTA @ 0x40000000 {
-            DR: u32 rw @ 0x00,
+          public register PORTALayout {
+            0x00 rw u32 DR,
           }
+          public PORTALayout PORTA(0x40000000);
           public void write(u32 val) {
             PORTA.DR <- val;
           }

@@ -15,7 +15,7 @@ describe("ProgramExpressions", () => {
         [
           "u8 g[2 + 1] <- [1, 2, 3];",
           "enum E { A <- 4 }",
-          "register R @ 0x40000000 { D: u32 rw @ 0x04, }",
+          "register Peripheral { 0x04 rw u32 D, } Peripheral R(0x40000000);",
           "struct P { u8 t[5]; }",
           "scope S { u8 m <- 9; }",
           "u8 f(u8 a[6]) {",
