@@ -116,7 +116,7 @@ describe("the type / value position split (#1336)", () => {
     createMockSymbols({ knownRegisters: new Set(["GPIO"]) });
 
   /**
-   * The tripwire for ADR-072. While that ADR is `Research`, ADR-004 governs and
+   * The tripwire for ADR-072. Until that ADR is implemented, ADR-004 governs and
    * a register is not a type: `TYPE_FORMING_KINDS` excludes the `register` kind
    * for this reason, and `isTypeName` is the per-file view of the same
    * decision. It once disagreed, which is exactly how `Control c;` reached

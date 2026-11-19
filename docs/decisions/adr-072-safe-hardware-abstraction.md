@@ -4,18 +4,16 @@
 > from v2 to v1. See [`README.md`](README.md) for the numbering rule and the full mapping
 > table.
 
-**Status:** Research
-**Date:** 2026-02-20 (revised 2026-07-04: simplified register syntax; added Parts 4–5. 2026-11-19: Part 5, scaled fields, moved to ADR-073)
+**Status:** Accepted
+**Date:** 2026-02-20 (revised 2026-07-04: simplified register syntax; added Parts 4–5. 2026-11-19: Part 5, scaled fields, moved to ADR-073; contradictions settled in rulings 1–10 on #2449; Accepted)
 **Decision Makers:** Language Design Team
-**Supersedes:** ADR-004 (Register Bindings — on acceptance; this ADR removes the `register Name @ address { }` form ADR-004 defines)
-**Amends:** ADR-016 (`### Scoped Registers` — on acceptance; that section's `@ address` examples go with it)
+**Supersedes:** ADR-004 (Register Bindings — takes effect when Part 1 is implemented; this ADR removes the `register Name @ address { }` form ADR-004 defines)
+**Amends:** ADR-016 (`### Scoped Registers` — takes effect when Part 1 is implemented; that section's `@ address` examples go with it)
 **Related ADRs:** ADR-034 (Bitmap Types), ADR-033 (Packed Structs — Rejected; Part 4 is the safe alternative), ADR-073 (Scaled Fields — formerly Part 5), ADR-074 (Byte-Order Reversal)
 
-> **Status is load-bearing here.** While this ADR is `Research` it is **not**
-> established syntax: ADR-004 still governs, a register is still not a type, and the
-> `@ address` form is still the one to write. The supersession is recorded now so a
-> reader arriving at ADR-004 has a route forward — it does not take effect until this
-> ADR is Accepted.
+> **Accepted, not implemented.** The compiler does not accept this syntax yet. Until
+> Part 1 is implemented, ADR-004 still describes what compiles: a register is not a
+> type, and the `@ address` form is the one to write.
 
 ## Context
 
@@ -763,15 +761,11 @@ This ADR covers four features for safe hardware abstraction in cnx:
 
 ## Decision
 
-### Accepted
-
 1. **Registers** — `register Name { byteOffset access type field, ... }` with `Name Instance(address);` instantiation. The base is implicit (not a parameter); fields are plain byte offsets. All registers use this syntax (breaking change). Template type serves as interface for generic peripheral code. Two definitions are two types even when their layouts match.
 
 2. **w1c/wo/w1s codegen fix** — Bit-field and bitmap-field writes generate direct writes, not RMW. Writing `false` to a w1c bit is a compiler error.
 
 3. **svd2cnx tool** — TypeScript tool to generate cnx from SVD files. Auto-generates bitmap types from field definitions with good naming.
-
-### Proposed (2026-07-04 revision — not yet accepted)
 
 4. **Data registers** — A register instantiated without an address (`Name Instance;`) is backed by normal memory, giving typed field access to wire/buffer formats (CAN/J1939, packets) without ADR-033's packed-struct overlay hazards. The instance owns its bytes (ruling 7 on #2449) and is assigned whole from a `u8` array of its size (ruling 8). Its size is the end of its last field (ruling 9). Its multi-byte fields are little-endian (ruling 10); reversing a big-endian source is ADR-074.
 
