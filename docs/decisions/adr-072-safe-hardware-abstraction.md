@@ -789,6 +789,18 @@ This ADR covers four features for safe hardware abstraction in cnx:
 
 ---
 
+## Diagnostics
+
+Part 1 (register types and fixed instances):
+
+| Code  | Meaning                                                                                             | Asserted by                                                  |
+| ----- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| E0429 | A register instance in a type position (`GPIO1 x;`); its register type is the type                  | `tests/bugs/issue-1336-register-in-type-position/`           |
+| E0931 | A register instance's address is not a compile-time constant                                        | `tests/adr-072/register-address-not-constant-error.test.cnx` |
+| E0932 | A register member's offset is not a compile-time constant                                           | `tests/adr-072/register-offset-not-constant-error.test.cnx`  |
+| E0933 | A function parameter is a register; rejected until register parameters are specialized per instance | `tests/adr-072/register-parameter-error.test.cnx`            |
+| E0934 | A register instance is declared inside a function                                                   | `tests/adr-072/register-local-instance-error.test.cnx`       |
+
 ## References
 
 - [CMSIS-SVD Format](https://arm-software.github.io/CMSIS_5/SVD/html/index.html)
