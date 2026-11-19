@@ -22,9 +22,13 @@ class RegisterInstanceAnalyzer {
   public analyze(program: IProgramSyntax): IBaseAnalysisError[] {
     const found: IBaseAnalysisError[] = [];
     for (const { declaration, scope } of program.members) {
+      const scopePath =
+        scope === null
+          ? ""
+          : (this.context.program.scopePathOf(scope) ?? scope);
       if (declaration.kind === "function") {
         for (const parameter of declaration.parameters ?? []) {
-          if (!this.isRegisterType(parameter.type)) continue;
+          if (!this.isRegisterType(parameter.type, scopePath)) continue;
           found.push({
             code: "E0933",
             span: parameter.span,
@@ -34,10 +38,10 @@ class RegisterInstanceAnalyzer {
           });
         }
         for (const statement of StatementNodes.in(declaration)) {
-          if (
-            statement.kind !== "constructorDeclaration" ||
-            !this.isRegisterType(statement.type)
-          ) {
+          if (statement.kind !== "constructorDeclaration") continue;
+          if (!this.isRegisterType(statement.type, scopePath)) {
+            if (statement.address !== null)
+              found.push(this.notRegister(statement));
             continue;
           }
           found.push({
@@ -56,18 +60,25 @@ class RegisterInstanceAnalyzer {
       ) {
         continue;
       }
-      const scopePath =
-        scope === null
-          ? ""
-          : (this.context.program.scopePathOf(scope) ?? scope);
       const symbol = this.context.program.memberOf(scopePath, declaration.name);
-      if (symbol?.kind !== "register") continue;
+      if (symbol?.kind !== "register") {
+        if (
+          declaration.kind === "constructorDeclaration" &&
+          declaration.address !== null
+        ) {
+          found.push(this.notRegister(declaration));
+        }
+        continue;
+      }
       if (declaration.kind === "constructorDeclaration") {
-        if (symbol.baseAddress === null) {
+        if (symbol.baseAddress === null || symbol.baseAddress < 0n) {
           found.push({
             code: "E0931",
             span: declaration.span,
-            message: `the address of register '${declaration.name}' is not a compile-time constant`,
+            message:
+              symbol.baseAddress === null
+                ? `the address of register '${declaration.name}' is not a compile-time constant`
+                : `the address of register '${declaration.name}' is negative`,
             helpText:
               "A register instance's address is resolved at compile time (ADR-072). Use a literal, a const, or arithmetic over them.",
           });
@@ -75,11 +86,15 @@ class RegisterInstanceAnalyzer {
         continue;
       }
       for (const member of declaration.members) {
-        if (symbol.members.get(member.name)?.offsetValue !== null) continue;
+        const offset = symbol.members.get(member.name)?.offsetValue ?? null;
+        if (offset !== null && offset >= 0n) continue;
         found.push({
           code: "E0932",
           span: member.span,
-          message: `the offset of register member '${member.name}' is not a compile-time constant`,
+          message:
+            offset === null
+              ? `the offset of register member '${member.name}' is not a compile-time constant`
+              : `the offset of register member '${member.name}' is negative`,
           helpText:
             "A register member's offset is resolved at compile time (ADR-072). Use a literal, a const, or arithmetic over them.",
         });
@@ -88,12 +103,40 @@ class RegisterInstanceAnalyzer {
     return found.sort(SourceOrder.bySpan);
   }
 
-  /** Whether a written type names a register type the file can see */
-  private isRegisterType(type: TTypeSyntax): boolean {
-    return (
-      (type.kind === "user" || type.kind === "global") &&
-      this.context.symbols.knownRegisterTypes.has(type.name)
-    );
+  /** `Type name(expr);` whose type is not a register: a C++ constructor (#375) */
+  private notRegister(declaration: {
+    readonly name: string;
+    readonly span: IBaseAnalysisError["span"];
+  }): IBaseAnalysisError {
+    return {
+      code: "E0935",
+      span: declaration.span,
+      message: `'${declaration.name}' is constructed from an expression, but its type is not a register type`,
+      helpText:
+        "Only a register instance takes an address expression (ADR-072). A C++ constructor's arguments are named constants (#375): declare the value as a const and pass its name.",
+    };
+  }
+
+  /** The register type a written type names, in the scope it is written in */
+  private isRegisterType(type: TTypeSyntax, scopePath: string): boolean {
+    const program = this.context.program;
+    const candidates: Array<[string, string]> =
+      type.kind === "user"
+        ? [
+            [scopePath, type.name],
+            ["", type.name],
+          ]
+        : type.kind === "scoped"
+          ? [[scopePath, type.name]]
+          : type.kind === "global"
+            ? [["", type.name]]
+            : type.kind === "qualified"
+              ? [[type.path.slice(0, -1).join("."), type.path.at(-1)!]]
+              : [];
+    return candidates.some(([path, name]) => {
+      const symbol = program.memberOf(path, name);
+      return symbol?.kind === "register" && symbol.registerType === null;
+    });
   }
 }
 

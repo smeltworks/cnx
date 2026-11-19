@@ -1,0 +1,2 @@
+8:0 error[E0935]: 'thermocouple' is constructed from an expression, but its type is not a register type
+       help: Only a register instance takes an address expression (ADR-072). A C++ constructor's arguments are named constants (#375): declare the value as a const and pass its name.

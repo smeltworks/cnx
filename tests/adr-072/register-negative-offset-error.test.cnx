@@ -1,0 +1,16 @@
+// test-error
+// test-adr: 072
+// ADR-072, E0931 and E0932: an address or offset that folds to a negative
+// number has no hexadecimal spelling and is no hardware address.
+
+i32 BACK <- -4;
+
+register Port {
+    BACK rw u32 DR,
+}
+
+Port P1(0 - 0x10);
+
+void main() {
+    P1.DR <- 1;
+}

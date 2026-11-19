@@ -525,6 +525,7 @@ base: bare, `this.` and `global.`.
 | E0932 | The offset of a register member is not a compile-time constant                                                        | Use a literal, a const, or arithmetic over them                                     | `TRANSPILE/1-Analyze/RegisterInstanceAnalyzer.ts` |
 | E0933 | A function parameter is a register; register parameters are not supported yet (ADR-072 Part 1 specializes them later) | Access the register instance directly (`GPIO1.DR`); it is never passed as a pointer | `TRANSPILE/1-Analyze/RegisterInstanceAnalyzer.ts` |
 | E0934 | A register instance is declared inside a function; it names hardware at a fixed address for the whole program         | Declare it at file level or as a scope member                                       | `TRANSPILE/1-Analyze/RegisterInstanceAnalyzer.ts` |
+| E0935 | `Type name(expr);` whose type is not a register type: only a register instance takes an address expression            | Declare the C++ constructor argument as a const and pass its name (#375)            | `TRANSPILE/1-Analyze/RegisterInstanceAnalyzer.ts` |
 
 ---
 
