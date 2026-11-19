@@ -55,8 +55,8 @@ layout gives the right answer for any number of fields.
 
 ## Research
 
-- **C:** no standard byte swap until C23's `<stdbit.h>`, and that has none either. POSIX
-  `ntohs`/`ntohl` and the compiler built-ins `__builtin_bswap16/32/64` act on one integer.
+- **C:** standard C has no byte swap; C23's `<stdbit.h>` adds none. POSIX `ntohs`/`ntohl`
+  and the compiler built-ins `__builtin_bswap16/32/64` act on one integer.
 - **C++23:** `std::byteswap(x)` acts on one integer.
 - **Rust:** `u16::from_be_bytes([u8; 2])` and `swap_bytes()`. The size is in the type, so a
   wrong-length slice is a compile error.
