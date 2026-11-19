@@ -456,9 +456,9 @@ class SyntaxLowering {
       kind: "structInitializer",
       // A field the parser recovered without a name initializes nothing
       fields: (ctx.fieldInitializerList()?.fieldInitializer() ?? [])
-        .filter((field) => field.IDENTIFIER() !== null)
+        .filter((field) => MemberName.terminal(field.memberName()) !== null)
         .map((field) => ({
-          name: field.IDENTIFIER().getText(),
+          name: field.memberName().getText(),
           value: SyntaxLowering.expressionOrMissing(field.expression(), field),
           ...SyntaxLowering.node(field),
         })),

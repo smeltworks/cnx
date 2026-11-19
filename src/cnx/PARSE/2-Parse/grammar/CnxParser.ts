@@ -3881,7 +3881,7 @@ export class CnxParser extends antlr.Parser {
             this.enterOuterAlt(localContext, 1);
             {
             this.state = 845;
-            this.match(CnxParser.IDENTIFIER);
+            this.memberName();
             this.state = 846;
             this.match(CnxParser.COLON);
             this.state = 847;
@@ -4990,7 +4990,7 @@ export class CnxParser extends antlr.Parser {
         105,0,0,836,838,3,148,74,0,837,835,1,0,0,0,838,841,1,0,0,0,839,837,
         1,0,0,0,839,840,1,0,0,0,840,843,1,0,0,0,841,839,1,0,0,0,842,844,
         5,105,0,0,843,842,1,0,0,0,843,844,1,0,0,0,844,147,1,0,0,0,845,846,
-        5,115,0,0,846,847,5,108,0,0,847,848,3,108,54,0,848,149,1,0,0,0,849,
+        3,24,12,0,846,847,5,108,0,0,847,848,3,108,54,0,848,149,1,0,0,0,849,
         850,5,102,0,0,850,855,3,152,76,0,851,852,5,105,0,0,852,854,3,152,
         76,0,853,851,1,0,0,0,854,857,1,0,0,0,855,853,1,0,0,0,855,856,1,0,
         0,0,856,859,1,0,0,0,857,855,1,0,0,0,858,860,5,105,0,0,859,858,1,
@@ -8550,8 +8550,8 @@ export class FieldInitializerContext extends antlr.ParserRuleContext {
     public constructor(parent: antlr.ParserRuleContext | null, invokingState: number) {
         super(parent, invokingState);
     }
-    public IDENTIFIER(): antlr.TerminalNode {
-        return this.getToken(CnxParser.IDENTIFIER, 0)!;
+    public memberName(): MemberNameContext {
+        return this.getRuleContext(0, MemberNameContext)!;
     }
     public COLON(): antlr.TerminalNode {
         return this.getToken(CnxParser.COLON, 0)!;

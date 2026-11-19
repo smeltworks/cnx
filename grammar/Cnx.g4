@@ -478,7 +478,7 @@ fieldInitializerList
     ;
 
 fieldInitializer
-    : IDENTIFIER ':' expression
+    : memberName ':' expression
     ;
 
 // ADR-035: Array initializers with square brackets

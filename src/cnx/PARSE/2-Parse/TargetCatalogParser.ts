@@ -110,7 +110,7 @@ class TargetCatalogParser {
 
     const fields = new Map<string, TTargetFieldValue>();
     for (const field of initializer.fieldInitializerList().fieldInitializer()) {
-      const fieldName = field.IDENTIFIER().getText();
+      const fieldName = field.memberName().getText();
       const value = TargetCatalogParser.literal(field.expression());
       if (value === null) {
         errors.push(

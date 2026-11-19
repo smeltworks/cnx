@@ -221,7 +221,9 @@ class ProgramLowering {
         bitmap
           .bitmapMember()
           .some((member) =>
-            ProgramLowering.isRepaired(MemberName.terminal(member.memberName())),
+            ProgramLowering.isRepaired(
+              MemberName.terminal(member.memberName()),
+            ),
           ))
     );
   }
@@ -300,7 +302,9 @@ class ProgramLowering {
       fields: ctx.structMember().map((member) => ({
         type: SyntaxLowering.type(member.type()),
         name: member.memberName().getText(),
-        nameSpan: ProgramLowering.spanOf(MemberName.required(member.memberName())),
+        nameSpan: ProgramLowering.spanOf(
+          MemberName.required(member.memberName()),
+        ),
         dimensions: member.arrayDimension().map(ProgramLowering.dimensionOf),
         overflow: SyntaxLowering.overflow(member.overflowModifier()),
         ...SyntaxLowering.node(member),
