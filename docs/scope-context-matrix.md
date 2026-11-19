@@ -403,20 +403,15 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-## ADR-015
+## ADR-015 E0433
 
 | Context            | same file | direct | transitive | from 1 away | thru chain |
 | ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
 | global variable    | -         | -      | -          | -           | -          |
-| top-level function | -         | -      | -          | -           | -          |
+| top-level function | ok        | -      | -          | -           | -          |
 | scope member       | -         | -      | -          | -           | -          |
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
-
-2 linked fixtures with no derivable context:
-
-- `bugs/issue-1643-self-referential-initializer/constructor-arg-below.test.cnx`
-- `bugs/issue-1643-self-referential-initializer/constructor-undeclared-self.test.cnx`
 
 ## ADR-016
 
@@ -954,14 +949,12 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | ok     | warn       | warn        | warn       |
 | for header         | -         | -      | -          | -           | -          |
 
-14 linked fixtures with no derivable context:
+12 linked fixtures with no derivable context:
 
 - `bugs/issue-1312-undefined-type-position/transitive-type-resolves.test.cnx`
 - `bugs/issue-1353-undeclared-value-position/declared-value-resolves.test.cnx`
 - `bugs/issue-1353-undeclared-value-position/macro-direct-include-control.test.cnx`
 - `bugs/issue-1582-undeclared-write-target/shadowed-write-resolves.test.cnx`
-- `bugs/issue-1643-self-referential-initializer/constructor-arg-below.test.cnx`
-- `bugs/issue-1643-self-referential-initializer/constructor-undeclared-self.test.cnx`
 - `bugs/issue-1643-self-referential-initializer/member-above-global-array.test.cnx`
 - `bugs/issue-1643-self-referential-initializer/member-above-global-private.test.cnx`
 - `bugs/issue-1643-self-referential-initializer/member-above-global.test.cnx`
@@ -1010,6 +1003,16 @@ cell is declared by the ADR that owns it.
 | scope member       | ok        | -      | -          | warn        | warn       |
 | scope method       | ok        | -      | -          | warn        | warn       |
 | for header         | ok        | -      | -          | warn        | warn       |
+
+## ADR-030 E0433
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | ok        | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
 
 ## ADR-034
 
