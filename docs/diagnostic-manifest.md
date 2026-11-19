@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1013 fixture(s) assert a diagnostic; 998 carry a code.
+1020 fixture(s) assert a diagnostic; 1006 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -490,6 +490,13 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-071/write-for-header-imported-transitive-error.test.cnx                                         | E0900                             |
 | tests/adr-071/write-imported-direct-error.test.cnx                                                        | E0900                             |
 | tests/adr-071/write-imported-transitive-error.test.cnx                                                    | E0900                             |
+| tests/adr-072/constructor-expression-not-register-error.test.cnx                                          | E0935                             |
+| tests/adr-072/register-address-not-constant-error.test.cnx                                                | E0931                             |
+| tests/adr-072/register-local-instance-error.test.cnx                                                      | E0934                             |
+| tests/adr-072/register-negative-offset-error.test.cnx                                                     | E0931, E0932                      |
+| tests/adr-072/register-offset-not-constant-error.test.cnx                                                 | E0932                             |
+| tests/adr-072/register-parameter-error.test.cnx                                                           | E0933                             |
+| tests/adr-072/register-scoped-parameter-error.test.cnx                                                    | E0933, E0934                      |
 | tests/analysis/division-by-const-zero.test.cnx                                                            | E0800                             |
 | tests/analysis/division-by-zero.test.cnx                                                                  | E0800                             |
 | tests/analysis/float-array-index.test.cnx                                                                 | E0851                             |
@@ -964,7 +971,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/compound-assign/bitmap-field-compound-unknown-field.test.cnx                                        | E0882                             |
 | tests/compound-assign/bitmap-field-compound.test.cnx                                                      | E0857                             |
 | tests/compound-assign/struct-field-bit-index-compound.test.cnx                                            | E0857                             |
-| tests/constructor-syntax/error-literal-arg.test.cnx                                                       | (uncoded)                         |
+| tests/constructor-syntax/error-literal-arg.test.cnx                                                       | E0426                             |
 | tests/constructor-syntax/error-non-const-arg.test.cnx                                                     | E0432                             |
 | tests/constructor-syntax/error-undeclared-arg.test.cnx                                                    | E0433                             |
 | tests/enum/enum-error-negative.test.cnx                                                                   | E0894                             |
