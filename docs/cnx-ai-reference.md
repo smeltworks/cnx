@@ -711,13 +711,15 @@ critical {
 ## Register Bindings (ADR-004)
 
 ```cnx
-register GPIO7 @ 0x42004000 {
-    DR:         u32 rw @ 0x00,
-    GDIR:       u32 rw @ 0x04,
-    PSR:        u32 ro @ 0x08,
-    DR_SET:     u32 wo @ 0x84,
-    DR_CLEAR:   u32 wo @ 0x88,
+register GpioPort {
+    0x00 rw u32 DR,
+    0x04 rw u32 GDIR,
+    0x08 ro u32 PSR,
+    0x84 wo u32 DR_SET,
+    0x88 wo u32 DR_CLEAR,
 }
+
+GpioPort GPIO7(0x42004000);
 
 GPIO7.DR <- 0xFF;
 GPIO7.DR_SET[3] <- true;            // atomic set bit 3
@@ -730,9 +732,11 @@ A register field can be typed by a **bitmap** for named bit-field access:
 
 ```cnx
 bitmap8 UartControl { Enable, TxEnable, RxEnable, Parity, StopBits, DataBits[2], Reserved }
-register UART @ 0x40010000 {
-    CTRL: UartControl rw @ 0x00,
+register UartPort {
+    0x00 rw UartControl CTRL,
 }
+
+UartPort UART(0x40010000);
 UART.CTRL.Enable   <- true;     // named field write
 UART.CTRL.DataBits <- 3;
 bool en <- UART.CTRL.Enable;    // named field read

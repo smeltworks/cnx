@@ -72,13 +72,15 @@ void bump(uint32_t* v) { (*v) = cnx_clamp_add_u32((*v), 1U); }
 Type-safe hardware access with access modifiers:
 
 ```cnx
-register GPIO7 @ 0x42004000 {
-    DR:         u32 rw @ 0x00,    // Read-Write
-    PSR:        u32 ro @ 0x08,    // Read-Only
-    DR_SET:     u32 wo @ 0x84,    // Write-Only (atomic set)
-    DR_CLEAR:   u32 wo @ 0x88,    // Write-Only (atomic clear)
-    DR_TOGGLE:  u32 wo @ 0x8C,    // Write-Only (atomic toggle)
+register GpioPort {
+    0x00 rw u32 DR,    // Read-Write
+    0x08 ro u32 PSR,    // Read-Only
+    0x84 wo u32 DR_SET,    // Write-Only (atomic set)
+    0x88 wo u32 DR_CLEAR,    // Write-Only (atomic clear)
+    0x8C wo u32 DR_TOGGLE,    // Write-Only (atomic toggle)
 }
+
+GpioPort GPIO7(0x42004000);
 ```
 
 ### Type-Aware Bit Indexing

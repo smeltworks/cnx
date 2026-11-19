@@ -18,6 +18,7 @@
  * and its file left alone.
  *
  * Usage: npx tsx scripts/migrate-adr-072.ts [--check] <file-or-dir>...
+ * (`.cnx` sources and `.md` docs)
  */
 import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -59,6 +60,8 @@ const TYPE_NAMES: Record<string, string> = {
   CONFIG: "ConfigBlock",
   NVIC: "NVIC_Type",
   Leds: "LedBank",
+  VectorTable: "VectorTableLayout",
+  NVIC_IPR: "NvicPriority",
   MOTOR_REG: "MotorController",
   RCC: "RCC_Type",
 };
@@ -75,7 +78,7 @@ class MigrateAdr072 {
         ? MigrateAdr072.files(
             readdirSync(path).map((entry) => join(path, entry)),
           )
-        : path.endsWith(".cnx")
+        : path.endsWith(".cnx") || path.endsWith(".md")
           ? [path]
           : [],
     );
@@ -124,7 +127,13 @@ class MigrateAdr072 {
     for (const file of MigrateAdr072.files(paths)) {
       const source = readFileSync(file, "utf8");
       const missing = new Set<string>();
-      const migrated = MigrateAdr072.rewrite(source, missing);
+      // Each fenced block of a doc is its own program
+      const migrated = file.endsWith(".md")
+        ? source
+            .split(/(^```.*$)/m)
+            .map((block) => MigrateAdr072.rewrite(block, missing))
+            .join("")
+        : MigrateAdr072.rewrite(source, missing);
       for (const name of missing) {
         unmapped.set(name, [...(unmapped.get(name) ?? []), file]);
       }

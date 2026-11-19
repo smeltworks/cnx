@@ -18,11 +18,13 @@ A safer C for embedded systems development. Transpiles to clean, readable C.
 #pragma target teensy41
 
 // Register binding with type-safe access
-register GPIO7 @ 0x42004000 {
-    DR:         u32 rw @ 0x00,
-    DR_SET:     u32 wo @ 0x84,
-    DR_TOGGLE:  u32 wo @ 0x8C,
+register GpioPort {
+    0x00 rw u32 DR,
+    0x84 wo u32 DR_SET,
+    0x8C wo u32 DR_TOGGLE,
 }
+
+GpioPort GPIO7(0x42004000);
 
 u32 LED_BIT <- 3;
 
