@@ -29,8 +29,8 @@ pass — which is why the obligation is to _declare honestly_, not to be green.
 
 | Band  | Work performed during | Release gate                          | Allocated so far                                        |
 | ----- | --------------------- | ------------------------------------- | ------------------------------------------------------- |
-| `0xx` | v0.x                  | All must be implemented to cut **v1** | 001–058, 060–072 (011, 012, 048, 055, 060, 065 retired) |
-| `1xx` | v1.x                  | All must be implemented to cut **v2** | 100–107                                                 |
+| `0xx` | v0.x                  | All must be implemented to cut **v1** | 001–058, 060–073 (011, 012, 048, 055, 060, 065 retired) |
+| `1xx` | v1.x                  | All must be implemented to cut **v2** | 100–106                                                 |
 | `2xx` | v2.x                  | All must be implemented to cut **v3** | none yet                                                |
 
 ### Choosing a band for a new ADR

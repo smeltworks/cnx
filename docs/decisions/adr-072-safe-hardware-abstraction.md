@@ -5,11 +5,11 @@
 > table.
 
 **Status:** Research
-**Date:** 2026-02-20 (revised 2026-07-04: simplified register syntax; added Parts 4–5. 2026-11-19: Part 5, scaled fields, moved to ADR-107)
+**Date:** 2026-02-20 (revised 2026-07-04: simplified register syntax; added Parts 4–5. 2026-11-19: Part 5, scaled fields, moved to ADR-073)
 **Decision Makers:** Language Design Team
 **Supersedes:** ADR-004 (Register Bindings — on acceptance; this ADR removes the `register Name @ address { }` form ADR-004 defines)
 **Amends:** ADR-016 (`### Scoped Registers` — on acceptance; that section's `@ address` examples go with it)
-**Related ADRs:** ADR-034 (Bitmap Types), ADR-033 (Packed Structs — Rejected; Part 4 is the safe alternative), ADR-107 (Scaled Fields — formerly Part 5)
+**Related ADRs:** ADR-034 (Bitmap Types), ADR-033 (Packed Structs — Rejected; Part 4 is the safe alternative), ADR-073 (Scaled Fields — formerly Part 5)
 
 > **Status is load-bearing here.** While this ADR is `Research` it is **not**
 > established syntax: ADR-004 still governs, a register is still not a type, and the
@@ -669,7 +669,7 @@ GpioPort scratch;             // data register — no address, normal memory
 ```
 
 Bit-packed bytes use a bitmap field; byte-aligned scalars use a scalar type. Scaling a raw
-value to an engineering unit is ADR-107. A J1939 PGN is a data register:
+value to an engineering unit is ADR-073. A J1939 PGN is a data register:
 
 ```cnx
 bitmap8 Etc1Control { drivelineEngaged[2], tccLockup[2], shiftInProcess[2], transition[2] }
@@ -713,7 +713,7 @@ This ADR covers four features for safe hardware abstraction in cnx:
 
 - **Peripheral initialization ordering** — Developer responsibility; easy to catch during testing
 - **Pin multiplexing conflicts** — HAL concern, not a language concern
-- **Scaled fields** — mapping a raw field to an engineering value with a unit; ADR-107 (ruling 4 on #2449)
+- **Scaled fields** — mapping a raw field to an engineering value with a unit; ADR-073 (ruling 4 on #2449)
 
 ---
 

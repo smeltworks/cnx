@@ -1,4 +1,4 @@
-# ADR-107: Scaled Fields
+# ADR-073: Scaled Fields
 
 **Status:** Research
 **Date:** 2026-11-19
