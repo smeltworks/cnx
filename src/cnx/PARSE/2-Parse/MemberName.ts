@@ -5,6 +5,7 @@
  */
 import { TerminalNode } from "antlr4ng";
 import * as Parser from "./grammar/CnxParser";
+import invariant from "../../utils/invariant";
 
 class MemberName {
   /** The name's token; null when recovery left the name out */
@@ -16,9 +17,7 @@ class MemberName {
   /** The name's token, for contexts the grammar requires a name on */
   static required(ctx: Parser.MemberNameContext): TerminalNode {
     const token = MemberName.terminal(ctx);
-    if (token === null) {
-      throw new Error(`member name has no token: '${ctx.getText()}'`);
-    }
+    invariant(token !== null, `member name has no token: '${ctx.getText()}'`);
     return token;
   }
 }
