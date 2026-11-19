@@ -129,7 +129,7 @@ class MigrateAdr072 {
     let enclosing = "";
     for (const match of source
       .slice(0, offset)
-      .matchAll(/\bscope[ \t]+(\w+)[ \t]*\{/g)) {
+      .matchAll(/\bscope\s+(\w+)\s*\{/g)) {
       let depth = 0;
       let end = match.index + match[0].length - 1;
       for (; end < source.length; end++) {
