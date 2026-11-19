@@ -1,0 +1,36 @@
+// test-error
+// test-adr: 072
+// ADR-072, E0936: a register type only declares a fixed-address instance.
+// Every other type position is a data register (Part 4), not supported yet.
+
+register GpioPort {
+    0x00 rw u32 DR,
+}
+
+GpioPort GPIO1(0x401B8000);
+
+struct Ok {
+    u32 dr;
+}
+
+GpioPort plain;
+GpioPort[2] ports;
+
+struct Holder {
+    GpioPort port;
+}
+
+GpioPort pick() {
+    return GPIO1;
+}
+
+u32 A <- 1;
+u32 B <- 2;
+GpioPort TWO(A, B);
+
+void main() {
+    GpioPort local;
+    Ok fine;
+    GPIO1.DR <- 1;
+    GpioPort.DR <- 1;
+}

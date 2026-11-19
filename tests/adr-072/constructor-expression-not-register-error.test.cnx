@@ -7,5 +7,4 @@
 
 Adafruit_MAX31856 thermocouple(10 + 1);
 
-void main() {
-}
+void main() {}

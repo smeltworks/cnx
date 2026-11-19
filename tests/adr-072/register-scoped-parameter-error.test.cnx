@@ -10,19 +10,16 @@ scope Board {
 
     public Port P1(0x40000000);
 
-    public void bare(Port p) {
-    }
+    public void bare(Port p) {}
 
-    public void viaThis(this.Port p) {
-    }
+    public void viaThis(this.Port p) {}
 
     public void local() {
         Port LOCAL(0x40001000);
     }
 }
 
-void qualified(Board.Port p) {
-}
+void qualified(Board.Port p) {}
 
 void main() {
     Board.P1.DR <- 1;

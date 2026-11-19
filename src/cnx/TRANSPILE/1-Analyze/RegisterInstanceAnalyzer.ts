@@ -37,7 +37,17 @@ class RegisterInstanceAnalyzer {
               "Access the register instance directly (`GPIO1.DR`). ADR-072 resolves a register parameter per instance at compile time; until that is implemented it is rejected rather than passed as a runtime pointer.",
           });
         }
+        if (this.isRegisterType(declaration.returnType, scopePath)) {
+          found.push(this.notInstance(declaration.name, declaration.span));
+        }
         for (const statement of StatementNodes.in(declaration)) {
+          if (
+            statement.kind === "variableDeclaration" &&
+            this.isRegisterType(statement.type, scopePath)
+          ) {
+            found.push(this.notInstance(statement.name, statement.span));
+            continue;
+          }
           if (statement.kind !== "constructorDeclaration") continue;
           if (!this.isRegisterType(statement.type, scopePath)) {
             if (statement.address !== null)
@@ -54,6 +64,21 @@ class RegisterInstanceAnalyzer {
         }
         continue;
       }
+      if (declaration.kind === "struct") {
+        for (const field of declaration.fields) {
+          if (this.isRegisterType(field.type, scopePath)) {
+            found.push(this.notInstance(field.name, field.span));
+          }
+        }
+        continue;
+      }
+      if (
+        declaration.kind === "variableDeclaration" &&
+        this.isRegisterType(declaration.type, scopePath)
+      ) {
+        found.push(this.notInstance(declaration.name, declaration.span));
+        continue;
+      }
       if (
         declaration.kind !== "register" &&
         declaration.kind !== "constructorDeclaration"
@@ -63,6 +88,11 @@ class RegisterInstanceAnalyzer {
       const symbol = this.context.program.memberOf(scopePath, declaration.name);
       if (symbol?.kind !== "register") {
         if (
+          declaration.kind === "constructorDeclaration" &&
+          this.isRegisterType(declaration.type, scopePath)
+        ) {
+          found.push(this.notInstance(declaration.name, declaration.span));
+        } else if (
           declaration.kind === "constructorDeclaration" &&
           declaration.address !== null
         ) {
@@ -103,6 +133,20 @@ class RegisterInstanceAnalyzer {
     return found.sort(SourceOrder.bySpan);
   }
 
+  /** E0936: a register type anywhere but a one-address instance */
+  private notInstance(
+    name: string,
+    span: IBaseAnalysisError["span"],
+  ): IBaseAnalysisError {
+    return {
+      code: "E0936",
+      span,
+      message: `'${name}' has a register type; a register type only declares a fixed-address instance (ADR-072)`,
+      helpText:
+        "Declare an instance at file or scope level with one address, `GpioPort GPIO1(0x401B8000);`. A register as a variable, array element, struct field or return value is a data register (ADR-072 Part 4), which is not supported yet.",
+    };
+  }
+
   /** `Type name(expr);` whose type is not a register: a C++ constructor (#375) */
   private notRegister(declaration: {
     readonly name: string;
@@ -119,6 +163,8 @@ class RegisterInstanceAnalyzer {
 
   /** The register type a written type names, in the scope it is written in */
   private isRegisterType(type: TTypeSyntax, scopePath: string): boolean {
+    if (type.kind === "array")
+      return this.isRegisterType(type.element, scopePath);
     const program = this.context.program;
     const candidates: Array<[string, string]> =
       type.kind === "user"

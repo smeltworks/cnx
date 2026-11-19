@@ -8,5 +8,4 @@ register VectorTableLayout {
 
 VectorTableLayout VTOR(0x20000000);
 
-void main() {
-}
+void main() {}

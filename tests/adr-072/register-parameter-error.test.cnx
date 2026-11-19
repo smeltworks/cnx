@@ -9,8 +9,7 @@ register GpioPort {
 
 GpioPort GPIO1(0x401B8000);
 
-void setHigh(GpioPort port) {
-}
+void setHigh(GpioPort port) {}
 
 void main() {
     GPIO1.DR <- 1;

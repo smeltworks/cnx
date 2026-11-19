@@ -1680,7 +1680,10 @@ class OperandTyper {
         // from this file's view, which holds every member's C type
         const register = ctx.program.symbolByCName(current.name);
         const info =
-          register?.kind === "register" ? register.members.get(member) : null;
+          // ADR-072: only an instance has members to read; a type has none
+          register?.kind === "register" && register.registerType !== null
+            ? register.members.get(member)
+            : null;
         if (!info) return UNKNOWN;
         // #2155 review 8: the member is named whatever its type, so its
         // access rules apply to it

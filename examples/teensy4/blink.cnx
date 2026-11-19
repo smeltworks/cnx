@@ -113,20 +113,28 @@ scope Teensy4 {
     public register GpioPort {
         /// Data Register - Current pin output values
         0x00 rw GPIO7Pins DataRegister,
+
         /// Direction Register - 1=output, 0=input
         0x04 rw GPIO7Pins DirectionRegister,
+
         /// Pad Status Register - Actual pin voltage (read-only)
         0x08 ro GPIO7Pins PadStatusRegister,
+
         /// Interrupt Configuration Register 1 - Pins 0-15
         0x0C rw ICR1Config InterruptConfig1,
+
         /// Interrupt Mask Register - Enable/disable per pin
         0x14 rw GPIO7Pins InterruptMaskRegister,
+
         /// Interrupt Status - Pending flags (write-1-to-clear)
         0x18 rw GPIO7Pins InterruptStatus,
+
         /// Atomic Set - Write 1 to set DataRegister bits (no RMW!)
         0x84 wo GPIO7Pins DataRegister_Set,
+
         /// Atomic Clear - Write 1 to clear DataRegister bits
         0x88 wo GPIO7Pins DataRegister_Clear,
+
         /// Atomic Toggle - Write 1 to toggle DataRegister bits
         0x8C wo GPIO7Pins DataRegister_Toggle,
     }

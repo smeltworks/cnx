@@ -801,6 +801,7 @@ Part 1 (register types and fixed instances):
 | E0933 | A function parameter is a register; rejected until register parameters are specialized per instance  | `tests/adr-072/register-parameter-error.test.cnx`                  |
 | E0934 | A register instance is declared inside a function                                                    | `tests/adr-072/register-local-instance-error.test.cnx`             |
 | E0935 | `Type name(expr);` whose type is not a register type (a C++ constructor takes named constants, #375) | `tests/adr-072/constructor-expression-not-register-error.test.cnx` |
+| E0936 | A register type anywhere but a one-address file- or scope-level instance (data registers are Part 4) | `tests/adr-072/register-type-position-error.test.cnx`              |
 
 ## References
 

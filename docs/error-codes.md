@@ -20,8 +20,8 @@ codes that already have a fixture.
 | E06xx     | Sizeof Expressions                                                                                                                                                                                                | 3       |
 | E07xx     | Control Flow                                                                                                                                                                                                      | 15      |
 | E08xx     | Arithmetic/Array Safety                                                                                                                                                                                           | 61      |
-| E09xx     | NULL Safety, Compile-Time Values, Literal Form, String Conversions, Interrupt Masking, `mut` Arguments, `for` Arrays, Config File Names, Environment Variables, Operator Operands, Parameter Lists, Member Access | 36      |
-| **Total** |                                                                                                                                                                                                                   | **162** |
+| E09xx     | NULL Safety, Compile-Time Values, Literal Form, String Conversions, Interrupt Masking, `mut` Arguments, `for` Arrays, Config File Names, Environment Variables, Operator Operands, Parameter Lists, Member Access | 37      |
+| **Total** |                                                                                                                                                                                                                   | **163** |
 
 ---
 
@@ -519,13 +519,14 @@ base: bare, `this.` and `global.`.
 
 ## E0931–E0934 — Register Types and Instances (ADR-072)
 
-| Code  | Message                                                                                                               | Help                                                                                | Source                                            |
-| ----- | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------- |
-| E0931 | The address of a register instance (`GpioPort GPIO1(base);`) is not a compile-time constant                           | Use a literal, a const, or arithmetic over them                                     | `TRANSPILE/1-Analyze/RegisterInstanceAnalyzer.ts` |
-| E0932 | The offset of a register member is not a compile-time constant                                                        | Use a literal, a const, or arithmetic over them                                     | `TRANSPILE/1-Analyze/RegisterInstanceAnalyzer.ts` |
-| E0933 | A function parameter is a register; register parameters are not supported yet (ADR-072 Part 1 specializes them later) | Access the register instance directly (`GPIO1.DR`); it is never passed as a pointer | `TRANSPILE/1-Analyze/RegisterInstanceAnalyzer.ts` |
-| E0934 | A register instance is declared inside a function; it names hardware at a fixed address for the whole program         | Declare it at file level or as a scope member                                       | `TRANSPILE/1-Analyze/RegisterInstanceAnalyzer.ts` |
-| E0935 | `Type name(expr);` whose type is not a register type: only a register instance takes an address expression            | Declare the C++ constructor argument as a const and pass its name (#375)            | `TRANSPILE/1-Analyze/RegisterInstanceAnalyzer.ts` |
+| Code  | Message                                                                                                                                                             | Help                                                                                    | Source                                            |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| E0931 | The address of a register instance (`GpioPort GPIO1(base);`) is not a compile-time constant                                                                         | Use a literal, a const, or arithmetic over them                                         | `TRANSPILE/1-Analyze/RegisterInstanceAnalyzer.ts` |
+| E0932 | The offset of a register member is not a compile-time constant                                                                                                      | Use a literal, a const, or arithmetic over them                                         | `TRANSPILE/1-Analyze/RegisterInstanceAnalyzer.ts` |
+| E0933 | A function parameter is a register; register parameters are not supported yet (ADR-072 Part 1 specializes them later)                                               | Access the register instance directly (`GPIO1.DR`); it is never passed as a pointer     | `TRANSPILE/1-Analyze/RegisterInstanceAnalyzer.ts` |
+| E0934 | A register instance is declared inside a function; it names hardware at a fixed address for the whole program                                                       | Declare it at file level or as a scope member                                           | `TRANSPILE/1-Analyze/RegisterInstanceAnalyzer.ts` |
+| E0935 | `Type name(expr);` whose type is not a register type: only a register instance takes an address expression                                                          | Declare the C++ constructor argument as a const and pass its name (#375)                | `TRANSPILE/1-Analyze/RegisterInstanceAnalyzer.ts` |
+| E0936 | A register type is used anywhere but as the type of a one-address instance at file or scope level (a variable, array, struct field, return type or extra arguments) | Declare `Type NAME(address);` at file or scope level; data registers are ADR-072 Part 4 | `TRANSPILE/1-Analyze/RegisterInstanceAnalyzer.ts` |
 
 ---
 
