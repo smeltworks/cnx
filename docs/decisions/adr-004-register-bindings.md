@@ -3,7 +3,7 @@
 **Status:** Implemented
 **Date:** 2025-12-26
 **Decision Makers:** cnx Language Design Team
-**Superseded By:** ADR-111 (Safe Hardware Abstraction Primitives — `Research`; the supersession takes effect when ADR-111 is Accepted, not before)
+**Superseded By:** ADR-072 (Safe Hardware Abstraction Primitives — `Research`; the supersession takes effect when ADR-072 is Accepted, not before)
 
 > **What is implemented, and what is not.** The register syntax this ADR defines —
 > `NAME: type access @ offset` — and its `rw` / `ro` / `wo` access modifiers are
@@ -23,9 +23,9 @@
 > a register name in a type position is rejected with **E0429**. It was accepted
 > silently until then, emitting a declaration of a type that is never defined, so the
 > generated C failed to compile while the transpiler reported success. E0429 is retired
-> when ADR-111 is implemented, not when it is merely Accepted.
+> when ADR-072 is implemented, not when it is merely Accepted.
 >
-> It becomes a type under ADR-111, where a register definition is a parameterized type
+> It becomes a type under ADR-072, where a register definition is a parameterized type
 > and the base address is supplied at instantiation (`SystemControl SCB(0xE000ED00);`).
 
 ## Context

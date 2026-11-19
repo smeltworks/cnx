@@ -1083,7 +1083,7 @@ A band is a commitment, not a label: cutting `v(N+1)` requires every non-termina
 `N` to be fully implemented (`Rejected` and `Superseded` are exempt). An ADR filed today but
 deliberately deferred until after v1 is `1xx` work, even though it was written during v0.x.
 
-Numbers are never reused, and changing an ADR's target release means `git mv` plus updating
+Numbers are never reused (the README lists the exceptions), and changing an ADR's target release means `git mv` plus updating
 every reference — including `.test.cnx` fixture comments, which ADR-043 carries into generated
 output, so `npm run test:update` is required.
 

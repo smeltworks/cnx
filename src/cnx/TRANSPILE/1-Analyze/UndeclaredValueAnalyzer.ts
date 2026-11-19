@@ -390,7 +390,7 @@ class UndeclaredValueAnalyzer {
     // as the base of `Type.MEMBER`, a register, which is a value at an address
     // (ADR-004) and so answers here but NOT in the type position (#1336). A
     // variable is `binds`' above, never this predicate's (#1643).
-    // ADR-111: when a register becomes a type, `isValueName` collapses into
+    // ADR-072: when a register becomes a type, `isValueName` collapses into
     // `isTypeName`.
     //
     // #1430: `CodeGenState.knownFunctions` is deliberately NOT consulted, for
