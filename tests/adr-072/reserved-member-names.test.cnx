@@ -24,5 +24,7 @@ void main() {
     s.ISR <- true;
     mut Vector v;
     v.ISR <- 3;
+    Vector w <- { ISR: 4 };
+    v.ISR <- w.ISR;
     GPIO1.ISR <- 0x01;
 }

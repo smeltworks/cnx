@@ -18,5 +18,7 @@ int main(void) {
     s = (uint8_t)((s & ~(1U << 0)) | (1U << 0));
     Vector v = {0};
     v.ISR = 3U;
+    const Vector w = { .ISR = 4U };
+    v.ISR = w.ISR;
     GPIO1__ISR = 0x01U;
 }

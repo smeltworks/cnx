@@ -1,3 +1,4 @@
+import MemberName from "./MemberName";
 import { type ParserRuleContext, type ParseTree, TerminalNode } from "antlr4ng";
 import * as Parser from "./grammar/CnxParser";
 import SyntaxLowering from "./SyntaxLowering";
@@ -152,10 +153,10 @@ class StatementLowering {
 
   /** Whether a terminal is the field name of a struct initializer's `x: v` */
   private static isFieldKey(node: TerminalNode): boolean {
-    const parent = node.parent;
+    const parent = node.parent?.parent;
     return (
       parent instanceof Parser.FieldInitializerContext &&
-      parent.IDENTIFIER() === node
+      MemberName.terminal(parent.memberName()) === node
     );
   }
 
