@@ -9,6 +9,8 @@ import DeclaredPointer from "../../../utils/DeclaredPointer";
 import IHeaderSymbol from "./types/IHeaderSymbol";
 import GeneratedBanner from "../../../utils/GeneratedBanner";
 import typeUtils from "../../../utils/mapType";
+import cTypeName from "../../../utils/cTypeName";
+import type IStructKeywordFacts from "../../../utils/types/IStructKeywordFacts";
 import IGroupedSymbols from "./types/IGroupedSymbols";
 import IHeaderOptions from "../codegen/types/IHeaderOptions";
 import IHeaderTypeInput from "./generators/IHeaderTypeInput";
@@ -20,7 +22,7 @@ import type IVariableFormatInput from "../codegen/types/IVariableFormatInput";
 import MisraSuppressionUtils from "../MisraSuppressionUtils";
 import CallbackTypedefFormatter from "../../../utils/CallbackTypedefFormatter";
 
-const { mapType, isBuiltInType } = typeUtils;
+const { isBuiltInType } = typeUtils;
 
 /**
  * Static utility class with pure functions for header generation
@@ -459,7 +461,10 @@ class HeaderGeneratorUtils {
   /**
    * Generate type alias section
    */
-  static generateTypeAliasSection(types: IHeaderSymbol[]): string[] {
+  static generateTypeAliasSection(
+    types: IHeaderSymbol[],
+    structKeywords: IStructKeywordFacts,
+  ): string[] {
     if (types.length === 0) {
       return [];
     }
@@ -467,7 +472,7 @@ class HeaderGeneratorUtils {
     const lines: string[] = ["/* Type aliases */"];
     for (const sym of types) {
       if (sym.type) {
-        const cType = mapType(sym.type);
+        const cType = cTypeName(sym.type, structKeywords);
         lines.push(`typedef ${cType} ${sym.name};`);
       }
     }
@@ -619,7 +624,10 @@ class HeaderGeneratorUtils {
    *
    * Uses VariableDeclarationFormatter for consistent formatting with CodeGenerator.
    */
-  static generateVariableSection(variables: IHeaderSymbol[]): string[] {
+  static generateVariableSection(
+    variables: IHeaderSymbol[],
+    structKeywords: IStructKeywordFacts,
+  ): string[] {
     if (variables.length === 0) {
       return [];
     }
@@ -631,7 +639,7 @@ class HeaderGeneratorUtils {
         name: sym.name,
         cnxType: sym.type || "int",
         mappedType: DeclaredPointer.spell(
-          mapType(sym.type || "int"),
+          cTypeName(sym.type || "int", structKeywords),
           sym.isPointer ?? false,
         ),
         modifiers: {

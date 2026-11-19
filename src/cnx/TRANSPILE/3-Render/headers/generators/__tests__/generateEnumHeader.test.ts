@@ -4,6 +4,7 @@
 
 import generateEnumHeader from "../generateEnumHeader";
 import IHeaderTypeInput from "../IHeaderTypeInput";
+import SymbolTable from "../../../../../PARSE/3-Declare/SymbolTable";
 
 /**
  * Creates a minimal IHeaderTypeInput with only enumMembers populated
@@ -22,6 +23,7 @@ function createInput(
     ),
     structFields: new Map(),
     structFieldDimensions: new Map(),
+    symbolTable: new SymbolTable(),
     bitmapBackingType: new Map(),
     bitmapFields: new Map(),
   };

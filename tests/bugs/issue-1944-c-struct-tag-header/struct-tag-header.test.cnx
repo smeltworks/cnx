@@ -1,0 +1,113 @@
+// test-execution
+// Issue #1944: a C struct declared with no typedef (`struct Point { ... };`)
+// must be written `struct Point` everywhere C names it. The .c wrote the
+// keyword and the .h did not, so every prototype, field and extern in the
+// header named a type C does not have, and gcc rejected it at exit 0.
+#include "pt-tag.h"
+
+struct Holder {
+    Point at;
+    Point[2] many;
+}
+
+Point origin <- { x: 3, y: 4 };
+
+void move(mut Point p) {
+    p.x <- 1;
+}
+
+i32 show(Point p) {
+    return p.y;
+}
+
+Point make() {
+    Point r <- { x: 5, y: 6 };
+    return r;
+}
+
+void moveAll(mut Point[2] ps) {
+    ps[1].x <- 9;
+}
+
+scope Shapes {
+    public void nudge(mut Point p) {
+        p.y <- 2;
+    }
+}
+
+void useIt(move cb, mut Point q) {
+    cb(q);
+}
+
+i32 useMaker(make cb) {
+    Point got <- cb();
+    return got.x;
+}
+
+Point[2] twins() {
+    Point[2] r <- [{ x: 1, y: 2 }, { x: 3, y: 4 }];
+    return r;
+}
+
+i32 secondX(Point[2] ps) {
+    return ps[1].x;
+}
+
+i32 useTwins(twins cb) {
+    Point[2] got <- cb();
+    return got[0].y;
+}
+
+u32 main() {
+    mut Point a <- { x: 0, y: 0 };
+    move(a);
+    if (a.x != 1) {
+        return 1;
+    }
+    i32 shown <- show(origin);
+    if (shown != 4) {
+        return 2;
+    }
+    Point m <- make();
+    if (m.x != 5) {
+        return 3;
+    }
+    mut Point[2] pair <- [{ x: 0, y: 0 }, { x: 0, y: 0 }];
+    moveAll(pair);
+    if (pair[1].x != 9) {
+        return 4;
+    }
+    Shapes.nudge(a);
+    if (a.y != 2) {
+        return 5;
+    }
+    mut Point b <- { x: 0, y: 0 };
+    useIt(move, b);
+    if (b.x != 1) {
+        return 6;
+    }
+    Holder h <- { at: { x: 7, y: 0 }, many: [{ x: 0, y: 0 }, { x: 0, y: 8 }] };
+    if (h.at.x != 7) {
+        return 7;
+    }
+    if (h.many[1].y != 8) {
+        return 8;
+    }
+    i32 made <- useMaker(make);
+    if (made != 5) {
+        return 9;
+    }
+    Point[2] t <- twins();
+    if (t[1].y != 4) {
+        return 10;
+    }
+    i32 second <- secondX(twins());
+    if (second != 3) {
+        return 11;
+    }
+    i32 viaCb <- useTwins(twins);
+    if (viaCb != 2) {
+        return 12;
+    }
+    return 0;
+}

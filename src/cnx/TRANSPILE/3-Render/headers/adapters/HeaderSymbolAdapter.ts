@@ -28,7 +28,7 @@ class HeaderSymbolAdapter {
   static fromTSymbol(symbol: TSymbol, state: TranspileState): IHeaderSymbol {
     switch (symbol.kind) {
       case "function":
-        return HeaderSymbolAdapter.convertFunction(symbol);
+        return HeaderSymbolAdapter.convertFunction(symbol, state);
       case "variable":
         return HeaderSymbolAdapter.convertVariable(symbol, state);
       case "struct":
@@ -50,6 +50,7 @@ class HeaderSymbolAdapter {
 
   private static convertFunction(
     func: import("../../../../types/symbols/IFunctionSymbol").default,
+    state: TranspileState,
   ): IHeaderSymbol {
     // Convert TType return type to string
     const returnTypeStr = TypeResolver.getTypeName(func.returnType);
@@ -91,7 +92,8 @@ class HeaderSymbolAdapter {
     // and the function returns `void`; what the header needs is the buffer's
     // element type -- the whole `u8[2][3]` was taken for an external type
     const returnBuffer =
-      ReturnBuffer.parameterFor(func.returnType) ?? undefined;
+      ReturnBuffer.parameterFor(func.returnType, state.symbolTable) ??
+      undefined;
     const returned = func.returnType;
     const headerType =
       returnBuffer !== undefined && returned.kind === "array"

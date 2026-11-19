@@ -1,11 +1,9 @@
 import type ICallbackTypedefParameter from "../types/ICallbackTypedefParameter";
-import type IResolvedSymbols from "../types/IResolvedSymbols";
 import type IFunctionSymbol from "../types/symbols/IFunctionSymbol";
 import DeclaredPointer from "./DeclaredPointer";
 import DeclaredTypeFacts from "./DeclaredTypeFacts";
-import headerCType from "./headerCType";
 import type IByValueFacts from "./types/IByValueFacts";
-import userCType from "./userCType";
+import cTypeName from "./cTypeName";
 import invariant from "./invariant";
 import ParameterByValue from "./ParameterByValue";
 import type ICallbackShapeFacts from "./types/ICallbackShapeFacts";
@@ -41,27 +39,13 @@ class CallbackParameterShape {
       : null;
   }
 
-  /**
-   * ADR-029: a resolved cnx type name, spelled in a `_fp` typedef the way
-   * the function's own prototype spells it -- `headerCType` for the C++
-   * namespace (`hw::Dev`, not the C join `hw__Dev`) and the primitive map,
-   * then the `struct` keyword a C tag with no typedef needs. A bare primitive
-   * lookup lost both (#1942 review).
-   */
-  static cType(typeName: string, symbolTable: IResolvedSymbols): string {
-    return userCType(
-      headerCType(typeName),
-      symbolTable.checkNeedsStructKeyword(typeName),
-    );
-  }
-
   /** ADR-029: a function this file declares or includes is a type too (#1491) */
 
   static returnType(
     symbol: IFunctionSymbol,
     facts: ICallbackShapeFacts,
   ): string {
-    return CallbackParameterShape.cType(
+    return cTypeName(
       SymbolTypeResolver.getTypeName(symbol.returnType),
       facts.symbolTable,
     );
@@ -177,7 +161,7 @@ class CallbackParameterShape {
     // auto-const its prototype never takes.
     if (DeclaredPointer.isHandleType(typeName, facts.symbolTable)) {
       return {
-        type: CallbackParameterShape.cType(typeName, facts.symbolTable),
+        type: cTypeName(typeName, facts.symbolTable),
         isStruct: false,
         isString: false,
         isOpaqueHandle: true,
@@ -187,7 +171,7 @@ class CallbackParameterShape {
     // ADR-006: a struct parameter is a pointer in C and a reference in C++,
     // which the formatter spells from `isStruct`.
     return {
-      type: CallbackParameterShape.cType(typeName, facts.symbolTable),
+      type: cTypeName(typeName, facts.symbolTable),
       isStruct,
       isString: false,
       isOpaqueHandle: false,

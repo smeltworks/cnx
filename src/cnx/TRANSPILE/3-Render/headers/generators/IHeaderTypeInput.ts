@@ -11,8 +11,8 @@ import IHeaderCallbackType from "../../../../types/IHeaderCallbackType";
  * the data needed for generating enums, structs, and bitmaps.
  */
 interface IHeaderTypeInput {
-  /** Issue #502: Optional IResolvedSymbols for C++ type detection */
-  readonly symbolTable?: IResolvedSymbols;
+  /** Issue #502, #1944: C++ namespace detection and the C struct keyword */
+  readonly symbolTable: IResolvedSymbols;
   /** Enum members and values: enumName -> (memberName -> value) */
   readonly enumMembers: ReadonlyMap<string, ReadonlyMap<string, number>>;
 

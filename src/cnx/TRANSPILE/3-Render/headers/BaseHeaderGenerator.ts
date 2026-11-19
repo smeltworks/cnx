@@ -7,7 +7,8 @@
  */
 
 import invariant from "../../../utils/invariant";
-import headerCType from "../../../utils/headerCType";
+import cTypeName from "../../../utils/cTypeName";
+import type IStructKeywordFacts from "../../../utils/types/IStructKeywordFacts";
 import IHeaderSymbol from "./types/IHeaderSymbol";
 import IParameterSymbol from "../../../utils/types/IParameterSymbol";
 import IHeaderOptions from "../codegen/types/IHeaderOptions";
@@ -19,6 +20,14 @@ import ParameterInputAdapter from "../codegen/helpers/ParameterInputAdapter";
 import ParameterSignatureBuilder from "../codegen/helpers/ParameterSignatureBuilder";
 import StructInitFunction from "../codegen/helpers/StructInitFunction";
 import ReturnBuffer from "../../../utils/ReturnBuffer";
+
+/**
+ * A header generated with no type input read no C header, so no C struct tag
+ * in it can need the `struct` keyword (#1944).
+ */
+const NO_C_HEADERS: IStructKeywordFacts = {
+  checkNeedsStructKeyword: () => false,
+};
 
 /**
  * Abstract base class for header file generation
@@ -185,6 +194,7 @@ abstract class BaseHeaderGenerator {
 
     // Get symbol table for C++ namespace detection
     const symbolTable = typeInput?.symbolTable;
+    const structKeywords = symbolTable ?? NO_C_HEADERS;
 
     // Filter to C-compatible external types
     //
@@ -233,7 +243,10 @@ abstract class BaseHeaderGenerator {
       ),
       ...HeaderGeneratorUtils.generateEnumSection(groups.enums, typeInput),
       ...HeaderGeneratorUtils.generateBitmapSection(groups.bitmaps, typeInput),
-      ...HeaderGeneratorUtils.generateTypeAliasSection(groups.types),
+      ...HeaderGeneratorUtils.generateTypeAliasSection(
+        groups.types,
+        structKeywords,
+      ),
       ...HeaderGeneratorUtils.generateCallbackStructForwardDecls(
         groups.structs,
         typeInput,
@@ -250,9 +263,13 @@ abstract class BaseHeaderGenerator {
       ...HeaderGeneratorUtils.generateRegisterSection(
         options.registerBlocks ?? [],
       ),
-      ...HeaderGeneratorUtils.generateVariableSection(cCompatibleVariables),
+      ...HeaderGeneratorUtils.generateVariableSection(
+        cCompatibleVariables,
+        structKeywords,
+      ),
       ...this.generateFunctionSection(
         groups.functions,
+        structKeywords,
         options.generatedStructInits,
       ),
       ...HeaderGeneratorUtils.generateHeaderEnd(guard),
@@ -278,6 +295,7 @@ abstract class BaseHeaderGenerator {
    */
   private generateFunctionSection(
     functions: IHeaderSymbol[],
+    structKeywords: IStructKeywordFacts,
     generatedStructInits?: ReadonlySet<string>,
   ): string[] {
     // #1205: the ADR-029 init functions are declarations too, so the section
@@ -293,7 +311,7 @@ abstract class BaseHeaderGenerator {
 
     const lines: string[] = ["/* Function prototypes */"];
     for (const sym of functions) {
-      const proto = this.generateFunctionPrototype(sym);
+      const proto = this.generateFunctionPrototype(sym, structKeywords);
       if (proto) {
         lines.push(proto);
       }
@@ -305,11 +323,14 @@ abstract class BaseHeaderGenerator {
   /**
    * Generate a function prototype
    */
-  private generateFunctionPrototype(sym: IHeaderSymbol): string | null {
-    // Map return type (main() always returns int). `headerCType`, the same
+  private generateFunctionPrototype(
+    sym: IHeaderSymbol,
+    structKeywords: IStructKeywordFacts,
+  ): string | null {
+    // Map return type (main() always returns int). `cTypeName`, the same
     // mapping a struct field uses, so a return type and a field cannot name
     // one type two ways (#1520).
-    const mappedType = sym.type ? headerCType(sym.type) : "void";
+    const mappedType = sym.type ? cTypeName(sym.type, structKeywords) : "void";
     const returnType = sym.name === "main" ? "int" : mappedType;
 
     // Get pass-by-value parameter names for this function
@@ -319,7 +340,7 @@ abstract class BaseHeaderGenerator {
 
     if (sym.parameters && sym.parameters.length > 0) {
       const translatedParams = sym.parameters.map((p) =>
-        this.generateParameter(p),
+        this.generateParameter(p, structKeywords),
       );
       params = translatedParams.join(", ");
     }
@@ -336,9 +357,13 @@ abstract class BaseHeaderGenerator {
   /**
    * Generate a single parameter with appropriate semantics
    */
-  private generateParameter(p: IParameterSymbol): string {
+  private generateParameter(
+    p: IParameterSymbol,
+    structKeywords: IStructKeywordFacts,
+  ): string {
+    // #1944: the .c definition's spelling, `struct` keyword and all
     const input = ParameterInputAdapter.fromSymbol(p, {
-      mapType: headerCType,
+      mapType: (typeName) => cTypeName(typeName, structKeywords),
     });
 
     return ParameterSignatureBuilder.build(input, this.getRefSuffix());
