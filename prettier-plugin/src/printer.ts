@@ -396,29 +396,17 @@ function printRegisterDeclaration(cursor: ChildCursor): Doc {
     " ",
     name,
     " ",
-    printMemberBlock(cursor, CnxParser.RULE_registerMember),
+    printCommaMemberBlock(cursor, CnxParser.RULE_registerMember),
   ];
 }
 
-/** ADR-072: `offset access type name,` */
+/** ADR-072: `offset access type name`; its comma belongs to the block */
 function printRegisterMember(cursor: ChildCursor): Doc {
   const offset = cursor.take();
   const access = cursor.take();
   const type = cursor.take();
   const name = cursor.take();
-  const comma = cursor.takeIfText(",");
-  return [
-    offset,
-    " ",
-    access,
-    " ",
-    type,
-    " ",
-    name,
-    // Only the comma the author wrote: the grammar's `','?` makes it optional,
-    // and synthesizing one would break "only whitespace is synthesized here".
-    comma ?? "",
-  ];
+  return [offset, " ", access, " ", type, " ", name];
 }
 
 function printStructDeclaration(cursor: ChildCursor): Doc {

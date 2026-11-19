@@ -310,6 +310,13 @@ u32 x <- 5;`;
       expect(result).toContain("0x00 rw u32 moder");
       expect(result).not.toContain("0x00,");
     });
+
+    it("keeps every register-member comma and its trailing comment", async () => {
+      const input =
+        "register GpioPort {\n    0x00 rw u32 DR, // data\n    0x18 w1c u32 ISR,\n}\n";
+      const result = await format(input);
+      expect(result).toBe(input);
+    });
   });
 
   describe("Blank line preservation", () => {
