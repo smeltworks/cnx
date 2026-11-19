@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // Postfix Chain Test: Const Expressions in Chains
 // Tests: Using const values and expressions as indices in chains
 

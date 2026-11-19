@@ -5,6 +5,7 @@
 
 #include "register-bit-indexing.test.hpp"
 
+
 #include <stdint.h>
 #include <stdbool.h>
 

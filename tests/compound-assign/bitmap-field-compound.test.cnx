@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 034
+#pragma target cortex-m7
 // E0857 on a compound operator to a bitmap field, whatever spells its prefix.
 //
 // #2159: `flat.Mode +<- 1` was lowered as the plain write `flat.Mode <- 1` --

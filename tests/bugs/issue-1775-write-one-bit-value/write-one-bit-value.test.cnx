@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // #1775: a bit of a write-1 register member takes the value it is given.
 // A runtime value was discarded and a one written instead, so
 // `GPIO.DR_SET[3] <- flag` set bit 3 when `flag` was false -- and on a `w1c`

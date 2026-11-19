@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 004
+#pragma target cortex-m7
 // E0870/E0871 in a scope METHOD across ONE include hop -- the `imported
 // direct` cells register-imported-direct-error.test.cnx leaves to E0872.
 

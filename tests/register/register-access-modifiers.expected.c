@@ -5,6 +5,7 @@
 
 #include "register-access-modifiers.test.h"
 
+
 #include <stdint.h>
 
 // ADR-004: Register access modifiers test

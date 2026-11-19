@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // Postfix Chain Test: Scoped Register Access from Global Context
 // Tests: Accessing scoped registers, bitmaps, and methods from outside the scope
 // Coverage: Section 13 - Scope Declaration (global context access)

@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 004
+#pragma target cortex-m7
 // Issue #2027: a zero written to a field of a write-1 register member is
 // E0872, as the same bit written by index is. Every spelling of the register
 // is checked, and a one, an rw member and a nonzero range are controls that

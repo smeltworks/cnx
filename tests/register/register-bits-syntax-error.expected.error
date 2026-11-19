@@ -1,2 +1,2 @@
-6:9 extraneous input '{' expecting {'rw', 'ro', 'wo', 'w1c', 'w1s'}
-7:8 mismatched input 'ICR0' expecting {'}', ','}
+7:9 extraneous input '{' expecting {'rw', 'ro', 'wo', 'w1c', 'w1s'}
+8:8 mismatched input 'ICR0' expecting {'}', ','}

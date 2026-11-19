@@ -13,8 +13,8 @@ extern "C" {
 #endif
 
 /* Registers (ADR-004) */
-/* Register: Periph__CTRL @ 0x40004000 */
-#define Periph__CTRL__CR (*(volatile Ctl*)(0x40004000 + 0x00))
+/* Register: Periph__CTRL @ 0x40004000U */
+#define Periph__CTRL__CR (*(volatile Ctl*)(0x40004000U))
 
 #ifdef __cplusplus
 }

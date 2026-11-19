@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // Test: Basic scoped register declaration and access
 
 scope Teensy4 {

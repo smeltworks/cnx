@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // ADR-004 + ADR-007: Bit indexing on registers
 // Tests: single bit access on register members
 register GpioPort {

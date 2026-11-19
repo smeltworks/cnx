@@ -5,15 +5,16 @@
 
 #include "scoped-register-bit-access.test.hpp"
 
+
 #include <stdint.h>
 #include <stdbool.h>
 
 // Test: Bit indexing on scoped registers
 /* Scope: Board */
 
-/* Register: Board__GPIO @ 0x40000000 */
-#define Board__GPIO__DR (*(volatile uint32_t*)(0x40000000 + 0x00))
-#define Board__GPIO__DR_SET (*(volatile uint32_t*)(0x40000000 + 0x84))
+/* Register: Board__GPIO @ 0x40000000U */
+#define Board__GPIO__DR (*(volatile uint32_t*)(0x40000000U))
+#define Board__GPIO__DR_SET (*(volatile uint32_t*)(0x40000084U))
 
 
 void Board__toggleLed(void) {

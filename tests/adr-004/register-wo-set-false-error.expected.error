@@ -1,8 +1,6 @@
-36:4 error[E0872]: Cannot assign false to write-only register bit GPIO.DR_SET[3]
+37:4 error[E0872]: Cannot assign false to write-only register bit GPIO.DR_SET[3]
        help: Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.
-38:4 error[E0872]: Cannot assign 0 to write-only register bits GPIO.DR_SET[0, 4]
-       help: Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.
-40:4 error[E0872]: Cannot assign false to write-only register bit GPIO.DR_SET[3]
+39:4 error[E0872]: Cannot assign 0 to write-only register bits GPIO.DR_SET[0, 4]
        help: Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.
 41:4 error[E0872]: Cannot assign false to write-only register bit GPIO.DR_SET[3]
        help: Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.
@@ -10,5 +8,7 @@
        help: Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.
 43:4 error[E0872]: Cannot assign false to write-only register bit GPIO.DR_SET[3]
        help: Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.
-45:4 error[E0872]: Cannot assign false to write-only register bit GPIO.INTSTAT[3]
+44:4 error[E0872]: Cannot assign false to write-only register bit GPIO.DR_SET[3]
+       help: Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.
+46:4 error[E0872]: Cannot assign false to write-only register bit GPIO.INTSTAT[3]
        help: Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.

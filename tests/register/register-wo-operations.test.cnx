@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // ADR-004: Write-only register operations test
 // Tests: Valid write-only register bit operations with various index types
 // Coverage: Section 12 - Register Declaration (write-only bit access)

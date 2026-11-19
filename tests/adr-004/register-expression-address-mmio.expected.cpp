@@ -5,10 +5,11 @@
 
 #include "register-expression-address-mmio.test.hpp"
 
-#include <stdint.h>
-
 // test-adr: 004
 // test-transpile-only
+
+#include <stdint.h>
+
 // A register whose address is an expression: a byte-aligned write-only access
 // spells the base the way the register's macro does, a clamp u32 sum
 // (#1991 review). Transpile only: on a 64-bit host the uint32_t sum is cast
@@ -16,5 +17,5 @@
 extern const uint32_t GPIO_BASE = 0x40000000U;
 
 int main(void) {
-    *((volatile uint8_t*)(0x40000100 + 0x04 + 1)) = (5U);
+    *((volatile uint8_t*)(0x40000105U)) = (5U);
 }

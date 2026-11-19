@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 025
+#pragma target cortex-m7
 // #2051: ADR-025 admits only constants as case labels. A label naming a
 // variable, a function or a scope reached the C as a name gcc rejects, at
 // exit 0, in every spelling. Each flagged label sits beside a const, an enum

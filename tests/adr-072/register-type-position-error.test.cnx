@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 072
+#pragma target cortex-m7
 // ADR-072, E0936: a register type only declares a fixed-address instance.
 // Every other type position is a data register (Part 4), not supported yet.
 
@@ -28,9 +29,16 @@ u32 A <- 1;
 u32 B <- 2;
 GpioPort TWO(A, B);
 
+scope Board {
+    GpioPort held;
+
+    GpioPort choose() {
+        return GPIO1;
+    }
+}
+
 void main() {
     GpioPort local;
     Ok fine;
     GPIO1.DR <- 1;
-    GpioPort.DR <- 1;
 }

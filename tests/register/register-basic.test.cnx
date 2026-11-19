@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // ADR-004: Basic register declaration and access
 // Tests: standalone register definition outside of scope
 register GpioPort {

@@ -7,6 +7,8 @@
 
 #include "reserved-member-names.test.hpp"
 
+// test-adr: 072
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -23,7 +25,6 @@ static inline uint16_t cnx_clamp_add_u16(uint16_t a, uint32_t b) {
     return (uint16_t)(a + (uint16_t)b);
 }
 
-// test-adr: 072
 // ADR-072 ruling 2 (#2029): a reserved word may name a member -- a register
 // member, a bitmap field or a struct field. A member is only declared in
 // member position and only reached after `.`, so `ISR` there is never the

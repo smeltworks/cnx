@@ -5,10 +5,11 @@
 
 #include "register-bitfield.test.hpp"
 
+// test-coverage: 12-bitfield-members
+
 #include <stdint.h>
 #include <stdbool.h>
 
-// test-coverage: 12-bitfield-members
 // Tests: Register using bitmap types as bitfield members
 // This tests the pattern of defining structured bitfields via bitmap types
 // 8-bit control bitmap

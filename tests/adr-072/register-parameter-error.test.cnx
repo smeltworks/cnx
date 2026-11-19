@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 072
+#pragma target cortex-m7
 // ADR-072, E0933: a register parameter is specialized per instance at compile
 // time. Until that is implemented it is rejected, never passed as a pointer.
 
@@ -14,8 +15,7 @@ struct Pair {
     u32 a;
 }
 
-void useStruct(Pair p) {
-}
+void useStruct(Pair p) {}
 
 void setHigh(GpioPort port) {}
 

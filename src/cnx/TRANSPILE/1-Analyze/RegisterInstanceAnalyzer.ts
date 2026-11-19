@@ -35,6 +35,7 @@ class RegisterInstanceAnalyzer {
         for (const parameter of declaration.parameters ?? []) {
           if (!this.isRegisterType(parameter.type, scopePath)) continue;
           found.push({
+            aboutItsPosition: true,
             code: "E0933",
             span: parameter.span,
             message: `parameter '${parameter.name}' is a register; register parameters are not supported yet (ADR-072)`,
@@ -60,6 +61,7 @@ class RegisterInstanceAnalyzer {
             continue;
           }
           found.push({
+            aboutItsPosition: true,
             code: "E0934",
             span: statement.span,
             message: `register instance '${statement.name}' must be declared at file or scope level`,
@@ -109,6 +111,7 @@ class RegisterInstanceAnalyzer {
       if (declaration.kind === "constructorDeclaration") {
         if (symbol.baseAddress === null || symbol.baseAddress < 0n) {
           found.push({
+            aboutItsPosition: true,
             code: "E0931",
             span: declaration.span,
             message:
@@ -127,6 +130,7 @@ class RegisterInstanceAnalyzer {
         const offset = symbol.members.get(member.name)?.offsetValue ?? null;
         if (offset !== null && offset >= 0n) continue;
         found.push({
+          aboutItsPosition: true,
           code: "E0932",
           span: member.span,
           message:
@@ -163,6 +167,7 @@ class RegisterInstanceAnalyzer {
         instance.baseAddress + member.offsetValue + this.bytesOf(member) - 1n;
       if (last < limit) continue;
       found.push({
+        aboutItsPosition: true,
         code: "E0931",
         span: declaration.span,
         message: `register member '${declaration.name}.${member.name}' ends at ${RegisterAddress.render(last)}, past the target's ${bits}-bit address range`,
@@ -186,6 +191,7 @@ class RegisterInstanceAnalyzer {
     span: IBaseAnalysisError["span"],
   ): IBaseAnalysisError {
     return {
+      aboutItsPosition: true,
       code: "E0936",
       span,
       message: `'${name}' has a register type; a register type only declares a fixed-address instance (ADR-072)`,
@@ -200,6 +206,7 @@ class RegisterInstanceAnalyzer {
     readonly span: IBaseAnalysisError["span"];
   }): IBaseAnalysisError {
     return {
+      aboutItsPosition: true,
       code: "E0935",
       span: declaration.span,
       message: `'${declaration.name}' is constructed from an expression, but its type is not a register type`,

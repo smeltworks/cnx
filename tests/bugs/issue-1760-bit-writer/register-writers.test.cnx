@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // #1760 second review: the register writers are the bit writer every other
 // write uses, and had its two defects. A register's bit range took its width
 // unfolded, so `[0, W]` at W == 32 masked with a run-time `1U << 32`, which

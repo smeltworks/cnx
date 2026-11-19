@@ -13,9 +13,9 @@ extern "C" {
 #endif
 
 /* Registers (ADR-004) */
-/* Register: PERIPH @ 0x40000000 */
-#define PERIPH__CTRL (*(volatile uint32_t*)(0x40000000 + 0x00))
-#define PERIPH__SET (*(volatile uint32_t*)(0x40000000 + 0x04))
+/* Register: PERIPH @ 0x40000000U */
+#define PERIPH__CTRL (*(volatile uint32_t*)(0x40000000U))
+#define PERIPH__SET (*(volatile uint32_t*)(0x40000004U))
 
 /* External variables */
 extern const uint8_t W;

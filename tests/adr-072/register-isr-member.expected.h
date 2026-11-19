@@ -14,8 +14,8 @@ extern "C" {
 typedef void (*ISR)(void);
 
 /* Registers (ADR-004) */
-/* Register: VTOR @ 0x20000000 */
-#define VTOR__reset (*(volatile ISR*)(0x20000000 + 0x00))
+/* Register: VTOR @ 0x20000000U */
+#define VTOR__reset (*(volatile ISR*)(0x20000000U))
 
 #ifdef __cplusplus
 }

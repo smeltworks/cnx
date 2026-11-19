@@ -320,14 +320,16 @@ function printCommaMemberBlock(cursor: ChildCursor, memberRule: number): Doc {
   while (cursor.peekRule() === memberRule) {
     const member = cursor.takeChild();
     first = first ?? member.node;
-    if (previous !== null && Cst.hasBlankLineBetween(previous, member.node)) {
+    // As in joinPreservingBlankLines: a member with leading comments already
+    // begins with a break, and its comment records its own blank line
+    if (previous !== null && !Cst.hasLeadingComments(member.node)) {
       parts.push(hardline);
+      if (Cst.hasBlankLineBetween(previous, member.node)) parts.push(hardline);
     }
     parts.push(member.doc);
     previous = member.node;
     const comma = cursor.takeIfText(",");
     if (comma !== null) parts.push(comma);
-    if (cursor.peekRule() === memberRule) parts.push(hardline);
   }
   const close = cursor.takeChild();
   return printBraced(open, parts, close.node, first);

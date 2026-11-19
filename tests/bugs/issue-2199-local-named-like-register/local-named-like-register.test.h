@@ -19,9 +19,9 @@ typedef struct Shadow {
 } Shadow;
 
 /* Registers (ADR-004) */
-/* Register: MOTOR @ 0x40002000 */
-#define MOTOR__FLAGS (*(volatile uint8_t*)(0x40002000 + 0x04))
-#define MOTOR__CONFIG (*(volatile uint8_t*)(0x40002000 + 0x08))
+/* Register: MOTOR @ 0x40002000U */
+#define MOTOR__FLAGS (*(volatile uint8_t*)(0x40002004U))
+#define MOTOR__CONFIG (*(volatile uint8_t*)(0x40002008U))
 
 /* Function prototypes */
 uint8_t viaLocal(void);

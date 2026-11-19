@@ -186,6 +186,23 @@ u32 x <- 5;`;
     });
   });
 
+  describe("Register declarations", () => {
+    it("keeps a commented member list stable across runs (ADR-072)", async () => {
+      const input = `register GpioPort {
+    /// Data
+    0x00 rw u32 DR,
+    /// Direction
+    0x04 rw u32 GDIR,
+
+    0x08 ro u32 PSR,
+}
+`;
+      const once = await format(input);
+      expect(once).toBe(input);
+      expect(await format(once)).toBe(input);
+    });
+  });
+
   describe("Array dimensions", () => {
     it("should preserve empty array dimensions in parameters", async () => {
       const input = "u32 main(string args[]){return 0;}";

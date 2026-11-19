@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // Issue #1244: a register bit-range write must mean the same thing through
 // every ADR-016 spelling. The classifier tested the subscript SHAPE before it
 // asked whether the target was a register, and a bit range is two expressions

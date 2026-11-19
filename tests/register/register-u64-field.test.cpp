@@ -5,6 +5,7 @@
 
 #include "register-u64-field.test.hpp"
 
+
 #include <stdint.h>
 
 // Tests: u64 as register field type (compilation only - registers need hardware)

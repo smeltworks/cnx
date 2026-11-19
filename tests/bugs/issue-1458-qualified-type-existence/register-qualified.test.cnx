@@ -1,4 +1,6 @@
 // test-error
+// test-adr: 072
+#pragma target cortex-m7
 // #1458: a register named through `global.`, `this.` or `Scope.` in a type
 // position is E0429, as the bare spelling is (#1336). Before the fix all three
 // exit 0 and emit a C type name nothing defines.

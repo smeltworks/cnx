@@ -11,10 +11,10 @@ extern "C" {
 #endif
 
 /* Registers (ADR-004) */
-/* Register: PERIPH @ 0x50000000 */
-#define PERIPH__CTRL (*(volatile uint32_t*)(0x50000000 + 0x00))
-#define PERIPH__STATUS (*(volatile uint32_t const *)(0x50000000 + 0x04))
-#define PERIPH__CMD (*(volatile uint32_t*)(0x50000000 + 0x08))
+/* Register: PERIPH @ 0x50000000U */
+#define PERIPH__CTRL (*(volatile uint32_t*)(0x50000000U))
+#define PERIPH__STATUS (*(volatile uint32_t const *)(0x50000004U))
+#define PERIPH__CMD (*(volatile uint32_t*)(0x50000008U))
 
 #ifdef __cplusplus
 }

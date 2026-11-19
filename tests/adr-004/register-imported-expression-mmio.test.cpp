@@ -3,16 +3,17 @@
  * A safer C for embedded systems
  */
 
-// test-adr: 004
-// test-transpile-only
 // A byte-aligned write-only access to a register an INCLUDED file declares at
 // an expression: 2.2 plans the declaring file's sum as this file's clamp
 // helper call (#1991 review). Transpile only: on a 64-bit host the uint32_t
 // sum is cast to a pointer of another size, as on main.
 #include "register-expression-declarations.hpp"
 
+// test-adr: 004
+// test-transpile-only
+
 #include <stdint.h>
 
 int main(void) {
-    *((volatile uint8_t*)(0x40000100 + 0x04 + 1)) = (5U);
+    *((volatile uint8_t*)(0x40000105U)) = (5U);
 }

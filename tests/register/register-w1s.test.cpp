@@ -5,10 +5,11 @@
 
 #include "register-w1s.test.hpp"
 
+// test-coverage: 12-w1s-access-modifier
+
 #include <stdint.h>
 #include <stdbool.h>
 
-// test-coverage: 12-w1s-access-modifier
 // Tests: Write-1-to-Set register access modifier
 // Writing 1 to a bit sets it, writing 0 has no effect
 void setGpioBit(const uint8_t pin) {

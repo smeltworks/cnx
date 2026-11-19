@@ -1,1 +1,16 @@
-35:4 error[E0427]: 'GpioPort' is a register type, not a value; reach its members through an instance
+17:0 error[E0936]: 'plain' has a register type; a register type only declares a fixed-address instance (ADR-072)
+       help: Declare an instance at file or scope level with one address, `GpioPort GPIO1(0x401B8000);`. A register as a variable, array element, struct field or return value is a data register (ADR-072 Part 4), which is not supported yet.
+18:0 error[E0936]: 'ports' has a register type; a register type only declares a fixed-address instance (ADR-072)
+       help: Declare an instance at file or scope level with one address, `GpioPort GPIO1(0x401B8000);`. A register as a variable, array element, struct field or return value is a data register (ADR-072 Part 4), which is not supported yet.
+21:4 error[E0936]: 'port' has a register type; a register type only declares a fixed-address instance (ADR-072)
+       help: Declare an instance at file or scope level with one address, `GpioPort GPIO1(0x401B8000);`. A register as a variable, array element, struct field or return value is a data register (ADR-072 Part 4), which is not supported yet.
+24:0 error[E0936]: 'pick' has a register type; a register type only declares a fixed-address instance (ADR-072)
+       help: Declare an instance at file or scope level with one address, `GpioPort GPIO1(0x401B8000);`. A register as a variable, array element, struct field or return value is a data register (ADR-072 Part 4), which is not supported yet.
+30:0 error[E0936]: 'TWO' has a register type; a register type only declares a fixed-address instance (ADR-072)
+       help: Declare an instance at file or scope level with one address, `GpioPort GPIO1(0x401B8000);`. A register as a variable, array element, struct field or return value is a data register (ADR-072 Part 4), which is not supported yet.
+33:4 error[E0936]: 'held' has a register type; a register type only declares a fixed-address instance (ADR-072)
+       help: Declare an instance at file or scope level with one address, `GpioPort GPIO1(0x401B8000);`. A register as a variable, array element, struct field or return value is a data register (ADR-072 Part 4), which is not supported yet.
+35:4 error[E0936]: 'choose' has a register type; a register type only declares a fixed-address instance (ADR-072)
+       help: Declare an instance at file or scope level with one address, `GpioPort GPIO1(0x401B8000);`. A register as a variable, array element, struct field or return value is a data register (ADR-072 Part 4), which is not supported yet.
+41:4 error[E0936]: 'local' has a register type; a register type only declares a fixed-address instance (ADR-072)
+       help: Declare an instance at file or scope level with one address, `GpioPort GPIO1(0x401B8000);`. A register as a variable, array element, struct field or return value is a data register (ADR-072 Part 4), which is not supported yet.

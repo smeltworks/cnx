@@ -5,9 +5,10 @@
 
 #include "register-vendor-type-name.test.hpp"
 
+// test-adr: 072
+
 #include <stdint.h>
 
-// test-adr: 072
 // ADR-072: the CMSIS `<NAME>_Type` spelling is a register type like any other,
 // including names that start with `E` and an upper-case letter.
 int main(void) {

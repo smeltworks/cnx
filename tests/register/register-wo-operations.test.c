@@ -5,6 +5,7 @@
 
 #include "register-wo-operations.test.h"
 
+
 #include <stdint.h>
 #include <stdbool.h>
 

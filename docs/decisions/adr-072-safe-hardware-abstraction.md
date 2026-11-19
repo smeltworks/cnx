@@ -813,22 +813,27 @@ Part 1 (register types and fixed instances):
 | top-level function | same file               | off      |
 | scope member       | same file               | error    |
 | scope method       | same file               | off      |
+| for header         | same file               | off      |
 | global variable    | imported direct         | off      |
 | top-level function | imported direct         | off      |
 | scope member       | imported direct         | off      |
 | scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
 | global variable    | imported transitive     | off      |
 | top-level function | imported transitive     | off      |
 | scope member       | imported transitive     | off      |
 | scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
 | global variable    | exercised from one away | warn     |
 | top-level function | exercised from one away | off      |
 | scope member       | exercised from one away | warn     |
 | scope method       | exercised from one away | off      |
+| for header         | exercised from one away | off      |
 | global variable    | exercised through chain | warn     |
 | top-level function | exercised through chain | off      |
 | scope member       | exercised through chain | warn     |
 | scope method       | exercised through chain | off      |
+| for header         | exercised through chain | off      |
 
 An instance is declared at file or scope level only (E0934), so the function rows are off. The imported rows are off because E0931 is about the instance in the file being transpiled; an included file's instance is checked when that file is.
 
@@ -836,28 +841,33 @@ An instance is declared at file or scope level only (E0934), so the function row
 
 | Context            | Relationship            | Severity |
 | ------------------ | ----------------------- | -------- |
-| global variable    | same file               | error    |
+| global variable    | same file               | warn     |
 | top-level function | same file               | off      |
-| scope member       | same file               | error    |
+| scope member       | same file               | warn     |
 | scope method       | same file               | off      |
+| for header         | same file               | off      |
 | global variable    | imported direct         | off      |
 | top-level function | imported direct         | off      |
 | scope member       | imported direct         | off      |
 | scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
 | global variable    | imported transitive     | off      |
 | top-level function | imported transitive     | off      |
 | scope member       | imported transitive     | off      |
 | scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
 | global variable    | exercised from one away | warn     |
 | top-level function | exercised from one away | off      |
 | scope member       | exercised from one away | warn     |
 | scope method       | exercised from one away | off      |
+| for header         | exercised from one away | off      |
 | global variable    | exercised through chain | warn     |
 | top-level function | exercised through chain | off      |
 | scope member       | exercised through chain | warn     |
 | scope method       | exercised through chain | off      |
+| for header         | exercised through chain | off      |
 
-A register type is declared at file or scope level only, so the function rows are off. The imported rows are off for the same reason as E0931.
+A register type is declared at file or scope level only, so the function rows are off. The imported rows are off for the same reason as E0931. The two same-file rows are `warn`, not `error`: E0932 is reported on the member inside the register body, a position the matrix derives no context for, so `register-negative-offset-error` and `register-offset-not-constant-error` assert it without occupying a cell.
 
 <!-- MATRIX-SEVERITY code: E0933 -->
 
@@ -867,22 +877,27 @@ A register type is declared at file or scope level only, so the function rows ar
 | top-level function | same file               | error    |
 | scope member       | same file               | off      |
 | scope method       | same file               | error    |
+| for header         | same file               | off      |
 | global variable    | imported direct         | off      |
 | top-level function | imported direct         | off      |
 | scope member       | imported direct         | off      |
 | scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
 | global variable    | imported transitive     | off      |
 | top-level function | imported transitive     | off      |
 | scope member       | imported transitive     | off      |
 | scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
 | global variable    | exercised from one away | off      |
 | top-level function | exercised from one away | warn     |
 | scope member       | exercised from one away | off      |
 | scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
 | global variable    | exercised through chain | off      |
 | top-level function | exercised through chain | warn     |
 | scope member       | exercised through chain | off      |
 | scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
 
 A parameter exists only on a function, so the variable rows are off. The imported rows are off: the diagnostic is about the parameter's own declaration.
 
@@ -894,22 +909,27 @@ A parameter exists only on a function, so the variable rows are off. The importe
 | top-level function | same file               | error    |
 | scope member       | same file               | off      |
 | scope method       | same file               | error    |
+| for header         | same file               | off      |
 | global variable    | imported direct         | off      |
 | top-level function | imported direct         | off      |
 | scope member       | imported direct         | off      |
 | scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
 | global variable    | imported transitive     | off      |
 | top-level function | imported transitive     | off      |
 | scope member       | imported transitive     | off      |
 | scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
 | global variable    | exercised from one away | off      |
 | top-level function | exercised from one away | warn     |
 | scope member       | exercised from one away | off      |
 | scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
 | global variable    | exercised through chain | off      |
 | top-level function | exercised through chain | warn     |
 | scope member       | exercised through chain | off      |
 | scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
 
 E0934 is the local instance, so only the function rows can hold it.
 
@@ -921,22 +941,27 @@ E0934 is the local instance, so only the function rows can hold it.
 | top-level function | same file               | error    |
 | scope member       | same file               | error    |
 | scope method       | same file               | error    |
+| for header         | same file               | off      |
 | global variable    | imported direct         | off      |
 | top-level function | imported direct         | off      |
 | scope member       | imported direct         | off      |
 | scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
 | global variable    | imported transitive     | off      |
 | top-level function | imported transitive     | off      |
 | scope member       | imported transitive     | off      |
 | scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
 | global variable    | exercised from one away | warn     |
 | top-level function | exercised from one away | warn     |
 | scope member       | exercised from one away | warn     |
 | scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
 | global variable    | exercised through chain | warn     |
 | top-level function | exercised through chain | warn     |
 | scope member       | exercised through chain | warn     |
 | scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
 
 The imported rows are off: the diagnostic is about the declaration it is written on.
 
@@ -948,24 +973,61 @@ The imported rows are off: the diagnostic is about the declaration it is written
 | top-level function | same file               | error    |
 | scope member       | same file               | error    |
 | scope method       | same file               | error    |
+| for header         | same file               | warn     |
 | global variable    | imported direct         | off      |
 | top-level function | imported direct         | off      |
 | scope member       | imported direct         | off      |
 | scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
 | global variable    | imported transitive     | off      |
 | top-level function | imported transitive     | off      |
 | scope member       | imported transitive     | off      |
 | scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
 | global variable    | exercised from one away | warn     |
 | top-level function | exercised from one away | warn     |
 | scope member       | exercised from one away | warn     |
 | scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
 | global variable    | exercised through chain | warn     |
 | top-level function | exercised through chain | warn     |
 | scope member       | exercised through chain | warn     |
 | scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
 
-The imported rows are off: the diagnostic is about the declaration it is written on, even when its register type is imported.
+The imported rows are off: the diagnostic is about the declaration it is written on, even when its register type is imported. `for header` is `warn` until a fixture declares a register-typed loop variable.
+
+<!-- MATRIX-SEVERITY code: E0937 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | error    |
+| top-level function | same file               | error    |
+| scope member       | same file               | error    |
+| scope method       | same file               | error    |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
+
+The imported rows are off: the diagnostic is about the type position it is written in, even when the instance is imported.
 
 ## References
 

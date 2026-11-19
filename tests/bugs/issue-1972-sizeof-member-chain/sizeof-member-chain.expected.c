@@ -5,7 +5,6 @@
 
 #include "sizeof-member-chain.test.h"
 
-// test-execution
 // Issue #1972: a dotted member access is measured the way the same expression
 // reads everywhere else. `sizeof`'s resolver once rebuilt it from its first
 // two names (`shared.inner` for `shared.inner.x`, `w.v` for a pointer local,
@@ -13,6 +12,8 @@
 // read from the same chain as the value. Each is checked against the width
 // of the type the ordinary expression reads.
 #include "widget.h"
+
+// test-execution
 
 #include <stdint.h>
 

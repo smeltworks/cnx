@@ -1,4 +1,5 @@
 // test-adr: 072
+#pragma target cortex-m7
 // ADR-072: the CMSIS `<NAME>_Type` spelling is a register type like any other,
 // including names that start with `E` and an upper-case letter.
 

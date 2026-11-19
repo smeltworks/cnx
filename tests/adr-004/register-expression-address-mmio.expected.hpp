@@ -13,8 +13,8 @@ extern "C" {
 #endif
 
 /* Registers (ADR-004) */
-/* Register: GPIO @ 0x40000100 */
-#define GPIO__SET (*(volatile uint32_t*)(0x40000100 + 0x04))
+/* Register: GPIO @ 0x40000100U */
+#define GPIO__SET (*(volatile uint32_t*)(0x40000104U))
 
 /* External variables */
 extern const uint32_t GPIO_BASE;

@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 016
+#pragma target cortex-m7
 // Test: Bare register access from inside a scope should error when SHADOWED
 // Issue #779: Ambiguity-aware validation - only require global. when shadowed
 

@@ -1,5 +1,6 @@
 // test-adr: 004
 // test-transpile-only
+#pragma target cortex-m7
 // A register whose address is an expression: a byte-aligned write-only access
 // spells the base the way the register's macro does, a clamp u32 sum
 // (#1991 review). Transpile only: on a 64-bit host the uint32_t sum is cast

@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 004
+#pragma target cortex-m7
 // ADR-004, E0872: a zero is assigned to a bit of a write-1 register member.
 // Coverage: Section 12 - Register Declaration (write-only validation)
 //

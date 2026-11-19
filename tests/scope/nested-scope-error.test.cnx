@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 016
+#pragma target cortex-m7
 // ADR-016 / Issue #1306: nested scopes are not allowed. Not "not in v1" -- never.
 // C99 5.2.4.1 guarantees only 31 significant initial characters in an external
 // identifier, and MISRA C:2012 Rule 5.1 is scored inside that budget: at depth 4

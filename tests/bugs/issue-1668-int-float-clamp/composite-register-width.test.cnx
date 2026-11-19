@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // #1668 (C6b, S22): a register member in a composite counts at its declared
 // width, so `small + STATUS.COUNT` saturates at u32 -- the helper this
 // snapshot names -- not at u8's.

@@ -13,10 +13,10 @@ extern "C" {
 #endif
 
 /* Registers (ADR-004) */
-/* Register: GPIO @ 0x40000000 */
-#define GPIO__DR_SET (*(volatile uint32_t*)(0x40000000 + 0x04))
-#define GPIO__PENDING (*(volatile uint32_t*)(0x40000000 + 0x08))
-#define GPIO__CMD (*(volatile uint8_t*)(0x40000000 + 0x0C))
+/* Register: GPIO @ 0x40000000U */
+#define GPIO__DR_SET (*(volatile uint32_t*)(0x40000004U))
+#define GPIO__PENDING (*(volatile uint32_t*)(0x40000008U))
+#define GPIO__CMD (*(volatile uint8_t*)(0x4000000CU))
 
 /* Function prototypes */
 void Led__show(const bool on);

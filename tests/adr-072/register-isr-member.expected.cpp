@@ -6,6 +6,7 @@
 #include "register-isr-member.test.hpp"
 
 // test-adr: 072
+
 // ADR-072: a register member typed `ISR` (a vector-table slot) still pulls in
 // the ISR typedef when nothing else in the file names the type.
 int main(void) {

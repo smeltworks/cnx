@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // Test: Bare register access from inside a scope should work when NOT shadowed
 // Issue #779: Ambiguity-aware validation - only require global. when shadowed
 // This is the happy path companion to cross-scope-register-bare-error.test.cnx

@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 034
+#pragma target cortex-m7
 // #1514: a register member typed by an INCLUDED bitmap is a bitmap, so it is
 // addressed by named field and bracket indexing is rejected (E0883) exactly
 // as it is when the bitmap is declared in the same file. Before #1514 the

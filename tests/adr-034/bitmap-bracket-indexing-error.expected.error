@@ -1,6 +1,6 @@
-39:24 error[E0883]: Cannot use bracket indexing on bitmap type 'Timer__ControlBits'
+40:24 error[E0883]: Cannot use bracket indexing on bitmap type 'Timer__ControlBits'
        help: A bitmap is addressed by named field, not by bit index -- write CTRL.FIELD_NAME (ADR-034).
-42:8 error[E0883]: Cannot use bracket indexing on bitmap type 'Timer__ControlBits'
+43:8 error[E0883]: Cannot use bracket indexing on bitmap type 'Timer__ControlBits'
        help: A bitmap is addressed by named field, not by bit index -- write CTRL.FIELD_NAME (ADR-034).
-46:23 error[E0883]: Cannot use bracket indexing on bitmap type 'Flags'
+47:23 error[E0883]: Cannot use bracket indexing on bitmap type 'Flags'
        help: A bitmap is addressed by named field, not by bit index -- write loose.FIELD_NAME (ADR-034).

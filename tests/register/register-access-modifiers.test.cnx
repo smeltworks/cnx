@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // ADR-004: Register access modifiers test
 // Tests: rw (read-write), ro (read-only), wo (write-only) modifiers
 register Peripheral {

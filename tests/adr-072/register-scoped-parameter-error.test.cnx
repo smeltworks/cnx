@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 072
+#pragma target cortex-m7
 // ADR-072, E0933 and E0934 for a register type declared in a scope, written
 // bare, as this.T and as Scope.T.
 

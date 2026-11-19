@@ -5,6 +5,7 @@
 
 #include "bare-register-bit.test.h"
 
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -20,11 +21,11 @@
 // one-byte memory access under both spellings.
 /* Scope: Drive */
 
-/* Register: Drive__PWM @ 0x40001000 */
-#define Drive__PWM__CTRL (*(volatile uint8_t*)(0x40001000 + 0x00))
-#define Drive__PWM__FLAGS (*(volatile uint8_t*)(0x40001000 + 0x04))
-#define Drive__PWM__SET (*(volatile uint8_t*)(0x40001000 + 0x08))
-#define Drive__PWM__CONFIG (*(volatile uint8_t*)(0x40001000 + 0x0C))
+/* Register: Drive__PWM @ 0x40001000U */
+#define Drive__PWM__CTRL (*(volatile uint8_t*)(0x40001000U))
+#define Drive__PWM__FLAGS (*(volatile uint8_t*)(0x40001004U))
+#define Drive__PWM__SET (*(volatile uint8_t*)(0x40001008U))
+#define Drive__PWM__CONFIG (*(volatile uint8_t*)(0x4000100CU))
 
 
 void Drive__viaBare(void) {
@@ -32,7 +33,7 @@ void Drive__viaBare(void) {
     Drive__PWM__FLAGS = (uint8_t)(1U << 0);
     Drive__PWM__SET = (uint8_t)(1U << 2);
     Drive__PWM__CONFIG = (uint8_t)((Drive__PWM__CONFIG & ~(1U << 3)) | (1U << 3));
-    *((volatile uint8_t*)(0x40001000 + 0x00)) = (0x55U);
+    *((volatile uint8_t*)(0x40001000U)) = (0x55U);
     Drive__PWM__FLAGS = (uint8_t)((5U & 0x7U) << 1);
     Drive__PWM__CONFIG = (uint8_t)((Drive__PWM__CONFIG & ~(0x7U << 1)) | ((5U & 0x7U) << 1));
 }
@@ -42,7 +43,7 @@ void Drive__viaThis(void) {
     Drive__PWM__FLAGS = (uint8_t)(1U << 0);
     Drive__PWM__SET = (uint8_t)(1U << 2);
     Drive__PWM__CONFIG = (uint8_t)((Drive__PWM__CONFIG & ~(1U << 3)) | (1U << 3));
-    *((volatile uint8_t*)(0x40001000 + 0x00)) = (0x55U);
+    *((volatile uint8_t*)(0x40001000U)) = (0x55U);
     Drive__PWM__FLAGS = (uint8_t)((5U & 0x7U) << 1);
     Drive__PWM__CONFIG = (uint8_t)((Drive__PWM__CONFIG & ~(0x7U << 1)) | ((5U & 0x7U) << 1));
 }

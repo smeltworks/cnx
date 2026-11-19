@@ -5,9 +5,10 @@
 
 #include "register-types-and-instances.test.hpp"
 
+// test-adr: 072
+
 #include <stdint.h>
 
-// test-adr: 072
 // ADR-072 Part 1: a register is a TYPE (a layout with no address), and each
 // instance fixes it at an address. The address and every offset are
 // compile-time constants, so the macros hold plain numbers -- no runtime

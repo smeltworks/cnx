@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 004
+#pragma target cortex-m7
 // #1514 negative control: a bitmap is a bitmap where its file is included.
 // `Deep` is in the run (mid.cnx includes deep.cnx), but other.cnx does not
 // include it, so other.cnx's register member cannot be typed by it.

@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // Issue #1336: the NEGATIVE CONTROL for the type/value position split.
 //
 // A register name is a legal VALUE -- `Control.DR` reads and writes memory at an

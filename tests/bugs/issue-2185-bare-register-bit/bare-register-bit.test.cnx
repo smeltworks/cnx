@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // Issue #2185: a scope's register bit written by its bare name -- `PWM.FLAGS[0]`
 // inside `scope Drive` -- is written per the member's access, as the `this.`
 // spelling of the same write is. The bare name was not a known register under

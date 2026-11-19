@@ -29,10 +29,10 @@ typedef struct Vector {
 } Vector;
 
 /* Registers (ADR-004) */
-/* Register: GPIO1 @ 0x401B8000 */
-#define GPIO1__scope (*(volatile uint32_t*)(0x401B8000 + 0x00))
-#define GPIO1__atomic (*(volatile uint32_t const *)(0x401B8000 + 0x04))
-#define GPIO1__ISR (*(volatile uint32_t*)(0x401B8000 + 0x18))
+/* Register: GPIO1 @ 0x401B8000U */
+#define GPIO1__scope (*(volatile uint32_t*)(0x401B8000U))
+#define GPIO1__atomic (*(volatile uint32_t const *)(0x401B8004U))
+#define GPIO1__ISR (*(volatile uint32_t*)(0x401B8018U))
 
 #ifdef __cplusplus
 }

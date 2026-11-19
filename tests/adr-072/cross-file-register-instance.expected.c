@@ -5,10 +5,11 @@
 
 #include "cross-file-register-instance.test.h"
 
-// test-adr: 072
 // ADR-072 Part 1 across files: an instance declared in an included file is
 // used here, and a second instance is made here of the included type.
 #include "lib/ports.h"
+
+// test-adr: 072
 
 #include <stdint.h>
 

@@ -1,0 +1,16 @@
+// test-error
+// test-adr: 072
+// ADR-072: a register type names a layout, not a value at an address, so its
+// members are reached only through an instance.
+
+register GpioPort {
+    0x00 rw u32 DR,
+}
+
+GpioPort GPIO1(0x401B8000);
+
+void main() {
+    // Negative control: an instance reaches its member
+    GPIO1.DR <- 1;
+    GpioPort.DR <- 1;
+}

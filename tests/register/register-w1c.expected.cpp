@@ -5,10 +5,11 @@
 
 #include "register-w1c.test.hpp"
 
+// test-coverage: 12-w1c-access-modifier
+
 #include <stdint.h>
 #include <stdbool.h>
 
-// test-coverage: 12-w1c-access-modifier
 // Tests: Write-1-to-Clear register access modifier
 // Writing 1 to a bit clears it, writing 0 has no effect
 void clearInterrupt(const uint32_t mask) {

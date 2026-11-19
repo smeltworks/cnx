@@ -11,9 +11,9 @@ extern "C" {
 #endif
 
 /* Registers (ADR-004) */
-/* Register: EXTI @ 0x40013C00 */
-#define EXTI__IMR (*(volatile uint32_t*)(0x40013C00 + 0x00))
-#define EXTI__PR (*(volatile uint32_t*)(0x40013C00 + 0x14))
+/* Register: EXTI @ 0x40013C00U */
+#define EXTI__IMR (*(volatile uint32_t*)(0x40013C00U))
+#define EXTI__PR (*(volatile uint32_t*)(0x40013C14U))
 
 #ifdef __cplusplus
 }

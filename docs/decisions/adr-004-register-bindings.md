@@ -22,7 +22,7 @@
 > Under this ADR a register was not a type, and a register name in a type position
 > was rejected with **E0429**. ADR-072 supersedes that: a register definition is a
 > type and each instance supplies its base address (`SystemControl SCB(0xE000ED00);`).
-> E0429 is retired; a register *instance* in a type position (`SCB x;`) is now
+> E0429 is retired; a register _instance_ in a type position (`SCB x;`) is now
 > **E0937**.
 
 ## Context

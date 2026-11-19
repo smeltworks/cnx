@@ -13,8 +13,8 @@ extern "C" {
 #endif
 
 /* Registers (ADR-004) */
-/* Register: EXPR @ 0x40000100 */
-#define EXPR__SET (*(volatile uint32_t*)(0x40000100 + 0x04))
+/* Register: EXPR @ 0x40000100U */
+#define EXPR__SET (*(volatile uint32_t*)(0x40000104U))
 
 /* External variables */
 extern const uint32_t EXPRESSION_BASE;

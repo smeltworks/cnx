@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // ADR-004: Register offset calculation test
 // Tests: correct offset values in generated C macros
 register UartPort {

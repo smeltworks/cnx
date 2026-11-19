@@ -13,13 +13,13 @@ extern "C" {
 #endif
 
 /* Registers (ADR-004) */
-/* Register: INT @ 0x40001000 */
-#define INT__STATUS (*(volatile uint32_t*)(0x40001000 + 0x00))
-#define INT__PENDING (*(volatile uint32_t*)(0x40001000 + 0x04))
+/* Register: INT @ 0x40001000U */
+#define INT__STATUS (*(volatile uint32_t*)(0x40001000U))
+#define INT__PENDING (*(volatile uint32_t*)(0x40001004U))
 
-/* Register: GPIO @ 0x40002000 */
-#define GPIO__DR (*(volatile uint32_t*)(0x40002000 + 0x00))
-#define GPIO__INTSTAT (*(volatile uint32_t*)(0x40002000 + 0x10))
+/* Register: GPIO @ 0x40002000U */
+#define GPIO__DR (*(volatile uint32_t*)(0x40002000U))
+#define GPIO__INTSTAT (*(volatile uint32_t*)(0x40002010U))
 
 /* Function prototypes */
 void clearInterrupt(const uint32_t mask);

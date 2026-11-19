@@ -1,4 +1,5 @@
 // test-coverage: 12-w1c-access-modifier
+#pragma target cortex-m7
 // Tests: Write-1-to-Clear register access modifier
 // Writing 1 to a bit clears it, writing 0 has no effect
 register InterruptController {

@@ -1,22 +1,22 @@
-37:8 error[E0872]: Cannot assign false to write-only register bit PWM.FLAGS.LED
+38:8 error[E0872]: Cannot assign false to write-only register bit PWM.FLAGS.LED
        help: Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.
-38:8 error[E0872]: Cannot assign 0 to write-only register bits PWM.CTRL.Mode
+39:8 error[E0872]: Cannot assign 0 to write-only register bits PWM.CTRL.Mode
        help: Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.
-43:8 error[E0872]: Cannot assign false to write-only register bit this.PWM.FLAGS.LED
-       help: Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.
-48:4 error[E0872]: Cannot assign false to write-only register bit GPIO.DR_SET.LED
+44:8 error[E0872]: Cannot assign false to write-only register bit this.PWM.FLAGS.LED
        help: Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.
 49:4 error[E0872]: Cannot assign false to write-only register bit GPIO.DR_SET.LED
        help: Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.
 50:4 error[E0872]: Cannot assign false to write-only register bit GPIO.DR_SET.LED
        help: Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.
-51:4 error[E0872]: Cannot assign false to write-only register bit GPIO.STATUS.LED
+51:4 error[E0872]: Cannot assign false to write-only register bit GPIO.DR_SET.LED
        help: Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.
-52:4 error[E0872]: Cannot assign false to write-only register bit GPIO.SET.LED
+52:4 error[E0872]: Cannot assign false to write-only register bit GPIO.STATUS.LED
        help: Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.
-53:4 error[E0872]: Cannot assign 0 to write-only register bits GPIO.DR_SET.Mode
+53:4 error[E0872]: Cannot assign false to write-only register bit GPIO.SET.LED
        help: Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.
-54:4 error[E0872]: Cannot assign 0 to write-only register bits Drive.PWM.CTRL.Mode
+54:4 error[E0872]: Cannot assign 0 to write-only register bits GPIO.DR_SET.Mode
        help: Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.
-55:4 error[E0872]: Cannot assign false to write-only register bit global.GPIO.STATUS.LED
+55:4 error[E0872]: Cannot assign 0 to write-only register bits Drive.PWM.CTRL.Mode
+       help: Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.
+56:4 error[E0872]: Cannot assign false to write-only register bit global.GPIO.STATUS.LED
        help: Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.

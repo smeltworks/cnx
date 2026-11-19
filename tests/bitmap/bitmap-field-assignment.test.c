@@ -25,9 +25,9 @@
  */
 typedef uint8_t Timer__ControlBits;
 
-/* Register: Timer__SysTick @ 0xE000E010 */
-#define Timer__SysTick__CTRL (*(volatile Timer__ControlBits*)(0xE000E010 + 0x00))
-#define Timer__SysTick__LOAD (*(volatile uint32_t*)(0xE000E010 + 0x04))
+/* Register: Timer__SysTick @ 0xE000E010U */
+#define Timer__SysTick__CTRL (*(volatile Timer__ControlBits*)(0xE000E010U))
+#define Timer__SysTick__LOAD (*(volatile uint32_t*)(0xE000E014U))
 
 
 void Timer__init(void) {

@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // Issue #1052: a bit-range (and single-bit) write to a register field through a
 // cross-scope `global.` path must expand to the mask/shift form, not emit a
 // literal `[start, width]` subscript (which is invalid C).

@@ -1,4 +1,5 @@
 // test-coverage: 12-bit-range-access
+#pragma target cortex-m7
 // Tests: Bit range access on register members using [start, width] syntax
 register Timer {
     0x00 rw u32 CTRL,

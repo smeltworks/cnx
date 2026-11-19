@@ -3,15 +3,16 @@
  * A safer C for embedded systems
  */
 
-// test-adr: 004
 // A byte-aligned write to a write-only member of a register declared in an
 // INCLUDED file is one memory access through the declaring file's base and
 // offset. 2.2 plans those expressions and the uint8_t the access is written
 // through, which is this file's only fixed-width type (#1991 review).
 #include "register-declarations.h"
 
+// test-adr: 004
+
 #include <stdint.h>
 
 int main(void) {
-    *((volatile uint8_t*)(0x40000000 + 0x08 + 1)) = (5U);
+    *((volatile uint8_t*)(0x40000009U)) = (5U);
 }

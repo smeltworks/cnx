@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 004
+#pragma target cortex-m7
 // ADR-004, E0870/E0871/E0872 on a SCOPED register, in every spelling.
 //
 // These are the arms codegen did not reach. Its three rules each resolved the

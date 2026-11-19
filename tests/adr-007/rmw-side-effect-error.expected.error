@@ -1,14 +1,14 @@
-40:8 error[E0890]: 'idx()' would be evaluated twice: 'arr[idx()][3]' is read and then written back
+41:8 error[E0890]: 'idx()' would be evaluated twice: 'arr[idx()][3]' is read and then written back
        help: A bit, bit-range or bitmap-field write keeps the other bits, so it reads its target and stores it back, and every subscript in the target runs twice. Store the index in a variable first (ADR-007).
-41:9 error[E0890]: 'idx()' would be evaluated twice: 'word[idx()]' is read and then written back
+42:9 error[E0890]: 'idx()' would be evaluated twice: 'word[idx()]' is read and then written back
        help: A bit, bit-range or bitmap-field write keeps the other bits, so it reads its target and stores it back, and every subscript in the target runs twice. Store the index in a variable first (ADR-007).
-42:8 error[E0890]: 'vidx' would be evaluated twice: 'arr[vidx][2, 4]' is read and then written back
+43:8 error[E0890]: 'vidx' would be evaluated twice: 'arr[vidx][2, 4]' is read and then written back
        help: A bit, bit-range or bitmap-field write keeps the other bits, so it reads its target and stores it back, and every subscript in the target runs twice. Store the index in a variable first (ADR-007).
-43:10 error[E0890]: 'idx()' would be evaluated twice: 'modes[idx()].fast' is read and then written back
+44:10 error[E0890]: 'idx()' would be evaluated twice: 'modes[idx()].fast' is read and then written back
        help: A bit, bit-range or bitmap-field write keeps the other bits, so it reads its target and stores it back, and every subscript in the target runs twice. Store the index in a variable first (ADR-007).
-44:12 error[E0890]: 'idx()' would be evaluated twice: 'GPIO.DR[idx()]' is read and then written back
+45:12 error[E0890]: 'idx()' would be evaluated twice: 'GPIO.DR[idx()]' is read and then written back
        help: A bit, bit-range or bitmap-field write keeps the other bits, so it reads its target and stores it back, and every subscript in the target runs twice. Store the index in a variable first (ADR-007).
-45:10 error[E0890]: 'idx()' would be evaluated twice: 'pairs[idx()].bits[3]' is read and then written back
+46:10 error[E0890]: 'idx()' would be evaluated twice: 'pairs[idx()].bits[3]' is read and then written back
        help: A bit, bit-range or bitmap-field write keeps the other bits, so it reads its target and stores it back, and every subscript in the target runs twice. Store the index in a variable first (ADR-007).
-46:10 error[E0890]: 'idx()' would be evaluated twice: 'level[idx()]' is read and then written back
+47:10 error[E0890]: 'idx()' would be evaluated twice: 'level[idx()]' is read and then written back
        help: A bit, bit-range or bitmap-field write keeps the other bits, so it reads its target and stores it back, and every subscript in the target runs twice. Store the index in a variable first (ADR-007).

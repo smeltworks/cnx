@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 007
+#pragma target cortex-m7
 // Issue #1114: a register member takes one bit index, like any scalar.
 //
 // NEGATIVE CONTROL: `GPIO.DR[3]`, the one bit index, stays silent.

@@ -25,15 +25,15 @@ extern "C" {
 typedef uint8_t Local;
 
 /* Registers (ADR-004) */
-/* Register: LREG @ 0x40001000 */
-#define LREG__RW (*(volatile Ctl*)(0x40001000 + 0x00))
+/* Register: LREG @ 0x40001000U */
+#define LREG__RW (*(volatile Ctl*)(0x40001000U))
 
-/* Register: OWNREG @ 0x40002000 */
-#define OWNREG__RW (*(volatile Local*)(0x40002000 + 0x00))
+/* Register: OWNREG @ 0x40002000U */
+#define OWNREG__RW (*(volatile Local*)(0x40002000U))
 
-/* Register: DREG @ 0x40005000 */
-#define DREG__D (*(volatile Deep*)(0x40005000 + 0x00))
-#define DREG__M (*(volatile EMode*)(0x40005000 + 0x02))
+/* Register: DREG @ 0x40005000U */
+#define DREG__D (*(volatile Deep*)(0x40005000U))
+#define DREG__M (*(volatile EMode*)(0x40005002U))
 
 /* Function prototypes */
 void Dev__go(void);

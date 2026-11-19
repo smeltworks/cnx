@@ -1,4 +1,5 @@
 // test-adr: 072
+#pragma target cortex-m7
 // ADR-072 ruling 2 (#2029): a reserved word may name a member -- a register
 // member, a bitmap field or a struct field. A member is only declared in
 // member position and only reached after `.`, so `ISR` there is never the

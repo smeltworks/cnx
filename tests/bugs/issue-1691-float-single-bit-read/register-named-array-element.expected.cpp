@@ -5,9 +5,10 @@
 
 #include "register-named-array-element.test.hpp"
 
+// test-execution
+
 #include <stdint.h>
 
-// test-execution
 // #1691 review: a local array and a scope array named like a register are
 // elements, not register bits (ADR-057 resolves the name; ADR-007 §1 types the
 // subscript). Before, both failed with an internal error.

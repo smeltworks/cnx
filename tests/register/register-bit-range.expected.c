@@ -5,9 +5,10 @@
 
 #include "register-bit-range.test.h"
 
+// test-coverage: 12-bit-range-access
+
 #include <stdint.h>
 
-// test-coverage: 12-bit-range-access
 // Tests: Bit range access on register members using [start, width] syntax
 void setTimerPrescaler(const uint8_t prescaler) {
     TIMER__PRESCALE = (TIMER__PRESCALE & ~((uint32_t)0xFFU << 0)) | ((prescaler & (uint32_t)0xFFU) << 0);

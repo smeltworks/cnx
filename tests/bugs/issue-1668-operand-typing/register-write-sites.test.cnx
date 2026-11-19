@@ -1,4 +1,5 @@
 // test-error
+#pragma target cortex-m7
 // #1668: E0871 reads every assignment site. Before, a write in a `for`
 // header was never checked (#1726), so a read-only member could be written
 // there.

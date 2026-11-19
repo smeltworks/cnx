@@ -1,4 +1,5 @@
 // test-error
+#pragma target cortex-m7
 // Test: bits[start..end] syntax should produce a parse error
 // This syntax is NOT valid cnx. Use bitmap types instead.
 

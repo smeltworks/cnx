@@ -29,10 +29,10 @@ typedef uint8_t StatusFlags;
 typedef uint16_t ControlFlags;
 
 /* Registers (ADR-004) */
-/* Register: MOTOR @ 0x40001000 */
-#define MOTOR__STATUS (*(volatile StatusFlags*)(0x40001000 + 0x00))
-#define MOTOR__CONTROL (*(volatile ControlFlags*)(0x40001000 + 0x04))
-#define MOTOR__DATA (*(volatile uint32_t*)(0x40001000 + 0x08))
+/* Register: MOTOR @ 0x40001000U */
+#define MOTOR__STATUS (*(volatile StatusFlags*)(0x40001000U))
+#define MOTOR__CONTROL (*(volatile ControlFlags*)(0x40001004U))
+#define MOTOR__DATA (*(volatile uint32_t*)(0x40001008U))
 
 #ifdef __cplusplus
 }

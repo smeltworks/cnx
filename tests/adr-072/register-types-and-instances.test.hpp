@@ -13,24 +13,24 @@ extern "C" {
 #endif
 
 /* Registers (ADR-004) */
-/* Register: GPIO1 @ 0x401B8000 */
-#define GPIO1__DR (*(volatile uint32_t*)(0x401B8000 + 0x00))
-#define GPIO1__PSR (*(volatile uint32_t const *)(0x401B8000 + 0x08))
-#define GPIO1__ISR (*(volatile uint32_t*)(0x401B8000 + 0x18))
-#define GPIO1__DR_SET (*(volatile uint32_t*)(0x401B8000 + 0x84))
+/* Register: GPIO1 @ 0x401B8000U */
+#define GPIO1__DR (*(volatile uint32_t*)(0x401B8000U))
+#define GPIO1__PSR (*(volatile uint32_t const *)(0x401B8008U))
+#define GPIO1__ISR (*(volatile uint32_t*)(0x401B8018U))
+#define GPIO1__DR_SET (*(volatile uint32_t*)(0x401B8084U))
 
-/* Register: GPIO2 @ 0x401BC000 */
-#define GPIO2__DR (*(volatile uint32_t*)(0x401BC000 + 0x00))
-#define GPIO2__PSR (*(volatile uint32_t const *)(0x401BC000 + 0x08))
-#define GPIO2__ISR (*(volatile uint32_t*)(0x401BC000 + 0x18))
-#define GPIO2__DR_SET (*(volatile uint32_t*)(0x401BC000 + 0x84))
+/* Register: GPIO2 @ 0x401BC000U */
+#define GPIO2__DR (*(volatile uint32_t*)(0x401BC000U))
+#define GPIO2__PSR (*(volatile uint32_t const *)(0x401BC008U))
+#define GPIO2__ISR (*(volatile uint32_t*)(0x401BC018U))
+#define GPIO2__DR_SET (*(volatile uint32_t*)(0x401BC084U))
 
-/* Register: UART0 @ 0x4006A000 */
-#define UART0__DATA (*(volatile uint8_t*)(0x4006A000 + 0x00))
-#define UART0__STATUS (*(volatile uint8_t const *)(0x4006A000 + 0x04))
+/* Register: UART0 @ 0x4006A000U */
+#define UART0__DATA (*(volatile uint8_t*)(0x4006A000U))
+#define UART0__STATUS (*(volatile uint8_t const *)(0x4006A004U))
 
-/* Register: Motor__PWM @ 0x40038000 */
-#define Motor__PWM__DUTY (*(volatile uint16_t*)(0x40038000 + 0x00))
+/* Register: Motor__PWM @ 0x40038000U */
+#define Motor__PWM__DUTY (*(volatile uint16_t*)(0x40038000U))
 
 /* External variables */
 extern const uint32_t GPIO_BASE;

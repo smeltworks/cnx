@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1022 fixture(s) assert a diagnostic; 1008 carry a code.
+1025 fixture(s) assert a diagnostic; 1011 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -492,11 +492,15 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-071/write-imported-transitive-error.test.cnx                                                    | E0900                             |
 | tests/adr-072/constructor-expression-not-register-error.test.cnx                                          | E0935                             |
 | tests/adr-072/register-address-not-constant-error.test.cnx                                                | E0931                             |
+| tests/adr-072/register-address-past-pointer-error.test.cnx                                                | E0931                             |
+| tests/adr-072/register-instance-as-type-error.test.cnx                                                    | E0937                             |
 | tests/adr-072/register-local-instance-error.test.cnx                                                      | E0934                             |
 | tests/adr-072/register-negative-offset-error.test.cnx                                                     | E0931, E0932                      |
 | tests/adr-072/register-offset-not-constant-error.test.cnx                                                 | E0932                             |
 | tests/adr-072/register-parameter-error.test.cnx                                                           | E0933                             |
 | tests/adr-072/register-scoped-parameter-error.test.cnx                                                    | E0933, E0934                      |
+| tests/adr-072/register-type-as-value-error.test.cnx                                                       | E0427                             |
+| tests/adr-072/register-type-position-error.test.cnx                                                       | E0936                             |
 | tests/analysis/division-by-const-zero.test.cnx                                                            | E0800                             |
 | tests/analysis/division-by-zero.test.cnx                                                                  | E0800                             |
 | tests/analysis/float-array-index.test.cnx                                                                 | E0851                             |
@@ -691,7 +695,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1333-scope-reopening/member-never-assigned-reopened.test.cnx                             | E0381                             |
 | tests/bugs/issue-1334-scope-declaration-sites/conflict-across-files.test.cnx                              | E0425                             |
 | tests/bugs/issue-1334-scope-declaration-sites/cross-language-conflict.test.cnx                            | E0425                             |
-| tests/bugs/issue-1336-register-in-type-position/register-in-type-position.test.cnx                        | E0429                             |
+| tests/bugs/issue-1336-register-in-type-position/register-in-type-position.test.cnx                        | E0937                             |
 | tests/bugs/issue-1353-undeclared-value-position/macro-through-cnx-include.test.cnx                        | E0426                             |
 | tests/bugs/issue-1353-undeclared-value-position/undeclared-value-same-file.test.cnx                       | E0427                             |
 | tests/bugs/issue-1353-undeclared-value-position/undeclared-value-sibling-consumer-first.test.cnx          | E0427                             |
@@ -722,7 +726,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1458-qualified-define-before-use/this-forward.test.cnx                                   | E0426                             |
 | tests/bugs/issue-1458-qualified-define-before-use/this-mutual.test.cnx                                    | E0426                             |
 | tests/bugs/issue-1458-qualified-define-before-use/this-self.test.cnx                                      | E0426                             |
-| tests/bugs/issue-1458-qualified-type-existence/register-qualified.test.cnx                                | E0429                             |
+| tests/bugs/issue-1458-qualified-type-existence/register-qualified.test.cnx                                | E0937                             |
 | tests/bugs/issue-1458-qualified-type-existence/undefined-qualified.test.cnx                               | E0426                             |
 | tests/bugs/issue-1472-scope-function-as-type/undefined-still-rejected.test.cnx                            | E0422                             |
 | tests/bugs/issue-1514-cross-file-bitmap-register/cross-file-bitmap-register-bracket-error.test.cnx        | E0883                             |
@@ -973,7 +977,6 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/compound-assign/bitmap-field-compound-unknown-field.test.cnx                                        | E0882                             |
 | tests/compound-assign/bitmap-field-compound.test.cnx                                                      | E0857                             |
 | tests/compound-assign/struct-field-bit-index-compound.test.cnx                                            | E0857                             |
-| tests/constructor-syntax/error-literal-arg.test.cnx                                                       | E0426                             |
 | tests/constructor-syntax/error-non-const-arg.test.cnx                                                     | E0432                             |
 | tests/constructor-syntax/error-undeclared-arg.test.cnx                                                    | E0433                             |
 | tests/enum/enum-error-negative.test.cnx                                                                   | E0894                             |

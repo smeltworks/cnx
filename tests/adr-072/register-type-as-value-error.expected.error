@@ -1,0 +1,1 @@
+15:4 error[E0427]: 'GpioPort' is a register type, not a value; reach its members through an instance

@@ -5,6 +5,7 @@
 
 #include "register-basic.test.h"
 
+
 #include <stdint.h>
 
 // ADR-004: Basic register declaration and access

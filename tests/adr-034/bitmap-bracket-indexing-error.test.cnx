@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 034
+#pragma target cortex-m7
 // ADR-034: a bitmap is addressed by named field, never by bit index. Until
 // #1322 this check keyed on a map of REGISTER member types, so it could only
 // ever fire through a register -- indexing a bitmap VARIABLE was accepted and

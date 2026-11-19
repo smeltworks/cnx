@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 004
+#pragma target cortex-m7
 // E0870/E0871/E0872 on register members typed by a bitmap from an INCLUDED
 // file (#2155 review 8). The access rules belong to the member, not to its
 // type, so they apply whether its bitmap is declared here or included (since

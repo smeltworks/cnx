@@ -11,12 +11,12 @@ extern "C" {
 #endif
 
 /* Registers (ADR-004) */
-/* Register: UART @ 0x40001000 */
-#define UART__CR (*(volatile uint32_t*)(0x40001000 + 0x00))
-#define UART__SR (*(volatile uint32_t const *)(0x40001000 + 0x04))
-#define UART__DR (*(volatile uint32_t*)(0x40001000 + 0x08))
-#define UART__BRR (*(volatile uint32_t*)(0x40001000 + 0x0C))
-#define UART__CR1 (*(volatile uint32_t*)(0x40001000 + 0x10))
+/* Register: UART @ 0x40001000U */
+#define UART__CR (*(volatile uint32_t*)(0x40001000U))
+#define UART__SR (*(volatile uint32_t const *)(0x40001004U))
+#define UART__DR (*(volatile uint32_t*)(0x40001008U))
+#define UART__BRR (*(volatile uint32_t*)(0x4000100CU))
+#define UART__CR1 (*(volatile uint32_t*)(0x40001010U))
 
 #ifdef __cplusplus
 }

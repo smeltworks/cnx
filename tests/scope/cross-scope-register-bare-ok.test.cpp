@@ -5,6 +5,7 @@
 
 #include "cross-scope-register-bare-ok.test.hpp"
 
+
 #include <stdint.h>
 
 // Test: Bare register access from inside a scope should work when NOT shadowed

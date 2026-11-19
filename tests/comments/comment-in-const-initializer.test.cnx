@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // Tests: a comment inside a const initializer never reaches the C (#1991 review)
 // A block comment, and a line comment that splits the initializer over lines
 scope Board {

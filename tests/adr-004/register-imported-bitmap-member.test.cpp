@@ -3,7 +3,6 @@
  * A safer C for embedded systems
  */
 
-// test-adr: 004
 // A public scoped register declared in an INCLUDED file, typed by a bitmap
 // that is PRIVATE to its scope, used here through a bitmap field. The macro
 // exported for `Chip.R.DR` casts to `Chip__Pins`, so the consumer compiles
@@ -11,6 +10,8 @@
 // type into the interface behind a public declaration has to follow a
 // register's member types as well as a function's signature (#1453).
 #include "register-bitmap-declarations.hpp"
+
+// test-adr: 004
 
 #include <stdint.h>
 #include <stdbool.h>

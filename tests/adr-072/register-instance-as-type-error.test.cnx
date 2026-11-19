@@ -1,0 +1,27 @@
+// test-error
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072, E0937: a register instance is a value at an address, so it is no
+// type; its register type is. `GPIO1.DR <- 1;` is the negative control: the
+// instance is still a value with members.
+
+register GpioPort {
+    0x00 rw u32 DR,
+}
+
+GpioPort GPIO1(0x401B8000);
+
+GPIO1 asGlobal;
+
+scope Board {
+    GPIO1 asMember;
+
+    void method() {
+        GPIO1 inMethod;
+    }
+}
+
+void main() {
+    GPIO1 inFunction;
+    GPIO1.DR <- 1;
+}

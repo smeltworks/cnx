@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 004
+#pragma target cortex-m7
 // ADR-004, E0870: a write-only (`wo`) register member read in a `for` header's
 // declaration -- the `for header` / `same file` cell of ADR-004's matrix.
 //

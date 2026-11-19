@@ -1,5 +1,6 @@
 // test-execution
 // test-adr: 057
+#pragma target cortex-m7
 // Issue #2199: a local named like a global register is the local, for its
 // writes as for its reads. A plain write, a bit and a bit range through the
 // local land on the local; the register is never written (it is not mapped

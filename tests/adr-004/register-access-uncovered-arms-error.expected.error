@@ -1,18 +1,18 @@
-32:22 error[E0870]: cannot read from write-only register member 'SET' (this.R.SET has 'wo' access modifier)
+33:22 error[E0870]: cannot read from write-only register member 'SET' (this.R.SET has 'wo' access modifier)
        help: A `wo` register member is hardware that returns nothing meaningful when read (ADR-004). Read the register's own readable member, or keep a shadow copy of what was written.
-37:8 error[E0871]: cannot assign to read-only register member 'ST' (this.R.ST has 'ro' access modifier)
+38:8 error[E0871]: cannot assign to read-only register member 'ST' (this.R.ST has 'ro' access modifier)
        help: An `ro` register member is hardware that cannot be written (ADR-004); the generated C declares it `const`. Write the register's own writable member, or change the declaration if the hardware allows writes.
-38:8 error[E0871]: cannot assign to read-only register member 'ST' (R.ST has 'ro' access modifier)
+39:8 error[E0871]: cannot assign to read-only register member 'ST' (R.ST has 'ro' access modifier)
        help: An `ro` register member is hardware that cannot be written (ADR-004); the generated C declares it `const`. Write the register's own writable member, or change the declaration if the hardware allows writes.
-39:8 error[E0871]: cannot assign to read-only register member 'ST' (Board.R.ST has 'ro' access modifier)
+40:8 error[E0871]: cannot assign to read-only register member 'ST' (Board.R.ST has 'ro' access modifier)
        help: An `ro` register member is hardware that cannot be written (ADR-004); the generated C declares it `const`. Write the register's own writable member, or change the declaration if the hardware allows writes.
-41:8 error[E0870]: cannot read from write-only register member 'SET' (this.R.SET has 'wo' access modifier)
+42:8 error[E0870]: cannot read from write-only register member 'SET' (this.R.SET has 'wo' access modifier)
        help: A `wo` register member is hardware that returns nothing meaningful when read (ADR-004). Read the register's own readable member, or keep a shadow copy of what was written.
-43:8 error[E0872]: Cannot assign false to write-only register bit this.R.SET[3]
+44:8 error[E0872]: Cannot assign false to write-only register bit this.R.SET[3]
        help: Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.
-48:18 error[E0870]: cannot read from write-only register member 'SET' (Board.R.SET has 'wo' access modifier)
+49:18 error[E0870]: cannot read from write-only register member 'SET' (Board.R.SET has 'wo' access modifier)
        help: A `wo` register member is hardware that returns nothing meaningful when read (ADR-004). Read the register's own readable member, or keep a shadow copy of what was written.
-52:4 error[E0871]: cannot assign to read-only register member 'ST' (Board.R.ST has 'ro' access modifier)
+53:4 error[E0871]: cannot assign to read-only register member 'ST' (Board.R.ST has 'ro' access modifier)
        help: An `ro` register member is hardware that cannot be written (ADR-004); the generated C declares it `const`. Write the register's own writable member, or change the declaration if the hardware allows writes.
-58:8 error[E0871]: cannot assign to read-only register member 'ST' (global.Board.R.ST has 'ro' access modifier)
+59:8 error[E0871]: cannot assign to read-only register member 'ST' (global.Board.R.ST has 'ro' access modifier)
        help: An `ro` register member is hardware that cannot be written (ADR-004); the generated C declares it `const`. Write the register's own writable member, or change the declaration if the hardware allows writes.

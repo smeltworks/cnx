@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // Postfix Chain Test: Register + Bitmap + Bit Indexing
 // Tests: Complex chains mixing hardware registers, bitmap fields, and bit access
 // HIGH RISK AREA: Lines 5850-6285 in CodeGenerator.ts

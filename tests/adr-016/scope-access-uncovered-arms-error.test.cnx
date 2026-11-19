@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 016
+#pragma target cortex-m7
 // The ADR-016 access arms that had no fixture, plus the global-variable context.
 //
 // E0435 as a TYPE: `M.T t;` inside M. E0437 for a register shadowed by a LOCAL

@@ -1,0 +1,4 @@
+14:0 error[E0937]: 'GPIO1' is a register instance, not a type; its register type is the type
+17:4 error[E0937]: 'GPIO1' is a register instance, not a type; its register type is the type
+20:8 error[E0937]: 'GPIO1' is a register instance, not a type; its register type is the type
+25:4 error[E0937]: 'GPIO1' is a register instance, not a type; its register type is the type

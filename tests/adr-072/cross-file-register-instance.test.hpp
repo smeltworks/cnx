@@ -13,9 +13,9 @@ extern "C" {
 #endif
 
 /* Registers (ADR-004) */
-/* Register: GPIO2 @ 0x401BC000 */
-#define GPIO2__DR (*(volatile uint32_t*)(0x401BC000 + 0x00))
-#define GPIO2__PSR (*(volatile uint32_t const *)(0x401BC000 + 0x08))
+/* Register: GPIO2 @ 0x401BC000U */
+#define GPIO2__DR (*(volatile uint32_t*)(0x401BC000U))
+#define GPIO2__PSR (*(volatile uint32_t const *)(0x401BC008U))
 
 #ifdef __cplusplus
 }

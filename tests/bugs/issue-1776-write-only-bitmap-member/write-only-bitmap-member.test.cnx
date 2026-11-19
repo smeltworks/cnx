@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // #1776: a bitmap field of a write-only register member is written without
 // reading the member, however the member is spelled. The unscoped spelling
 // emitted a read-modify-write: a read of a `wo` member, which ADR-004 forbids

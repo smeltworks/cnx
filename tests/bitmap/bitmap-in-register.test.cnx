@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // ADR-034 + ADR-004: Bitmap inside Register Test
 // This is the "million dollar feature" - using bitmaps for type-safe hardware registers
 // Define a bitmap for motor control register
