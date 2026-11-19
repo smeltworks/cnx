@@ -136,7 +136,11 @@ registerDefinition
     ;
 
 registerField
-    : byteOffset access type IDENTIFIER transform?
+    : byteOffset access type memberName transform?
+    ;
+
+memberName
+    : IDENTIFIER | keyword   // any reserved word may name a member (ruling 2 on #2449)
     ;
 
 transform
@@ -190,6 +194,13 @@ GpioPort GPIO7(0x42004000);
 GpioPort GPIO8(0x42008000);
 GpioPort GPIO9(0x4200C000);
 ```
+
+A member may be named with any reserved word, so the datasheet's `ISR` is used as
+written. A member is declared only in member position and reached only after a `.`,
+so `GPIO1.ISR` cannot be read as the `ISR` type (ADR-040). The same rule covers bitmap
+fields and struct fields: a keyword restricts naming only where it would make the
+program ambiguous (ruling 2 on #2449, #2029). Names that are C keywords are a separate
+question (#2222).
 
 #### Transpilation
 
@@ -611,7 +622,7 @@ Key considerations:
 
 2. **Reserved field generation** — Calculate gaps between fields and emit `Reserved[N]`
 
-3. **Field name sanitization** — SVD field names may conflict with cnx keywords
+3. **Field names are copied unchanged** — a cnx reserved word may name a register member or bitmap field (Part 1), so no rename table is needed
 
 4. **Cluster handling** — SVD `<cluster>` elements represent register arrays; emit with appropriate indexing
 
