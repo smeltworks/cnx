@@ -7,8 +7,9 @@ import type TExpression from "../types/syntax/TExpression";
  * ADR-045: whether an operand is a string -- a string literal, a value of a
  * string type, or a C string (a `char` array or a `cstring`), which cnx
  * treats as one. 2.1's E0929 rejects a comparison where this holds for one
- * side only (#2017), and 2.2 writes an `=` / `!=` comparison as `strcmp` from
- * the same answer (#1373 review), so the two read one fact.
+ * side only (#2017), and 2.2 writes an `=`, `!=`, `<`, `>`, `<=` or `>=`
+ * comparison as `strcmp` from the same answer (#1373 review, #1956), so the
+ * two read one fact.
  */
 class StringOperand {
   static is(expr: TExpression, ctx: ITypingContext): boolean {
@@ -16,9 +17,11 @@ class StringOperand {
   }
 
   /**
-   * Whether `=` / `!=` compares these operands' contents. Two C strings are
-   * compared by content as a cnx string is; a C string beside anything else
-   * is a pointer, so `c_line != NULL` stays a null check (ADR-046).
+   * Whether `=`, `!=`, `<`, `>`, `<=` or `>=` compares these operands'
+   * contents. Two C strings are compared by content as a cnx string is. A C
+   * string beside anything else is a pointer, so `c_line != NULL` stays a null
+   * check (ADR-046); that carve-out is for `=` / `!=` only, since `NULL` under
+   * an ordering is E0903 (an untyped operand beside one is #2460).
    */
   static comparesContents(
     left: TExpression,

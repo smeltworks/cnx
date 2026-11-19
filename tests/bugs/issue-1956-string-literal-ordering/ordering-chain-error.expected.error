@@ -1,0 +1,2 @@
+10:14 error[E0807]: 'a < b < c' compares the bool 'a < b' with 'c'
+       help: MISRA C:2012 Rule 10.1: did you mean '(a < b) && (b < c)'?

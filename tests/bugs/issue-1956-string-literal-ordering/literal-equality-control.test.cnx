@@ -1,0 +1,16 @@
+// test-execution
+// test-adr: 045
+// #1956 control: a string literal beside '=' is still compared by content
+#pragma target host
+i32 main() {
+    string<4> s <- "a";
+    bool same <- s = "a";
+    if (same != true) {
+        return 1;
+    }
+    bool differ <- ("a" = s) = false;
+    if (differ != false) {
+        return 2;
+    }
+    return 0;
+}

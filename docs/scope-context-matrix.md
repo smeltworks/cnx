@@ -1339,16 +1339,29 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-6 linked fixtures with no derivable context:
+9 linked fixtures with no derivable context:
 
 - `bugs/issue-1209-string-array-return/callback-return.test.cnx`
 - `bugs/issue-1209-string-array-return/cross-file.test.cnx`
 - `bugs/issue-1209-string-array-return/lazy-buffer-call.test.cnx`
 - `bugs/issue-1373-string-comparison-chain/c-string-control.test.cnx`
 - `bugs/issue-1373-string-comparison-chain/chain-control.test.cnx`
+- `bugs/issue-1956-string-literal-ordering/c-string-ordering.test.cnx`
+- `bugs/issue-1956-string-literal-ordering/literal-equality-control.test.cnx`
+- `bugs/issue-1956-string-literal-ordering/literal-ordering.test.cnx`
 - `bugs/issue-2017-integer-string-comparison/string-literal-control.test.cnx`
 
 ## ADR-045 E0427
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | ok        | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
+
+## ADR-045 E0807
 
 | Context            | same file | direct | transitive | from 1 away | thru chain |
 | ------------------ | --------- | ------ | ---------- | ----------- | ---------- |

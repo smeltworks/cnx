@@ -1,0 +1,15 @@
+// test-error
+// test-adr: 045
+// #1956: a string is ordered only with a string; two strings ordered stay silent
+#pragma target host
+u32 n <- 3;
+bool flag <- true;
+string<4> a <- "ab";
+string<4> b <- "cd";
+
+void main() {
+    bool r1 <- a < n;
+    bool r2 <- n >= "ab";
+    bool r3 <- a <= flag;
+    bool ok <- a < b;
+}

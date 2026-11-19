@@ -324,6 +324,9 @@ string<64> b <- "Hello";
 if (a = b) {                    // strcmp(a, b) == 0
     // Equal content
 }
+if (a < b) {                    // strcmp(a, b) < 0: ordered by content
+    // a sorts first
+}
 
 // Concatenation with capacity validation
 string<64> result <- a + " World";  // OK: 64 >= 32 + 6

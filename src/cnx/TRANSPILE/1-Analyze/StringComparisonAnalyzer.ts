@@ -1,6 +1,6 @@
 /**
- * E0929: `=` / `!=` compares a string only with a string, and a string
- * comparison has exactly two operands (ADR-045).
+ * E0929: `=` / `!=` and `<` / `>` / `<=` / `>=` compare a string only with a
+ * string, and a string comparison has exactly two operands (ADR-045).
  *
  * A string comparison is written as `strcmp`, so a non-string operand beside
  * a string reached C as a `strcmp` argument: `x = "abc"` with `x: u32` emitted
@@ -34,6 +34,9 @@ import StringOperand from "../../utils/StringOperand";
 import IStringComparisonError from "./types/IStringComparisonError";
 
 const RULE = "ADR-045: '=' and '!=' compare a string only with another string.";
+/** #1956: a relational chain is E0807's (OperatorOperandAnalyzer) */
+const ORDERING_RULE =
+  "ADR-045: '<', '>', '<=' and '>=' order a string only with another string.";
 
 class StringComparisonAnalyzer {
   private readonly found: IStringComparisonError[] = [];
@@ -51,29 +54,43 @@ class StringComparisonAnalyzer {
     if (expr.kind === "binary" && expr.level === "equality") {
       this.level(expr);
     }
+    if (expr.kind === "binary" && expr.level === "relational") {
+      this.pair(expr.operands[0], expr.operands[1], ORDERING_RULE);
+    }
     for (const child of ExpressionChildren.of(expr)) {
       this.expression(child);
     }
   }
 
-  /** `operators[i]` joins operand `i` to `i + 1` */
-  private level(level: TBinaryExpression): void {
-    const operands = level.operands;
-    const leftIsString = StringOperand.is(operands[0], this.context);
-    const rightIsString = StringOperand.is(operands[1], this.context);
+  /**
+   * Reports the operand beside a string that is not one, when cnx can type
+   * it, and returns whether it did; a pair of strings returns false
+   */
+  private pair(left: TExpression, right: TExpression, rule: string): boolean {
+    const leftIsString = StringOperand.is(left, this.context);
+    const rightIsString = StringOperand.is(right, this.context);
     if (leftIsString !== rightIsString) {
-      const other = leftIsString ? operands[1] : operands[0];
+      const other = leftIsString ? right : left;
       if (!this.cannotType(other)) {
         this.report(
           other.span,
           this.notAString(other),
-          RULE,
+          rule,
           BindingSite.ofOperands([other], this.context),
         );
-        return;
+        return true;
       }
     }
-    const pairIsString = leftIsString || rightIsString;
+    return false;
+  }
+
+  /** `operators[i]` joins operand `i` to `i + 1` */
+  private level(level: TBinaryExpression): void {
+    const operands = level.operands;
+    if (this.pair(operands[0], operands[1], RULE)) return;
+    const pairIsString =
+      StringOperand.is(operands[0], this.context) ||
+      StringOperand.is(operands[1], this.context);
     for (let i = 2; i < operands.length; i += 1) {
       const isString = StringOperand.is(operands[i], this.context);
       if (!pairIsString && !isString) continue;

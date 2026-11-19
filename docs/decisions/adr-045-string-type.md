@@ -490,7 +490,13 @@ if (a = b) {       // strcmp(a, b) == 0
 if (a != b) {      // strcmp(a, b) != 0
     // Different content
 }
+
+if (a < b) {       // strcmp(a, b) < 0
+    // a sorts before b
+}
 ```
+
+**`<`, `>`, `<=` and `>=` order strings by content** (#1956, owner ruling 2026-11-19: "if misra 10.1 forbids them, then yes A, otherwise B", B being ordering by content). `a < b` is `strcmp(a, b) < 0`, and `>`, `<=` and `>=` compare `strcmp`'s result with 0 the same way. Before #1191 added E0925, `"a" < "b"` had compared two addresses in C. MISRA C:2012 Rule 10.1 does not forbid this: it governs operands of an essential type (Boolean, character, signed, unsigned, enum, floating), and a string, a `char` array or pointer, has none. Ordering pointers is Rule 18.3's, and `strcmp(a, b) < 0` orders two `int`s, not pointers. The operands are those of `=`: two C strings are ordered by content too, and anything else beside a string is E0929 (`'n' is a u32, not a string`). An ordering is not chained (`a < b < c` is E0807, as for numbers). Every other operator except `+` is still E0925 on a string, citing this ADR rather than Rule 10.1.
 
 **A string is compared only with a string** (#2017). Either side of `=` or `!=` may be a string: a `string<N>`, a string literal, or a C string (a `char*` or a `char[]`), which cnx treats as a string. Two C strings compare by content too: `name != other` is `strcmp(name, other) != 0`, not an address comparison; a C string beside `NULL` stays a null check (ADR-046). Anything else beside a string is E0929, which names its type -- `'x' is a u32, not a string` -- because it would be handed to `strcmp`: with `u32 x`, `x = "abc"` had emitted `strcmp(x, "abc") == 0`, which the C compiler rejects. A value whose type cnx cannot read, such as an unreadable header macro, is left to the C compiler. No MISRA C:2012 rule governs comparing a string, so E0929 cites this ADR (CLAUDE.md: a standard is cited only where one of its rules directly applies).
 

@@ -1,0 +1,32 @@
+// test-execution
+// test-adr: 045
+// #1956: two C strings are ordered by content, as '=' compares them, not by address
+#pragma target host
+#include <string.h>
+
+i32 main() {
+    string<8> hay <- "zebra";
+    cstring c_whole <- strstr(hay, "zebra");
+    cstring c_tail <- strstr(hay, "bra");
+    if (c_whole != NULL) {
+        if (c_tail != NULL) {
+            if ((c_whole > c_tail) != true) {
+                return 1;
+            }
+            if ((c_whole <= c_tail) != false) {
+                return 2;
+            }
+            if ((c_tail < hay) != true) {
+                return 3;
+            }
+        } else {
+            return 6;
+        }
+    } else {
+        return 5;
+    }
+    if ((hay >= "zebra") != true) {
+        return 4;
+    }
+    return 0;
+}

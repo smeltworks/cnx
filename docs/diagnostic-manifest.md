@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1020 fixture(s) assert a diagnostic; 1006 carry a code.
+1022 fixture(s) assert a diagnostic; 1008 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -882,6 +882,8 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1881-macro-reached-through-cnx/two-hop.test.cnx                                          | E0427                             |
 | tests/bugs/issue-1881-macro-reached-through-cnx/type-through-cnx.test.cnx                                 | E0426                             |
 | tests/bugs/issue-1881-macro-reached-through-cnx/variable-through-cnx.test.cnx                             | E0427                             |
+| tests/bugs/issue-1956-string-literal-ordering/ordering-chain-error.test.cnx                               | E0807                             |
+| tests/bugs/issue-1956-string-literal-ordering/ordering-operand-error.test.cnx                             | E0929                             |
 | tests/bugs/issue-1963-define-before-use/global-and-local.test.cnx                                         | E0426                             |
 | tests/bugs/issue-1963-define-before-use/struct-field.test.cnx                                             | E0426                             |
 | tests/bugs/issue-1975-header-struct-byte-length/case-label-length-error.test.cnx                          | E0713, E0717                      |
