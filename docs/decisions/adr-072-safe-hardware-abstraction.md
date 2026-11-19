@@ -641,21 +641,30 @@ Key considerations:
 
 6. **Alternate registers** — SVD `<alternateGroup>` and `<alternateRegister>` handle registers sharing the same address with different access (e.g., UART THR/RBR). Emit as two register fields at same offset with `wo` and `ro` — cnx already supports this.
 
-7. **Layout deduplication** — SVD files with layout-identical peripherals (without `derivedFrom`) are automatically consolidated into one template with multiple instances. The compiler enforces this: duplicate register definitions are an error.
+7. **Layout deduplication** — SVD files with layout-identical peripherals (without `derivedFrom`) are automatically consolidated into one template with multiple instances.
 
 8. **Struct name mapping** — SVD's `<headerStructName>` maps directly to the parameterized register template name
 
 9. **Bitmap reuse** — When multiple registers have identical field layouts (e.g., DR and ISR both have Pin0-Pin31), generate one bitmap type and reuse it
 
-#### Compiler Enforcement
+#### Identical Layouts
 
-Duplicate register definitions are a compile error:
+Two register definitions are two types, even when their layouts match exactly. A register
+is a named type like a struct, so the compiler does not compare layouts (ruling 6 on #2449):
 
 ```cnx
-register Gpio1Port { 0x00 rw u32 DR }
-register Gpio2Port { 0x00 rw u32 DR }
-// ERROR: Gpio2Port has identical layout to Gpio1Port — use Gpio1Port instead
+register Watchdog { 0x00 rw u32 CTRL, 0x04 wo u32 KEY, }
+register Timer    { 0x00 rw u32 CTRL, 0x04 wo u32 KEY, }
+
+Timer TMR1(0x40038000);
+
+void kick(Watchdog w) { w.KEY <- 0xB480A602; }
+
+kick(TMR1);   // ERROR: TMR1 is a Timer, not a Watchdog
 ```
+
+Merging layout-identical peripherals into one template is svd2cnx's job (item 7 above),
+not a language rule.
 
 ---
 
@@ -737,7 +746,7 @@ This ADR covers four features for safe hardware abstraction in cnx:
 
 ### Accepted
 
-1. **Registers** — `register Name { byteOffset access type field, ... }` with `Name Instance(address);` instantiation. The base is implicit (not a parameter); fields are plain byte offsets. All registers use this syntax (breaking change). Template type serves as interface for generic peripheral code. Duplicate definitions are a compiler error.
+1. **Registers** — `register Name { byteOffset access type field, ... }` with `Name Instance(address);` instantiation. The base is implicit (not a parameter); fields are plain byte offsets. All registers use this syntax (breaking change). Template type serves as interface for generic peripheral code. Two definitions are two types even when their layouts match.
 
 2. **w1c/wo/w1s codegen fix** — Bit-field and bitmap-field writes generate direct writes, not RMW. Writing `false` to a w1c bit is a compiler error.
 
