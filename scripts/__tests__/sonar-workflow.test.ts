@@ -1,5 +1,13 @@
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { spawnSync } from "node:child_process";
+import {
+  chmodSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { delimiter, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
@@ -186,6 +194,57 @@ describe("sonar.yml — scans every pull request and push from a trusted context
     expect(resolve?.run).toMatch(
       /if \[ "\$count" -ne 1 \][\s\S]*::error::expected one open PR/,
     );
+  });
+
+  /**
+   * The regexes above only prove the branch is written. GitHub runs `run:`
+   * under `bash -e`, and `grep -c` exits 1 when it counts zero lines, so a
+   * bare `count=$(... | grep -c .)` killed the step before the zero-match
+   * branch was reached (#2439's post-merge scan). This runs the step itself
+   * against a stubbed `gh` that returns each number of matching PRs.
+   */
+  it("reaches each PR-count branch when the step runs under bash -e", () => {
+    const resolve = steps.find(
+      (step) => step.name === "Resolve what to analyze",
+    );
+    const pr = (n: number): string =>
+      JSON.stringify({ number: n, base: "main", branch: `b${n}` });
+    const dir = mkdtempSync(join(tmpdir(), "sonar-resolve-"));
+    try {
+      const gh = join(dir, "gh");
+      writeFileSync(gh, '#!/usr/bin/env bash\nprintf "%s" "$GH_STUB_OUT"\n');
+      chmodSync(gh, 0o755);
+      const run = (ghOut: string): { status: number | null; out: string } => {
+        const output = join(dir, "output");
+        writeFileSync(output, "");
+        const result = spawnSync("bash", ["-e", "-c", resolve?.run ?? ""], {
+          env: {
+            PATH: `${dir}${delimiter}${process.env.PATH ?? ""}`,
+            GITHUB_OUTPUT: output,
+            GH_STUB_OUT: ghOut,
+            EVENT: "pull_request",
+            REPO: "o/r",
+            HEAD_OWNER: "o",
+            HEAD_BRANCH: "b",
+            HEAD_SHA: "abc",
+          },
+          encoding: "utf-8",
+        });
+        return { status: result.status, out: readFileSync(output, "utf-8") };
+      };
+
+      const none = run("");
+      expect(none.status).toBe(0);
+      expect(none.out).toContain("skip=true");
+
+      const one = run(pr(7));
+      expect(one.status).toBe(0);
+      expect(one.out).toContain("ref=refs/pull/7/head");
+
+      expect(run(`${pr(7)}\n${pr(8)}`).status).toBe(1);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   /**

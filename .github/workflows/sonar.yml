@@ -65,7 +65,7 @@ jobs:
           matches=$(gh api --paginate --method GET "repos/$REPO/pulls" \
             -f state=open -f "head=$HEAD_OWNER:$HEAD_BRANCH" -F per_page=100 \
             --jq '.[] | select(.head.sha == env.HEAD_SHA) | {number, base: .base.ref, branch: .head.ref} | @json')
-          count=$(printf '%s\n' "$matches" | grep -c .)
+          count=$(printf '%s\n' "$matches" | grep -c . || true)
           if [ "$count" -eq 0 ]; then
             # The PR this run belongs to merged or closed between PR Quality
             # Checks finishing and this workflow_run firing: nothing left to
