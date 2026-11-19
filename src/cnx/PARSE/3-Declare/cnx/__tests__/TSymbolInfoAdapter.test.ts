@@ -23,7 +23,6 @@ import TestEnumMembers from "../../../../types/__testUtils__/testEnumMembers";
 import TestMembers from "../../../../types/__testUtils__/testMembers";
 import IScopeSymbol from "../../../../types/symbols/IScopeSymbol";
 import TVisibility from "../../../../types/TVisibility";
-import TestExpression from "../../../../types/__testUtils__/testExpression";
 
 describe("TSymbolInfoAdapter", () => {
   // Reset global scope between tests to avoid state pollution
@@ -413,14 +412,22 @@ describe("TSymbolInfoAdapter", () => {
           sourceLanguage: ESourceLanguage.Cnx,
           visibility: "public",
         }),
-        baseAddress: TestExpression.hex("0x40000000"),
+        registerType: "Peripheral",
+        addressExpr: null,
+        baseAddress: 0x40000000n,
         members: TestMembers.asRegisterMembers(
           "GPIO",
           new Map([
             [
               "DATA",
               {
-                offset: TestExpression.hex("0x00"),
+                offset: {
+                  kind: "literal",
+                  digits: "0",
+                  text: "0x00",
+                  typeName: null,
+                },
+                offsetValue: 0x00n,
                 type: TypeResolver.resolve("u32"),
                 access: "rw",
               },
@@ -445,14 +452,22 @@ describe("TSymbolInfoAdapter", () => {
           sourceLanguage: ESourceLanguage.Cnx,
           visibility: "public",
         }),
-        baseAddress: TestExpression.hex("0x40001000"),
+        registerType: "Peripheral",
+        addressExpr: null,
+        baseAddress: 0x40001000n,
         members: TestMembers.asRegisterMembers(
           "UART",
           new Map([
             [
               "TX",
               {
-                offset: TestExpression.hex("0x00"),
+                offset: {
+                  kind: "literal",
+                  digits: "0",
+                  text: "0x00",
+                  typeName: null,
+                },
+                offsetValue: 0x00n,
                 type: TypeResolver.resolve("u32"),
                 access: "wo",
               },
@@ -463,9 +478,7 @@ describe("TSymbolInfoAdapter", () => {
 
       const info = TSymbolInfoAdapter.convert([register]);
 
-      expect(info.registerBaseAddresses.get("UART")).toMatchObject({
-        text: "0x40001000",
-      });
+      expect(info.registerBaseAddresses.get("UART")).toBe(0x40001000n);
     });
 
     it("should populate register member info maps", () => {
@@ -479,14 +492,22 @@ describe("TSymbolInfoAdapter", () => {
           sourceLanguage: ESourceLanguage.Cnx,
           visibility: "public",
         }),
-        baseAddress: TestExpression.hex("0x40002000"),
+        registerType: "Peripheral",
+        addressExpr: null,
+        baseAddress: 0x40002000n,
         members: TestMembers.asRegisterMembers(
           "SPI",
           new Map([
             [
               "DATA",
               {
-                offset: TestExpression.hex("0x00"),
+                offset: {
+                  kind: "literal",
+                  digits: "0",
+                  text: "0x00",
+                  typeName: null,
+                },
+                offsetValue: 0x00n,
                 type: TypeResolver.resolve("u32"),
                 access: "rw",
               },
@@ -494,7 +515,13 @@ describe("TSymbolInfoAdapter", () => {
             [
               "STATUS",
               {
-                offset: TestExpression.hex("0x04"),
+                offset: {
+                  kind: "literal",
+                  digits: "4",
+                  text: "0x04",
+                  typeName: null,
+                },
+                offsetValue: 0x04n,
                 type: TypeResolver.resolve("u8"),
                 access: "ro",
               },
@@ -507,12 +534,8 @@ describe("TSymbolInfoAdapter", () => {
 
       expect(info.registerMemberAccess.get("SPI__DATA")).toBe("rw");
       expect(info.registerMemberAccess.get("SPI__STATUS")).toBe("ro");
-      expect(info.registerMemberOffsets.get("SPI__DATA")).toMatchObject({
-        text: "0x00",
-      });
-      expect(info.registerMemberOffsets.get("SPI__STATUS")).toMatchObject({
-        text: "0x04",
-      });
+      expect(info.registerMemberOffsets.get("SPI__DATA")).toBe(0x00n);
+      expect(info.registerMemberOffsets.get("SPI__STATUS")).toBe(0x04n);
       expect(info.registerMemberCTypes.get("SPI__DATA")).toBe("uint32_t");
       expect(info.registerMemberCTypes.get("SPI__STATUS")).toBe("uint8_t");
     });
@@ -546,14 +569,22 @@ describe("TSymbolInfoAdapter", () => {
           sourceLanguage: ESourceLanguage.Cnx,
           visibility: "public",
         }),
-        baseAddress: TestExpression.hex("0x40003000"),
+        registerType: "Peripheral",
+        addressExpr: null,
+        baseAddress: 0x40003000n,
         members: TestMembers.asRegisterMembers(
           "CTRL",
           new Map([
             [
               "FLAGS",
               {
-                offset: TestExpression.hex("0x00"),
+                offset: {
+                  kind: "literal",
+                  digits: "0",
+                  text: "0x00",
+                  typeName: null,
+                },
+                offsetValue: 0x00n,
                 type: TypeResolver.resolve("StatusFlags"),
                 access: "rw",
               },

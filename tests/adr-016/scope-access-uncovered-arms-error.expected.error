@@ -1,6 +1,6 @@
-32:8 error[E0435]: Cannot reference own scope 'Vault' by name; use 'this.Shape' instead of 'Vault.Shape'
+34:8 error[E0435]: Cannot reference own scope 'Vault' by name; use 'this.Shape' instead of 'Vault.Shape'
        help: Inside a scope its members are reached through `this.`; the scope's name is for the outside. `global.` is allowed when the qualification is deliberate.
-39:8 error[E0437]: Use 'global.GPIO.DR' to access register 'GPIO' from inside scope 'Vault' (a local variable named 'GPIO' shadows the global register)
+41:8 error[E0437]: Use 'global.GPIO.DR' to access register 'GPIO' from inside scope 'Vault' (a local variable named 'GPIO' shadows the global register)
        help: A bare name resolves to the nearest declaration, which here is the shadow. `global.` names the file-scope one unambiguously.
-44:14 error[E0436]: Cannot access private member 'secret' of scope 'Vault' from outside the scope
+46:14 error[E0436]: Cannot access private member 'secret' of scope 'Vault' from outside the scope
        help: Only public members are accessible outside their scope. Mark it `public`, or reach it through a public member.

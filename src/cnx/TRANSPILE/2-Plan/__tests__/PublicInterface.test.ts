@@ -10,7 +10,6 @@ import type IBitmapSymbol from "../../../types/symbols/IBitmapSymbol";
 import type IRegisterSymbol from "../../../types/symbols/IRegisterSymbol";
 import type TSymbol from "../../../types/symbols/TSymbol";
 import TypeResolver from "../../../utils/TypeResolver";
-import TestExpression from "../../../types/__testUtils__/testExpression";
 
 /**
  * #1453: a register is part of the public interface, and its accessor block
@@ -49,14 +48,22 @@ const register = (
   bitmapType?: string,
 ): IRegisterSymbol => ({
   ...base("register", name, scopePath, visibility),
-  baseAddress: TestExpression.hex("0x40000000"),
+  registerType: "Peripheral",
+  addressExpr: null,
+  baseAddress: 0x40000000n,
   members: TestMembers.asRegisterMembers(
     scopePath === "" ? name : `${scopePath}__${name}`,
     new Map([
       [
         "DR",
         {
-          offset: TestExpression.hex("0x00"),
+          offset: {
+            kind: "literal",
+            digits: "0",
+            text: "0x00",
+            typeName: null,
+          },
+          offsetValue: 0x00n,
           type: TypeResolver.resolve(bitmapType ?? "u32"),
           access: "rw",
         },

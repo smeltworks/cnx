@@ -1,4 +1,4 @@
-24:22 error[E0870]: cannot read from write-only register member 'COMMAND' (LOOP_REG.COMMAND has 'wo' access modifier)
+26:22 error[E0870]: cannot read from write-only register member 'COMMAND' (LOOP_REG.COMMAND has 'wo' access modifier)
        help: A `wo` register member is hardware that returns nothing meaningful when read (ADR-004). Read the register's own readable member, or keep a shadow copy of what was written.
-30:26 error[E0870]: cannot read from write-only register member 'COMMAND' (global.LOOP_REG.COMMAND has 'wo' access modifier)
+32:26 error[E0870]: cannot read from write-only register member 'COMMAND' (global.LOOP_REG.COMMAND has 'wo' access modifier)
        help: A `wo` register member is hardware that returns nothing meaningful when read (ADR-004). Read the register's own readable member, or keep a shadow copy of what was written.

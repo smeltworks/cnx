@@ -21,7 +21,6 @@ import TestSourceSpan from "../../../../../types/__testUtils__/testSourceSpan";
 import TestEnumMembers from "../../../../../types/__testUtils__/testEnumMembers";
 import TestMembers from "../../../../../types/__testUtils__/testMembers";
 import type IProgram from "../../../../../types/IProgram";
-import TestExpression from "../../../../../types/__testUtils__/testExpression";
 
 let state = new TranspileState();
 
@@ -508,7 +507,9 @@ describe("HeaderSymbolAdapter", () => {
           sourceLanguage: ESourceLanguage.Cnx,
           visibility: "public",
         }),
-        baseAddress: TestExpression.hex("0x40000000"),
+        registerType: "Peripheral",
+        addressExpr: null,
+        baseAddress: 0x40000000n,
         members: TestMembers.asRegisterMembers(
           "GPIO",
           new Map([
@@ -516,7 +517,13 @@ describe("HeaderSymbolAdapter", () => {
               "DATA",
               {
                 type: TTypeUtils.createPrimitive("u32"),
-                offset: TestExpression.hex("0x00"),
+                offset: {
+                  kind: "literal",
+                  digits: "0",
+                  text: "0x00",
+                  typeName: null,
+                },
+                offsetValue: 0x00n,
                 access: "rw" as const,
               },
             ],
@@ -524,7 +531,13 @@ describe("HeaderSymbolAdapter", () => {
               "DIR",
               {
                 type: TTypeUtils.createPrimitive("u32"),
-                offset: TestExpression.hex("0x04"),
+                offset: {
+                  kind: "literal",
+                  digits: "4",
+                  text: "0x04",
+                  typeName: null,
+                },
+                offsetValue: 0x04n,
                 access: "rw" as const,
               },
             ],
@@ -549,7 +562,9 @@ describe("HeaderSymbolAdapter", () => {
           sourceLanguage: ESourceLanguage.Cnx,
           visibility: "public",
         }),
-        baseAddress: TestExpression.hex("0x50000000"),
+        registerType: "Peripheral",
+        addressExpr: null,
+        baseAddress: 0x50000000n,
         members: new Map(),
       };
 
