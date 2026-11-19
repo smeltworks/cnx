@@ -715,11 +715,11 @@ bitmaps cover the format completely.
 
 ### Open questions
 
-- **Backing model.** An _owned_ buffer (the instance allocates its own bytes at a
-  compile-time address; a received frame is copied in before reading) keeps ADR-072's
-  zero-cost / compile-time model. A _view_ over an existing runtime buffer avoids the
-  copy but holds a runtime pointer and needs a lifetime story. Owned-first is the minimal
-  safe start.
+- **Backing model: owned (ruling 7 on #2449).** A data register is a variable of the
+  register's type with its own bytes, like any other variable: `Etc1 etc1;`. There is no
+  view over another buffer, so no runtime pointer, lifetime or aliasing question. A
+  received frame is copied in before it is read. A global data register has a
+  compile-time address, so generic register functions take it with no runtime pointer.
 - **How bytes get in.** A `load(bytes)` step, field-by-field assignment, or a view — tied
   to the backing-model choice.
 
