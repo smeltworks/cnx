@@ -4,18 +4,16 @@
 > from v2 to v1. See [`README.md`](README.md) for the numbering rule and the full mapping
 > table.
 
-**Status:** Research
-**Date:** 2026-02-20 (revised 2026-07-04: simplified register syntax; added Parts 4–5)
+**Status:** Accepted
+**Date:** 2026-02-20 (revised 2026-07-04: simplified register syntax; added Parts 4–5. 2026-11-19: Part 5, scaled fields, moved to ADR-073; contradictions settled in rulings 1–10 on #2449; Accepted)
 **Decision Makers:** Language Design Team
-**Supersedes:** ADR-004 (Register Bindings — on acceptance; this ADR removes the `register Name @ address { }` form ADR-004 defines)
-**Amends:** ADR-016 (`### Scoped Registers` — on acceptance; that section's `@ address` examples go with it)
-**Related ADRs:** ADR-034 (Bitmap Types), ADR-033 (Packed Structs — Rejected; Part 4 is the safe alternative)
+**Supersedes:** ADR-004 (Register Bindings — takes effect when Part 1 is implemented; this ADR removes the `register Name @ address { }` form ADR-004 defines)
+**Amends:** ADR-016 (`### Scoped Registers` — takes effect when Part 1 is implemented; that section's `@ address` examples go with it)
+**Related ADRs:** ADR-034 (Bitmap Types), ADR-033 (Packed Structs — Rejected; Part 4 is the safe alternative), ADR-073 (Scaled Fields — formerly Part 5), ADR-074 (Byte-Order Reversal)
 
-> **Status is load-bearing here.** While this ADR is `Research` it is **not**
-> established syntax: ADR-004 still governs, a register is still not a type, and the
-> `@ address` form is still the one to write. The supersession is recorded now so a
-> reader arriving at ADR-004 has a route forward — it does not take effect until this
-> ADR is Accepted.
+> **Accepted, not implemented.** The compiler does not accept this syntax yet. Until
+> Part 1 is implemented, ADR-004 still describes what compiles: a register is not a
+> type, and the `@ address` form is the one to write.
 
 ## Context
 
@@ -35,10 +33,10 @@ Enable writing MCU libraries where **invalid hardware access is a compile error*
 
 ```cnx
 // Ideal: compiler prevents all these mistakes
-GPIO1.ISR <- GPIO1.ISR;           // ERROR: RMW on w1c register
-UART1.send("hello");              // ERROR: UART1 clock not enabled
-GPIO1.Pin13 <- output;            // ERROR: Pin13 muxed to SPI
-DMA.transfer(src, dst, 1000);     // ERROR: DMA not initialized
+GPIO1.ISR <- GPIO1.ISR; // ERROR: RMW on w1c register
+UART1.send("hello"); // ERROR: UART1 clock not enabled
+GPIO1.Pin13 <- output; // ERROR: Pin13 muxed to SPI
+DMA.transfer(src, dst, 1000); // ERROR: DMA not initialized
 ```
 
 ---
@@ -52,9 +50,9 @@ The i.MX RT1062 (Teensy 4.x) has 9 GPIO ports with identical register layouts at
 ```cnx
 // Current: repetitive and error-prone
 register GPIO1 @ 0x401B8000 {
-    DR:   GpioDirection rw @ 0x00,
+    DR: GpioDirection rw @ 0x00,
     GDIR: GpioDirection rw @ 0x04,
-    PSR:  GpioDirection ro @ 0x08,
+    PSR: GpioDirection ro @ 0x08,
     // ... 10 more fields
 }
 
@@ -112,7 +110,7 @@ Uses macros and base address offsets:
 
 1. **Minimize repetition** — Define peripheral layout once, instantiate many times
 2. **Type safety** — Each instance should be a distinct type (GPIO1 ≠ GPIO2)
-3. **Zero runtime cost** — All addresses resolved at compile time
+3. **Type safety** — The register is the type and each instantiation is an instance of it with its own address: `GPIO1` and `GPIO2` are distinct instances of one type `GpioPort`, and passing a `UartPort` instance where a `GpioPort` is expected is a type error (ruling 1 on #2449)
 4. **MISRA compliance** — Generated C must pass static analysis
 5. **SVD compatibility** — Syntax should map cleanly from SVD peripheral definitions
 
@@ -126,27 +124,42 @@ Parameterized registers follow cnx's function-like patterns and are straightforw
 
 The base address is **not** a parameter. A register defines its fields at plain byte
 offsets from an implicit base; the base is supplied at instantiation. A field is
-`byteOffset access type name` with an optional scaling transform. Both the old
+`byteOffset access type name`. Both the old
 `register Name @ address { }` form and an explicit `(u32 baseAddress)` parameter are
 removed — the base ceremony was pure boilerplate the transpiler can supply.
 
 ```antlr
 registerDefinition
-    : 'register' IDENTIFIER '{' registerField* '}'
+    : 'register' IDENTIFIER '{' registerField (',' registerField)* ','? '}'
     ;
 
 registerField
-    : byteOffset access type IDENTIFIER transform?
+    : byteOffset access type memberName
     ;
 
-transform
-    : ('multiplier' | 'divisor') NUMBER ('offset' NUMBER)?
-    | 'offset' NUMBER
+memberName
+    : IDENTIFIER | keyword   // any reserved word may name a member (ruling 2 on #2449)
     ;
 
 registerInstantiation
     : type IDENTIFIER ( '(' address ')' )? ';'   // address -> MMIO; omitted -> data register (Part 4)
     ;
+
+byteOffset : constantExpression ;
+address    : constantExpression ;
+```
+
+A field offset and an instance address are compile-time constant expressions: literals,
+named constants and arithmetic on them (ruling 5 on #2449). The compiler evaluates each one
+and emits the value as a plain number, so no address is computed at runtime. An expression
+the compiler cannot evaluate is an error, as is an address that does not fit the target's
+pointer width.
+
+```cnx
+u32 GPIO_BASE <- 0x401B8000;
+
+GpioPort GPIO1(GPIO_BASE); // 0x401B8000
+GpioPort GPIO2(GPIO_BASE + 0x4000); // 0x401BC000
 ```
 
 Single-instance peripherals simply have one instantiation:
@@ -158,7 +171,7 @@ register SystemControl {
     0x04 rw u32 ICSR,
 }
 
-SystemControl SCB(0xE000ED00);  // Only one instance
+SystemControl SCB(0xE000ED00); // Only one instance
 ```
 
 #### Syntax
@@ -166,17 +179,17 @@ SystemControl SCB(0xE000ED00);  // Only one instance
 ```cnx
 // Register definition — plain byte offsets, no base ceremony
 register GpioPort {
-    0x00 rw  GpioDirection DR,
-    0x04 rw  GpioDirection GDIR,
-    0x08 ro  GpioDirection PSR,
-    0x0C rw  u32           ICR1,
-    0x10 rw  u32           ICR2,
-    0x14 rw  GpioDirection IMR,
+    0x00 rw GpioDirection DR,
+    0x04 rw GpioDirection GDIR,
+    0x08 ro GpioDirection PSR,
+    0x0C rw u32 ICR1,
+    0x10 rw u32 ICR2,
+    0x14 rw GpioDirection IMR,
     0x18 w1c GpioDirection ISR,
-    0x1C rw  u32           EDGE,
-    0x84 wo  GpioDirection DR_SET,
-    0x88 wo  GpioDirection DR_CLR,
-    0x8C wo  GpioDirection DR_TOG,
+    0x1C rw u32 EDGE,
+    0x84 wo GpioDirection DR_SET,
+    0x88 wo GpioDirection DR_CLR,
+    0x8C wo GpioDirection DR_TOG,
 }
 
 // Instantiate at specific addresses
@@ -190,6 +203,13 @@ GpioPort GPIO7(0x42004000);
 GpioPort GPIO8(0x42008000);
 GpioPort GPIO9(0x4200C000);
 ```
+
+A member may be named with any reserved word, so the datasheet's `ISR` is used as
+written. A member is declared only in member position and reached only after a `.`,
+so `GPIO1.ISR` cannot be read as the `ISR` type (ADR-040). The same rule covers bitmap
+fields and struct fields: a keyword restricts naming only where it would make the
+program ambiguous (ruling 2 on #2449, #2029). Names that are C keywords are a separate
+question (#2222).
 
 #### Transpilation
 
@@ -207,19 +227,19 @@ Transpiles to:
 
 ```c
 // Each instance gets its own macro set with computed addresses
-#define GPIO1_DR   (*(volatile uint32_t*)(0x401B8000 + 0x00))
-#define GPIO1_GDIR (*(volatile uint32_t*)(0x401B8000 + 0x04))
+#define GPIO1__DR   (*(volatile uint32_t*)(0x401B8000 + 0x00))
+#define GPIO1__GDIR (*(volatile uint32_t*)(0x401B8000 + 0x04))
 
-#define GPIO2_DR   (*(volatile uint32_t*)(0x401BC000 + 0x00))
-#define GPIO2_GDIR (*(volatile uint32_t*)(0x401BC000 + 0x04))
+#define GPIO2__DR   (*(volatile uint32_t*)(0x401BC000 + 0x00))
+#define GPIO2__GDIR (*(volatile uint32_t*)(0x401BC000 + 0x04))
 ```
 
 #### Implementation Notes
 
 This is straightforward to implement:
 
-1. **Parser**: `registerDeclaration` takes no parameter list; a field is `offset access type name transform?`
-2. **Symbol Collection**: Store the register's fields (offset, access, type, optional transform) with the definition
+1. **Parser**: `registerDeclaration` takes no parameter list; a field is `offset access type name`
+2. **Symbol Collection**: Store the register's fields (offset, access, type) with the definition
 3. **Instantiation**: When processing `GpioPort GPIO1(0x401B8000)`:
    - Look up `GpioPort` definition
    - Add the instance address `0x401B8000` to each field's byte offset
@@ -236,7 +256,7 @@ Register instances can be used in two ways:
 
 ```cnx
 void debugGpio1() {
-    GPIO1.DR[13] <- true;  // Only works with GPIO1
+    GPIO1.DR[13] <- true; // Only works with GPIO1
 }
 ```
 
@@ -251,34 +271,25 @@ void clearPin(GpioPort port, u8 pin) {
     port.DR[pin] <- false;
 }
 
-setPin(GPIO1, 13);   // OK — GPIO1 is a GpioPort
-setPin(GPIO2, 0);    // OK — GPIO2 is a GpioPort
-setPin(UART1, 0);    // ERROR: UART1 is not a GpioPort
+setPin(GPIO1, 13); // OK — GPIO1 is a GpioPort
+setPin(GPIO2, 0); // OK — GPIO2 is a GpioPort
+setPin(UART1, 0); // ERROR: UART1 is not a GpioPort
 ```
 
 #### Function Specialization
 
-The compiler **specializes** generic peripheral functions at each call site. There is no runtime indirection:
+A register parameter is resolved at compile time. Each call names an instance whose
+address the compiler knows, so every access through the parameter is a direct access
+to that instance's address. There is no runtime indirection: no base pointer is passed,
+stored or dereferenced.
 
 ```cnx
-setPin(GPIO1, 13);
-setPin(GPIO2, 0);
+setPin(GPIO1, 13); // port.DR is GPIO1's DR
+setPin(GPIO2, 0); // port.DR is GPIO2's DR
 ```
 
-Transpiles to:
-
-```c
-// Inlined/specialized — no function call overhead
-GPIO1_DR |= (1 << 13);
-GPIO2_DR |= (1 << 0);
-```
-
-If the function is too large to inline, the compiler generates separate specialized versions:
-
-```c
-void setPin_GPIO1(uint8_t pin) { GPIO1_DR |= (1 << pin); }
-void setPin_GPIO2(uint8_t pin) { GPIO2_DR |= (1 << pin); }
-```
+How the generated C achieves this (one specialized function per instance passed,
+inlining, or both) is an emission choice, not part of this decision.
 
 This enables writing reusable HAL code without runtime overhead or duplicating source code per instance.
 
@@ -287,11 +298,21 @@ This enables writing reusable HAL code without runtime overhead or duplicating s
 Register template types (`GpioPort`) are **compile-time-only identifiers**, not runtime values. They cannot be assigned to variables or stored in data structures:
 
 ```cnx
-GpioPort activePort <- GPIO1;  // ERROR: register types are not assignable
-activePort <- GPIO2;           // ERROR: cannot reassign register type
-setPin(activePort, 13);        // Would require runtime indirection
+GpioPort activePort <- GPIO1; // ERROR: register types are not assignable
+activePort <- GPIO2; // ERROR: cannot reassign register type
+setPin(activePort, 13); // Would require runtime indirection
 
-GpioPort[2] ports <- [GPIO1, GPIO2];  // ERROR: cannot store registers in arrays
+GpioPort[2] ports <- [GPIO1, GPIO2]; // ERROR: cannot store registers in arrays
+```
+
+The same holds for a function with a register parameter. It has no single body to
+point at, one per instance it is called with, so it can be called but never used as a
+callback (ADR-029): not passed, stored or named as a callback type.
+
+```cnx
+struct Hal {
+    setPin handler; // ERROR: setPin takes a register parameter
+}
 ```
 
 This is intentional — runtime polymorphism over registers would require function pointers or vtables, defeating zero-cost abstraction. If you need dynamic port selection, use explicit branching:
@@ -299,8 +320,12 @@ This is intentional — runtime polymorphism over registers would require functi
 ```cnx
 void setPinOnPort(u8 portNum, u8 pin) {
     switch (portNum) {
-        case 1 { setPin(GPIO1, pin); }
-        case 2 { setPin(GPIO2, pin); }
+        case 1 {
+            setPin(GPIO1, pin);
+        }
+        case 2 {
+            setPin(GPIO2, pin);
+        }
         // ...
     }
 }
@@ -348,17 +373,17 @@ Assigning a wider type to a narrower bitmap field requires explicit bit extracti
 
 ```cnx
 bitmap32 DmaErrors {
-    Chan0Err[4],   // 4 bits wide
+    Chan0Err[4], // 4 bits wide
     Chan1Err[4],
     Reserved[24]
 }
 
 u8 error <- 0xFF;
 
-DMA.ERR.Chan0Err <- error;        // ERROR: u8 (8 bits) doesn't fit in 4-bit field
-DMA.ERR.Chan0Err <- error[0, 4];  // OK: explicitly extract 4 bits
-DMA.ERR.Chan0Err <- 0xF;          // OK: literal fits in 4 bits
-DMA.ERR.Chan0Err <- 0x1F;         // ERROR: literal exceeds 4 bits
+DMA.ERR.Chan0Err <- error; // ERROR: u8 (8 bits) doesn't fit in 4-bit field
+DMA.ERR.Chan0Err <- error[0, 4]; // OK: explicitly extract 4 bits
+DMA.ERR.Chan0Err <- 0xF; // OK: literal fits in 4 bits
+DMA.ERR.Chan0Err <- 0x1F; // ERROR: literal exceeds 4 bits
 ```
 
 This follows cnx's philosophy of explicit bit extraction (`value[start, width]`) rather than C's implicit truncating casts.
@@ -369,8 +394,8 @@ A `w1c` / `wo` / `w1s` bit assignment emits a **direct write**, never the
 read-modify-write an `rw` field gets:
 
 ```cnx
-STATUS.OVERFLOW <- true;    // STATUS declared w1c
-CTRL.ENABLE <- true;        // CTRL declared rw
+STATUS.OVERFLOW <- true; // STATUS declared w1c
+CTRL.ENABLE <- true; // CTRL declared rw
 ```
 
 ```c
@@ -587,7 +612,7 @@ bitmap32 GpioPins {
 
 register GpioPort {
     /// Data Register
-    0x00 rw  GpioPins DR,
+    0x00 rw GpioPins DR,
     /// Interrupt Status Register (write 1 to clear)
     0x18 w1c GpioPins ISR,
 }
@@ -610,7 +635,7 @@ Key considerations:
 
 2. **Reserved field generation** — Calculate gaps between fields and emit `Reserved[N]`
 
-3. **Field name sanitization** — SVD field names may conflict with cnx keywords
+3. **Field names are copied unchanged** — a cnx reserved word may name a register member or bitmap field (Part 1), so no rename table is needed
 
 4. **Cluster handling** — SVD `<cluster>` elements represent register arrays; emit with appropriate indexing
 
@@ -618,21 +643,39 @@ Key considerations:
 
 6. **Alternate registers** — SVD `<alternateGroup>` and `<alternateRegister>` handle registers sharing the same address with different access (e.g., UART THR/RBR). Emit as two register fields at same offset with `wo` and `ro` — cnx already supports this.
 
-7. **Layout deduplication** — SVD files with layout-identical peripherals (without `derivedFrom`) are automatically consolidated into one template with multiple instances. The compiler enforces this: duplicate register definitions are an error.
+7. **Layout deduplication** — SVD files with layout-identical peripherals (without `derivedFrom`) are automatically consolidated into one template with multiple instances.
 
 8. **Struct name mapping** — SVD's `<headerStructName>` maps directly to the parameterized register template name
 
 9. **Bitmap reuse** — When multiple registers have identical field layouts (e.g., DR and ISR both have Pin0-Pin31), generate one bitmap type and reuse it
 
-#### Compiler Enforcement
+#### Identical Layouts
 
-Duplicate register definitions are a compile error:
+Two register definitions are two types, even when their layouts match exactly. A register
+is a named type like a struct, so the compiler does not compare layouts (ruling 6 on #2449):
 
 ```cnx
-register Gpio1Port { 0x00 rw u32 DR }
-register Gpio2Port { 0x00 rw u32 DR }
-// ERROR: Gpio2Port has identical layout to Gpio1Port — use Gpio1Port instead
+register Watchdog {
+    0x00 rw u32 CTRL,
+    0x04 wo u32 KEY,
+}
+
+register Timer {
+    0x00 rw u32 CTRL,
+    0x04 wo u32 KEY,
+}
+
+Timer TMR1(0x40038000);
+
+void kick(Watchdog w) {
+    w.KEY <- 0xB480A602;
+}
+
+kick(TMR1); // ERROR: TMR1 is a Timer, not a Watchdog
 ```
+
+Merging layout-identical peripherals into one template is svd2cnx's job (item 7 above),
+not a language rule.
 
 ---
 
@@ -654,27 +697,32 @@ normal memory gets the same typed ergonomics without the packed-struct hazards.
 
 A register instantiated **without an address** is backed by normal memory instead of
 MMIO. Everything else about registers — typed fields, access modes, bitmap-typed fields,
-scaled fields (Part 5), template-as-interface — is unchanged.
+template-as-interface — is unchanged.
 
 ```cnx
-GpioPort GPIO1(0x401B8000);   // MMIO — address given
-GpioPort scratch;             // data register — no address, normal memory
+GpioPort GPIO1(0x401B8000); // MMIO — address given
+GpioPort scratch; // data register — no address, normal memory
 ```
 
-Bit-packed bytes use a bitmap field; byte-aligned scalars use a scalar type (with an
-optional transform). A J1939 PGN is a data register:
+Bit-packed bytes use a bitmap field; byte-aligned scalars use a scalar type. Scaling a raw
+value to an engineering unit is ADR-073. A J1939 PGN is a data register:
 
 ```cnx
-bitmap8 Etc1Control { drivelineEngaged[2], tccLockup[2], shiftInProcess[2], transition[2] }
-
-register Etc1 {
-    0 ro Etc1Control control,             // byte 0 — bit-packed, via bitmap
-    1 ro u16 outputShaft divisor 8,       // bytes 1-2 — 0.125 rpm/bit
-    3 ro u8  clutchSlip  multiplier 0.4,  // byte 3 — 0.4 %/bit
-    5 ro u16 inputShaft  divisor 8,       // bytes 5-6
+bitmap8 Etc1Control {
+    drivelineEngaged[2],
+    tccLockup[2],
+    shiftInProcess[2],
+    transition[2]
 }
 
-Etc1 etc1;                                 // in normal memory
+register Etc1 {
+    0 ro Etc1Control control, // byte 0 — bit-packed, via bitmap
+    1 ro u16 outputShaft, // bytes 1-2 — raw, 0.125 rpm/bit
+    3 ro u8 clutchSlip, // byte 3 — raw, 0.4 %/bit
+    5 ro u16 inputShaft, // bytes 5-6 — raw, 0.125 rpm/bit
+}
+
+Etc1 etc1; // in normal memory
 ```
 
 Because J1939 fields are either byte-aligned or bit-fields within a single byte (never a
@@ -683,98 +731,61 @@ bitmaps cover the format completely.
 
 ### Open questions
 
-- **Backing model.** An _owned_ buffer (the instance allocates its own bytes at a
-  compile-time address; a received frame is copied in before reading) keeps ADR-072's
-  zero-cost / compile-time model. A _view_ over an existing runtime buffer avoids the
-  copy but holds a runtime pointer and needs a lifetime story. Owned-first is the minimal
-  safe start.
-- **How bytes get in.** A `load(bytes)` step, field-by-field assignment, or a view — tied
-  to the backing-model choice.
+- **Backing model: owned (ruling 7 on #2449).** A data register is a variable of the
+  register's type with its own bytes, like any other variable: `Etc1 etc1;`. There is no
+  view over another buffer, so no runtime pointer, lifetime or aliasing question. A
+  received frame is copied in before it is read. A global data register has a
+  compile-time address, so generic register functions take it with no runtime pointer.
+- **How bytes get in: whole-register assignment (ruling 8 on #2449).** A data register is
+  assigned from a `u8` array of exactly its size, and a `u8` array of that size is assigned
+  from it. A size mismatch is a compile error. Field access modes still apply to field
+  writes, and Part 1's rule that a register cannot be assigned covers MMIO instances only.
 
----
+  ```cnx
+  etc1 <- rxFrame; // copy a received frame in
+  txFrame <- etc1; // copy out for sending
+  etc1.clutchSlip <- 5; // ERROR: clutchSlip is ro
+  ```
 
-## Part 5: Scaled Fields
+- **Size: the end of the last field (ruling 9 on #2449).** A register's size is the byte
+  just past its last field. There is no declared size; to match an 8-byte frame, name the
+  unused bytes as fields (`7 ro u8 reserved7,`). The editor shows a register's size on hover.
+  A data register is written either one member at a time (`etc1.outputShaft <- 23;`, which
+  needs a writable field) or whole, from a value of exactly its size.
 
-_Added 2026-07-04._
-
-### Problem
-
-A raw register value often _means_ an engineering value: an ADC code is volts, an on-die
-temperature reading is °C (via a calibration scale + offset), a J1939 signal is
-`raw × resolution + offset`. Today the raw integer comes back and the caller applies the
-formula by hand — the same magic-number-at-the-call-site problem registers exist to
-remove.
-
-### Decision
-
-A register field may carry a scaling transform: **exactly one** of `multiplier N` or
-`divisor N` (they are inverses — pick whichever reads cleaner: `divisor 8` beats
-`multiplier 0.125`), followed by an optional `offset N`. Reading the field returns the
-engineering value:
-
-```
-value = (raw {× multiplier | ÷ divisor}) + offset
-```
-
-Both is a compile error; neither means no scaling. `divisor` — the number divided _by_ —
-is the precise term (not "divider").
-
-```cnx
-register Adc {
-    0x00 ro u16 sample  divisor 4096,           // 12-bit code -> fraction of full scale
-    0x04 ro i16 dieTemp divisor 100 offset -40, // on-die temp sensor -> °C
-}
-```
-
-Scaled fields apply equally to MMIO (ADC, on-die temp, DAC, timer prescalers) and to data
-registers (J1939 resolution/offset). The "raw code -> real-world unit" pattern is not
-J1939-specific, which is why it belongs on the standard register field rather than in a
-library.
-
-### Open questions
-
-- **Read type.** How `(storage type, multiplier/divisor, offset)` maps to the field's read
-  type — when it is `f32` vs a wider integer vs the storage type.
-- **Offset order.** `raw*scale + offset` (SAE/J1939) vs `(raw - offset)*scale` (some sensor
-  calibrations). This ADR assumes the former.
-- **Validity.** Whether a field can declare a not-available/error sentinel (e.g. J1939's
-  0xFF/0xFE) and read as a `{value, valid}` pair — possibly a language feature, possibly
-  left to library code layered on plain scaled fields.
+- **Byte order: little-endian (ruling 10 on #2449).** A data register's multi-byte fields
+  are little-endian: `u8[2] [1, 2]` assigned to a register with one `u16` field reads as
+  `0x0201`. A big-endian source is reversed explicitly at the assignment; that syntax is
+  ADR-074. An MMIO register uses the hardware's order.
 
 ---
 
 ## Summary
 
-This ADR covers five features for safe hardware abstraction in cnx:
+This ADR covers four features for safe hardware abstraction in cnx:
 
 1. **Registers** — Define layouts once (byte offsets, implicit base), instantiate at multiple addresses
 2. **Data registers** — Instantiate a register in normal memory (no address) for wire/buffer formats
-3. **Scaled fields** — `multiplier`/`divisor` + `offset` on fields; reads return the engineering value
-4. **w1c/wo/w1s codegen fix** — Generate direct writes instead of RMW for write-only registers
-5. **svd2cnx tool** — Import register definitions from ARM SVD files
+3. **w1c/wo/w1s codegen fix** — Generate direct writes instead of RMW for write-only registers
+4. **svd2cnx tool** — Import register definitions from ARM SVD files
 
 ### Out of Scope (Future ADRs if needed)
 
 - **Peripheral initialization ordering** — Developer responsibility; easy to catch during testing
 - **Pin multiplexing conflicts** — HAL concern, not a language concern
+- **Scaled fields** — mapping a raw field to an engineering value with a unit; ADR-073 (ruling 4 on #2449)
 
 ---
 
 ## Decision
 
-### Accepted
-
-1. **Registers** — `register Name { byteOffset access type field, ... }` with `Name Instance(address);` instantiation. The base is implicit (not a parameter); fields are plain byte offsets. All registers use this syntax (breaking change). Template type serves as interface for generic peripheral code. Duplicate definitions are a compiler error.
+1. **Registers** — `register Name { byteOffset access type field, ... }` with `Name Instance(address);` instantiation. The base is implicit (not a parameter); fields are plain byte offsets. All registers use this syntax (breaking change). Template type serves as interface for generic peripheral code. Two definitions are two types even when their layouts match.
 
 2. **w1c/wo/w1s codegen fix** — Bit-field and bitmap-field writes generate direct writes, not RMW. Writing `false` to a w1c bit is a compiler error.
 
 3. **svd2cnx tool** — TypeScript tool to generate cnx from SVD files. Auto-generates bitmap types from field definitions with good naming.
 
-### Proposed (2026-07-04 revision — not yet accepted)
-
-4. **Data registers** — A register instantiated without an address (`Name Instance;`) is backed by normal memory, giving typed field access to wire/buffer formats (CAN/J1939, packets) without ADR-033's packed-struct overlay hazards. Backing model (owned vs view) is open.
-
-5. **Scaled fields** — A field may carry exactly one of `multiplier N` / `divisor N` plus optional `offset N`; reading returns `(raw {× multiplier | ÷ divisor}) + offset`. Serves MMIO (ADC, on-die temp) and wire data alike. Read-type inference, offset order, and validity are open.
+4. **Data registers** — A register instantiated without an address (`Name Instance;`) is backed by normal memory, giving typed field access to wire/buffer formats (CAN/J1939, packets) without ADR-033's packed-struct overlay hazards. The instance owns its bytes (ruling 7 on #2449) and is assigned whole from a `u8` array of its size (ruling 8). Its size is the end of its last field (ruling 9). Its multi-byte fields are little-endian (ruling 10); reversing a big-endian source is ADR-074.
 
 ---
 

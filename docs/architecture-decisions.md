@@ -15,7 +15,7 @@ v2 (so "Research (v2 Roadmap)" holds `1xx` ADRs).
 | ADR                                                        | Title                      | Description                                                                      |
 | ---------------------------------------------------------- | -------------------------- | -------------------------------------------------------------------------------- |
 | [ADR-001](decisions/adr-001-assignment-operator.md)        | Assignment Operator        | `<-` for assignment, `=` for comparison                                          |
-| [ADR-004](decisions/adr-004-register-bindings.md)          | Register Bindings          | Type-safe hardware access (ADR-072 supersedes on acceptance)                     |
+| [ADR-004](decisions/adr-004-register-bindings.md)          | Register Bindings          | Type-safe hardware access (superseded by ADR-072 once implemented)               |
 | [ADR-007](decisions/adr-007-type-aware-bit-indexing.md)    | Type-Aware Bit Indexing    | Integers as bit arrays (`.length` superseded by ADR-058)                         |
 | [ADR-010](decisions/adr-010-c-interoperability.md)         | C Interoperability         | Unified ANTLR parser architecture                                                |
 | [ADR-014](decisions/adr-014-structs.md)                    | Structs                    | Data containers without methods                                                  |
@@ -88,6 +88,8 @@ v2 (so "Research (v2 Roadmap)" holds `1xx` ADRs).
 | [ADR-066](decisions/adr-066-do178c-compliance.md)         | DO-178C Compliance            | Safety-critical software certification framework |
 | [ADR-069](decisions/adr-069-dead-code-reachability.md)    | Dead-Code / Reachability      | Reject unreachable code (MISRA 2.1/2.2, DO-178C) |
 | [ADR-072](decisions/adr-072-safe-hardware-abstraction.md) | Safe Hardware Abstraction     | Type-safe hardware abstraction primitives        |
+| [ADR-073](decisions/adr-073-scaled-fields.md)             | Scaled Fields                 | Register fields with resolution and units        |
+| [ADR-074](decisions/adr-074-byte-order-reversal.md)       | Byte-Order Reversal           | Reversing big-endian bytes into a data register  |
 
 ## Research (v2 Roadmap)
 

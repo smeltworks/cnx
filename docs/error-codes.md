@@ -130,9 +130,9 @@ compiler rejects at exit 0. Reporting E0426 ("not defined") for a register decla
 few lines up would describe the transpiler rather than the source, which is why this is
 its own code rather than a second message on E0426.
 
-ADR-072 would make a register name a type. It is `Research`, and its own header states
-that while it is Research "a register is still not a type", so ADR-004 governs and this
-diagnostic is correct today. **When ADR-072 is implemented, E0429 is retired outright** —
+ADR-072 makes a register name a type. It is Accepted but not implemented, and its own
+header states that until Part 1 is implemented "a register is not a type", so ADR-004
+still describes what compiles and this diagnostic is correct today. **When ADR-072 is implemented, E0429 is retired outright** —
 `Control c(0x40000000)` becomes the instantiation form that ADR designs. Grep `ADR-072`
 to find every site that has to change together.
 

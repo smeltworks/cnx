@@ -3,7 +3,7 @@
 **Status:** Implemented
 **Date:** 2025-12-26
 **Decision Makers:** cnx Language Design Team
-**Superseded By:** ADR-072 (Safe Hardware Abstraction Primitives — `Research`; the supersession takes effect when ADR-072 is Accepted, not before)
+**Superseded By:** ADR-072 (Safe Hardware Abstraction Primitives — Accepted; the supersession takes effect when ADR-072 Part 1 is implemented)
 
 > **What is implemented, and what is not.** The register syntax this ADR defines —
 > `NAME: type access @ offset` — and its `rw` / `ro` / `wo` access modifiers are
