@@ -731,6 +731,12 @@ bitmaps cover the format completely.
   etc1.clutchSlip <- 5; // ERROR: clutchSlip is ro
   ```
 
+- **Size: the end of the last field (ruling 9 on #2449).** A register's size is the byte
+  just past its last field. There is no declared size; to match an 8-byte frame, name the
+  unused bytes as fields (`7 ro u8 reserved7,`). The editor shows a register's size on hover.
+  A data register is written either one member at a time (`etc1.outputShaft <- 23;`, which
+  needs a writable field) or whole, from a value of exactly its size.
+
 ---
 
 ## Summary
@@ -762,7 +768,7 @@ This ADR covers four features for safe hardware abstraction in cnx:
 
 ### Proposed (2026-07-04 revision — not yet accepted)
 
-4. **Data registers** — A register instantiated without an address (`Name Instance;`) is backed by normal memory, giving typed field access to wire/buffer formats (CAN/J1939, packets) without ADR-033's packed-struct overlay hazards. The instance owns its bytes (ruling 7 on #2449) and is assigned whole from a `u8` array of its size (ruling 8). Its size and the byte order of multi-byte fields are open.
+4. **Data registers** — A register instantiated without an address (`Name Instance;`) is backed by normal memory, giving typed field access to wire/buffer formats (CAN/J1939, packets) without ADR-033's packed-struct overlay hazards. The instance owns its bytes (ruling 7 on #2449) and is assigned whole from a `u8` array of its size (ruling 8). Its size is the end of its last field (ruling 9). The byte order of multi-byte fields is open.
 
 ---
 
