@@ -9,6 +9,14 @@ register GpioPort {
 
 GpioPort GPIO1(0x401B8000);
 
+// Negative control: a struct parameter is no register
+struct Pair {
+    u32 a;
+}
+
+void useStruct(Pair p) {
+}
+
 void setHigh(GpioPort port) {}
 
 void main() {

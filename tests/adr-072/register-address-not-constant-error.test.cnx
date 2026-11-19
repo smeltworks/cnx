@@ -11,6 +11,11 @@ mut u32 base <- 0x401B8000;
 
 GpioPort GPIO1(base);
 
+// Negative control: a constant base is an address
+u32 FIXED <- 0x401BC000;
+GpioPort GPIO2(FIXED + 0x10);
+
 void main() {
     GPIO1.DR <- 1;
+    GPIO2.DR <- 1;
 }
