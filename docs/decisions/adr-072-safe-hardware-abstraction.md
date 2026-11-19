@@ -720,8 +720,16 @@ bitmaps cover the format completely.
   view over another buffer, so no runtime pointer, lifetime or aliasing question. A
   received frame is copied in before it is read. A global data register has a
   compile-time address, so generic register functions take it with no runtime pointer.
-- **How bytes get in.** A `load(bytes)` step, field-by-field assignment, or a view — tied
-  to the backing-model choice.
+- **How bytes get in: whole-register assignment (ruling 8 on #2449).** A data register is
+  assigned from a `u8` array of exactly its size, and a `u8` array of that size is assigned
+  from it. A size mismatch is a compile error. Field access modes still apply to field
+  writes, and Part 1's rule that a register cannot be assigned covers MMIO instances only.
+
+  ```cnx
+  etc1 <- rxFrame;      // copy a received frame in
+  txFrame <- etc1;      // copy out for sending
+  etc1.clutchSlip <- 5; // ERROR: clutchSlip is ro
+  ```
 
 ---
 
@@ -754,7 +762,7 @@ This ADR covers four features for safe hardware abstraction in cnx:
 
 ### Proposed (2026-07-04 revision — not yet accepted)
 
-4. **Data registers** — A register instantiated without an address (`Name Instance;`) is backed by normal memory, giving typed field access to wire/buffer formats (CAN/J1939, packets) without ADR-033's packed-struct overlay hazards. The instance owns its bytes (ruling 7 on #2449); how bytes get in and the byte order of multi-byte fields are open.
+4. **Data registers** — A register instantiated without an address (`Name Instance;`) is backed by normal memory, giving typed field access to wire/buffer formats (CAN/J1939, packets) without ADR-033's packed-struct overlay hazards. The instance owns its bytes (ruling 7 on #2449) and is assigned whole from a `u8` array of its size (ruling 8). Its size and the byte order of multi-byte fields are open.
 
 ---
 
