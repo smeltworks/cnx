@@ -29,6 +29,15 @@ u32 A <- 1;
 u32 B <- 2;
 GpioPort TWO(A, B);
 
+// Negative control: a scoped struct shadows the global register type
+scope Shadow {
+    struct GpioPort {
+        u32 dr;
+    }
+
+    GpioPort held;
+}
+
 scope Board {
     GpioPort held;
 

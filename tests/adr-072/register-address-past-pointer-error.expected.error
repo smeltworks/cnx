@@ -1,6 +1,8 @@
-13:0 error[E0931]: register member 'WRAPS.ISR' ends at 0x100000008U, past the target's 32-bit address range
+13:0 error[E0931]: register member 'WRAPS.ISR' ends at 0x10000000BU, past the target's 32-bit address range
        help: Every byte of a register member must be addressable on the target (ADR-072). Check the instance's address against the datasheet.
-14:0 error[E0931]: register member 'HIGH.DR' ends at 0x100000000U, past the target's 32-bit address range
+14:0 error[E0931]: register member 'HIGH.DR' ends at 0x100000003U, past the target's 32-bit address range
        help: Every byte of a register member must be addressable on the target (ADR-072). Check the instance's address against the datasheet.
-14:0 error[E0931]: register member 'HIGH.ISR' ends at 0x100000018U, past the target's 32-bit address range
+14:0 error[E0931]: register member 'HIGH.ISR' ends at 0x10000001BU, past the target's 32-bit address range
+       help: Every byte of a register member must be addressable on the target (ADR-072). Check the instance's address against the datasheet.
+17:0 error[E0931]: register member 'EDGE.ISR' ends at 0x100000001U, past the target's 32-bit address range
        help: Every byte of a register member must be addressable on the target (ADR-072). Check the instance's address against the datasheet.

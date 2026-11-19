@@ -179,7 +179,13 @@ class RegisterInstanceAnalyzer {
   }
 
   private bytesOf(member: IRegisterMemberSymbol): bigint {
-    const name = "name" in member.type ? String(member.type.name) : "";
+    const type = member.type;
+    const name =
+      type.kind === "primitive"
+        ? type.primitive
+        : "name" in type
+          ? String(type.name)
+          : "";
     const bits =
       TYPE_WIDTH[name] ?? this.context.symbols.bitmapBitWidth.get(name) ?? 8;
     return BigInt(Math.ceil(bits / 8));
@@ -233,10 +239,13 @@ class RegisterInstanceAnalyzer {
             : type.kind === "qualified"
               ? [[type.path.slice(0, -1).join("."), type.path.at(-1)!]]
               : [];
-    return candidates.some(([path, name]) => {
+    // the nearest declaration wins: a scoped struct shadows a global register
+    for (const [path, name] of candidates) {
       const symbol = program.memberOf(path, name);
-      return symbol?.kind === "register" && symbol.registerType === null;
-    });
+      if (symbol === undefined || symbol === null) continue;
+      return symbol.kind === "register" && symbol.registerType === null;
+    }
+    return false;
   }
 }
 

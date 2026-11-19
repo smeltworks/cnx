@@ -13,11 +13,15 @@ register GpioPort {
 GpioPort WRAPS(0xFFFFFFF0);
 GpioPort HIGH(0x100000000);
 
+// ISR starts in range at 0xFFFFFFFE, but its four bytes end past it
+GpioPort EDGE(0xFFFFFFE6);
+
 // Negative control: the last member ends exactly at the top of the range
 GpioPort TOP(0xFFFFFFE4);
 
 void main() {
     WRAPS.DR <- 1;
     HIGH.DR <- 1;
+    EDGE.DR <- 1;
     TOP.ISR <- 1;
 }
