@@ -705,10 +705,10 @@ describe("CodeGenWalker Coverage Tests", () => {
       expect(code).toContain("GPIO__PORTA__DR = val");
       expect(code).not.toContain("#define GPIO__PORTA__DR");
       const block = host.state.exportedRegisterBlocks.join("\n");
-      expect(block).toContain("/* Register: GPIO__PORTA @ 0x40000000 */");
-      // Address format is 0x40000000 + 0x00
+      expect(block).toContain("/* Register: GPIO__PORTA @ 0x40000000U */");
+      // ADR-072: one folded, unsigned address
       expect(block).toContain(
-        "#define GPIO__PORTA__DR (*(volatile uint32_t*)(0x40000000 + 0x00))",
+        "#define GPIO__PORTA__DR (*(volatile uint32_t*)(0x40000000U))",
       );
     });
   });

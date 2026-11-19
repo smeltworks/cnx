@@ -319,8 +319,8 @@ describe("RegisterHandlers", () => {
       const result = getHandler()!(ctx);
 
       expect(result).toContain("volatile uint8_t*");
-      expect(result).toContain("0x40000000");
-      expect(result).toContain("0x04");
+      // ADR-072: base + offset folded to one address
+      expect(result).toContain("(0x40000004U)");
     });
 
     it("generates MMIO with byte offset for non-zero start", () => {
@@ -352,7 +352,7 @@ describe("RegisterHandlers", () => {
       const result = getHandler()!(ctx);
 
       expect(result).toContain("volatile uint16_t*");
-      expect(result).toContain("0x04 + 1");
+      expect(result).toContain("(0x40000005U)");
     });
   });
 
@@ -517,7 +517,7 @@ describe("RegisterHandlers", () => {
       const result = getHandler()!(ctx);
 
       expect(result).toContain("volatile uint32_t*");
-      expect(result).toContain("0x40000000");
+      expect(result).toContain("(0x40000008U)");
     });
 
     // #1322a: the `'this' outside a scope` guard this asserted is deleted. It
