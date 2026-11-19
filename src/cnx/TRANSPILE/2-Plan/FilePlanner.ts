@@ -1114,6 +1114,7 @@ class FilePlanner {
   private registerInstances(
     program: IProgramSyntax,
     cTypes: Set<string>,
+    requirements: PlannedRequirements,
   ): readonly TDeclarationSyntax[] {
     const memberCTypes = this.state.symbols!.registerMemberCTypes;
     return program.members.flatMap(({ declaration, scope }) => {
@@ -1127,7 +1128,12 @@ class FilePlanner {
       // Its macros spell each member's C type, so its header is required
       for (const member of instance.members.values()) {
         const cType = memberCTypes.get(member.fullyQualifiedCName);
-        if (cType !== undefined) cTypes.add(cType);
+        if (cType === undefined) continue;
+        cTypes.add(cType);
+        // An `ISR` member's typedef comes from its own header
+        const include =
+          TypeGenerationHelper.generatePrimitiveType(cType).include;
+        if (include !== null) requirements.require(include);
       }
       return [declaration];
     });
@@ -1323,7 +1329,7 @@ class FilePlanner {
     const unwritten: IUnwrittenSyntax = {
       declarations: new Set([
         ...inlinedConsts,
-        ...this.registerInstances(program, decidedCTypes),
+        ...this.registerInstances(program, decidedCTypes, requirements),
       ]),
       values: new Set(
         [...statics.values.keys()].flatMap((value) =>
