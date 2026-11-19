@@ -16,7 +16,7 @@ registers exist to remove:
 
 ```cnx
 u16 raw <- etc1.outputShaft;
-f32 rpm <- raw * 0.125;      // the resolution lives at every call site
+f32 rpm <- raw * 0.125; // the resolution lives at every call site
 ```
 
 The pattern is not J1939-specific. It covers MMIO (ADC, on-die temperature, DAC, timer
@@ -28,8 +28,8 @@ ADR-072's 2026-07-04 revision proposed a trailing transform on the field:
 
 ```cnx
 register Etc1 {
-    1 ro u16 outputShaft divisor 8,       // 0.125 rpm/bit
-    3 ro u8  clutchSlip  multiplier 0.4,  // 0.4 %/bit
+    1 ro u16 outputShaft divisor 8, // 0.125 rpm/bit
+    3 ro u8 clutchSlip multiplier 0.4, // 0.4 %/bit
 }
 ```
 

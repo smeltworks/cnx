@@ -33,10 +33,10 @@ Enable writing MCU libraries where **invalid hardware access is a compile error*
 
 ```cnx
 // Ideal: compiler prevents all these mistakes
-GPIO1.ISR <- GPIO1.ISR;           // ERROR: RMW on w1c register
-UART1.send("hello");              // ERROR: UART1 clock not enabled
-GPIO1.Pin13 <- output;            // ERROR: Pin13 muxed to SPI
-DMA.transfer(src, dst, 1000);     // ERROR: DMA not initialized
+GPIO1.ISR <- GPIO1.ISR; // ERROR: RMW on w1c register
+UART1.send("hello"); // ERROR: UART1 clock not enabled
+GPIO1.Pin13 <- output; // ERROR: Pin13 muxed to SPI
+DMA.transfer(src, dst, 1000); // ERROR: DMA not initialized
 ```
 
 ---
@@ -50,9 +50,9 @@ The i.MX RT1062 (Teensy 4.x) has 9 GPIO ports with identical register layouts at
 ```cnx
 // Current: repetitive and error-prone
 register GPIO1 @ 0x401B8000 {
-    DR:   GpioDirection rw @ 0x00,
+    DR: GpioDirection rw @ 0x00,
     GDIR: GpioDirection rw @ 0x04,
-    PSR:  GpioDirection ro @ 0x08,
+    PSR: GpioDirection ro @ 0x08,
     // ... 10 more fields
 }
 
@@ -158,8 +158,8 @@ pointer width.
 ```cnx
 u32 GPIO_BASE <- 0x401B8000;
 
-GpioPort GPIO1(GPIO_BASE);            // 0x401B8000
-GpioPort GPIO2(GPIO_BASE + 0x4000);   // 0x401BC000
+GpioPort GPIO1(GPIO_BASE); // 0x401B8000
+GpioPort GPIO2(GPIO_BASE + 0x4000); // 0x401BC000
 ```
 
 Single-instance peripherals simply have one instantiation:
@@ -171,7 +171,7 @@ register SystemControl {
     0x04 rw u32 ICSR,
 }
 
-SystemControl SCB(0xE000ED00);  // Only one instance
+SystemControl SCB(0xE000ED00); // Only one instance
 ```
 
 #### Syntax
@@ -179,17 +179,17 @@ SystemControl SCB(0xE000ED00);  // Only one instance
 ```cnx
 // Register definition — plain byte offsets, no base ceremony
 register GpioPort {
-    0x00 rw  GpioDirection DR,
-    0x04 rw  GpioDirection GDIR,
-    0x08 ro  GpioDirection PSR,
-    0x0C rw  u32           ICR1,
-    0x10 rw  u32           ICR2,
-    0x14 rw  GpioDirection IMR,
+    0x00 rw GpioDirection DR,
+    0x04 rw GpioDirection GDIR,
+    0x08 ro GpioDirection PSR,
+    0x0C rw u32 ICR1,
+    0x10 rw u32 ICR2,
+    0x14 rw GpioDirection IMR,
     0x18 w1c GpioDirection ISR,
-    0x1C rw  u32           EDGE,
-    0x84 wo  GpioDirection DR_SET,
-    0x88 wo  GpioDirection DR_CLR,
-    0x8C wo  GpioDirection DR_TOG,
+    0x1C rw u32 EDGE,
+    0x84 wo GpioDirection DR_SET,
+    0x88 wo GpioDirection DR_CLR,
+    0x8C wo GpioDirection DR_TOG,
 }
 
 // Instantiate at specific addresses
@@ -256,7 +256,7 @@ Register instances can be used in two ways:
 
 ```cnx
 void debugGpio1() {
-    GPIO1.DR[13] <- true;  // Only works with GPIO1
+    GPIO1.DR[13] <- true; // Only works with GPIO1
 }
 ```
 
@@ -271,9 +271,9 @@ void clearPin(GpioPort port, u8 pin) {
     port.DR[pin] <- false;
 }
 
-setPin(GPIO1, 13);   // OK — GPIO1 is a GpioPort
-setPin(GPIO2, 0);    // OK — GPIO2 is a GpioPort
-setPin(UART1, 0);    // ERROR: UART1 is not a GpioPort
+setPin(GPIO1, 13); // OK — GPIO1 is a GpioPort
+setPin(GPIO2, 0); // OK — GPIO2 is a GpioPort
+setPin(UART1, 0); // ERROR: UART1 is not a GpioPort
 ```
 
 #### Function Specialization
@@ -284,8 +284,8 @@ to that instance's address. There is no runtime indirection: no base pointer is 
 stored or dereferenced.
 
 ```cnx
-setPin(GPIO1, 13);   // port.DR is GPIO1's DR
-setPin(GPIO2, 0);    // port.DR is GPIO2's DR
+setPin(GPIO1, 13); // port.DR is GPIO1's DR
+setPin(GPIO2, 0); // port.DR is GPIO2's DR
 ```
 
 How the generated C achieves this (one specialized function per instance passed,
@@ -298,11 +298,11 @@ This enables writing reusable HAL code without runtime overhead or duplicating s
 Register template types (`GpioPort`) are **compile-time-only identifiers**, not runtime values. They cannot be assigned to variables or stored in data structures:
 
 ```cnx
-GpioPort activePort <- GPIO1;  // ERROR: register types are not assignable
-activePort <- GPIO2;           // ERROR: cannot reassign register type
-setPin(activePort, 13);        // Would require runtime indirection
+GpioPort activePort <- GPIO1; // ERROR: register types are not assignable
+activePort <- GPIO2; // ERROR: cannot reassign register type
+setPin(activePort, 13); // Would require runtime indirection
 
-GpioPort[2] ports <- [GPIO1, GPIO2];  // ERROR: cannot store registers in arrays
+GpioPort[2] ports <- [GPIO1, GPIO2]; // ERROR: cannot store registers in arrays
 ```
 
 The same holds for a function with a register parameter. It has no single body to
@@ -311,7 +311,7 @@ callback (ADR-029): not passed, stored or named as a callback type.
 
 ```cnx
 struct Hal {
-    setPin handler;       // ERROR: setPin takes a register parameter
+    setPin handler; // ERROR: setPin takes a register parameter
 }
 ```
 
@@ -320,8 +320,12 @@ This is intentional — runtime polymorphism over registers would require functi
 ```cnx
 void setPinOnPort(u8 portNum, u8 pin) {
     switch (portNum) {
-        case 1 { setPin(GPIO1, pin); }
-        case 2 { setPin(GPIO2, pin); }
+        case 1 {
+            setPin(GPIO1, pin);
+        }
+        case 2 {
+            setPin(GPIO2, pin);
+        }
         // ...
     }
 }
@@ -369,17 +373,17 @@ Assigning a wider type to a narrower bitmap field requires explicit bit extracti
 
 ```cnx
 bitmap32 DmaErrors {
-    Chan0Err[4],   // 4 bits wide
+    Chan0Err[4], // 4 bits wide
     Chan1Err[4],
     Reserved[24]
 }
 
 u8 error <- 0xFF;
 
-DMA.ERR.Chan0Err <- error;        // ERROR: u8 (8 bits) doesn't fit in 4-bit field
-DMA.ERR.Chan0Err <- error[0, 4];  // OK: explicitly extract 4 bits
-DMA.ERR.Chan0Err <- 0xF;          // OK: literal fits in 4 bits
-DMA.ERR.Chan0Err <- 0x1F;         // ERROR: literal exceeds 4 bits
+DMA.ERR.Chan0Err <- error; // ERROR: u8 (8 bits) doesn't fit in 4-bit field
+DMA.ERR.Chan0Err <- error[0, 4]; // OK: explicitly extract 4 bits
+DMA.ERR.Chan0Err <- 0xF; // OK: literal fits in 4 bits
+DMA.ERR.Chan0Err <- 0x1F; // ERROR: literal exceeds 4 bits
 ```
 
 This follows cnx's philosophy of explicit bit extraction (`value[start, width]`) rather than C's implicit truncating casts.
@@ -390,8 +394,8 @@ A `w1c` / `wo` / `w1s` bit assignment emits a **direct write**, never the
 read-modify-write an `rw` field gets:
 
 ```cnx
-STATUS.OVERFLOW <- true;    // STATUS declared w1c
-CTRL.ENABLE <- true;        // CTRL declared rw
+STATUS.OVERFLOW <- true; // STATUS declared w1c
+CTRL.ENABLE <- true; // CTRL declared rw
 ```
 
 ```c
@@ -608,7 +612,7 @@ bitmap32 GpioPins {
 
 register GpioPort {
     /// Data Register
-    0x00 rw  GpioPins DR,
+    0x00 rw GpioPins DR,
     /// Interrupt Status Register (write 1 to clear)
     0x18 w1c GpioPins ISR,
 }
@@ -651,14 +655,23 @@ Two register definitions are two types, even when their layouts match exactly. A
 is a named type like a struct, so the compiler does not compare layouts (ruling 6 on #2449):
 
 ```cnx
-register Watchdog { 0x00 rw u32 CTRL, 0x04 wo u32 KEY, }
-register Timer    { 0x00 rw u32 CTRL, 0x04 wo u32 KEY, }
+register Watchdog {
+    0x00 rw u32 CTRL,
+    0x04 wo u32 KEY,
+}
+
+register Timer {
+    0x00 rw u32 CTRL,
+    0x04 wo u32 KEY,
+}
 
 Timer TMR1(0x40038000);
 
-void kick(Watchdog w) { w.KEY <- 0xB480A602; }
+void kick(Watchdog w) {
+    w.KEY <- 0xB480A602;
+}
 
-kick(TMR1);   // ERROR: TMR1 is a Timer, not a Watchdog
+kick(TMR1); // ERROR: TMR1 is a Timer, not a Watchdog
 ```
 
 Merging layout-identical peripherals into one template is svd2cnx's job (item 7 above),
@@ -687,24 +700,29 @@ MMIO. Everything else about registers — typed fields, access modes, bitmap-typ
 template-as-interface — is unchanged.
 
 ```cnx
-GpioPort GPIO1(0x401B8000);   // MMIO — address given
-GpioPort scratch;             // data register — no address, normal memory
+GpioPort GPIO1(0x401B8000); // MMIO — address given
+GpioPort scratch; // data register — no address, normal memory
 ```
 
 Bit-packed bytes use a bitmap field; byte-aligned scalars use a scalar type. Scaling a raw
 value to an engineering unit is ADR-073. A J1939 PGN is a data register:
 
 ```cnx
-bitmap8 Etc1Control { drivelineEngaged[2], tccLockup[2], shiftInProcess[2], transition[2] }
-
-register Etc1 {
-    0 ro Etc1Control control,             // byte 0 — bit-packed, via bitmap
-    1 ro u16 outputShaft,                 // bytes 1-2 — raw, 0.125 rpm/bit
-    3 ro u8  clutchSlip,                  // byte 3 — raw, 0.4 %/bit
-    5 ro u16 inputShaft,                  // bytes 5-6 — raw, 0.125 rpm/bit
+bitmap8 Etc1Control {
+    drivelineEngaged[2],
+    tccLockup[2],
+    shiftInProcess[2],
+    transition[2]
 }
 
-Etc1 etc1;                                 // in normal memory
+register Etc1 {
+    0 ro Etc1Control control, // byte 0 — bit-packed, via bitmap
+    1 ro u16 outputShaft, // bytes 1-2 — raw, 0.125 rpm/bit
+    3 ro u8 clutchSlip, // byte 3 — raw, 0.4 %/bit
+    5 ro u16 inputShaft, // bytes 5-6 — raw, 0.125 rpm/bit
+}
+
+Etc1 etc1; // in normal memory
 ```
 
 Because J1939 fields are either byte-aligned or bit-fields within a single byte (never a
@@ -724,8 +742,8 @@ bitmaps cover the format completely.
   writes, and Part 1's rule that a register cannot be assigned covers MMIO instances only.
 
   ```cnx
-  etc1 <- rxFrame;      // copy a received frame in
-  txFrame <- etc1;      // copy out for sending
+  etc1 <- rxFrame; // copy a received frame in
+  txFrame <- etc1; // copy out for sending
   etc1.clutchSlip <- 5; // ERROR: clutchSlip is ro
   ```
 

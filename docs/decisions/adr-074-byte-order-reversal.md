@@ -18,7 +18,7 @@ register Pair {
 
 Pair p;
 u8[2] bytes <- [1, 2];
-p <- bytes;          // p.value = 0x0201 = 513
+p <- bytes; // p.value = 0x0201 = 513
 ```
 
 Big-endian sources (Modbus, most network protocols) send the high byte first. Their bytes
@@ -26,7 +26,7 @@ need reversing on the way in and out, and the owner's direction is that the assi
 should say so explicitly, sketched as:
 
 ```cnx
-p <- bytes.reversed();   // p.value = 0x0102 = 258 — syntax not decided
+p <- bytes.reversed(); // p.value = 0x0102 = 258 — syntax not decided
 ```
 
 The syntax has to be memory safe and read like C.
@@ -38,11 +38,11 @@ field it moves the fields as well as their bytes:
 
 ```cnx
 register Holding {
-    0 ro u16 setpoint,     // bytes 0-1
-    2 ro u16 actual,       // bytes 2-3
+    0 ro u16 setpoint, // bytes 0-1
+    2 ro u16 actual, // bytes 2-3
 }
 
-u8[4] rx <- [0x04, 0xD2, 0x00, 0x64];   // big-endian: setpoint 1234, actual 100
+u8[4] rx <- [0x04, 0xD2, 0x00, 0x64]; // big-endian: setpoint 1234, actual 100
 ```
 
 | Conversion              | Bytes in the register      | `setpoint`      | `actual`        |
