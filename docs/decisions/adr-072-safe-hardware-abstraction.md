@@ -9,7 +9,7 @@
 **Decision Makers:** Language Design Team
 **Supersedes:** ADR-004 (Register Bindings — on acceptance; this ADR removes the `register Name @ address { }` form ADR-004 defines)
 **Amends:** ADR-016 (`### Scoped Registers` — on acceptance; that section's `@ address` examples go with it)
-**Related ADRs:** ADR-034 (Bitmap Types), ADR-033 (Packed Structs — Rejected; Part 4 is the safe alternative), ADR-073 (Scaled Fields — formerly Part 5)
+**Related ADRs:** ADR-034 (Bitmap Types), ADR-033 (Packed Structs — Rejected; Part 4 is the safe alternative), ADR-073 (Scaled Fields — formerly Part 5), ADR-074 (Byte-Order Reversal)
 
 > **Status is load-bearing here.** While this ADR is `Research` it is **not**
 > established syntax: ADR-004 still governs, a register is still not a type, and the
@@ -737,6 +737,11 @@ bitmaps cover the format completely.
   A data register is written either one member at a time (`etc1.outputShaft <- 23;`, which
   needs a writable field) or whole, from a value of exactly its size.
 
+- **Byte order: little-endian (ruling 10 on #2449).** A data register's multi-byte fields
+  are little-endian: `u8[2] [1, 2]` assigned to a register with one `u16` field reads as
+  `0x0201`. A big-endian source is reversed explicitly at the assignment; that syntax is
+  ADR-074. An MMIO register uses the hardware's order.
+
 ---
 
 ## Summary
@@ -768,7 +773,7 @@ This ADR covers four features for safe hardware abstraction in cnx:
 
 ### Proposed (2026-07-04 revision — not yet accepted)
 
-4. **Data registers** — A register instantiated without an address (`Name Instance;`) is backed by normal memory, giving typed field access to wire/buffer formats (CAN/J1939, packets) without ADR-033's packed-struct overlay hazards. The instance owns its bytes (ruling 7 on #2449) and is assigned whole from a `u8` array of its size (ruling 8). Its size is the end of its last field (ruling 9). The byte order of multi-byte fields is open.
+4. **Data registers** — A register instantiated without an address (`Name Instance;`) is backed by normal memory, giving typed field access to wire/buffer formats (CAN/J1939, packets) without ADR-033's packed-struct overlay hazards. The instance owns its bytes (ruling 7 on #2449) and is assigned whole from a `u8` array of its size (ruling 8). Its size is the end of its last field (ruling 9). Its multi-byte fields are little-endian (ruling 10); reversing a big-endian source is ADR-074.
 
 ---
 

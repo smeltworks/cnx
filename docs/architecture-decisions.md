@@ -89,6 +89,7 @@ v2 (so "Research (v2 Roadmap)" holds `1xx` ADRs).
 | [ADR-069](decisions/adr-069-dead-code-reachability.md)    | Dead-Code / Reachability      | Reject unreachable code (MISRA 2.1/2.2, DO-178C) |
 | [ADR-072](decisions/adr-072-safe-hardware-abstraction.md) | Safe Hardware Abstraction     | Type-safe hardware abstraction primitives        |
 | [ADR-073](decisions/adr-073-scaled-fields.md)             | Scaled Fields                 | Register fields with resolution and units        |
+| [ADR-074](decisions/adr-074-byte-order-reversal.md)       | Byte-Order Reversal           | Reversing big-endian bytes into a data register  |
 
 ## Research (v2 Roadmap)
 
