@@ -160,18 +160,6 @@ class StatementLowering {
     );
   }
 
-  private static soleArgument(
-    ctx: Parser.ConstructorArgumentListContext,
-  ): TExpression | null {
-    const names = ctx.IDENTIFIER();
-    if (names.length !== 1) return null;
-    return {
-      kind: "identifier",
-      name: names[0].getText(),
-      ...SyntaxLowering.node(ctx),
-    } as TExpression;
-  }
-
   static variableDeclaration(
     ctx: Parser.VariableDeclarationContext | Parser.ForVarDeclContext,
   ): IVariableDeclarationSyntax {
@@ -245,9 +233,7 @@ class StatementLowering {
         written: argument.getText(),
       })),
       spellsOwnName: StatementLowering.spellsOwnName(ctx),
-      // ADR-072: `GpioPort GPIO1(BASE);` is a register instance's address as
-      // much as `GPIO1(BASE + 0)` is, so one name is lowered as both shapes
-      address: StatementLowering.soleArgument(constructorArguments),
+      address: null,
       ...SyntaxLowering.node(ctx),
     };
   }
