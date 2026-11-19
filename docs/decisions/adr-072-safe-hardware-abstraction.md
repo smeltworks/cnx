@@ -754,7 +754,7 @@ This ADR covers four features for safe hardware abstraction in cnx:
 
 ### Proposed (2026-07-04 revision — not yet accepted)
 
-4. **Data registers** — A register instantiated without an address (`Name Instance;`) is backed by normal memory, giving typed field access to wire/buffer formats (CAN/J1939, packets) without ADR-033's packed-struct overlay hazards. Backing model (owned vs view) is open.
+4. **Data registers** — A register instantiated without an address (`Name Instance;`) is backed by normal memory, giving typed field access to wire/buffer formats (CAN/J1939, packets) without ADR-033's packed-struct overlay hazards. The instance owns its bytes (ruling 7 on #2449); how bytes get in and the byte order of multi-byte fields are open.
 
 ---
 
