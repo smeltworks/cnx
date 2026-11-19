@@ -1,6 +1,6 @@
 # ADR-004: Type-Safe Register Bindings
 
-**Status:** Implemented
+**Status:** Superseded (by ADR-072)
 **Date:** 2025-12-26
 **Decision Makers:** cnx Language Design Team
 **Superseded By:** ADR-072 (Safe Hardware Abstraction Primitives — Accepted; the supersession takes effect when ADR-072 Part 1 is implemented)
@@ -19,14 +19,11 @@
 > #define Teensy4__GPIO7__DR (*(volatile uint32_t*)(0x42004000U))
 > ```
 >
-> So **a register is not a type** in the language as shipped, and that is enforced:
-> a register name in a type position is rejected with **E0429**. It was accepted
-> silently until then, emitting a declaration of a type that is never defined, so the
-> generated C failed to compile while the transpiler reported success. E0429 is retired
-> when ADR-072 is implemented, not when it is merely Accepted.
->
-> It becomes a type under ADR-072, where a register definition is a parameterized type
-> and the base address is supplied at instantiation (`SystemControl SCB(0xE000ED00);`).
+> Under this ADR a register was not a type, and a register name in a type position
+> was rejected with **E0429**. ADR-072 supersedes that: a register definition is a
+> type and each instance supplies its base address (`SystemControl SCB(0xE000ED00);`).
+> E0429 is retired; a register *instance* in a type position (`SCB x;`) is now
+> **E0937**.
 
 ## Context
 

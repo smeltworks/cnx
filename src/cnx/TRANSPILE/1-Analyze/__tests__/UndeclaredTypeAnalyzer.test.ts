@@ -2,7 +2,7 @@
  * Unit tests for UndeclaredTypeAnalyzer.
  *
  * Issue #1312 (E0426): a type name that denotes nothing this file can see.
- * Issue #1336 (E0429): a name that denotes a REGISTER, which is not a type.
+ * Issue #1336 (E0937): a name that denotes a REGISTER, which is not a type.
  *
  * The integration fixtures in `tests/bugs/issue-1336-register-in-type-position`
  * assert the diagnostic end to end, but they cannot reach every branch here: a
@@ -73,7 +73,7 @@ describe("UndeclaredTypeAnalyzer", () => {
     state = new TranspileState();
   });
 
-  describe("a register in a type position (E0429, #1336)", () => {
+  describe("a register in a type position (E0937, #1336)", () => {
     it("rejects it, and names it a register rather than undefined", () => {
       const errors = analyze(`
         ${REGISTER}
@@ -83,8 +83,10 @@ describe("UndeclaredTypeAnalyzer", () => {
         }
       `);
       expect(errors).toHaveLength(1);
-      expect(errors[0].code).toBe("E0429");
-      expect(errors[0].message).toBe("'Control' is a register, not a type");
+      expect(errors[0].code).toBe("E0937");
+      expect(errors[0].message).toBe(
+        "'Control' is a register instance, not a type; its register type is the type",
+      );
     });
 
     it("reports the use site, not the declaration", () => {
@@ -108,7 +110,7 @@ describe("UndeclaredTypeAnalyzer", () => {
         }
       `);
       expect(errors).toHaveLength(1);
-      expect(errors[0].code).toBe("E0429");
+      expect(errors[0].code).toBe("E0937");
       expect(errors[0].typeName).toBe("Control");
     });
   });
@@ -241,7 +243,7 @@ describe("UndeclaredTypeAnalyzer", () => {
   });
 
   describe("a qualified type form (#1458)", () => {
-    it("rejects a register named by global., this. or Scope. as E0429", () => {
+    it("rejects a register named by global., this. or Scope. as E0937", () => {
       const errors = analyze(`
         register ControlBlock { 0x00 rw u32 DR, } ControlBlock Control(0x40000000);
         scope Board {
@@ -258,9 +260,9 @@ describe("UndeclaredTypeAnalyzer", () => {
         }
       `);
       expect(errors.map((e) => `${e.code} ${e.typeName}`)).toEqual([
-        "E0429 global.Control",
-        "E0429 this.Pins",
-        "E0429 Board.Leds",
+        "E0937 global.Control",
+        "E0937 this.Pins",
+        "E0937 Board.Leds",
       ]);
     });
 

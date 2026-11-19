@@ -77,7 +77,7 @@ class NameExistence {
    * the type answers here. #1336 was an instance answering "yes": `Control c;`
    * reached codegen with no typedef behind it -- exit 0, then `unknown type
    * name 'Control'` from the C compiler. An instance in a type position is
-   * still E0429.
+   * still E0937.
    */
   static isTypeName(
     typeName: string,
@@ -132,7 +132,7 @@ class NameExistence {
    *
    * Separate from the two position predicates because the type position needs
    * to tell "this name is a register instance" apart from "this name is
-   * nothing at all" -- E0429 against E0426. Answering "not a type" is enough
+   * nothing at all" -- E0937 against E0426. Answering "not a type" is enough
    * to reject; naming *why* is what makes the diagnostic worth reading.
    */
   static isRegisterName(name: string, symbols: ICodeGenSymbols): boolean {

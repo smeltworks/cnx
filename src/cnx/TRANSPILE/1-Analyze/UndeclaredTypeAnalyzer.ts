@@ -1,7 +1,11 @@
 /**
  * UndeclaredTypeAnalyzer — rejects a name in a type position that does not name
  * a type: one that denotes nothing this file can see (E0426), or one that
- * denotes a register instance, which is not a type (E0429, #1336).
+ * denotes a register instance, which is not a type (E0937, #1336).
+ *
+ * E0429 is retired with ADR-072: a register name in a type position was its
+ * whole meaning, and a register definition is a type now. Its one remaining
+ * case, a register instance there, is E0937.
  *
  * Issue #1312. `CodeGenerator.getTypeName` ends in `resolved ?? ctx.getText()`,
  * so a name that resolves to no type was emitted as the raw cnx source text
@@ -290,7 +294,7 @@ class UndeclaredTypeAnalyzer {
 
   /**
    * Whether any spelling denotes a register instance (ADR-072). Asked only
-   * after `denotesType` has already answered no, to tell E0429 from E0426: a
+   * after `denotesType` has already answered no, to tell E0937 from E0426: a
    * register TYPE is a type and never reaches here.
    */
   denotesRegister(spellings: ReadonlyArray<string>): boolean {
@@ -329,16 +333,16 @@ class UndeclaredTypeAnalyzer {
   }
 
   /**
-   * E0429: the name is declared, but as a register instance (`GPIO1 x;`),
+   * E0937: the name is declared, but as a register instance (`GPIO1 x;`),
    * and an instance is a value, not a type. Its type (`GpioPort`) is the type
    * (ADR-072).
    */
   addRegisterInTypePositionError(typeName: string, span: ISourceSpan): void {
     this._push(
-      "E0429",
+      "E0937",
       typeName,
       span,
-      `'${typeName}' is a register, not a type`,
+      `'${typeName}' is a register instance, not a type; its register type is the type`,
       {},
     );
   }
