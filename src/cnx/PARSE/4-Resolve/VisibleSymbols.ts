@@ -20,7 +20,6 @@
 
 import type IBitmapFieldLayout from "../../types/IBitmapFieldLayout";
 import type ICodeGenSymbols from "../../types/ICodeGenSymbols";
-import type TExpression from "../../types/syntax/TExpression";
 
 /**
  * The mutable collections mergeExternalSymbols accumulates into.

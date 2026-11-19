@@ -447,7 +447,7 @@ function runAnalyzers(
       run: () => new ScopeAccessAnalyzer(context).analyze(parsed.program),
     },
     {
-      label: "register instances (ADR-072, E0931-E0933)",
+      label: "register instances (ADR-072, E0931-E0934)",
       run: () => new RegisterInstanceAnalyzer(context).analyze(parsed.program),
     },
     {

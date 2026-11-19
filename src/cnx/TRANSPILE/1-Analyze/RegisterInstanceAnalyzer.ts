@@ -5,6 +5,7 @@
  * - E0932: a register member's offset is not a compile-time constant
  * - E0933: a function parameter is a register (ADR-072 specializes it per
  *   instance; until that lands it is rejected, not passed as a pointer)
+ * - E0934: a register instance is declared inside a function
  *
  * 1.4 Resolve folded every address and offset once; this reads the result.
  */
@@ -13,6 +14,7 @@ import type TTypeSyntax from "../../types/syntax/TTypeSyntax";
 import type IBaseAnalysisError from "./types/IBaseAnalysisError";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import SourceOrder from "../../utils/SourceOrder";
+import StatementNodes from "../../utils/StatementNodes";
 
 class RegisterInstanceAnalyzer {
   constructor(private readonly context: IAnalysisContext) {}
@@ -29,6 +31,21 @@ class RegisterInstanceAnalyzer {
             message: `parameter '${parameter.name}' is a register; register parameters are not supported yet (ADR-072)`,
             helpText:
               "Access the register instance directly (`GPIO1.DR`). ADR-072 resolves a register parameter per instance at compile time; until that is implemented it is rejected rather than passed as a runtime pointer.",
+          });
+        }
+        for (const statement of StatementNodes.in(declaration)) {
+          if (
+            statement.kind !== "constructorDeclaration" ||
+            !this.isRegisterType(statement.type)
+          ) {
+            continue;
+          }
+          found.push({
+            code: "E0934",
+            span: statement.span,
+            message: `register instance '${statement.name}' must be declared at file or scope level`,
+            helpText:
+              "A register instance names hardware at a fixed address for the whole program (ADR-072), so it is not a local. Declare it beside the register type or as a scope member.",
           });
         }
         continue;

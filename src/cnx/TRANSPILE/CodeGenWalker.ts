@@ -78,7 +78,6 @@ import type IVariableDeclarationSyntax from "../types/syntax/IVariableDeclaratio
 import type TStatement from "../types/syntax/TStatement";
 import type TSwitchStatement from "../types/syntax/TSwitchStatement";
 import type IStructDeclarationSyntax from "../types/syntax/IStructDeclarationSyntax";
-import type IRegisterDeclarationSyntax from "../types/syntax/IRegisterDeclarationSyntax";
 import type IParameterSyntax from "../types/syntax/IParameterSyntax";
 import type IFunctionDeclarationSyntax from "../types/syntax/IFunctionDeclarationSyntax";
 import type TDeclarationSyntax from "../types/syntax/TDeclarationSyntax";

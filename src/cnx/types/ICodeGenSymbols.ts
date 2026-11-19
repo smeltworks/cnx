@@ -1,5 +1,4 @@
 import type IBitmapFieldLayout from "./IBitmapFieldLayout";
-import type TExpression from "./syntax/TExpression";
 /**
  * Read-only symbol collections for code generation.
  * Provides generators with access to type declarations without mutation.

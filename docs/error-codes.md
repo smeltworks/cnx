@@ -108,7 +108,7 @@ second header and the program ran with a wrong value.
 | E0426 | Type is not defined -- nowhere, or not yet: this file defines it below the use, or the use is inside it (ADR-030) | Declare the type above its first use, or #include the file that does                             | `TRANSPILE/1-Analyze/UndeclaredTypeAnalyzer.ts`                                                   |
 | E0427 | Identifier is not defined                                                                                         | Declare it, or #include the file that does                                                       | `TRANSPILE/1-Analyze/UndeclaredValueAnalyzer.ts`                                                  |
 | E0428 | Value assigned to an enum is not of that enum type                                                                | Assign one of the enum's members, or convert explicitly with a cast                              | `TRANSPILE/1-Analyze/EnumTypeSafetyAnalyzer.ts`                                                   |
-| E0429 | Name is a register, not a type                                                                                    | Access the register's members instead, e.g. `GPIO.DR`                                            | `TRANSPILE/1-Analyze/UndeclaredTypeAnalyzer.ts`                                                   |
+| E0429 | Name is a register instance, not a type (ADR-072: its register type is the type)                                  | Access the register's members instead, e.g. `GPIO.DR`, or use its type                           | `TRANSPILE/1-Analyze/UndeclaredTypeAnalyzer.ts`                                                   |
 | E0430 | Nested scopes are not allowed                                                                                     | Close the enclosing scope before declaring another, or use a flat scope such as `Hardware_GPIO`  | `PARSE/2-Parse/CnxSourceParser.ts`                                                                |
 | E0431 | `this` used outside a `scope`, or `global` at file level (ADR-016)                                                | At file level write the bare name; in a function, `global.Name`; or move the code into its scope | `TRANSPILE/1-Analyze/ThisOutsideScopeAnalyzer.ts`                                                 |
 | E0432 | C++ constructor argument is declared `mut`                                                                        | Remove `mut` from the argument; a constructor runs during static initialization                  | `TRANSPILE/1-Analyze/ConstructorArgumentAnalyzer.ts`                                              |
@@ -124,17 +124,13 @@ is where the promise is stated), ADR-016 (E0425 — a reopened scope composes, b
 its members stay unique)
 
 **E0429 (#1336)** is the type position's other answer: the name IS declared, as a
-register, and a register is not a type. ADR-004 makes a register a binding to memory,
-not a type name, so `Control c;` had no type behind it and the transpiler emitted C the
-compiler rejects at exit 0. Reporting E0426 ("not defined") for a register declared a
-few lines up would describe the transpiler rather than the source, which is why this is
-its own code rather than a second message on E0426.
-
-ADR-072 makes a register name a type. It is Accepted but not implemented, and its own
-header states that until Part 1 is implemented "a register is not a type", so ADR-004
-still describes what compiles and this diagnostic is correct today. **When ADR-072 is implemented, E0429 is retired outright** —
-`Control c(0x40000000)` becomes the instantiation form that ADR designs. Grep `ADR-072`
-to find every site that has to change together.
+register instance, and an instance is a value, not a type. ADR-072 makes a register
+declaration a type (`register ControlBlock { ... }`) and `ControlBlock Control(0x40000000);`
+an instance of it, so `ControlBlock c;` names a type and `Control c;` does not. Before
+#1336 `Control c;` had no type behind it and the transpiler emitted C the compiler
+rejects at exit 0. Reporting E0426 ("not defined") for an instance declared a few lines
+up would describe the transpiler rather than the source, which is why this is its own
+code rather than a second message on E0426.
 
 **E0426/E0427 (#1312, #1353, #1398)** complete the set: an undeclared name is diagnosed
 in a type position, a value position and a call position (E0422) rather than only the
@@ -521,13 +517,14 @@ base: bare, `this.` and `global.`.
 
 ---
 
-## E0931–E0933 — Register Types and Instances (ADR-072)
+## E0931–E0934 — Register Types and Instances (ADR-072)
 
 | Code  | Message                                                                                                               | Help                                                                                | Source                                            |
 | ----- | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------- |
 | E0931 | The address of a register instance (`GpioPort GPIO1(base);`) is not a compile-time constant                           | Use a literal, a const, or arithmetic over them                                     | `TRANSPILE/1-Analyze/RegisterInstanceAnalyzer.ts` |
 | E0932 | The offset of a register member is not a compile-time constant                                                        | Use a literal, a const, or arithmetic over them                                     | `TRANSPILE/1-Analyze/RegisterInstanceAnalyzer.ts` |
 | E0933 | A function parameter is a register; register parameters are not supported yet (ADR-072 Part 1 specializes them later) | Access the register instance directly (`GPIO1.DR`); it is never passed as a pointer | `TRANSPILE/1-Analyze/RegisterInstanceAnalyzer.ts` |
+| E0934 | A register instance is declared inside a function; it names hardware at a fixed address for the whole program         | Declare it at file level or as a scope member                                       | `TRANSPILE/1-Analyze/RegisterInstanceAnalyzer.ts` |
 
 ---
 

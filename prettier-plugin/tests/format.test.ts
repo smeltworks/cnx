@@ -305,10 +305,9 @@ u32 x <- 5;`;
     });
 
     it("does not synthesize a register-member comma the author omitted", async () => {
-      const input =
-        "register GPIO @ 0x40020000 {\n    moder: u32 rw @ 0x00\n}\n";
+      const input = "register GpioPort {\n    0x00 rw u32 moder\n}\n";
       const result = await format(input);
-      expect(result).toContain("moder: u32 rw @ 0x00");
+      expect(result).toContain("0x00 rw u32 moder");
       expect(result).not.toContain("0x00,");
     });
   });

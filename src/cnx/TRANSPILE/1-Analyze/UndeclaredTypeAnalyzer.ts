@@ -1,7 +1,7 @@
 /**
  * UndeclaredTypeAnalyzer — rejects a name in a type position that does not name
  * a type: one that denotes nothing this file can see (E0426), or one that
- * denotes a register, which is not a type (E0429, #1336).
+ * denotes a register instance, which is not a type (E0429, #1336).
  *
  * Issue #1312. `CodeGenerator.getTypeName` ends in `resolved ?? ctx.getText()`,
  * so a name that resolves to no type was emitted as the raw cnx source text
@@ -289,19 +289,9 @@ class UndeclaredTypeAnalyzer {
   }
 
   /**
-   * Whether any spelling denotes a register (ADR-004). Asked only after
-   * `denotesType` has already answered no, to tell E0429 from E0426.
-   *
-   * Cross-file this answers no, and the name falls through to E0426. That is
-   * currently TRUE rather than a gap: a register declared in an included file is
-   * not visible in the consumer at all (#1453 -- its `#define` is written to the
-   * implementation file and the header exports nothing), so "not defined" is the
-   * accurate report. When #1453 makes such a register visible it lands in the
-   * same `knownRegisters` set this reads, and E0429 begins firing there with no
-   * change here.
-   *
-   * ADR-072: retire this with E0429 when a register becomes a type -- at which
-   * point `denotesType` answers yes and this is never reached.
+   * Whether any spelling denotes a register instance (ADR-072). Asked only
+   * after `denotesType` has already answered no, to tell E0429 from E0426: a
+   * register TYPE is a type and never reaches here.
    */
   denotesRegister(spellings: ReadonlyArray<string>): boolean {
     return spellings.some((name) =>
@@ -339,13 +329,9 @@ class UndeclaredTypeAnalyzer {
   }
 
   /**
-   * E0429: the name is declared, but as a register, and a register is not a
-   * type (ADR-004).
-   *
-   * ADR-072: this code exists only for as long as that is true. When ADR-072 is
-   * IMPLEMENTED, `Control c;` becomes the instantiation form it designs and
-   * this diagnostic is retired outright -- delete the method, its call site,
-   * `NameExistence.isRegisterName`, the fixture, and the E0429 registry row.
+   * E0429: the name is declared, but as a register instance (`GPIO1 x;`),
+   * and an instance is a value, not a type. Its type (`GpioPort`) is the type
+   * (ADR-072).
    */
   addRegisterInTypePositionError(typeName: string, span: ISourceSpan): void {
     this._push(

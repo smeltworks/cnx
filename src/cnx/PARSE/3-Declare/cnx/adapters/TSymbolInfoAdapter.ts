@@ -21,7 +21,6 @@ import IScopeSymbol from "../../../../types/symbols/IScopeSymbol";
 import IVariableSymbol from "../../../../types/symbols/IVariableSymbol";
 import TypeResolver from "../../../../utils/TypeResolver";
 import ScopeUtils from "../../../../utils/ScopeUtils";
-import type TExpression from "../../../../types/syntax/TExpression";
 
 /**
  * Groups register-related maps for processRegister method.
