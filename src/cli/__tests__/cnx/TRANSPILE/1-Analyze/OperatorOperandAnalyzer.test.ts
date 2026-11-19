@@ -497,7 +497,7 @@ describe("OperatorOperandAnalyzer -- operands outside the operator's set", () =>
     ["a whole array", "u8 r <- row + 1;", "+", "an array"],
     ["a partly indexed array", "u8 r <- grid[0] + grid[1];", "+", "an array"],
     ["a struct", "u8 r <- p + 1;", "+", "a struct"],
-    ["a string under <", "bool r <- s < s;", "<", "a string"],
+    ["a string under -", "string<8> r <- s - s;", "-", "a string"],
     ["a float under <<", "u32 r <- k << 1;", "<<", "a float"],
     ["a float under &", "u32 r <- k & 1;", "&", "a float"],
     ["a float under unary ~", "u32 r <- ~k;", "~", "a float"],
@@ -530,12 +530,14 @@ describe("OperatorOperandAnalyzer -- operands outside the operator's set", () =>
     expect(run("row +<- 1;")).toEqual([]);
   });
 
-  it("takes an unsized string parameter under +, not under <", () => {
+  it("takes an unsized string parameter under + and <, not under -", () => {
     const codes = (body: string) =>
       analyze(`void g(string p) { ${body} }`).map((e) => [e.code, e.message]);
     expect(codes('string<8> r <- p + "a";')).toEqual([]);
-    expect(codes("bool r <- p < p;")).toEqual([
-      ["E0925", "Operator '<' is not valid on a string"],
+    // ADR-045 (#1956): a string is ordered by content
+    expect(codes("bool r <- p < p;")).toEqual([]);
+    expect(codes("string<8> r <- p - p;")).toEqual([
+      ["E0925", "Operator '-' is not valid on a string"],
     ]);
   });
 
@@ -600,8 +602,13 @@ describe("OperatorOperandAnalyzer -- operands outside the operator's set", () =>
       "+",
       "an array",
     ],
-    ["a string literal under <", 'bool r <- "ab" < "cd";', "<", "a string"],
-    ["a concatenation under <", "bool r <- (s + s) < s;", "<", "a string"],
+    [
+      "a string literal under -",
+      'string<4> r <- "ab" - "cd";',
+      "-",
+      "a string",
+    ],
+    ["a concatenation under -", "string<8> r <- (s + s) - s;", "-", "a string"],
     ["an enum composite under +", "u8 r <- (m | m) + 1;", "|", "an enum"],
   ])("rejects %s once (#2347 review)", (_label, body, operator, noun) => {
     expect(run(body)).toEqual([
