@@ -111,7 +111,7 @@ class MigrateAdr072 {
         );
         const instance = `${indent}${shown}${type} ${name}(${address});`;
         // A type is shared within the scope that declares it, never across
-        const key = `${MigrateAdr072.enclosingScope(source, offset, indent)}.${type}`;
+        const key = `${MigrateAdr072.enclosingScope(source, offset)}.${type}`;
         const seen = layouts.get(key);
         if (seen === members) return instance;
         if (seen !== undefined) {
@@ -124,18 +124,21 @@ class MigrateAdr072 {
     );
   }
 
-  /** The scope a declaration at `offset`, indented by `indent`, sits in */
-  static enclosingScope(
-    source: string,
-    offset: number,
-    indent: string,
-  ): string {
-    if (indent === "") return "";
-    const before = source.slice(0, offset);
-    const scopes = [...before.matchAll(/^([ \t]*)scope[ \t]+(\w+)/gm)].filter(
-      (match) => match[1].length < indent.length,
-    );
-    return scopes.at(-1)?.[2] ?? "";
+  /** The innermost scope still open at `offset`, by brace depth */
+  static enclosingScope(source: string, offset: number): string {
+    let enclosing = "";
+    for (const match of source
+      .slice(0, offset)
+      .matchAll(/\bscope[ \t]+(\w+)[ \t]*\{/g)) {
+      let depth = 0;
+      let end = match.index + match[0].length - 1;
+      for (; end < source.length; end++) {
+        if (source[end] === "{") depth++;
+        else if (source[end] === "}" && --depth === 0) break;
+      }
+      if (end > offset) enclosing = match[1];
+    }
+    return enclosing;
   }
 
   static main(argv: string[]): void {
