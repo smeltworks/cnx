@@ -41,8 +41,11 @@ import TypeCheckUtils from "./TypeCheckUtils";
 interface ISubscriptContext {
   /** Type information for the variable being subscripted, null if unknown */
   typeInfo: Pick<TTypeInfo, "isArray" | "isString"> | null;
-  /** Number of subscript expressions (1 for single index, 2 for range/slice) */
-  subscriptCount: number;
+  /**
+   * The subscript's folded length, null when it does not fold. `x[a]` is
+   * `x[a, 1]` (ADR-007 §1), so it is never how many indexes were written.
+   */
+  length: number | null;
   /** Whether this is a register access (registers always use bit manipulation) */
   isRegisterAccess?: boolean;
 }
@@ -66,23 +69,10 @@ class SubscriptClassifier {
    * @returns The kind of subscript operation (array or bit access)
    */
   static classify(ctx: ISubscriptContext): TSubscriptKind {
-    const { typeInfo, subscriptCount, isRegisterAccess } = ctx;
-
-    // Registers always use bit manipulation
-    if (isRegisterAccess) {
-      return subscriptCount === 2 ? "bit_range" : "bit_single";
-    }
-
-    // Check if this should be array access
-    const isArrayAccess = SubscriptClassifier.isArrayAccess(typeInfo);
-
-    if (isArrayAccess) {
-      // Slice vs element access
-      return subscriptCount === 2 ? "array_slice" : "array_element";
-    }
-
-    // Default: bit manipulation
-    return subscriptCount === 2 ? "bit_range" : "bit_single";
+    if (ctx.isRegisterAccess) return "bit_range";
+    if (!SubscriptClassifier.isArrayAccess(ctx.typeInfo)) return "bit_range";
+    // An array's length of 1 is the element itself, never a one-element array
+    return ctx.length === 1 ? "array_element" : "array_slice";
   }
 
   /**

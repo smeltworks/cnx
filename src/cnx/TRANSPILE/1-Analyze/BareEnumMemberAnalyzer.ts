@@ -125,8 +125,9 @@ class ExpectedEnums {
   private targetEnum(target: TExpression): TExpected {
     const writesRange =
       target.kind === "postfix" &&
-      target.ops.some(
-        (op) => op.kind === "subscript" && op.indexes.length === 2,
+      OperandTyper.chainOf(target, this.context).steps.some(
+        (step) =>
+          step.subscript === "bit_range" || step.subscript === "array_slice",
       );
     if (writesRange) return null;
     return (

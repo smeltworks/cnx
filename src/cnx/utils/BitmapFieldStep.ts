@@ -39,25 +39,21 @@ class BitmapFieldStep {
     step: IChainStep | undefined,
     field: IBitmapFieldTarget | null,
   ): boolean {
-    return (
-      step?.subscript === "bit_single" ||
-      step?.subscript === "bit_range" ||
-      field !== null
-    );
+    return step?.subscript === "bit_range" || field !== null;
   }
 
   /**
    * Whether a final step writing bits (`writesBits`) writes exactly one: a
-   * bit index, or a one-bit field. The one answer for the value's C type
+   * subscript one bit long (ADR-007 §1), or a one-bit field. The one answer for the value's C type
    * (`bool`), E0872's wording, and the rendered form.
    */
   static writesOneBit(
     step: IChainStep | undefined,
     field: IBitmapFieldTarget | null,
   ): boolean {
-    return field === null
-      ? step?.subscript === "bit_single"
-      : field.layout.width === 1;
+    if (field !== null) return field.layout.width === 1;
+    const bits = step?.subscript === "bit_range" ? step.after?.form : null;
+    return bits?.kind === "bitRange" && bits.width === 1;
   }
 }
 

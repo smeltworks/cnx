@@ -42,8 +42,8 @@ class StringValueForm {
     return {
       kind: "substring",
       chain: value,
-      start: last.indexes[0],
-      length: last.indexes[1] ?? null,
+      start: last.start,
+      length: last.length,
     };
   }
 

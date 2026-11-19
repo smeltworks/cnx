@@ -144,7 +144,7 @@ class ShiftCheck {
     written: string,
   ): void {
     if (shifted === null) return;
-    if (shifted.form.kind === "bitIndex" || shifted.form.kind === "bitRange") {
+    if (shifted.form.kind === "bitRange") {
       return;
     }
     const integer =

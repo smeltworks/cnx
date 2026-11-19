@@ -203,7 +203,7 @@ class ArrayIndexBoundsCheck {
       }
       depth += 1;
       found.push({
-        expressions: op.indexes,
+        expressions: [op.start],
         opsAfter: ops.length - index - 1,
         dimension: depth,
         at: op.span,

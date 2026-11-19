@@ -12,7 +12,7 @@ interface IFloatBitWrite {
   readonly floatType: string;
   /** Bit index expression (the start position of a range) */
   readonly bitIndex: string;
-  /** Bit width with its fold (#1096), or null for a single bit */
+  /** Bit width with its fold (#1096), or null when it is one bit (ADR-007 §1) */
   readonly width: IBitWidth | null;
   /** The value written */
   readonly value: string;

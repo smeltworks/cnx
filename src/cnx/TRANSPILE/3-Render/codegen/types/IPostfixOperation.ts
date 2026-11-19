@@ -17,9 +17,6 @@ interface IPostfixOperation {
   /** #1994: it is the chain head's `rootOp`, as the read path's is */
   appliesToRoot: boolean;
 
-  /** How many subscript expressions this operation carries: 0, 1 or 2. */
-  indexCount: number;
-
   /**
    * The subscript indexes, rendered on demand.
    *

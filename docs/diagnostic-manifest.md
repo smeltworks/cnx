@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1012 fixture(s) assert a diagnostic; 997 carry a code.
+1013 fixture(s) assert a diagnostic; 998 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -52,6 +52,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-007/slice-zero-length.test.cnx                                                                  | E0860                             |
 | tests/adr-007/subscript-depth-scalar-error.test.cnx                                                       | E0856                             |
 | tests/adr-007/subscript-depth-this-error.test.cnx                                                         | E0856                             |
+| tests/adr-007/subscript-length-one-bounds-error.test.cnx                                                  | E0854                             |
 | tests/adr-013/const-assign-error.test.cnx                                                                 | E0900                             |
 | tests/adr-013/const-bool-assign-error.test.cnx                                                            | E0900                             |
 | tests/adr-013/const-bool-param-assign-error.test.cnx                                                      | E0900                             |

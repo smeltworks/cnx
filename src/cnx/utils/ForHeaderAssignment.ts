@@ -28,8 +28,7 @@ class ForHeaderAssignment {
     const target = site.target;
     const steps = OperandTyper.chainOf(target, ctx).steps;
     const last = steps.at(-1);
-    const isBitWrite =
-      last?.subscript === "bit_single" || last?.subscript === "bit_range";
+    const isBitWrite = last?.subscript === "bit_range";
     if (isBitWrite && last.before?.category === "floating") {
       return "a float bit write is more than one statement";
     }

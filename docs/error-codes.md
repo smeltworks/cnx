@@ -355,7 +355,7 @@ base: bare, `this.` and `global.`.
 
 | Code  | Message                                                           | Help                                                                  | Source                                               |
 | ----- | ----------------------------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------- |
-| E0888 | A float bit range read at file scope                              | The union copy it lowers to is a statement; read it inside a function | `TRANSPILE/1-Analyze/BitAccessAnalyzer.ts`           |
+| E0888 | A float's bits read at file scope, at any length                  | The union copy it lowers to is a statement; read it inside a function | `TRANSPILE/1-Analyze/BitAccessAnalyzer.ts`           |
 | E0889 | Both `atomic` and `volatile` on one declaration                   | `atomic` already implies `volatile`; choose one                       | `TRANSPILE/1-Analyze/DeclarationModifierAnalyzer.ts` |
 | E0890 | A read-modify-write target has a side effect                      | Store the index in a variable first; a bit write evaluates it twice   | `TRANSPILE/1-Analyze/BitAccessAnalyzer.ts`           |
 | E0891 | Implicit conversion from a floating value to an integer (ADR-024) | Write the conversion as a cast, which saturates: `(u32)value`         | `TRANSPILE/1-Analyze/IntegerConversionAnalyzer.ts`   |

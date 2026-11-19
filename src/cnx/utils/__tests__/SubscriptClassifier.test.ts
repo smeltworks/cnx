@@ -5,19 +5,19 @@ import TTypeInfo from "../../types/TTypeInfo";
 describe("SubscriptClassifier", () => {
   describe("classify", () => {
     describe("register access", () => {
-      it("returns bit_single for single-index register access", () => {
+      it("returns bit_range for a one-bit register access", () => {
         const result = SubscriptClassifier.classify({
           typeInfo: null,
-          subscriptCount: 1,
+          length: 1,
           isRegisterAccess: true,
         });
-        expect(result).toBe("bit_single");
+        expect(result).toBe("bit_range");
       });
 
-      it("returns bit_range for two-index register access", () => {
+      it("returns bit_range for four-bit register access", () => {
         const result = SubscriptClassifier.classify({
           typeInfo: null,
-          subscriptCount: 2,
+          length: 4,
           isRegisterAccess: true,
         });
         expect(result).toBe("bit_range");
@@ -25,7 +25,7 @@ describe("SubscriptClassifier", () => {
     });
 
     describe("array types", () => {
-      it("returns array_element for array type with single index", () => {
+      it("returns array_element for array type with length 1", () => {
         const typeInfo: TTypeInfo = {
           baseType: "u8",
           bitWidth: 8,
@@ -34,13 +34,13 @@ describe("SubscriptClassifier", () => {
         };
         const result = SubscriptClassifier.classify({
           typeInfo,
-          subscriptCount: 1,
+          length: 1,
           isRegisterAccess: false,
         });
         expect(result).toBe("array_element");
       });
 
-      it("returns array_slice for array type with two indices", () => {
+      it("returns array_slice for array type with length 4", () => {
         const typeInfo: TTypeInfo = {
           baseType: "u8",
           bitWidth: 8,
@@ -49,7 +49,7 @@ describe("SubscriptClassifier", () => {
         };
         const result = SubscriptClassifier.classify({
           typeInfo,
-          subscriptCount: 2,
+          length: 4,
           isRegisterAccess: false,
         });
         expect(result).toBe("array_slice");
@@ -57,7 +57,7 @@ describe("SubscriptClassifier", () => {
     });
 
     describe("string types", () => {
-      it("returns array_element for string type with single index", () => {
+      it("returns array_element for string type with length 1", () => {
         const typeInfo: TTypeInfo = {
           baseType: "string",
           bitWidth: 0,
@@ -67,7 +67,7 @@ describe("SubscriptClassifier", () => {
         };
         const result = SubscriptClassifier.classify({
           typeInfo,
-          subscriptCount: 1,
+          length: 1,
           isRegisterAccess: false,
         });
         expect(result).toBe("array_element");
@@ -81,7 +81,7 @@ describe("SubscriptClassifier", () => {
       // Issue #579 heuristic, reverted by Issue #1100 because it broke ADR-007
       // bit-indexing for scalar parameters; the flag itself is gone (#1668
       // review: written for every parameter, read by nothing).
-      it("returns bit_single for non-array parameter with single index", () => {
+      it("returns bit_range for non-array parameter with [a], which is [a, 1]", () => {
         const typeInfo: TTypeInfo = {
           baseType: "u8",
           bitWidth: 8,
@@ -90,28 +90,28 @@ describe("SubscriptClassifier", () => {
         };
         const result = SubscriptClassifier.classify({
           typeInfo,
-          subscriptCount: 1,
-          isRegisterAccess: false,
-        });
-        expect(result).toBe("bit_single");
-      });
-
-      it("returns bit_range for non-array parameter with two indices", () => {
-        const typeInfo: TTypeInfo = {
-          baseType: "u8",
-          bitWidth: 8,
-          isArray: false,
-          isConst: false,
-        };
-        const result = SubscriptClassifier.classify({
-          typeInfo,
-          subscriptCount: 2,
+          length: 1,
           isRegisterAccess: false,
         });
         expect(result).toBe("bit_range");
       });
 
-      it("returns array_element for array parameter with single index", () => {
+      it("returns bit_range for non-array parameter with length 4", () => {
+        const typeInfo: TTypeInfo = {
+          baseType: "u8",
+          bitWidth: 8,
+          isArray: false,
+          isConst: false,
+        };
+        const result = SubscriptClassifier.classify({
+          typeInfo,
+          length: 4,
+          isRegisterAccess: false,
+        });
+        expect(result).toBe("bit_range");
+      });
+
+      it("returns array_element for array parameter with length 1", () => {
         const typeInfo: TTypeInfo = {
           baseType: "u8",
           bitWidth: 8,
@@ -120,7 +120,7 @@ describe("SubscriptClassifier", () => {
         };
         const result = SubscriptClassifier.classify({
           typeInfo,
-          subscriptCount: 1,
+          length: 1,
           isRegisterAccess: false,
         });
         expect(result).toBe("array_element");
@@ -128,7 +128,7 @@ describe("SubscriptClassifier", () => {
     });
 
     describe("scalar types (bit manipulation)", () => {
-      it("returns bit_single for scalar integer with single index", () => {
+      it("returns bit_range for scalar integer with [a], which is [a, 1]", () => {
         const typeInfo: TTypeInfo = {
           baseType: "u8",
           bitWidth: 8,
@@ -137,13 +137,13 @@ describe("SubscriptClassifier", () => {
         };
         const result = SubscriptClassifier.classify({
           typeInfo,
-          subscriptCount: 1,
+          length: 1,
           isRegisterAccess: false,
         });
-        expect(result).toBe("bit_single");
+        expect(result).toBe("bit_range");
       });
 
-      it("returns bit_range for scalar integer with two indices", () => {
+      it("returns bit_range for scalar integer with length 4", () => {
         const typeInfo: TTypeInfo = {
           baseType: "u16",
           bitWidth: 16,
@@ -152,7 +152,7 @@ describe("SubscriptClassifier", () => {
         };
         const result = SubscriptClassifier.classify({
           typeInfo,
-          subscriptCount: 2,
+          length: 4,
           isRegisterAccess: false,
         });
         expect(result).toBe("bit_range");
@@ -160,19 +160,19 @@ describe("SubscriptClassifier", () => {
     });
 
     describe("null type info", () => {
-      it("returns array_element for null type with single index (safety default)", () => {
+      it("returns array_element for null type with length 1 (safety default)", () => {
         const result = SubscriptClassifier.classify({
           typeInfo: null,
-          subscriptCount: 1,
+          length: 1,
           isRegisterAccess: false,
         });
         expect(result).toBe("array_element");
       });
 
-      it("returns array_slice for null type with two indices (safety default)", () => {
+      it("returns array_slice for null type with length 4 (safety default)", () => {
         const result = SubscriptClassifier.classify({
           typeInfo: null,
-          subscriptCount: 2,
+          length: 4,
           isRegisterAccess: false,
         });
         expect(result).toBe("array_slice");

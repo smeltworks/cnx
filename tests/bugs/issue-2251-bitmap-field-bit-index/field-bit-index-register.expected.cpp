@@ -38,7 +38,7 @@ void set(const uint8_t i) {
 
 int main(void) {
     set(1U);
-    const bool b = ((((((GPIO__DATA >> 4) & 0x7) >> 2U) & 1)) != 0U);
+    const bool b = ((((((GPIO__DATA >> 4) & 0x7) >> 2U) & 0x1U)) != 0U);
     if (b == true) {
         return 1U;
     }

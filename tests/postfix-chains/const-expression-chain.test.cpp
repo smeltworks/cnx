@@ -56,7 +56,7 @@ int main(void) {
     const uint32_t computedId = sensors[COMPUTED_IDX].id;
     sensors[INDEX_0].data = (uint8_t)((sensors[INDEX_0].data & ~(1U << LED_BIT)) | (1U << LED_BIT));
     sensors[INDEX_1].data = (uint8_t)((sensors[INDEX_1].data & ~(1U << STATUS_BIT)) | (0U << STATUS_BIT));
-    if (((sensors[INDEX_0].data >> LED_BIT) & 1) == true) {
+    if (((sensors[INDEX_0].data >> LED_BIT) & 0x1U) == true) {
         GPIO__DR = (GPIO__DR & ~((uint32_t)1U << LED_BIT)) | ((uint32_t)1U << LED_BIT);
     }
     const uint32_t ROW = 0U;
@@ -66,5 +66,5 @@ int main(void) {
     matrix[ROW][COL] = 0xFFU;
     matrix[ROW][COL] = (uint8_t)((matrix[ROW][COL] & ~(1U << FIELD_BIT)) | (0U << FIELD_BIT));
     const uint8_t value = matrix[ROW][COL];
-    const bool bit = ((((matrix[ROW][COL] >> FIELD_BIT) & 1)) != 0U);
+    const bool bit = ((((matrix[ROW][COL] >> FIELD_BIT) & 0x1U)) != 0U);
 }

@@ -23,7 +23,7 @@ int main(void) {
     if (g.header != 21) {
         return 2U;
     }
-    const bool headerBit = ((((g.header >> 4U) & 1)) != 0U);
+    const bool headerBit = ((((g.header >> 4U) & 0x1U)) != 0U);
     if (headerBit != true) {
         return 3U;
     }
@@ -32,7 +32,7 @@ int main(void) {
     if (g.bytes[1U] != 4) {
         return 4U;
     }
-    const bool byteBit = ((((g.bytes[1U] >> 2U) & 1)) != 0U);
+    const bool byteBit = ((((g.bytes[1U] >> 2U) & 0x1U)) != 0U);
     if (byteBit != true) {
         return 5U;
     }
@@ -41,7 +41,7 @@ int main(void) {
     if (g.cells[1U][2U] != 8) {
         return 6U;
     }
-    const bool cellBit = ((((g.cells[1U][2U] >> 3U) & 1)) != 0U);
+    const bool cellBit = ((((g.cells[1U][2U] >> 3U) & 0x1U)) != 0U);
     if (cellBit != true) {
         return 7U;
     }

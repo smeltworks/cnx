@@ -9,6 +9,7 @@ import invariant from "../../utils/invariant";
 import TTypeInfo from "../../types/TTypeInfo";
 import type TOverflowBehavior from "../../types/TOverflowBehavior";
 import type IOperandType from "../../types/IOperandType";
+import BitmapFieldStep from "../../utils/BitmapFieldStep";
 import OperandTyper from "../../utils/OperandTyper";
 import TypeCheckUtils from "../../utils/TypeCheckUtils";
 import CompoundOperator from "../../utils/CompoundOperator";
@@ -136,44 +137,30 @@ class AssignmentClassifier {
       return scopeQualifiedKind;
     }
 
-    // Check for bit range through struct chain: devices[0].control[0, 4]
-    // Detected by last subscript having 2 expressions (start, width)
-    if (ctx.lastSubscriptExprCount === 2) {
+    // Bits through a struct chain: devices[0].control[0, 4], or control[3],
+    // which is control[3, 1] -- the typer typed the last subscript a range
+    if (ctx.target.last?.subscript === "bit_range") {
       return AssignmentKind.STRUCT_CHAIN_BIT_RANGE;
     }
 
     // Multi-dimensional array element: arr[i][j] (1 identifier, multiple subscripts)
     if (ids.length === 1) {
-      return AssignmentClassifier.classifyMultiDimArrayAccess(
-        typeInfo,
-        ctx.subscriptCount,
-      );
+      return AssignmentClassifier.classifyMultiDimArrayAccess(typeInfo);
     }
 
     return null;
   }
 
   /**
-   * Classify multi-dimensional array access: arr[i][j] or arr[i][j][bit]
+   * Classify multi-dimensional array access: arr[i][j]. A bit of an element
+   * (`arr[i][j][bit]`) is a `bit_range` and was claimed above.
    */
   private static classifyMultiDimArrayAccess(
     typeInfo: TTypeInfo | undefined,
-    subscriptCount: number,
   ): AssignmentKind | null {
     if (!typeInfo?.isArray || !typeInfo.arrayDimensions) {
       return null;
     }
-
-    const numDims = typeInfo.arrayDimensions.length;
-
-    // Check for bit indexing on array element
-    if (
-      subscriptCount === numDims + 1 &&
-      TypeCheckUtils.isInteger(typeInfo.baseType)
-    ) {
-      return AssignmentKind.ARRAY_ELEMENT_BIT;
-    }
-
     return AssignmentKind.MULTI_DIM_ARRAY_ELEMENT;
   }
 
@@ -192,14 +179,10 @@ class AssignmentClassifier {
     if (!step?.beforeRegisterMember) {
       return null;
     }
-    switch (step.subscript) {
-      case "bit_single":
-        return AssignmentKind.REGISTER_BIT;
-      case "bit_range":
-        return AssignmentKind.REGISTER_BIT_RANGE;
-      default:
-        return null;
-    }
+    if (step.subscript !== "bit_range") return null;
+    return BitmapFieldStep.writesOneBit(step, null)
+      ? AssignmentKind.REGISTER_BIT
+      : AssignmentKind.REGISTER_BIT_RANGE;
   }
 
   /**
@@ -408,19 +391,19 @@ class AssignmentClassifier {
       subscriptKind !== null,
       "the typer typed this target's final subscript",
     );
-    // The subscripts are flattened, so anything before the final op's own
-    // expressions indexed an array element first
-    const indexesAnElement = ctx.subscriptCount > ctx.lastSubscriptExprCount;
+    // A subscript op before the final one indexed an array element first
+    const indexesAnElement =
+      ctx.postfixOps.filter((op) => op.kind === "subscript").length > 1;
 
     switch (subscriptKind) {
-      case "bit_single":
-        if (!indexesAnElement) return AssignmentKind.INTEGER_BIT;
-        // e.g. matrix[i][j][bit] on an integer array's element
-        return OperandTyper.hasWritableBits(last?.before ?? null)
-          ? AssignmentKind.ARRAY_ELEMENT_BIT
-          : AssignmentKind.MULTI_DIM_ARRAY_ELEMENT;
-
       case "bit_range":
+        if (BitmapFieldStep.writesOneBit(last, null)) {
+          if (!indexesAnElement) return AssignmentKind.INTEGER_BIT;
+          // e.g. matrix[i][j][bit] on an integer array's element
+          return OperandTyper.hasWritableBits(last?.before ?? null)
+            ? AssignmentKind.ARRAY_ELEMENT_BIT
+            : AssignmentKind.MULTI_DIM_ARRAY_ELEMENT;
+        }
         return indexesAnElement
           ? AssignmentKind.ARRAY_ELEMENT_BIT_RANGE
           : AssignmentKind.INTEGER_BIT_RANGE;

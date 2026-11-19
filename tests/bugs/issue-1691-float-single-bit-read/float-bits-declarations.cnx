@@ -1,0 +1,2 @@
+// #1691: an f32 another file declares, for the cross-file single-bit read
+f32 sharedFloat <- 2.5;

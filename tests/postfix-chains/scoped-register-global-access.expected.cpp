@@ -45,7 +45,7 @@ int main(void) {
     const bool running = ((((MotorController__MOTOR_REG__CTRL >> 0) & 1)) != 0U);
     const uint8_t mode = static_cast<uint8_t>(((MotorController__MOTOR_REG__CTRL >> 3) & 0x7));
     Board__GPIO__DR = (Board__GPIO__DR & ~((uint32_t)1U << 0)) | ((uint32_t)1U << 0);
-    const bool ledState = ((((Board__GPIO__DR >> 3U) & 1)) != 0U);
+    const bool ledState = ((((Board__GPIO__DR >> 3U) & 0x1U)) != 0U);
     MotorController__start();
     const bool isRun = MotorController__isRunning();
     const uint8_t currentMode = MotorController__getMode();

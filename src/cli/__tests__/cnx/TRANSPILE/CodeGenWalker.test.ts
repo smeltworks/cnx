@@ -9839,7 +9839,7 @@ describe("CodeGenWalker", () => {
         });
 
         // Bitmap indexing generates bit extraction (no shift for position 0)
-        expect(code).toContain("((flags) & 1)");
+        expect(code).toContain("((flags) & 0x1U)");
       });
     });
 

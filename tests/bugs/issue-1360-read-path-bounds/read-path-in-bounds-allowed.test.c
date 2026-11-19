@@ -29,11 +29,11 @@ int main(void) {
     if (last != 40) {
         return 2;
     }
-    const uint8_t bitZero = (uint8_t)((flags) & 1);
+    const uint8_t bitZero = (uint8_t)((flags) & 0x1U);
     if (bitZero != 1) {
         return 3;
     }
-    const uint8_t bitTwo = (uint8_t)((flags >> 2U) & 1);
+    const uint8_t bitTwo = (uint8_t)((flags >> 2U) & 0x1U);
     if (bitTwo != 1) {
         return 4;
     }

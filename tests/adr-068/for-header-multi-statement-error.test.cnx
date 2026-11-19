@@ -26,6 +26,8 @@ void controls() {
     for (bits[5] <- true; n < 4; n +<- 1) {
         bits[6] <- false;
     }
+    // `buf[0, 1]` is `buf[0]` (ADR-007 §1): one element, one expression
+    for (buf[0, 1] <- n; n < 4; n +<- 1) {}
 }
 
 // ASSERTIONS 1-2 -- a string target, in the init and in the update.
@@ -46,12 +48,12 @@ void fields() {
     }
 }
 
-// ASSERTIONS 4-5 -- a slice, one element and several.
+// ASSERTIONS 4-5 -- a slice, in the init and in the update.
 void slices() {
     u8 n <- 0;
     u8[8] buf;
     u32 v <- 7;
-    for (buf[0, 1] <- n; n < 2; buf[4, 4] <- v) {
+    for (buf[0, 4] <- v; n < 2; buf[4, 4] <- v) {
         n +<- 1;
     }
 }

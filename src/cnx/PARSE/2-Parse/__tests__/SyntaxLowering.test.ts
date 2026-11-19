@@ -41,7 +41,7 @@ function shape(e: TExpression): string {
         .map((op) => {
           if (op.kind === "member") return `.${op.name}`;
           if (op.kind === "subscript") {
-            return `[${op.indexes.map(shape).join(", ")}]`;
+            return `[${shape(op.start)}, ${shape(op.length)}]`;
           }
           if (op.kind === "missing") return "<missing op>";
           return `(${op.arguments.map(shape).join(", ")})`;
@@ -90,7 +90,7 @@ describe("SyntaxLowering", () => {
     ["1 - -1", "additive(integer:1 - -integer:1)"],
     ["this.n", "this.n"],
     ["global.s.n", "global.s.n"],
-    ["arr[i][0, 4]", "arr[i][integer:0, integer:4]"],
+    ["arr[i][0, 4]", "arr[i, integer:1][integer:0, integer:4]"],
     ["f()", "f()"],
     ["s.f(a, 1)", "s.f(a, integer:1)"],
     ["(x)", "paren(x)"],
@@ -174,8 +174,9 @@ describe("SyntaxLowering", () => {
     ["a <", "relational(a < <missing>)"],
     ["(u8)", "cast<primitive:u8>(<missing>)"],
     ["{ a: }", "{a: <missing>}"],
-    ["a[", "a<missing op><missing op>"],
-    ["[1, [", "[integer:1, <missing>]<missing op><missing op>"],
+    // one subscript production (ADR-007 §1): recovery commits to it
+    ["a[", "a[<missing>, integer:1]"],
+    ["[1, [", "[integer:1, <missing>][<missing>, integer:1]"],
     ["- <- ( ] - global", "-<missing>(-global)"],
     ["( u8", "<missing>"],
     // a field recovered without a name initializes nothing
@@ -389,18 +390,24 @@ describe("SyntaxLowering on recovered trees", () => {
       "a",
       ["missing"],
     ],
-    [
-      "a subscript with no index",
-      "void f() { for (a <- 0; a < 1; a [ +<- 1) {} }",
-      "a",
-      ["missing", "missing"],
-    ],
   ])("lowers %s to a missing op", (_label, source, head, kinds) => {
     const shapes = loweredTargets(source)
       .map((target) => opKinds(target, head))
       .filter((shape) => shape !== null);
 
     expect(shapes).toContainEqual(kinds);
+  });
+
+  // ADR-007 §1: there is one subscript production, `[start (, length)?]`, so
+  // the parser recovers into it and the start is what is missing
+  it("lowers a subscript with no index to one subscript", () => {
+    const shapes = loweredTargets(
+      "void f() { for (a <- 0; a < 1; a [ +<- 1) {} }",
+    )
+      .map((target) => opKinds(target, "a"))
+      .filter((shape) => shape !== null);
+
+    expect(shapes).toContainEqual(["subscript"]);
   });
 });
 

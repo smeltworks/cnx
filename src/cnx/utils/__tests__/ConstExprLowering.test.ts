@@ -81,7 +81,8 @@ describe("ConstExprLowering", () => {
 
   // The editor's symbol collection lowers a tree with parse errors
   it.each<[string, string]>([
-    ["a[", "<member a[>"],
+    // ADR-007 §1: one subscript production, so recovery commits to it
+    ["a[", "<subscript a[>"],
     ["(u8)", "(u8)"],
   ])(
     "lowers %s, which the parser recovered from, as %s",

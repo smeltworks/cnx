@@ -329,7 +329,7 @@ class OperatorOperandAnalyzer {
     }
     if (operand.dimensions.length > 0) return "array";
     // One bit or a bit range of a scalar is an unsigned value (ADR-007)
-    if (form.kind === "bitIndex" || form.kind === "bitRange") return null;
+    if (form.kind === "bitRange") return null;
     if (form.kind === "unreadableMacro") return null;
     if (form.kind === "foreign" && form.indeterminate) return null;
     const category = operand.category;

@@ -234,9 +234,6 @@ interface IAssignmentContext {
   /** Number of [index] accesses in the chain */
   readonly subscriptDepth: number;
 
-  /** Number of expressions in the last subscript operation (1=element, 2=slice/bit-range) */
-  readonly lastSubscriptExprCount: number;
-
   /** True if target is a simple identifier (no prefix, no postfix) */
   readonly isSimpleIdentifier: boolean;
 

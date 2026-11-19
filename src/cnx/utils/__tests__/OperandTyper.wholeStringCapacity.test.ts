@@ -67,7 +67,7 @@ describe("OperandTyper.wholeStringCapacity", () => {
     // `buffer[0, 2] <- value` writes two bytes of the string, not the string
     // (tests/scope/scope-string-param-slice.test.cnx)
     expect(capacityOf(step("array_slice", string8))).toBeNull();
-    expect(capacityOf(step("bit_single", string8))).toBeNull();
+    expect(capacityOf(step("bit_range", string8))).toBeNull();
     expect(capacityOf(step("bit_range", string8))).toBeNull();
   });
 

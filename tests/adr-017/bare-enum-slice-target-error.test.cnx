@@ -6,6 +6,6 @@ enum State {
 }
 
 void main() {
-    State[4] arr <- [State.IDLE*];
-    arr[0, 1] <- RUNNING;
+    mut State[4] arr <- [State.IDLE*];
+    arr[0, 2] <- RUNNING;
 }

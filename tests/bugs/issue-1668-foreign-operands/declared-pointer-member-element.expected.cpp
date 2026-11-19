@@ -16,5 +16,5 @@
 void read(void) {
     const uint8_t v = cops.buf[2U];
     const uint8_t e = cops.arr[2U];
-    const bool b = ((((cops.flags >> 2U) & 1)) != 0U);
+    const bool b = ((((cops.flags >> 2U) & 0x1U)) != 0U);
 }

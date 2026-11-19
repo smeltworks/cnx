@@ -163,21 +163,34 @@ class SyntaxLowering {
       };
     }
     const indexes = ctx.expression().map((e) => SyntaxLowering.expression(e));
-    if (indexes.length === 1) {
-      return {
-        kind: "subscript",
-        indexes: [indexes[0]],
-        ...SyntaxLowering.node(ctx),
-      };
-    }
-    if (indexes.length === 2) {
-      return {
-        kind: "subscript",
-        indexes: [indexes[0], indexes[1]],
-        ...SyntaxLowering.node(ctx),
-      };
-    }
-    return null;
+    const start = indexes[0];
+    if (start === undefined || indexes.length > 2) return null;
+    return {
+      kind: "subscript",
+      start,
+      length: indexes[1] ?? SyntaxLowering.defaultLength(start),
+      ...SyntaxLowering.node(ctx),
+    };
+  }
+
+  /**
+   * ADR-007 §1: the length `x[start]` leaves out, `1`, as if written right
+   * after `start` -- an empty span there, so it underlines nothing
+   */
+  private static defaultLength(start: TExpression): TExpression {
+    const at = { line: start.span.endLine, column: start.span.endColumn };
+    return {
+      kind: "literal",
+      literalKind: "integer",
+      text: "1",
+      written: "1",
+      span: {
+        line: at.line,
+        column: at.column,
+        endLine: at.line,
+        endColumn: at.column,
+      },
+    };
   }
 
   /**

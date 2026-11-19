@@ -48,7 +48,7 @@ int main(void) {
     const uint32_t byte1 = ((devices[2U].config >> 8U) & 0xFFU);
     const uint32_t byte2 = ((devices[2U].config >> 16U) & 0xFFU);
     const uint32_t byte3 = ((devices[2U].config >> 24U) & 0xFFU);
-    flags = (uint8_t)((flags & ~(0x1U << 0)) | ((1U & 0x1U) << 0));
+    flags = (uint8_t)((flags & ~(1U << 0)) | (1U << 0));
     const uint8_t singleBit = static_cast<uint8_t>(((flags) & 0x1U));
     uint8_t test = 0U;
     test = (uint8_t)((test & ~(0x3U << 0)) | ((3U & 0x3U) << 0));

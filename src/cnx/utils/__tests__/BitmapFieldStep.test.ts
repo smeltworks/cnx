@@ -17,6 +17,11 @@ function step(fields: Partial<IChainStep>): IChainStep {
   } as IChainStep;
 }
 
+/** ADR-007 §1: `x[a]` is `x[a, 1]`, a subscript one bit long */
+const oneBit = {
+  form: { kind: "bitRange", width: 1 },
+} as unknown as IOperandType;
+
 const flags = {
   bitmapTypeName: "Flags",
   dimensions: [],
@@ -45,9 +50,12 @@ describe("BitmapFieldStep.fieldOf", () => {
 describe("BitmapFieldStep.writesBits", () => {
   const field = { bitmapType: "Flags", fieldName: "Mode", layout };
 
-  it("is a bit index, a bit range or a bitmap field", () => {
+  it("is a subscript of bits, of any length, or a bitmap field", () => {
     expect(
-      BitmapFieldStep.writesBits(step({ subscript: "bit_single" }), null),
+      BitmapFieldStep.writesBits(
+        step({ subscript: "bit_range", after: oneBit }),
+        null,
+      ),
     ).toBe(true);
     expect(
       BitmapFieldStep.writesBits(step({ subscript: "bit_range" }), null),
@@ -67,10 +75,13 @@ describe("BitmapFieldStep.writesBits", () => {
 });
 
 describe("BitmapFieldStep.writesOneBit", () => {
-  it("is a bit index, or a one-bit field", () => {
+  it("is a subscript one bit long, or a one-bit field", () => {
     const one = { offset: 0, width: 1 } as IBitmapFieldLayout;
     expect(
-      BitmapFieldStep.writesOneBit(step({ subscript: "bit_single" }), null),
+      BitmapFieldStep.writesOneBit(
+        step({ subscript: "bit_range", after: oneBit }),
+        null,
+      ),
     ).toBe(true);
     expect(
       BitmapFieldStep.writesOneBit(step({ member: "A" }), {

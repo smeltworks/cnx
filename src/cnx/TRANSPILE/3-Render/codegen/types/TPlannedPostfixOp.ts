@@ -29,12 +29,8 @@ type TPlannedPostfixOp =
       readonly narrowing: TPlannedNarrowing | null;
     }
   /**
-   * `[i]` or `[start, width]`.
-   *
-   * `indexCount` is 1 or 2 and it is the DISCRIMINATOR: one index is an array
-   * or bit access, two is a bit RANGE. Counting operations rather than
-   * expressions is what keeps `flags[4, 3]` (one op, two expressions) distinct
-   * from `flags[4][3]` (two ops, one each).
+   * `[start, length]`; `[start]` is `[start, 1]` (ADR-007 §1). What it IS is
+   * `typedAs`, never how many indexes were written.
    *
    * `renderIndexes` returns them together, in order. Each is written against
    * `size_t`, which 2.2 planned for it, so an index literal takes MISRA
@@ -42,7 +38,6 @@ type TPlannedPostfixOp =
    */
   | {
       readonly kind: "subscript";
-      readonly indexCount: number;
       readonly renderIndexes: () => readonly string[];
       /**
        * The FINAL index folded to a compile-time constant, or undefined.
@@ -50,8 +45,8 @@ type TPlannedPostfixOp =
        * Issue #1094: a bit range resolves a const or macro width to its value
        * so the mask is precomputed, byte-identical to a literal width, instead
        * of a runtime `((1U << W) - 1)` -- which is undefined behavior at full
-       * width and uses the wrong base type above 32 bits. Only the two-index
-       * arm asks.
+       * width and uses the wrong base type above 32 bits. A bit range asks;
+       * `[start]`'s length is `1`.
        */
       readonly foldWidth: () => number | undefined;
       /**

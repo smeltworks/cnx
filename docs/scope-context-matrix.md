@@ -113,9 +113,20 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-1 linked fixture with no derivable context:
+2 linked fixtures with no derivable context:
 
+- `adr-007/subscript-length-one-spellings.test.cnx`
 - `bugs/issue-1114-struct-field-subscript-depth/field-c-header-error.test.cnx`
+
+## ADR-007 E0854
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | ok        | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
 
 ## ADR-007 E0856
 

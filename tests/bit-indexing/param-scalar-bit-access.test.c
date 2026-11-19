@@ -19,7 +19,7 @@
 // dereference the pointer rather than assigning through it.
 // Single-bit read on an unmodified scalar parameter (pass-by-value in C)
 bool bitOfParam(const uint32_t v) {
-    return ((((v >> 4U) & 1)) != 0U);
+    return ((((v >> 4U) & 0x1U)) != 0U);
 }
 
 // Single-bit write on a scalar parameter. The parameter becomes a pointer in

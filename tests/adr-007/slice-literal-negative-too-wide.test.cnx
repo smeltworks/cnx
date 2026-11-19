@@ -1,19 +1,20 @@
 // test-error
 // test-adr: 007
 // Issue #1085 review: a negative integer literal slice source must be fit-checked
-// just like a positive one. -300 cannot be represented in a 1-byte slice
-// (-300 < -128), so it is a compile error rather than a silent (uint8_t)(-300)
-// truncation. Mirrors slice-literal-too-wide.test.cnx for the positive overflow.
-// NEGATIVE CONTROL -- the most negative value a 1-byte slice CAN hold. -300 is
-// rejected; -128 is exactly the two's-complement lower bound and must not be.
+// just like a positive one. -40000 cannot be represented in a 2-byte slice
+// (-40000 < -32768), so it is a compile error rather than a silent truncation.
+// Mirrors slice-literal-too-wide.test.cnx for the positive overflow. ADR-007 §1:
+// `buf[0, 1]` is `buf[0]`, an element, so the slice here is two elements wide.
+// NEGATIVE CONTROL -- the most negative value a 2-byte slice CAN hold. -40000
+// is rejected; -32768 is exactly the two's-complement lower bound and must not be.
 u32 fits() {
-    u8[8] ok;
-    ok[0, 1] <- -128;
+    mut u8[8] ok;
+    ok[0, 2] <- -32768;
     return 0;
 }
 
 u32 main() {
-    u8[8] buf;
-    buf[0, 1] <- -300;
+    mut u8[8] buf;
+    buf[0, 2] <- -40000;
     return 0;
 }

@@ -1,0 +1,38 @@
+// test-execution
+// test-target-xfail: atmega328p #1709 "Float bit indexing requires 64-bit double"
+// #1691 across files: a single-bit read of a float declared in a C header and
+// in an included .cnx reads its IEEE-754 bits through the union, as a bit range
+// does. -2.5f is 0xC0200000 and 2.5f is 0x40200000.
+#include "float_bits.h"
+#include "float-bits-declarations.cnx"
+
+u32 main() {
+    // A C header's float: sign bit set, bit 21 set, bit 0 clear
+    bool headerSign <- headerFloat[31];
+    if (headerSign = false) {
+        return 1;
+    }
+    bool headerLow <- headerFloat[21];
+    if (headerLow = false) {
+        return 2;
+    }
+    bool headerZero <- headerFloat[0];
+    if (headerZero = true) {
+        return 3;
+    }
+    // An included .cnx's f32: sign bit clear, bit 30 set
+    bool sharedSign <- sharedFloat[31];
+    if (sharedSign = true) {
+        return 4;
+    }
+    bool sharedHigh <- sharedFloat[30];
+    if (sharedHigh = false) {
+        return 5;
+    }
+    // The same bit spelled `[a, 1]` reads the same (ADR-007 §1)
+    bool sharedHighRange <- sharedFloat[30, 1];
+    if (sharedHighRange != sharedHigh) {
+        return 6;
+    }
+    return 0;
+}

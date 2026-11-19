@@ -79,7 +79,6 @@ function createMockContext(
     resolvedBaseIdentifier,
     memberAccessDepth: 0,
     subscriptDepth: 0,
-    lastSubscriptExprCount: 1, // default: 1 expression (array element, single bit)
     isSimpleIdentifier: true,
     isSimpleThisAccess: false,
     isSimpleGlobalAccess: false,
@@ -114,9 +113,15 @@ function withPlannedCopy(
  * the classifier reads for a subscript's kind -- the case's INPUT, the way a
  * declared type is, not a re-derivation of it.
  */
+/**
+ * A subscript kind, or `"one_bit"`: a `bit_range` one bit long, which is
+ * `x[a]` (ADR-007 §1) -- the typer types it `bool`
+ */
+type TTestSubscript = TSubscriptKind | "one_bit";
+
 function typedLast(
   ctx: IAssignmentContext,
-  subscript: TSubscriptKind,
+  kind: TTestSubscript,
   typeName = "u8",
 ): IAssignmentContext {
   const before: IOperandType = {
@@ -140,8 +145,14 @@ function typedLast(
       ...ctx.target,
       last: {
         before,
-        subscript,
-        after: null,
+        subscript: kind === "one_bit" ? "bit_range" : kind,
+        after:
+          kind === "one_bit"
+            ? ({
+                ...before,
+                form: { kind: "bitRange", width: 1 },
+              } as IOperandType)
+            : null,
         property: null,
         callee: null,
         beforeNamesType: false,
@@ -164,7 +175,7 @@ function typedLast(
 function registerStep(
   ctx: IAssignmentContext,
   member: string,
-  subscript: "bit_single" | "bit_range",
+  subscript: TTestSubscript,
 ): IAssignmentContext {
   const typed = typedLast(ctx, subscript);
   return {
@@ -390,14 +401,21 @@ describe("AssignmentClassifier - Bitmap Fields", () => {
           { kind: "member", name: "Running" },
           {
             kind: "subscript",
-            indexCount: 1,
             renderIndexes: () => ["0"],
             foldWidth: () => undefined,
           },
         ],
       }),
-      { before: bitmapOperand() },
-      "bit_single",
+      {
+        before: bitmapOperand(),
+        after: {
+          ...bitmapOperand(),
+          typeName: "bool",
+          category: "boolean",
+          form: { kind: "bitRange", width: 1 },
+        },
+      },
+      "bit_range",
     );
 
     expect(classify(ctx)).not.toBe(AssignmentKind.BITMAP_FIELD);
@@ -495,7 +513,7 @@ describe("AssignmentClassifier - Integer Bit Access", () => {
         hasArrayAccess: true,
         isSimpleIdentifier: false,
       }),
-      "bit_single",
+      "one_bit",
     );
 
     expect(classify(ctx)).toBe(AssignmentKind.INTEGER_BIT);
@@ -510,7 +528,6 @@ describe("AssignmentClassifier - Integer Bit Access", () => {
         subscriptCount: 2,
         hasArrayAccess: true,
         isSimpleIdentifier: false,
-        lastSubscriptExprCount: 2, // bit range has 2 expressions [start, width]
       }),
       "bit_range",
       "u32",
@@ -583,7 +600,6 @@ describe("AssignmentClassifier - Array Access", () => {
         subscriptCount: 2,
         hasArrayAccess: true,
         isSimpleIdentifier: false,
-        lastSubscriptExprCount: 2, // slice has 2 expressions [start, length]
       }),
       "array_slice",
     );
@@ -896,9 +912,8 @@ describe("AssignmentClassifier - Prefix Patterns", () => {
         hasArrayAccess: true,
         postfixOpsCount: 1,
         isSimpleIdentifier: false,
-        lastSubscriptExprCount: 1, // single bit
       }),
-      "bit_single",
+      "one_bit",
     );
 
     expect(classify(ctx)).toBe(AssignmentKind.INTEGER_BIT);
@@ -922,7 +937,6 @@ describe("AssignmentClassifier - Prefix Patterns", () => {
         hasArrayAccess: true,
         postfixOpsCount: 1,
         isSimpleIdentifier: false,
-        lastSubscriptExprCount: 2, // bit range
       }),
       "bit_range",
       "u16",
@@ -950,7 +964,6 @@ describe("AssignmentClassifier - Prefix Patterns", () => {
         hasArrayAccess: true,
         postfixOpsCount: 1,
         isSimpleIdentifier: false,
-        lastSubscriptExprCount: 1,
       }),
       "array_element",
     );
@@ -979,7 +992,7 @@ describe("AssignmentClassifier - Register Bit Access", () => {
       isSimpleIdentifier: false,
     });
 
-    expect(classify(registerStep(ctx, "GPIO7__DR_SET", "bit_single"))).toBe(
+    expect(classify(registerStep(ctx, "GPIO7__DR_SET", "one_bit"))).toBe(
       AssignmentKind.REGISTER_BIT,
     );
   });
@@ -1018,7 +1031,7 @@ describe("AssignmentClassifier - Register Bit Access", () => {
     });
 
     expect(
-      classify(registerStep(ctx, "Teensy4__GPIO7__DR_SET", "bit_single")),
+      classify(registerStep(ctx, "Teensy4__GPIO7__DR_SET", "one_bit")),
     ).toBe(AssignmentKind.REGISTER_BIT);
   });
 });
@@ -1030,27 +1043,6 @@ describe("AssignmentClassifier - Multi-dim Array Bit Indexing", () => {
   beforeEach(() => {
     state = new TranspileState();
     setupSymbols();
-  });
-
-  it("classifies matrix[i][j][bit] as ARRAY_ELEMENT_BIT", () => {
-    declare(
-      "matrix",
-      createTypeInfo({
-        baseType: "u32",
-        isArray: true,
-        arrayDimensions: [4, 4],
-      }),
-    );
-
-    const ctx = createMockContext(state, {
-      identifiers: ["matrix"],
-      subscriptCount: 3,
-      hasMemberAccess: true,
-      hasArrayAccess: true,
-      isSimpleIdentifier: false,
-    });
-
-    expect(classify(ctx)).toBe(AssignmentKind.ARRAY_ELEMENT_BIT);
   });
 
   it("classifies matrix[i][j] as MULTI_DIM_ARRAY_ELEMENT", () => {
@@ -1101,7 +1093,6 @@ describe("AssignmentClassifier - Scoped Register Bit Range", () => {
         // token that happens to be present.
         {
           kind: "subscript",
-          indexCount: 2,
           renderIndexes: () => ["0", "1"],
           foldWidth: () => undefined,
         } as IAssignmentContext["postfixOps"][0],
@@ -1135,7 +1126,7 @@ describe("AssignmentClassifier - Register Bit via MemberWithSubscript", () => {
       isSimpleIdentifier: false,
     });
 
-    expect(classify(registerStep(ctx, "TIMER__CTRL", "bit_single"))).toBe(
+    expect(classify(registerStep(ctx, "TIMER__CTRL", "one_bit"))).toBe(
       AssignmentKind.REGISTER_BIT,
     );
   });
@@ -1147,11 +1138,6 @@ describe("AssignmentClassifier - Register Bit via MemberWithSubscript", () => {
     const ctx = createMockContext(state, {
       identifiers: ["TIMER", "CTRL"],
       subscriptCount: 2,
-      // A bit range is ONE op carrying TWO expressions, so both counts are 2.
-      // This was left at the default 1 — a state no real bit range produces —
-      // which is why the test passed while `PORT.Set[8, 8]` emitted
-      // `PORT__Set.Set` in the actual transpiler (#1244).
-      lastSubscriptExprCount: 2,
       hasMemberAccess: true,
       hasArrayAccess: true,
       isSimpleIdentifier: false,
@@ -1176,7 +1162,7 @@ describe("AssignmentClassifier - Register Bit via MemberWithSubscript", () => {
     });
 
     expect(
-      classify(registerStep(ctx, "Teensy4__GPIO7__DR_SET", "bit_single")),
+      classify(registerStep(ctx, "Teensy4__GPIO7__DR_SET", "one_bit")),
     ).toBe(AssignmentKind.REGISTER_BIT);
   });
 });
@@ -1196,15 +1182,15 @@ describe("AssignmentClassifier - Bare Scope-Qualified Subscripts", () => {
   });
 
   const scopedRegisterCases: ReadonlyArray<
-    readonly [string, number, number, AssignmentKind]
+    readonly [string, number, AssignmentKind]
   > = [
-    ["single bit", 1, 1, AssignmentKind.REGISTER_BIT],
-    ["bit range", 2, 2, AssignmentKind.REGISTER_BIT_RANGE],
+    ["single bit", 2, AssignmentKind.REGISTER_BIT],
+    ["bit range", 2, AssignmentKind.REGISTER_BIT_RANGE],
   ];
 
   it.each(scopedRegisterCases)(
     "classifies Scope.REG.MEMBER[%s] without a global. prefix",
-    (_label, subscriptCount, lastSubscriptExprCount, expected) => {
+    (_label, subscriptCount, expected) => {
       setupSymbols({
         knownScopes: new Set(["Hw"]),
         knownRegisters: new Set(["Hw__GPIO"]),
@@ -1213,7 +1199,6 @@ describe("AssignmentClassifier - Bare Scope-Qualified Subscripts", () => {
       const ctx = createMockContext(state, {
         identifiers: ["Hw", "GPIO", "Mode"],
         subscriptCount,
-        lastSubscriptExprCount,
         hasMemberAccess: true,
         hasArrayAccess: true,
         isSimpleIdentifier: false,
@@ -1222,7 +1207,7 @@ describe("AssignmentClassifier - Bare Scope-Qualified Subscripts", () => {
       const subscript =
         expected === AssignmentKind.REGISTER_BIT_RANGE
           ? "bit_range"
-          : "bit_single";
+          : "one_bit";
       expect(classify(registerStep(ctx, "Hw__GPIO__Mode", subscript))).toBe(
         expected,
       );
@@ -1237,23 +1222,29 @@ describe("AssignmentClassifier - Bare Scope-Qualified Subscripts", () => {
     isArray: true,
     arrayDimensions: [16],
   });
+  const SUBSCRIPT_OP = {
+    kind: "subscript",
+    renderIndexes: () => [],
+    foldWidth: () => undefined,
+  } as const;
   const scopeVariableCases: ReadonlyArray<
-    readonly [string, TTypeInfo, number, number, TSubscriptKind, AssignmentKind]
+    readonly [string, TTypeInfo, number, number, TTestSubscript, AssignmentKind]
+    // label, type, flattened expressions, subscript ops, the typer's kind
   > = [
     [
       "bit range on a scalar",
       createTypeInfo({ baseType: "u8", bitWidth: 8 }),
       2,
-      2,
+      1,
       "bit_range",
       AssignmentKind.INTEGER_BIT_RANGE,
     ],
     [
       "bit on an array element",
       u8Array,
+      3,
       2,
-      1,
-      "bit_single",
+      "one_bit",
       AssignmentKind.ARRAY_ELEMENT_BIT,
     ],
     [
@@ -1268,7 +1259,7 @@ describe("AssignmentClassifier - Bare Scope-Qualified Subscripts", () => {
       "slice on an array",
       u8Array,
       2,
-      2,
+      1,
       "array_slice",
       AssignmentKind.ARRAY_SLICE,
     ],
@@ -1276,14 +1267,7 @@ describe("AssignmentClassifier - Bare Scope-Qualified Subscripts", () => {
 
   it.each(scopeVariableCases)(
     "routes Scope.member[...] to the shared subscript decision: %s",
-    (
-      _label,
-      typeInfo,
-      subscriptCount,
-      lastSubscriptExprCount,
-      kind,
-      expected,
-    ) => {
+    (_label, typeInfo, subscriptCount, subscriptOps, kind, expected) => {
       setupSymbols({ knownScopes: new Set(["Other"]) });
       declare("Other__member", typeInfo);
 
@@ -1291,7 +1275,10 @@ describe("AssignmentClassifier - Bare Scope-Qualified Subscripts", () => {
         createMockContext(state, {
           identifiers: ["Other", "member"],
           subscriptCount,
-          lastSubscriptExprCount,
+          postfixOps: [
+            { kind: "member", name: "member" },
+            ...Array.from({ length: subscriptOps }, () => SUBSCRIPT_OP),
+          ],
           hasMemberAccess: true,
           hasArrayAccess: true,
           isSimpleIdentifier: false,
@@ -1306,14 +1293,16 @@ describe("AssignmentClassifier - Bare Scope-Qualified Subscripts", () => {
   it("leaves a non-register Scope.a.b chain to the struct-chain branch", () => {
     setupSymbols({ knownScopes: new Set(["Other"]) });
 
-    const ctx = createMockContext(state, {
-      identifiers: ["Other", "config", "field"],
-      subscriptCount: 1,
-      lastSubscriptExprCount: 2,
-      hasMemberAccess: true,
-      hasArrayAccess: true,
-      isSimpleIdentifier: false,
-    });
+    const ctx = typedLast(
+      createMockContext(state, {
+        identifiers: ["Other", "config", "field"],
+        subscriptCount: 2,
+        hasMemberAccess: true,
+        hasArrayAccess: true,
+        isSimpleIdentifier: false,
+      }),
+      "bit_range",
+    );
 
     expect(classify(ctx)).toBe(AssignmentKind.STRUCT_CHAIN_BIT_RANGE);
   });
@@ -1337,15 +1326,17 @@ describe("AssignmentClassifier - Bare Scope-Qualified Subscripts", () => {
       enterScope(state, currentScopePath);
       declare(typeInfoKey, createTypeInfo({ baseType: "Point", bitWidth: 0 }));
 
-      const ctx = createMockContext(state, {
-        scopePath: currentScopePath ?? "",
-        identifiers: ["Other", "member"],
-        subscriptCount: 1,
-        lastSubscriptExprCount: 2,
-        hasMemberAccess: true,
-        hasArrayAccess: true,
-        isSimpleIdentifier: false,
-      });
+      const ctx = typedLast(
+        createMockContext(state, {
+          scopePath: currentScopePath ?? "",
+          identifiers: ["Other", "member"],
+          subscriptCount: 2,
+          hasMemberAccess: true,
+          hasArrayAccess: true,
+          isSimpleIdentifier: false,
+        }),
+        "bit_range",
+      );
 
       expect(classify(ctx)).toBe(AssignmentKind.STRUCT_CHAIN_BIT_RANGE);
     },

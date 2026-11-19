@@ -1,2 +1,2 @@
-17:17 error[E0861]: Slice assignment literal value (-300) does not fit in the 1-byte slice for 'buf'
+18:17 error[E0861]: Slice assignment literal value (-40000) does not fit in the 2-byte slice for 'buf'
        help: Narrow the value, or widen the slice.

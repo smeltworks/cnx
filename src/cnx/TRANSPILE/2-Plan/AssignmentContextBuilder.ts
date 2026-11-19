@@ -187,14 +187,26 @@ function processPostfixOps(
   extraction: ITargetExtraction,
   deps: IContextBuilderDeps,
 ): void {
-  for (const op of postfixOps) {
+  // ADR-007 §1: the typer's kind decides what a subscript's expressions are,
+  // never how many were written. Only the final op is lowered as bits or a
+  // slice; one before it is lowered as an element. 2.1 does not reject a slice
+  // there (`arr[0, 2][1]`), which is #1757's to lower.
+  const lastKind = deps.target.last?.subscript ?? null;
+  const ranged = lastKind === "bit_range" || lastKind === "array_slice";
+  postfixOps.forEach((op, at) => {
     if (op.kind === "member") {
       const name = op.name;
       extraction.identifiers.push(name);
       extraction.hasMemberAccess = true;
       extraction.ops.push({ kind: "member", name });
     } else {
-      const exprs = op.kind === "subscript" ? op.indexes : [];
+      const isRange = ranged && at === postfixOps.length - 1;
+      const exprs =
+        op.kind !== "subscript"
+          ? []
+          : isRange
+            ? [op.start, op.length]
+            : [op.start];
       for (const expr of exprs) {
         extraction.subscripts.push(expr);
       }
@@ -203,16 +215,17 @@ function processPostfixOps(
       extraction.lastSubscriptExprCount = exprs.length;
       extraction.ops.push({
         kind: "subscript",
-        indexCount: exprs.length,
         // A thunk: most chains are not bit accesses, and the walk that reads
         // these decides that from `CodeGenState` alone. Generating an index up
         // front would queue a pending temp for every chain it then rejects.
         renderIndexes: () => exprs.map((expr) => deps.generateExpression(expr)),
         foldWidth: () =>
-          exprs.length === 2 ? deps.tryEvaluateConstant(exprs[1]) : undefined,
+          op.kind === "subscript" && isRange
+            ? deps.tryEvaluateConstant(op.length)
+            : undefined,
       });
     }
-  }
+  });
 }
 
 /**
@@ -369,7 +382,6 @@ function buildAssignmentContext(
     target: deps.target,
     memberAccessDepth,
     subscriptDepth,
-    lastSubscriptExprCount,
     isSimpleIdentifier,
     isSimpleThisAccess,
     isSimpleGlobalAccess,

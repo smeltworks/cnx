@@ -69,7 +69,7 @@ int main(void) {
         return 6U;
     }
     const uint8_t flags = 0xFFU;
-    buffer[6] = (uint8_t)(flags);
+    buffer[OFFSET_FLAGS] = flags;
     if (buffer[6U] != 0xFF) {
         return 7U;
     }

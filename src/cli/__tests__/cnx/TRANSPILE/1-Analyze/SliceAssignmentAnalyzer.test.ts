@@ -40,7 +40,7 @@ describe("SliceAssignmentAnalyzer", () => {
       },
       {
         why: "a bool element, which has a width but no byte meaning",
-        body: "    bool[4] flags;\n    flags[0, 1] <- 1;",
+        body: "    bool[4] flags;\n    flags[0, 2] <- 1;",
         says: "'bool'",
       },
       {
@@ -108,18 +108,18 @@ describe("SliceAssignmentAnalyzer", () => {
 
   describe("E0861 -- the source must fit the slice", () => {
     it("rejects a literal too wide for the slice, unsigned or negative", () => {
-      const high = errors("    u8[8] buf;\n    buf[0, 1] <- 256;");
+      const high = errors("    u8[8] buf;\n    buf[0, 2] <- 65536;");
       expect(high.map((e) => e.code)).toEqual(["E0861"]);
 
       // #1085 review: guarding only the unsigned upper bound let a negative
       // literal of any magnitude through, silently truncated.
-      const low = errors("    u8[8] buf;\n    buf[0, 1] <- -129;");
+      const low = errors("    u8[8] buf;\n    buf[0, 2] <- -32769;");
       expect(low.map((e) => e.code)).toEqual(["E0861"]);
     });
 
     it("accepts a literal at each end of the two's-complement range", () => {
-      expect(codes("    u8[8] buf;\n    buf[0, 1] <- 255;")).toEqual([]);
-      expect(codes("    u8[8] buf;\n    buf[0, 1] <- -128;")).toEqual([]);
+      expect(codes("    u8[8] buf;\n    buf[0, 2] <- 65535;")).toEqual([]);
+      expect(codes("    u8[8] buf;\n    buf[0, 2] <- -32768;")).toEqual([]);
     });
 
     it("checks a read-only binding by its type's width, not its folded value", () => {

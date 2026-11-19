@@ -181,7 +181,7 @@ describe("BareEnumMemberAnalyzer reads 2.1's value sites (#1991 review)", () => 
     errors([...header, ...body].join("\n")).map((error) => error.span.line);
 
   it("rejects a member written to a slice", () => {
-    expect(codes(["void main() {", "    arr[0, 1] <- GREEN;", "}"])).toEqual([
+    expect(codes(["void main() {", "    arr[0, 2] <- GREEN;", "}"])).toEqual([
       5,
     ]);
   });

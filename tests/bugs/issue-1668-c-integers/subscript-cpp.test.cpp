@@ -24,7 +24,7 @@ int main(void) {
     if (c != 8) {
         return 2U;
     }
-    const bool d = ((((cWord >> 4U) & 1)) != 0U);
+    const bool d = ((((cWord >> 4U) & 0x1U)) != 0U);
     if (d != true) {
         return 3U;
     }

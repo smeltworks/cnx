@@ -169,9 +169,13 @@ class ConstExprLowering {
     };
   }
 
-  /** `[i]`, not a bit range `[start, width]` */
+  /** `[i]`, which is `[i, 1]` (ADR-007 §1): a length of one */
   private static isElement(op: TPostfixOpSyntax): boolean {
-    return op.kind === "subscript" && op.indexes.length === 1;
+    return (
+      op.kind === "subscript" &&
+      op.length.kind === "literal" &&
+      op.length.text === "1"
+    );
   }
 
   private static literal(expr: TExpressionOf<"literal">): TConstExpr {

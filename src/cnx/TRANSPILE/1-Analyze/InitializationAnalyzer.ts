@@ -307,7 +307,7 @@ class InitializationWalk {
   private ops(ops: readonly TPostfixOpSyntax[]): void {
     for (const op of ops) {
       if (op.kind === "subscript") {
-        for (const index of op.indexes) {
+        for (const index of [op.start, op.length]) {
           this.expression(index);
         }
       } else if (op.kind === "call") {

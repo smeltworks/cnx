@@ -1,0 +1,38 @@
+// test-execution
+// #1691 review: a local array and a scope array named like a register are
+// elements, not register bits (ADR-057 resolves the name; ADR-007 §1 types the
+// subscript). Before, both failed with an internal error.
+register GPIO @ 0x40000000 {
+    DR: u32 rw @ 0x00,
+}
+
+scope S {
+    u8[4] GPIO <- [5, 6, 7, 8];
+    public u8 get() {
+        return GPIO[1];
+    }
+    public u8 getOne() {
+        return GPIO[2, 1];
+    }
+}
+
+u32 main() {
+    u8[4] GPIO <- [1, 2, 3, 4];
+    u8 x <- GPIO[1];
+    if (x != 2) {
+        return 1;
+    }
+    u8 y <- GPIO[3, 1];
+    if (y != 4) {
+        return 2;
+    }
+    u8 g <- S.get();
+    if (g != 6) {
+        return 3;
+    }
+    u8 h <- S.getOne();
+    if (h != 7) {
+        return 4;
+    }
+    return 0;
+}

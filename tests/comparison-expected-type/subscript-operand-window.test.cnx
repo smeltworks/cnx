@@ -39,7 +39,7 @@ u32 main() {
     u32 a <- (arr[0] = 5) ? 1 : 0;
 
     // Bit read as a comparison operand, under a u32 expectedType. Lowers to
-    // ((flags) & 1) == 1 -- the bit-extraction mask is generated, and the
+    // ((flags) & 0x1U) == 1 -- the bit-extraction mask is generated, and the
     // comparison literal must still be suffix-free.
     u32 b <- (flags[0] = 1) ? 1 : 0;
 

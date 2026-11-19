@@ -1,0 +1,2 @@
+8:7 error[E0854]: Array index out of bounds: 9 >= 4 for 'arr' dimension 1
+       help: The last valid index is 3 (ADR-036).

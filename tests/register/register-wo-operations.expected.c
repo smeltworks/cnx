@@ -52,7 +52,7 @@ int main(void) {
     GPIO__DR_TOGGLE = ((uint32_t)1U << targetBit);
     GPIO__DR = (GPIO__DR & ~((uint32_t)1U << LED_BIT)) | ((uint32_t)1U << LED_BIT);
     GPIO__DR = (GPIO__DR & ~((uint32_t)1U << BUTTON_BIT)) | ((uint32_t)0U << BUTTON_BIT);
-    const bool state = ((((GPIO__DR >> LED_BIT) & 1)) != 0U);
+    const bool state = ((((GPIO__DR >> LED_BIT) & 0x1U)) != 0U);
     if (state == true) {
         GPIO__DR_CLEAR = ((uint32_t)1U << LED_BIT);
     } else {

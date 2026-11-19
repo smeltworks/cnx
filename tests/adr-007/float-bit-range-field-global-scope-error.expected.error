@@ -1,2 +1,2 @@
-20:12 error[E0888]: Float bit range 'r.value[0, 8]' cannot be read at file scope
-       help: Reading a float's bits copies it through a union (MISRA C:2012 Rule 21.15 forbids the pointer cast), and a copy is a statement -- there is none at file scope. Read it inside a function.
+20:12 error[E0888]: Float bits 'r.value[0, 8]' cannot be read at file scope
+       help: Reading a float's bits copies it through a union (a pointer cast would break MISRA C:2012 Rule 11.3), and a copy is a statement -- there is none at file scope. Read it inside a function.

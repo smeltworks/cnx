@@ -173,8 +173,8 @@ class StringDeclarationCheck {
     if (!OperandTyper.isSubstring(node, this.context)) return;
     const last = node.ops.at(-1);
     if (last?.kind !== "subscript") return;
-    const length = last.indexes.at(1);
-    if (length === undefined || this.constantOf(length) !== null) return;
+    const length = last.length;
+    if (this.constantOf(length) !== null) return;
     this.found.push({
       code: "E0922",
       span: length.span,

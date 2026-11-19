@@ -277,7 +277,9 @@ u8 low <- big[0, 8]; // bits 0-7 → 0xEF
 u8 high <- big[24, 8]; // bits 24-31 → 0xDE
 ```
 
-Bit indexing also works on **floats** (`f32`/`f64`): `f32val[24, 8]` reads/writes IEEE-754 bytes (union-based, MISRA 21.15) — the way to build a float from wire bytes.
+`x[a]` is exactly `x[a, 1]` (ADR-007): a one-bit subscript, written either way, reads as a `bool`; a wider range reads as the smallest unsigned type that holds it.
+
+Bit indexing also works on **floats** (`f32`/`f64`): `f32val[24, 8]` and `f32val[31]` read/write IEEE-754 bits through a union (a pointer cast would break MISRA C:2012 Rule 11.3) — the way to build a float from wire bytes. A union copy is a statement, so a float's bits cannot be read at file scope (E0888), at any length.
 
 **Compound assignment is not supported on a bit-index target:** `flags[0, 4] +<- 3;` is a compile error — read, modify, then write back.
 
