@@ -1,0 +1,47 @@
+// test-execution
+// test-adr: 007
+// ADR-007 §1: x[a] is x[a, 1] for every value. Each check writes or reads
+// with both spellings and compares the results, so reverting either spelling
+// to its own path fails here.
+u32 main() {
+    mut u8[4] arr <- [10, 20, 30, 40];
+    u32 i <- 2;
+
+    // An array element, read with each spelling
+    u8 e1 <- arr[i];
+    u8 e2 <- arr[i, 1];
+    if (e1 != 30) { return 1; }
+    if (e2 != 30) { return 2; }
+
+    // A compound write into one element, each spelling
+    arr[i] +<- 1;
+    arr[i, 1] +<- 1;
+    if (arr[2] != 32) { return 3; }
+
+    // A plain write into one element, each spelling
+    arr[0] <- 7;
+    arr[1, 1] <- 8;
+    if (arr[0] != 7) { return 4; }
+    if (arr[1] != 8) { return 5; }
+
+    // An integer's bit, read with each spelling
+    u32 n <- 0x0A;
+    bool b1 <- n[1];
+    bool b2 <- n[1, 1];
+    bool b3 <- n[2];
+    bool b4 <- n[2, 1];
+    if (b1 != true) { return 6; }
+    if (b2 != true) { return 7; }
+    if (b3 != false) { return 8; }
+    if (b4 != false) { return 9; }
+
+    // An integer's bit, written with each spelling
+    mut u32 m <- 0;
+    m[3] <- true;
+    m[5, 1] <- true;
+    if (m != 0x28) { return 10; }
+    m[3, 1] <- false;
+    m[5] <- false;
+    if (m != 0) { return 11; }
+    return 0;
+}

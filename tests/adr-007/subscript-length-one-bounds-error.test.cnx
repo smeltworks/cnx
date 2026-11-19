@@ -1,0 +1,10 @@
+// test-error
+// test-adr: 007
+// ADR-007 §1: arr[9, 1] is arr[9], so it is bounds-checked as an element
+// index (E0854). NEGATIVE CONTROL -- arr[3, 1], the last element, is in bounds.
+u32 main() {
+    mut u8[4] arr;
+    arr[3, 1] <- 1;
+    arr[9, 1] <- 1;
+    return 0;
+}
