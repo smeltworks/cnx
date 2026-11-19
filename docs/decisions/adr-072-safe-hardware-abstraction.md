@@ -112,7 +112,7 @@ Uses macros and base address offsets:
 
 1. **Minimize repetition** — Define peripheral layout once, instantiate many times
 2. **Type safety** — Each instance should be a distinct type (GPIO1 ≠ GPIO2)
-3. **Zero runtime cost** — All addresses resolved at compile time
+3. **Type safety** — The register is the type and each instantiation is an instance of it with its own address: `GPIO1` and `GPIO2` are distinct instances of one type `GpioPort`, and passing a `UartPort` instance where a `GpioPort` is expected is a type error (ruling 1 on #2449)
 4. **MISRA compliance** — Generated C must pass static analysis
 5. **SVD compatibility** — Syntax should map cleanly from SVD peripheral definitions
 
