@@ -718,7 +718,10 @@ describe("HeaderGeneratorUtils", () => {
 
   describe("generateTypeAliasSection", () => {
     it("returns empty array for no types", () => {
-      const lines = HeaderGeneratorUtils.generateTypeAliasSection([]);
+      const lines = HeaderGeneratorUtils.generateTypeAliasSection(
+        [],
+        new SymbolTable(),
+      );
 
       expect(lines).toHaveLength(0);
     });
@@ -728,7 +731,10 @@ describe("HeaderGeneratorUtils", () => {
         makeSymbol({ name: "Size", kind: "type", type: "u32" }),
         makeSymbol({ name: "Handle", kind: "type", type: "u64" }),
       ];
-      const lines = HeaderGeneratorUtils.generateTypeAliasSection(types);
+      const lines = HeaderGeneratorUtils.generateTypeAliasSection(
+        types,
+        new SymbolTable(),
+      );
 
       expect(lines).toContain("typedef uint32_t Size;");
       expect(lines).toContain("typedef uint64_t Handle;");
@@ -739,10 +745,22 @@ describe("HeaderGeneratorUtils", () => {
         makeSymbol({ name: "NoType", kind: "type" }),
         makeSymbol({ name: "WithType", kind: "type", type: "i32" }),
       ];
-      const lines = HeaderGeneratorUtils.generateTypeAliasSection(types);
+      const lines = HeaderGeneratorUtils.generateTypeAliasSection(
+        types,
+        new SymbolTable(),
+      );
 
       expect(lines.some((l) => l.includes("NoType"))).toBe(false);
       expect(lines).toContain("typedef int32_t WithType;");
+    });
+
+    it("writes the struct keyword for a C tag with no typedef (#1944)", () => {
+      const lines = HeaderGeneratorUtils.generateTypeAliasSection(
+        [makeSymbol({ name: "Spot", kind: "type", type: "Point" })],
+        { checkNeedsStructKeyword: (name) => name === "Point" },
+      );
+
+      expect(lines).toContain("typedef struct Point Spot;");
     });
   });
 

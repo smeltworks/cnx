@@ -3841,7 +3841,10 @@ class FilePlanner {
       returnType: CallbackParameterShape.returnType(symbol, facts),
       parameters: CallbackParameterShape.parameters(cName, symbol, facts),
       typedefName: CallbackParameterShape.typedefName(cName),
-      returnBuffer: ReturnBuffer.parameterFor(symbol.returnType),
+      returnBuffer: ReturnBuffer.parameterFor(
+        symbol.returnType,
+        this.state.symbolTable,
+      ),
     };
   }
 

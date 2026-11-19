@@ -499,6 +499,7 @@ class CodeGenWalker {
       planned.type,
       temp,
       this.host.getAggregateZeroInitBrace(),
+      state.symbolTable,
     );
     invariant(declaration !== null, "a buffer ternary has a buffer");
     const indent = FormatUtils.indent(1);
@@ -834,6 +835,7 @@ class CodeGenWalker {
         returnType,
         name,
         this.host.getAggregateZeroInitBrace(),
+        this.host.state.symbolTable,
       );
       invariant(temporary !== null, "a buffer return has a buffer");
       return temporary;
@@ -2717,7 +2719,10 @@ class CodeGenWalker {
    * array fills, or null when it returns by value
    */
   private renderReturnBuffer(cName: string): string | null {
-    return ReturnBuffer.parameterFor(this.returnTypeOf(cName));
+    return ReturnBuffer.parameterFor(
+      this.returnTypeOf(cName),
+      this.host.state.symbolTable,
+    );
   }
 
   /** The declared return type of the function named `cName` */

@@ -15,6 +15,8 @@ extern "C" {
 
 /* Callback typedefs */
 typedef void (*move_fp)(struct Point&);
+typedef struct Point (*make_fp)(void);
+typedef void (*twins_fp)(struct Point cnx_return[2]);
 
 /* Struct definitions */
 typedef struct Holder {
@@ -32,6 +34,10 @@ struct Point make(void);
 void moveAll(struct Point ps[2]);
 void Shapes__nudge(struct Point& p);
 void useIt(move_fp cb, struct Point& q);
+int32_t useMaker(make_fp cb);
+void twins(struct Point cnx_return[2]);
+int32_t secondX(const struct Point ps[2]);
+int32_t useTwins(twins_fp cb);
 
 #ifdef __cplusplus
 }

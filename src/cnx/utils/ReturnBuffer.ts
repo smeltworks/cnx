@@ -1,7 +1,8 @@
 import type TType from "../types/TType";
 import CArrayDimensions from "./CArrayDimensions";
-import headerCType from "./headerCType";
+import cTypeName from "./cTypeName";
 import TypeResolver from "./TypeResolver";
+import type IStructKeywordFacts from "./types/IStructKeywordFacts";
 
 /**
  * #1209 (owner ruling, 2026-11-13): C returns no array, so a function whose
@@ -42,20 +43,26 @@ class ReturnBuffer {
       .join("");
   }
 
-  /** The C type of one element of the buffer a function returning `type` fills */
-  static elementCType(type: TType): string {
+  /**
+   * The C type of one element of the buffer a function returning `type`
+   * fills, spelled by `cTypeName` like any other type the .h and .c name (#1944)
+   */
+  static elementCType(type: TType, facts: IStructKeywordFacts): string {
     const element = type.kind === "array" ? type.elementType : type;
     return element.kind === "string"
       ? "char"
-      : headerCType(TypeResolver.getTypeName(element));
+      : cTypeName(TypeResolver.getTypeName(element), facts);
   }
 
   /** The buffer parameter of a function returning `type`, or null */
-  static parameterFor(type: TType): string | null {
+  static parameterFor(type: TType, facts: IStructKeywordFacts): string | null {
     const dimensions = ReturnBuffer.dimensionsOf(type);
     return dimensions === null
       ? null
-      : ReturnBuffer.parameter(ReturnBuffer.elementCType(type), dimensions);
+      : ReturnBuffer.parameter(
+          ReturnBuffer.elementCType(type, facts),
+          dimensions,
+        );
   }
 
   /**
@@ -79,12 +86,17 @@ class ReturnBuffer {
    * A caller's temporary for a call returning `type`, or null. `zero` is the
    * file's aggregate zero: C++ cannot write an enum element `{0}`
    */
-  static temporaryFor(type: TType, name: string, zero: string): string | null {
+  static temporaryFor(
+    type: TType,
+    name: string,
+    zero: string,
+    facts: IStructKeywordFacts,
+  ): string | null {
     const dimensions = ReturnBuffer.dimensionsOf(type);
     return dimensions === null
       ? null
       : ReturnBuffer.temporary(
-          ReturnBuffer.elementCType(type),
+          ReturnBuffer.elementCType(type, facts),
           name,
           dimensions,
           zero,

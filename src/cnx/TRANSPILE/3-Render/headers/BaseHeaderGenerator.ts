@@ -243,7 +243,10 @@ abstract class BaseHeaderGenerator {
       ),
       ...HeaderGeneratorUtils.generateEnumSection(groups.enums, typeInput),
       ...HeaderGeneratorUtils.generateBitmapSection(groups.bitmaps, typeInput),
-      ...HeaderGeneratorUtils.generateTypeAliasSection(groups.types),
+      ...HeaderGeneratorUtils.generateTypeAliasSection(
+        groups.types,
+        structKeywords,
+      ),
       ...HeaderGeneratorUtils.generateCallbackStructForwardDecls(
         groups.structs,
         typeInput,

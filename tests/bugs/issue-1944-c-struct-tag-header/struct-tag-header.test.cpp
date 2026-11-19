@@ -45,6 +45,31 @@ void useIt(move_fp cb, struct Point& q) {
     cb(q);
 }
 
+int32_t useMaker(make_fp cb) {
+    const struct Point got = cb();
+    return got.x;
+}
+
+/* ADR-045 / Issue #1209: C returns no array, so the result is written into a buffer the caller supplies. */
+void twins(struct Point cnx_return[2]) {
+    const struct Point r[2] = {{ .x = 1, .y = 2 }, { .x = 3, .y = 4 }};
+    /* ADR-045 / Issue #1209: the result is copied into the caller's buffer, which outlives the call. */
+    for (uint32_t cnx_tmp0 = 0U; cnx_tmp0 < 2U; cnx_tmp0++) {
+        cnx_return[cnx_tmp0] = r[cnx_tmp0];
+    }
+    return;
+}
+
+int32_t secondX(const struct Point ps[2]) {
+    return ps[1U].x;
+}
+
+int32_t useTwins(twins_fp cb) {
+    struct Point got[2] = {};
+    cb(got);
+    return got[0U].y;
+}
+
 int main(void) {
     struct Point a = { .x = 0, .y = 0 };
     move(a);
@@ -79,6 +104,26 @@ int main(void) {
     }
     if (h.many[1U].y != 8) {
         return 8U;
+    }
+    const int32_t made = useMaker(make);
+    if (made != 5) {
+        return 9U;
+    }
+    struct Point t[2] = {};
+    twins(t);
+    if (t[1U].y != 4) {
+        return 10U;
+    }
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
+    struct Point cnx_tmp1[2] = {};
+    twins(cnx_tmp1);
+    const int32_t second = secondX(cnx_tmp1);
+    if (second != 3) {
+        return 11U;
+    }
+    const int32_t viaCb = useTwins(twins);
+    if (viaCb != 2) {
+        return 12U;
     }
     return 0U;
 }

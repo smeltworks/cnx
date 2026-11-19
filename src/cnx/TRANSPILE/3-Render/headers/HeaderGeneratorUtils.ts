@@ -22,7 +22,7 @@ import type IVariableFormatInput from "../codegen/types/IVariableFormatInput";
 import MisraSuppressionUtils from "../MisraSuppressionUtils";
 import CallbackTypedefFormatter from "../../../utils/CallbackTypedefFormatter";
 
-const { mapType, isBuiltInType } = typeUtils;
+const { isBuiltInType } = typeUtils;
 
 /**
  * Static utility class with pure functions for header generation
@@ -461,7 +461,10 @@ class HeaderGeneratorUtils {
   /**
    * Generate type alias section
    */
-  static generateTypeAliasSection(types: IHeaderSymbol[]): string[] {
+  static generateTypeAliasSection(
+    types: IHeaderSymbol[],
+    structKeywords: IStructKeywordFacts,
+  ): string[] {
     if (types.length === 0) {
       return [];
     }
@@ -469,7 +472,7 @@ class HeaderGeneratorUtils {
     const lines: string[] = ["/* Type aliases */"];
     for (const sym of types) {
       if (sym.type) {
-        const cType = mapType(sym.type);
+        const cType = cTypeName(sym.type, structKeywords);
         lines.push(`typedef ${cType} ${sym.name};`);
       }
     }
