@@ -1,0 +1,16 @@
+// test-error
+// test-adr: 072
+// ADR-072, E0931: a register instance's address is resolved at compile time.
+// A `mut` base can change at run time, so it cannot fix an instance's address.
+
+register GpioPort {
+    0x00 rw u32 DR,
+}
+
+mut u32 base <- 0x401B8000;
+
+GpioPort GPIO1(base);
+
+void main() {
+    GPIO1.DR <- 1;
+}

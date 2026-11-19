@@ -1,0 +1,49 @@
+// test-adr: 072
+// ADR-072 Part 1: a register is a TYPE (a layout with no address), and each
+// instance fixes it at an address. The address and every offset are
+// compile-time constants, so the macros hold plain numbers -- no runtime
+// arithmetic -- and each instance gets its own `NAME__MEMBER` macros.
+
+u32 GPIO_BASE <- 0x401B8000;
+u32 ISR_OFFSET <- 0x18;
+
+register GpioPort {
+    0x00 rw u32 DR,
+    0x08 ro u32 PSR,
+    ISR_OFFSET w1c u32 ISR,
+    0x84 wo u32 DR_SET,
+}
+
+GpioPort GPIO1(GPIO_BASE);
+GpioPort GPIO2(GPIO_BASE + 0x4000);
+
+// A vendor-style (CMSIS) type name is allowed, not required
+register UART_Type {
+    0x00 rw u8 DATA,
+    0x04 ro u8 STATUS,
+}
+
+UART_Type UART0(0x4006A000);
+
+scope Motor {
+    public register PwmChannel {
+        0x00 rw u16 DUTY,
+    }
+
+    public PwmChannel PWM(0x40038000);
+
+    public void stop() {
+        this.PWM.DUTY <- 0;
+    }
+}
+
+void main() {
+    GPIO1.DR <- 1;
+    GPIO2.DR <- 2;
+    u32 pins <- GPIO1.PSR;
+    GPIO1.ISR <- 0x01;
+    GPIO2.DR_SET <- pins;
+    UART0.DATA <- 0x41;
+    u8 status <- UART0.STATUS;
+    Motor.stop();
+}

@@ -356,15 +356,16 @@ class TSymbolInfoAdapter {
   ): void {
     // ADR-072 Part 1: a register TYPE has no address and no storage; only an
     // instance is a register a value can be read from or written to. An
-    // instance whose address did not fold is 1.4's error, not a register.
-    const baseAddress = register.baseAddress;
+    // instance whose address did not fold is still declared (E0931 reports
+    // the address), but it has no address to emit.
+    const cName = register.fullyQualifiedCName;
     if (register.registerType === null) {
-      maps.knownRegisterTypes.add(register.fullyQualifiedCName);
+      maps.knownRegisterTypes.add(cName);
       return;
     }
-    if (baseAddress === null) return;
-    const cName = register.fullyQualifiedCName;
     maps.knownRegisters.add(cName);
+    const baseAddress = register.baseAddress;
+    if (baseAddress === null) return;
     maps.registerBaseAddresses.set(cName, baseAddress);
     maps.memberCNames.set(
       cName,

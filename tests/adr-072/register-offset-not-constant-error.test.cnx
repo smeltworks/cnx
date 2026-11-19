@@ -1,0 +1,16 @@
+// test-error
+// test-adr: 072
+// ADR-072, E0932: a register member's offset is resolved at compile time.
+
+mut u32 offset <- 0x04;
+
+register GpioPort {
+    0x00 rw u32 DR,
+    offset rw u32 PSR,
+}
+
+GpioPort GPIO1(0x401B8000);
+
+void main() {
+    GPIO1.DR <- 1;
+}

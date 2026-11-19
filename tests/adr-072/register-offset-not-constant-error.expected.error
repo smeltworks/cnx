@@ -1,0 +1,2 @@
+9:4 error[E0932]: the offset of register member 'PSR' is not a compile-time constant
+       help: A register member's offset is resolved at compile time (ADR-072). Use a literal, a const, or arithmetic over them.

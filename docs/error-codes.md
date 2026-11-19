@@ -521,6 +521,16 @@ base: bare, `this.` and `global.`.
 
 ---
 
+## E0931–E0933 — Register Types and Instances (ADR-072)
+
+| Code  | Message                                                                                                               | Help                                                                                | Source                                            |
+| ----- | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------- |
+| E0931 | The address of a register instance (`GpioPort GPIO1(base);`) is not a compile-time constant                           | Use a literal, a const, or arithmetic over them                                     | `TRANSPILE/1-Analyze/RegisterInstanceAnalyzer.ts` |
+| E0932 | The offset of a register member is not a compile-time constant                                                        | Use a literal, a const, or arithmetic over them                                     | `TRANSPILE/1-Analyze/RegisterInstanceAnalyzer.ts` |
+| E0933 | A function parameter is a register; register parameters are not supported yet (ADR-072 Part 1 specializes them later) | Access the register instance directly (`GPIO1.DR`); it is never passed as a pointer | `TRANSPILE/1-Analyze/RegisterInstanceAnalyzer.ts` |
+
+---
+
 ---
 
 ## Adding New Error Codes

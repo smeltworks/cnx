@@ -1,0 +1,2 @@
+12:13 error[E0933]: parameter 'port' is a register; register parameters are not supported yet (ADR-072)
+       help: Access the register instance directly (`GPIO1.DR`). ADR-072 resolves a register parameter per instance at compile time; until that is implemented it is rejected rather than passed as a runtime pointer.
