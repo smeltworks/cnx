@@ -48,8 +48,6 @@ toward its band's gate.
 ### Numbers are never reused
 
 Gaps are intentional and permanent. `059` and `107` were never allocated; neither will be filled.
-`111` is the one exception: it was a filing mistake, so when it moved to `072` every reference
-was rewritten and the number was freed for reuse.
 `053` was withdrawn on 2026-08-28 -- it described the transpiler's pipeline rather than deciding
 anything about the language, so it did not meet the definition of an ADR. The number stays retired.
 
@@ -76,6 +74,12 @@ exceptions — both were vacated on 2026-01-07 and refilled before it existed (`
 2026-01-10, `046` on 2026-01-19), which means a reference to either from before its refill date
 means the decision the renumbering history maps it to, not the one holding the number today.
 
+`111` is the third exception, by the owner's ruling of 2026-11-18 ("111 can be reused because it
+was a mistake, and every reference, even historical can be updated"). When it moved to `072`,
+every reference in the repository was rewritten, and the number may be refilled. Issues, PR
+titles and commit messages cannot all be rewritten, so a reference to ADR-111 from before its
+refill date means ADR-072.
+
 ### Moving an ADR to a different band
 
 When an ADR's target release changes, its number changes with it:
@@ -86,7 +90,9 @@ When an ADR's target release changes, its number changes with it:
 3. Regenerate test snapshots. ADR references inside `.test.cnx` comments are carried into
    generated `.c`/`.cpp` output by ADR-043 comment preservation, so `npm run test:update` is
    required and its diff must contain comment lines only.
-4. Add a row to the renumbering history below.
+4. Put a `> **Formerly ADR-NNN.**` note under the new file's title, giving the old number and
+   the date.
+5. Add a row to the renumbering history below.
 
 Precedent: commit `a2277b87` (2026-01-07) moved ADR-051 → ADR-104 and ADR-046 → ADR-105 this way.
 
@@ -166,7 +172,7 @@ they were written. This table is how those references stay resolvable.
 | ADR-113 | ADR-068 | Forever Loops               | 2026-08-23 | v0 work mis-filed in the `1xx` band          |
 | ADR-114 | ADR-069 | Dead-Code / Reachability    | 2026-08-23 | Required for v1; mis-filed in the `1xx` band |
 | ADR-115 | ADR-070 | Return-Value Use            | 2026-08-23 | Required for v1; mis-filed in the `1xx` band |
-| ADR-111 | ADR-072 | Safe Hardware Abstraction   | 2026-11-18 | Required for v1; mis-filed in the `1xx` band |
+| ADR-111 | ADR-072 | Safe Hardware Abstraction   | 2026-11-18 | Promoted to the v1 roadmap                   |
 
 A changed file stem is not a renumbering and does not belong in this table. ADR-022 was
 rewritten in place in commit `1f56e2d8` (`adr-022-ternary-operator.md` was replaced by

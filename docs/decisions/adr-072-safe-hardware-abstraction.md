@@ -1,5 +1,9 @@
 # ADR-072: Safe Hardware Abstraction Primitives
 
+> **Formerly ADR-111.** Renumbered 2026-11-18 into the `0xx` band — its target release moved
+> from v2 to v1. See [`README.md`](README.md) for the numbering rule and the full mapping
+> table.
+
 **Status:** Research
 **Date:** 2026-02-20 (revised 2026-07-04: simplified register syntax; added Parts 4–5)
 **Decision Makers:** Language Design Team
