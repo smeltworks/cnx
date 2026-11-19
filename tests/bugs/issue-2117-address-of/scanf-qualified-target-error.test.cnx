@@ -7,9 +7,11 @@
 // CONTROL: `parsed` is a plain `mut` local and compiles.
 #include <stdio.h>
 
-register GPIO @ 0x42000000 {
-    DR: u32 rw @ 0x00,
+register GpioPort {
+    0x00 rw u32 DR,
 }
+
+GpioPort GPIO(0x42000000);
 
 struct Sample {
     u32 value;

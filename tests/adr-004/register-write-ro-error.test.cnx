@@ -6,10 +6,12 @@
 // is a statement, so it reaches the two function-body contexts; the whole,
 // bit, range and compound forms are each asserted once.
 
-register STATUS_REG @ 0x40000000 {
-    FLAGS: u32 ro @ 0x00,
-    CTRL: u32 rw @ 0x04,
+register StatusBlock {
+    0x00 ro u32 FLAGS,
+    0x04 rw u32 CTRL,
 }
+
+StatusBlock STATUS_REG(0x40000000);
 
 // NEGATIVE CONTROL -- reading the ro member, and writing the rw one in every
 // form the assertions below use.

@@ -7,11 +7,13 @@
 // of a `wo` member there returns nothing meaningful just as it would in the
 // loop's body.
 
-register LOOP_REG @ 0x40000000 {
-    CTRL: u32 rw @ 0x00,
-    STATUS: u32 ro @ 0x04,
-    COMMAND: u32 wo @ 0x08,
+register LoopBlock {
+    0x00 rw u32 CTRL,
+    0x04 ro u32 STATUS,
+    0x08 wo u32 COMMAND,
 }
+
+LoopBlock LOOP_REG(0x40000000);
 
 // NEGATIVE CONTROL -- the same `for` header reading the rw and ro members.
 void okReads() {

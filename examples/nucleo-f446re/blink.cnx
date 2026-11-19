@@ -61,12 +61,14 @@ scope SysTick {
         Reserved_31 // bit 31
     }
     // SysTick registers (named Regs to avoid colliding with the scope name)
-    register Regs @ 0xE000E010 {
-        CTRL: ControlBits rw @ 0x00, // Control and Status
-        LOAD: u32 rw @ 0x04, // Reload value (24-bit)
-        VAL: u32 rw @ 0x08, // Current value (24-bit, write clears)
-        CALIB: u32 ro @ 0x0C, // Calibration value
+    register RegisterBlock {
+        0x00 rw ControlBits CTRL, // Control and Status
+        0x04 rw u32 LOAD, // Reload value (24-bit)
+        0x08 rw u32 VAL, // Current value (24-bit, write clears)
+        0x0C ro u32 CALIB, // Calibration value
     }
+
+    RegisterBlock Regs(0xE000E010);
     /// Initialize SysTick for 1ms interrupt ticks
     /// Assumes 16 MHz HSI clock (default after reset)
     public void init() {
@@ -129,9 +131,11 @@ scope RCC {
         Reserved_30, // bit 30
         Reserved_31 // bit 31
     }
-    public register RCC @ 0x40023800 {
-        AHB1ENR: AHB1Peripherals rw @ 0x30,
+    public register RCC_Type {
+        0x30 rw AHB1Peripherals AHB1ENR,
     }
+
+    public RCC_Type RCC(0x40023800);
 }
 
 // =============================================================================
@@ -194,18 +198,20 @@ scope STM32F446 {
         PA14_RESET,
         PA15_RESET
     }
-    public register GPIOA @ 0x40020000 {
-        ModeRegister: u32 rw @ 0x00,
-        OutputTypeRegister: GPIOAPins rw @ 0x04,
-        OutputSpeedRegister: u32 rw @ 0x08,
-        PullUpDownRegister: u32 rw @ 0x0C,
-        InputData: GPIOAPins ro @ 0x10,
-        OutputData: GPIOAPins rw @ 0x14,
-        BitSetReset: GPIOAPins wo @ 0x18,
-        LockRegister: GPIOAPins rw @ 0x1C,
-        AlternateFunctionLow: u32 rw @ 0x20,
-        AlternateFunctionHigh: u32 rw @ 0x24,
+    public register GpioPort {
+        0x00 rw u32 ModeRegister,
+        0x04 rw GPIOAPins OutputTypeRegister,
+        0x08 rw u32 OutputSpeedRegister,
+        0x0C rw u32 PullUpDownRegister,
+        0x10 ro GPIOAPins InputData,
+        0x14 rw GPIOAPins OutputData,
+        0x18 wo GPIOAPins BitSetReset,
+        0x1C rw GPIOAPins LockRegister,
+        0x20 rw u32 AlternateFunctionLow,
+        0x24 rw u32 AlternateFunctionHigh,
     }
+
+    public GpioPort GPIOA(0x40020000);
 }
 
 // =============================================================================

@@ -4,12 +4,16 @@ scope Board {
     u32 BASE <- (0x40000000 /* GPIO block */);
     u32 SPLIT <- (0x40000000 + // GPIO block
         0x100);
-    register Gpio @ BASE {
-        DATA: u32 rw @ 0x00,
+    register GpioPort {
+        0x00 rw u32 DATA,
     }
-    register Pins @ SPLIT {
-        DATA: u32 rw @ 0x00,
+
+    GpioPort Gpio(BASE);
+    register PortPins {
+        0x00 rw u32 DATA,
     }
+
+    PortPins Pins(SPLIT);
 }
 
 void main() {

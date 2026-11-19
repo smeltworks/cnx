@@ -10,10 +10,12 @@ bitmap8 MotorControl {
 }
 
 // Use bitmap type inside a register definition
-register MOTOR @ 0x40001000 {
-    CTRL: MotorControl rw @ 0x00, // Bitmap as register type!
-    STATUS: u8 ro @ 0x04,
+register MotorController {
+    0x00 rw MotorControl CTRL, // Bitmap as register type!
+    0x04 ro u8 STATUS,
 }
+
+MotorController MOTOR(0x40001000);
 
 void main() {
     // Direct bitmap field access on the memory-mapped register

@@ -2,10 +2,12 @@
 // Issue #779: Ambiguity-aware validation - only require global. when shadowed
 // This is the happy path companion to cross-scope-register-bare-error.test.cnx
 
-register GPIO @ 0x40000000 {
-    DR: u32 rw @ 0x00,
-    DIR: u32 rw @ 0x04,
+register GpioPort {
+    0x00 rw u32 DR,
+    0x04 rw u32 DIR,
 }
+
+GpioPort GPIO(0x40000000);
 
 scope Motor {
     // No shadowing of GPIO - bare access should work

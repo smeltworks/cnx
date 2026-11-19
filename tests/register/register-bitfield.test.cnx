@@ -35,17 +35,21 @@ bitmap16 TimerConfig {
 }
 
 // Register using multiple bitmap types as members
-register UART @ 0x40010000 {
-    CTRL: UARTControl rw @ 0x00,
-    STATUS: UARTStatus ro @ 0x04,
-    DATA: u8 rw @ 0x08,
+register UartPort {
+    0x00 rw UARTControl CTRL,
+    0x04 ro UARTStatus STATUS,
+    0x08 rw u8 DATA,
 }
 
-register TIMER @ 0x40020000 {
-    CONFIG: TimerConfig rw @ 0x00,
-    COUNT: u32 ro @ 0x04,
-    RELOAD: u32 rw @ 0x08,
+UartPort UART(0x40010000);
+
+register Timer {
+    0x00 rw TimerConfig CONFIG,
+    0x04 ro u32 COUNT,
+    0x08 rw u32 RELOAD,
 }
+
+Timer TIMER(0x40020000);
 
 void configureUART() {
     UART.CTRL.Enable <- true;

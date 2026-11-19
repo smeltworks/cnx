@@ -6,10 +6,12 @@
 u8 W <- 32;
 u8 H <- 16;
 
-register PERIPH @ 0x40000000 {
-    CTRL: u32 rw @ 0x00,
-    SET: u32 wo @ 0x04,
+register Peripheral {
+    0x00 rw u32 CTRL,
+    0x04 wo u32 SET,
 }
+
+Peripheral PERIPH(0x40000000);
 
 void configure(u32 v) {
     PERIPH.CTRL[0, W] <- v;

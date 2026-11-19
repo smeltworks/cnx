@@ -17,9 +17,11 @@
 // UndeclaredTypeAnalyzer is registered immediately before UndeclaredValueAnalyzer.
 // The E0429 below therefore means the value analyzer never runs on this file, and
 // any control for it placed here would be inert whatever it asserted.
-register Control @ 0x40000000 {
-    DR: u32 rw @ 0x00,
+register ControlBlock {
+    0x00 rw u32 DR,
 }
+
+ControlBlock Control(0x40000000);
 
 struct Point {
     u32 x;

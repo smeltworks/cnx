@@ -1,15 +1,19 @@
 // test-coverage: 12-bit-range-access
 // Tests: Bit range access on register members using [start, width] syntax
-register TIMER @ 0x40010000 {
-    CTRL: u32 rw @ 0x00,
-    PRESCALE: u32 rw @ 0x04,
-    VALUE: u32 ro @ 0x08,
+register Timer {
+    0x00 rw u32 CTRL,
+    0x04 rw u32 PRESCALE,
+    0x08 ro u32 VALUE,
 }
 
-register CONFIG @ 0x40020000 {
-    MODE: u32 rw @ 0x00,
-    OPTIONS: u32 rw @ 0x04,
+Timer TIMER(0x40010000);
+
+register ConfigBlock {
+    0x00 rw u32 MODE,
+    0x04 rw u32 OPTIONS,
 }
+
+ConfigBlock CONFIG(0x40020000);
 
 void setTimerPrescaler(u8 prescaler) {
     // Write 8-bit prescaler to bits 0-7

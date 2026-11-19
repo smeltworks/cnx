@@ -1,11 +1,13 @@
 // Test: Basic scoped register declaration and access
 
 scope Teensy4 {
-    public register GPIO7 @ 0x42004000 {
-        DR: u32 rw @ 0x00,
-        DR_SET: u32 wo @ 0x84,
-        DR_TOGGLE: u32 wo @ 0x8C,
+    public register GpioPort {
+        0x00 rw u32 DR,
+        0x84 wo u32 DR_SET,
+        0x8C wo u32 DR_TOGGLE,
     }
+
+    public GpioPort GPIO7(0x42004000);
 }
 
 void main() {

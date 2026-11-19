@@ -9,9 +9,11 @@ enum EMode {
     STOP
 }
 
-register DEV @ 0x40000000 {
-    EM: EMode rw @ 0x04,
+register Device {
+    0x04 rw EMode EM,
 }
+
+Device DEV(0x40000000);
 
 mut u8 sink;
 

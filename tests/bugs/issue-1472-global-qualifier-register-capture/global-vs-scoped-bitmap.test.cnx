@@ -38,10 +38,12 @@ scope Chip {
         Reserved[6]
     }
 
-    public register CTRL @ 0x40000000 {
-        GLOBAL_STATUS: global.Flags rw @ 0x00,
-        LOCAL_STATUS: Flags rw @ 0x04,
+    public register ControlBlock {
+        0x00 rw global.Flags GLOBAL_STATUS,
+        0x04 rw Flags LOCAL_STATUS,
     }
+
+    public ControlBlock CTRL(0x40000000);
 }
 
 void main() {

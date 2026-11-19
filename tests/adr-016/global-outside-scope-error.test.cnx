@@ -81,9 +81,11 @@ enum EKind {
     B
 }
 
-register Port @ global.PORT_BASE {
-    DR: u32 rw @ global.DR_OFFSET,
+register PortPins {
+    global.DR_OFFSET rw u32 DR,
 }
+
+PortPins Port(global.PORT_BASE);
 
 u32 main() {
     u32 r <- inPlainFunction(1, 2);

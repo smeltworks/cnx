@@ -13,10 +13,12 @@ scope Timer {
         Reserved_6, // bit 6
         Reserved_7 // bit 7
     }
-    register SysTick @ 0xE000E010 {
-        CTRL: ControlBits rw @ 0x00,
-        LOAD: u32 rw @ 0x04,
+    register SysTickTimer {
+        0x00 rw ControlBits CTRL,
+        0x04 rw u32 LOAD,
     }
+
+    SysTickTimer SysTick(0xE000E010);
     public void init() {
 
         // Test bitmap field assignment

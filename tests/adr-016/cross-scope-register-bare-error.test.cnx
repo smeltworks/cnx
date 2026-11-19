@@ -3,10 +3,12 @@
 // Test: Bare register access from inside a scope should error when SHADOWED
 // Issue #779: Ambiguity-aware validation - only require global. when shadowed
 
-register GPIO @ 0x40000000 {
-    DR: u32 rw @ 0x00,
-    DIR: u32 rw @ 0x04,
+register GpioPort {
+    0x00 rw u32 DR,
+    0x04 rw u32 DIR,
 }
+
+GpioPort GPIO(0x40000000);
 
 scope Motor {
     // Shadow the GPIO register name with a scope member

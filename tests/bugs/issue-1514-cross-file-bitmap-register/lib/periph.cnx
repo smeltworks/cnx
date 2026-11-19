@@ -3,7 +3,9 @@
 #include "bitmaps.cnx"
 
 scope Periph {
-    public register CTRL @ 0x40004000 {
-        CR: Ctl rw @ 0x00,
+    public register ControlBlock {
+        0x00 rw Ctl CR,
     }
+
+    public ControlBlock CTRL(0x40004000);
 }

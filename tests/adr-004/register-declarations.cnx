@@ -1,11 +1,13 @@
 // Helper (not a test): a register with every access modifier, for the
 // cross-file ADR-004 fixtures. An access modifier is a property of the
 // DECLARATION, which lives here, so the rules have to reach across the include.
-register HW @ 0x40000000 {
-    CTRL: u32 rw @ 0x00,
-    STATUS: u32 ro @ 0x04,
-    COMMAND: u32 wo @ 0x08,
-    SET: u32 w1s @ 0x0C,
+register Hardware {
+    0x00 rw u32 CTRL,
+    0x04 ro u32 STATUS,
+    0x08 wo u32 COMMAND,
+    0x0C w1s u32 SET,
 }
+
+Hardware HW(0x40000000);
 
 u32 REGISTER_MARKER <- 1;

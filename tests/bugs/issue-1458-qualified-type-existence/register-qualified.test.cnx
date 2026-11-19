@@ -6,26 +6,32 @@
 // The `Point` lines are live negative controls: the analyzer reports every
 // type-position error in one walk, so rejecting a real type in any spelling
 // would add a line to the .expected.error.
-register Control @ 0x40000000 {
-    DR: u32 rw @ 0x00,
+register ControlBlock {
+    0x00 rw u32 DR,
 }
+
+ControlBlock Control(0x40000000);
 
 struct Point {
     u32 x;
 }
 
 scope Board {
-    register Pins @ 0x40001000 {
-        DR: u32 rw @ 0x00,
+    register PortPins {
+        0x00 rw u32 DR,
     }
+
+    PortPins Pins(0x40001000);
 
     public struct Point {
         u32 y;
     }
 
-    public register Leds @ 0x40002000 {
-        DR: u32 rw @ 0x00,
+    public register LedBank {
+        0x00 rw u32 DR,
     }
+
+    public LedBank Leds(0x40002000);
 
     public void go() {
         global.Point gp <- { x: 1 };

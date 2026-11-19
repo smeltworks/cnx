@@ -7,9 +7,11 @@
 
 u32 GPIO_BASE <- 0x40000000;
 
-register GPIO @ GPIO_BASE + 0x100 {
-    SET: u32 wo @ 0x04,
+register GpioPort {
+    0x04 wo u32 SET,
 }
+
+GpioPort GPIO(GPIO_BASE + 0x100);
 
 void main() {
     GPIO.SET[8, 8] <- 5;

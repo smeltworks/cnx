@@ -25,18 +25,22 @@ scope MixedAccess {
     }
 }
 
-register PERIPH @ 0x50000000 {
-    CTRL: DeviceFlags rw @ 0x00,
-    DATA: u32 rw @ 0x04,
+register Peripheral {
+    0x00 rw DeviceFlags CTRL,
+    0x04 rw u32 DATA,
 }
+
+Peripheral PERIPH(0x50000000);
 
 scope Device {
     MixedAccess.Controller[2] controllers;
 
-    register HW @ 0x60000000 {
-        STATUS: DeviceFlags rw @ 0x00,
-        CONFIG: u32 rw @ 0x04,
+    register Hardware {
+        0x00 rw DeviceFlags STATUS,
+        0x04 rw u32 CONFIG,
     }
+
+    Hardware HW(0x60000000);
 
     void configure() {
         // MEGA CHAIN: Scope.array[i].struct.array[j].struct.bitmap.field (7 levels!)

@@ -21,9 +21,11 @@ scope Timer {
         Reserved[6]
     }
 
-    register SysTick @ 0xE000E010 {
-        CTRL: ControlBits rw @ 0x00,
+    register SysTickTimer {
+        0x00 rw ControlBits CTRL,
     }
+
+    SysTickTimer SysTick(0xE000E010);
 
     public void test() {
         // NEGATIVE CONTROLS -- the named-field form ADR-034 requires, through

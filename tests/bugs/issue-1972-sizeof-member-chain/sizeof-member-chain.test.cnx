@@ -22,9 +22,11 @@ struct Pair {
     u32 b;
 }
 
-register GPIO @ 0x40000000 {
-    DR: u32 rw @ 0x00,
+register GpioPort {
+    0x00 rw u32 DR,
 }
+
+GpioPort GPIO(0x40000000);
 
 scope S {
     public Pair cfg;

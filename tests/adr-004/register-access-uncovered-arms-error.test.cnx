@@ -10,11 +10,13 @@
 // `R__SET += 1`, a read of a write-only register. Probed before #1322.
 
 scope Board {
-    public register R @ 0x40000000 {
-        ST: u32 ro @ 0x00,
-        SET: u32 wo @ 0x04,
-        CTRL: u32 rw @ 0x08,
+    public register Peripheral {
+        0x00 ro u32 ST,
+        0x04 wo u32 SET,
+        0x08 rw u32 CTRL,
     }
+
+    public Peripheral R(0x40000000);
 
     // NEGATIVE CONTROL -- the rw member in every spelling the assertions use,
     // and a read of the ro one.

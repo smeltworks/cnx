@@ -8,9 +8,11 @@
 #include "lib/bitmaps.cnx"
 
 scope Dev {
-    register R @ 0x40003000 {
-        CR: Ctl rw @ 0x00,
+    register Peripheral {
+        0x00 rw Ctl CR,
     }
+
+    Peripheral R(0x40003000);
 
     public void set(u8 m) {
         this.R.CR[4, 4] <- m;

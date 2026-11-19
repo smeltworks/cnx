@@ -6,9 +6,11 @@
 // variable rather than a scope member. E0436 from a file-scope INITIALIZER --
 // a reference to a scope's member can stand anywhere a value can.
 
-register GPIO @ 0x40000000 {
-    DR: u32 rw @ 0x00,
+register GpioPort {
+    0x00 rw u32 DR,
 }
+
+GpioPort GPIO(0x40000000);
 
 scope Vault {
     i32 secret <- 7;

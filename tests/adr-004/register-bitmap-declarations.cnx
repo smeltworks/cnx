@@ -10,10 +10,12 @@ scope Chip {
         Reserved[6]
     }
 
-    public register R @ 0x40000000 {
-        DR: Pins rw @ 0x00,
-        DIR: u8 rw @ 0x04,
+    public register Peripheral {
+        0x00 rw Pins DR,
+        0x04 rw u8 DIR,
     }
+
+    public Peripheral R(0x40000000);
 }
 
 u32 CHIP_MARKER <- 1;
