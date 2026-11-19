@@ -2014,6 +2014,56 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | warn   | warn       | warn        | warn       |
 | for header         | warn      | warn   | warn       | warn        | warn       |
 
+## ADR-072
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | -         | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
+
+7 linked fixtures with no derivable context:
+
+- `adr-072/constructor-expression-not-register-error.test.cnx`
+- `adr-072/cross-file-register-instance.test.cnx`
+- `adr-072/register-isr-member.test.cnx`
+- `adr-072/register-offset-not-constant-error.test.cnx`
+- `adr-072/register-types-and-instances.test.cnx`
+- `adr-072/register-vendor-type-name.test.cnx`
+- `adr-072/reserved-member-names.test.cnx`
+
+## ADR-072 E0931
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | ok        | -      | -          | -           | -          |
+| top-level function | -         | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
+
+## ADR-072 E0933
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | ok        | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | ok        | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
+
+## ADR-072 E0934
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | ok        | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | ok        | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
+
 ## Positions
 
 Which part of its statement each code's diagnostics land in, for a code whose
