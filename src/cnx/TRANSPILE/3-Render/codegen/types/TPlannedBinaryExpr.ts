@@ -63,7 +63,8 @@ type TPlannedBinaryExpr =
       readonly mapOperator: ((operator: string) => string) | null;
       readonly adrLine: number | undefined;
       /**
-       * ADR-045: the operands are strings, so this is a `strcmp`.
+       * ADR-045: the operands are strings, so this is a `strcmp` whose
+       * result is compared with 0 by `operator`, the C operator written.
        *
        * Decided at plan time because `isStringExpression` is a type-registry
        * predicate that generates nothing. The RENDERER raises the
@@ -71,7 +72,7 @@ type TPlannedBinaryExpr =
        * pre-registered it would drag the header into every file with a
        * comparison in it.
        */
-      readonly strcmp: { readonly isNotEqual: boolean } | null;
+      readonly strcmp: { readonly operator: string } | null;
       readonly renderOperands: readonly (() => IGeneratorOutput)[];
     }
   /** `<<` / `>>`, joined with operators read from the tree and no window. */

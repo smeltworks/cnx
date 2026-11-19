@@ -163,6 +163,7 @@ import ISimpleIdentifierDeps from "./3-Render/codegen/types/ISimpleIdentifierDep
 import IPostfixChainDeps from "./3-Render/codegen/types/IPostfixChainDeps";
 import IPostfixOperation from "./3-Render/codegen/types/IPostfixOperation";
 import type TExpression from "../types/syntax/TExpression";
+import type TBinaryExpression from "../types/syntax/TBinaryExpression";
 import type TExpressionOf from "../types/syntax/TExpressionOf";
 import type TPostfixOpSyntax from "../types/syntax/TPostfixOpSyntax";
 import type TTypeSyntax from "../types/syntax/TTypeSyntax";
@@ -863,6 +864,23 @@ class CodeGenWalker {
   }
 
   /**
+   * ADR-045: 2.2 decided whether this comparison compares strings; when it
+   * does, 2.3 writes `strcmp(a, b)` compared with 0 by `operator`
+   */
+  private plannedStrcmp(
+    expr: TBinaryExpression,
+    operator: string,
+  ): { readonly operator: string } | null {
+    const isStrcmp = this.filePlan.comparisons.get(expr);
+    invariant(
+      isStrcmp !== undefined,
+      `2.2 planned every comparison 2.3 renders (got line ${expr.span.line})`,
+    );
+    this.rendering.comparisons.add(expr);
+    return isStrcmp ? { operator } : null;
+  }
+
+  /**
    * The binary precedence ladder, collapsed.
    *
    * 1.2 lowers the grammar's ten levels to one `binary` node per real
@@ -899,29 +917,25 @@ class CodeGenWalker {
         return { kind: "join", separator: " ^ ", renderOperands };
       case "bitwiseAnd":
         return { kind: "join", separator: " & ", renderOperands };
-      case "equality": {
-        const isStrcmp = this.filePlan.comparisons.get(expr);
-        invariant(
-          isStrcmp !== undefined,
-          `2.2 planned every comparison 2.3 renders (got line ${expr.span.line})`,
-        );
-        this.rendering.comparisons.add(expr);
+      case "equality":
         return {
           kind: "comparison",
           operators,
           mapOperator: BinaryExprUtils.mapEqualityOperator,
           adrLine: BinaryExprUtils.equalityAdrLine(operators, expr.span.line),
-          strcmp: isStrcmp ? { isNotEqual: operators[0] === "!=" } : null,
+          strcmp: this.plannedStrcmp(
+            expr,
+            BinaryExprUtils.mapEqualityOperator(operators[0]),
+          ),
           renderOperands,
         };
-      }
       case "relational":
         return {
           kind: "comparison",
           operators,
           mapOperator: null,
           adrLine: undefined,
-          strcmp: null,
+          strcmp: this.plannedStrcmp(expr, operators[0]),
           renderOperands,
         };
       case "shift":

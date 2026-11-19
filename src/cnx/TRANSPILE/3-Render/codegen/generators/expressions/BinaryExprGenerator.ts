@@ -193,7 +193,7 @@ const renderComparison = (
     const code = BinaryExprUtils.generateStrcmpCode(
       operandCodes[0],
       operandCodes[1],
-      plan.strcmp.isNotEqual,
+      plan.strcmp.operator,
     );
 
     return { code, effects };

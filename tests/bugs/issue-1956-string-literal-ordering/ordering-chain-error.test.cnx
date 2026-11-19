@@ -1,0 +1,11 @@
+// test-error
+// test-adr: 045
+// #1956: an ordering of strings is not chained, as an ordering of numbers is not
+#pragma target host
+string<4> a <- "ab";
+string<4> b <- "cd";
+string<4> c <- "ef";
+
+void main() {
+    bool r <- a < b < c;
+}

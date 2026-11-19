@@ -1,0 +1,36 @@
+// test-execution
+// test-adr: 045
+// #1956: ordering two strings compares their contents (strcmp), not their addresses
+#pragma target host
+bool flag <- true;
+string<4> first <- "a";
+
+// Two literals ordered, "a" < "b", reach C as strcmp("a", "b"), which cppcheck
+// rejects as a comparison of static strings (#2458), so the pair is a string and a literal
+i32 main() {
+    bool r <- first < "b" = flag;
+    if (r != true) {
+        return 1;
+    }
+    string<4> a <- "ab";
+    string<4> b <- "ac";
+    if ((a < b) != true) {
+        return 2;
+    }
+    if ((b > a) != true) {
+        return 3;
+    }
+    if ((a <= "ab") != true) {
+        return 4;
+    }
+    if ((a >= "ab") != true) {
+        return 5;
+    }
+    if ((b <= a) != false) {
+        return 6;
+    }
+    if (("abc" > a) != true) {
+        return 7;
+    }
+    return 0;
+}

@@ -380,7 +380,7 @@ struct tags that are 94 characters and byte-identical for 63 — transpiling exi
 
 A comparison chain is read as C reads it (#1373): `a = b = c` is `(a = b) = c`, so an integer chain is E0810 (10.4) and a relational one E0807 (10.1), each suggesting the chain's adjacent pairs joined with `&&`.
 
-E0929 (ADR-045: a string compares only with a string, and a string comparison has two operands) is a cnx rule with no MISRA rule behind it: a cnx string has no C counterpart for an essential type rule to govern, and `a = b = true` would be valid C. It cites ADR-045, not a merely related rule (owner ruling, 2026-09-27, in CLAUDE.md).
+E0929 (ADR-045: a string compares or orders only with a string, and a string comparison has two operands) is a cnx rule with no MISRA rule behind it: a cnx string has no C counterpart for an essential type rule to govern, and `a = b = true` would be valid C. It cites ADR-045, not a merely related rule (owner ruling, 2026-09-27, in CLAUDE.md).
 
 ---
 
