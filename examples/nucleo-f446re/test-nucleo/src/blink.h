@@ -110,20 +110,20 @@ typedef uint32_t RCC__AHB1Peripherals;
 typedef uint32_t STM32F446__GPIOAPins;
 
 /* Registers (ADR-004) */
-/* Register: RCC__RCC @ 0x40023800 */
-#define RCC__RCC__AHB1ENR (*(volatile RCC__AHB1Peripherals*)(0x40023800 + 0x30))
+/* Register: RCC__RCC @ 0x40023800U */
+#define RCC__RCC__AHB1ENR (*(volatile RCC__AHB1Peripherals*)(0x40023830U))
 
-/* Register: STM32F446__GPIOA @ 0x40020000 */
-#define STM32F446__GPIOA__ModeRegister (*(volatile uint32_t*)(0x40020000 + 0x00))
-#define STM32F446__GPIOA__OutputTypeRegister (*(volatile STM32F446__GPIOAPins*)(0x40020000 + 0x04))
-#define STM32F446__GPIOA__OutputSpeedRegister (*(volatile uint32_t*)(0x40020000 + 0x08))
-#define STM32F446__GPIOA__PullUpDownRegister (*(volatile uint32_t*)(0x40020000 + 0x0C))
-#define STM32F446__GPIOA__InputData (*(volatile STM32F446__GPIOAPins const *)(0x40020000 + 0x10))
-#define STM32F446__GPIOA__OutputData (*(volatile STM32F446__GPIOAPins*)(0x40020000 + 0x14))
-#define STM32F446__GPIOA__BitSetReset (*(volatile STM32F446__GPIOAPins*)(0x40020000 + 0x18))
-#define STM32F446__GPIOA__LockRegister (*(volatile STM32F446__GPIOAPins*)(0x40020000 + 0x1C))
-#define STM32F446__GPIOA__AlternateFunctionLow (*(volatile uint32_t*)(0x40020000 + 0x20))
-#define STM32F446__GPIOA__AlternateFunctionHigh (*(volatile uint32_t*)(0x40020000 + 0x24))
+/* Register: STM32F446__GPIOA @ 0x40020000U */
+#define STM32F446__GPIOA__ModeRegister (*(volatile uint32_t*)(0x40020000U))
+#define STM32F446__GPIOA__OutputTypeRegister (*(volatile STM32F446__GPIOAPins*)(0x40020004U))
+#define STM32F446__GPIOA__OutputSpeedRegister (*(volatile uint32_t*)(0x40020008U))
+#define STM32F446__GPIOA__PullUpDownRegister (*(volatile uint32_t*)(0x4002000CU))
+#define STM32F446__GPIOA__InputData (*(volatile STM32F446__GPIOAPins const *)(0x40020010U))
+#define STM32F446__GPIOA__OutputData (*(volatile STM32F446__GPIOAPins*)(0x40020014U))
+#define STM32F446__GPIOA__BitSetReset (*(volatile STM32F446__GPIOAPins*)(0x40020018U))
+#define STM32F446__GPIOA__LockRegister (*(volatile STM32F446__GPIOAPins*)(0x4002001CU))
+#define STM32F446__GPIOA__AlternateFunctionLow (*(volatile uint32_t*)(0x40020020U))
+#define STM32F446__GPIOA__AlternateFunctionHigh (*(volatile uint32_t*)(0x40020024U))
 
 /* External variables */
 extern const uint32_t BLINK_DELAY_MS;
