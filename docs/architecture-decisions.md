@@ -91,15 +91,16 @@ v2 (so "Research (v2 Roadmap)" holds `1xx` ADRs).
 
 ## Research (v2 Roadmap)
 
-| ADR                                                        | Title                      | Description                             |
-| ---------------------------------------------------------- | -------------------------- | --------------------------------------- |
-| [ADR-100](decisions/adr-100-multi-core-synchronization.md) | Multi-Core Synchronization | ESP32/RP2040 spinlock patterns          |
-| [ADR-101](decisions/adr-101-heap-allocation.md)            | Heap Allocation            | Dynamic memory for desktop targets      |
-| [ADR-102](decisions/adr-102-critical-section-analysis.md)  | Critical Section Analysis  | Complexity warnings and cycle analysis  |
-| [ADR-103](decisions/adr-103-stream-handling.md)            | Stream Handling            | FILE\* and fopen patterns for file I/O  |
-| [ADR-104](decisions/adr-104-isr-queues.md)                 | ISR-Safe Queues            | Producer-consumer patterns for ISR/main |
-| [ADR-105](decisions/adr-105-prefixed-includes.md)          | Prefixed Includes          | Namespace control for includes          |
-| [ADR-106](decisions/adr-106-isr-vector-bindings.md)        | Vector Table Bindings      | Register bindings for ISR vector tables |
+| ADR                                                        | Title                      | Description                               |
+| ---------------------------------------------------------- | -------------------------- | ----------------------------------------- |
+| [ADR-100](decisions/adr-100-multi-core-synchronization.md) | Multi-Core Synchronization | ESP32/RP2040 spinlock patterns            |
+| [ADR-101](decisions/adr-101-heap-allocation.md)            | Heap Allocation            | Dynamic memory for desktop targets        |
+| [ADR-102](decisions/adr-102-critical-section-analysis.md)  | Critical Section Analysis  | Complexity warnings and cycle analysis    |
+| [ADR-103](decisions/adr-103-stream-handling.md)            | Stream Handling            | FILE\* and fopen patterns for file I/O    |
+| [ADR-104](decisions/adr-104-isr-queues.md)                 | ISR-Safe Queues            | Producer-consumer patterns for ISR/main   |
+| [ADR-105](decisions/adr-105-prefixed-includes.md)          | Prefixed Includes          | Namespace control for includes            |
+| [ADR-106](decisions/adr-106-isr-vector-bindings.md)        | Vector Table Bindings      | Register bindings for ISR vector tables   |
+| [ADR-107](decisions/adr-107-scaled-fields.md)              | Scaled Fields              | Register fields with resolution and units |
 
 ## Rejected
 

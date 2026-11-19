@@ -5,11 +5,11 @@
 > table.
 
 **Status:** Research
-**Date:** 2026-02-20 (revised 2026-07-04: simplified register syntax; added Parts 4–5)
+**Date:** 2026-02-20 (revised 2026-07-04: simplified register syntax; added Parts 4–5. 2026-11-19: Part 5, scaled fields, moved to ADR-107)
 **Decision Makers:** Language Design Team
 **Supersedes:** ADR-004 (Register Bindings — on acceptance; this ADR removes the `register Name @ address { }` form ADR-004 defines)
 **Amends:** ADR-016 (`### Scoped Registers` — on acceptance; that section's `@ address` examples go with it)
-**Related ADRs:** ADR-034 (Bitmap Types), ADR-033 (Packed Structs — Rejected; Part 4 is the safe alternative)
+**Related ADRs:** ADR-034 (Bitmap Types), ADR-033 (Packed Structs — Rejected; Part 4 is the safe alternative), ADR-107 (Scaled Fields — formerly Part 5)
 
 > **Status is load-bearing here.** While this ADR is `Research` it is **not**
 > established syntax: ADR-004 still governs, a register is still not a type, and the
@@ -126,7 +126,7 @@ Parameterized registers follow cnx's function-like patterns and are straightforw
 
 The base address is **not** a parameter. A register defines its fields at plain byte
 offsets from an implicit base; the base is supplied at instantiation. A field is
-`byteOffset access type name` with an optional scaling transform. Both the old
+`byteOffset access type name`. Both the old
 `register Name @ address { }` form and an explicit `(u32 baseAddress)` parameter are
 removed — the base ceremony was pure boilerplate the transpiler can supply.
 
@@ -136,16 +136,11 @@ registerDefinition
     ;
 
 registerField
-    : byteOffset access type memberName transform?
+    : byteOffset access type memberName
     ;
 
 memberName
     : IDENTIFIER | keyword   // any reserved word may name a member (ruling 2 on #2449)
-    ;
-
-transform
-    : ('multiplier' | 'divisor') NUMBER ('offset' NUMBER)?
-    | 'offset' NUMBER
     ;
 
 registerInstantiation
@@ -229,8 +224,8 @@ Transpiles to:
 
 This is straightforward to implement:
 
-1. **Parser**: `registerDeclaration` takes no parameter list; a field is `offset access type name transform?`
-2. **Symbol Collection**: Store the register's fields (offset, access, type, optional transform) with the definition
+1. **Parser**: `registerDeclaration` takes no parameter list; a field is `offset access type name`
+2. **Symbol Collection**: Store the register's fields (offset, access, type) with the definition
 3. **Instantiation**: When processing `GpioPort GPIO1(0x401B8000)`:
    - Look up `GpioPort` definition
    - Add the instance address `0x401B8000` to each field's byte offset
@@ -666,24 +661,24 @@ normal memory gets the same typed ergonomics without the packed-struct hazards.
 
 A register instantiated **without an address** is backed by normal memory instead of
 MMIO. Everything else about registers — typed fields, access modes, bitmap-typed fields,
-scaled fields (Part 5), template-as-interface — is unchanged.
+template-as-interface — is unchanged.
 
 ```cnx
 GpioPort GPIO1(0x401B8000);   // MMIO — address given
 GpioPort scratch;             // data register — no address, normal memory
 ```
 
-Bit-packed bytes use a bitmap field; byte-aligned scalars use a scalar type (with an
-optional transform). A J1939 PGN is a data register:
+Bit-packed bytes use a bitmap field; byte-aligned scalars use a scalar type. Scaling a raw
+value to an engineering unit is ADR-107. A J1939 PGN is a data register:
 
 ```cnx
 bitmap8 Etc1Control { drivelineEngaged[2], tccLockup[2], shiftInProcess[2], transition[2] }
 
 register Etc1 {
     0 ro Etc1Control control,             // byte 0 — bit-packed, via bitmap
-    1 ro u16 outputShaft divisor 8,       // bytes 1-2 — 0.125 rpm/bit
-    3 ro u8  clutchSlip  multiplier 0.4,  // byte 3 — 0.4 %/bit
-    5 ro u16 inputShaft  divisor 8,       // bytes 5-6
+    1 ro u16 outputShaft,                 // bytes 1-2 — raw, 0.125 rpm/bit
+    3 ro u8  clutchSlip,                  // byte 3 — raw, 0.4 %/bit
+    5 ro u16 inputShaft,                  // bytes 5-6 — raw, 0.125 rpm/bit
 }
 
 Etc1 etc1;                                 // in normal memory
@@ -705,70 +700,20 @@ bitmaps cover the format completely.
 
 ---
 
-## Part 5: Scaled Fields
-
-_Added 2026-07-04._
-
-### Problem
-
-A raw register value often _means_ an engineering value: an ADC code is volts, an on-die
-temperature reading is °C (via a calibration scale + offset), a J1939 signal is
-`raw × resolution + offset`. Today the raw integer comes back and the caller applies the
-formula by hand — the same magic-number-at-the-call-site problem registers exist to
-remove.
-
-### Decision
-
-A register field may carry a scaling transform: **exactly one** of `multiplier N` or
-`divisor N` (they are inverses — pick whichever reads cleaner: `divisor 8` beats
-`multiplier 0.125`), followed by an optional `offset N`. Reading the field returns the
-engineering value:
-
-```
-value = (raw {× multiplier | ÷ divisor}) + offset
-```
-
-Both is a compile error; neither means no scaling. `divisor` — the number divided _by_ —
-is the precise term (not "divider").
-
-```cnx
-register Adc {
-    0x00 ro u16 sample  divisor 4096,           // 12-bit code -> fraction of full scale
-    0x04 ro i16 dieTemp divisor 100 offset -40, // on-die temp sensor -> °C
-}
-```
-
-Scaled fields apply equally to MMIO (ADC, on-die temp, DAC, timer prescalers) and to data
-registers (J1939 resolution/offset). The "raw code -> real-world unit" pattern is not
-J1939-specific, which is why it belongs on the standard register field rather than in a
-library.
-
-### Open questions
-
-- **Read type.** How `(storage type, multiplier/divisor, offset)` maps to the field's read
-  type — when it is `f32` vs a wider integer vs the storage type.
-- **Offset order.** `raw*scale + offset` (SAE/J1939) vs `(raw - offset)*scale` (some sensor
-  calibrations). This ADR assumes the former.
-- **Validity.** Whether a field can declare a not-available/error sentinel (e.g. J1939's
-  0xFF/0xFE) and read as a `{value, valid}` pair — possibly a language feature, possibly
-  left to library code layered on plain scaled fields.
-
----
-
 ## Summary
 
-This ADR covers five features for safe hardware abstraction in cnx:
+This ADR covers four features for safe hardware abstraction in cnx:
 
 1. **Registers** — Define layouts once (byte offsets, implicit base), instantiate at multiple addresses
 2. **Data registers** — Instantiate a register in normal memory (no address) for wire/buffer formats
-3. **Scaled fields** — `multiplier`/`divisor` + `offset` on fields; reads return the engineering value
-4. **w1c/wo/w1s codegen fix** — Generate direct writes instead of RMW for write-only registers
-5. **svd2cnx tool** — Import register definitions from ARM SVD files
+3. **w1c/wo/w1s codegen fix** — Generate direct writes instead of RMW for write-only registers
+4. **svd2cnx tool** — Import register definitions from ARM SVD files
 
 ### Out of Scope (Future ADRs if needed)
 
 - **Peripheral initialization ordering** — Developer responsibility; easy to catch during testing
 - **Pin multiplexing conflicts** — HAL concern, not a language concern
+- **Scaled fields** — mapping a raw field to an engineering value with a unit; ADR-107 (ruling 4 on #2449)
 
 ---
 
@@ -785,8 +730,6 @@ This ADR covers five features for safe hardware abstraction in cnx:
 ### Proposed (2026-07-04 revision — not yet accepted)
 
 4. **Data registers** — A register instantiated without an address (`Name Instance;`) is backed by normal memory, giving typed field access to wire/buffer formats (CAN/J1939, packets) without ADR-033's packed-struct overlay hazards. Backing model (owned vs view) is open.
-
-5. **Scaled fields** — A field may carry exactly one of `multiplier N` / `divisor N` plus optional `offset N`; reading returns `(raw {× multiplier | ÷ divisor}) + offset`. Serves MMIO (ADC, on-die temp) and wire data alike. Read-type inference, offset order, and validity are open.
 
 ---
 
