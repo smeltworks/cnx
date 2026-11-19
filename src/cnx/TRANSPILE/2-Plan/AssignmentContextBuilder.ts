@@ -188,8 +188,9 @@ function processPostfixOps(
   deps: IContextBuilderDeps,
 ): void {
   // ADR-007 §1: the typer's kind decides what a subscript's expressions are,
-  // never how many were written. Only the final op can be bits or a slice:
-  // any subscript before it indexes an element (E0856 rejects the rest).
+  // never how many were written. Only the final op is lowered as bits or a
+  // slice; one before it is lowered as an element. 2.1 does not reject a slice
+  // there (`arr[0, 2][1]`), which is #1757's to lower.
   const lastKind = deps.target.last?.subscript ?? null;
   const ranged = lastKind === "bit_range" || lastKind === "array_slice";
   postfixOps.forEach((op, at) => {
@@ -381,7 +382,6 @@ function buildAssignmentContext(
     target: deps.target,
     memberAccessDepth,
     subscriptDepth,
-    lastSubscriptExprCount,
     isSimpleIdentifier,
     isSimpleThisAccess,
     isSimpleGlobalAccess,

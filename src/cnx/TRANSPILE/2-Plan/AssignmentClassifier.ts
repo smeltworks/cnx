@@ -139,42 +139,28 @@ class AssignmentClassifier {
 
     // Bits through a struct chain: devices[0].control[0, 4], or control[3],
     // which is control[3, 1] -- the typer typed the last subscript a range
-    if (ctx.lastSubscriptExprCount === 2) {
+    if (ctx.target.last?.subscript === "bit_range") {
       return AssignmentKind.STRUCT_CHAIN_BIT_RANGE;
     }
 
     // Multi-dimensional array element: arr[i][j] (1 identifier, multiple subscripts)
     if (ids.length === 1) {
-      return AssignmentClassifier.classifyMultiDimArrayAccess(
-        typeInfo,
-        ctx.subscriptCount,
-      );
+      return AssignmentClassifier.classifyMultiDimArrayAccess(typeInfo);
     }
 
     return null;
   }
 
   /**
-   * Classify multi-dimensional array access: arr[i][j] or arr[i][j][bit]
+   * Classify multi-dimensional array access: arr[i][j]. A bit of an element
+   * (`arr[i][j][bit]`) is a `bit_range` and was claimed above.
    */
   private static classifyMultiDimArrayAccess(
     typeInfo: TTypeInfo | undefined,
-    subscriptCount: number,
   ): AssignmentKind | null {
     if (!typeInfo?.isArray || !typeInfo.arrayDimensions) {
       return null;
     }
-
-    const numDims = typeInfo.arrayDimensions.length;
-
-    // Check for bit indexing on array element
-    if (
-      subscriptCount === numDims + 1 &&
-      TypeCheckUtils.isInteger(typeInfo.baseType)
-    ) {
-      return AssignmentKind.ARRAY_ELEMENT_BIT;
-    }
-
     return AssignmentKind.MULTI_DIM_ARRAY_ELEMENT;
   }
 
@@ -405,9 +391,9 @@ class AssignmentClassifier {
       subscriptKind !== null,
       "the typer typed this target's final subscript",
     );
-    // The subscripts are flattened, so anything before the final op's own
-    // expressions indexed an array element first
-    const indexesAnElement = ctx.subscriptCount > ctx.lastSubscriptExprCount;
+    // A subscript op before the final one indexed an array element first
+    const indexesAnElement =
+      ctx.postfixOps.filter((op) => op.kind === "subscript").length > 1;
 
     switch (subscriptKind) {
       case "bit_range":

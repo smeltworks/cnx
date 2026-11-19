@@ -1162,7 +1162,8 @@ const generateSubscriptAccess = (
 
 /**
  * An element, `arr[i]` (which is `arr[i, 1]`), as the one operand typer typed
- * the subscript (#1668, C12). A register member's subscript is its bits.
+ * the subscript (#1668, C12). The typer resolved the root, so a local or scope
+ * array named like a register is an element here (ADR-057, #2298).
  */
 const handleElementSubscript = (
   ctx: ISubscriptAccessContext,
@@ -1172,10 +1173,6 @@ const handleElementSubscript = (
 ): SubscriptAccessResult => {
   // Check if result is a register member with bitmap type (throws)
   validateNotBitmapMember(ctx, input);
-  invariant(
-    !checkRegisterAccess(ctx, input),
-    `the typer types a register member's subscript as bits (${ctx.result})`,
-  );
   // #1322: constant index bounds (ADR-036, E0854) are checked in pass 2.1,
   // in value position and in a target alike.
   output.result = `${ctx.result}[${index}]`;
@@ -1201,18 +1198,6 @@ const validateNotBitmapMember = (
     `a bitmap is addressed by named field, never by bit index ` +
       `('${bitmapType}') -- E0883 rejects this in pass 2.1, before this runs`,
   );
-};
-
-/**
- * Check if this is a register access (bit extraction).
- */
-const checkRegisterAccess = (
-  ctx: ISubscriptAccessContext,
-  input: IGeneratorInput,
-): boolean => {
-  if (ctx.isRegisterChain) return true;
-  if (!ctx.rootIdentifier) return false;
-  return input.symbols!.knownRegisters.has(ctx.rootIdentifier);
 };
 
 /**

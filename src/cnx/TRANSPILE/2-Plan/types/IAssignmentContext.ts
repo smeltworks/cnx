@@ -234,13 +234,6 @@ interface IAssignmentContext {
   /** Number of [index] accesses in the chain */
   readonly subscriptDepth: number;
 
-  /**
-   * Expressions the last subscript contributes to `subscripts`: 2 (start and
-   * length) when the typer typed it a bit range or a slice, 1 (the index) for
-   * an element. It follows the typer, never how many were written (ADR-007 §1).
-   */
-  readonly lastSubscriptExprCount: number;
-
   /** True if target is a simple identifier (no prefix, no postfix) */
   readonly isSimpleIdentifier: boolean;
 

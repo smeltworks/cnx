@@ -14,7 +14,8 @@ import HandlerTestUtils from "./handlerTestUtils";
  * Create mock context for testing.
  */
 function createMockContext(
-  overrides: Partial<IAssignmentContext> = {},
+  // `exprCount`: what the builder lowers the final op to -- 2 for a range
+  overrides: Partial<IAssignmentContext> & { readonly exprCount?: 1 | 2 } = {},
 ): IAssignmentContext {
   // Default resolved values based on first identifier
   const identifiers = overrides.identifiers ?? ["flags"];
@@ -71,7 +72,7 @@ function createMockContext(
   // #1668 review: the final op, the target without it and the typer's step
   const bits = HandlerTestUtils.bitWriteOf(
     ctx,
-    ctx.lastSubscriptExprCount === 2 ? 2 : 1,
+    overrides.exprCount ?? 1,
     target.typeInfo,
   );
   return {
@@ -228,7 +229,7 @@ describe("BitAccessHandlers", () => {
           .mockReturnValueOnce("4"),
       });
       const ctx = createMockContext({
-        lastSubscriptExprCount: 2,
+        exprCount: 2,
         ...HandlerTestUtils.subscriptsOf([
           { mockValue: "0" } as never,
           { mockValue: "4" } as never,
@@ -252,7 +253,7 @@ describe("BitAccessHandlers", () => {
           .mockReturnValueOnce("8"),
       });
       const ctx = createMockContext({
-        lastSubscriptExprCount: 2,
+        exprCount: 2,
         identifiers: ["data"],
         ...HandlerTestUtils.subscriptsOf([
           { mockValue: "4" } as never,
@@ -277,7 +278,7 @@ describe("BitAccessHandlers", () => {
           .mockReturnValueOnce("16"),
       });
       const ctx = createMockContext({
-        lastSubscriptExprCount: 2,
+        exprCount: 2,
         ...HandlerTestUtils.subscriptsOf([
           { mockValue: "32" } as never,
           { mockValue: "16" } as never,
@@ -306,7 +307,7 @@ describe("BitAccessHandlers", () => {
       });
       const ctx = createMockContext({
         floatBits: { floatType: "f32", shared: true },
-        lastSubscriptExprCount: 2,
+        exprCount: 2,
         identifiers: ["f"],
         ...HandlerTestUtils.subscriptsOf([
           { mockValue: "0" } as never,
@@ -428,7 +429,7 @@ describe("BitAccessHandlers", () => {
           .mockImplementation((e: { mockValue: string }) => e.mockValue),
       });
       const ctx = createMockContext({
-        lastSubscriptExprCount: 2,
+        exprCount: 2,
         identifiers: ["row"],
         generatedValue: "6",
         ...HandlerTestUtils.subscriptsOf(
@@ -596,7 +597,7 @@ describe("BitAccessHandlers", () => {
         generatedValue: "15",
         hasMemberAccess: true,
         hasArrayAccess: true,
-        lastSubscriptExprCount: 2,
+        exprCount: 2,
       });
 
       const result = getHandler()!(ctx);
