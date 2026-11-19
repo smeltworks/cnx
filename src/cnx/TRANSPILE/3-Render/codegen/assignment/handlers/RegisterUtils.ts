@@ -6,7 +6,7 @@
  */
 import RegisterAccessMode from "../../../../../utils/RegisterAccessMode";
 import type TranspileState from "../../../../TranspileState";
-import type TExpression from "../../../../../types/syntax/TExpression";
+import RegisterAddress from "../../../../../utils/RegisterAddress";
 
 /** Result from MMIO optimization attempt */
 interface IOptimizationResult {
@@ -29,7 +29,6 @@ class RegisterUtils {
     startConst: number | undefined,
     value: string,
     state: TranspileState,
-    renderExpression: (expr: TExpression) => string,
   ): IOptimizationResult {
     // 2.2 decided which writes are one memory access, and through what (#1991)
     if (accessType === null) return { success: false };
@@ -41,8 +40,8 @@ class RegisterUtils {
       return { success: false };
     }
     // The same renderer the register macro spells them with (#1991)
-    const baseAddr = renderExpression(base);
-    const memberOffset = renderExpression(offset);
+    const baseAddr = RegisterAddress.render(base);
+    const memberOffset = RegisterAddress.render(offset);
 
     const byteOffset = startConst! / 8;
     const totalOffset =

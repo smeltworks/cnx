@@ -1,6 +1,6 @@
 import type IBaseSymbol from "./IBaseSymbol";
 import type IRegisterMemberSymbol from "./IRegisterMemberSymbol";
-import type TExpression from "../syntax/TExpression";
+import type TConstExpr from "../TConstExpr";
 
 /**
  * Symbol representing a register block definition.
@@ -9,8 +9,22 @@ interface IRegisterSymbol extends IBaseSymbol {
   /** Discriminator narrowed to "register" */
   readonly kind: "register";
 
-  /** The base address as 1.2 lowered it; 2.3 renders it (#1991) */
-  readonly baseAddress: TExpression;
+  /**
+   * ADR-072 Part 1: null on the register TYPE (`register GpioPort { ... }`),
+   * which has no address; an instance (`GpioPort GPIO1(0x401B8000);`) carries
+   * the address its declaration wrote, settled by 1.4.
+   */
+  /** The type an instance is of, by C name; null on the type itself */
+  readonly registerType: string | null;
+
+  readonly addressExpr: TConstExpr | null;
+
+  /**
+   * The address `addressExpr` folds to, settled once by 1.4. Null on a type,
+   * and on an instance whose address is not a compile-time constant -- which
+   * is a compile error, not a runtime address.
+   */
+  readonly baseAddress: bigint | null;
 
   /**
    * Members, each a symbol carrying its own span and identity (#1318).

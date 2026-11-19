@@ -5,6 +5,7 @@
  * Produces TType-based IRegisterSymbol with proper IScopeSymbol references.
  */
 
+import ConstExprLowering from "../../../../utils/ConstExprLowering";
 import type IRegisterDeclarationSyntax from "../../../../types/syntax/IRegisterDeclarationSyntax";
 import ESourceLanguage from "../../../../utils/types/ESourceLanguage";
 import IRegisterSymbol from "../../../../types/symbols/IRegisterSymbol";
@@ -37,7 +38,8 @@ class RegisterCollector {
     // #1298: members carry the scope's PATH, not the scope object. The path
     // holds every outer component, so nothing downstream can flatten it to a
     // leaf -- which is what the reference threaded here used to protect against.
-    const baseAddress = syntax.address;
+    // ADR-072 Part 1: the declaration is the TYPE; an instance supplies the
+    // address, and 1.4 binds it (#2449).
 
     // Collect register members
     const members = new Map<string, IRegisterMemberSymbol>();
@@ -47,7 +49,7 @@ class RegisterCollector {
 
     for (const member of syntax.members) {
       const memberName = member.name;
-      const offset = member.offset;
+      const offset = ConstExprLowering.lower(member.offset);
       const accessMod = member.access;
 
       // #1514: the member's type is recorded, not judged. Whether it names a
@@ -68,6 +70,7 @@ class RegisterCollector {
           visibility,
         }),
         offset,
+        offsetValue: null,
         type,
         access: accessMod,
       };
@@ -89,7 +92,9 @@ class RegisterCollector {
       span,
       sourceLanguage: ESourceLanguage.Cnx,
       visibility,
-      baseAddress,
+      registerType: null,
+      addressExpr: null,
+      baseAddress: null,
       members,
     };
   }

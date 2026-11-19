@@ -68,7 +68,7 @@ class TargetCatalogParser {
     for (const member of struct.structMember()) {
       const suffix = member.arrayDimension().length > 0 ? "[]" : "";
       members.set(
-        member.IDENTIFIER().getText(),
+        member.memberName().getText(),
         member.type().getText() + suffix,
       );
     }

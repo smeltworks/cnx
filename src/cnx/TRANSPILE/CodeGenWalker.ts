@@ -102,6 +102,8 @@ import type IPlannedSwitch from "./3-Render/codegen/types/IPlannedSwitch";
 import type TPlannedCaseLabel from "./3-Render/codegen/types/TPlannedCaseLabel";
 import enumGenerator from "./3-Render/codegen/generators/declarationGenerators/EnumGenerator";
 import bitmapGenerator from "./3-Render/codegen/generators/declarationGenerators/BitmapGenerator";
+import RegisterAddress from "../utils/RegisterAddress";
+import type IRegisterSymbol from "../types/symbols/IRegisterSymbol";
 import generateRegisterDeclaration from "./3-Render/codegen/generators/declarationGenerators/RegisterGenerator";
 import type IPlannedRegister from "./3-Render/codegen/types/IPlannedRegister";
 import type IPlannedFunction from "./3-Render/codegen/types/IPlannedFunction";
@@ -2001,7 +2003,9 @@ class CodeGenWalker {
           this.planScope(declaration),
         );
       case "register":
-        return this.generateRegister(declaration);
+        // ADR-072 Part 1: a register TYPE has no address, so no macros; each
+        // instance emits its own
+        return "";
       // Issue #369 / #1164: the struct generator decides for itself what a
       // self-include suppresses. Returning early here also skipped its
       // callback-field effects and dropped the ADR-029 init function, which
@@ -2029,8 +2033,15 @@ class CodeGenWalker {
         );
       case "function":
         return this.generateFunction(declaration);
+      case "constructorDeclaration": {
+        const instance = this.registerInstanceOf(
+          this.host.getState().currentScopePath,
+          declaration.name,
+        );
+        if (instance !== null) return this.generateRegister(instance);
+      }
+      // falls through
       case "variableDeclaration":
-      case "constructorDeclaration":
         return (
           this.staticValueNote(declaration) +
           this.nullPointerNote(declaration) +
@@ -2148,6 +2159,17 @@ class CodeGenWalker {
       declaration.kind === "function",
     );
     const isPrivate = visibility === "private";
+    const instance =
+      declaration.kind === "constructorDeclaration"
+        ? this.registerInstanceOf(declaringScopePath, declaration.name)
+        : null;
+    if (instance !== null) {
+      return {
+        kind: "register",
+        adrLine,
+        planRegister: () => this.planRegister(instance),
+      };
+    }
     switch (declaration.kind) {
       case "variableDeclaration":
       case "constructorDeclaration":
@@ -2185,12 +2207,7 @@ class CodeGenWalker {
         };
       }
       case "register":
-        return {
-          kind: "register",
-          adrLine,
-          planRegister: () =>
-            this.planRegister(declaration, declaringScopePath),
-        };
+        return { kind: "other", adrLine };
       default:
         return { kind: "other", adrLine };
     }
@@ -2338,11 +2355,22 @@ class CodeGenWalker {
     return this.zeroInitializerOf(decl.type, isArray, decl.dimensions);
   }
 
-  private generateRegister(register: IRegisterDeclarationSyntax): string {
+  private generateRegister(instance: IRegisterSymbol): string {
     return this.invokeGenerator(
       generateRegisterDeclaration,
-      this.planRegister(register, this.host.getState().currentScopePath),
+      this.planRegister(instance),
     );
+  }
+
+  /** ADR-072 Part 1: the register instance 1.4 bound this declaration to, if any */
+  private registerInstanceOf(
+    scopePath: string,
+    name: string,
+  ): IRegisterSymbol | null {
+    const symbol = this.host.state.program?.memberOf(scopePath, name);
+    return symbol?.kind === "register" && symbol.registerType !== null
+      ? symbol
+      : null;
   }
 
   /**
@@ -2361,30 +2389,26 @@ class CodeGenWalker {
    * explicit `global.Flags` arrives as `Flags`. Nothing downstream may
    * re-qualify it.
    */
-  planRegister(
-    register: IRegisterDeclarationSyntax,
-    declaringScopePath: string,
-  ): IPlannedRegister {
-    const baseAddress = this.renderExpression(register.address);
-    const symbol = this.host.state.program?.memberOf(
-      declaringScopePath,
-      register.name,
+  planRegister(instance: IRegisterSymbol): IPlannedRegister {
+    const cTypes = this.host.state.symbols!.registerMemberCTypes;
+    invariant(
+      instance.baseAddress !== null,
+      "E0931 rejects an instance whose address is not a constant",
     );
-    invariant(symbol?.kind === "register", "3-Declare declares every register");
     return {
-      name: symbol.fullyQualifiedCName,
-      baseAddress,
-      members: register.members.map((member) => {
-        const memberSymbol = symbol.members.get(member.name);
+      name: instance.fullyQualifiedCName,
+      baseAddress: RegisterAddress.render(instance.baseAddress),
+      members: [...instance.members.values()].map((member) => {
+        const cType = cTypes.get(member.fullyQualifiedCName);
         invariant(
-          memberSymbol !== undefined,
-          "3-Declare declares every register member",
+          cType !== undefined && member.offsetValue !== null,
+          "1.4 settles every register member's C type and offset",
         );
         return {
-          cName: memberSymbol.fullyQualifiedCName,
-          cType: this.renderType(member.type),
+          cName: member.fullyQualifiedCName,
+          cType,
           access: member.access,
-          offset: this.renderExpression(member.offset),
+          offset: RegisterAddress.render(member.offsetValue),
         };
       }),
     };

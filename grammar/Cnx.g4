@@ -96,14 +96,29 @@ visibilityModifier
     ;
 
 // ----------------------------------------------------------------------------
-// Register Bindings (ADR-004: Type-safe hardware access)
+// Registers (ADR-072 Part 1: a register is a type; instances supply the address)
 // ----------------------------------------------------------------------------
 registerDeclaration
-    : 'register' IDENTIFIER '@' expression '{' registerMember* '}'
+    : 'register' IDENTIFIER '{' registerMember (',' registerMember)* ','? '}'
     ;
 
+// byteOffset access type name -- the offset is a compile-time constant expression
 registerMember
-    : IDENTIFIER ':' type accessModifier '@' expression ','?
+    : expression accessModifier type memberName
+    ;
+
+// ADR-072 ruling 2 (#2449): any reserved word may name a member. A member is only
+// declared in member position and only reached after '.', so it cannot be read as
+// the keyword.
+memberName
+    : IDENTIFIER
+    | 'scope' | 'struct' | 'enum' | 'this' | 'global' | 'register' | 'private' | 'public'
+    | 'const' | 'mut' | 'volatile' | 'void' | 'if' | 'else' | 'while' | 'do' | 'for'
+    | 'forever' | 'switch' | 'case' | 'default' | 'return' | 'true' | 'false' | 'NULL'
+    | 'string' | 'sizeof' | 'bitmap8' | 'bitmap16' | 'bitmap24' | 'bitmap32'
+    | 'rw' | 'ro' | 'wo' | 'w1c' | 'w1s' | 'clamp' | 'wrap' | 'atomic' | 'critical'
+    | 'u8' | 'u16' | 'u32' | 'u64' | 'i8' | 'i16' | 'i32' | 'i64' | 'f32' | 'f64'
+    | 'bool' | 'ISR'
     ;
 
 accessModifier
@@ -122,7 +137,7 @@ structDeclaration
     ;
 
 structMember
-    : overflowModifier? type IDENTIFIER arrayDimension* ';'   // ADR-044: a field's own clamp/wrap
+    : overflowModifier? type memberName arrayDimension* ';'   // ADR-044: a field's own clamp/wrap
     ;
 
 // ----------------------------------------------------------------------------
@@ -151,7 +166,7 @@ bitmapType
     ;
 
 bitmapMember
-    : IDENTIFIER ('[' INTEGER_LITERAL ']')?  // FieldName or FieldName[N]
+    : memberName ('[' INTEGER_LITERAL ']')?  // FieldName or FieldName[N]
     ;
 
 // ----------------------------------------------------------------------------
@@ -204,6 +219,7 @@ arrayDimension
 variableDeclaration
     : atomicModifier? volatileModifier? constModifier? mutModifier? overflowModifier? type IDENTIFIER arrayDimension* ('<-' expression)? ';'
     | type IDENTIFIER '(' constructorArgumentList ')' ';'   // Issue #375: C++ constructor
+    | type IDENTIFIER '(' expression ')' ';'                // ADR-072: a register instance at an address
     ;
 
 // Issue #375: Constructor argument list - identifiers only (must be const variables)
@@ -267,7 +283,7 @@ assignmentTarget
 
 // Unified postfix operation for assignment targets (Issue #387)
 postfixTargetOp
-    : '.' IDENTIFIER                           // Member access
+    : '.' memberName                           // Member access
     | '[' expression (',' expression)? ']'     // ADR-007: [start, length]; [start] is [start, 1]
     ;
 
@@ -416,7 +432,7 @@ postfixExpression
     ;
 
 postfixOp
-    : '.' IDENTIFIER                           // Member access
+    : '.' memberName                           // Member access
     | '[' expression (',' expression)? ']'     // ADR-007: [start, length]; [start] is [start, 1]
     | '(' argumentList? ')'                    // Function call
     ;

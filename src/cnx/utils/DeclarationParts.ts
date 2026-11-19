@@ -30,7 +30,6 @@ class DeclarationParts {
         ];
       case "register":
         return [
-          DeclarationParts.expression(declaration.address),
           ...declaration.members.flatMap((member) => [
             DeclarationParts.type(member.type),
             DeclarationParts.expression(member.offset),
@@ -81,7 +80,12 @@ class DeclarationParts {
       case "variableDeclaration":
         return DeclarationParts.variable(statement);
       case "constructorDeclaration":
-        return [DeclarationParts.type(statement.type)];
+        return statement.address
+          ? [
+              DeclarationParts.type(statement.type),
+              DeclarationParts.expression(statement.address),
+            ]
+          : [DeclarationParts.type(statement.type)];
       case "assignment":
         return DeclarationParts.expressions([
           statement.target,

@@ -29,10 +29,11 @@ import type TExpression from "../../../../types/syntax/TExpression";
  */
 interface IRegisterMaps {
   knownRegisters: Set<string>;
-  scopedRegisters: Map<string, TExpression>;
+  scopedRegisters: Map<string, bigint>;
   registerMemberAccess: Map<string, string>;
-  registerBaseAddresses: Map<string, TExpression>;
-  registerMemberOffsets: Map<string, TExpression>;
+  registerBaseAddresses: Map<string, bigint>;
+  registerMemberOffsets: Map<string, bigint>;
+  knownRegisterTypes: Set<string>;
   registerMemberCTypes: Map<string, string>;
   memberCNames: Map<string, Map<string, string>>;
 }
@@ -82,10 +83,11 @@ class TSymbolInfoAdapter {
     const bitmapBitWidth = new Map<string, number>();
 
     // === Register Information ===
-    const scopedRegisters = new Map<string, TExpression>();
+    const scopedRegisters = new Map<string, bigint>();
     const registerMemberAccess = new Map<string, string>();
-    const registerBaseAddresses = new Map<string, TExpression>();
-    const registerMemberOffsets = new Map<string, TExpression>();
+    const registerBaseAddresses = new Map<string, bigint>();
+    const registerMemberOffsets = new Map<string, bigint>();
+    const knownRegisterTypes = new Set<string>();
     const registerMemberCTypes = new Map<string, string>();
 
     // === Function Return Types ===
@@ -140,6 +142,7 @@ class TSymbolInfoAdapter {
             registerMemberAccess,
             registerBaseAddresses,
             registerMemberOffsets,
+            knownRegisterTypes,
             registerMemberCTypes,
             memberCNames,
           });
@@ -190,6 +193,7 @@ class TSymbolInfoAdapter {
       registerMemberAccess,
       registerBaseAddresses,
       registerMemberOffsets,
+      knownRegisterTypes,
       registerMemberCTypes,
 
       // Function return types
@@ -350,9 +354,18 @@ class TSymbolInfoAdapter {
     register: IRegisterSymbol,
     maps: IRegisterMaps,
   ): void {
+    // ADR-072 Part 1: a register TYPE has no address and no storage; only an
+    // instance is a register a value can be read from or written to. An
+    // instance whose address did not fold is 1.4's error, not a register.
+    const baseAddress = register.baseAddress;
+    if (register.registerType === null) {
+      maps.knownRegisterTypes.add(register.fullyQualifiedCName);
+      return;
+    }
+    if (baseAddress === null) return;
     const cName = register.fullyQualifiedCName;
     maps.knownRegisters.add(cName);
-    maps.registerBaseAddresses.set(cName, register.baseAddress);
+    maps.registerBaseAddresses.set(cName, baseAddress);
     maps.memberCNames.set(
       cName,
       TSymbolInfoAdapter.memberCNamesOf(register.members.values()),
@@ -361,14 +374,16 @@ class TSymbolInfoAdapter {
     // Check if this is a scoped register (has non-global scope)
     const isScoped = !ScopeUtils.isGlobalScopePath(register.scopePath);
     if (isScoped) {
-      maps.scopedRegisters.set(cName, register.baseAddress);
+      maps.scopedRegisters.set(cName, baseAddress);
     }
 
     for (const memberInfo of register.members.values()) {
       const fullName = memberInfo.fullyQualifiedCName;
 
       maps.registerMemberAccess.set(fullName, memberInfo.access);
-      maps.registerMemberOffsets.set(fullName, memberInfo.offset);
+      if (memberInfo.offsetValue !== null) {
+        maps.registerMemberOffsets.set(fullName, memberInfo.offsetValue);
+      }
       // #1514: a bitmap member's C type IS the bitmap's C name, which is
       // what `knownBitmaps` is keyed by -- so whether the member is a bitmap
       // is asked of this map and the VISIBLE view's bitmaps, once, where the

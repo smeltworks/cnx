@@ -10,14 +10,20 @@ import type IBaseSymbol from "./IBaseSymbol";
  * member is emitted as an offset from a base address.
  */
 import type TRegisterAccessMode from "../TRegisterAccessMode";
-import type TExpression from "../syntax/TExpression";
+import type TConstExpr from "../TConstExpr";
 import type TType from "../TType";
 interface IRegisterMemberSymbol extends IBaseSymbol {
   /** Discriminator narrowed to "register_member" */
   readonly kind: "register_member";
 
-  /** The offset from the base address as 1.2 lowered it; 2.3 renders it (#1991) */
-  readonly offset: TExpression;
+  /** The offset from the base address, as written */
+  readonly offset: TConstExpr;
+
+  /**
+   * ADR-072 Part 1: what `offset` folds to, settled once by 1.4. Null until
+   * then, and when it is not a compile-time constant -- a compile error.
+   */
+  readonly offsetValue: bigint | null;
 
   /**
    * The member's type as written, settled by 1.4 Resolve like any other

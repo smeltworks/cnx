@@ -16,16 +16,12 @@ import TSymbolKindCnx from "../../types/symbol-kinds/TSymbolKindCnx";
  * `enum_member`/`bitmap_field`/`register_member` are values inside a type, not
  * types.
  *
- * `register` is NOT a member. It reads like a type kind, but a register
- * declares a variable at an address; `CodeGenState.isScopeType` is measurably
- * `knownEnums | knownStructs | knownBitmaps` and has never included registers.
- * Adding it here would qualify a bare name matching a register declaration --
- * a cnx behavior change. ADR-072 would make a register a type, but it is
- * `Research`, so ADR-004 remains in force and this exclusion stands. Revisit
- * when ADR-072 is implemented, not when it is merely Accepted.
+ * `register` is a member: ADR-072 Part 1 makes `register GpioPort { ... }`
+ * a type, whose instances (`GpioPort GPIO1(0x401B8000);`) are fixed at an
+ * address (#2449).
  */
 const TYPE_FORMING_KINDS: ReadonlySet<TSymbolKindCnx> = new Set<TSymbolKindCnx>(
-  ["enum", "struct", "bitmap", "function"],
+  ["enum", "struct", "bitmap", "function", "register"],
 );
 
 export default TYPE_FORMING_KINDS;

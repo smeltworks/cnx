@@ -15,6 +15,7 @@ import { ScopeMemberContext } from "./CnxParser.js";
 import { VisibilityModifierContext } from "./CnxParser.js";
 import { RegisterDeclarationContext } from "./CnxParser.js";
 import { RegisterMemberContext } from "./CnxParser.js";
+import { MemberNameContext } from "./CnxParser.js";
 import { AccessModifierContext } from "./CnxParser.js";
 import { StructDeclarationContext } from "./CnxParser.js";
 import { StructMemberContext } from "./CnxParser.js";
@@ -220,6 +221,16 @@ export class CnxListener implements ParseTreeListener {
      * @param ctx the parse tree
      */
     exitRegisterMember?: (ctx: RegisterMemberContext) => void;
+    /**
+     * Enter a parse tree produced by `CnxParser.memberName`.
+     * @param ctx the parse tree
+     */
+    enterMemberName?: (ctx: MemberNameContext) => void;
+    /**
+     * Exit a parse tree produced by `CnxParser.memberName`.
+     * @param ctx the parse tree
+     */
+    exitMemberName?: (ctx: MemberNameContext) => void;
     /**
      * Enter a parse tree produced by `CnxParser.accessModifier`.
      * @param ctx the parse tree

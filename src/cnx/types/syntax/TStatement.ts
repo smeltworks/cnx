@@ -30,6 +30,13 @@ type TStatement = ISyntaxNode &
         })[];
         /** #1643 (ADR-030): its own name is written bare in its arguments */
         readonly spellsOwnName: boolean;
+        /**
+         * ADR-072: `Type name(<expression>);`, the argument when it is not a
+         * bare name -- only a register instance's address is written so.
+         * A bare name stays in `arguments`: whether `Type` is a register is a
+         * cross-file fact 1.4 settles.
+         */
+        readonly address: TExpression | null;
       }
     | ({ readonly kind: "assignment" } & IAssignmentSyntax)
     | { readonly kind: "expression"; readonly expression: TExpression }

@@ -10,6 +10,7 @@
  * shape minus its pass-through levels -- see `TExpression` -- and leaves every
  * question about meaning to the pass that owns it.
  */
+import MemberName from "./MemberName";
 import { TerminalNode } from "antlr4ng";
 import type { ParserRuleContext, ParseTree, Token } from "antlr4ng";
 import * as Parser from "./grammar/CnxParser";
@@ -147,7 +148,7 @@ class SyntaxLowering {
   private static memberOrSubscript(
     ctx: Parser.PostfixTargetOpContext | Parser.PostfixOpContext,
   ): TPostfixOpSyntax | null {
-    const identifier = ctx.IDENTIFIER();
+    const identifier = MemberName.terminal(ctx.memberName());
     if (identifier) {
       // a name the parser conjured to recover was never written
       if (identifier.symbol.tokenIndex < 0)

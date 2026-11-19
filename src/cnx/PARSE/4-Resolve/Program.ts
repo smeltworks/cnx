@@ -79,6 +79,7 @@ import TransitiveEnumCollector from "./TransitiveEnumCollector";
 import VisibleSymbols from "./VisibleSymbols";
 import ConstantNames from "./ConstantNames";
 import ConstantEvaluator from "../../utils/ConstantEvaluator";
+import RegisterInstances from "./RegisterInstances";
 import EnumMemberValues from "../../utils/EnumMemberValues";
 import type IConstantEnvironment from "../../utils/types/IConstantEnvironment";
 import type IConstantNameFacts from "./types/IConstantNameFacts";
@@ -662,13 +663,22 @@ class Program {
     );
     // A parameter sized by an earlier one (`u8[a.type_element_count] b`) is the
     // frame's to settle: the header writes the same answer the .c does
-    const symbolsByFile = Program.withSettledParameters(
-      values.symbolsByFile,
-      dimensioned,
-      constants,
-      fileFacts,
-      (declaration) => settledLocals.get(declaration),
-      framesByFile,
+    const symbolsByFile = RegisterInstances.bind(
+      Program.withSettledParameters(
+        values.symbolsByFile,
+        dimensioned,
+        constants,
+        fileFacts,
+        (declaration) => settledLocals.get(declaration),
+        framesByFile,
+      ),
+      (sourceFile) =>
+        Program.environment(
+          Program.nameFacts(dimensioned, sourceFile, constants, {
+            settledLocal: SETTLED,
+            files: fileFacts,
+          }),
+        ),
     );
     return {
       symbolsByFile,

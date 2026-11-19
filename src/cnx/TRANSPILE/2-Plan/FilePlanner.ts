@@ -1105,6 +1105,25 @@ class FilePlanner {
    * passes by name (`Counter Lights__counter(Lights__start);`). 2.2 decides
    * it once, before 2.3 renders the scope.
    */
+  /**
+   * ADR-072 Part 1: the constructor declarations 1.4 bound to a register
+   * instance. Each is written as its register's macros, not as a declaration,
+   * so its type is never spelled.
+   */
+  private registerInstances(
+    program: IProgramSyntax,
+  ): readonly TDeclarationSyntax[] {
+    return program.members.flatMap(({ declaration, scope }) => {
+      if (declaration.kind !== "constructorDeclaration") return [];
+      const scopePath =
+        scope === null ? "" : (this.state.program?.scopePathOf(scope) ?? scope);
+      const symbol = this.state.program?.memberOf(scopePath, declaration.name);
+      return symbol?.kind === "register" && symbol.registerType !== null
+        ? [declaration]
+        : [];
+    });
+  }
+
   private planInlinedConsts(
     program: IProgramSyntax,
     cTypes: Set<string>,
@@ -1293,7 +1312,10 @@ class FilePlanner {
     const inlinedConsts = this.planInlinedConsts(program, decidedCTypes);
     const statics = this.planStaticValues(program, valuePositions);
     const unwritten: IUnwrittenSyntax = {
-      declarations: inlinedConsts,
+      declarations: new Set([
+        ...inlinedConsts,
+        ...this.registerInstances(program),
+      ]),
       values: new Set(
         [...statics.values.keys()].flatMap((value) =>
           ExpressionNodes.direct(value),
@@ -1354,7 +1376,7 @@ class FilePlanner {
       requirements.require("float_static_assert");
     }
     const registerAccesses = new Map<IAssignmentSyntax, string>();
-    const foreignRegisterValues = this.planRegisterAccesses(
+    this.planRegisterAccesses(
       program,
       valuePositions,
       registerAccesses,
@@ -1365,14 +1387,12 @@ class FilePlanner {
       unwritten,
       valuePositions,
       types,
-      foreignRegisterValues,
     );
-    const narrowings = this.planNarrowings(expectedTypes, decidedCTypes, [
-      ...FilePlanner.writtenExpressions(program, unwritten),
-      ...foreignRegisterValues.flatMap((value) =>
-        ExpressionNodes.direct(value),
-      ),
-    ]);
+    const narrowings = this.planNarrowings(
+      expectedTypes,
+      decidedCTypes,
+      FilePlanner.writtenExpressions(program, unwritten),
+    );
     invariant(valuePositions !== null, "2.1 hands 2.2 where each value stands");
     const wholeArrayWrites = this.planWholeArrayWrites(
       valuePositions,
@@ -1417,7 +1437,6 @@ class FilePlanner {
     const clamps = this.planClamps(
       program,
       unwritten,
-      foreignRegisterValues,
       decidedCTypes,
       requirements,
     );
@@ -1823,7 +1842,6 @@ class FilePlanner {
     unwritten: IUnwrittenSyntax,
     valuePositions: IValuePositions | null,
     types: ReadonlyMap<TTypeSyntax, IPlannedType>,
-    foreignRegisterValues: readonly TExpression[],
   ): ReadonlyMap<TExpression, IPlannedExpectedType> {
     invariant(valuePositions !== null, "2.1 hands 2.2 where each value stands");
     const typeScopes = new Map(
@@ -1966,30 +1984,22 @@ class FilePlanner {
       const expected = resolve(valuePositions.sites.get(expression) ?? null);
       if (expected !== null) planned.set(expression, expected);
     }
-    // Like the file's own register's: written against no type
-    for (const value of foreignRegisterValues) {
-      for (const node of ExpressionNodes.direct(value)) {
-        planned.set(node, NO_EXPECTED_TYPE);
-      }
-    }
     return planned;
   }
 
   /**
    * ADR-004: the `uintN_t` each byte-aligned write to a write-only register
-   * member is written through, and the base address and offset expressions
-   * of the registers another file declares that those writes spell. The
-   * file's own registers' are already among 2.1's value positions.
+   * member is written through. Its address is a number 1.4 settled (ADR-072),
+   * so it has no expression of its own to plan.
    */
   private planRegisterAccesses(
     program: IProgramSyntax,
     valuePositions: IValuePositions | null,
     accesses: Map<IAssignmentSyntax, string>,
     cTypes: Set<string>,
-  ): TExpression[] {
+  ): void {
     invariant(valuePositions !== null, "2.1 hands 2.2 where each value stands");
     const symbols = this.state.symbols!;
-    const foreign: TExpression[] = [];
     const sites = FilePlanner.assignmentSites(program);
     for (const site of sites) {
       const range = AssignmentTarget.parts(site.target).ops.at(-1);
@@ -2022,13 +2032,7 @@ class FilePlanner {
       if (accessType === null) continue;
       accesses.set(site, accessType);
       cTypes.add(accessType);
-      for (const value of [base, offset]) {
-        if (!valuePositions.positions.has(value) && !foreign.includes(value)) {
-          foreign.push(value);
-        }
-      }
     }
-    return foreign;
   }
 
   /**
@@ -2276,7 +2280,6 @@ class FilePlanner {
   private planClamps(
     program: IProgramSyntax,
     unwritten: IUnwrittenSyntax,
-    foreignRegisterValues: readonly TExpression[],
     cTypes: Set<string>,
     requirements: PlannedRequirements,
   ): {
@@ -2295,12 +2298,7 @@ class FilePlanner {
 
     const chains = new Map<TExpression, IPlannedOverflowChain | null>();
     const negations = new Map<TExpressionOf<"unary">, IPlannedOverflowHelper>();
-    for (const expr of [
-      ...FilePlanner.writtenExpressions(program, unwritten),
-      ...foreignRegisterValues.flatMap((value) =>
-        ExpressionNodes.direct(value),
-      ),
-    ]) {
+    for (const expr of FilePlanner.writtenExpressions(program, unwritten)) {
       if (expr.kind === "unary") {
         const negation = this.overflowNegation(expr);
         if (negation !== null) {

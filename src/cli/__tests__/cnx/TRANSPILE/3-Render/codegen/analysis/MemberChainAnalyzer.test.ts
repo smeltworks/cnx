@@ -65,7 +65,7 @@ function analyze(statement: string): {
   const found = target!;
   let rendered = 0;
   const ops: TPlannedTargetOp[] = found.postfixTargetOp().map((op) => {
-    const name = op.IDENTIFIER();
+    const name = op.memberName();
     if (name) return { kind: "member", name: name.getText() };
     const indexes = op.expression();
     return {

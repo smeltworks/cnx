@@ -172,6 +172,7 @@ class NameExistence {
       symbols.knownEnums.has(typeName) ||
       symbols.knownStructs.has(typeName) ||
       symbols.knownBitmaps.has(typeName) ||
+      symbols.knownRegisterTypes.has(typeName) ||
       symbols.knownScopes.has(typeName) ||
       // #1511: from the table, which shares `OpaqueTypeResolution` with the
       // artifact. `ICodeGenSymbols` carried a merged copy of this set purely so

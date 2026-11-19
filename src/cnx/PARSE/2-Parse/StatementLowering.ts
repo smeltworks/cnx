@@ -199,6 +199,19 @@ class StatementLowering {
     { kind: "variableDeclaration" | "constructorDeclaration" }
   > {
     const constructorArguments = ctx.constructorArgumentList();
+    const address = ctx.LPAREN() ? ctx.expression() : null;
+    if (address) {
+      return {
+        kind: "constructorDeclaration",
+        type: SyntaxLowering.type(ctx.type()),
+        name: ctx.IDENTIFIER().getText(),
+        nameSpan: StatementLowering.nameSpan(ctx.IDENTIFIER()),
+        arguments: [],
+        spellsOwnName: StatementLowering.spellsOwnName(ctx),
+        address: SyntaxLowering.expression(address),
+        ...SyntaxLowering.node(ctx),
+      };
+    }
     if (!constructorArguments) {
       return {
         kind: "variableDeclaration",
@@ -219,6 +232,7 @@ class StatementLowering {
         written: argument.getText(),
       })),
       spellsOwnName: StatementLowering.spellsOwnName(ctx),
+      address: null,
       ...SyntaxLowering.node(ctx),
     };
   }

@@ -99,7 +99,6 @@ function writeRegisterBitRange(
       ctx.foldSubscript(0),
       ctx.generatedValue,
       ctx.state,
-      ctx.renderExpression,
     );
     if (mmio.success) {
       return mmio.statement!;
