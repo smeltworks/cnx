@@ -8,6 +8,7 @@ import HeaderGeneratorUtils from "../HeaderGeneratorUtils";
 import IHeaderSymbol from "../types/IHeaderSymbol";
 import IParameterSymbol from "../../../../utils/types/IParameterSymbol";
 import TSymbolKind from "../../../../types/symbol-kinds/TSymbolKind";
+import SymbolTable from "../../../../PARSE/3-Declare/SymbolTable";
 
 /**
  * Helper to create test symbols with required properties
@@ -768,7 +769,10 @@ describe("HeaderGeneratorUtils", () => {
 
   describe("generateVariableSection", () => {
     it("returns empty array for no variables", () => {
-      const lines = HeaderGeneratorUtils.generateVariableSection([]);
+      const lines = HeaderGeneratorUtils.generateVariableSection(
+        [],
+        new SymbolTable(),
+      );
 
       expect(lines).toHaveLength(0);
     });
@@ -781,7 +785,10 @@ describe("HeaderGeneratorUtils", () => {
           type: "u32",
         }),
       ];
-      const lines = HeaderGeneratorUtils.generateVariableSection(variables);
+      const lines = HeaderGeneratorUtils.generateVariableSection(
+        variables,
+        new SymbolTable(),
+      );
 
       expect(lines).toContain("extern uint32_t counter;");
     });
@@ -795,7 +802,10 @@ describe("HeaderGeneratorUtils", () => {
           isConst: true,
         }),
       ];
-      const lines = HeaderGeneratorUtils.generateVariableSection(variables);
+      const lines = HeaderGeneratorUtils.generateVariableSection(
+        variables,
+        new SymbolTable(),
+      );
 
       expect(lines).toContain("extern const uint32_t VERSION;");
     });
@@ -809,7 +819,10 @@ describe("HeaderGeneratorUtils", () => {
           isAtomic: true,
         }),
       ];
-      const lines = HeaderGeneratorUtils.generateVariableSection(variables);
+      const lines = HeaderGeneratorUtils.generateVariableSection(
+        variables,
+        new SymbolTable(),
+      );
 
       expect(lines).toContain("extern volatile bool flag;");
     });
@@ -824,7 +837,10 @@ describe("HeaderGeneratorUtils", () => {
           arrayDimensions: ["64"],
         }),
       ];
-      const lines = HeaderGeneratorUtils.generateVariableSection(variables);
+      const lines = HeaderGeneratorUtils.generateVariableSection(
+        variables,
+        new SymbolTable(),
+      );
 
       expect(lines).toContain("extern uint8_t buffer[64];");
     });
@@ -846,9 +862,12 @@ describe("HeaderGeneratorUtils", () => {
         }),
       ];
 
-      expect(HeaderGeneratorUtils.generateVariableSection(variables)).toContain(
-        expected,
-      );
+      expect(
+        HeaderGeneratorUtils.generateVariableSection(
+          variables,
+          new SymbolTable(),
+        ),
+      ).toContain(expected);
     });
   });
 
@@ -875,6 +894,7 @@ describe("HeaderGeneratorUtils", () => {
       const input = {
         structFields: new Map(),
         structFieldDimensions: new Map(),
+        symbolTable: new SymbolTable(),
         enumMembers: new Map(),
         memberCNames: new Map(),
         bitmapBackingType: new Map(),
@@ -893,6 +913,7 @@ describe("HeaderGeneratorUtils", () => {
       const input = {
         structFields: new Map(),
         structFieldDimensions: new Map(),
+        symbolTable: new SymbolTable(),
         enumMembers: new Map(),
         memberCNames: new Map(),
         bitmapBackingType: new Map(),
@@ -924,6 +945,7 @@ describe("HeaderGeneratorUtils", () => {
       const input = {
         structFields: new Map(),
         structFieldDimensions: new Map(),
+        symbolTable: new SymbolTable(),
         enumMembers: new Map(),
         memberCNames: new Map(),
         bitmapBackingType: new Map(),
@@ -961,6 +983,7 @@ describe("HeaderGeneratorUtils", () => {
       const input = {
         structFields: new Map(),
         structFieldDimensions: new Map(),
+        symbolTable: new SymbolTable(),
         enumMembers: new Map(),
         memberCNames: new Map(),
         bitmapBackingType: new Map(),
@@ -993,6 +1016,7 @@ describe("HeaderGeneratorUtils", () => {
       const input = {
         structFields: new Map(),
         structFieldDimensions: new Map(),
+        symbolTable: new SymbolTable(),
         enumMembers: new Map(),
         memberCNames: new Map(),
         bitmapBackingType: new Map(),
@@ -1034,6 +1058,7 @@ describe("HeaderGeneratorUtils", () => {
       const input = {
         structFields: new Map(),
         structFieldDimensions: new Map(),
+        symbolTable: new SymbolTable(),
         enumMembers: new Map(),
         memberCNames: new Map(),
         bitmapBackingType: new Map(),
@@ -1051,6 +1076,7 @@ describe("HeaderGeneratorUtils", () => {
       const input = {
         structFields: new Map(),
         structFieldDimensions: new Map(),
+        symbolTable: new SymbolTable(),
         enumMembers: new Map(),
         memberCNames: new Map(),
         bitmapBackingType: new Map(),
@@ -1080,6 +1106,7 @@ describe("HeaderGeneratorUtils", () => {
       const input = {
         structFields: new Map(),
         structFieldDimensions: new Map(),
+        symbolTable: new SymbolTable(),
         enumMembers: new Map(),
         memberCNames: new Map(),
         bitmapBackingType: new Map(),
@@ -1107,6 +1134,7 @@ describe("HeaderGeneratorUtils", () => {
       const input = {
         structFields: new Map(),
         structFieldDimensions: new Map(),
+        symbolTable: new SymbolTable(),
         enumMembers: new Map(),
         memberCNames: new Map(),
         bitmapBackingType: new Map(),
@@ -1134,6 +1162,7 @@ describe("HeaderGeneratorUtils", () => {
       const input = {
         structFields: new Map(),
         structFieldDimensions: new Map(),
+        symbolTable: new SymbolTable(),
         enumMembers: new Map(),
         memberCNames: new Map(),
         bitmapBackingType: new Map(),

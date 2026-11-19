@@ -4,6 +4,7 @@
 
 import generateStructHeader from "../generateStructHeader";
 import IHeaderTypeInput from "../IHeaderTypeInput";
+import SymbolTable from "../../../../../PARSE/3-Declare/SymbolTable";
 
 /**
  * Creates a minimal IHeaderTypeInput with struct fields populated
@@ -17,6 +18,7 @@ function createInput(
     memberCNames: new Map(),
     structFields,
     structFieldDimensions: structFieldDimensions ?? new Map(),
+    symbolTable: new SymbolTable(),
     bitmapBackingType: new Map(),
     bitmapFields: new Map(),
   };

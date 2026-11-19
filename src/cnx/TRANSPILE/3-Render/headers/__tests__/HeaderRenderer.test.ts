@@ -10,6 +10,7 @@ import HeaderGenerator from "../HeaderGenerator";
 import IHeaderEmissionFacts from "../types/IHeaderEmissionFacts";
 import IHeaderSymbol from "../types/IHeaderSymbol";
 import IHeaderOptions from "../../codegen/types/IHeaderOptions";
+import SymbolTable from "../../../../PARSE/3-Declare/SymbolTable";
 
 /** #1428: the run's mode, stated -- the renderer reads it from the program */
 const C_RUN = { cppMode: () => false };
@@ -43,6 +44,7 @@ describe("HeaderRenderer", () => {
         memberCNames: new Map(),
         structFields: new Map(),
         structFieldDimensions: new Map(),
+        symbolTable: new SymbolTable(),
         bitmapBackingType: new Map(),
         bitmapFields: new Map(),
       },

@@ -5,7 +5,7 @@
  * Used by HeaderGenerator to emit full struct definitions in headers.
  */
 
-import headerCType from "../../../../utils/headerCType";
+import cTypeName from "../../../../utils/cTypeName";
 import DeclaredPointer from "../../../../utils/DeclaredPointer";
 import IHeaderTypeInput from "./IHeaderTypeInput";
 /**
@@ -28,8 +28,8 @@ function resolveFieldCType(
   }
   // Issue #502/#522: a C++ namespaced type is written `A::B`, as 1.3 stored
   // it (#2116). Shared with the function-prototype path, so the two cannot
-  // name one type two ways (#1520).
-  return headerCType(fieldType);
+  // name one type two ways (#1520, #1944).
+  return cTypeName(fieldType, input.symbolTable);
 }
 
 /**

@@ -9,6 +9,8 @@ import DeclaredPointer from "../../../utils/DeclaredPointer";
 import IHeaderSymbol from "./types/IHeaderSymbol";
 import GeneratedBanner from "../../../utils/GeneratedBanner";
 import typeUtils from "../../../utils/mapType";
+import cTypeName from "../../../utils/cTypeName";
+import type IStructKeywordFacts from "../../../utils/types/IStructKeywordFacts";
 import IGroupedSymbols from "./types/IGroupedSymbols";
 import IHeaderOptions from "../codegen/types/IHeaderOptions";
 import IHeaderTypeInput from "./generators/IHeaderTypeInput";
@@ -619,7 +621,10 @@ class HeaderGeneratorUtils {
    *
    * Uses VariableDeclarationFormatter for consistent formatting with CodeGenerator.
    */
-  static generateVariableSection(variables: IHeaderSymbol[]): string[] {
+  static generateVariableSection(
+    variables: IHeaderSymbol[],
+    structKeywords: IStructKeywordFacts,
+  ): string[] {
     if (variables.length === 0) {
       return [];
     }
@@ -631,7 +636,7 @@ class HeaderGeneratorUtils {
         name: sym.name,
         cnxType: sym.type || "int",
         mappedType: DeclaredPointer.spell(
-          mapType(sym.type || "int"),
+          cTypeName(sym.type || "int", structKeywords),
           sym.isPointer ?? false,
         ),
         modifiers: {

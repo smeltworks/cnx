@@ -34,7 +34,7 @@ import TIncludeHeader from "../../types/TIncludeHeader";
 import AdrProvenance from "../../instrumentation/AdrProvenance";
 import type INamedTypeResolution from "../../types/INamedTypeResolution";
 import type IPlannedType from "./types/IPlannedType";
-import userCType from "../../utils/userCType";
+import cTypeName from "../../utils/cTypeName";
 import type ITypeGenerationDeps from "./types/ITypeGenerationDeps";
 
 /**
@@ -88,7 +88,7 @@ class TypeGenerationHelper {
     typeName: string,
     deps: ITypeGenerationDeps,
   ): string {
-    return userCType(typeName, deps.checkNeedsStructKeyword(typeName));
+    return cTypeName(typeName, deps);
   }
 
   static generateStringType(): string {

@@ -5,6 +5,7 @@
 import generateBitmapHeader from "../generateBitmapHeader";
 import IHeaderTypeInput from "../IHeaderTypeInput";
 import type IBitmapFieldLayout from "../../../../../types/IBitmapFieldLayout";
+import SymbolTable from "../../../../../PARSE/3-Declare/SymbolTable";
 
 /**
  * Creates a minimal IHeaderTypeInput with bitmap data populated
@@ -18,6 +19,7 @@ function createInput(
     memberCNames: new Map(),
     structFields: new Map(),
     structFieldDimensions: new Map(),
+    symbolTable: new SymbolTable(),
     bitmapBackingType,
     bitmapFields: bitmapFields ?? new Map(),
   };
