@@ -21,6 +21,14 @@ import type IRegisterSymbol from "../../types/symbols/IRegisterSymbol";
 import type IRegisterMemberSymbol from "../../types/symbols/IRegisterMemberSymbol";
 import StatementNodes from "../../utils/StatementNodes";
 
+/** Symbol kinds a type position resolves to; a register type is checked apart */
+const TYPE_KINDS: ReadonlySet<string> = new Set([
+  "struct",
+  "enum",
+  "bitmap",
+  "function",
+]);
+
 class RegisterInstanceAnalyzer {
   constructor(private readonly context: IAnalysisContext) {}
 
@@ -239,11 +247,16 @@ class RegisterInstanceAnalyzer {
             : type.kind === "qualified"
               ? [[type.path.slice(0, -1).join("."), type.path.at(-1)!]]
               : [];
-    // the nearest declaration wins: a scoped struct shadows a global register
+    // the nearest TYPE wins: a scoped struct shadows a global register type,
+    // a scoped variable or instance of the same name does not
     for (const [path, name] of candidates) {
       const symbol = program.memberOf(path, name);
       if (symbol === undefined || symbol === null) continue;
-      return symbol.kind === "register" && symbol.registerType === null;
+      if (symbol.kind === "register") {
+        if (symbol.registerType === null) return true;
+        continue;
+      }
+      if (TYPE_KINDS.has(symbol.kind)) return false;
     }
     return false;
   }

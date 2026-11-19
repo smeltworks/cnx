@@ -38,6 +38,12 @@ scope Shadow {
     GpioPort held;
 }
 
+// A scoped variable named like the register type shadows no type
+scope Named {
+    u32 GpioPort <- 0;
+    GpioPort field;
+}
+
 scope Board {
     GpioPort held;
 
