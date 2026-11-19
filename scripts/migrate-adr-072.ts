@@ -20,6 +20,7 @@
  * Usage: npx tsx scripts/migrate-adr-072.ts [--check] <file-or-dir>...
  * (`.cnx` sources and `.md` docs)
  */
+// cspell:ignore Regs PERIPH OWNREG LREG
 import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -108,7 +109,8 @@ class MigrateAdr072 {
             `${pad}${offset} ${access} ${memberType} ${member}${comma}${comment ?? ""}`,
         );
         const instance = `${indent}${shown}${type} ${name}(${address});`;
-        const seen = layouts.get(type);
+        // Only a file-level type is shared; a scope declares its own
+        const seen = indent === "" ? layouts.get(type) : undefined;
         if (seen === members) return instance;
         if (seen !== undefined) {
           unmapped.add(`${name} (layout differs from another ${type})`);
