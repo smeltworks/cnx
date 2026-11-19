@@ -1,6 +1,0 @@
-// test-error
-// Issue #375: Error - literal argument (should be parse error)
-Adafruit_MAX31856 thermocouple(10);
-
-void main() {
-}

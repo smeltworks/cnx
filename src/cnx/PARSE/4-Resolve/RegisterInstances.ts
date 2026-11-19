@@ -62,6 +62,7 @@ class RegisterInstances {
   ): IRegisterSymbol | null {
     if (symbol.kind !== "variable" || !symbol.constructedAddress) return null;
     const type = symbol.type;
+    // TODO(#1720): restore the kind check once TypeResolver settles kinds.
     // TypeResolver guesses a kind from the spelling (`EXTI_Type` reads as an
     // enum), so the register type is found by name alone
     if (!("name" in type) || typeof type.name !== "string") return null;

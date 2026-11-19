@@ -25,7 +25,6 @@ tests/bugs/issue-1306-nested-scope-diagnostic/nested-lib.cnx
 tests/bugs/issue-2366-void-param-diagnostic/void-param.test.cnx
 tests/c-interop/use-c-union-basic.test.cnx
 tests/c-interop/use-c-union-typedef.test.cnx
-tests/constructor-syntax/error-literal-arg.test.cnx
 tests/null-check/null-in-ternary.test.cnx
 tests/adr-014/struct-written-type-rejected-error.test.cnx
 tests/adr-014/struct-written-type-direct-error.test.cnx
