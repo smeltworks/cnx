@@ -16,18 +16,11 @@ import type IAnalysisContext from "./types/IAnalysisContext";
 import SourceOrder from "../../utils/SourceOrder";
 import RegisterAddress from "../../utils/RegisterAddress";
 import RegisterInstance from "../../utils/RegisterInstance";
+import TYPE_FORMING_KINDS from "../../PARSE/3-Declare/TYPE_FORMING_KINDS";
 import TYPE_WIDTH from "../../types/TYPE_WIDTH";
 import type IRegisterSymbol from "../../types/symbols/IRegisterSymbol";
 import type IRegisterMemberSymbol from "../../types/symbols/IRegisterMemberSymbol";
 import StatementNodes from "../../utils/StatementNodes";
-
-/** Symbol kinds a type position resolves to; a register type is checked apart */
-const TYPE_KINDS: ReadonlySet<string> = new Set([
-  "struct",
-  "enum",
-  "bitmap",
-  "function",
-]);
 
 class RegisterInstanceAnalyzer {
   constructor(private readonly context: IAnalysisContext) {}
@@ -256,7 +249,7 @@ class RegisterInstanceAnalyzer {
         if (symbol.registerType === null) return true;
         continue;
       }
-      if (TYPE_KINDS.has(symbol.kind)) return false;
+      if (TYPE_FORMING_KINDS.has(symbol.kind)) return false;
     }
     return false;
   }
