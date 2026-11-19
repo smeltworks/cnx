@@ -6,14 +6,20 @@
 
 bitmap8 Status {
     ISR,
-    Reserved[7]
+    critical,
+    Reserved[6]
 }
 
 struct Vector {
     u32 ISR;
+    u8 scope;
+    u16 u8;
+    u8 wrap;
 }
 
 register GpioPort {
+    0x00 rw u32 scope,
+    0x04 ro u32 atomic,
     0x18 w1c u32 ISR,
 }
 
@@ -27,4 +33,9 @@ void main() {
     Vector w <- { ISR: 4 };
     v.ISR <- w.ISR;
     GPIO1.ISR <- 0x01;
+    GPIO1.scope <- GPIO1.atomic;
+    s.critical <- s.ISR;
+    Vector x <- { ISR: 1, scope: 2, u8: 3, wrap: 4 };
+    v.u8 <- x.u8 + x.scope;
+    v.wrap <- x.wrap;
 }

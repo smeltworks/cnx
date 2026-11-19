@@ -15,17 +15,23 @@ extern "C" {
 /* Bitmaps */
 /* Bitmap: Status
  *   ISR: bit 0
- *   Reserved: bits 1-7 (7 bits)
+ *   critical: bit 1
+ *   Reserved: bits 2-7 (6 bits)
  */
 typedef uint8_t Status;
 
 /* Struct definitions */
 typedef struct Vector {
     uint32_t ISR;
+    uint8_t scope;
+    uint16_t u8;
+    uint8_t wrap;
 } Vector;
 
 /* Registers (ADR-004) */
 /* Register: GPIO1 @ 0x401B8000 */
+#define GPIO1__scope (*(volatile uint32_t*)(0x401B8000 + 0x00))
+#define GPIO1__atomic (*(volatile uint32_t const *)(0x401B8000 + 0x04))
 #define GPIO1__ISR (*(volatile uint32_t*)(0x401B8000 + 0x18))
 
 #ifdef __cplusplus

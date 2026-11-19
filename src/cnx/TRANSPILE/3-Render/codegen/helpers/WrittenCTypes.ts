@@ -8,7 +8,8 @@
  */
 class WrittenCTypes {
   private static readonly TYPE_NAME =
-    /\b(?:u?int(?:8|16|32|64|ptr|max)_t|bool|true|false)\b/g;
+    // a word after `.` or `->` is a member name, not a type (ADR-072 ruling 2)
+    /(?<!(?:\.|->)\s*)\b(?:u?int(?:8|16|32|64|ptr|max)_t|bool|true|false)\b/g;
 
   private static readonly NOT_CODE =
     /\/\*[\s\S]*?\*\/|\/\/.*|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'/g;
