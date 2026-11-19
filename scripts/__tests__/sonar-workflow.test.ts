@@ -183,25 +183,13 @@ describe("sonar.yml — scans every pull request and push from a trusted context
    * By the time this workflow_run fires, the PR it targets may have already
    * merged or closed -- the "exactly one open PR" query then finds zero, which
    * is a race, not a defect. Only more than one match is still a real error.
-   */
-  it("skips without failing when the resolved PR has already been merged or closed", () => {
-    const resolve = steps.find(
-      (step) => step.name === "Resolve what to analyze",
-    );
-    expect(resolve?.run).toMatch(
-      /if \[ "\$count" -eq 0 \][\s\S]*echo "skip=true" >> "\$GITHUB_OUTPUT"[\s\S]*exit 0/,
-    );
-    expect(resolve?.run).toMatch(
-      /if \[ "\$count" -ne 1 \][\s\S]*::error::expected one open PR/,
-    );
-  });
-
-  /**
-   * The regexes above only prove the branch is written. GitHub runs `run:`
-   * under `bash -e`, and `grep -c` exits 1 when it counts zero lines, so a
-   * bare `count=$(... | grep -c .)` killed the step before the zero-match
-   * branch was reached (#2439's post-merge scan). This runs the step itself
-   * against a stubbed `gh` that returns each number of matching PRs.
+   *
+   * GitHub runs `run:` under `bash -e`, and `grep -c` exits 1 when it counts
+   * zero lines, so a bare `count=$(... | grep -c .)` killed the step before the
+   * zero-match branch was reached (#2439's post-merge scan). A regex over the
+   * step's text cannot catch that, so this runs the step itself against a
+   * stubbed `gh` that returns each number of matching PRs, and checks each
+   * branch by its own output.
    */
   it("reaches each PR-count branch when the step runs under bash -e", () => {
     const resolve = steps.find(
@@ -214,7 +202,9 @@ describe("sonar.yml — scans every pull request and push from a trusted context
       const gh = join(dir, "gh");
       writeFileSync(gh, '#!/usr/bin/env bash\nprintf "%s" "$GH_STUB_OUT"\n');
       chmodSync(gh, 0o755);
-      const run = (ghOut: string): { status: number | null; out: string } => {
+      const run = (
+        ghOut: string,
+      ): { status: number | null; stdout: string; out: string } => {
         const output = join(dir, "output");
         writeFileSync(output, "");
         const result = spawnSync("bash", ["-e", "-c", resolve?.run ?? ""], {
@@ -230,18 +220,25 @@ describe("sonar.yml — scans every pull request and push from a trusted context
           },
           encoding: "utf-8",
         });
-        return { status: result.status, out: readFileSync(output, "utf-8") };
+        return {
+          status: result.status,
+          stdout: result.stdout,
+          out: readFileSync(output, "utf-8"),
+        };
       };
 
       const none = run("");
       expect(none.status).toBe(0);
       expect(none.out).toContain("skip=true");
+      expect(none.stdout).toContain("::notice::no open PR at abc");
 
       const one = run(pr(7));
       expect(one.status).toBe(0);
       expect(one.out).toContain("ref=refs/pull/7/head");
 
-      expect(run(`${pr(7)}\n${pr(8)}`).status).toBe(1);
+      const two = run(`${pr(7)}\n${pr(8)}`);
+      expect(two.status).toBe(1);
+      expect(two.stdout).toContain("::error::expected one open PR at abc");
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

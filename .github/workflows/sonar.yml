@@ -65,6 +65,9 @@ jobs:
           matches=$(gh api --paginate --method GET "repos/$REPO/pulls" \
             -f state=open -f "head=$HEAD_OWNER:$HEAD_BRANCH" -F per_page=100 \
             --jq '.[] | select(.head.sha == env.HEAD_SHA) | {number, base: .base.ref, branch: .head.ref} | @json')
+          # grep -c prints 0 and exits 1 when no line matches. Under bash -e
+          # that exit would end the step before the skip branch below, so
+          # `|| true` discards the status and keeps the printed 0.
           count=$(printf '%s\n' "$matches" | grep -c . || true)
           if [ "$count" -eq 0 ]; then
             # The PR this run belongs to merged or closed between PR Quality
