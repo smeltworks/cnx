@@ -258,27 +258,18 @@ setPin(UART1, 0);    // ERROR: UART1 is not a GpioPort
 
 #### Function Specialization
 
-The compiler **specializes** generic peripheral functions at each call site. There is no runtime indirection:
+A register parameter is resolved at compile time. Each call names an instance whose
+address the compiler knows, so every access through the parameter is a direct access
+to that instance's address. There is no runtime indirection: no base pointer is passed,
+stored or dereferenced.
 
 ```cnx
-setPin(GPIO1, 13);
-setPin(GPIO2, 0);
+setPin(GPIO1, 13);   // port.DR is GPIO1's DR
+setPin(GPIO2, 0);    // port.DR is GPIO2's DR
 ```
 
-Transpiles to:
-
-```c
-// Inlined/specialized — no function call overhead
-GPIO1_DR |= (1 << 13);
-GPIO2_DR |= (1 << 0);
-```
-
-If the function is too large to inline, the compiler generates separate specialized versions:
-
-```c
-void setPin_GPIO1(uint8_t pin) { GPIO1_DR |= (1 << pin); }
-void setPin_GPIO2(uint8_t pin) { GPIO2_DR |= (1 << pin); }
-```
+How the generated C achieves this (one specialized function per instance passed,
+inlining, or both) is an emission choice, not part of this decision.
 
 This enables writing reusable HAL code without runtime overhead or duplicating source code per instance.
 
@@ -292,6 +283,16 @@ activePort <- GPIO2;           // ERROR: cannot reassign register type
 setPin(activePort, 13);        // Would require runtime indirection
 
 GpioPort[2] ports <- [GPIO1, GPIO2];  // ERROR: cannot store registers in arrays
+```
+
+The same holds for a function with a register parameter. It has no single body to
+point at, one per instance it is called with, so it can be called but never used as a
+callback (ADR-029): not passed, stored or named as a callback type.
+
+```cnx
+struct Hal {
+    setPin handler;       // ERROR: setPin takes a register parameter
+}
 ```
 
 This is intentional — runtime polymorphism over registers would require function pointers or vtables, defeating zero-cost abstraction. If you need dynamic port selection, use explicit branching:
