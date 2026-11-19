@@ -1278,7 +1278,10 @@ class FilePlanner {
       this.state.program?.scopePathOf(scope.name) ?? scope.name;
     const constructorArguments = new Set(
       scope.members.flatMap(({ declaration }) =>
-        declaration.kind === "constructorDeclaration"
+        declaration.kind === "constructorDeclaration" &&
+        // ADR-072: an instance's address is folded, so its const is inlined
+        this.state.program?.memberOf(declaringScopePath, declaration.name)
+          ?.kind !== "register"
           ? declaration.arguments.map((argument) => argument.name)
           : [],
       ),

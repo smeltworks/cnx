@@ -50,7 +50,7 @@ class RegisterInstanceAnalyzer {
           }
           if (statement.kind !== "constructorDeclaration") continue;
           if (!this.isRegisterType(statement.type, scopePath)) {
-            if (statement.address !== null)
+            if (statement.address !== null && statement.arguments.length === 0)
               found.push(this.notRegister(statement));
             continue;
           }
@@ -94,7 +94,8 @@ class RegisterInstanceAnalyzer {
           found.push(this.notInstance(declaration.name, declaration.span));
         } else if (
           declaration.kind === "constructorDeclaration" &&
-          declaration.address !== null
+          declaration.address !== null &&
+          declaration.arguments.length === 0
         ) {
           found.push(this.notRegister(declaration));
         }
