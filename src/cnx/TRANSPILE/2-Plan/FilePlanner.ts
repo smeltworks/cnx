@@ -1113,12 +1113,23 @@ class FilePlanner {
    */
   private registerInstances(
     program: IProgramSyntax,
+    cTypes: Set<string>,
   ): readonly TDeclarationSyntax[] {
+    const memberCTypes = this.state.symbols!.registerMemberCTypes;
     return program.members.flatMap(({ declaration, scope }) => {
-      return declaration.kind === "constructorDeclaration" &&
-        RegisterInstance.inScope(this.state.program, scope, declaration.name)
-        ? [declaration]
-        : [];
+      if (declaration.kind !== "constructorDeclaration") return [];
+      const instance = RegisterInstance.inScope(
+        this.state.program,
+        scope,
+        declaration.name,
+      );
+      if (instance === null) return [];
+      // Its macros spell each member's C type, so its header is required
+      for (const member of instance.members.values()) {
+        const cType = memberCTypes.get(member.fullyQualifiedCName);
+        if (cType !== undefined) cTypes.add(cType);
+      }
+      return [declaration];
     });
   }
 
@@ -1312,7 +1323,7 @@ class FilePlanner {
     const unwritten: IUnwrittenSyntax = {
       declarations: new Set([
         ...inlinedConsts,
-        ...this.registerInstances(program),
+        ...this.registerInstances(program, decidedCTypes),
       ]),
       values: new Set(
         [...statics.values.keys()].flatMap((value) =>
