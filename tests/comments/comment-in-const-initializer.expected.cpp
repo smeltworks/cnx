@@ -8,13 +8,15 @@
 // Tests: a comment inside a const initializer never reaches the C (#1991 review)
 // A block comment, and a line comment that splits the initializer over lines
 /* Scope: Board */
+static const uint32_t Board__BASE = 1073741824U;
+static const uint32_t Board__SPLIT = 1073742080U;
 
-/* Register: Board__Gpio @ 0x40000000U */
-#define Board__Gpio__DATA (*(volatile uint32_t*)(0x40000000U + 0x00))
+/* Register: Board__Gpio @ 0x40000000 */
+#define Board__Gpio__DATA (*(volatile uint32_t*)(0x40000000 + 0x00))
 
 
-/* Register: Board__Pins @ 1073742080U */
-#define Board__Pins__DATA (*(volatile uint32_t*)(1073742080U + 0x00))
+/* Register: Board__Pins @ 0x40000100 */
+#define Board__Pins__DATA (*(volatile uint32_t*)(0x40000100 + 0x00))
 
 
 int main(void) {

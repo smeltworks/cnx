@@ -1,2 +1,2 @@
-16:8 error[E0883]: Cannot use bracket indexing on bitmap type 'Ctl'
+18:8 error[E0883]: Cannot use bracket indexing on bitmap type 'Ctl'
        help: A bitmap is addressed by named field, not by bit index -- write CR.FIELD_NAME (ADR-034).

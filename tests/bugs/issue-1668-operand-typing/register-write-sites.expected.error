@@ -1,2 +1,2 @@
-17:28 error[E0871]: cannot assign to read-only register member 'FLAGS' (STATUS_REG.FLAGS has 'ro' access modifier)
+19:28 error[E0871]: cannot assign to read-only register member 'FLAGS' (STATUS_REG.FLAGS has 'ro' access modifier)
        help: An `ro` register member is hardware that cannot be written (ADR-004); the generated C declares it `const`. Write the register's own writable member, or change the declaration if the hardware allows writes.

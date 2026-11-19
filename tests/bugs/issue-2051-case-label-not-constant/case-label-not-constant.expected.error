@@ -42,9 +42,9 @@
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
 152:34 error[E0717]: Case label 'Bits.a' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-187:13 error[E0717]: Case label 'Board.Spot.x' is not a constant
+189:13 error[E0717]: Case label 'Board.Spot.x' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-187:29 error[E0717]: Case label 'Board.Pins.a' is not a constant
+189:29 error[E0717]: Case label 'Board.Pins.a' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-187:45 error[E0717]: Case label 'Board.GPIO.DR' is not a constant
+189:45 error[E0717]: Case label 'Board.GPIO.DR' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
