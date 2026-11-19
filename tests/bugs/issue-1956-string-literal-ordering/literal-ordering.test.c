@@ -15,8 +15,12 @@
 
 const bool flag = true;
 
+const char first[5] = "a";
+
+// Two literals ordered, "a" < "b", reach C as strcmp("a", "b"), which cppcheck
+// rejects as a comparison of static strings, so the pair is a string and a literal
 int main(void) {
-    const bool r = strcmp("a", "b") < 0 == flag;
+    const bool r = strcmp(first, "b") < 0 == flag;
     if (r != true) {
         return 1;
     }

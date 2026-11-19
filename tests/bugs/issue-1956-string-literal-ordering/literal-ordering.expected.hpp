@@ -14,6 +14,7 @@ extern "C" {
 
 /* External variables */
 extern const bool flag;
+extern const char first[5];
 
 #ifdef __cplusplus
 }
