@@ -292,14 +292,14 @@ describe("ScopeCollector", () => {
       );
 
       // Register has bare name with scope reference
-      const regSymbol = result.memberSymbols.find((s) => s.name === "CTRL");
+      const regSymbol = result.memberSymbols.find(
+        (s) => s.name === "ControlBlock",
+      );
       expect(regSymbol).toBeDefined();
       expect(SymbolGuards.isRegister(regSymbol!)).toBe(true);
       if (SymbolGuards.isRegister(regSymbol!)) {
-        expect(regSymbol.baseAddress).toMatchObject({
-          kind: "literal",
-          text: "0x40001000",
-        });
+        // ADR-072: a register type has no address; its instance carries one
+        expect(regSymbol.baseAddress).toBeNull();
         expect(regSymbol.members.get("STATUS")?.access).toBe("rw");
         expect(regSymbol.members.get("COMMAND")?.access).toBe("wo");
         expect(regSymbol.scopePath).toBe("Motor");
@@ -375,7 +375,9 @@ describe("ScopeCollector", () => {
         },
       );
 
-      const regSymbol = result.memberSymbols.find((s) => s.name === "CTRL");
+      const regSymbol = result.memberSymbols.find(
+        (s) => s.name === "ControlBlock",
+      );
       expect(SymbolGuards.isRegister(regSymbol!)).toBe(true);
       if (SymbolGuards.isRegister(regSymbol!)) {
         expect(
@@ -388,7 +390,7 @@ describe("ScopeCollector", () => {
       const code = `
         scope Motor {
           register ControlBlock {
-            FLAGS: global.MotorFlags rw @ 0x00,
+            0x00 rw global.MotorFlags FLAGS,
           }
           ControlBlock CTRL(0x40001000);
         }
@@ -411,7 +413,9 @@ describe("ScopeCollector", () => {
         },
       );
 
-      const regSymbol = result.memberSymbols.find((s) => s.name === "CTRL");
+      const regSymbol = result.memberSymbols.find(
+        (s) => s.name === "ControlBlock",
+      );
       expect(SymbolGuards.isRegister(regSymbol!)).toBe(true);
       if (SymbolGuards.isRegister(regSymbol!)) {
         expect(

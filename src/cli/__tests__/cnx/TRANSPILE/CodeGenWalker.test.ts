@@ -1691,7 +1691,7 @@ describe("CodeGenWalker", () => {
     it("should generate register definition", () => {
       const source = `
         register GpioPort {
-          rw u32 DATA @ 0x00
+          0x00 rw u32 DATA,
         }
         GpioPort GPIO(0x40020000);
         void main() { }
@@ -15608,7 +15608,7 @@ describe("CodeGenWalker", () => {
       it("should generate register comment", () => {
         const source = `
           register GpioPort {
-            rw u32 DR @ 0x00;
+            0x00 rw u32 DR,
           }
           GpioPort GPIO7(0x42004000);
         `;
@@ -15636,7 +15636,7 @@ describe("CodeGenWalker", () => {
         const source = `
           scope Teensy4 {
             register GpioPort {
-              rw u32 DR @ 0x00;
+              0x00 rw u32 DR,
             }
             GpioPort GPIO7(0x42004000);
           }

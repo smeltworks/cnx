@@ -25,6 +25,14 @@ type TDirective = IProgramSyntax["directives"][number];
  * needs the parse tree or its token stream. Leading comments are read here,
  * while the token stream is still at hand.
  */
+const REGISTER_ACCESS_MODES: ReadonlySet<string> = new Set([
+  "rw",
+  "ro",
+  "wo",
+  "w1c",
+  "w1s",
+]);
+
 class ProgramLowering {
   static program(
     tree: Parser.ProgramContext,
@@ -179,16 +187,17 @@ class ProgramLowering {
     if (register) {
       return (
         ProgramLowering.isRepaired(register.IDENTIFIER()) ||
-        register
-          .registerMember()
-          .some((member) =>
+        register.registerMember().some(
+          (member) =>
             ProgramLowering.isRepaired(
               MemberName.terminal(member.memberName()),
               member.type(),
               member.accessModifier(),
               member.expression(),
-            ),
-          )
+            ) ||
+            // recovery can hand the access slot any token, such as `{`
+            !REGISTER_ACCESS_MODES.has(member.accessModifier()!.getText()),
+        )
       );
     }
     const struct = ctx.structDeclaration();

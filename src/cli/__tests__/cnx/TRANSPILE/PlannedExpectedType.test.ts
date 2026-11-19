@@ -187,9 +187,13 @@ describe("2.2 plans the type each value is written against", () => {
 
   it("plans a register's address and offsets, against no type (ADR-004)", () => {
     const literals = plannedLiterals(
-      ["register HwBlock {", "  0x04 rw u32 CTRL,", "}", "HwBlock HW(0x40000000);", ""].join(
-        "\n",
-      ),
+      [
+        "register HwBlock {",
+        "  0x04 rw u32 CTRL,",
+        "}",
+        "HwBlock HW(0x40000000);",
+        "",
+      ].join("\n"),
     );
     expect(literals.get("0x40000000")).toEqual({
       type: null,

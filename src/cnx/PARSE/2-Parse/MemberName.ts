@@ -3,15 +3,19 @@
  * any reserved word, so it is one token of whichever kind. This hands back
  * that token as the TerminalNode an IDENTIFIER() accessor used to.
  */
-import { TerminalNode } from "antlr4ng";
+import { ErrorNode, TerminalNode } from "antlr4ng";
 import * as Parser from "./grammar/CnxParser";
 import invariant from "../../utils/invariant";
 
 class MemberName {
   /** The name's token; null when recovery left the name out */
   static terminal(ctx: Parser.MemberNameContext | null): TerminalNode | null {
-    const token = ctx?.getChild(0);
-    return token instanceof TerminalNode ? token : null;
+    // recovery can fill the rule with error tokens; that name was never written
+    if (!ctx || ctx.getChildCount() !== 1) return null;
+    const token = ctx.getChild(0);
+    return token instanceof TerminalNode && !(token instanceof ErrorNode)
+      ? token
+      : null;
   }
 
   /** The name's token, for contexts the grammar requires a name on */

@@ -33,11 +33,10 @@ describe("RegisterCollector", () => {
       );
 
       expect(symbol.kind).toBe("register");
-      expect(symbol.name).toBe("GPIO");
-      expect(symbol.baseAddress).toMatchObject({
-        kind: "literal",
-        text: "0x40000000",
-      });
+      expect(symbol.name).toBe("GpioPort");
+      // ADR-072: a register type has no address; its instance carries one
+      expect(symbol.registerType).toBeNull();
+      expect(symbol.baseAddress).toBeNull();
       expect(symbol.sourceFile).toBe("test.cnx");
       expect(symbol.sourceLanguage).toBe(ESourceLanguage.Cnx);
       expect(symbol.visibility).toBe("public");
@@ -181,7 +180,7 @@ describe("RegisterCollector", () => {
         "public",
       );
 
-      expect(symbol.name).toBe("CTRL");
+      expect(symbol.name).toBe("ControlBlock");
       expect(symbol.scopePath).toBe("Motor");
       expect(symbol.scopePath).toBe("Motor");
     });
@@ -225,7 +224,7 @@ describe("RegisterCollector", () => {
     it("does not let a scope-local bitmap capture an explicit global. type", () => {
       const code = `
         register ControlBlock {
-          FLAGS: global.MotorFlags rw @ 0x00,
+          0x00 rw global.MotorFlags FLAGS,
         }
         ControlBlock CTRL(0x40005000);
       `;
@@ -273,10 +272,9 @@ describe("RegisterCollector", () => {
         "public",
       );
 
-      expect(symbol.baseAddress).toMatchObject({
-        kind: "identifier",
-        name: "BASE_ADDR",
-      });
+      // ADR-072: a register type has no address; its instance carries one
+      expect(symbol.registerType).toBeNull();
+      expect(symbol.baseAddress).toBeNull();
     });
   });
 
@@ -352,7 +350,7 @@ describe("RegisterCollector", () => {
         `register GpioPort { 0x00 rw u32 DATA, } GpioPort GPIO(0x40000000);`,
       );
       expect(global.members.get("DATA")!.fullyQualifiedCName).toBe(
-        "GPIO__DATA",
+        "GpioPort__DATA",
       );
       expect(global.members.get("DATA")!.name).toBe("DATA");
 
@@ -362,7 +360,7 @@ describe("RegisterCollector", () => {
         "private",
       );
       expect(scoped.members.get("DATA")!.fullyQualifiedCName).toBe(
-        "Board__GPIO__DATA",
+        "Board__GpioPort__DATA",
       );
       expect(scoped.members.get("DATA")!.visibility).toBe("private");
     });

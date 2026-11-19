@@ -42,11 +42,14 @@ function analyze(source: string) {
     "test.cnx",
     registry,
   );
-  state.symbols = TSymbolInfoAdapter.convert(declared.symbols);
   state.program = Program.build([declared], {
     registry,
     cppMode: state.cppMode,
   });
+  // ADR-072: register instances bind in Program.build, so the view is the settled one
+  state.symbols =
+    state.program.codeGenSymbolsFor("test.cnx") ??
+    TSymbolInfoAdapter.convert(declared.symbols);
   // `true` is the declining default -- the analyzer stays silent unless the
   // transpiler knows the file's whole name universe. These sources include
   // nothing, so the diagnostic is in scope.

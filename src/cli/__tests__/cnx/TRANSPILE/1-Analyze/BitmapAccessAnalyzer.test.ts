@@ -15,7 +15,8 @@ import testAnalysisContextFor from "./testAnalysisContextFor";
  * two ways a bitmap is reached.
  */
 const FLAGS = "bitmap8 Flags { Mode[3], Enable, Reserved[4] }";
-const REGISTER = "register Peripheral { 0x00 rw Flags CTRL, } Peripheral R(0x40000000);";
+const REGISTER =
+  "register Peripheral { 0x00 rw Flags CTRL, } Peripheral R(0x40000000);";
 
 const errors = (source: string) => {
   const { syntax, context } = testAnalysisContextFor(source, {

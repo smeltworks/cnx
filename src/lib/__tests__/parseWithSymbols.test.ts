@@ -417,8 +417,8 @@ describe("parseWithSymbols", () => {
       const member = result.symbols.find(
         (s) => s.name === "DR" && s.kind === "registerMember",
       );
-      expect(member?.id).toBe("Board.GPIO.DR");
-      expect(member?.parentId).toBe("Board.GPIO");
+      expect(member?.id).toBe("Board.GpioPort.DR");
+      expect(member?.parentId).toBe("Board.GpioPort");
     });
 
     it("struct has correct id and parentId", () => {
@@ -558,7 +558,10 @@ register GpioPort {
 GpioPort GPIO(0x40000000);
 `);
       const parent = result.symbols.find((s) => s.kind === "register")!;
-      const members = result.symbols.filter((s) => s.kind === "registerMember");
+      // ADR-072: the instance lists the same members again, under its own id
+      const members = result.symbols.filter(
+        (s) => s.kind === "registerMember" && s.parentId === parent.id,
+      );
       expect(members).toHaveLength(3);
       expect(new Set(members.map((m) => m.line)).size).toBe(3);
       expect(members.map((m) => m.line)).not.toContain(parent.line);

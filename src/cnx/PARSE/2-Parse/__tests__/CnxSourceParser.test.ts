@@ -186,10 +186,7 @@ scope C {
     it.each([
       ["a struct body", `struct S {\n    scope B { u8 x <- 1; }\n}`],
       ["a function body", `void main() {\n    scope B { u8 x <- 1; }\n}`],
-      [
-        "a register body",
-        `register R {\n    scope B { u8 x <- 1; }\n}`,
-      ],
+      ["a register body", `register R {\n    scope B { u8 x <- 1; }\n}`],
     ])(
       "does not claim a nested scope for a scope keyword in %s",
       (_, source) => {

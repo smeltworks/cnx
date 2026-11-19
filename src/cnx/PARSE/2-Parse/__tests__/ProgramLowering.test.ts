@@ -27,6 +27,7 @@ describe("ProgramLowering", () => {
     expect(program.declarations.map((d) => d.declaration.kind)).toEqual([
       "scope",
       "register",
+      "constructorDeclaration",
       "struct",
       "enum",
       "bitmap",
@@ -144,8 +145,7 @@ describe("ProgramLowering", () => {
     ).declarations;
     expect(declaration).toMatchObject({
       kind: "register",
-      name: "GPIO",
-      address: { written: "0x40000000" },
+      name: "GpioPort",
       members: [
         { name: "DR", access: "rw", offset: { written: "0x04" } },
         { name: "SR", access: "ro", offset: { written: "0x08" } },

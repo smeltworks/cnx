@@ -146,9 +146,9 @@ describe("CnxResolver Integration", () => {
         registry,
       ).symbols;
 
-      expect(symbols).toHaveLength(1);
+      expect(symbols).toHaveLength(2);
       expect(SymbolGuards.isRegister(symbols[0])).toBe(true);
-      expect(symbols[0].name).toBe("GPIO");
+      expect(symbols[0].name).toBe("GpioPort");
     });
   });
 
@@ -261,7 +261,7 @@ describe("CnxResolver Integration", () => {
         registry,
       ).symbols;
 
-      expect(symbols).toHaveLength(2);
+      expect(symbols).toHaveLength(3);
 
       const regSymbol = symbols.find((s) => s.name === "GPIO");
       expect(regSymbol).toBeDefined();
@@ -296,7 +296,7 @@ describe("CnxResolver Integration", () => {
       ).symbols;
 
       // Scope + bitmap + register
-      expect(symbols).toHaveLength(3);
+      expect(symbols).toHaveLength(4);
 
       // Both bitmap and register have bare names with scope references
       const regSymbol = symbols.find((s) => s.name === "CTRL");
@@ -401,7 +401,7 @@ describe("CnxResolver Integration", () => {
       // 2 scope functions (init, move)
       // 1 top-level function (main)
       // Total: 10
-      expect(symbols).toHaveLength(10);
+      expect(symbols).toHaveLength(11);
 
       // Verify each type is present
       const structSymbols = symbols.filter((s) => s.kind === "struct");
@@ -423,7 +423,7 @@ describe("CnxResolver Integration", () => {
       expect(functionSymbols).toHaveLength(3);
 
       const variableSymbols = symbols.filter((s) => s.kind === "variable");
-      expect(variableSymbols).toHaveLength(2);
+      expect(variableSymbols).toHaveLength(3);
     });
 
     it("resolves multiple scopes", () => {
@@ -687,6 +687,7 @@ describe("CnxResolver Integration", () => {
       expect(declared.sourceFile).toBe("test.cnx");
       expect([...declared.declaredScopeTypes].sort()).toEqual([
         "Local__E",
+        "Local__GpioPort",
         "Local__S",
       ]);
     });
