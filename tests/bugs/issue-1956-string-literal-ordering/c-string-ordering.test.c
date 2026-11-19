@@ -11,19 +11,28 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 int main(void) {
     const char hay[9] = "zebra";
     const char* c_whole = strstr(hay, "zebra");
     const char* c_tail = strstr(hay, "bra");
-    if ((strcmp(c_whole, c_tail) > 0) != true) {
-        return 1;
-    }
-    if ((strcmp(c_whole, c_tail) <= 0) != false) {
-        return 2;
-    }
-    if ((strcmp(c_tail, hay) < 0) != true) {
-        return 3;
+    if (c_whole != NULL) {
+        if (c_tail != NULL) {
+            if ((strcmp(c_whole, c_tail) > 0) != true) {
+                return 1;
+            }
+            if ((strcmp(c_whole, c_tail) <= 0) != false) {
+                return 2;
+            }
+            if ((strcmp(c_tail, hay) < 0) != true) {
+                return 3;
+            }
+        } else {
+            return 6;
+        }
+    } else {
+        return 5;
     }
     if ((strcmp(hay, "zebra") >= 0) != true) {
         return 4;

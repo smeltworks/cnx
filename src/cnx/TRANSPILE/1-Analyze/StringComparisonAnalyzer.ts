@@ -63,8 +63,8 @@ class StringComparisonAnalyzer {
   }
 
   /**
-   * Whether either of a comparison's first two operands is a string, having
-   * reported the other when it is not one
+   * Reports the operand beside a string that is not one, when cnx can type
+   * it, and returns whether it did; a pair of strings returns false
    */
   private pair(left: TExpression, right: TExpression, rule: string): boolean {
     const leftIsString = StringOperand.is(left, this.context);

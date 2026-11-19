@@ -18,7 +18,7 @@ extern const bool flag = true;
 extern const char first[5] = "a";
 
 // Two literals ordered, "a" < "b", reach C as strcmp("a", "b"), which cppcheck
-// rejects as a comparison of static strings, so the pair is a string and a literal
+// rejects as a comparison of static strings (#2458), so the pair is a string and a literal
 int main(void) {
     const bool r = strcmp(first, "b") < 0 == flag;
     if (r != true) {

@@ -1,6 +1,6 @@
-12:19 error[E0929]: 'n' is a u32, not a string
+11:19 error[E0929]: 'n' is a u32, not a string
        help: ADR-045: '<', '>', '<=' and '>=' order a string only with another string.
-13:15 error[E0929]: 'n' is a u32, not a string
+12:15 error[E0929]: 'n' is a u32, not a string
        help: ADR-045: '<', '>', '<=' and '>=' order a string only with another string.
-14:20 error[E0929]: 'flag' is a bool, not a string
+13:20 error[E0929]: 'flag' is a bool, not a string
        help: ADR-045: '<', '>', '<=' and '>=' order a string only with another string.
