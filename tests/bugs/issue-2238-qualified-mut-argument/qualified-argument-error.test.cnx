@@ -35,6 +35,7 @@ void main() {
     bump(count);
     bump(B1.LEN);
     bump((flag));
+    bump((B1.LEN));
     bump(S.shared);
     bump((cfg).total);
     bump(plain);

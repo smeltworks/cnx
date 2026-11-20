@@ -6,7 +6,9 @@
        help: Copy it into a `mut` local, pass that, then assign the local back to 'B1.LEN' (ADR-071, #2238).
 37:9 error[E0915]: cannot pass '(flag)' to `mut` parameter 'n' of function 'bump': it is volatile, and 'bump' would write it through a plain pointer, so the volatile access would be lost
        help: Copy it into a `mut` local, pass that, then assign the local back to '(flag)' (ADR-071, #2238).
-38:9 error[E0915]: cannot pass 'S.shared' to `mut` parameter 'n' of function 'bump': it is atomic, and 'bump' would write it through a plain pointer, so the atomic access would be lost
+38:9 error[E0915]: cannot pass '(B1.LEN)' to `mut` parameter 'n' of function 'bump': it is a register member, and 'bump' would write it through a plain pointer, so the volatile access would be lost
+       help: Copy it into a `mut` local, pass that, then assign the local back to '(B1.LEN)' (ADR-071, #2238).
+39:9 error[E0915]: cannot pass 'S.shared' to `mut` parameter 'n' of function 'bump': it is atomic, and 'bump' would write it through a plain pointer, so the atomic access would be lost
        help: Copy it into a `mut` local, pass that, then assign the local back to 'S.shared' (ADR-071, #2238).
-39:9 error[E0915]: cannot pass '(cfg).total' to `mut` parameter 'n' of function 'bump': it is volatile, and 'bump' would write it through a plain pointer, so the volatile access would be lost
+40:9 error[E0915]: cannot pass '(cfg).total' to `mut` parameter 'n' of function 'bump': it is volatile, and 'bump' would write it through a plain pointer, so the volatile access would be lost
        help: Copy it into a `mut` local, pass that, then assign the local back to '(cfg).total' (ADR-071, #2238).
