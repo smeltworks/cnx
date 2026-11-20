@@ -41,6 +41,8 @@ function writeRegisterBit(ctx: IAssignmentContext, memberName: string): string {
   const accessMod = ctx.state.symbols!.registerMemberAccess.get(memberName);
   const storage = storageOf(ctx, memberName);
   const bitIndex = ctx.renderSubscript(0);
+  // ADR-072: `GPIO1__DR` for an instance, `port->DR` through a parameter
+  const target = ctx.renderBitTarget();
 
   if (RegisterUtils.isWriteOnlyRegister(accessMod)) {
     AssignmentHandlerUtils.validateWriteOnlyValue(
@@ -50,7 +52,7 @@ function writeRegisterBit(ctx: IAssignmentContext, memberName: string): string {
       bitIndex,
     );
     return BitUtils.writeOnlySingleBit(
-      memberName,
+      target,
       bitIndex,
       ctx.generatedValue,
       storage,
@@ -59,7 +61,7 @@ function writeRegisterBit(ctx: IAssignmentContext, memberName: string): string {
   }
 
   return BitUtils.singleBitWrite(
-    memberName,
+    target,
     bitIndex,
     ctx.generatedValue,
     storage,
@@ -83,6 +85,7 @@ function writeRegisterBitRange(
   const start = ctx.renderSubscript(0);
   // With its fold (#1096): a register's `[0, W]` masked a runtime `1U << 32`
   const width = { text: ctx.renderSubscript(1), folded: ctx.foldSubscript(1) };
+  const target = ctx.renderBitTarget();
 
   if (RegisterUtils.isWriteOnlyRegister(accessMod)) {
     AssignmentHandlerUtils.validateWriteOnlyValue(
@@ -105,7 +108,7 @@ function writeRegisterBitRange(
     }
 
     return BitUtils.writeOnlyMultiBit(
-      memberName,
+      target,
       start,
       width,
       ctx.generatedValue,
@@ -114,7 +117,7 @@ function writeRegisterBitRange(
   }
 
   return BitUtils.multiBitWrite(
-    memberName,
+    target,
     start,
     width,
     ctx.generatedValue,

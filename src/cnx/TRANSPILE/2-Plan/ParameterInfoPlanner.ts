@@ -1,5 +1,6 @@
 import ParameterPassing from "./ParameterPassing";
 import ParameterByValue from "../../utils/ParameterByValue";
+import RegisterInstance from "../../utils/RegisterInstance";
 import type TParameterInfo from "../../types/TParameterInfo";
 import type IFunctionContextCallbacks from "./types/IFunctionContextCallbacks";
 import type IPlannedFunctionParameter from "./types/IPlannedFunctionParameter";
@@ -63,7 +64,13 @@ class ParameterInfoPlanner {
     // - If typedef says pointer BUT it's a primitive (like u8), don't treat as struct
     //   (primitives use forcePointerSemantics for dereference instead)
     // Issue #958: C-header typedef struct types are always treated as struct (pointer semantics)
-    const isStruct = (typeInfo.isStruct && !passing.byValue) || isOpaqueHandle;
+    // ADR-072: a register parameter is a pointer to its layout in C and C++
+    const isRegister = RegisterInstance.isType(
+      state.program?.symbolByCName(typeInfo.typeName),
+    );
+
+    const isStruct =
+      (typeInfo.isStruct && !passing.byValue) || isOpaqueHandle || isRegister;
 
     // Issue #895: Primitive types that become pointers need dereferencing when used as values
     // e.g., "u8 buf" becoming "uint8_t* buf" requires "*buf" when accessing the value
@@ -87,7 +94,8 @@ class ParameterInfoPlanner {
 
     // Issue #958: a C-header typedef struct -- an opaque handle, the same fact --
     // needs pointer semantics, like a callback pointer param
-    const forcePointerSemantics = isCallbackPointerParam || isOpaqueHandle;
+    const forcePointerSemantics =
+      isCallbackPointerParam || isOpaqueHandle || isRegister;
 
     return {
       name,
@@ -102,6 +110,7 @@ class ParameterInfoPlanner {
       forcePointerSemantics,
       isOpaqueHandle,
       isPassByValue: passing.byValue,
+      isRegister,
     };
   }
 

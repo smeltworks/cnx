@@ -15,6 +15,7 @@ interface IParameterSymbol {
   passing?: IParameterPassing; // #1639: decided once in 2.2, as the .c signature reads it
   isCallback?: boolean; // ADR-029/#1164: the param's declared type IS a callback function
   callbackTypedefName?: string; // ADR-029/#1164: the typedef to write it as (e.g. "onReceive_fp")
+  isRegister?: boolean; // ADR-072: a register parameter, a pointer to its layout
   isOpaqueHandle?: boolean; // Issue #995: type is opaque (incomplete struct), needs pointer not reference -- each element's, for an array (#996)
 }
 

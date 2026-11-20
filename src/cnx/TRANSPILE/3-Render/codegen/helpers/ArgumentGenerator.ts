@@ -147,6 +147,8 @@ class ArgumentGenerator {
         return ArgumentGenerator.handleLvalueArg(form.cast, callbacks, state);
       case "literal-address":
         return `&${callbacks.generateExpression()}`;
+      case "register":
+        return form.pointer;
       case "rvalue":
         return ArgumentGenerator.handleRvalueArg(
           form.compoundLiteral,

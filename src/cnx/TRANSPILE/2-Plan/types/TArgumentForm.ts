@@ -18,6 +18,8 @@ type TArgumentForm =
   | { readonly kind: "rvalue"; readonly compoundLiteral: string | null }
   /** C: a struct literal, by the address of its own compound literal (#1530) */
   | { readonly kind: "literal-address" }
+  // ADR-072: a register instance, as a pointer to its layout
+  | { readonly kind: "register"; readonly pointer: string }
   /** #2157: a list for an array parameter, passed as a temporary of its shape */
   | { readonly kind: "array-temp"; readonly array: IPlannedWholeArrayWrite }
   /**

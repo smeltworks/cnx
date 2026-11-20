@@ -1,4 +1,5 @@
 import RegisterInstance from "../../utils/RegisterInstance";
+import RegisterAddress from "../../utils/RegisterAddress";
 import BindingSite from "../../utils/BindingSite";
 import ForeignTypeFacts from "../../utils/ForeignTypeFacts";
 import SubscriptDepthValidator from "./SubscriptDepthValidator";
@@ -1843,6 +1844,11 @@ class FilePlanner {
     >,
   ): TArgumentForm {
     const object = ExpressionShape.unparenthesized(expression);
+    const instance = OperandTyper.registerInstanceOf(
+      object,
+      this.state.typingContext(),
+    );
+    if (instance !== null) return this.registerForm(instance);
     const form = ArgumentForm.of(
       this.boundArgumentName(object) !== null,
       passing.param?.baseType,
@@ -1857,6 +1863,21 @@ class FilePlanner {
       "2.1 rejected every `mut` argument that is not an object (ADR-006, E0915)",
     );
     return form;
+  }
+
+  /** ADR-072: an instance passed to a register parameter, at its address */
+  private registerForm(instance: string): TArgumentForm {
+    const register = this.state.program?.symbolByCName(instance);
+    invariant(
+      RegisterInstance.isInstance(register) &&
+        register.registerType !== null &&
+        register.baseAddress !== null,
+      `2.1 rejected an instance whose address does not fold (E0931, '${instance}')`,
+    );
+    return {
+      kind: "register",
+      pointer: `(${register.registerType}*)${RegisterAddress.render(register.baseAddress)}`,
+    };
   }
 
   private planExpectedTypes(

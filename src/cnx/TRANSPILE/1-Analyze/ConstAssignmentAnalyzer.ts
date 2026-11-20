@@ -42,6 +42,7 @@ import BoundDeclaration from "./helpers/BoundDeclaration";
 import WrittenBinding from "./helpers/WrittenBinding";
 import MutArgument from "./helpers/MutArgument";
 import BindingSite from "../../utils/BindingSite";
+import RegisterInstance from "../../utils/RegisterInstance";
 import type IVariableSymbol from "../../types/symbols/IVariableSymbol";
 import type IWrittenBinding from "./types/IWrittenBinding";
 import type TValueBinding from "../../types/TValueBinding";
@@ -83,6 +84,7 @@ class ConstAssignmentCheck {
         this.checkHandleStore(site.value, target.name);
       return;
     }
+    if (this.writesThroughRegister(target)) return;
 
     const suffix = ConstAssignmentCheck.targetSuffix(target.ops);
     this.found.push({
@@ -143,6 +145,24 @@ class ConstAssignmentCheck {
         "Through the copy, the object may be written (ADR-030); declare the source `mut` (ADR-071).",
       declaredAt: BindingSite.of(source.binding, this.context),
     });
+  }
+
+  /**
+   * ADR-072: `port.DR <- 1` writes the hardware a register parameter names,
+   * not the parameter, so the member's access mode governs it. Rebinding the
+   * parameter itself is still a write to it.
+   */
+  private writesThroughRegister(target: IWrittenBinding): boolean {
+    const binding = target.binding;
+    return (
+      target.ops.length > 0 &&
+      binding?.kind === "local" &&
+      binding.declaration.kind === "parameter" &&
+      RegisterInstance.typeNamedBy(
+        this.context.program,
+        binding.declaration.type,
+      ) !== null
+    );
   }
 
   /** How the target's shape is named in E0900's message. */

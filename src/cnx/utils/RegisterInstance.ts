@@ -1,6 +1,8 @@
 import type IProgram from "../types/IProgram";
 import type IRegisterSymbol from "../types/symbols/IRegisterSymbol";
 import type TSymbol from "../types/symbols/TSymbol";
+import type TType from "../types/TType";
+import TypeResolver from "./TypeResolver";
 
 /**
  * ADR-072 Part 1: the register instance 1.4 bound a declaration to, if any.
@@ -20,6 +22,15 @@ class RegisterInstance {
   }
 
   /** By the scope path the declaration is a member of ("" is global) */
+  /** ADR-072: the register type `type` names, as a parameter's type does */
+  static typeNamedBy(
+    program: IProgram | null | undefined,
+    type: TType,
+  ): IRegisterSymbol | null {
+    const symbol = program?.symbolByCName(TypeResolver.getTypeName(type));
+    return RegisterInstance.isType(symbol) ? symbol : null;
+  }
+
   static atPath(
     program: IProgram | null | undefined,
     scopePath: string,

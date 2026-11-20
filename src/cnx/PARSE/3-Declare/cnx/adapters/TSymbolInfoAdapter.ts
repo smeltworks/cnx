@@ -358,25 +358,7 @@ class TSymbolInfoAdapter {
     // instance whose address did not fold is still declared (E0931 reports
     // the address), but it has no address to emit.
     const cName = register.fullyQualifiedCName;
-    if (register.registerType === null) {
-      maps.knownRegisterTypes.add(cName);
-      return;
-    }
-    maps.knownRegisters.add(cName);
-    const baseAddress = register.baseAddress;
-    if (baseAddress === null) return;
-    maps.registerBaseAddresses.set(cName, baseAddress);
-    maps.memberCNames.set(
-      cName,
-      TSymbolInfoAdapter.memberCNamesOf(register.members.values()),
-    );
-
-    // Check if this is a scoped register (has non-global scope)
-    const isScoped = !ScopeUtils.isGlobalScopePath(register.scopePath);
-    if (isScoped) {
-      maps.scopedRegisters.set(cName, baseAddress);
-    }
-
+    // ADR-072: a type's members are what a register parameter reaches
     for (const memberInfo of register.members.values()) {
       const fullName = memberInfo.fullyQualifiedCName;
 
@@ -394,6 +376,24 @@ class TSymbolInfoAdapter {
           TypeResolver.getTypeName(memberInfo.type),
         ),
       );
+    }
+    if (register.registerType === null) {
+      maps.knownRegisterTypes.add(cName);
+      return;
+    }
+    maps.knownRegisters.add(cName);
+    const baseAddress = register.baseAddress;
+    if (baseAddress === null) return;
+    maps.registerBaseAddresses.set(cName, baseAddress);
+    maps.memberCNames.set(
+      cName,
+      TSymbolInfoAdapter.memberCNamesOf(register.members.values()),
+    );
+
+    // Check if this is a scoped register (has non-global scope)
+    const isScoped = !ScopeUtils.isGlobalScopePath(register.scopePath);
+    if (isScoped) {
+      maps.scopedRegisters.set(cName, baseAddress);
     }
   }
 

@@ -13,6 +13,7 @@ import IHeaderSymbol from "../types/IHeaderSymbol";
 import IParameterSymbol from "../../../../utils/types/IParameterSymbol";
 import TypeResolver from "../../../../utils/TypeResolver";
 import ScopeUtils from "../../../../utils/ScopeUtils";
+import RegisterInstance from "../../../../utils/RegisterInstance";
 import type TType from "../../../../types/TType";
 import type TranspileState from "../../../TranspileState";
 import invariant from "../../../../utils/invariant";
@@ -80,6 +81,9 @@ class HeaderSymbolAdapter {
         // `isHeldThroughPointer` itself, a second decision that agreed with the
         // `.c`'s only because both called one predicate.
         isOpaqueHandle: p.isOpaqueHandle || undefined,
+        isRegister:
+          RegisterInstance.typeNamedBy(state.program, p.type) !== null ||
+          undefined,
       };
     });
 

@@ -1,5 +1,6 @@
 import TypedefParamParser from "../../utils/TypedefParamParser";
 import ParameterByValue from "../../utils/ParameterByValue";
+import RegisterInstance from "../../utils/RegisterInstance";
 import type ICallbackTypeInfo from "../../types/ICallbackTypeInfo";
 import type TranspileState from "../TranspileState";
 import type IParameterPassing from "../../types/IParameterPassing";
@@ -35,6 +36,10 @@ class ParameterPassing {
       paramIndex
     ];
     const isOpaqueHandle = param.isOpaqueHandle === true;
+    // ADR-072: a register argument is the instance's layout, through a pointer
+    if (RegisterInstance.typeNamedBy(facts.program, param.type) !== null) {
+      return ParameterPassing.passing(false, false, false, false);
+    }
 
     // Issue #895: a C callback typedef the function is wired to decides
     // pointer or value. A `mut` parameter keeps its pointer even where the

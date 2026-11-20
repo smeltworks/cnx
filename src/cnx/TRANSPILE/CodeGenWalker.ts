@@ -2819,6 +2819,7 @@ class CodeGenWalker {
         callbackTypes: this.host.state.callbackTypes,
         passing,
         isOpaqueHandle: registered.isOpaqueHandle ?? false,
+        isRegister: registered.isRegister ?? false,
         declarationOf: (typeName) => this.host.state.declarationOf(typeName),
       },
     );
