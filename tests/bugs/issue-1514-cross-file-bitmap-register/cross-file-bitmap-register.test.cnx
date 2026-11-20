@@ -39,7 +39,7 @@ OwnedBlock OWNREG(0x40002000);
 
 register DeviceBlock {
     0x00 rw Deep D,
-    0x02 rw EMode M,
+    0x04 rw EMode M,
 }
 
 DeviceBlock DREG(0x40005000);
