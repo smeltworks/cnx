@@ -52,8 +52,31 @@ scope Board {
     }
 }
 
+register Outer {
+    0x00 rw GpioPort INNER,
+}
+
+scope Hw {
+    register Port {
+        0x00 rw u32 DR,
+    }
+
+    register Nest {
+        0x00 rw Port INNER,
+    }
+
+    u32 conv(u32 raw) {
+        return (Port)raw;
+    }
+}
+
+u32 cast(u32 raw) {
+    return (GpioPort)raw;
+}
+
 void main() {
     GpioPort local;
+    for (GpioPort p <- GPIO1; GPIO1.DR = 0; ) {}
     Ok fine;
     GPIO1.DR <- 1;
 }

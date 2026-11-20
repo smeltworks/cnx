@@ -46,6 +46,8 @@ import BUILTIN_TYPE_NAMES from "./BUILTIN_TYPE_NAMES";
 import IUndeclaredTypeError from "./types/IUndeclaredTypeError";
 import BindingSite from "../../utils/BindingSite";
 import NameExistence from "../../PARSE/3-Declare/NameExistence";
+import RegisterInstance from "../../utils/RegisterInstance";
+import StatementNodes from "../../utils/StatementNodes";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionChildren from "../../utils/ExpressionChildren";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
@@ -63,7 +65,11 @@ import type ISourceSpan from "../../types/ISourceSpan";
 class UndeclaredTypeWalk {
   public constructor(private readonly analyzer: UndeclaredTypeAnalyzer) {}
 
+  /** The type positions another rule decides for a register type */
+  private ownedElsewhere: ReadonlySet<TTypeSyntax> = new Set();
+
   public declaration(declaration: TMemberDeclaration, scope: string): void {
+    this.ownedElsewhere = this.analyzer.registerPositionsOf(declaration, scope);
     for (const part of DeclarationParts.of(declaration)) {
       if (part.kind === "type") this.type(part.type, scope);
       else this.expression(part.expression, scope);
@@ -77,16 +83,29 @@ class UndeclaredTypeWalk {
     }
   }
 
-  private type(type: TTypeSyntax, scope: string): void {
+  private type(type: TTypeSyntax, scope: string, owned = false): void {
+    const elsewhere = owned || this.ownedElsewhere.has(type);
     switch (type.kind) {
       case "user":
-        this.analyzer.checkUse(type.name, scope, type.span);
+        this.analyzer.checkUse(type.name, scope, type.span, elsewhere);
         return;
       case "scoped":
-        this.analyzer.checkScopedUse(type.text, type.name, scope, type.span);
+        this.analyzer.checkScopedUse(
+          type.text,
+          type.name,
+          scope,
+          type.span,
+          elsewhere,
+        );
         return;
       case "global":
-        this.analyzer.checkScopedUse(type.text, type.name, "", type.span);
+        this.analyzer.checkScopedUse(
+          type.text,
+          type.name,
+          "",
+          type.span,
+          elsewhere,
+        );
         return;
       case "qualified":
         // #2116: the member the path names, by identity, read for the
@@ -96,10 +115,11 @@ class UndeclaredTypeWalk {
           type.path.slice(1).join("."),
           type.path[0],
           type.span,
+          elsewhere,
         );
         return;
       case "array":
-        this.type(type.element, scope);
+        this.type(type.element, scope, elsewhere);
         for (const dimension of type.dimensions) {
           if (dimension) this.expression(dimension, scope);
         }
@@ -151,9 +171,58 @@ class UndeclaredTypeAnalyzer {
     return this.errors;
   }
 
+  /**
+   * ADR-072: the type positions whose register type another rule decides --
+   * a file- or scope-level instance (its one allowed position), a parameter
+   * (E0933) and a local instance (E0934). Every other position of a register
+   * type is E0936, decided here because this walk visits them all.
+   */
+  registerPositionsOf(
+    declaration: TMemberDeclaration,
+    scope: string,
+  ): ReadonlySet<TTypeSyntax> {
+    const owned = new Set<TTypeSyntax>();
+    const program = this.context.program;
+    if (
+      declaration.kind === "constructorDeclaration" &&
+      RegisterInstance.inScope(
+        program,
+        scope === "" ? null : scope,
+        declaration.name,
+      )
+    ) {
+      owned.add(declaration.type);
+    }
+    if (declaration.kind === "function") {
+      for (const parameter of declaration.parameters ?? []) {
+        owned.add(parameter.type);
+      }
+      for (const statement of StatementNodes.in(declaration)) {
+        if (statement.kind === "constructorDeclaration")
+          owned.add(statement.type);
+      }
+    }
+    return owned;
+  }
+
   /** One written bare type name: before its definition, unknown, or a register */
-  checkUse(typeName: string, scope: string, span: ISourceSpan): void {
+  checkUse(
+    typeName: string,
+    scope: string,
+    span: ISourceSpan,
+    ownedElsewhere = false,
+  ): void {
     if (BUILTIN_TYPE_NAMES.has(typeName)) {
+      return;
+    }
+    const bound =
+      this.context.program.scopeTypeOf(
+        this.context.sourceFile,
+        scope,
+        typeName,
+      ) ?? this.context.program.memberOf("", typeName);
+    if (!ownedElsewhere && RegisterInstance.isType(bound)) {
+      this.addNotInstanceError(typeName, span);
       return;
     }
     // ADR-057: inside a scope a bare `T` may name a scope-declared type,
@@ -192,8 +261,13 @@ class UndeclaredTypeAnalyzer {
     name: string,
     scope: string,
     span: ISourceSpan,
+    ownedElsewhere = false,
   ): void {
     const member = this.context.program.memberOf(scope, name);
+    if (!ownedElsewhere && RegisterInstance.isType(member)) {
+      this.addNotInstanceError(written, span);
+      return;
+    }
     this.checkNamed(
       written,
       member?.cnxScopedName,
@@ -345,6 +419,19 @@ class UndeclaredTypeAnalyzer {
       `'${typeName}' is a register instance, not a type; its register type is the type`,
       {},
     );
+  }
+
+  /** E0936: a register type anywhere but the type of a one-address instance */
+  addNotInstanceError(typeName: string, span: ISourceSpan): void {
+    this.errors.push({
+      code: "E0936",
+      typeName,
+      span,
+      aboutItsPosition: true,
+      message: `'${typeName}' is a register type; a register type only declares a fixed-address instance (ADR-072)`,
+      helpText:
+        "Declare an instance at file or scope level with one address, `GpioPort GPIO1(0x401B8000);`. A register as a variable, array element, struct field, register member, return value or cast is a data register (ADR-072 Part 4), which is not supported yet.",
+    });
   }
 
   private _push(

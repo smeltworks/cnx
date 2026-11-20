@@ -2,8 +2,8 @@ import type IProgram from "../types/IProgram";
 
 /**
  * The member kinds `bindValue` does not bind, so no position decides them: a
- * type, or a register (ADR-004 makes it a value, but the binder binds only
- * variables and functions)
+ * type, a register type among them, or a register instance (ADR-072). A type
+ * named as a value is E0897's to reject, not this one's
  */
 const POSITION_FREE_KINDS: ReadonlySet<string> = new Set([
   "struct",

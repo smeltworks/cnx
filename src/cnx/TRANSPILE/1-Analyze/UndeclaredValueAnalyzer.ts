@@ -435,10 +435,7 @@ class UndeclaredValueAnalyzer {
       identifier,
       span,
       aboutItsPosition: true,
-      // ADR-072: a register type names a layout, not a value at an address
-      message: this.context.symbols.knownRegisterTypes.has(identifier)
-        ? `'${identifier}' is a register type, not a value; reach its members through an instance`
-        : `'${identifier}' is not defined`,
+      message: `'${identifier}' is not defined`,
     });
   }
 
