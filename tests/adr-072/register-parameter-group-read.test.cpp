@@ -14,6 +14,7 @@
 
 // ADR-072: a grouped member read through a register parameter is reached
 // through its offset group's union, the same path its write takes.
+/* ADR-072: Uart must sit at the offsets and widths its register declares */
 static_assert(offsetof(Uart, AT__0x00) == 0x00U, "Uart.AT__0x00 is at 0x00");
 static_assert(sizeof(((Uart*)0)->AT__0x00.RBR) == 1U, "Uart.RBR is 1 byte(s)");
 static_assert(sizeof(((Uart*)0)->AT__0x00.THR) == 1U, "Uart.THR is 1 byte(s)");
@@ -21,6 +22,7 @@ static_assert(sizeof(((Uart*)0)->AT__0x00.DLL) == 1U, "Uart.DLL is 1 byte(s)");
 static_assert(offsetof(Uart, LSR) == 0x05U, "Uart.LSR is at 0x05");
 static_assert(sizeof(((Uart*)0)->LSR) == 1U, "Uart.LSR is 1 byte(s)");
 
+/* ADR-072: Dev must sit at the offsets and widths its register declares */
 static_assert(offsetof(Dev, AT__0x00) == 0x00U, "Dev.AT__0x00 is at 0x00");
 static_assert(sizeof(((Dev*)0)->AT__0x00.CTRL) == 1U, "Dev.CTRL is 1 byte(s)");
 static_assert(sizeof(((Dev*)0)->AT__0x00.STATUS) == 1U, "Dev.STATUS is 1 byte(s)");

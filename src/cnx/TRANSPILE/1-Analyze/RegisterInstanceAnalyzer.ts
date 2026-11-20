@@ -12,7 +12,6 @@
  * E0933 is retired: a register parameter is supported now, bound to an
  * instance at each call (ADR-072).
  */
-import type ITargetWidths from "../../types/ITargetWidths";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TTypeSyntax from "../../types/syntax/TTypeSyntax";
 import type IBaseAnalysisError from "./types/IBaseAnalysisError";
@@ -131,7 +130,6 @@ class RegisterInstanceAnalyzer {
     },
     register: IRegisterSymbol,
   ): IBaseAnalysisError[] {
-    const widths = RegisterLayout.widthsOf(this.context.program.target());
     const found: IBaseAnalysisError[] = [];
     const placed: Array<{
       readonly name: string;
@@ -144,7 +142,7 @@ class RegisterInstanceAnalyzer {
       const member = register.members.get(syntax.name);
       const start = member?.offsetValue ?? null;
       if (member === undefined || start === null || start < 0n) continue;
-      const bytes = this.bytesOf(member, widths);
+      const bytes = member.bytes;
       if (bytes === null) continue;
       const end = start + bytes;
       const misaligned = this.misaligned(syntax, member, start, bytes);
@@ -238,10 +236,7 @@ class RegisterInstanceAnalyzer {
     for (const member of instance.members.values()) {
       if (member.offsetValue === null || member.offsetValue < 0n) continue;
       const last =
-        instance.baseAddress +
-        member.offsetValue +
-        this.bytesOf(member, RegisterLayout.widthsOf(target))! -
-        1n;
+        instance.baseAddress + member.offsetValue + member.bytes! - 1n;
       if (last < limit) continue;
       found.push({
         aboutItsPosition: true,
@@ -285,18 +280,6 @@ class RegisterInstanceAnalyzer {
       span: argument.span,
       message: `'${argument.name}' is not defined`,
     };
-  }
-
-  /** Null where the target, and so a pointer's or an int's width, is unknown */
-  private bytesOf(
-    member: IRegisterMemberSymbol,
-    widths: ITargetWidths,
-  ): bigint | null {
-    return RegisterLayout.bytesOf(
-      member,
-      widths,
-      this.context.symbols.bitmapBitWidth,
-    );
   }
 
   /** `Type name(expr);` whose type is not a register: a C++ constructor (#375) */

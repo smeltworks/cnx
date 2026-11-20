@@ -103,7 +103,6 @@ import type TPlannedCaseLabel from "./3-Render/codegen/types/TPlannedCaseLabel";
 import enumGenerator from "./3-Render/codegen/generators/declarationGenerators/EnumGenerator";
 import bitmapGenerator from "./3-Render/codegen/generators/declarationGenerators/BitmapGenerator";
 import RegisterAddress from "../utils/RegisterAddress";
-import RegisterLayout from "../utils/RegisterLayout";
 import renderRegisterLayout from "./3-Render/codegen/generators/declarationGenerators/RegisterLayoutGenerator";
 import renderRegisterLayoutAsserts from "./3-Render/codegen/generators/declarationGenerators/RegisterLayoutAssertGenerator";
 import RegisterBlockPlacement from "./3-Render/codegen/generators/declarationGenerators/RegisterBlockPlacement";
@@ -2397,17 +2396,12 @@ class CodeGenWalker {
     if (!RegisterInstance.isType(type) || !type.isParameterLayout) {
       return "";
     }
-    const widths = RegisterLayout.widthsOf(state.program!.target());
     const symbols = state.symbols!;
     const members = [...type.members.values()].map((member) => {
       const cType = symbols.registerMemberCTypes.get(
         member.fullyQualifiedCName,
       );
-      const bytes = RegisterLayout.bytesOf(
-        member,
-        widths,
-        symbols.bitmapBitWidth,
-      );
+      const bytes = member.bytes;
       invariant(
         cType !== undefined && member.offsetValue !== null && bytes !== null,
         "1.4 settles every register member's C type, offset and width",

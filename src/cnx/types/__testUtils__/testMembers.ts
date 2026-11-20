@@ -118,10 +118,12 @@ class TestMembers {
         | "group"
         | "layoutField"
         | "layoutUnion"
+        | "bytes"
       > & {
         readonly group?: number | null;
         readonly layoutField?: string;
         readonly layoutUnion?: string | null;
+        readonly bytes?: bigint | null;
       }
     >,
   ): Map<string, IRegisterMemberSymbol> {
@@ -134,6 +136,7 @@ class TestMembers {
         group: null,
         layoutField: name,
         layoutUnion: null,
+        bytes: null,
         ...rest,
         kind: "register_member",
       });

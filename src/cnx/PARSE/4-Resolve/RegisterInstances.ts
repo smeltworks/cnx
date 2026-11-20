@@ -6,6 +6,7 @@ import type TConstExpr from "../../types/TConstExpr";
 import type IConstantEnvironment from "../../utils/types/IConstantEnvironment";
 import ConstantEvaluator from "../../utils/ConstantEvaluator";
 import RegisterLayout from "../../utils/RegisterLayout";
+import type ITargetWidths from "../../types/ITargetWidths";
 import TypeResolver from "../../utils/TypeResolver";
 import ScopeFunctions from "./ScopeFunctions";
 import type IFunctionSymbol from "../../types/symbols/IFunctionSymbol";
@@ -27,8 +28,10 @@ class RegisterInstances {
   static bind(
     symbolsByFile: ReadonlyMap<string, ReadonlyArray<TSymbol>>,
     environmentOf: (sourceFile: string) => IConstantEnvironment,
+    widths: ITargetWidths,
   ): Map<string, ReadonlyArray<TSymbol>> {
     const types = new Map<string, IRegisterSymbol>();
+    const bitmapBitWidth = RegisterInstances.bitmapBitWidths(symbolsByFile);
     const taken = RegisterInstances.parameterTypeNames(symbolsByFile);
     const settled = new Map<string, ReadonlyArray<TSymbol>>();
     for (const [sourceFile, symbols] of symbolsByFile) {
@@ -40,7 +43,12 @@ class RegisterInstances {
             return symbol;
           }
           const type = {
-            ...RegisterInstances.withOffsets(symbol, env),
+            ...RegisterInstances.withOffsets(
+              symbol,
+              env,
+              widths,
+              bitmapBitWidth,
+            ),
             isParameterLayout: taken.has(symbol.fullyQualifiedCName),
           };
           types.set(type.fullyQualifiedCName, type);
@@ -70,6 +78,21 @@ class RegisterInstances {
       result.set(sourceFile, bound);
     }
     return result;
+  }
+
+  /** Each bitmap's bit width, by C name: a member of one is its backing integer */
+  private static bitmapBitWidths(
+    symbolsByFile: ReadonlyMap<string, ReadonlyArray<TSymbol>>,
+  ): Map<string, number> {
+    const widths = new Map<string, number>();
+    for (const symbols of symbolsByFile.values()) {
+      for (const symbol of symbols) {
+        if (symbol.kind === "bitmap") {
+          widths.set(symbol.fullyQualifiedCName, symbol.bitWidth);
+        }
+      }
+    }
+    return widths;
   }
 
   /** Every type name some function's parameter is declared with */
@@ -122,6 +145,8 @@ class RegisterInstances {
   private static withOffsets(
     type: IRegisterSymbol,
     env: IConstantEnvironment,
+    widths: ITargetWidths,
+    bitmapBitWidth: ReadonlyMap<string, number>,
   ): IRegisterSymbol {
     const members = new Map<string, IRegisterMemberSymbol>();
     for (const [name, member] of type.members) {
@@ -129,6 +154,7 @@ class RegisterInstances {
       members.set(name, {
         ...member,
         offsetValue,
+        bytes: RegisterLayout.bytesOf(member, widths, bitmapBitWidth),
         layoutUnion:
           member.group === null || offsetValue === null
             ? null

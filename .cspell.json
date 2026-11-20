@@ -403,6 +403,7 @@
     "opensource",
     "OSAL",
     "OSSM",
+    "offsetof",
     "oxlint",
     "Parasoft",
     "parsetree",

@@ -54,6 +54,13 @@ interface IRegisterMemberSymbol extends IBaseSymbol {
    * and until then
    */
   readonly layoutUnion: string | null;
+
+  /**
+   * ADR-072: the bytes the member occupies as C lays it out, settled once by
+   * 1.4 from the target's widths; null until then, and where the target is
+   * unknown
+   */
+  readonly bytes: bigint | null;
 }
 
 export default IRegisterMemberSymbol;

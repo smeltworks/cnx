@@ -16,6 +16,7 @@
 // offset whatever its type -- an enum is as wide as a C int, a bitmap24 as
 // the uint32_t it is. A member may be named `length`, and a register in
 // parentheses is still that register.
+/* ADR-072: Blk must sit at the offsets and widths its register declares */
 static_assert(offsetof(Blk, MODE) == 0x00U, "Blk.MODE is at 0x00");
 static_assert(sizeof(((Blk*)0)->MODE) == 4U, "Blk.MODE is 4 byte(s)");
 static_assert(offsetof(Blk, CTL) == 0x04U, "Blk.CTL is at 0x04");

@@ -12,7 +12,9 @@ function renderRegisterLayoutAsserts(
   keyword: string,
 ): string {
   const name = planned.name;
-  const lines: string[] = [];
+  const lines: string[] = [
+    `/* ADR-072: ${name} must sit at the offsets and widths its register declares */`,
+  ];
   const slots = new Set<string>();
   for (const member of planned.members) {
     const slotName = member.union ?? member.name;

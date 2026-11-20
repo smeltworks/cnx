@@ -15,6 +15,7 @@
 // written as its struct, with the headers its member types need.
 /* Scope: Board */
 
+/* ADR-072: Board__Port must sit at the offsets and widths its register declares */
 static_assert(offsetof(Board__Port, DR) == 0x00U, "Board__Port.DR is at 0x00");
 static_assert(sizeof(((Board__Port*)0)->DR) == 4U, "Board__Port.DR is 4 byte(s)");
 static_assert(offsetof(Board__Port, ODR) == 0x08U, "Board__Port.ODR is at 0x08");

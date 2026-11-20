@@ -76,6 +76,7 @@ class RegisterCollector {
         group: member.group,
         layoutField: memberName,
         layoutUnion: null,
+        bytes: null,
       };
 
       members.set(memberName, memberInfo);

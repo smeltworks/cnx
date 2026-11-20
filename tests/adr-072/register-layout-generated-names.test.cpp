@@ -14,6 +14,7 @@
 // ADR-072: the names a register layout generates for its gaps and offset
 // groups carry `__`, which ADR-063 keeps out of a cnx name, so a member
 // spelled like one of them never collides with it.
+/* ADR-072: Odd must sit at the offsets and widths its register declares */
 static_assert(offsetof(Odd, A) == 0x00U, "Odd.A is at 0x00");
 static_assert(sizeof(((Odd*)0)->A) == 1U, "Odd.A is 1 byte(s)");
 static_assert(offsetof(Odd, RESERVED_0x01) == 0x04U, "Odd.RESERVED_0x01 is at 0x04");

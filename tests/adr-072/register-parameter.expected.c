@@ -16,11 +16,13 @@
 // ADR-072: a register parameter is bound to an instance at each call. The
 // function reaches the members of whichever instance it is called with,
 // grouped members included, and passes its parameter on to another.
+/* ADR-072: GpioPort must sit at the offsets and widths its register declares */
 _Static_assert(offsetof(GpioPort, DR) == 0x00U, "GpioPort.DR is at 0x00");
 _Static_assert(sizeof(((GpioPort*)0)->DR) == 4U, "GpioPort.DR is 4 byte(s)");
 _Static_assert(offsetof(GpioPort, ISR) == 0x18U, "GpioPort.ISR is at 0x18");
 _Static_assert(sizeof(((GpioPort*)0)->ISR) == 4U, "GpioPort.ISR is 4 byte(s)");
 
+/* ADR-072: Uart must sit at the offsets and widths its register declares */
 _Static_assert(offsetof(Uart, AT__0x00) == 0x00U, "Uart.AT__0x00 is at 0x00");
 _Static_assert(sizeof(((Uart*)0)->AT__0x00.RBR) == 1U, "Uart.RBR is 1 byte(s)");
 _Static_assert(sizeof(((Uart*)0)->AT__0x00.THR) == 1U, "Uart.THR is 1 byte(s)");
@@ -46,6 +48,7 @@ uint8_t status(Uart* u) {
 
 /* Scope: Board */
 
+/* ADR-072: Board__Port must sit at the offsets and widths its register declares */
 _Static_assert(offsetof(Board__Port, DR) == 0x00U, "Board__Port.DR is at 0x00");
 _Static_assert(sizeof(((Board__Port*)0)->DR) == 4U, "Board__Port.DR is 4 byte(s)");
 

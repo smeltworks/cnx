@@ -33,8 +33,8 @@ class RegisterLayout {
   }
 
   /** The widths a layout depends on, from the program's target */
-  static widthsOf(target: TRunTarget): ITargetWidths {
-    if (target.kind !== "resolved") {
+  static widthsOf(target: TRunTarget | null): ITargetWidths {
+    if (target?.kind !== "resolved") {
       return { pointerBits: null, intBits: null, doubleBits: null };
     }
     return {
