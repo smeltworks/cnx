@@ -11,11 +11,13 @@
 **Amends:** ADR-016 (`### Scoped Registers` — takes effect when Part 1 is implemented; that section's `@ address` examples go with it)
 **Related ADRs:** ADR-034 (Bitmap Types), ADR-033 (Packed Structs — Rejected; Part 4 is the safe alternative), ADR-073 (Scaled Fields — formerly Part 5), ADR-074 (Byte-Order Reversal)
 
-> **Part 1 is partly implemented.** Register types, fixed-address instances,
+> **Part 1 is implemented.** Register types, fixed-address instances,
 > compile-time addresses and reserved member names compile (#2461), and the
-> `@ address` form is gone. A register parameter (E0933) and a register type in any
-> position but a one-address instance (E0936) are rejected until the rest of Part 1
-> and Part 4 land. Parts 2–4 are not implemented.
+> `@ address` form is gone. A register parameter is bound to an instance at
+> each call; offset groups, the overlap rule (E0938) and the alignment rule
+> (E0939) hold for every register. A register type in any position but a
+> one-address instance or a parameter (E0936) is rejected until Part 4 lands.
+> Parts 2–4 are not implemented.
 
 ## Context
 
@@ -840,12 +842,13 @@ Part 1 (register types and fixed instances):
 | E0937 | A register instance in a type position (`GPIO1 x;`); its register type is the type                                                          | `tests/bugs/issue-1336-register-in-type-position/`                                                                                                      |
 | E0931 | A register instance's address cannot be used: not a compile-time constant, negative, or a member past the target's pointer range (ruling 5) | `tests/adr-072/register-address-not-constant-error.test.cnx`, `register-negative-offset-error.test.cnx`, `register-address-past-pointer-error.test.cnx` |
 | E0932 | A register member's offset is not a compile-time constant                                                                                   | `tests/adr-072/register-offset-not-constant-error.test.cnx`                                                                                             |
-| E0933 | A function parameter is a register; rejected until register parameters are specialized per instance                                         | `tests/adr-072/register-parameter-error.test.cnx`                                                                                                       |
 | E0934 | A register instance is declared inside a function                                                                                           | `tests/adr-072/register-local-instance-error.test.cnx`                                                                                                  |
 | E0935 | `Type name(expr);` whose type is not a register type (a C++ constructor takes named constants, #375)                                        | `tests/adr-072/constructor-expression-not-register-error.test.cnx`                                                                                      |
 | E0936 | A register type anywhere but a one-address file- or scope-level instance (data registers are Part 4)                                        | `tests/adr-072/register-type-position-error.test.cnx`                                                                                                   |
 | E0938 | Two register members overlap outside an offset group (Layout Rules)                                                                         | `tests/adr-072/register-overlap-error.test.cnx`                                                                                                         |
 | E0939 | A register member's offset is not a multiple of its size (Layout Rules)                                                                     | `tests/adr-072/register-misaligned-error.test.cnx`                                                                                                      |
+| E0940 | The argument to a register parameter is not an instance of its register type, nor a register parameter of that type                         | `tests/adr-072/register-parameter-error.test.cnx`                                                                                                       |
+| E0941 | A function with a register parameter is used as a callback type (ADR-029)                                                                   | `tests/adr-072/register-callback-type-error.test.cnx`                                                                                                   |
 
 <!-- MATRIX-SEVERITY code: E0931 -->
 
@@ -975,7 +978,7 @@ As for E0932: a register type is declared at file or scope level only, so the fu
 
 As for E0932: a register type is declared at file or scope level only, so the function and imported rows are off, and E0939 is reported on the member inside the register body, a position the matrix derives no context for, so `register-misaligned-error` asserts it without occupying a cell.
 
-<!-- MATRIX-SEVERITY code: E0933 -->
+<!-- MATRIX-SEVERITY code: E0940 -->
 
 | Context            | Relationship            | Severity |
 | ------------------ | ----------------------- | -------- |
@@ -1005,7 +1008,39 @@ As for E0932: a register type is declared at file or scope level only, so the fu
 | scope method       | exercised through chain | warn     |
 | for header         | exercised through chain | off      |
 
-A parameter exists only on a function, so the variable rows are off. The imported rows are off: the diagnostic is about the parameter's own declaration.
+An argument is written in a call, which only a function body holds, so the variable rows are off. The imported rows are off: the diagnostic is about the argument at the call, wherever the function is declared.
+
+<!-- MATRIX-SEVERITY code: E0941 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | off      |
+| top-level function | same file               | error    |
+| scope member       | same file               | off      |
+| scope method       | same file               | off      |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | off      |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | off      |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | off      |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | off      |
+| for header         | exercised through chain | off      |
+
+E0941 is reported at the callback type's position. A parameter's type is a function's own, so that row is an error; a struct field's type is written in the struct body, a position the matrix derives no context for, so `register-callback-type-error` asserts it without occupying a cell.
 
 <!-- MATRIX-SEVERITY code: E0934 -->
 

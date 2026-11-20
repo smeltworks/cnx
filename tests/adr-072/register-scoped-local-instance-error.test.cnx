@@ -1,0 +1,21 @@
+// test-error
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072, E0934: a register instance names hardware for the whole program,
+// so a scope method does not declare one either.
+
+scope Board {
+    public register Port {
+        0x00 rw u32 DR,
+    }
+
+    public Port P1(0x40000000);
+
+    public void local() {
+        Port LOCAL(0x40001000);
+    }
+}
+
+void main() {
+    Board.P1.DR <- 1;
+}

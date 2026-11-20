@@ -1,8 +1,10 @@
 28:12 error[E0940]: 'u' is a register of type 'Uart'; parameter 'port' of function 'setHigh' takes a 'GpioPort'
        help: Pass an instance of 'GpioPort' declared at file or scope level (`GpioPort NAME(address);`), or a 'GpioPort' parameter (ADR-072).
-33:12 error[E0940]: 'UART0' is a register of type 'Uart'; parameter 'port' of function 'setHigh' takes a 'GpioPort'
+33:16 error[E0940]: 'UART0' is a register of type 'Uart'; parameter 'port' of function 'setHigh' takes a 'GpioPort'
        help: Pass an instance of 'GpioPort' declared at file or scope level (`GpioPort NAME(address);`), or a 'GpioPort' parameter (ADR-072).
-35:12 error[E0940]: 'value' is not a register instance; parameter 'port' of function 'setHigh' takes a 'GpioPort'
+39:12 error[E0940]: 'UART0' is a register of type 'Uart'; parameter 'port' of function 'setHigh' takes a 'GpioPort'
        help: Pass an instance of 'GpioPort' declared at file or scope level (`GpioPort NAME(address);`), or a 'GpioPort' parameter (ADR-072).
-36:12 error[E0940]: 'GPIO1.DR' is not a register instance; parameter 'port' of function 'setHigh' takes a 'GpioPort'
+41:12 error[E0940]: 'value' is not a register instance; parameter 'port' of function 'setHigh' takes a 'GpioPort'
+       help: Pass an instance of 'GpioPort' declared at file or scope level (`GpioPort NAME(address);`), or a 'GpioPort' parameter (ADR-072).
+42:12 error[E0940]: 'GPIO1.DR' is not a register instance; parameter 'port' of function 'setHigh' takes a 'GpioPort'
        help: Pass an instance of 'GpioPort' declared at file or scope level (`GpioPort NAME(address);`), or a 'GpioPort' parameter (ADR-072).

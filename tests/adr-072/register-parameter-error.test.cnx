@@ -28,6 +28,12 @@ void wrongUart(Uart u) {
     setHigh(u);
 }
 
+scope Board {
+    public void wrongInScope() {
+        setHigh(UART0);
+    }
+}
+
 void main() {
     setHigh(GPIO1);
     setHigh(UART0);
