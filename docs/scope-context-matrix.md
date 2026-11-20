@@ -2048,14 +2048,16 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-12 linked fixtures with no derivable context:
+14 linked fixtures with no derivable context:
 
 - `adr-072/cross-file-register-instance.test.cnx`
 - `adr-072/register-isr-member.test.cnx`
+- `adr-072/register-layout-generated-names.test.cnx`
 - `adr-072/register-misaligned-error.test.cnx`
 - `adr-072/register-offset-group.test.cnx`
 - `adr-072/register-offset-not-constant-error.test.cnx`
 - `adr-072/register-overlap-error.test.cnx`
+- `adr-072/register-parameter-group-read.test.cnx`
 - `adr-072/register-parameter-layout.test.cnx`
 - `adr-072/register-parameter.test.cnx`
 - `adr-072/register-scoped-layout.test.cnx`

@@ -41,6 +41,19 @@ interface IRegisterMemberSymbol extends IBaseSymbol {
    * reaches through one address, or null when it stands alone
    */
   readonly group: number | null;
+
+  /**
+   * ADR-072: the member's field name in the C layout struct a register
+   * parameter points to, settled by 3-Declare
+   */
+  readonly layoutField: string;
+
+  /**
+   * ADR-072: the union of the layout struct an offset group's member sits in
+   * (`AT__0x00`), settled by 1.4 with `offsetValue`; null for a lone member,
+   * and until then
+   */
+  readonly layoutUnion: string | null;
 }
 
 export default IRegisterMemberSymbol;

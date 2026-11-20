@@ -12,8 +12,11 @@ type TMemberStep =
   | {
       readonly kind: "access";
       readonly separator: "." | "->" | "::";
-      /** ADR-072: the union an offset group's member is reached through */
-      readonly group?: string;
+      /**
+       * ADR-072: the member's path within a register layout, through its
+       * offset group's union (`AT__0x00.RBR`)
+       */
+      readonly path?: string;
     };
 
 export default TMemberStep;

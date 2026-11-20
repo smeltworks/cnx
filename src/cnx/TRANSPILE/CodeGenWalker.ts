@@ -1572,15 +1572,8 @@ class CodeGenWalker {
         this.host.state.symbols!.memberCNames.get(registerCName)?.get(member),
       rootMemberSeparator: (holding: IRootHolding) =>
         memberAccessChain.rootMemberSeparator(holding, this.host.state.cppMode),
-      registerGroup: (layout: string, member: string) => {
-        const type = this.host.state.program?.symbolByCName(layout);
-        const info = RegisterInstance.isType(type)
-          ? type.members.get(member)
-          : undefined;
-        return info?.group == null || info.offsetValue === null
-          ? undefined
-          : RegisterLayout.groupName(info.offsetValue);
-      },
+      registerMemberPath: (layout: string, member: string) =>
+        RegisterInstance.layoutPathOf(this.host.state.program, layout, member),
     };
   }
 
@@ -2406,14 +2399,7 @@ class CodeGenWalker {
     ) {
       return "";
     }
-    const target = state.program!.target();
-    const widths =
-      target.kind === "resolved"
-        ? {
-            pointerBits: target.description.pointer_bits,
-            intBits: target.description.int_bits,
-          }
-        : { pointerBits: null, intBits: null };
+    const widths = RegisterLayout.widthsOf(state.program!.target());
     const symbols = state.symbols!;
     const members = [...type.members.values()].map((member) => {
       const cType = symbols.registerMemberCTypes.get(
@@ -2429,12 +2415,12 @@ class CodeGenWalker {
         "1.4 settles every register member's C type, offset and width",
       );
       return {
-        name: member.name,
+        name: member.layoutField,
         cType,
         access: member.access,
         offset: member.offsetValue,
         bytes,
-        group: member.group,
+        union: member.layoutUnion,
       };
     });
     return RegisterBlockPlacement.place(

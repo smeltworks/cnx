@@ -15,7 +15,7 @@ extern "C" {
 /* Registers (ADR-072) */
 typedef struct Board__Port {
     volatile uint32_t DR;
-    uint8_t RESERVED_0x04[4];
+    uint8_t RESERVED__0x04[4];
     volatile uint32_t ODR;
 } Board__Port;
 

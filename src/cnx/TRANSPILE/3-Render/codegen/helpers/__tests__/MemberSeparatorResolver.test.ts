@@ -37,7 +37,7 @@ describe("MemberSeparatorResolver", () => {
           `${registerCName}__${member}`,
       ),
       rootMemberSeparator: vi.fn((): "." | "->" => "->"),
-      registerGroup: vi.fn((): string | undefined => undefined),
+      registerMemberPath: vi.fn((): string | undefined => undefined),
       ...overrides,
     };
   }

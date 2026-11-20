@@ -25,8 +25,8 @@ interface IMemberSeparatorDeps {
    * how the root is held (`memberAccessChain.rootMemberSeparator`)
    */
   rootMemberSeparator(holding: IRootHolding): "." | "->";
-  /** ADR-072: the union a register layout's grouped member sits in */
-  registerGroup(layout: string, member: string): string | undefined;
+  /** ADR-072: a member's path within a register layout (`AT__0x00.RBR`) */
+  registerMemberPath(layout: string, member: string): string | undefined;
 }
 
 export default IMemberSeparatorDeps;

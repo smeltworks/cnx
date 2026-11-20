@@ -15,7 +15,7 @@ extern "C" {
 /* Registers (ADR-072) */
 typedef struct GpioPort {
     volatile uint32_t DR;
-    uint8_t RESERVED_0x04[20];
+    uint8_t RESERVED__0x04[20];
     volatile uint32_t ISR;
 } GpioPort;
 
@@ -23,8 +23,8 @@ typedef struct Uart {
     union {
         volatile const uint8_t RBR;
         volatile uint8_t THR;
-    } AT_0x00;
-    uint8_t RESERVED_0x01[4];
+    } AT__0x00;
+    uint8_t RESERVED__0x01[4];
     volatile const uint8_t LSR;
 } Uart;
 

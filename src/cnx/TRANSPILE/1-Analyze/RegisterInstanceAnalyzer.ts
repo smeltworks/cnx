@@ -131,14 +131,7 @@ class RegisterInstanceAnalyzer {
     },
     register: IRegisterSymbol,
   ): IBaseAnalysisError[] {
-    const target = this.context.program.target();
-    const widths =
-      target.kind === "resolved"
-        ? {
-            pointerBits: target.description.pointer_bits,
-            intBits: target.description.int_bits,
-          }
-        : { pointerBits: null, intBits: null };
+    const widths = RegisterLayout.widthsOf(this.context.program.target());
     const found: IBaseAnalysisError[] = [];
     const placed: Array<{
       readonly name: string;
@@ -247,10 +240,7 @@ class RegisterInstanceAnalyzer {
       const last =
         instance.baseAddress +
         member.offsetValue +
-        this.bytesOf(member, {
-          pointerBits: bits,
-          intBits: target.description.int_bits,
-        })! -
+        this.bytesOf(member, RegisterLayout.widthsOf(target))! -
         1n;
       if (last < limit) continue;
       found.push({

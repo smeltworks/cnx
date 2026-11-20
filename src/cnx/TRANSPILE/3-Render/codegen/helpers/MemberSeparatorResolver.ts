@@ -89,14 +89,14 @@ class MemberSeparatorResolver {
     // decided by the one helper the read path asks too (#1760 review)
     if (ctx.holding.isStructParam || ctx.holding.isPointerLocal) {
       const layout = ctx.holding.registerLayout;
-      const group =
+      const path =
         layout === null
           ? undefined
-          : deps.registerGroup(layout, identifierChain.at(-1)!);
+          : deps.registerMemberPath(layout, identifierChain.at(-1)!);
       return {
         kind: "access",
         separator: deps.rootMemberSeparator(ctx.holding),
-        ...(group === undefined ? {} : { group }),
+        ...(path === undefined ? {} : { path }),
       };
     }
 
@@ -240,9 +240,7 @@ class MemberSeparatorResolver {
       case "register-member":
         return step.cName;
       case "access":
-        return step.group === undefined
-          ? `${result}${step.separator}${member}`
-          : `${result}${step.separator}${step.group}.${member}`;
+        return `${result}${step.separator}${step.path ?? member}`;
     }
   }
 }

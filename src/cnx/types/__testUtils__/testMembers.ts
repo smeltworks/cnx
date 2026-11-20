@@ -114,8 +114,15 @@ class TestMembers {
       string,
       Omit<
         IRegisterMemberSymbol,
-        keyof ReturnType<typeof TestMembers.base> | "group"
-      > & { readonly group?: number | null }
+        | keyof ReturnType<typeof TestMembers.base>
+        | "group"
+        | "layoutField"
+        | "layoutUnion"
+      > & {
+        readonly group?: number | null;
+        readonly layoutField?: string;
+        readonly layoutUnion?: string | null;
+      }
     >,
   ): Map<string, IRegisterMemberSymbol> {
     const out = new Map<string, IRegisterMemberSymbol>();
@@ -125,6 +132,8 @@ class TestMembers {
       out.set(name, {
         ...TestMembers.base("register_member", name, ownerScopedName, line),
         group: null,
+        layoutField: name,
+        layoutUnion: null,
         ...rest,
         kind: "register_member",
       });

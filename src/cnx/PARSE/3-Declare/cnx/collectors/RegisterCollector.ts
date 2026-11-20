@@ -74,6 +74,8 @@ class RegisterCollector {
         type,
         access: accessMod,
         group: member.group,
+        layoutField: memberName,
+        layoutUnion: null,
       };
 
       members.set(memberName, memberInfo);

@@ -3,7 +3,6 @@
  * instances are reached through. Each member sits at its declared offset: a
  * gap is a reserved byte array, and an offset group is one union.
  */
-import RegisterAddress from "../../../../../utils/RegisterAddress";
 import RegisterLayout from "../../../../../utils/RegisterLayout";
 import type IPlannedRegisterLayout from "../../types/IPlannedRegisterLayout";
 import type IPlannedRegisterLayoutMember from "../../types/IPlannedRegisterLayoutMember";
@@ -14,17 +13,15 @@ function field(member: IPlannedRegisterLayoutMember): string {
 }
 
 /** The members at one offset: a lone member, or a group's union */
-function slot(
-  members: readonly IPlannedRegisterLayoutMember[],
-  offset: bigint,
-): string[] {
-  if (members.length === 1 && members[0].group === null) {
+function slot(members: readonly IPlannedRegisterLayoutMember[]): string[] {
+  const union = members[0].union;
+  if (union === null) {
     return [`    ${field(members[0])}`];
   }
   return [
     "    union {",
     ...members.map((member) => `        ${field(member)}`),
-    `    } ${RegisterLayout.groupName(offset)};`,
+    `    } ${union};`,
   ];
 }
 
@@ -44,10 +41,10 @@ function renderRegisterLayout(planned: IPlannedRegisterLayout): string {
     const members = byOffset.get(offset)!;
     if (offset > next) {
       lines.push(
-        `    uint8_t RESERVED_${RegisterAddress.hex(next)}[${offset - next}];`,
+        `    uint8_t ${RegisterLayout.reservedName(next)}[${offset - next}];`,
       );
     }
-    lines.push(...slot(members, offset));
+    lines.push(...slot(members));
     const end = members.reduce(
       (widest, member) =>
         offset + member.bytes > widest ? offset + member.bytes : widest,

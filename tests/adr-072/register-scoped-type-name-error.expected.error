@@ -1,0 +1,2 @@
+26:14 error[E0940]: 'Board.P1' is a register of type 'Board.Port'; parameter 'p' of function 'set' takes a 'Other.Port'
+       help: Pass an instance of 'Other.Port' declared at file or scope level (`Port NAME(address);`), or a 'Other.Port' parameter (ADR-072).

@@ -24,7 +24,7 @@ void setAndClear(GpioPort* port, const uint8_t pin) {
 }
 
 void send(Uart* u, const uint8_t b) {
-    u->AT_0x00.THR = b;
+    u->AT__0x00.THR = b;
 }
 
 uint8_t status(Uart* u) {

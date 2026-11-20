@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1034 fixture(s) assert a diagnostic; 1020 carry a code.
+1036 fixture(s) assert a diagnostic; 1022 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -505,6 +505,8 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-072/register-parameter-error.test.cnx                                                           | E0940                             |
 | tests/adr-072/register-parameter-mut-argument-error.test.cnx                                              | E0915                             |
 | tests/adr-072/register-scoped-local-instance-error.test.cnx                                               | E0934                             |
+| tests/adr-072/register-scoped-type-name-error.test.cnx                                                    | E0940                             |
+| tests/adr-072/register-scoped-type-value-error.test.cnx                                                   | E0942                             |
 | tests/adr-072/register-type-as-value-error.test.cnx                                                       | E0897                             |
 | tests/adr-072/register-type-position-error.test.cnx                                                       | E0936                             |
 | tests/analysis/division-by-const-zero.test.cnx                                                            | E0800                             |

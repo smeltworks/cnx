@@ -10,7 +10,7 @@ function member(
     cType: "uint32_t",
     access: "rw",
     bytes: 4n,
-    group: null,
+    union: null,
     ...overrides,
   };
 }
@@ -29,7 +29,7 @@ describe("renderRegisterLayout (ADR-072)", () => {
       [
         "typedef struct GpioPort {",
         "    volatile uint32_t DR;",
-        "    uint8_t RESERVED_0x04[20];",
+        "    uint8_t RESERVED__0x04[20];",
         "    volatile uint32_t ISR;",
         "} GpioPort;",
         "",
@@ -37,7 +37,7 @@ describe("renderRegisterLayout (ADR-072)", () => {
     );
   });
 
-  it("writes an offset group as one union named by its offset", () => {
+  it("writes an offset group as its members' one union", () => {
     expect(
       renderRegisterLayout({
         name: "Uart",
@@ -48,7 +48,7 @@ describe("renderRegisterLayout (ADR-072)", () => {
             cType: "uint8_t",
             bytes: 1n,
             access: "ro",
-            group: 0,
+            union: "AT__0x00",
           }),
           member({
             name: "THR",
@@ -56,7 +56,7 @@ describe("renderRegisterLayout (ADR-072)", () => {
             cType: "uint8_t",
             bytes: 1n,
             access: "wo",
-            group: 0,
+            union: "AT__0x00",
           }),
           member({
             name: "LSR",
@@ -73,8 +73,8 @@ describe("renderRegisterLayout (ADR-072)", () => {
         "    union {",
         "        volatile const uint8_t RBR;",
         "        volatile uint8_t THR;",
-        "    } AT_0x00;",
-        "    uint8_t RESERVED_0x01[4];",
+        "    } AT__0x00;",
+        "    uint8_t RESERVED__0x01[4];",
         "    volatile const uint8_t LSR;",
         "} Uart;",
         "",
@@ -86,17 +86,17 @@ describe("renderRegisterLayout (ADR-072)", () => {
     const out = renderRegisterLayout({
       name: "Mixed",
       members: [
-        member({ name: "W", offset: 0n, group: 0 }),
+        member({ name: "W", offset: 0n, union: "AT__0x00" }),
         member({
           name: "B",
           offset: 0n,
           cType: "uint8_t",
           bytes: 1n,
-          group: 0,
+          union: "AT__0x00",
         }),
         member({ name: "N", offset: 8n }),
       ],
     });
-    expect(out).toContain("    uint8_t RESERVED_0x04[4];");
+    expect(out).toContain("    uint8_t RESERVED__0x04[4];");
   });
 });

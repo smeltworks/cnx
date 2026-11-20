@@ -1,0 +1,2 @@
+16:13 error[E0942]: 'Board.P1' is a 'Board.Port' register, not a value
+       help: A register is hardware at a fixed address (ADR-072): read and write its members (`GPIO1.DR`), or pass it to a register parameter. It is not read, assigned or stored whole.

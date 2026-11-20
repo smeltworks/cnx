@@ -157,12 +157,13 @@ class CallbackAssignmentCheck {
     const what =
       passed === null
         ? "is not a register instance"
-        : `is a register of type '${passed}'`;
+        : `is a register of type '${RegisterInstance.cnxNameOf(this.context.program, passed)}'`;
+    const wanted = layout.cnxScopedName;
     this.found.push({
       code: "E0940",
       span: arg.span,
-      message: `'${arg.written}' ${what}; parameter '${paramName}' of function '${callee.name}' takes a '${layout.name}'`,
-      helpText: `Pass an instance of '${layout.name}' declared at file or scope level (\`${layout.name} NAME(address);\`), or a '${layout.name}' parameter (ADR-072).`,
+      message: `'${arg.written}' ${what}; parameter '${paramName}' of function '${callee.name}' takes a '${wanted}'`,
+      helpText: `Pass an instance of '${wanted}' declared at file or scope level (\`${layout.name} NAME(address);\`), or a '${wanted}' parameter (ADR-072).`,
       declaredAt: BindingSite.ofSymbol(callee),
     });
   }

@@ -1,0 +1,27 @@
+// test-error
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072, E0940: a scoped register type is named as cnx spells
+// it (`Board.Port`), so two scopes' same-named types are told apart.
+
+scope Board {
+    public register Port {
+        0x00 rw u32 DR,
+    }
+
+    public Port P1(0x40000000);
+}
+
+scope Other {
+    public register Port {
+        0x00 rw u32 DR,
+    }
+
+    public void set(Port p) {
+        p.DR <- 1;
+    }
+}
+
+void main() {
+    Other.set(Board.P1);
+}

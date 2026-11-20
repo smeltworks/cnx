@@ -1,0 +1,28 @@
+// test-execution
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072: the names a register layout generates for its gaps and offset
+// groups carry `__`, which ADR-063 keeps out of a cnx name, so a member
+// spelled like one of them never collides with it.
+
+register Odd {
+    0x00 rw u8 A,
+    0x04 rw u8 RESERVED_0x01,
+    0x08 {
+        rw u8 B,
+        rw u8 C,
+    },
+    0x0C rw u8 AT_0x08,
+}
+
+Odd ODD0(0x40003000);
+
+void touch(Odd o) {
+    o.RESERVED_0x01 <- 1;
+    o.B <- 2;
+    o.AT_0x08 <- 3;
+}
+
+void main() {
+    touch(ODD0);
+}

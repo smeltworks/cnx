@@ -5,6 +5,7 @@ import type IVariableSymbol from "../../types/symbols/IVariableSymbol";
 import type TConstExpr from "../../types/TConstExpr";
 import type IConstantEnvironment from "../../utils/types/IConstantEnvironment";
 import ConstantEvaluator from "../../utils/ConstantEvaluator";
+import RegisterLayout from "../../utils/RegisterLayout";
 import MemberSymbolBase from "../3-Declare/cnx/utils/MemberSymbolBase";
 
 /**
@@ -76,9 +77,14 @@ class RegisterInstances {
   ): IRegisterSymbol {
     const members = new Map<string, IRegisterMemberSymbol>();
     for (const [name, member] of type.members) {
+      const offsetValue = RegisterInstances.fold(member.offset, env);
       members.set(name, {
         ...member,
-        offsetValue: RegisterInstances.fold(member.offset, env),
+        offsetValue,
+        layoutUnion:
+          member.group === null || offsetValue === null
+            ? null
+            : RegisterLayout.groupName(offsetValue),
       });
     }
     return { ...type, members };

@@ -91,7 +91,7 @@ class TypeNameValueAnalyzer {
     return {
       code: "E0942",
       span: chain.span,
-      message: `'${chain.written}' is a '${type}' register, not a value`,
+      message: `'${chain.written}' is a '${RegisterInstance.cnxNameOf(this.context.program, type)}' register, not a value`,
       helpText:
         "A register is hardware at a fixed address (ADR-072): read and write its members (`GPIO1.DR`), or pass it to a register parameter. It is not read, assigned or stored whole.",
     };
