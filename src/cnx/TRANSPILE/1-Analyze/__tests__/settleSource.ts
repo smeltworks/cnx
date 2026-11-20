@@ -16,7 +16,7 @@ import type TRunTarget from "../../../types/TRunTarget";
 function settleSource(
   source: string,
   state: TranspileState,
-  target: TRunTarget | null = null,
+  target?: TRunTarget,
 ) {
   const parser = new CnxParser(
     new CommonTokenStream(new CnxLexer(CharStream.fromString(source))),
