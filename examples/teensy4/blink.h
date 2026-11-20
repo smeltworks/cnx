@@ -78,17 +78,17 @@ typedef uint32_t Teensy4__GPIO7Pins;
  */
 typedef uint32_t Teensy4__ICR1Config;
 
-/* Registers (ADR-004) */
-/* Register: Teensy4__GPIO7 @ 0x42004000 */
-#define Teensy4__GPIO7__DataRegister (*(volatile Teensy4__GPIO7Pins*)(0x42004000 + 0x00))
-#define Teensy4__GPIO7__DirectionRegister (*(volatile Teensy4__GPIO7Pins*)(0x42004000 + 0x04))
-#define Teensy4__GPIO7__PadStatusRegister (*(volatile Teensy4__GPIO7Pins const *)(0x42004000 + 0x08))
-#define Teensy4__GPIO7__InterruptConfig1 (*(volatile Teensy4__ICR1Config*)(0x42004000 + 0x0C))
-#define Teensy4__GPIO7__InterruptMaskRegister (*(volatile Teensy4__GPIO7Pins*)(0x42004000 + 0x14))
-#define Teensy4__GPIO7__InterruptStatus (*(volatile Teensy4__GPIO7Pins*)(0x42004000 + 0x18))
-#define Teensy4__GPIO7__DataRegister_Set (*(volatile Teensy4__GPIO7Pins*)(0x42004000 + 0x84))
-#define Teensy4__GPIO7__DataRegister_Clear (*(volatile Teensy4__GPIO7Pins*)(0x42004000 + 0x88))
-#define Teensy4__GPIO7__DataRegister_Toggle (*(volatile Teensy4__GPIO7Pins*)(0x42004000 + 0x8C))
+/* Registers (ADR-072) */
+/* Register: Teensy4__GPIO7 @ 0x42004000U */
+#define Teensy4__GPIO7__DataRegister (*(volatile Teensy4__GPIO7Pins*)(0x42004000U))
+#define Teensy4__GPIO7__DirectionRegister (*(volatile Teensy4__GPIO7Pins*)(0x42004004U))
+#define Teensy4__GPIO7__PadStatusRegister (*(volatile Teensy4__GPIO7Pins const *)(0x42004008U))
+#define Teensy4__GPIO7__InterruptConfig1 (*(volatile Teensy4__ICR1Config*)(0x4200400CU))
+#define Teensy4__GPIO7__InterruptMaskRegister (*(volatile Teensy4__GPIO7Pins*)(0x42004014U))
+#define Teensy4__GPIO7__InterruptStatus (*(volatile Teensy4__GPIO7Pins*)(0x42004018U))
+#define Teensy4__GPIO7__DataRegister_Set (*(volatile Teensy4__GPIO7Pins*)(0x42004084U))
+#define Teensy4__GPIO7__DataRegister_Clear (*(volatile Teensy4__GPIO7Pins*)(0x42004088U))
+#define Teensy4__GPIO7__DataRegister_Toggle (*(volatile Teensy4__GPIO7Pins*)(0x4200408CU))
 
 /* External variables */
 extern const uint32_t BLINK_DELAY_MS;

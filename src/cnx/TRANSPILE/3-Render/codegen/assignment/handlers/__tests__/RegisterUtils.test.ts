@@ -8,7 +8,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import RegisterUtils from "../RegisterUtils";
 import TranspileState from "../../../../../TranspileState";
 import HandlerTestUtils from "./handlerTestUtils";
-import TestExpression from "../../../../../../types/__testUtils__/testExpression";
 
 let state = new TranspileState();
 
@@ -47,12 +46,8 @@ describe("RegisterUtils", () => {
     beforeEach(() => {
       state = new TranspileState();
       HandlerTestUtils.setupMockSymbols(state, {
-        registerBaseAddresses: new Map([
-          ["GPIO7", TestExpression.hex("0x401B8000")],
-        ]),
-        registerMemberOffsets: new Map([
-          ["GPIO7_DR", TestExpression.hex("0x00")],
-        ]),
+        registerBaseAddresses: new Map([["GPIO7", 0x401b8000n]]),
+        registerMemberOffsets: new Map([["GPIO7_DR", 0n]]),
       });
     });
 
@@ -68,7 +63,6 @@ describe("RegisterUtils", () => {
         undefined,
         "0xFF",
         state,
-        (expr) => expr.written,
       );
 
       expect(result.success).toBe(false);
@@ -89,7 +83,6 @@ describe("RegisterUtils", () => {
         3,
         "0xFF",
         state,
-        (expr) => expr.written,
       );
 
       expect(result.success).toBe(false);
@@ -110,7 +103,6 @@ describe("RegisterUtils", () => {
         0,
         "0xFF",
         state,
-        (expr) => expr.written,
       );
 
       expect(result.success).toBe(false);
@@ -125,9 +117,7 @@ describe("RegisterUtils", () => {
       });
       HandlerTestUtils.setupMockSymbols(state, {
         registerBaseAddresses: new Map(), // No base address
-        registerMemberOffsets: new Map([
-          ["GPIO7_DR", TestExpression.hex("0x00")],
-        ]),
+        registerMemberOffsets: new Map([["GPIO7_DR", 0n]]),
       });
 
       const result = RegisterUtils.tryGenerateMMIO(
@@ -137,7 +127,6 @@ describe("RegisterUtils", () => {
         0,
         "0xFF",
         state,
-        (expr) => expr.written,
       );
 
       expect(result.success).toBe(false);
@@ -158,12 +147,11 @@ describe("RegisterUtils", () => {
         0,
         "0xFF",
         state,
-        (expr) => expr.written,
       );
 
       expect(result.success).toBe(true);
       expect(result.statement).toBe(
-        "*((volatile uint8_t*)(0x401B8000 + 0x00)) = (0xFF);",
+        "*((volatile uint8_t*)(0x401B8000U)) = (0xFF);",
       );
     });
 
@@ -182,12 +170,11 @@ describe("RegisterUtils", () => {
         8,
         "0xABCD",
         state,
-        (expr) => expr.written,
       );
 
       expect(result.success).toBe(true);
       expect(result.statement).toBe(
-        "*((volatile uint16_t*)(0x401B8000 + 0x00 + 1)) = (0xABCD);",
+        "*((volatile uint16_t*)(0x401B8001U)) = (0xABCD);",
       );
     });
 
@@ -206,12 +193,11 @@ describe("RegisterUtils", () => {
         0,
         "0xDEADBEEF",
         state,
-        (expr) => expr.written,
       );
 
       expect(result.success).toBe(true);
       expect(result.statement).toBe(
-        "*((volatile uint32_t*)(0x401B8000 + 0x00)) = (0xDEADBEEF);",
+        "*((volatile uint32_t*)(0x401B8000U)) = (0xDEADBEEF);",
       );
     });
   });

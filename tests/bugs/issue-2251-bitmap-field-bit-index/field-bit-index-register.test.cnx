@@ -13,10 +13,12 @@ bitmap8 Pins {
     R7
 }
 
-register GPIO @ 0x40000000 {
-    DATA: Pins rw @ 0x00,
-    SET: Pins wo @ 0x04,
+register GpioPort {
+    0x00 rw Pins DATA,
+    0x04 wo Pins SET,
 }
+
+GpioPort GPIO(0x40000000);
 
 atomic Pins ap;
 

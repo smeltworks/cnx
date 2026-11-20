@@ -5,6 +5,7 @@
 
 #include "register-multiple.test.hpp"
 
+
 #include <stdint.h>
 
 // ADR-004: Multiple registers in same file

@@ -5,6 +5,7 @@
 
 #include "register-bitmap-bit-chain.test.h"
 
+
 #include <stdint.h>
 #include <stdbool.h>
 

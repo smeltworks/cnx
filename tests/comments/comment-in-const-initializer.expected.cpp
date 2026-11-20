@@ -3,6 +3,7 @@
  * A safer C for embedded systems
  */
 
+
 #include <stdint.h>
 
 // Tests: a comment inside a const initializer never reaches the C (#1991 review)
@@ -10,11 +11,11 @@
 /* Scope: Board */
 
 /* Register: Board__Gpio @ 0x40000000U */
-#define Board__Gpio__DATA (*(volatile uint32_t*)(0x40000000U + 0x00))
+#define Board__Gpio__DATA (*(volatile uint32_t*)(0x40000000U))
 
 
-/* Register: Board__Pins @ 1073742080U */
-#define Board__Pins__DATA (*(volatile uint32_t*)(1073742080U + 0x00))
+/* Register: Board__Pins @ 0x40000100U */
+#define Board__Pins__DATA (*(volatile uint32_t*)(0x40000100U))
 
 
 int main(void) {

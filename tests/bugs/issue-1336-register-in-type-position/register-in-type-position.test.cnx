@@ -1,9 +1,10 @@
 // test-error
+// test-adr: 072
+#pragma target cortex-m7
 // Issue #1336: a register name used in a TYPE position.
 //
-// ADR-004 (Implemented) defines a register as a memory-mapped binding, not a type.
-// ADR-072 would make a register name a type, but is Status: Research, and its own
-// header states that while it is Research "a register is still not a type".
+// Under ADR-072 a register definition is a type and an instance is a value at
+// an address, so an instance in a type position is E0937.
 //
 // Before the fix this transpiled at exit 0 and emitted `Control c = {0};`,
 // referencing a type that is never emitted -- gcc: unknown type name 'Control'.
@@ -17,9 +18,11 @@
 // UndeclaredTypeAnalyzer is registered immediately before UndeclaredValueAnalyzer.
 // The E0429 below therefore means the value analyzer never runs on this file, and
 // any control for it placed here would be inert whatever it asserted.
-register Control @ 0x40000000 {
-    DR: u32 rw @ 0x00,
+register ControlBlock {
+    0x00 rw u32 DR,
 }
+
+ControlBlock Control(0x40000000);
 
 struct Point {
     u32 x;

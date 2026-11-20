@@ -2027,6 +2027,115 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | warn   | warn       | warn        | warn       |
 | for header         | warn      | warn   | warn       | warn        | warn       |
 
+## ADR-072
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | -         | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
+
+6 linked fixtures with no derivable context:
+
+- `adr-072/cross-file-register-instance.test.cnx`
+- `adr-072/register-isr-member.test.cnx`
+- `adr-072/register-offset-not-constant-error.test.cnx`
+- `adr-072/register-types-and-instances.test.cnx`
+- `adr-072/register-vendor-type-name.test.cnx`
+- `adr-072/reserved-member-names.test.cnx`
+
+## ADR-072 E0427
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | ok        | -      | -          | -           | -          |
+| top-level function | -         | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
+
+## ADR-072 E0897
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | ok        | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | ok        | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
+
+## ADR-072 E0931
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | ok        | -      | -          | warn        | warn       |
+| top-level function | -         | -      | -          | -           | -          |
+| scope member       | ok        | -      | -          | warn        | warn       |
+| scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
+
+## ADR-072 E0932
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | warn      | -      | -          | warn        | warn       |
+| top-level function | -         | -      | -          | -           | -          |
+| scope member       | warn      | -      | -          | warn        | warn       |
+| scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
+
+## ADR-072 E0933
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | ok        | -      | -          | warn        | warn       |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | ok        | -      | -          | warn        | warn       |
+| for header         | -         | -      | -          | -           | -          |
+
+## ADR-072 E0934
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | ok        | -      | -          | warn        | warn       |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | ok        | -      | -          | warn        | warn       |
+| for header         | -         | -      | -          | -           | -          |
+
+## ADR-072 E0935
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | ok        | -      | -          | warn        | warn       |
+| top-level function | ok        | -      | -          | warn        | warn       |
+| scope member       | ok        | -      | -          | warn        | warn       |
+| scope method       | ok        | -      | -          | warn        | warn       |
+| for header         | -         | -      | -          | -           | -          |
+
+## ADR-072 E0936
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | ok        | -      | -          | warn        | warn       |
+| top-level function | ok        | -      | -          | warn        | warn       |
+| scope member       | ok        | -      | -          | warn        | warn       |
+| scope method       | ok        | -      | -          | warn        | warn       |
+| for header         | ok        | -      | -          | -           | -          |
+
+## ADR-072 E0937
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | ok        | -      | -          | warn        | warn       |
+| top-level function | ok        | -      | -          | warn        | warn       |
+| scope member       | ok        | -      | -          | warn        | warn       |
+| scope method       | ok        | -      | -          | warn        | warn       |
+| for header         | -         | -      | -          | -           | -          |
+
 ## Positions
 
 Which part of its statement each code's diagnostics land in, for a code whose

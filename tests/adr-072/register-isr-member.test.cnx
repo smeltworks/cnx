@@ -1,0 +1,12 @@
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072: a register member typed `ISR` (a vector-table slot) still pulls in
+// the ISR typedef when nothing else in the file names the type.
+
+register VectorTableLayout {
+    0x00 rw ISR reset,
+}
+
+VectorTableLayout VTOR(0x20000000);
+
+void main() {}

@@ -1,10 +1,13 @@
+#pragma target cortex-m7
 // Issue #1052: a bit-range (and single-bit) write to a register field through a
 // cross-scope `global.` path must expand to the mask/shift form, not emit a
 // literal `[start, width]` subscript (which is invalid C).
 scope Hw {
-    public register GPIO @ 0x40020000 {
-        Mode: u32 rw @ 0x00,
+    public register GpioPort {
+        0x00 rw u32 Mode,
     }
+
+    public GpioPort GPIO(0x40020000);
 }
 // Issue #1244: #1052 names BOTH the `global.Scope.REG.FIELD` and the bare
 // `OtherScope.REG.FIELD` spellings, but only the first was covered here -- so

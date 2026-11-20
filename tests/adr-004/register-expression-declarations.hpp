@@ -12,9 +12,9 @@
 extern "C" {
 #endif
 
-/* Registers (ADR-004) */
-/* Register: EXPR @ cnx_clamp_add_u32(EXPRESSION_BASE, 0x100) */
-#define EXPR__SET (*(volatile uint32_t*)(cnx_clamp_add_u32(EXPRESSION_BASE, 0x100) + 0x04))
+/* Registers (ADR-072) */
+/* Register: EXPR @ 0x40000100U */
+#define EXPR__SET (*(volatile uint32_t*)(0x40000104U))
 
 /* External variables */
 extern const uint32_t EXPRESSION_BASE;

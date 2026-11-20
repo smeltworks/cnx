@@ -1,0 +1,8 @@
+14:21 error[E0933]: parameter 'p' is a register; register parameters are not supported yet (ADR-072)
+       help: Access the register instance directly (`GPIO1.DR`). ADR-072 resolves a register parameter per instance at compile time; until that is implemented it is rejected rather than passed as a runtime pointer.
+16:24 error[E0933]: parameter 'p' is a register; register parameters are not supported yet (ADR-072)
+       help: Access the register instance directly (`GPIO1.DR`). ADR-072 resolves a register parameter per instance at compile time; until that is implemented it is rejected rather than passed as a runtime pointer.
+19:8 error[E0934]: register instance 'LOCAL' must be declared at file or scope level
+       help: A register instance names hardware at a fixed address for the whole program (ADR-072), so it is not a local. Declare it beside the register type or as a scope member.
+23:15 error[E0933]: parameter 'p' is a register; register parameters are not supported yet (ADR-072)
+       help: Access the register instance directly (`GPIO1.DR`). ADR-072 resolves a register parameter per instance at compile time; until that is implemented it is rejected rather than passed as a runtime pointer.

@@ -3,10 +3,12 @@ import type ISyntaxNode from "./ISyntaxNode";
 import type TExpression from "./TExpression";
 import type TTypeSyntax from "./TTypeSyntax";
 
-/** `register name @ address { member: type access @ offset, ... }` */
+/**
+ * `register Name { offset access type member, ... }` -- a register TYPE
+ * (ADR-072 Part 1). It has no address; each instance supplies one.
+ */
 interface IRegisterDeclarationSyntax extends ISyntaxNode {
   readonly name: string;
-  readonly address: TExpression;
   readonly members: ReadonlyArray<
     ISyntaxNode & {
       readonly name: string;

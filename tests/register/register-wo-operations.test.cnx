@@ -1,13 +1,16 @@
+#pragma target cortex-m7
 // ADR-004: Write-only register operations test
 // Tests: Valid write-only register bit operations with various index types
 // Coverage: Section 12 - Register Declaration (write-only bit access)
 // Extracted from: write-only-register-chain.test.cnx.skip
-register GPIO @ 0x42000000 {
-    DR: u32 rw @ 0x00,
-    DR_SET: u32 wo @ 0x84,
-    DR_CLEAR: u32 wo @ 0x88,
-    DR_TOGGLE: u32 wo @ 0x8C,
+register GpioPort {
+    0x00 rw u32 DR,
+    0x84 wo u32 DR_SET,
+    0x88 wo u32 DR_CLEAR,
+    0x8C wo u32 DR_TOGGLE,
 }
+
+GpioPort GPIO(0x42000000);
 
 u32 LED_BIT <- 3;
 

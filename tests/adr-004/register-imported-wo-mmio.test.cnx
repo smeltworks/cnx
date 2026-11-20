@@ -1,4 +1,5 @@
 // test-adr: 004
+#pragma target cortex-m7
 // A byte-aligned write to a write-only member of a register declared in an
 // INCLUDED file is one memory access through the declaring file's base and
 // offset. 2.2 plans those expressions and the uint8_t the access is written

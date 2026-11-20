@@ -418,7 +418,7 @@ const u32 DEBOUNCE_MS <- 50;
 
 // Usage
 LED_init(LED_PIN);           // Works: variable has address
-register GPIOB @ GPIOB_BASE; // Works: #define for address literal
+GpioPort GPIOB(GPIOB_BASE);  // Works: a compile-time constant address (ADR-072)
 ```
 
 ### Rationale
@@ -559,9 +559,11 @@ Hardware registers need actual addresses:
 
 ```
 // Register at fixed address
-register GPIOA @ 0x40020000 {
-    DR: u32 rw @ 0x00
+register GpioPort {
+    0x00 rw u32 DR,
 }
+
+GpioPort GPIOA(0x40020000);
 
 // Can we get the address?
 u32 addr <- &GPIOA.DR;  // No: `&` is not cnx (#2117)

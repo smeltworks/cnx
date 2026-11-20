@@ -1,19 +1,21 @@
+#pragma target cortex-m7
 // ADR-004: Multiple registers in same file
 // Tests: defining and using multiple register blocks
-register GPIOA @ 0x40020000 {
-    DR: u32 rw @ 0x00,
-    GDIR: u32 rw @ 0x04,
+register GpioPort {
+    0x00 rw u32 DR,
+    0x04 rw u32 GDIR,
 }
 
-register GPIOB @ 0x40020400 {
-    DR: u32 rw @ 0x00,
-    GDIR: u32 rw @ 0x04,
+GpioPort GPIOA(0x40020000);
+
+GpioPort GPIOB(0x40020400);
+
+register Timer {
+    0x00 rw u32 CR,
+    0x04 ro u32 CNT,
 }
 
-register TIMER @ 0x40000000 {
-    CR: u32 rw @ 0x00,
-    CNT: u32 ro @ 0x04,
-}
+Timer TIMER(0x40000000);
 
 void main() {
     // Configure GPIO A as output

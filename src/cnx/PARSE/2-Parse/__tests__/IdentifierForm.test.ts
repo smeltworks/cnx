@@ -164,8 +164,14 @@ describe("IdentifierForm (E0201, E0202)", () => {
       ["enum member", `enum Good { A_ }`],
       ["bitmap name", `bitmap8 Bad_ { a[8] }`],
       ["bitmap member", `bitmap8 Good { a_[8] }`],
-      ["register name", `register Bad_ @ 0x1000 { A: u32 rw @ 0x00, }`],
-      ["register member", `register Good @ 0x1000 { a_: u32 rw @ 0x00, }`],
+      [
+        "register name",
+        `register Bad_Layout { 0x00 rw u32 A, } Bad_Layout Bad_(0x1000);`,
+      ],
+      [
+        "register member",
+        `register GoodLayout { 0x00 rw u32 a_, } GoodLayout Good(0x1000);`,
+      ],
     ])("flags a trailing underscore on a %s", (_label, code) => {
       const errors = analyze(code);
 

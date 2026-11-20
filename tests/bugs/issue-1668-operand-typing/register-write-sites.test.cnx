@@ -1,11 +1,14 @@
 // test-error
+#pragma target cortex-m7
 // #1668: E0871 reads every assignment site. Before, a write in a `for`
 // header was never checked (#1726), so a read-only member could be written
 // there.
-register STATUS_REG @ 0x40000000 {
-    FLAGS: u32 ro @ 0x00,
-    CTRL: u32 rw @ 0x04,
+register StatusBlock {
+    0x00 ro u32 FLAGS,
+    0x04 rw u32 CTRL,
 }
+
+StatusBlock STATUS_REG(0x40000000);
 
 void main() {
     // NEGATIVE CONTROL -- a writable member in a `for` update

@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 004
+#pragma target cortex-m7
 // E0870/E0871/E0872 across TWO include hops in the function-body cells
 // register-imported-transitive-error.test.cnx leaves uncovered: E0870 and
 // E0872 in a top-level function, E0870 and E0871 in a scope method.

@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 004
+#pragma target cortex-m7
 // ADR-004, E0870: a write-only (`wo`) register member is read.
 //
 // #1322 relocated this from `output/`, where it reported `1:0`. The four
@@ -7,12 +8,14 @@
 // register read is an expression, so it reaches an initializer as well as a
 // function body.
 
-register CONTROL_REG @ 0x40000000 {
-    CTRL: u32 rw @ 0x00,
-    STATUS: u32 ro @ 0x04,
-    COMMAND: u32 wo @ 0x08,
-    PENDING: u32 w1c @ 0x0C,
+register ControlBlock {
+    0x00 rw u32 CTRL,
+    0x04 ro u32 STATUS,
+    0x08 wo u32 COMMAND,
+    0x0C w1c u32 PENDING,
 }
+
+ControlBlock CONTROL_REG(0x40000000);
 
 // NEGATIVE CONTROL -- reads of rw, ro and w1c members are all fine. A w1c
 // status register is READ to see what is pending; only `wo` returns nothing.

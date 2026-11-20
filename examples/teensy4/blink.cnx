@@ -110,26 +110,28 @@ scope Teensy4 {
     // =========================================================================
     // Scoped register generates: Teensy4_GPIO7_DataRegister, Teensy4_GPIO7_DataRegister_Set, etc.
     // This avoids conflicts with Teensy's imxrt.h which defines GPIO7_DR.
-    public register GPIO7 @ 0x42004000 {
+    public register GpioPort {
         /// Data Register - Current pin output values
-        DataRegister: GPIO7Pins rw @ 0x00,
+        0x00 rw GPIO7Pins DataRegister,
         /// Direction Register - 1=output, 0=input
-        DirectionRegister: GPIO7Pins rw @ 0x04,
+        0x04 rw GPIO7Pins DirectionRegister,
         /// Pad Status Register - Actual pin voltage (read-only)
-        PadStatusRegister: GPIO7Pins ro @ 0x08,
+        0x08 ro GPIO7Pins PadStatusRegister,
         /// Interrupt Configuration Register 1 - Pins 0-15
-        InterruptConfig1: ICR1Config rw @ 0x0C,
+        0x0C rw ICR1Config InterruptConfig1,
         /// Interrupt Mask Register - Enable/disable per pin
-        InterruptMaskRegister: GPIO7Pins rw @ 0x14,
+        0x14 rw GPIO7Pins InterruptMaskRegister,
         /// Interrupt Status - Pending flags (write-1-to-clear)
-        InterruptStatus: GPIO7Pins rw @ 0x18,
+        0x18 rw GPIO7Pins InterruptStatus,
         /// Atomic Set - Write 1 to set DataRegister bits (no RMW!)
-        DataRegister_Set: GPIO7Pins wo @ 0x84,
+        0x84 wo GPIO7Pins DataRegister_Set,
         /// Atomic Clear - Write 1 to clear DataRegister bits
-        DataRegister_Clear: GPIO7Pins wo @ 0x88,
+        0x88 wo GPIO7Pins DataRegister_Clear,
         /// Atomic Toggle - Write 1 to toggle DataRegister bits
-        DataRegister_Toggle: GPIO7Pins wo @ 0x8C,
+        0x8C wo GPIO7Pins DataRegister_Toggle,
     }
+
+    public GpioPort GPIO7(0x42004000);
     u8 doSomething() {
         u8 someByte <- 123;
 

@@ -689,9 +689,10 @@ describe("CodeGenWalker Coverage Tests", () => {
     it("should generate scope with register member", () => {
       const source = `
         scope GPIO {
-          public register PORTA @ 0x40000000 {
-            DR: u32 rw @ 0x00,
+          public register PORTALayout {
+            0x00 rw u32 DR,
           }
+          public PORTALayout PORTA(0x40000000);
           public void write(u32 val) {
             PORTA.DR <- val;
           }
@@ -704,10 +705,10 @@ describe("CodeGenWalker Coverage Tests", () => {
       expect(code).toContain("GPIO__PORTA__DR = val");
       expect(code).not.toContain("#define GPIO__PORTA__DR");
       const block = host.state.exportedRegisterBlocks.join("\n");
-      expect(block).toContain("/* Register: GPIO__PORTA @ 0x40000000 */");
-      // Address format is 0x40000000 + 0x00
+      expect(block).toContain("/* Register: GPIO__PORTA @ 0x40000000U */");
+      // ADR-072: one folded, unsigned address
       expect(block).toContain(
-        "#define GPIO__PORTA__DR (*(volatile uint32_t*)(0x40000000 + 0x00))",
+        "#define GPIO__PORTA__DR (*(volatile uint32_t*)(0x40000000U))",
       );
     });
   });

@@ -578,14 +578,18 @@ LED.off();                     // OK - public by default
 // 14. REGISTER BINDINGS
 // =============================================================================
 
-// Type-safe hardware access
-register GPIO7 @ 0x42004000 {
-    DR:         u32 rw @ 0x00,  // Read-Write
-    GDIR:       u32 rw @ 0x04,  // Direction
-    PSR:        u32 ro @ 0x08,  // Read-Only
-    DR_SET:     u32 wo @ 0x84,  // Write-Only atomic set
-    DR_CLEAR:   u32 wo @ 0x88,  // Write-Only atomic clear
+// Type-safe hardware access (ADR-072): a register is a type -- a layout of
+// `offset access type name` members -- and each instance fixes it at an
+// address. Offsets and addresses are compile-time constants.
+register GpioPort {
+    0x00 rw u32 DR,  // Read-Write
+    0x04 rw u32 GDIR,  // Direction
+    0x08 ro u32 PSR,  // Read-Only
+    0x84 wo u32 DR_SET,  // Write-Only atomic set
+    0x88 wo u32 DR_CLEAR,  // Write-Only atomic clear
 }
+
+GpioPort GPIO7(0x42004000);
 
 u32 data <- GPIO7.DR;           // Read
 GPIO7.DR <- 0xFF;               // Write
@@ -642,11 +646,13 @@ f32 PI <- 3.14159;
 
 #include <Arduino.h>
 
-register GPIO7 @ 0x42004000 {
-    DR_SET:     u32 wo @ 0x84,
-    DR_CLEAR:   u32 wo @ 0x88,
-    DR_TOGGLE:  u32 wo @ 0x8C,
+register GpioOutputs {
+    0x84 wo u32 DR_SET,
+    0x88 wo u32 DR_CLEAR,
+    0x8C wo u32 DR_TOGGLE,
 }
+
+GpioOutputs GPIO7(0x42004000);
 
 u32 LED_PIN <- 13;
 u32 LED_BIT <- 3;

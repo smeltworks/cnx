@@ -124,7 +124,7 @@ describe("the type / value position split (#1336)", () => {
    * exit 0.
    *
    * If ADR-072 is IMPLEMENTED this expectation inverts -- deliberately, in that
-   * ADR's own work, together with E0429's retirement. It failing for any other
+   * ADR's own work, together with E0429's retirement (now E0937). It failing for any other
    * reason means the two answers have drifted apart again.
    */
   it("does NOT accept a register in a type position", () => {

@@ -1,8 +1,8 @@
-30:12 error[E0870]: cannot read from write-only register member 'CFG' (LREG.CFG has 'wo' access modifier)
+33:12 error[E0870]: cannot read from write-only register member 'CFG' (LREG.CFG has 'wo' access modifier)
        help: A `wo` register member is hardware that returns nothing meaningful when read (ADR-004). Read the register's own readable member, or keep a shadow copy of what was written.
-32:4 error[E0872]: Cannot assign false to write-only register bit LREG.CLR[0]
+35:4 error[E0872]: Cannot assign false to write-only register bit LREG.CLR[0]
        help: Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.
-34:4 error[E0870]: cannot read from write-only register member 'CFG' (LREG.CFG has 'wo' access modifier)
+37:4 error[E0870]: cannot read from write-only register member 'CFG' (LREG.CFG has 'wo' access modifier)
        help: A `wo` register member is hardware that returns nothing meaningful when read (ADR-004). Read the register's own readable member, or keep a shadow copy of what was written.
-36:4 error[E0871]: cannot assign to read-only register member 'ST' (LREG.ST has 'ro' access modifier)
+39:4 error[E0871]: cannot assign to read-only register member 'ST' (LREG.ST has 'ro' access modifier)
        help: An `ro` register member is hardware that cannot be written (ADR-004); the generated C declares it `const`. Write the register's own writable member, or change the declaration if the hardware allows writes.

@@ -54,8 +54,11 @@ class ValuePositionWalk {
       this.variable(declaration);
       return;
     }
+    if (declaration.kind === "constructorDeclaration") {
+      if (declaration.address) this.place(declaration.address, NOWHERE, null);
+      return;
+    }
     if (declaration.kind === "register") {
-      this.place(declaration.address, NOWHERE, null);
       for (const member of declaration.members) {
         this.place(member.offset, NOWHERE, null);
       }

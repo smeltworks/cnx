@@ -5,6 +5,7 @@
 
 #include "bitmap-in-register.test.h"
 
+
 #include <stdint.h>
 #include <stdbool.h>
 

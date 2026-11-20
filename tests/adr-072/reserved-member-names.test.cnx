@@ -1,0 +1,42 @@
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072 ruling 2 (#2029): a reserved word may name a member -- a register
+// member, a bitmap field or a struct field. A member is only declared in
+// member position and only reached after `.`, so `ISR` there is never the
+// ISR type.
+
+bitmap8 Status {
+    ISR,
+    critical,
+    Reserved[6]
+}
+
+struct Vector {
+    u32 ISR;
+    u8 scope;
+    u16 u8;
+    u8 wrap;
+}
+
+register GpioPort {
+    0x00 rw u32 scope,
+    0x04 ro u32 atomic,
+    0x18 w1c u32 ISR,
+}
+
+GpioPort GPIO1(0x401B8000);
+
+void main() {
+    mut Status s <- 0;
+    s.ISR <- true;
+    mut Vector v;
+    v.ISR <- 3;
+    Vector w <- { ISR: 4 };
+    v.ISR <- w.ISR;
+    GPIO1.ISR <- 0x01;
+    GPIO1.scope <- GPIO1.atomic;
+    s.critical <- s.ISR;
+    Vector x <- { ISR: 1, scope: 2, u8: 3, wrap: 4 };
+    v.u8 <- x.u8 + x.scope;
+    v.wrap <- x.wrap;
+}

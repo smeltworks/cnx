@@ -5,6 +5,7 @@
 
 #include "scoped-register-basic.test.hpp"
 
+
 #include <stdint.h>
 
 // Test: Basic scoped register declaration and access

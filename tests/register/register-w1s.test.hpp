@@ -12,16 +12,16 @@
 extern "C" {
 #endif
 
-/* Registers (ADR-004) */
-/* Register: GPIO @ 0x40000000 */
-#define GPIO__DR (*(volatile uint32_t*)(0x40000000 + 0x00))
-#define GPIO__DR_SET (*(volatile uint32_t*)(0x40000000 + 0x84))
-#define GPIO__DR_CLEAR (*(volatile uint32_t*)(0x40000000 + 0x88))
-#define GPIO__DR_TOGGLE (*(volatile uint32_t*)(0x40000000 + 0x8C))
+/* Registers (ADR-072) */
+/* Register: GPIO @ 0x40000000U */
+#define GPIO__DR (*(volatile uint32_t*)(0x40000000U))
+#define GPIO__DR_SET (*(volatile uint32_t*)(0x40000084U))
+#define GPIO__DR_CLEAR (*(volatile uint32_t*)(0x40000088U))
+#define GPIO__DR_TOGGLE (*(volatile uint32_t*)(0x4000008CU))
 
-/* Register: CTRL @ 0x40001000 */
-#define CTRL__ENABLE (*(volatile uint32_t*)(0x40001000 + 0x00))
-#define CTRL__FLAGS (*(volatile uint32_t*)(0x40001000 + 0x04))
+/* Register: CTRL @ 0x40001000U */
+#define CTRL__ENABLE (*(volatile uint32_t*)(0x40001000U))
+#define CTRL__FLAGS (*(volatile uint32_t*)(0x40001004U))
 
 /* Function prototypes */
 void setGpioBit(const uint8_t pin);

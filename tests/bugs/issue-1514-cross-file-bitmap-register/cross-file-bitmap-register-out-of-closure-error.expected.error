@@ -1,1 +1,1 @@
-tests/bugs/issue-1514-cross-file-bitmap-register/lib/other.cnx:2:7 error[E0426]: type 'Deep' is not defined
+tests/bugs/issue-1514-cross-file-bitmap-register/lib/other.cnx:2:12 error[E0426]: type 'Deep' is not defined

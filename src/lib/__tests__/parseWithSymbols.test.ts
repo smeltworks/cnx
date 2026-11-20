@@ -141,9 +141,10 @@ describe("parseWithSymbols", () => {
       // Use valid cnx register syntax with proper fields
       const source = `
         scope Board {
-          register GPIO @ 0x40000000 {
-            DR: u32 rw @ 0x00,
+          register GpioPort {
+            0x00 rw u32 DR,
           }
+          GpioPort GPIO(0x40000000);
         }
       `;
 
@@ -385,9 +386,10 @@ describe("parseWithSymbols", () => {
     it("register in scope has nested id path", () => {
       const source = `
         scope Board {
-          register GPIO @ 0x40000000 {
-            DR: u32 rw @ 0x00,
+          register GpioPort {
+            0x00 rw u32 DR,
           }
+          GpioPort GPIO(0x40000000);
         }
       `;
 
@@ -403,9 +405,10 @@ describe("parseWithSymbols", () => {
     it("register member has id=Scope.Register.member", () => {
       const source = `
         scope Board {
-          register GPIO @ 0x40000000 {
-            DR: u32 rw @ 0x00,
+          register GpioPort {
+            0x00 rw u32 DR,
           }
+          GpioPort GPIO(0x40000000);
         }
       `;
 
@@ -414,8 +417,8 @@ describe("parseWithSymbols", () => {
       const member = result.symbols.find(
         (s) => s.name === "DR" && s.kind === "registerMember",
       );
-      expect(member?.id).toBe("Board.GPIO.DR");
-      expect(member?.parentId).toBe("Board.GPIO");
+      expect(member?.id).toBe("Board.GpioPort.DR");
+      expect(member?.parentId).toBe("Board.GpioPort");
     });
 
     it("struct has correct id and parentId", () => {
@@ -547,14 +550,18 @@ struct Point {
 
     it("register members", () => {
       const result = parseWithSymbols(`
-register GPIO @ 0x40000000 {
-  DR: u32 rw @ 0x00,
-  DIR: u32 rw @ 0x04,
-  MASK: u32 rw @ 0x08,
+register GpioPort {
+  0x00 rw u32 DR,
+  0x04 rw u32 DIR,
+  0x08 rw u32 MASK,
 }
+GpioPort GPIO(0x40000000);
 `);
       const parent = result.symbols.find((s) => s.kind === "register")!;
-      const members = result.symbols.filter((s) => s.kind === "registerMember");
+      // ADR-072: the instance lists the same members again, under its own id
+      const members = result.symbols.filter(
+        (s) => s.kind === "registerMember" && s.parentId === parent.id,
+      );
       expect(members).toHaveLength(3);
       expect(new Set(members.map((m) => m.line)).size).toBe(3);
       expect(members.map((m) => m.line)).not.toContain(parent.line);

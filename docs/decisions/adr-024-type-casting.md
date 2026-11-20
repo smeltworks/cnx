@@ -343,12 +343,14 @@ u32 rawAddr <- 0x40000000;
 volatile u32 reg <- (volatile u32)rawAddr;  // NOT SUPPORTED
 ```
 
-**Why?** For hardware register access, use the `register` keyword (ADR-004):
+**Why?** For hardware register access, use the `register` keyword (ADR-072):
 
 ```cnx
-register GPIO @ 0x40000000 {
-    DR: u32 rw @ 0x00,
+register GpioPort {
+    0x00 rw u32 DR,
 }
+
+GpioPort GPIO(0x40000000);
 
 GPIO.DR <- 0xFF;  // Safe, typed register access
 ```

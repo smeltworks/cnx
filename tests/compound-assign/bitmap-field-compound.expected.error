@@ -1,10 +1,10 @@
-43:8 error[E0857]: Compound assignment operators are not supported on a bitmap field
-       help: A compound operator reads, modifies and writes back one storage location. Write the read and the write out separately.
-54:4 error[E0857]: Compound assignment operators are not supported on a bitmap field
-       help: A compound operator reads, modifies and writes back one storage location. Write the read and the write out separately.
-55:4 error[E0857]: Compound assignment operators are not supported on a bitmap field
-       help: A compound operator reads, modifies and writes back one storage location. Write the read and the write out separately.
-56:4 error[E0857]: Compound assignment operators are not supported on a bitmap field
+46:8 error[E0857]: Compound assignment operators are not supported on a bitmap field
        help: A compound operator reads, modifies and writes back one storage location. Write the read and the write out separately.
 57:4 error[E0857]: Compound assignment operators are not supported on a bitmap field
+       help: A compound operator reads, modifies and writes back one storage location. Write the read and the write out separately.
+58:4 error[E0857]: Compound assignment operators are not supported on a bitmap field
+       help: A compound operator reads, modifies and writes back one storage location. Write the read and the write out separately.
+59:4 error[E0857]: Compound assignment operators are not supported on a bitmap field
+       help: A compound operator reads, modifies and writes back one storage location. Write the read and the write out separately.
+60:4 error[E0857]: Compound assignment operators are not supported on a bitmap field
        help: A compound operator reads, modifies and writes back one storage location. Write the read and the write out separately.

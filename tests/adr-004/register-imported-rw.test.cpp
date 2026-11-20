@@ -5,7 +5,6 @@
 
 #include "register-imported-rw.test.hpp"
 
-// test-adr: 004
 // A register declared in an INCLUDED file, used here. ADR-004's whole use case
 // is a board file declaring the hardware and application files including it,
 // and until #1322 the importer reported `'HW' is not defined` (E0427): every
@@ -13,6 +12,8 @@
 // register did not. Compiled in both modes, so the emitted access is checked
 // against a C compiler as well as against the snapshot.
 #include "register-declarations.hpp"
+
+// test-adr: 004
 
 #include <stdint.h>
 #include <stdbool.h>

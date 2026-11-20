@@ -5,6 +5,7 @@
 
 #include "register-spelling-parity.test.hpp"
 
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -26,11 +27,11 @@
 /* Scope: Driver */
 
 void Driver__bareByteAligned(void) {
-    *((volatile uint8_t*)(0x40020000 + 0x08 + 1)) = (255U);
+    *((volatile uint8_t*)(0x40020009U)) = (255U);
 }
 
 void Driver__globalByteAligned(void) {
-    *((volatile uint8_t*)(0x40020000 + 0x08 + 1)) = (255U);
+    *((volatile uint8_t*)(0x40020009U)) = (255U);
 }
 
 void Driver__bareReadModifyWrite(void) {

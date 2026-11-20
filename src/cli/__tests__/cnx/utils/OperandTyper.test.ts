@@ -606,9 +606,10 @@ void main() {
   });
 
   it("types a register member (C11)", () => {
-    const t = typeOf(`register R @ 0x40000000 {
-    CTRL: u16 rw @ 0x00,
+    const t = typeOf(`register Peripheral {
+    0x00 rw u16 CTRL,
 }
+    Peripheral R(0x40000000);
 void main() {
     u16 r <- R.CTRL;
 }`);
@@ -941,13 +942,15 @@ void main() {
   // #2158/#2185: the register member a step's prefix is, however the
   // register is spelled -- the one answer the classifier and handlers read
   describe("the register member a step reads from", () => {
-    const declarations = `register MOTOR @ 0x40000000 {
-    CTRL: u8 rw @ 0x00,
+    const declarations = `register MotorController {
+    0x00 rw u8 CTRL,
 }
+    MotorController MOTOR(0x40000000);
 scope Drive {
-    register PWM @ 0x40001000 {
-        FLAGS: u8 w1c @ 0x04,
+    register PwmChannel {
+        0x04 w1c u8 FLAGS,
     }
+    PwmChannel PWM(0x40001000);
     public void bare() { %BODY% }
 }
 `;
@@ -1001,9 +1004,10 @@ scope Drive {
     it("names the member a bitmap field of a register member is in", () => {
       const step = targetOf(`bitmap8 Ctl { A, B, Mode[3], C, D, E }
 scope Drive {
-    register PWM @ 0x40001000 {
-        CTRL: Ctl rw @ 0x00,
+    register PwmChannel {
+        0x00 rw Ctl CTRL,
     }
+    PwmChannel PWM(0x40001000);
     public void bare() { PWM.CTRL.Mode <- 2; }
 }
 `).steps.at(-1);

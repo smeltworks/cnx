@@ -4,16 +4,18 @@
 > from v2 to v1. See [`README.md`](README.md) for the numbering rule and the full mapping
 > table.
 
-**Status:** Accepted
+**Status:** WIP — Accepted design, implementation in progress (Part 1 register types and instances landed in #2461; register parameters are PR 2; Parts 2–4 to follow)
 **Date:** 2026-02-20 (revised 2026-07-04: simplified register syntax; added Parts 4–5. 2026-11-19: Part 5, scaled fields, moved to ADR-073; contradictions settled in rulings 1–10 on #2449; Accepted)
 **Decision Makers:** Language Design Team
 **Supersedes:** ADR-004 (Register Bindings — takes effect when Part 1 is implemented; this ADR removes the `register Name @ address { }` form ADR-004 defines)
 **Amends:** ADR-016 (`### Scoped Registers` — takes effect when Part 1 is implemented; that section's `@ address` examples go with it)
 **Related ADRs:** ADR-034 (Bitmap Types), ADR-033 (Packed Structs — Rejected; Part 4 is the safe alternative), ADR-073 (Scaled Fields — formerly Part 5), ADR-074 (Byte-Order Reversal)
 
-> **Accepted, not implemented.** The compiler does not accept this syntax yet. Until
-> Part 1 is implemented, ADR-004 still describes what compiles: a register is not a
-> type, and the `@ address` form is the one to write.
+> **Part 1 is partly implemented.** Register types, fixed-address instances,
+> compile-time addresses and reserved member names compile (#2461), and the
+> `@ address` form is gone. A register parameter (E0933) and a register type in any
+> position but a one-address instance (E0936) are rejected until the rest of Part 1
+> and Part 4 land. Parts 2–4 are not implemented.
 
 ## Context
 
@@ -227,11 +229,11 @@ Transpiles to:
 
 ```c
 // Each instance gets its own macro set with computed addresses
-#define GPIO1__DR   (*(volatile uint32_t*)(0x401B8000 + 0x00))
-#define GPIO1__GDIR (*(volatile uint32_t*)(0x401B8000 + 0x04))
+#define GPIO1__DR   (*(volatile uint32_t*)(0x401B8000U))
+#define GPIO1__GDIR (*(volatile uint32_t*)(0x401B8004U))
 
-#define GPIO2__DR   (*(volatile uint32_t*)(0x401BC000 + 0x00))
-#define GPIO2__GDIR (*(volatile uint32_t*)(0x401BC000 + 0x04))
+#define GPIO2__DR   (*(volatile uint32_t*)(0x401BC000U))
+#define GPIO2__GDIR (*(volatile uint32_t*)(0x401BC004U))
 ```
 
 #### Implementation Notes
@@ -788,6 +790,244 @@ This ADR covers four features for safe hardware abstraction in cnx:
 4. **Data registers** — A register instantiated without an address (`Name Instance;`) is backed by normal memory, giving typed field access to wire/buffer formats (CAN/J1939, packets) without ADR-033's packed-struct overlay hazards. The instance owns its bytes (ruling 7 on #2449) and is assigned whole from a `u8` array of its size (ruling 8). Its size is the end of its last field (ruling 9). Its multi-byte fields are little-endian (ruling 10); reversing a big-endian source is ADR-074.
 
 ---
+
+## Diagnostics
+
+Part 1 (register types and fixed instances):
+
+| Code  | Meaning                                                                                                                                     | Asserted by                                                                                                                                             |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| E0937 | A register instance in a type position (`GPIO1 x;`); its register type is the type                                                          | `tests/bugs/issue-1336-register-in-type-position/`                                                                                                      |
+| E0931 | A register instance's address cannot be used: not a compile-time constant, negative, or a member past the target's pointer range (ruling 5) | `tests/adr-072/register-address-not-constant-error.test.cnx`, `register-negative-offset-error.test.cnx`, `register-address-past-pointer-error.test.cnx` |
+| E0932 | A register member's offset is not a compile-time constant                                                                                   | `tests/adr-072/register-offset-not-constant-error.test.cnx`                                                                                             |
+| E0933 | A function parameter is a register; rejected until register parameters are specialized per instance                                         | `tests/adr-072/register-parameter-error.test.cnx`                                                                                                       |
+| E0934 | A register instance is declared inside a function                                                                                           | `tests/adr-072/register-local-instance-error.test.cnx`                                                                                                  |
+| E0935 | `Type name(expr);` whose type is not a register type (a C++ constructor takes named constants, #375)                                        | `tests/adr-072/constructor-expression-not-register-error.test.cnx`                                                                                      |
+| E0936 | A register type anywhere but a one-address file- or scope-level instance (data registers are Part 4)                                        | `tests/adr-072/register-type-position-error.test.cnx`                                                                                                   |
+
+<!-- MATRIX-SEVERITY code: E0931 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | error    |
+| top-level function | same file               | off      |
+| scope member       | same file               | error    |
+| scope method       | same file               | off      |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | off      |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | off      |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | off      |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | off      |
+| for header         | exercised through chain | off      |
+
+An instance is declared at file or scope level only (E0934), so the function rows are off. The imported rows are off because E0931 is about the instance in the file being transpiled; an included file's instance is checked when that file is.
+
+<!-- MATRIX-SEVERITY code: E0932 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | warn     |
+| top-level function | same file               | off      |
+| scope member       | same file               | warn     |
+| scope method       | same file               | off      |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | off      |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | off      |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | off      |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | off      |
+| for header         | exercised through chain | off      |
+
+A register type is declared at file or scope level only, so the function rows are off. The imported rows are off for the same reason as E0931. The two same-file rows are `warn`, not `error`: E0932 is reported on the member inside the register body, a position the matrix derives no context for, so `register-negative-offset-error` and `register-offset-not-constant-error` assert it without occupying a cell.
+
+<!-- MATRIX-SEVERITY code: E0933 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | off      |
+| top-level function | same file               | error    |
+| scope member       | same file               | off      |
+| scope method       | same file               | error    |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
+
+A parameter exists only on a function, so the variable rows are off. The imported rows are off: the diagnostic is about the parameter's own declaration.
+
+<!-- MATRIX-SEVERITY code: E0934 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | off      |
+| top-level function | same file               | error    |
+| scope member       | same file               | off      |
+| scope method       | same file               | error    |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
+
+E0934 is the local instance, so only the function rows can hold it.
+
+<!-- MATRIX-SEVERITY code: E0935 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | error    |
+| top-level function | same file               | error    |
+| scope member       | same file               | error    |
+| scope method       | same file               | error    |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
+
+The imported rows are off: the diagnostic is about the declaration it is written on.
+
+<!-- MATRIX-SEVERITY code: E0936 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | error    |
+| top-level function | same file               | error    |
+| scope member       | same file               | error    |
+| scope method       | same file               | error    |
+| for header         | same file               | error    |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
+
+The imported rows are off: the diagnostic is about the declaration it is written on, even when its register type is imported.
+
+<!-- MATRIX-SEVERITY code: E0937 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | error    |
+| top-level function | same file               | error    |
+| scope member       | same file               | error    |
+| scope method       | same file               | error    |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | off      |
+
+The imported rows are off: the diagnostic is about the type position it is written in, even when the instance is imported.
 
 ## References
 

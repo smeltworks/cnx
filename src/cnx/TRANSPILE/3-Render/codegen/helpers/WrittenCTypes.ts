@@ -18,12 +18,20 @@ class WrittenCTypes {
     const found = new Set<string>();
     for (const line of WrittenCTypes.codeLines(code)) {
       for (const match of line.matchAll(WrittenCTypes.TYPE_NAME)) {
+        if (WrittenCTypes.isMemberName(line, match.index)) continue;
         found.add(
           match[0] === "true" || match[0] === "false" ? "bool" : match[0],
         );
       }
     }
     return found;
+  }
+
+  /** A word after `.` or `->` is a member name, not a type (ADR-072 ruling 2) */
+  private static isMemberName(line: string, start: number): boolean {
+    let at = start - 1;
+    while (at >= 0 && (line[at] === " " || line[at] === "\t")) at--;
+    return line[at] === "." || (line[at] === ">" && line[at - 1] === "-");
   }
 
   /** The lines of `code` that are C, with comments and literals blanked */

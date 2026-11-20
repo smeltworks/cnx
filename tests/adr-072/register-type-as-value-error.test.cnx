@@ -1,0 +1,33 @@
+// test-error
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072, E0897: a register type names a layout, not a value at an address,
+// so its members are reached only through an instance, in every spelling.
+
+register GpioPort {
+    0x00 rw u32 DR,
+}
+
+GpioPort GPIO1(0x401B8000);
+
+scope Board {
+    public register Port {
+        0x00 rw u32 DR,
+    }
+
+    Port P(0x40000000);
+
+    void poke() {
+        // Negative control: the scope's instance reaches its member
+        this.P.DR <- 1;
+        Port.DR <- 1;
+        this.Port.DR <- 1;
+    }
+}
+
+void main() {
+    // Negative control: an instance reaches its member
+    GPIO1.DR <- 1;
+    GpioPort.DR <- 1;
+    Board.Port.DR <- 1;
+}

@@ -1,1 +1,1 @@
-30:4 error[E0429]: 'Control' is a register, not a type
+33:4 error[E0937]: 'Control' is a register instance, not a type; its register type is the type

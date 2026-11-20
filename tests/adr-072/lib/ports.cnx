@@ -1,0 +1,8 @@
+// ADR-072: a register type and an instance declared in an included file
+
+register GpioPort {
+    0x00 rw u32 DR,
+    0x08 ro u32 PSR,
+}
+
+GpioPort GPIO1(0x401B8000);

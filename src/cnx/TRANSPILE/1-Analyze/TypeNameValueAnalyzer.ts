@@ -17,6 +17,7 @@ import type ITypeNameValueError from "./types/ITypeNameValueError";
 import type ISourceSite from "../../types/ISourceSite";
 import type IOperandType from "../../types/IOperandType";
 import BindingSite from "../../utils/BindingSite";
+import RegisterInstance from "../../utils/RegisterInstance";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TExpression from "../../types/syntax/TExpression";
@@ -24,6 +25,9 @@ import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
 
 const HELP =
   "A type is measured, not read: it answers ADR-058's length properties, its own and its fields' (Point.type_byte_length, Point.x.type_bit_length). A value is read from a variable of the type.";
+
+const REGISTER_HELP =
+  "A register type is a layout with no address; an instance gives it one (`GpioPort GPIO1(0x401B8000);`), and its members are read and written through that instance (`GPIO1.DR`).";
 
 class TypeNameValueAnalyzer {
   constructor(private readonly context: IAnalysisContext) {}
@@ -56,11 +60,17 @@ class TypeNameValueAnalyzer {
     if (misnamed === null) return null;
     const at = misnamed.at;
     const span = at?.span ?? chain.span;
+    // ADR-072: a register type has members, but only an instance reaches them
+    const register = RegisterInstance.isType(
+      this.context.program.symbolByCName(misnamed.type.typeName ?? ""),
+    );
     return {
       code: "E0897",
       span: span,
-      message: TypeNameValueAnalyzer.message(chain, at),
-      helpText: HELP,
+      message: register
+        ? `'${TypeNameValueAnalyzer.written(chain, at)}' is a register type, not a value; reach its members through an instance`
+        : TypeNameValueAnalyzer.message(chain, at),
+      helpText: register ? REGISTER_HELP : HELP,
       declaredAt: this.typeDeclaration(misnamed.type),
     };
   }
@@ -71,6 +81,15 @@ class TypeNameValueAnalyzer {
   }
 
   /** The chain as its source spells it, up to the op where it stops */
+  /** The chain as written up to the op `at`, or whole */
+  private static written(
+    chain: TExpression,
+    at: TPostfixOpSyntax | null,
+  ): string {
+    if (chain.kind !== "postfix" || at === null) return chain.written;
+    return ExpressionShape.writtenThrough(chain, chain.ops.indexOf(at));
+  }
+
   private static message(
     chain: TExpression,
     at: TPostfixOpSyntax | null,

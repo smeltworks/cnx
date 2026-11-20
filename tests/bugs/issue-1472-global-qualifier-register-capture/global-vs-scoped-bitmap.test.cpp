@@ -5,9 +5,10 @@
 
 #include "global-vs-scoped-bitmap.test.hpp"
 
+// test-adr: 057
+
 #include <stdint.h>
 
-// test-adr: 057
 // Found while doing #1472 (deferred type resolution); fixed in the same PR.
 //
 // ADR-057: "Qualify from the parse tree, never from a resolved name. Once a

@@ -20,10 +20,10 @@ extern "C" {
  */
 typedef uint8_t Chip__Pins;
 
-/* Registers (ADR-004) */
-/* Register: Chip__R @ 0x40000000 */
-#define Chip__R__DR (*(volatile Chip__Pins*)(0x40000000 + 0x00))
-#define Chip__R__DIR (*(volatile uint8_t*)(0x40000000 + 0x04))
+/* Registers (ADR-072) */
+/* Register: Chip__R @ 0x40000000U */
+#define Chip__R__DR (*(volatile Chip__Pins*)(0x40000000U))
+#define Chip__R__DIR (*(volatile uint8_t*)(0x40000004U))
 
 /* External variables */
 extern const uint32_t CHIP_MARKER;

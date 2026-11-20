@@ -285,9 +285,25 @@ class VariableCollector {
       initialValueExpr: facts.initialValueExpr ?? undefined,
       initializerCallee: facts.initializerCallee,
       isConstructed: declaration.kind === "constructorDeclaration" || undefined,
+      constructedAddress: VariableCollector.constructedAddress(declaration),
     };
 
     return symbol;
+  }
+
+  /** A constructor's sole argument, which 1.4 reads as an address if `Type` is a register */
+  private static constructedAddress(
+    declaration: TDeclarationSyntax,
+  ): TConstExpr | undefined {
+    if (declaration.kind !== "constructorDeclaration") return undefined;
+    if (declaration.address) {
+      return ConstExprLowering.lower(declaration.address);
+    }
+    const only =
+      declaration.arguments.length === 1 ? declaration.arguments[0] : null;
+    return only
+      ? { kind: "name", root: null, path: [only.name], at: only.span }
+      : undefined;
   }
 }
 

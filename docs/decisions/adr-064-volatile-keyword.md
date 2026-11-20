@@ -397,9 +397,11 @@ Tested with Nucleo-F446RE blink example:
 Currently `register` blocks don't automatically add `volatile`. Consider:
 
 ```cnx
-register GPIOA @ 0x40020000 {
-    DR: u32 rw @ 0x00,  // Should this be implicitly volatile?
+register GpioPort {
+    0x00 rw u32 DR, // Should this be implicitly volatile?
 }
+
+GpioPort GPIOA(0x40020000);
 ```
 
 **Decision**: Defer to future ADR. Register members should likely be implicitly volatile.

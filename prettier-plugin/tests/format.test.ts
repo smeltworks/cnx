@@ -186,6 +186,23 @@ u32 x <- 5;`;
     });
   });
 
+  describe("Register declarations", () => {
+    it("keeps a commented member list stable across runs (ADR-072)", async () => {
+      const input = `register GpioPort {
+    /// Data
+    0x00 rw u32 DR,
+    /// Direction
+    0x04 rw u32 GDIR,
+
+    0x08 ro u32 PSR,
+}
+`;
+      const once = await format(input);
+      expect(once).toBe(input);
+      expect(await format(once)).toBe(input);
+    });
+  });
+
   describe("Array dimensions", () => {
     it("should preserve empty array dimensions in parameters", async () => {
       const input = "u32 main(string args[]){return 0;}";
@@ -305,11 +322,17 @@ u32 x <- 5;`;
     });
 
     it("does not synthesize a register-member comma the author omitted", async () => {
-      const input =
-        "register GPIO @ 0x40020000 {\n    moder: u32 rw @ 0x00\n}\n";
+      const input = "register GpioPort {\n    0x00 rw u32 moder\n}\n";
       const result = await format(input);
-      expect(result).toContain("moder: u32 rw @ 0x00");
+      expect(result).toContain("0x00 rw u32 moder");
       expect(result).not.toContain("0x00,");
+    });
+
+    it("keeps every register-member comma and its trailing comment", async () => {
+      const input =
+        "register GpioPort {\n    0x00 rw u32 DR, // data\n    0x18 w1c u32 ISR,\n}\n";
+      const result = await format(input);
+      expect(result).toBe(input);
     });
   });
 

@@ -1,8 +1,8 @@
-29:18 error[E0870]: cannot read from write-only register member 'COMMAND' (CONTROL_REG.COMMAND has 'wo' access modifier)
+32:18 error[E0870]: cannot read from write-only register member 'COMMAND' (CONTROL_REG.COMMAND has 'wo' access modifier)
        help: A `wo` register member is hardware that returns nothing meaningful when read (ADR-004). Read the register's own readable member, or keep a shadow copy of what was written.
-33:17 error[E0870]: cannot read from write-only register member 'COMMAND' (CONTROL_REG.COMMAND has 'wo' access modifier)
+36:17 error[E0870]: cannot read from write-only register member 'COMMAND' (CONTROL_REG.COMMAND has 'wo' access modifier)
        help: A `wo` register member is hardware that returns nothing meaningful when read (ADR-004). Read the register's own readable member, or keep a shadow copy of what was written.
-38:22 error[E0870]: cannot read from write-only register member 'COMMAND' (global.CONTROL_REG.COMMAND has 'wo' access modifier)
+41:22 error[E0870]: cannot read from write-only register member 'COMMAND' (global.CONTROL_REG.COMMAND has 'wo' access modifier)
        help: A `wo` register member is hardware that returns nothing meaningful when read (ADR-004). Read the register's own readable member, or keep a shadow copy of what was written.
-42:15 error[E0870]: cannot read from write-only register member 'COMMAND' (global.CONTROL_REG.COMMAND has 'wo' access modifier)
+45:15 error[E0870]: cannot read from write-only register member 'COMMAND' (global.CONTROL_REG.COMMAND has 'wo' access modifier)
        help: A `wo` register member is hardware that returns nothing meaningful when read (ADR-004). Read the register's own readable member, or keep a shadow copy of what was written.

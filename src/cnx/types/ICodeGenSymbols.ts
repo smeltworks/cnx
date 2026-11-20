@@ -1,5 +1,4 @@
 import type IBitmapFieldLayout from "./IBitmapFieldLayout";
-import type TExpression from "./syntax/TExpression";
 /**
  * Read-only symbol collections for code generation.
  * Provides generators with access to type declarations without mutation.
@@ -34,6 +33,9 @@ interface ICodeGenSymbols {
 
   /** Set of known bitmap type names (ADR-034) */
   readonly knownBitmaps: ReadonlySet<string>;
+
+  /** ADR-072 Part 1: register TYPES (`register GpioPort { ... }`), by C name */
+  readonly knownRegisterTypes: ReadonlySet<string>;
 
   // === Scope Information ===
 
@@ -112,17 +114,17 @@ interface ICodeGenSymbols {
   // === Register Information (ADR-004) ===
 
   /** Scoped registers: "scopeName.registerName" -> address expression */
-  readonly scopedRegisters: ReadonlyMap<string, TExpression>;
+  readonly scopedRegisters: ReadonlyMap<string, bigint>;
 
   /** Register member access patterns: "scope.reg.field" -> access code */
   readonly registerMemberAccess: ReadonlyMap<string, string>;
 
   // Issue #187: Register address info for width-appropriate memory access
   /** Register base addresses: registerName -> base address expression */
-  readonly registerBaseAddresses: ReadonlyMap<string, TExpression>;
+  readonly registerBaseAddresses: ReadonlyMap<string, bigint>;
 
   /** Register member offsets: "reg_member" -> offset expression */
-  readonly registerMemberOffsets: ReadonlyMap<string, TExpression>;
+  readonly registerMemberOffsets: ReadonlyMap<string, bigint>;
 
   /** Register member C types: "reg_member" -> C type (e.g., "uint32_t") */
   readonly registerMemberCTypes: ReadonlyMap<string, string>;

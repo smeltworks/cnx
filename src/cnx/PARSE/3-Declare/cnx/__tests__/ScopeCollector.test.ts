@@ -277,10 +277,11 @@ describe("ScopeCollector", () => {
     it("collects scope with nested register", () => {
       const code = `
         scope Motor {
-          register CTRL @ 0x40001000 {
-            STATUS: u32 rw @ 0x00,
-            COMMAND: u32 wo @ 0x04,
+          register ControlBlock {
+            0x00 rw u32 STATUS,
+            0x04 wo u32 COMMAND,
           }
+          ControlBlock CTRL(0x40001000);
         }
       `;
       const tree = parse(code);
@@ -291,14 +292,14 @@ describe("ScopeCollector", () => {
       );
 
       // Register has bare name with scope reference
-      const regSymbol = result.memberSymbols.find((s) => s.name === "CTRL");
+      const regSymbol = result.memberSymbols.find(
+        (s) => s.name === "ControlBlock",
+      );
       expect(regSymbol).toBeDefined();
       expect(SymbolGuards.isRegister(regSymbol!)).toBe(true);
       if (SymbolGuards.isRegister(regSymbol!)) {
-        expect(regSymbol.baseAddress).toMatchObject({
-          kind: "literal",
-          text: "0x40001000",
-        });
+        // ADR-072: a register type has no address; its instance carries one
+        expect(regSymbol.baseAddress).toBeNull();
         expect(regSymbol.members.get("STATUS")?.access).toBe("rw");
         expect(regSymbol.members.get("COMMAND")?.access).toBe("wo");
         expect(regSymbol.scopePath).toBe("Motor");
@@ -350,9 +351,10 @@ describe("ScopeCollector", () => {
     it("resolves scoped bitmap types in registers", () => {
       const code = `
         scope Motor {
-          register CTRL @ 0x40001000 {
-            FLAGS: MotorFlags rw @ 0x00,
+          register ControlBlock {
+            0x00 rw MotorFlags FLAGS,
           }
+          ControlBlock CTRL(0x40001000);
         }
       `;
       const tree = parse(code);
@@ -373,7 +375,9 @@ describe("ScopeCollector", () => {
         },
       );
 
-      const regSymbol = result.memberSymbols.find((s) => s.name === "CTRL");
+      const regSymbol = result.memberSymbols.find(
+        (s) => s.name === "ControlBlock",
+      );
       expect(SymbolGuards.isRegister(regSymbol!)).toBe(true);
       if (SymbolGuards.isRegister(regSymbol!)) {
         expect(
@@ -385,9 +389,10 @@ describe("ScopeCollector", () => {
     it("keeps an explicit global. bitmap out of the scope's reach", () => {
       const code = `
         scope Motor {
-          register CTRL @ 0x40001000 {
-            FLAGS: global.MotorFlags rw @ 0x00,
+          register ControlBlock {
+            0x00 rw global.MotorFlags FLAGS,
           }
+          ControlBlock CTRL(0x40001000);
         }
       `;
       const tree = parse(code);
@@ -408,7 +413,9 @@ describe("ScopeCollector", () => {
         },
       );
 
-      const regSymbol = result.memberSymbols.find((s) => s.name === "CTRL");
+      const regSymbol = result.memberSymbols.find(
+        (s) => s.name === "ControlBlock",
+      );
       expect(SymbolGuards.isRegister(regSymbol!)).toBe(true);
       if (SymbolGuards.isRegister(regSymbol!)) {
         expect(

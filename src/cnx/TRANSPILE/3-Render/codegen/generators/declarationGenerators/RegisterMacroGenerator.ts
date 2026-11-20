@@ -12,12 +12,10 @@ import IPlannedRegisterMember from "../../types/IPlannedRegisterMember";
  * Generate #define macros for register members.
  *
  * @param members - The planned members, in declaration order
- * @param baseAddress - Base address expression string
  * @returns Array of #define lines
  */
 function generateRegisterMacros(
   members: readonly IPlannedRegisterMember[],
-  baseAddress: string,
 ): string[] {
   return members.map((member) => {
     // Determine qualifiers based on access mode
@@ -26,8 +24,8 @@ function generateRegisterMacros(
         ? `volatile ${member.cType} const *`
         : `volatile ${member.cType}*`;
 
-    // Generate: #define PREFIX_REGNAME (*(volatile type*)(base + offset))
-    return `#define ${member.cName} (*(${cast})(${baseAddress} + ${member.offset}))`;
+    // ADR-072: one folded address, so the C does no address arithmetic
+    return `#define ${member.cName} (*(${cast})(${member.address}))`;
   });
 }
 

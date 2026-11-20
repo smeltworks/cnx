@@ -1,2 +1,2 @@
-21:8 error[E0437]: Use 'global.GPIO.DR' to access register 'GPIO' from inside scope 'Motor' (scope member 'GPIO' shadows the global register)
+24:8 error[E0437]: Use 'global.GPIO.DR' to access register 'GPIO' from inside scope 'Motor' (scope member 'GPIO' shadows the global register)
        help: A bare name resolves to the nearest declaration, which here is the shadow. `global.` names the file-scope one unambiguously.

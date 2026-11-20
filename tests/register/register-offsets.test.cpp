@@ -5,6 +5,7 @@
 
 #include "register-offsets.test.hpp"
 
+
 #include <stdint.h>
 
 // ADR-004: Register offset calculation test

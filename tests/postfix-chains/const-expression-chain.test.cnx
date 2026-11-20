@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // Postfix Chain Test: Const Expressions in Chains
 // Tests: Using const values and expressions as indices in chains
 
@@ -17,10 +18,12 @@ scope ConstExprChain {
 
 mut ConstExprChain.Sensor[SENSOR_COUNT] sensors;
 
-register GPIO @ 0x40000000 {
-    DR: u32 rw @ 0x00,
-    DR_SET: u32 wo @ 0x84,
+register GpioPort {
+    0x00 rw u32 DR,
+    0x84 wo u32 DR_SET,
 }
+
+GpioPort GPIO(0x40000000);
 
 void main() {
     // Array indexing with const

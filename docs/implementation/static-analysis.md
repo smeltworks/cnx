@@ -257,7 +257,7 @@ This section documents intentional deviations from MISRA C 2012 rules.
 **Deviation:** Register bindings require casting integer addresses to `volatile` pointers:
 
 ```c
-#define GPIO7_DR (*(volatile uint32_t*)(0x42004000 + 0x00))
+#define GPIO7_DR (*(volatile uint32_t*)(0x42004000U))
 ```
 
 **Rationale:** This is the standard pattern for memory-mapped I/O in embedded systems. The address is a hardware specification, not an arbitrary cast. All major embedded compilers and MISRA deviation databases accept this pattern with documentation.

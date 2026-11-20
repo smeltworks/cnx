@@ -1,4 +1,5 @@
 // test-adr: 004, 034
+#pragma target cortex-m7
 // #1514: a register member typed by a bitmap declared in ANOTHER file lost its
 // bitmap. A field write emitted a flat identifier nothing declares, and a field
 // read a struct member access on an integer -- transpiler exit 0, gcc rejects:
@@ -24,23 +25,31 @@ bitmap8 Local {
     Hi[4]
 }
 
-register LREG @ 0x40001000 {
-    RW: Ctl rw @ 0x00,
+register LoopBlock {
+    0x00 rw Ctl RW,
 }
 
-register OWNREG @ 0x40002000 {
-    RW: Local rw @ 0x00,
+LoopBlock LREG(0x40001000);
+
+register OwnedBlock {
+    0x00 rw Local RW,
 }
 
-register DREG @ 0x40005000 {
-    D: Deep rw @ 0x00,
-    M: EMode rw @ 0x02,
+OwnedBlock OWNREG(0x40002000);
+
+register DeviceBlock {
+    0x00 rw Deep D,
+    0x02 rw EMode M,
 }
+
+DeviceBlock DREG(0x40005000);
 
 scope Dev {
-    register CTRL @ 0x40000000 {
-        STATUS: Chip.Flags rw @ 0x00,
+    register ControlBlock {
+        0x00 rw Chip.Flags STATUS,
     }
+
+    ControlBlock CTRL(0x40000000);
 
     public void go() {
         this.CTRL.STATUS.Busy <- true;
@@ -52,9 +61,11 @@ scope Dev {
 }
 
 scope Bus {
-    register G @ 0x40006000 {
-        C: global.Ctl rw @ 0x00,
+    register GpioPort {
+        0x00 rw global.Ctl C,
     }
+
+    GpioPort G(0x40006000);
 
     public void go() {
         this.G.C.En <- true;
@@ -62,9 +73,11 @@ scope Bus {
 }
 
 scope Chip {
-    register R @ 0x40003000 {
-        DR: Flags rw @ 0x00,
+    register Peripheral {
+        0x00 rw Flags DR,
     }
+
+    Peripheral R(0x40003000);
 
     public void set() {
         this.R.DR.Busy <- true;

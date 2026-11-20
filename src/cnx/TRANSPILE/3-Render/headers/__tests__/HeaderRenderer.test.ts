@@ -76,7 +76,7 @@ describe("HeaderRenderer", () => {
     const plan = HeaderRenderer.render(facts);
 
     const header = plan.headersBySourcePath.get("/src/hw.cnx") ?? "";
-    expect(header).toContain("/* Registers (ADR-004) */");
+    expect(header).toContain("/* Registers (ADR-072) */");
     expect(header).toContain("#define HW__CTRL (*(volatile uint32_t*)");
   });
 

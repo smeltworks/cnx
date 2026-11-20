@@ -387,11 +387,9 @@ class UndeclaredValueAnalyzer {
     const symbols = context.symbols;
 
     // A function referenced as a value (ADR-029 function-as-type), a type used
-    // as the base of `Type.MEMBER`, a register, which is a value at an address
-    // (ADR-004) and so answers here but NOT in the type position (#1336). A
-    // variable is `binds`' above, never this predicate's (#1643).
-    // ADR-072: when a register becomes a type, `isValueName` collapses into
-    // `isTypeName`.
+    // as the base of `Type.MEMBER`, a register instance, which is a value at an
+    // address (ADR-072) and so answers here but NOT in the type position
+    // (#1336). A variable is `binds`' above, never this predicate's (#1643).
     //
     // #1430: `CodeGenState.knownFunctions` is deliberately NOT consulted, for
     // the reason `NameExistence`'s class comment already gives for

@@ -23,15 +23,15 @@ extern "C" {
  */
 typedef uint8_t MotorFlags;
 
-/* Registers (ADR-004) */
-/* Register: MotorController__MOTOR_REG @ 0x40002000 */
-#define MotorController__MOTOR_REG__CTRL (*(volatile MotorFlags*)(0x40002000 + 0x00))
-#define MotorController__MOTOR_REG__SPEED (*(volatile uint32_t*)(0x40002000 + 0x04))
-#define MotorController__MOTOR_REG__STATUS (*(volatile uint32_t const *)(0x40002000 + 0x08))
+/* Registers (ADR-072) */
+/* Register: MotorController__MOTOR_REG @ 0x40002000U */
+#define MotorController__MOTOR_REG__CTRL (*(volatile MotorFlags*)(0x40002000U))
+#define MotorController__MOTOR_REG__SPEED (*(volatile uint32_t*)(0x40002004U))
+#define MotorController__MOTOR_REG__STATUS (*(volatile uint32_t const *)(0x40002008U))
 
-/* Register: Board__GPIO @ 0x40000000 */
-#define Board__GPIO__DR (*(volatile uint32_t*)(0x40000000 + 0x00))
-#define Board__GPIO__DR_SET (*(volatile uint32_t*)(0x40000000 + 0x84))
+/* Register: Board__GPIO @ 0x40000000U */
+#define Board__GPIO__DR (*(volatile uint32_t*)(0x40000000U))
+#define Board__GPIO__DR_SET (*(volatile uint32_t*)(0x40000084U))
 
 /* Function prototypes */
 void MotorController__start(void);

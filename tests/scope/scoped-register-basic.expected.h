@@ -10,11 +10,11 @@
 extern "C" {
 #endif
 
-/* Registers (ADR-004) */
-/* Register: Teensy4__GPIO7 @ 0x42004000 */
-#define Teensy4__GPIO7__DR (*(volatile uint32_t*)(0x42004000 + 0x00))
-#define Teensy4__GPIO7__DR_SET (*(volatile uint32_t*)(0x42004000 + 0x84))
-#define Teensy4__GPIO7__DR_TOGGLE (*(volatile uint32_t*)(0x42004000 + 0x8C))
+/* Registers (ADR-072) */
+/* Register: Teensy4__GPIO7 @ 0x42004000U */
+#define Teensy4__GPIO7__DR (*(volatile uint32_t*)(0x42004000U))
+#define Teensy4__GPIO7__DR_SET (*(volatile uint32_t*)(0x42004084U))
+#define Teensy4__GPIO7__DR_TOGGLE (*(volatile uint32_t*)(0x4200408CU))
 
 #ifdef __cplusplus
 }

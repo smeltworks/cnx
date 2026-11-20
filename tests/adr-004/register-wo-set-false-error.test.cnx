@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 004
+#pragma target cortex-m7
 // ADR-004, E0872: a zero is assigned to a bit of a write-1 register member.
 // Coverage: Section 12 - Register Declaration (write-only validation)
 //
@@ -8,12 +9,14 @@
 // const were accepted and emitted `GPIO__DR_SET = (1U << 3)`: the bit the
 // author meant to clear was set. The rule is about the value now.
 
-register GPIO @ 0x42000000 {
-    DR_SET: u32 wo @ 0x84,
-    DR_CLEAR: u32 wo @ 0x88,
-    DR: u32 rw @ 0x00,
-    INTSTAT: u32 w1c @ 0x10,
+register GpioPort {
+    0x84 wo u32 DR_SET,
+    0x88 wo u32 DR_CLEAR,
+    0x00 rw u32 DR,
+    0x10 w1c u32 INTSTAT,
 }
+
+GpioPort GPIO(0x42000000);
 
 u32 OFF <- 0;
 bool DOWN <- false;

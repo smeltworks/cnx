@@ -1,0 +1,8 @@
+23:12 error[E0897]: 'Port' is a register type, not a value; reach its members through an instance
+       help: A register type is a layout with no address; an instance gives it one (`GpioPort GPIO1(0x401B8000);`), and its members are read and written through that instance (`GPIO1.DR`).
+24:17 error[E0897]: 'this.Port' is a register type, not a value; reach its members through an instance
+       help: A register type is a layout with no address; an instance gives it one (`GpioPort GPIO1(0x401B8000);`), and its members are read and written through that instance (`GPIO1.DR`).
+31:12 error[E0897]: 'GpioPort' is a register type, not a value; reach its members through an instance
+       help: A register type is a layout with no address; an instance gives it one (`GpioPort GPIO1(0x401B8000);`), and its members are read and written through that instance (`GPIO1.DR`).
+32:14 error[E0897]: 'Board.Port' is a register type, not a value; reach its members through an instance
+       help: A register type is a layout with no address; an instance gives it one (`GpioPort GPIO1(0x401B8000);`), and its members are read and written through that instance (`GPIO1.DR`).

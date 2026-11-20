@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // Issue #1244: a register bit-range write must mean the same thing through
 // every ADR-016 spelling. The classifier tested the subscript SHAPE before it
 // asked whether the target was a register, and a bit range is two expressions
@@ -13,10 +14,12 @@
 // different handler either: `GLOBAL_REGISTER_BIT` routed to a handler that
 // skips the MMIO byte-aligned-write optimization, so the two spellings of one
 // write to a write-only register emitted different C.
-register PORT @ 0x40020000 {
-    Set: u32 wo @ 0x08,
-    Mode: u32 rw @ 0x00,
+register PortPins {
+    0x08 wo u32 Set,
+    0x00 rw u32 Mode,
 }
+
+PortPins PORT(0x40020000);
 
 scope Driver {
     // Byte-aligned write-only bit range: the MMIO form. Both spellings must

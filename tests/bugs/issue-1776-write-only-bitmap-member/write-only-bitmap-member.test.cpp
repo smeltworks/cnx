@@ -5,6 +5,7 @@
 
 #include "write-only-bitmap-member.test.hpp"
 
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -18,11 +19,11 @@
 // bitmap value -- the same read of a `wo` member and write-back of a `w1c` one.
 /* Scope: Drive */
 
-/* Register: Drive__PWM @ 0x40001000 */
-#define Drive__PWM__CTRL (*(volatile CtrlBits*)(0x40001000 + 0x00))
-#define Drive__PWM__FLAGS (*(volatile CtrlBits*)(0x40001000 + 0x04))
-#define Drive__PWM__SET (*(volatile CtrlBits*)(0x40001000 + 0x08))
-#define Drive__PWM__CONFIG (*(volatile CtrlBits*)(0x40001000 + 0x0C))
+/* Register: Drive__PWM @ 0x40001000U */
+#define Drive__PWM__CTRL (*(volatile CtrlBits*)(0x40001000U))
+#define Drive__PWM__FLAGS (*(volatile CtrlBits*)(0x40001004U))
+#define Drive__PWM__SET (*(volatile CtrlBits*)(0x40001008U))
+#define Drive__PWM__CONFIG (*(volatile CtrlBits*)(0x4000100CU))
 
 
 void Drive__start(void) {

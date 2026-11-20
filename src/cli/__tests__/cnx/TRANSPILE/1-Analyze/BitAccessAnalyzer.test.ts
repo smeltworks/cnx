@@ -105,10 +105,11 @@ describe("BitAccessAnalyzer (E0890)", () => {
         "    slow,",
         "    level[6]",
         "}",
-        "register GPIO @ 0x40000000 {",
-        "    DR: u32 rw @ 0x00,",
-        "    DR_SET: u32 wo @ 0x04,",
+        "register GpioPort {",
+        "    0x00 rw u32 DR,",
+        "    0x04 wo u32 DR_SET,",
         "}",
+        "GpioPort GPIO(0x40000000);",
         "u8[4] arr <- [0*];",
         "Mode[4] modes;",
         "volatile u8 volatileIndex <- 0;",
@@ -131,7 +132,7 @@ describe("BitAccessAnalyzer (E0890)", () => {
       "    modes[idx()].fast <- true;",
       "    GPIO.DR[idx()] <- true;",
     ]);
-    expect(found.map((e) => e.span.line)).toEqual([19, 20, 21, 22, 23]);
+    expect(found.map((e) => e.span.line)).toEqual([20, 21, 22, 23, 24]);
     expect(found[0].message).toBe(
       "'idx()' would be evaluated twice: 'arr[idx()][3]' is read and then written back",
     );

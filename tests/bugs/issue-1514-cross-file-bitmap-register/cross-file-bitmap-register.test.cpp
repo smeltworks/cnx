@@ -5,7 +5,6 @@
 
 #include "cross-file-bitmap-register.test.hpp"
 
-// test-adr: 004, 034
 // #1514: a register member typed by a bitmap declared in ANOTHER file lost its
 // bitmap. A field write emitted a flat identifier nothing declares, and a field
 // read a struct member access on an integer -- transpiler exit 0, gcc rejects:
@@ -24,13 +23,15 @@
 #include "lib/mid.hpp"
 #include "lib/periph.hpp"
 
+// test-adr: 004, 034
+
 #include <stdint.h>
 #include <stdbool.h>
 
 /* Scope: Dev */
 
-/* Register: Dev__CTRL @ 0x40000000 */
-#define Dev__CTRL__STATUS (*(volatile Chip__Flags*)(0x40000000 + 0x00))
+/* Register: Dev__CTRL @ 0x40000000U */
+#define Dev__CTRL__STATUS (*(volatile Chip__Flags*)(0x40000000U))
 
 
 void Dev__go(void) {
@@ -43,8 +44,8 @@ bool Dev__busy(void) {
 
 /* Scope: Bus */
 
-/* Register: Bus__G @ 0x40006000 */
-#define Bus__G__C (*(volatile Ctl*)(0x40006000 + 0x00))
+/* Register: Bus__G @ 0x40006000U */
+#define Bus__G__C (*(volatile Ctl*)(0x40006000U))
 
 
 void Bus__go(void) {
@@ -53,8 +54,8 @@ void Bus__go(void) {
 
 /* Scope: Chip */
 
-/* Register: Chip__R @ 0x40003000 */
-#define Chip__R__DR (*(volatile Chip__Flags*)(0x40003000 + 0x00))
+/* Register: Chip__R @ 0x40003000U */
+#define Chip__R__DR (*(volatile Chip__Flags*)(0x40003000U))
 
 
 void Chip__set(void) {

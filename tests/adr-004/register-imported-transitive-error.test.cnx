@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 004
+#pragma target cortex-m7
 // E0870/E0871/E0872 across TWO include hop(s), in all four contexts -- the
 // `imported transitive` column of ADR-004's matrix.
 //

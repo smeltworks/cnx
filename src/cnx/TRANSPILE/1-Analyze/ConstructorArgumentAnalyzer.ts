@@ -23,6 +23,7 @@
  * half in each pass.
  */
 
+import RegisterInstance from "../../utils/RegisterInstance";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TStatement from "../../types/syntax/TStatement";
@@ -98,7 +99,22 @@ class ConstructorArgumentAnalyzer {
         if (statement.kind === "constructorDeclaration") check.check(statement);
       }
     };
-    for (const member of program.members) visit(member.declaration);
+    for (const member of program.members) {
+      // ADR-072: a register instance's argument is an address, not a C++
+      // constructor argument (E0931 checks it)
+      const declaration = member.declaration;
+      if (
+        declaration.kind === "constructorDeclaration" &&
+        RegisterInstance.inScope(
+          this.context.program,
+          member.scope,
+          declaration.name,
+        ) !== null
+      ) {
+        continue;
+      }
+      visit(declaration);
+    }
     return check.errors();
   }
 }

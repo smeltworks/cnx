@@ -85,11 +85,11 @@ static inline uint32_t cnx_clamp_add_u32(uint32_t a, uint64_t b) {
  */
 typedef uint32_t SysTick__ControlBits;
 
-/* Register: SysTick__Regs @ 0xE000E010 */
-#define SysTick__Regs__CTRL (*(volatile SysTick__ControlBits*)(0xE000E010 + 0x00))
-#define SysTick__Regs__LOAD (*(volatile uint32_t*)(0xE000E010 + 0x04))
-#define SysTick__Regs__VAL (*(volatile uint32_t*)(0xE000E010 + 0x08))
-#define SysTick__Regs__CALIB (*(volatile uint32_t const *)(0xE000E010 + 0x0C))
+/* Register: SysTick__Regs @ 0xE000E010U */
+#define SysTick__Regs__CTRL (*(volatile SysTick__ControlBits*)(0xE000E010U))
+#define SysTick__Regs__LOAD (*(volatile uint32_t*)(0xE000E014U))
+#define SysTick__Regs__VAL (*(volatile uint32_t*)(0xE000E018U))
+#define SysTick__Regs__CALIB (*(volatile uint32_t const *)(0xE000E01CU))
 
 
 void SysTick__init(void) {

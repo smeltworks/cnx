@@ -12,6 +12,10 @@ describe("WrittenCTypes", () => {
     ]);
   });
 
+  it("leaves out a member named like a type (ADR-072 ruling 2)", () => {
+    expect([...WrittenCTypes.of("x = m.true + p->uint8_t;")]).toEqual([]);
+  });
+
   it("counts a bool literal as bool", () => {
     expect([...WrittenCTypes.of("x = false;")]).toEqual(["bool"]);
   });

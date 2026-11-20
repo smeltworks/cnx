@@ -182,9 +182,10 @@ scope S {
     it("writes no header for a file whose only scope member is a private register", async () => {
       const { code, headerCode } = await transpileSource(`
 scope S {
-    private register R @ 0x40000000 {
-        DR: u32 rw @ 0x00,
+    private register Peripheral {
+        0x00 rw u32 DR,
     }
+    private Peripheral R(0x40000000);
 }
 `);
       expect(headerCode).toBeUndefined();

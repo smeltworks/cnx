@@ -5,13 +5,13 @@
 
 #include "conditional-compilation.test.h"
 
-// test-adr: 037
 // ADR-037: Conditional compilation directives
 // These pass through to the generated C for the C preprocessor to handle
 // Note: Inline conditionals (around code blocks) are handled by the C preprocessor
 #include <stdint.h>
 #include <stdbool.h>
 
+// test-adr: 037
 // Platform flags (no values allowed)
 #define TEENSY
 #define HAS_LED

@@ -1,3 +1,3 @@
-33:8 error[E0429]: 'global.Control' is a register, not a type
-34:8 error[E0429]: 'this.Pins' is a register, not a type
-40:4 error[E0429]: 'Board.Leds' is a register, not a type
+41:8 error[E0937]: 'global.Control' is a register instance, not a type; its register type is the type
+42:8 error[E0937]: 'this.Pins' is a register instance, not a type; its register type is the type
+48:4 error[E0937]: 'Board.Leds' is a register instance, not a type; its register type is the type

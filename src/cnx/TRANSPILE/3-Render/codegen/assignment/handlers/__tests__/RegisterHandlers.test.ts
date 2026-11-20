@@ -10,7 +10,6 @@ import IAssignmentContext from "../../../../../2-Plan/types/IAssignmentContext";
 import TranspileState from "../../../../../TranspileState";
 import HandlerTestUtils from "./handlerTestUtils";
 import enterScope from "../../../../../__tests__/enterScope";
-import TestExpression from "../../../../../../types/__testUtils__/testExpression";
 
 /**
  * The typer's step for a register member's bit: the member it names and its
@@ -304,12 +303,8 @@ describe("RegisterHandlers", () => {
       });
       HandlerTestUtils.setupMockSymbols(state, {
         registerMemberAccess: new Map([["GPIO7__DR_SET", "wo"]]),
-        registerBaseAddresses: new Map([
-          ["GPIO7", TestExpression.hex("0x40000000")],
-        ]),
-        registerMemberOffsets: new Map([
-          ["GPIO7__DR_SET", TestExpression.hex("0x04")],
-        ]),
+        registerBaseAddresses: new Map([["GPIO7", 0x40000000n]]),
+        registerMemberOffsets: new Map([["GPIO7__DR_SET", 0x04n]]),
       });
       const ctx = createMockContext({
         ...HandlerTestUtils.subscriptsOf([
@@ -324,8 +319,8 @@ describe("RegisterHandlers", () => {
       const result = getHandler()!(ctx);
 
       expect(result).toContain("volatile uint8_t*");
-      expect(result).toContain("0x40000000");
-      expect(result).toContain("0x04");
+      // ADR-072: base + offset folded to one address
+      expect(result).toContain("(0x40000004U)");
     });
 
     it("generates MMIO with byte offset for non-zero start", () => {
@@ -341,12 +336,8 @@ describe("RegisterHandlers", () => {
       });
       HandlerTestUtils.setupMockSymbols(state, {
         registerMemberAccess: new Map([["GPIO7__DR_SET", "wo"]]),
-        registerBaseAddresses: new Map([
-          ["GPIO7", TestExpression.hex("0x40000000")],
-        ]),
-        registerMemberOffsets: new Map([
-          ["GPIO7__DR_SET", TestExpression.hex("0x04")],
-        ]),
+        registerBaseAddresses: new Map([["GPIO7", 0x40000000n]]),
+        registerMemberOffsets: new Map([["GPIO7__DR_SET", 0x04n]]),
       });
       const ctx = createMockContext({
         ...HandlerTestUtils.subscriptsOf([
@@ -361,7 +352,7 @@ describe("RegisterHandlers", () => {
       const result = getHandler()!(ctx);
 
       expect(result).toContain("volatile uint16_t*");
-      expect(result).toContain("0x04 + 1");
+      expect(result).toContain("(0x40000005U)");
     });
   });
 
@@ -507,12 +498,8 @@ describe("RegisterHandlers", () => {
       });
       HandlerTestUtils.setupMockSymbols(state, {
         registerMemberAccess: new Map([["Motor__GPIO7__ICR1", "wo"]]),
-        registerBaseAddresses: new Map([
-          ["Motor__GPIO7", TestExpression.hex("0x40000000")],
-        ]),
-        registerMemberOffsets: new Map([
-          ["Motor__GPIO7__ICR1", TestExpression.hex("0x08")],
-        ]),
+        registerBaseAddresses: new Map([["Motor__GPIO7", 0x40000000n]]),
+        registerMemberOffsets: new Map([["Motor__GPIO7__ICR1", 0x08n]]),
       });
       const ctx = createMockContext({
         identifiers: ["GPIO7", "ICR1"],
@@ -530,7 +517,7 @@ describe("RegisterHandlers", () => {
       const result = getHandler()!(ctx);
 
       expect(result).toContain("volatile uint32_t*");
-      expect(result).toContain("0x40000000");
+      expect(result).toContain("(0x40000008U)");
     });
 
     // #1322a: the `'this' outside a scope` guard this asserted is deleted. It

@@ -1,11 +1,14 @@
 // test-error
 // test-adr: 007
+#pragma target cortex-m7
 // Issue #1114: a register member takes one bit index, like any scalar.
 //
 // NEGATIVE CONTROL: `GPIO.DR[3]`, the one bit index, stays silent.
-register GPIO @ 0x40000000 {
-    DR: u32 rw @ 0x00,
+register GpioPort {
+    0x00 rw u32 DR,
 }
+
+GpioPort GPIO(0x40000000);
 
 void writes() {
     GPIO.DR[3][1] <- true;

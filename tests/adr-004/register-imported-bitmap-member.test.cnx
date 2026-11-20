@@ -1,4 +1,5 @@
 // test-adr: 004
+#pragma target cortex-m7
 // A public scoped register declared in an INCLUDED file, typed by a bitmap
 // that is PRIVATE to its scope, used here through a bitmap field. The macro
 // exported for `Chip.R.DR` casts to `Chip__Pins`, so the consumer compiles

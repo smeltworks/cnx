@@ -23,10 +23,10 @@ extern "C" {
  */
 typedef uint8_t Pins;
 
-/* Registers (ADR-004) */
-/* Register: GPIO @ 0x40000000 */
-#define GPIO__DATA (*(volatile Pins*)(0x40000000 + 0x00))
-#define GPIO__SET (*(volatile Pins*)(0x40000000 + 0x04))
+/* Registers (ADR-072) */
+/* Register: GPIO @ 0x40000000U */
+#define GPIO__DATA (*(volatile Pins*)(0x40000000U))
+#define GPIO__SET (*(volatile Pins*)(0x40000004U))
 
 /* External variables */
 extern volatile Pins ap;

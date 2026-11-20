@@ -1,0 +1,13 @@
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072 Part 1 across files: an instance declared in an included file is
+// used here, and a second instance is made here of the included type.
+
+#include "lib/ports.cnx"
+
+GpioPort GPIO2(0x401BC000);
+
+void main() {
+    GPIO1.DR <- 1;
+    GPIO2.DR <- GPIO1.PSR;
+}

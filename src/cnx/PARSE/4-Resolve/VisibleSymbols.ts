@@ -20,7 +20,6 @@
 
 import type IBitmapFieldLayout from "../../types/IBitmapFieldLayout";
 import type ICodeGenSymbols from "../../types/ICodeGenSymbols";
-import type TExpression from "../../types/syntax/TExpression";
 
 /**
  * The mutable collections mergeExternalSymbols accumulates into.
@@ -42,13 +41,14 @@ interface IMergeAccumulator {
   >;
   readonly knownStructs: Set<string>;
   readonly knownBitmaps: Set<string>;
+  readonly knownRegisterTypes: Set<string>;
   readonly bitmapFields: Map<string, Map<string, IBitmapFieldLayout>>;
   readonly bitmapBackingType: Map<string, string>;
   readonly knownRegisters: Set<string>;
-  readonly scopedRegisters: Map<string, TExpression>;
+  readonly scopedRegisters: Map<string, bigint>;
   readonly registerMemberAccess: Map<string, string>;
-  readonly registerBaseAddresses: Map<string, TExpression>;
-  readonly registerMemberOffsets: Map<string, TExpression>;
+  readonly registerBaseAddresses: Map<string, bigint>;
+  readonly registerMemberOffsets: Map<string, bigint>;
   readonly registerMemberCTypes: Map<string, string>;
   readonly bitmapBitWidth: Map<string, number>;
   readonly structFields: Map<string, Map<string, string>>;
@@ -91,6 +91,7 @@ class VisibleSymbols {
     const mergedKnownScopes = new Set(base.knownScopes);
     const mergedKnownStructs = new Set(base.knownStructs);
     const mergedKnownBitmaps = new Set(base.knownBitmaps);
+    const mergedKnownRegisterTypes = new Set(base.knownRegisterTypes);
     const mergedBitmapFields = VisibleSymbols._copyNestedMap(base.bitmapFields);
     const mergedBitmapBackingType = new Map(base.bitmapBackingType);
     const mergedBitmapBitWidth = new Map(base.bitmapBitWidth);
@@ -134,6 +135,7 @@ class VisibleSymbols {
         scopeMemberVisibility: mergedScopeMemberVisibility,
         knownStructs: mergedKnownStructs,
         knownBitmaps: mergedKnownBitmaps,
+        knownRegisterTypes: mergedKnownRegisterTypes,
         bitmapFields: mergedBitmapFields,
         bitmapBackingType: mergedBitmapBackingType,
         bitmapBitWidth: mergedBitmapBitWidth,
@@ -157,6 +159,7 @@ class VisibleSymbols {
       knownEnums: mergedKnownEnums,
       knownStructs: mergedKnownStructs,
       knownBitmaps: mergedKnownBitmaps,
+      knownRegisterTypes: mergedKnownRegisterTypes,
       bitmapFields: mergedBitmapFields,
       bitmapBackingType: mergedBitmapBackingType,
       bitmapBitWidth: mergedBitmapBitWidth,
@@ -190,6 +193,10 @@ class VisibleSymbols {
     VisibleSymbols._mergeNames(external.knownEnums, into.knownEnums);
     VisibleSymbols._mergeNames(external.knownStructs, into.knownStructs);
     VisibleSymbols._mergeNames(external.knownBitmaps, into.knownBitmaps);
+    VisibleSymbols._mergeNames(
+      external.knownRegisterTypes,
+      into.knownRegisterTypes,
+    );
 
     // Issue #1190: the visibility map travels with the scope name. Registering a
     // scope as known while leaving its visibility unknown makes every member of an

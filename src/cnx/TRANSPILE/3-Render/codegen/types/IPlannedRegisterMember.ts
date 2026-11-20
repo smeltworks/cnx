@@ -37,8 +37,8 @@ interface IPlannedRegisterMember {
   /** ADR-004 access modifier as written. */
   readonly access: TRegisterAccessMode;
 
-  /** The rendered offset expression, e.g. `0x00`. */
-  readonly offset: string;
+  /** The member's folded address, e.g. `0x401BC018U` (ADR-072) */
+  readonly address: string;
 }
 
 export default IPlannedRegisterMember;

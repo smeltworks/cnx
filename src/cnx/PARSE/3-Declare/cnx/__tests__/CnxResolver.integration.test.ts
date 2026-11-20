@@ -133,10 +133,11 @@ describe("CnxResolver Integration", () => {
 
     it("resolves top-level register", () => {
       const code = `
-        register GPIO @ 0x40000000 {
-          DATA: u32 rw @ 0x00,
-          DIR:  u32 rw @ 0x04,
+        register GpioPort {
+          0x00 rw u32 DATA,
+          0x04 rw u32 DIR,
         }
+        GpioPort GPIO(0x40000000);
       `;
       const tree = parse(code);
       const symbols = CnxResolver.resolve(
@@ -145,9 +146,9 @@ describe("CnxResolver Integration", () => {
         registry,
       ).symbols;
 
-      expect(symbols).toHaveLength(1);
+      expect(symbols).toHaveLength(2);
       expect(SymbolGuards.isRegister(symbols[0])).toBe(true);
-      expect(symbols[0].name).toBe("GPIO");
+      expect(symbols[0].name).toBe("GpioPort");
     });
   });
 
@@ -248,9 +249,10 @@ describe("CnxResolver Integration", () => {
           reserved[5]
         }
 
-        register GPIO @ 0x40000000 {
-          STATUS: StatusFlags rw @ 0x00,
+        register GpioPort {
+          0x00 rw StatusFlags STATUS,
         }
+        GpioPort GPIO(0x40000000);
       `;
       const tree = parse(code);
       const symbols = CnxResolver.resolve(
@@ -259,7 +261,7 @@ describe("CnxResolver Integration", () => {
         registry,
       ).symbols;
 
-      expect(symbols).toHaveLength(2);
+      expect(symbols).toHaveLength(3);
 
       const regSymbol = symbols.find((s) => s.name === "GPIO");
       expect(regSymbol).toBeDefined();
@@ -280,9 +282,10 @@ describe("CnxResolver Integration", () => {
             reserved[5]
           }
 
-          register CTRL @ 0x40001000 {
-            FLAGS: CtrlFlags rw @ 0x00,
+          register ControlBlock {
+            0x00 rw CtrlFlags FLAGS,
           }
+          ControlBlock CTRL(0x40001000);
         }
       `;
       const tree = parse(code);
@@ -293,7 +296,7 @@ describe("CnxResolver Integration", () => {
       ).symbols;
 
       // Scope + bitmap + register
-      expect(symbols).toHaveLength(3);
+      expect(symbols).toHaveLength(4);
 
       // Both bitmap and register have bare names with scope references
       const regSymbol = symbols.find((s) => s.name === "CTRL");
@@ -360,10 +363,11 @@ describe("CnxResolver Integration", () => {
           reserved[6]
         }
 
-        register GPIO @ 0x40000000 {
-          DATA: u32 rw @ 0x00,
-          DIR:  u32 rw @ 0x04,
+        register GpioPort {
+          0x00 rw u32 DATA,
+          0x04 rw u32 DIR,
         }
+        GpioPort GPIO(0x40000000);
 
         scope Motor {
           u32 position;
@@ -397,7 +401,7 @@ describe("CnxResolver Integration", () => {
       // 2 scope functions (init, move)
       // 1 top-level function (main)
       // Total: 10
-      expect(symbols).toHaveLength(10);
+      expect(symbols).toHaveLength(11);
 
       // Verify each type is present
       const structSymbols = symbols.filter((s) => s.kind === "struct");
@@ -419,7 +423,7 @@ describe("CnxResolver Integration", () => {
       expect(functionSymbols).toHaveLength(3);
 
       const variableSymbols = symbols.filter((s) => s.kind === "variable");
-      expect(variableSymbols).toHaveLength(2);
+      expect(variableSymbols).toHaveLength(3);
     });
 
     it("resolves multiple scopes", () => {
@@ -668,9 +672,10 @@ describe("CnxResolver Integration", () => {
         scope Local {
           public struct S { u8 a; }
           public enum E { x, y }
-          public register GPIO @ 0x40000000 {
-            DATA: u32 rw @ 0x00,
+          public register GpioPort {
+            0x00 rw u32 DATA,
           }
+          public GpioPort GPIO(0x40000000);
         }
       `;
       const declared = CnxResolver.resolve(
@@ -682,6 +687,7 @@ describe("CnxResolver Integration", () => {
       expect(declared.sourceFile).toBe("test.cnx");
       expect([...declared.declaredScopeTypes].sort()).toEqual([
         "Local__E",
+        "Local__GpioPort",
         "Local__S",
       ]);
     });

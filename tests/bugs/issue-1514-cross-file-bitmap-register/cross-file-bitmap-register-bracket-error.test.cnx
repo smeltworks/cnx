@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 034
+#pragma target cortex-m7
 // #1514: a register member typed by an INCLUDED bitmap is a bitmap, so it is
 // addressed by named field and bracket indexing is rejected (E0883) exactly
 // as it is when the bitmap is declared in the same file. Before #1514 the
@@ -8,9 +9,11 @@
 #include "lib/bitmaps.cnx"
 
 scope Dev {
-    register R @ 0x40003000 {
-        CR: Ctl rw @ 0x00,
+    register Peripheral {
+        0x00 rw Ctl CR,
     }
+
+    Peripheral R(0x40003000);
 
     public void set(u8 m) {
         this.R.CR[4, 4] <- m;

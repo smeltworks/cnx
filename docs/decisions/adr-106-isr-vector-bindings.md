@@ -53,58 +53,62 @@ Treat the vector table as a register with ISR-typed fields:
 // Vector table is in RAM at 0x20000000 (copied at startup)
 #ifdef TEENSY41
 
-register VectorTable @ 0x20000000 {
+register VectorTableLayout {
     // ARM Exceptions (0-15)
-    StackPointer:     u32  ro @ 0x00,
-    Reset:            ISR  ro @ 0x04,
-    NMI:              ISR  rw @ 0x08,
-    HardFault:        ISR  rw @ 0x0C,
-    MemManage:        ISR  rw @ 0x10,
-    BusFault:         ISR  rw @ 0x14,
-    UsageFault:       ISR  rw @ 0x18,
+    0x00 ro u32 StackPointer,
+    0x04 ro ISR Reset,
+    0x08 rw ISR NMI,
+    0x0C rw ISR HardFault,
+    0x10 rw ISR MemManage,
+    0x14 rw ISR BusFault,
+    0x18 rw ISR UsageFault,
     // Reserved 0x1C - 0x2B
-    SVCall:           ISR  rw @ 0x2C,
-    DebugMonitor:     ISR  rw @ 0x30,
+    0x2C rw ISR SVCall,
+    0x30 rw ISR DebugMonitor,
     // Reserved 0x34
-    PendSV:           ISR  rw @ 0x38,
-    SysTick:          ISR  rw @ 0x3C,
+    0x38 rw ISR PendSV,
+    0x3C rw ISR SysTick,
 
     // Vendor IRQs (16+) - IMXRT1062 specific
     // Offset = (16 + IRQ_NUMBER) × 4
-    DMA_CH0:          ISR  rw @ 0x40,   // IRQ 0
-    DMA_CH1:          ISR  rw @ 0x44,   // IRQ 1
+    0x40 rw ISR DMA_CH0,   // IRQ 0
+    0x44 rw ISR DMA_CH1,   // IRQ 1
     // ... DMA channels 2-15 ...
-    DMA_ERROR:        ISR  rw @ 0x80,   // IRQ 16
-    LPUART1:          ISR  rw @ 0x90,   // IRQ 20
-    LPUART2:          ISR  rw @ 0x94,   // IRQ 21
-    LPUART3:          ISR  rw @ 0x98,   // IRQ 22
-    LPUART4:          ISR  rw @ 0x9C,   // IRQ 23
-    LPUART5:          ISR  rw @ 0xA0,   // IRQ 24
-    LPUART6:          ISR  rw @ 0xA4,   // IRQ 25
-    LPUART7:          ISR  rw @ 0xA8,   // IRQ 26
-    LPUART8:          ISR  rw @ 0xAC,   // IRQ 27
-    LPI2C1:           ISR  rw @ 0xB0,   // IRQ 28
-    LPI2C2:           ISR  rw @ 0xB4,   // IRQ 29
-    LPI2C3:           ISR  rw @ 0xB8,   // IRQ 30
-    LPI2C4:           ISR  rw @ 0xBC,   // IRQ 31
-    LPSPI1:           ISR  rw @ 0xC0,   // IRQ 32
-    LPSPI2:           ISR  rw @ 0xC4,   // IRQ 33
-    LPSPI3:           ISR  rw @ 0xC8,   // IRQ 34
-    LPSPI4:           ISR  rw @ 0xCC,   // IRQ 35
-    CAN1:             ISR  rw @ 0xD0,   // IRQ 36
-    CAN2:             ISR  rw @ 0xD4,   // IRQ 37
+    0x80 rw ISR DMA_ERROR,   // IRQ 16
+    0x90 rw ISR LPUART1,   // IRQ 20
+    0x94 rw ISR LPUART2,   // IRQ 21
+    0x98 rw ISR LPUART3,   // IRQ 22
+    0x9C rw ISR LPUART4,   // IRQ 23
+    0xA0 rw ISR LPUART5,   // IRQ 24
+    0xA4 rw ISR LPUART6,   // IRQ 25
+    0xA8 rw ISR LPUART7,   // IRQ 26
+    0xAC rw ISR LPUART8,   // IRQ 27
+    0xB0 rw ISR LPI2C1,   // IRQ 28
+    0xB4 rw ISR LPI2C2,   // IRQ 29
+    0xB8 rw ISR LPI2C3,   // IRQ 30
+    0xBC rw ISR LPI2C4,   // IRQ 31
+    0xC0 rw ISR LPSPI1,   // IRQ 32
+    0xC4 rw ISR LPSPI2,   // IRQ 33
+    0xC8 rw ISR LPSPI3,   // IRQ 34
+    0xCC rw ISR LPSPI4,   // IRQ 35
+    0xD0 rw ISR CAN1,   // IRQ 36
+    0xD4 rw ISR CAN2,   // IRQ 37
     // ... continues to IRQ 159 ...
-    GPIO6789:         ISR  rw @ 0x2B4,  // IRQ 157 (high-speed GPIO)
+    0x2B4 rw ISR GPIO6789,  // IRQ 157 (high-speed GPIO)
 }
 
+VectorTableLayout VectorTable(0x20000000);
+
 // NVIC Interrupt Set-Enable Registers
-register NVIC @ 0xE000E100 {
-    ISER0:            u32  rw @ 0x00,   // Enable IRQs 0-31
-    ISER1:            u32  rw @ 0x04,   // Enable IRQs 32-63
-    ISER2:            u32  rw @ 0x08,   // Enable IRQs 64-95
-    ISER3:            u32  rw @ 0x0C,   // Enable IRQs 96-127
-    ISER4:            u32  rw @ 0x10,   // Enable IRQs 128-159
+register NVIC_Type {
+    0x00 rw u32 ISER0,   // Enable IRQs 0-31
+    0x04 rw u32 ISER1,   // Enable IRQs 32-63
+    0x08 rw u32 ISER2,   // Enable IRQs 64-95
+    0x0C rw u32 ISER3,   // Enable IRQs 96-127
+    0x10 rw u32 ISER4,   // Enable IRQs 128-159
 }
+
+NVIC_Type NVIC(0xE000E100);
 
 #endif // TEENSY41
 ```
@@ -165,9 +169,11 @@ For platforms where the vector table is in Flash, cnx could support a `link` acc
 
 ```cnx
 // STM32F4 - vector table in Flash
-register VectorTable @ 0x08000000 {
+register VectorTableLayout {
     USART1:           ISR  link @ 0xD4,   // IRQ 37
 }
+
+VectorTableLayout VectorTable(0x08000000);
 
 // This assignment:
 VectorTable.USART1 <- myHandler;
@@ -229,11 +235,13 @@ How should interrupt priorities be set?
 
 ```cnx
 // NVIC Interrupt Priority Registers
-register NVIC_IPR @ 0xE000E400 {
-    IPR0:   u32 rw @ 0x00,   // Priorities for IRQs 0-3
-    IPR1:   u32 rw @ 0x04,   // Priorities for IRQs 4-7
+register NvicPriority {
+    0x00 rw u32 IPR0,   // Priorities for IRQs 0-3
+    0x04 rw u32 IPR1,   // Priorities for IRQs 4-7
     // ...
 }
+
+NvicPriority NVIC_IPR(0xE000E400);
 
 // Possible syntax?
 VectorTable.LPUART1.priority <- 64;  // Lower = higher priority

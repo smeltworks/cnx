@@ -1,0 +1,82 @@
+// test-error
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072, E0936: a register type only declares a fixed-address instance.
+// Every other type position is a data register (Part 4), not supported yet.
+
+register GpioPort {
+    0x00 rw u32 DR,
+}
+
+GpioPort GPIO1(0x401B8000);
+
+struct Ok {
+    u32 dr;
+}
+
+GpioPort plain;
+GpioPort[2] ports;
+
+struct Holder {
+    GpioPort port;
+}
+
+GpioPort pick() {
+    return GPIO1;
+}
+
+u32 A <- 1;
+u32 B <- 2;
+GpioPort TWO(A, B);
+
+// Negative control: a scoped struct shadows the global register type
+scope Shadow {
+    struct GpioPort {
+        u32 dr;
+    }
+
+    GpioPort held;
+}
+
+// A scoped variable named like the register type shadows no type
+scope Named {
+    u32 GpioPort <- 0;
+    GpioPort field;
+}
+
+scope Board {
+    GpioPort held;
+
+    GpioPort choose() {
+        return GPIO1;
+    }
+}
+
+register Outer {
+    0x00 rw GpioPort INNER,
+}
+
+scope Hw {
+    register Port {
+        0x00 rw u32 DR,
+    }
+
+    register Nest {
+        0x00 rw Port INNER,
+    }
+
+    u32 conv(u32 raw) {
+        return (Port)raw;
+    }
+}
+
+u32 cast(u32 raw) {
+    return (GpioPort)raw;
+}
+
+void main() {
+    GpioPort local;
+    for (GpioPort p <- GPIO1; GPIO1.DR = 0; ) {}
+    Ok fine;
+    GPIO1.DR <- 1;
+}

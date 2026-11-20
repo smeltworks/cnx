@@ -1,0 +1,22 @@
+// test-error
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072: a one-name address that binds nothing is E0427, as the same name
+// inside an expression is, not E0931's "not a compile-time constant".
+
+register GpioPort {
+    0x00 rw u32 DR,
+}
+
+// Negative control: a constant declared above
+u32 EARLY <- 0x40000000;
+GpioPort G1(EARLY);
+
+GpioPort G2(MISSING);
+GpioPort G3(LATER);
+
+u32 LATER <- 0x40001000;
+
+void main() {
+    G1.DR <- 1;
+}

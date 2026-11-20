@@ -10,11 +10,11 @@
 extern "C" {
 #endif
 
-/* Registers (ADR-004) */
-/* Register: TIMER64 @ 0x40001000 */
-#define TIMER64__COUNT (*(volatile uint64_t const *)(0x40001000 + 0x00))
-#define TIMER64__COMPARE (*(volatile uint64_t*)(0x40001000 + 0x08))
-#define TIMER64__CONTROL (*(volatile uint32_t*)(0x40001000 + 0x10))
+/* Registers (ADR-072) */
+/* Register: TIMER64 @ 0x40001000U */
+#define TIMER64__COUNT (*(volatile uint64_t const *)(0x40001000U))
+#define TIMER64__COMPARE (*(volatile uint64_t*)(0x40001008U))
+#define TIMER64__CONTROL (*(volatile uint32_t*)(0x40001010U))
 
 #ifdef __cplusplus
 }

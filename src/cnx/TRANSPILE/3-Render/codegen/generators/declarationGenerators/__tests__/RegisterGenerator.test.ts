@@ -19,6 +19,7 @@
  * sharper test than routing it through a mock type map that had to be read
  * backwards to see what was being asserted.
  */
+import RegisterAddress from "../../../../../../utils/RegisterAddress";
 import { describe, it, expect, beforeEach } from "vitest";
 import TranspileState from "../../../../../TranspileState";
 import generateRegister from "../RegisterGenerator";
@@ -62,10 +63,10 @@ function member(
   name: string,
   type: string,
   access: IPlannedRegisterMember["access"],
-  offset: string,
+  address: string,
   cType: string = C_TYPES[type] ?? type,
 ): TMemberSpec {
-  return { name, cType, access, offset };
+  return { name, cType, access, address };
 }
 
 /** A register. */
@@ -74,7 +75,16 @@ function planned(
   baseAddress: string,
   members: TMemberSpec[],
 ): IRegisterSpec {
-  return { name, baseAddress, members };
+  // 2.2 folds each member's address (ADR-072); a spec gives the offset
+  const base = BigInt(baseAddress);
+  return {
+    name,
+    baseAddress,
+    members: members.map((m) => ({
+      ...m,
+      address: RegisterAddress.render(base + BigInt(m.address)),
+    })),
+  };
 }
 
 /**
@@ -146,7 +156,7 @@ describe.each([
 
       expect(result.code).toBe(
         `/* Register: ${prefix}GPIO7 @ 0x42004000 */
-#define ${prefix}GPIO7__DR (*(volatile uint32_t*)(0x42004000 + 0x00))
+#define ${prefix}GPIO7__DR (*(volatile uint32_t*)(0x42004000U))
 `,
       );
       expect(result.effects).toEqual([]);
@@ -166,13 +176,13 @@ describe.each([
         `/* Register: ${prefix}TIMER @ 0x40000000 */`,
       );
       expect(result.code).toContain(
-        `#define ${prefix}TIMER__CTRL (*(volatile uint32_t*)(0x40000000 + 0x00))`,
+        `#define ${prefix}TIMER__CTRL (*(volatile uint32_t*)(0x40000000U))`,
       );
       expect(result.code).toContain(
-        `#define ${prefix}TIMER__COUNT (*(volatile uint32_t const *)(0x40000000 + 0x04))`,
+        `#define ${prefix}TIMER__COUNT (*(volatile uint32_t const *)(0x40000004U))`,
       );
       expect(result.code).toContain(
-        `#define ${prefix}TIMER__LOAD (*(volatile uint32_t*)(0x40000000 + 0x08))`,
+        `#define ${prefix}TIMER__LOAD (*(volatile uint32_t*)(0x40000008U))`,
       );
     });
   });
@@ -196,7 +206,7 @@ describe.each([
       );
 
       expect(result.code).toContain(
-        `#define ${prefix}STATUS__FLAGS (*(volatile ${cast})(0x50000000 + 0x00))`,
+        `#define ${prefix}STATUS__FLAGS (*(volatile ${cast})(0x50000000U))`,
       );
     });
   });
@@ -238,16 +248,16 @@ describe.each([
       );
 
       expect(result.code).toContain(
-        `#define ${prefix}GPIO__DR (*(volatile uint32_t*)(0x401B8000 + 0x00))`,
+        `#define ${prefix}GPIO__DR (*(volatile uint32_t*)(0x401B8000U))`,
       );
       expect(result.code).toContain(
-        `#define ${prefix}GPIO__DR_SET (*(volatile uint32_t*)(0x401B8000 + 0x84))`,
+        `#define ${prefix}GPIO__DR_SET (*(volatile uint32_t*)(0x401B8084U))`,
       );
       expect(result.code).toContain(
-        `#define ${prefix}GPIO__DR_CLEAR (*(volatile uint32_t*)(0x401B8000 + 0x88))`,
+        `#define ${prefix}GPIO__DR_CLEAR (*(volatile uint32_t*)(0x401B8088U))`,
       );
       expect(result.code).toContain(
-        `#define ${prefix}GPIO__DR_TOGGLE (*(volatile uint32_t*)(0x401B8000 + 0x8C))`,
+        `#define ${prefix}GPIO__DR_TOGGLE (*(volatile uint32_t*)(0x401B808CU))`,
       );
     });
   });

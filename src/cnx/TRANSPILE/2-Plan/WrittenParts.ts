@@ -20,9 +20,11 @@ class WrittenParts {
     return program.members
       .filter(
         ({ declaration, scope }) =>
-          scope === null ||
-          (!WrittenParts.headerText(declaration) &&
-            !unwritten.declarations.has(declaration)),
+          // ADR-072 Part 1: a register TYPE spells no C; its instances'
+          // macros are written from the settled symbol
+          declaration.kind !== "register" &&
+          !unwritten.declarations.has(declaration) &&
+          (scope === null || !WrittenParts.headerText(declaration)),
       )
       .flatMap(({ declaration, scope }) =>
         WrittenParts.inDeclaration(declaration, scope),

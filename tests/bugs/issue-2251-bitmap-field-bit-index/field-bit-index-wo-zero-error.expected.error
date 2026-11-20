@@ -1,2 +1,2 @@
-20:4 error[E0872]: Cannot assign false to write-only register bit GPIO.SET.Mode[1]
+23:4 error[E0872]: Cannot assign false to write-only register bit GPIO.SET.Mode[1]
        help: Writing 0 to a write-1 register (`wo`, `w1s`, `w1c`) does not clear the bit -- the hardware ignores zeros, and a spelled-out zero (`0x0`, a const) would have SET it. Use the corresponding CLEAR register to clear bits.

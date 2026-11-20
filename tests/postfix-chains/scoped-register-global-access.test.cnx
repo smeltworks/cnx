@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // Postfix Chain Test: Scoped Register Access from Global Context
 // Tests: Accessing scoped registers, bitmaps, and methods from outside the scope
 // Coverage: Section 13 - Scope Declaration (global context access)
@@ -14,11 +15,13 @@ bitmap8 MotorFlags {
 scope MotorController {
     u32 DEFAULT_SPEED <- 100;
 
-    public register MOTOR_REG @ 0x40002000 {
-        CTRL: MotorFlags rw @ 0x00,
-        SPEED: u32 rw @ 0x04,
-        STATUS: u32 ro @ 0x08,
+    public register MotorController {
+        0x00 rw MotorFlags CTRL,
+        0x04 rw u32 SPEED,
+        0x08 ro u32 STATUS,
     }
+
+    public MotorController MOTOR_REG(0x40002000);
 
     public void start() {
         // Inside scope: must use 'this.' to access own members
@@ -39,10 +42,12 @@ scope MotorController {
 }
 
 scope Board {
-    public register GPIO @ 0x40000000 {
-        DR: u32 rw @ 0x00,
-        DR_SET: u32 wo @ 0x84,
+    public register GpioPort {
+        0x00 rw u32 DR,
+        0x84 wo u32 DR_SET,
     }
+
+    public GpioPort GPIO(0x40000000);
 
     u32 LED_BIT <- 3;
 

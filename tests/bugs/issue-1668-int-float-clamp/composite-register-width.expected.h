@@ -12,9 +12,9 @@
 extern "C" {
 #endif
 
-/* Registers (ADR-004) */
-/* Register: STATUS @ 0x40000000 */
-#define STATUS__COUNT (*(volatile uint32_t const *)(0x40000000 + 0x00))
+/* Registers (ADR-072) */
+/* Register: STATUS @ 0x40000000U */
+#define STATUS__COUNT (*(volatile uint32_t const *)(0x40000000U))
 
 /* External variables */
 extern const uint8_t small;

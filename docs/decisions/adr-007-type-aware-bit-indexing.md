@@ -204,9 +204,11 @@ this ADR rejects.
 Bit indexing works with register members:
 
 ```cnx
-register GPIO7 @ 0x42004000 {
-    DR: u32 rw @ 0x00,
+register GpioPort {
+    0x00 rw u32 DR,
 }
+
+GpioPort GPIO7(0x42004000);
 
 u32 LED_BIT <- 3;
 bool isOn <- GPIO7.DR[LED_BIT];   // Read bit 3 of DR register
@@ -447,9 +449,11 @@ void flags() {
 Bit indexing combines naturally with register syntax:
 
 ```cnx
-register UART @ 0x40000000 {
-    SR: u32 ro @ 0x00,
+register UartPort {
+    0x00 ro u32 SR,
 }
+
+UartPort UART(0x40000000);
 
 bool txEmpty <- UART.SR[7];     // Read TX empty flag
 ```

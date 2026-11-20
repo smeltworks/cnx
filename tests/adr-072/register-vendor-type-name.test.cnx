@@ -1,0 +1,15 @@
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072: the CMSIS `<NAME>_Type` spelling is a register type like any other,
+// including names that start with `E` and an upper-case letter.
+
+register EXTI_Type {
+    0x00 rw u32 IMR,
+    0x14 w1c u32 PR,
+}
+
+EXTI_Type EXTI(0x40013C00);
+
+void main() {
+    EXTI.IMR <- 0x01;
+}

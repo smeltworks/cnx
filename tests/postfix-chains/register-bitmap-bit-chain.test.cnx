@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // Postfix Chain Test: Register + Bitmap + Bit Indexing
 // Tests: Complex chains mixing hardware registers, bitmap fields, and bit access
 // HIGH RISK AREA: Lines 5850-6285 in CodeGenerator.ts
@@ -16,11 +17,13 @@ bitmap16 ControlFlags {
     Reserved[6] // bits 10-15
 }
 
-register MOTOR @ 0x40001000 {
-    STATUS: StatusFlags rw @ 0x00,
-    CONTROL: ControlFlags rw @ 0x04,
-    DATA: u32 rw @ 0x08,
+register MotorController {
+    0x00 rw StatusFlags STATUS,
+    0x04 rw ControlFlags CONTROL,
+    0x08 rw u32 DATA,
 }
+
+MotorController MOTOR(0x40001000);
 
 void main() {
     // Chain: register.bitmap_member.field (3 levels)

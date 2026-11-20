@@ -12,12 +12,12 @@
 extern "C" {
 #endif
 
-/* Registers (ADR-004) */
-/* Register: GPIO @ 0x42000000 */
-#define GPIO__DR (*(volatile uint32_t*)(0x42000000 + 0x00))
-#define GPIO__DR_SET (*(volatile uint32_t*)(0x42000000 + 0x84))
-#define GPIO__DR_CLEAR (*(volatile uint32_t*)(0x42000000 + 0x88))
-#define GPIO__DR_TOGGLE (*(volatile uint32_t*)(0x42000000 + 0x8C))
+/* Registers (ADR-072) */
+/* Register: GPIO @ 0x42000000U */
+#define GPIO__DR (*(volatile uint32_t*)(0x42000000U))
+#define GPIO__DR_SET (*(volatile uint32_t*)(0x42000084U))
+#define GPIO__DR_CLEAR (*(volatile uint32_t*)(0x42000088U))
+#define GPIO__DR_TOGGLE (*(volatile uint32_t*)(0x4200008CU))
 
 /* External variables */
 extern const uint32_t LED_BIT;

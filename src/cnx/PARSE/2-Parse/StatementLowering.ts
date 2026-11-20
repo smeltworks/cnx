@@ -1,3 +1,4 @@
+import MemberName from "./MemberName";
 import { type ParserRuleContext, type ParseTree, TerminalNode } from "antlr4ng";
 import * as Parser from "./grammar/CnxParser";
 import SyntaxLowering from "./SyntaxLowering";
@@ -152,10 +153,10 @@ class StatementLowering {
 
   /** Whether a terminal is the field name of a struct initializer's `x: v` */
   private static isFieldKey(node: TerminalNode): boolean {
-    const parent = node.parent;
+    const parent = node.parent?.parent;
     return (
       parent instanceof Parser.FieldInitializerContext &&
-      parent.IDENTIFIER() === node
+      MemberName.terminal(parent.memberName()) === node
     );
   }
 
@@ -199,6 +200,19 @@ class StatementLowering {
     { kind: "variableDeclaration" | "constructorDeclaration" }
   > {
     const constructorArguments = ctx.constructorArgumentList();
+    const address = ctx.LPAREN() ? ctx.expression() : null;
+    if (address) {
+      return {
+        kind: "constructorDeclaration",
+        type: SyntaxLowering.type(ctx.type()),
+        name: ctx.IDENTIFIER().getText(),
+        nameSpan: StatementLowering.nameSpan(ctx.IDENTIFIER()),
+        arguments: [],
+        spellsOwnName: StatementLowering.spellsOwnName(ctx),
+        address: SyntaxLowering.expression(address),
+        ...SyntaxLowering.node(ctx),
+      };
+    }
     if (!constructorArguments) {
       return {
         kind: "variableDeclaration",
@@ -219,6 +233,7 @@ class StatementLowering {
         written: argument.getText(),
       })),
       spellsOwnName: StatementLowering.spellsOwnName(ctx),
+      address: null,
       ...SyntaxLowering.node(ctx),
     };
   }

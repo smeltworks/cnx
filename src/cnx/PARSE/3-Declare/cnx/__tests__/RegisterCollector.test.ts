@@ -17,10 +17,11 @@ describe("RegisterCollector", () => {
   describe("basic register extraction", () => {
     it("collects a simple register with primitive members", () => {
       const code = `
-        register GPIO @ 0x40000000 {
-          DATA: u32 rw @ 0x00,
-          DIR:  u32 rw @ 0x04,
+        register GpioPort {
+          0x00 rw u32 DATA,
+          0x04 rw u32 DIR,
         }
+        GpioPort GPIO(0x40000000);
       `;
       const tree = parse(code);
       const regCtx = FirstDeclaration.register(tree);
@@ -32,11 +33,10 @@ describe("RegisterCollector", () => {
       );
 
       expect(symbol.kind).toBe("register");
-      expect(symbol.name).toBe("GPIO");
-      expect(symbol.baseAddress).toMatchObject({
-        kind: "literal",
-        text: "0x40000000",
-      });
+      expect(symbol.name).toBe("GpioPort");
+      // ADR-072: a register type has no address; its instance carries one
+      expect(symbol.registerType).toBeNull();
+      expect(symbol.baseAddress).toBeNull();
       expect(symbol.sourceFile).toBe("test.cnx");
       expect(symbol.sourceLanguage).toBe(ESourceLanguage.Cnx);
       expect(symbol.visibility).toBe("public");
@@ -57,13 +57,14 @@ describe("RegisterCollector", () => {
 
     it("handles different access modes", () => {
       const code = `
-        register UART @ 0x40001000 {
-          RX:    u8 ro @ 0x00,
-          TX:    u8 wo @ 0x04,
-          CTRL:  u16 rw @ 0x08,
-          FLAGS: u8 w1c @ 0x0C,
-          SET:   u8 w1s @ 0x10,
+        register UartPort {
+          0x00 ro u8 RX,
+          0x04 wo u8 TX,
+          0x08 rw u16 CTRL,
+          0x0C w1c u8 FLAGS,
+          0x10 w1s u8 SET,
         }
+        UartPort UART(0x40001000);
       `;
       const tree = parse(code);
       const regCtx = FirstDeclaration.register(tree);
@@ -83,13 +84,14 @@ describe("RegisterCollector", () => {
 
     it("converts cnx types to C types", () => {
       const code = `
-        register TIMERS @ 0x40002000 {
-          COUNT8:  u8 rw @ 0x00,
-          COUNT16: u16 rw @ 0x04,
-          COUNT32: u32 rw @ 0x08,
-          COUNT64: u64 rw @ 0x10,
-          SIGNED:  i32 rw @ 0x18,
+        register TIMERSLayout {
+          0x00 rw u8 COUNT8,
+          0x04 rw u16 COUNT16,
+          0x08 rw u32 COUNT32,
+          0x10 rw u64 COUNT64,
+          0x18 rw i32 SIGNED,
         }
+        TIMERSLayout TIMERS(0x40002000);
       `;
       const tree = parse(code);
       const regCtx = FirstDeclaration.register(tree);
@@ -121,9 +123,10 @@ describe("RegisterCollector", () => {
   describe("bitmap type references", () => {
     it("records a named member's type without judging whether it is a bitmap (#1514)", () => {
       const code = `
-        register STATUS @ 0x40003000 {
-          FLAGS: StatusFlags rw @ 0x00,
+        register StatusBlock {
+          0x00 rw StatusFlags FLAGS,
         }
+        StatusBlock STATUS(0x40003000);
       `;
       const tree = parse(code);
       const regCtx = FirstDeclaration.register(tree);
@@ -140,9 +143,10 @@ describe("RegisterCollector", () => {
 
     it("records a primitive member's type as written", () => {
       const code = `
-        register DATA @ 0x40004000 {
-          VALUE: u32 rw @ 0x00,
+        register DATALayout {
+          0x00 rw u32 VALUE,
         }
+        DATALayout DATA(0x40004000);
       `;
       const tree = parse(code);
       const regCtx = FirstDeclaration.register(tree);
@@ -162,9 +166,10 @@ describe("RegisterCollector", () => {
   describe("scoped registers", () => {
     it("uses scope reference properly", () => {
       const code = `
-        register CTRL @ 0x40005000 {
-          STATUS: u32 rw @ 0x00,
+        register ControlBlock {
+          0x00 rw u32 STATUS,
         }
+        ControlBlock CTRL(0x40005000);
       `;
       const tree = parse(code);
       const regCtx = FirstDeclaration.register(tree);
@@ -175,16 +180,17 @@ describe("RegisterCollector", () => {
         "public",
       );
 
-      expect(symbol.name).toBe("CTRL");
+      expect(symbol.name).toBe("ControlBlock");
       expect(symbol.scopePath).toBe("Motor");
       expect(symbol.scopePath).toBe("Motor");
     });
 
     it("resolves a bare bitmap type through the ADR-057 ladder", () => {
       const code = `
-        register CTRL @ 0x40005000 {
-          FLAGS: MotorFlags rw @ 0x00,
+        register ControlBlock {
+          0x00 rw MotorFlags FLAGS,
         }
+        ControlBlock CTRL(0x40005000);
       `;
       const tree = parse(code);
       const regCtx = FirstDeclaration.register(tree);
@@ -217,9 +223,10 @@ describe("RegisterCollector", () => {
 
     it("does not let a scope-local bitmap capture an explicit global. type", () => {
       const code = `
-        register CTRL @ 0x40005000 {
-          FLAGS: global.MotorFlags rw @ 0x00,
+        register ControlBlock {
+          0x00 rw global.MotorFlags FLAGS,
         }
+        ControlBlock CTRL(0x40005000);
       `;
       const tree = parse(code);
       const regCtx = FirstDeclaration.register(tree);
@@ -251,9 +258,10 @@ describe("RegisterCollector", () => {
   describe("base address expressions", () => {
     it("captures complex base address expressions", () => {
       const code = `
-        register DMA @ BASE_ADDR {
-          CTRL: u32 rw @ 0x00,
+        register DMALayout {
+          0x00 rw u32 CTRL,
         }
+        DMALayout DMA(BASE_ADDR);
       `;
       const tree = parse(code);
       const regCtx = FirstDeclaration.register(tree);
@@ -264,10 +272,9 @@ describe("RegisterCollector", () => {
         "public",
       );
 
-      expect(symbol.baseAddress).toMatchObject({
-        kind: "identifier",
-        name: "BASE_ADDR",
-      });
+      // ADR-072: a register type has no address; its instance carries one
+      expect(symbol.registerType).toBeNull();
+      expect(symbol.baseAddress).toBeNull();
     });
   });
 
@@ -275,9 +282,10 @@ describe("RegisterCollector", () => {
     it("captures the source line number", () => {
       const code = `
 
-        register OnLine3 @ 0x40000000 {
-          DATA: u32 rw @ 0x00,
+        register OnLine3Layout {
+          0x00 rw u32 DATA,
         }
+        OnLine3Layout OnLine3(0x40000000);
       `;
       const tree = parse(code);
       const regCtx = FirstDeclaration.register(tree);
@@ -298,9 +306,10 @@ describe("RegisterCollector", () => {
   describe("visibility (#1300)", () => {
     it("records a private declaration as private", () => {
       const tree = parse(`
-        register Hidden @ 0x40000000 {
-          DR: u32 rw @ 0x00,
+        register HiddenLayout {
+          0x00 rw u32 DR,
         }
+        HiddenLayout Hidden(0x40000000);
       `);
       const symbol = RegisterCollector.collect(
         FirstDeclaration.register(tree),
@@ -324,11 +333,12 @@ describe("RegisterCollector", () => {
 
     it("gives each member a DISTINCT line, not the register's", () => {
       const symbol = collect(`
-        register GPIO @ 0x40000000 {
-          DATA: u32 rw @ 0x00,
-          DIR:  u32 rw @ 0x04,
-          MASK: u32 rw @ 0x08,
+        register GpioPort {
+          0x00 rw u32 DATA,
+          0x04 rw u32 DIR,
+          0x08 rw u32 MASK,
         }
+        GpioPort GPIO(0x40000000);
       `);
       const lines = [...symbol.members.values()].map((m) => m.span.line);
       expect(new Set(lines).size).toBe(3);
@@ -337,20 +347,20 @@ describe("RegisterCollector", () => {
 
     it("keys a member by its owner, and inherits the owner's visibility", () => {
       const global = collect(
-        `register GPIO @ 0x40000000 { DATA: u32 rw @ 0x00, }`,
+        `register GpioPort { 0x00 rw u32 DATA, } GpioPort GPIO(0x40000000);`,
       );
       expect(global.members.get("DATA")!.fullyQualifiedCName).toBe(
-        "GPIO__DATA",
+        "GpioPort__DATA",
       );
       expect(global.members.get("DATA")!.name).toBe("DATA");
 
       const scoped = collect(
-        `register GPIO @ 0x40000000 { DATA: u32 rw @ 0x00, }`,
+        `register GpioPort { 0x00 rw u32 DATA, } GpioPort GPIO(0x40000000);`,
         "Board",
         "private",
       );
       expect(scoped.members.get("DATA")!.fullyQualifiedCName).toBe(
-        "Board__GPIO__DATA",
+        "Board__GpioPort__DATA",
       );
       expect(scoped.members.get("DATA")!.visibility).toBe("private");
     });

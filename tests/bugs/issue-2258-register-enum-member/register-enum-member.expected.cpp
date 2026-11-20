@@ -5,10 +5,11 @@
 
 #include "register-enum-member.test.hpp"
 
+// test-adr: 004
+
 #include <stdint.h>
 #include <stdbool.h>
 
-// test-adr: 004
 // #2258, #2155 review 9: a register member typed by a cnx enum is typed
 // as that enum, so it compares with the enum's members and initializes an
 // enum binding. Round 8 typed it as nothing (false E0434), and `main` typed

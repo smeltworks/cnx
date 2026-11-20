@@ -68,7 +68,7 @@ class TargetCatalogParser {
     for (const member of struct.structMember()) {
       const suffix = member.arrayDimension().length > 0 ? "[]" : "";
       members.set(
-        member.IDENTIFIER().getText(),
+        member.memberName().getText(),
         member.type().getText() + suffix,
       );
     }
@@ -110,7 +110,7 @@ class TargetCatalogParser {
 
     const fields = new Map<string, TTargetFieldValue>();
     for (const field of initializer.fieldInitializerList().fieldInitializer()) {
-      const fieldName = field.IDENTIFIER().getText();
+      const fieldName = field.memberName().getText();
       const value = TargetCatalogParser.literal(field.expression());
       if (value === null) {
         errors.push(

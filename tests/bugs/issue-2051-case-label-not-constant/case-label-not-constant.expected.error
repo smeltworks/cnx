@@ -1,50 +1,50 @@
-64:17 error[E0717]: Case label 'this.helper' is not a constant
+65:17 error[E0717]: Case label 'this.helper' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-67:17 error[E0717]: Case label 'this.level' is not a constant
+68:17 error[E0717]: Case label 'this.level' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-70:17 error[E0717]: Case label 'global.counter' is not a constant
+71:17 error[E0717]: Case label 'global.counter' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-73:17 error[E0717]: Case label 'global.Panel' is not a constant
+74:17 error[E0717]: Case label 'global.Panel' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-87:17 error[E0717]: Case label 'this.State' is not a constant
+88:17 error[E0717]: Case label 'this.State' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-90:17 error[E0717]: Case label 'global.EMode' is not a constant
+91:17 error[E0717]: Case label 'global.EMode' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-90:33 error[E0717]: Case label 'global.Pt' is not a constant
+91:33 error[E0717]: Case label 'global.Pt' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-93:17 error[E0717]: Case label 'this.Flags' is not a constant
+94:17 error[E0717]: Case label 'this.Flags' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-96:17 error[E0717]: Case label 'this.S' is not a constant
+97:17 error[E0717]: Case label 'this.S' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-99:17 error[E0717]: Case label 'global.Pt.x' is not a constant
+100:17 error[E0717]: Case label 'global.Pt.x' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-99:32 error[E0717]: Case label 'this.Flags.a' is not a constant
+100:32 error[E0717]: Case label 'this.Flags.a' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-113:17 error[E0717]: Case label 'level' is not a constant
+114:17 error[E0717]: Case label 'level' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-113:26 error[E0717]: Case label 'helper' is not a constant
+114:26 error[E0717]: Case label 'helper' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-113:36 error[E0717]: Case label 'counter' is not a constant
+114:36 error[E0717]: Case label 'counter' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-126:13 error[E0717]: Case label 'Panel.level' is not a constant
+127:13 error[E0717]: Case label 'Panel.level' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-129:13 error[E0717]: Case label 'p' is not a constant
+130:13 error[E0717]: Case label 'p' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-146:13 error[E0717]: Case label 'Panel.State' is not a constant
+147:13 error[E0717]: Case label 'Panel.State' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-146:28 error[E0717]: Case label 'EMode' is not a constant
+147:28 error[E0717]: Case label 'EMode' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-146:37 error[E0717]: Case label 'Pt' is not a constant
+147:37 error[E0717]: Case label 'Pt' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-149:13 error[E0717]: Case label 'Panel.S' is not a constant
+150:13 error[E0717]: Case label 'Panel.S' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-152:26 error[E0717]: Case label 'Pt.x' is not a constant
+153:26 error[E0717]: Case label 'Pt.x' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-152:34 error[E0717]: Case label 'Bits.a' is not a constant
+153:34 error[E0717]: Case label 'Bits.a' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-187:13 error[E0717]: Case label 'Board.Spot.x' is not a constant
+190:13 error[E0717]: Case label 'Board.Spot.x' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-187:29 error[E0717]: Case label 'Board.Pins.a' is not a constant
+190:29 error[E0717]: Case label 'Board.Pins.a' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
-187:45 error[E0717]: Case label 'Board.GPIO.DR' is not a constant
+190:45 error[E0717]: Case label 'Board.GPIO.DR' is not a constant
        help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.

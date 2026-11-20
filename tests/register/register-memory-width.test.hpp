@@ -12,9 +12,9 @@
 extern "C" {
 #endif
 
-/* Registers (ADR-004) */
-/* Register: REG32 @ 0x40000000 */
-#define REG32__DR (*(volatile uint32_t*)(0x40000000 + 0x00))
+/* Registers (ADR-072) */
+/* Register: REG32 @ 0x40000000U */
+#define REG32__DR (*(volatile uint32_t*)(0x40000000U))
 
 /* Function prototypes */
 void write32(const uint32_t data);

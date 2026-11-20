@@ -5,6 +5,7 @@
 
 #include "register-writers.test.h"
 
+
 #include <stdint.h>
 
 // #1760 second review: the register writers are the bit writer every other
@@ -18,7 +19,7 @@ const uint8_t H = 16U;
 
 void configure(const uint32_t v) {
     PERIPH__CTRL = (PERIPH__CTRL & ~((uint32_t)0xFFFFFFFFU << 0)) | ((v & (uint32_t)0xFFFFFFFFU) << 0);
-    *((volatile uint32_t*)(0x40000000 + 0x04)) = (v);
+    *((volatile uint32_t*)(0x40000004U)) = (v);
     PERIPH__SET = ((v & (uint32_t)0xFFFFU) << 4);
     PERIPH__SET = (((v | 1U) & (uint32_t)0xFFFFU) << 4);
 }

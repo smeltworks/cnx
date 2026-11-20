@@ -5,6 +5,7 @@
 
 #include "scoped-register-global-access.test.h"
 
+
 #include <stdint.h>
 #include <stdbool.h>
 

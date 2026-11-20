@@ -27,6 +27,7 @@ import LiteralUtils from "./LiteralUtils";
 import CompositeType from "./CompositeType";
 import LengthProperty from "./LengthProperty";
 import TypeHead from "./TypeHead";
+import RegisterInstance from "./RegisterInstance";
 import ResolvedTarget from "./ResolvedTarget";
 import PROPERTY_NAMES from "./constants/PROPERTY_NAMES";
 import SubscriptClassifier from "./SubscriptClassifier";
@@ -533,8 +534,13 @@ class OperandTyper {
     cName: string,
     ctx: ITypingContext,
   ): IOperandType | null {
+    const symbol = ctx.program.symbolByCName(cName);
+    // ADR-072: a register type is named, not read, as a struct type is
+    if (RegisterInstance.isType(symbol)) {
+      return OperandTyper.fromType({ kind: "register", name: cName }, [], ctx);
+    }
     // An enum names its members first (`EMode.RUN`): `enumType` types it
-    const type = TypeHead.ofSymbol(ctx.program.symbolByCName(cName), cName);
+    const type = TypeHead.ofSymbol(symbol, cName);
     return type === null || type.kind === "enum"
       ? null
       : OperandTyper.fromType(type, [], ctx);
@@ -1589,7 +1595,11 @@ class OperandTyper {
       case "enum":
         return { k: "enumType", name: symbol.fullyQualifiedCName };
       case "register":
-        return { k: "register", name: symbol.fullyQualifiedCName };
+        // a register type falls through to the named-type answer below
+        if (RegisterInstance.isInstance(symbol)) {
+          return { k: "register", name: symbol.fullyQualifiedCName };
+        }
+        break;
       default:
         break;
     }
@@ -1680,7 +1690,10 @@ class OperandTyper {
         // from this file's view, which holds every member's C type
         const register = ctx.program.symbolByCName(current.name);
         const info =
-          register?.kind === "register" ? register.members.get(member) : null;
+          // ADR-072: only an instance has members to read; a type has none
+          RegisterInstance.isInstance(register)
+            ? register.members.get(member)
+            : null;
         if (!info) return UNKNOWN;
         // #2155 review 8: the member is named whatever its type, so its
         // access rules apply to it

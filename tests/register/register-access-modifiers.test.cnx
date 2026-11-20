@@ -1,10 +1,13 @@
+#pragma target cortex-m7
 // ADR-004: Register access modifiers test
 // Tests: rw (read-write), ro (read-only), wo (write-only) modifiers
-register PERIPH @ 0x50000000 {
-    CTRL: u32 rw @ 0x00, // Read-write: can read and write
-    STATUS: u32 ro @ 0x04, // Read-only: can only read
-    CMD: u32 wo @ 0x08, // Write-only: can only write
+register Peripheral {
+    0x00 rw u32 CTRL, // Read-write: can read and write
+    0x04 ro u32 STATUS, // Read-only: can only read
+    0x08 wo u32 CMD, // Write-only: can only write
 }
+
+Peripheral PERIPH(0x50000000);
 
 void main() {
     // Read-write: both operations allowed

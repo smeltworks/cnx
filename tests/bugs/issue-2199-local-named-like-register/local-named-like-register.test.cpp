@@ -7,6 +7,9 @@
 
 #include "local-named-like-register.test.hpp"
 
+// test-execution
+// test-adr: 057
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -23,8 +26,6 @@ static inline uint8_t cnx_clamp_add_u8(uint8_t a, uint32_t b) {
     return (uint8_t)(a + (uint8_t)b);
 }
 
-// test-execution
-// test-adr: 057
 // Issue #2199: a local named like a global register is the local, for its
 // writes as for its reads. A plain write, a bit and a bit range through the
 // local land on the local; the register is never written (it is not mapped

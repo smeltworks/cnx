@@ -68,6 +68,7 @@ const CONCATENATED_RULES: ReadonlySet<number> = new Set([
   CnxParser.RULE_pragmaDirective,
   CnxParser.RULE_visibilityModifier,
   CnxParser.RULE_accessModifier,
+  CnxParser.RULE_memberName,
   CnxParser.RULE_bitmapType,
   CnxParser.RULE_constModifier,
   CnxParser.RULE_mutModifier,
@@ -319,14 +320,16 @@ function printCommaMemberBlock(cursor: ChildCursor, memberRule: number): Doc {
   while (cursor.peekRule() === memberRule) {
     const member = cursor.takeChild();
     first = first ?? member.node;
-    if (previous !== null && Cst.hasBlankLineBetween(previous, member.node)) {
+    // As in joinPreservingBlankLines: a member with leading comments already
+    // begins with a break, and its comment records its own blank line
+    if (previous !== null && !Cst.hasLeadingComments(member.node)) {
       parts.push(hardline);
+      if (Cst.hasBlankLineBetween(previous, member.node)) parts.push(hardline);
     }
     parts.push(member.doc);
     previous = member.node;
     const comma = cursor.takeIfText(",");
     if (comma !== null) parts.push(comma);
-    if (cursor.peekRule() === memberRule) parts.push(hardline);
   }
   const close = cursor.takeChild();
   return printBraced(open, parts, close.node, first);
@@ -390,44 +393,22 @@ function printScopeDeclaration(cursor: ChildCursor): Doc {
 function printRegisterDeclaration(cursor: ChildCursor): Doc {
   const keyword = cursor.take();
   const name = cursor.take();
-  const at = cursor.take();
-  const address = cursor.take();
   return [
     keyword,
     " ",
     name,
     " ",
-    at,
-    " ",
-    address,
-    " ",
-    printMemberBlock(cursor, CnxParser.RULE_registerMember),
+    printCommaMemberBlock(cursor, CnxParser.RULE_registerMember),
   ];
 }
 
+/** ADR-072: `offset access type name`; its comma belongs to the block */
 function printRegisterMember(cursor: ChildCursor): Doc {
-  const name = cursor.take();
-  const colon = cursor.take();
-  const type = cursor.take();
+  const offset = cursor.take();
   const access = cursor.take();
-  const at = cursor.take();
-  const address = cursor.take();
-  const comma = cursor.takeIfText(",");
-  return [
-    name,
-    colon,
-    " ",
-    type,
-    " ",
-    access,
-    " ",
-    at,
-    " ",
-    address,
-    // Only the comma the author wrote: the grammar's `','?` makes it optional,
-    // and synthesizing one would break "only whitespace is synthesized here".
-    comma ?? "",
-  ];
+  const type = cursor.take();
+  const name = cursor.take();
+  return [offset, " ", access, " ", type, " ", name];
 }
 
 function printStructDeclaration(cursor: ChildCursor): Doc {
@@ -540,7 +521,8 @@ function printVariableDeclaration(cursor: ChildCursor): Doc {
   const name = cursor.take();
   parts.push(type, " ", name);
 
-  // Alternative 2 (issue #375): `Type name(constArg, ...)` C++ constructor form.
+  // Issue #375: `Type name(constArg, ...)` C++ constructor form, and ADR-072's
+  // register instance `GpioPort GPIO1(0x401B8000);` -- both `( x ) ;`.
   const open = cursor.takeIfText("(");
   if (open !== null) {
     parts.push(open, cursor.take(), cursor.take(), cursor.take());

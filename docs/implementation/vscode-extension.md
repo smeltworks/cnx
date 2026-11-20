@@ -45,10 +45,11 @@ Create a VS Code extension that provides:
 ┌─────────────────────────────────────────────────────────────┐
 │  blink.cnx                          │  [Generated C]        │
 ├─────────────────────────────────────┼───────────────────────┤
-│  register GPIO7 @ 0x42004000 {      │  #define GPIO7_DR ... │
-│      DR: u32 rw @ 0x00,             │  #define GPIO7_DR_SET │
-│      DR_SET: u32 wo @ 0x84,         │                       │
+│  register GpioPort {                │  #define GPIO7__DR ...│
+│      0x00 rw u32 DR,                │  #define GPIO7__DR_SET│
+│      0x84 wo u32 DR_SET,            │                       │
 │  }                                  │  uint32_t LED_BIT = 3;│
+│  GpioPort GPIO7(0x42004000);        │                       │
 │                                     │                       │
 │  u32 LED_BIT <- 3;                  │  void LED_toggle() {  │
 │                                     │      GPIO7_DR_TOGGLE  │

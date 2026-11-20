@@ -63,9 +63,11 @@ Comments should pass through to generated C:
 
 ```cnx
 // Initialize the LED controller
-register GPIO7 @ 0x42004000 {
-    DR_SET: u32 wo @ 0x84,  // Atomic set register
+register GpioPort {
+    0x84 wo u32 DR_SET, // Atomic set register
 }
+
+GpioPort GPIO7(0x42004000);
 
 /// Toggle the onboard LED
 void toggleLED() {
@@ -77,7 +79,7 @@ Generates:
 
 ```c
 /* Initialize the LED controller */
-#define GPIO7_DR_SET (*(volatile uint32_t*)(0x42004000 + 0x84))  /* Atomic set register */
+#define GPIO7__DR_SET (*(volatile uint32_t*)(0x42004084U))  /* Atomic set register (not emitted yet, #1366) */
 
 /**
  * Toggle the onboard LED

@@ -12,12 +12,12 @@
 extern "C" {
 #endif
 
-/* Registers (ADR-004) */
-/* Register: HW @ 0x40000000 */
-#define HW__CTRL (*(volatile uint32_t*)(0x40000000 + 0x00))
-#define HW__STATUS (*(volatile uint32_t const *)(0x40000000 + 0x04))
-#define HW__COMMAND (*(volatile uint32_t*)(0x40000000 + 0x08))
-#define HW__SET (*(volatile uint32_t*)(0x40000000 + 0x0C))
+/* Registers (ADR-072) */
+/* Register: HW @ 0x40000000U */
+#define HW__CTRL (*(volatile uint32_t*)(0x40000000U))
+#define HW__STATUS (*(volatile uint32_t const *)(0x40000004U))
+#define HW__COMMAND (*(volatile uint32_t*)(0x40000008U))
+#define HW__SET (*(volatile uint32_t*)(0x4000000CU))
 
 /* External variables */
 extern const uint32_t REGISTER_MARKER;

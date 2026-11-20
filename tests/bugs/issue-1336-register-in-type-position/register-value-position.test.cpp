@@ -5,6 +5,7 @@
 
 #include "register-value-position.test.hpp"
 
+
 #include <stdint.h>
 
 // Issue #1336: the NEGATIVE CONTROL for the type/value position split.

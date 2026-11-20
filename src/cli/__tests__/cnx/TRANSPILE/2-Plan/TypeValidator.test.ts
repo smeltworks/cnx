@@ -126,9 +126,10 @@ describe("TypeValidator", () => {
 struct Point {
     u8 x;
 }
-register GPIO @ 0x40000000 {
-    DATA: u32 rw @ 0x00,
+register GpioPort {
+    0x00 rw u32 DATA,
 }
+GpioPort GPIO(0x40000000);
 u32 after <- 1;`;
 
     it.each([

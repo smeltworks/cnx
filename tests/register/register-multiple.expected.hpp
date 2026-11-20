@@ -10,18 +10,18 @@
 extern "C" {
 #endif
 
-/* Registers (ADR-004) */
-/* Register: GPIOA @ 0x40020000 */
-#define GPIOA__DR (*(volatile uint32_t*)(0x40020000 + 0x00))
-#define GPIOA__GDIR (*(volatile uint32_t*)(0x40020000 + 0x04))
+/* Registers (ADR-072) */
+/* Register: GPIOA @ 0x40020000U */
+#define GPIOA__DR (*(volatile uint32_t*)(0x40020000U))
+#define GPIOA__GDIR (*(volatile uint32_t*)(0x40020004U))
 
-/* Register: GPIOB @ 0x40020400 */
-#define GPIOB__DR (*(volatile uint32_t*)(0x40020400 + 0x00))
-#define GPIOB__GDIR (*(volatile uint32_t*)(0x40020400 + 0x04))
+/* Register: GPIOB @ 0x40020400U */
+#define GPIOB__DR (*(volatile uint32_t*)(0x40020400U))
+#define GPIOB__GDIR (*(volatile uint32_t*)(0x40020404U))
 
-/* Register: TIMER @ 0x40000000 */
-#define TIMER__CR (*(volatile uint32_t*)(0x40000000 + 0x00))
-#define TIMER__CNT (*(volatile uint32_t const *)(0x40000000 + 0x04))
+/* Register: TIMER @ 0x40000000U */
+#define TIMER__CR (*(volatile uint32_t*)(0x40000000U))
+#define TIMER__CNT (*(volatile uint32_t const *)(0x40000004U))
 
 #ifdef __cplusplus
 }

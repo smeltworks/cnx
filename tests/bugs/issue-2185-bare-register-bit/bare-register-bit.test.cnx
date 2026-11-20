@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // Issue #2185: a scope's register bit written by its bare name -- `PWM.FLAGS[0]`
 // inside `scope Drive` -- is written per the member's access, as the `this.`
 // spelling of the same write is. The bare name was not a known register under
@@ -10,12 +11,14 @@
 // one-byte memory access under both spellings.
 
 scope Drive {
-    register PWM @ 0x40001000 {
-        CTRL: u8 wo @ 0x00,
-        FLAGS: u8 w1c @ 0x04,
-        SET: u8 w1s @ 0x08,
-        CONFIG: u8 rw @ 0x0C,
+    register PwmChannel {
+        0x00 wo u8 CTRL,
+        0x04 w1c u8 FLAGS,
+        0x08 w1s u8 SET,
+        0x0C rw u8 CONFIG,
     }
+
+    PwmChannel PWM(0x40001000);
 
     public void viaBare() {
         PWM.CTRL[1] <- true;

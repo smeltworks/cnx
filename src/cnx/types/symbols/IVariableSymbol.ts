@@ -73,6 +73,14 @@ interface IVariableSymbol extends IBaseSymbol {
    * `mut` to write or remove (ADR-071 E0899)
    */
   readonly isConstructed?: boolean;
+
+  /**
+   * ADR-072 Part 1: a constructor's one argument as a constant expression
+   * (`GpioPort GPIO1(GPIO_BASE + 0x4000);`). Whether it is an address -- the
+   * type is a register -- is a cross-file fact, so 1.4 decides it and
+   * evaluates it there.
+   */
+  readonly constructedAddress?: TConstExpr;
 }
 
 export default IVariableSymbol;

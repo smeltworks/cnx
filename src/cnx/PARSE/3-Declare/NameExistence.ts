@@ -70,23 +70,14 @@ class NameExistence {
    * (#1458); once a name is a string those answers are indistinguishable from
    * a bare one, which is the same reason `TypeNameLadder` keeps them separate.
    *
-   * ## A register is not a type (#1336)
+   * ## A register type is a type; a register instance is not (ADR-072)
    *
-   * `symbols.knownRegisters` is deliberately NOT consulted. `TYPE_FORMING_KINDS`
-   * already owns "does this kind introduce a type name" and already excludes
-   * `register` for this reason; this predicate answers the same question from
-   * the per-file name sets, and used to disagree with that owner. The
-   * disagreement WAS the bug: E0426 asks whether a name is a type, the register
-   * set answered "yes", and `Control c;` reached codegen with no typedef behind
-   * it -- exit 0, then `unknown type name 'Control'` from the C compiler.
-   *
-   * ADR-004 is what makes the exclusion correct today: a register declares a
-   * variable at an address, not a type. ADR-072 would make a register name a
-   * type, but it is `Research`, and its own header states that while it is
-   * Research "a register is still not a type".
-   *
-   * ADR-072: when it is IMPLEMENTED (not merely Accepted), add `knownRegisters`
-   * back here, drop `isValueName` and `isRegisterName`, and retire E0429.
+   * `register GpioPort { ... }` declares a type (`knownRegisterTypes`), and
+   * `GpioPort GPIO1(0x401B8000);` an instance of it (`knownRegisters`). Only
+   * the type answers here. #1336 was an instance answering "yes": `Control c;`
+   * reached codegen with no typedef behind it -- exit 0, then `unknown type
+   * name 'Control'` from the C compiler. An instance in a type position is
+   * still E0937.
    */
   static isTypeName(
     typeName: string,
@@ -119,7 +110,8 @@ class NameExistence {
    * `knownVariables` set this read had no position, so a second answer here
    * accepted `u32 a <- b + 1` above `b` while binding found nothing.
    *
-   * ADR-072: if a register becomes a type, this collapses into `isTypeName`.
+   * A register instance answers here but not in `isTypeName`: it is a value
+   * at an address, whose type is its register type (ADR-072).
    */
   static isValueName(
     name: string,
@@ -134,15 +126,12 @@ class NameExistence {
   }
 
   /**
-   * Whether a bare name denotes a register (ADR-004).
+   * Whether a bare name denotes a register instance (ADR-072).
    *
    * Separate from the two position predicates because the type position needs
-   * to tell "this name is a register" apart from "this name is nothing at all"
-   * -- E0429 against E0426. Answering "not a type" is enough to reject; naming
-   * *why* is what makes the diagnostic worth reading, since the register is
-   * declared right there in the file.
-   *
-   * ADR-072: retire this along with E0429 when a register becomes a type.
+   * to tell "this name is a register instance" apart from "this name is
+   * nothing at all" -- E0937 against E0426. Answering "not a type" is enough
+   * to reject; naming *why* is what makes the diagnostic worth reading.
    */
   static isRegisterName(name: string, symbols: ICodeGenSymbols): boolean {
     return symbols.knownRegisters.has(name);
@@ -172,6 +161,7 @@ class NameExistence {
       symbols.knownEnums.has(typeName) ||
       symbols.knownStructs.has(typeName) ||
       symbols.knownBitmaps.has(typeName) ||
+      symbols.knownRegisterTypes.has(typeName) ||
       symbols.knownScopes.has(typeName) ||
       // #1511: from the table, which shares `OpaqueTypeResolution` with the
       // artifact. `ICodeGenSymbols` carried a merged copy of this set purely so

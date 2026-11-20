@@ -1,6 +1,8 @@
-register OREG @ 0x40008000 {
-    D: Deep rw @ 0x00,
+register OutputBlock {
+    0x00 rw Deep D,
 }
+
+OutputBlock OREG(0x40008000);
 
 // #1514: `Deep` is in the run through mid.cnx, but not included here
 scope Other {

@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // Issue #1336: the NEGATIVE CONTROL for the type/value position split.
 //
 // A register name is a legal VALUE -- `Control.DR` reads and writes memory at an
@@ -13,9 +14,11 @@
 // This assertion cannot be made in register-in-type-position.test.cnx: that fixture
 // errors in an EARLIER analyzer, and runAnalyzers stops at the first one that
 // returns errors, so the value analyzer never runs on it.
-register Control @ 0x40000000 {
-    DR: u32 rw @ 0x00,
+register ControlBlock {
+    0x00 rw u32 DR,
 }
+
+ControlBlock Control(0x40000000);
 
 u32 main() {
     Control.DR <- 0x01;

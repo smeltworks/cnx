@@ -1,12 +1,15 @@
+#pragma target cortex-m7
 // Tests: u64 as register field type (compilation only - registers need hardware)
 // Coverage: Section 1.1 u64 in register field
 
 // 64-bit timer register (common in modern MCUs)
-register TIMER64 @ 0x40001000 {
-    COUNT: u64 ro @ 0x00,
-    COMPARE: u64 rw @ 0x08,
-    CONTROL: u32 rw @ 0x10,
+register Timer64 {
+    0x00 ro u64 COUNT,
+    0x08 rw u64 COMPARE,
+    0x10 rw u32 CONTROL,
 }
+
+Timer64 TIMER64(0x40001000);
 
 void main() {
     // Write to 64-bit register field

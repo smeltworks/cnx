@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 034
+#pragma target cortex-m7
 // E0857 on a compound operator to a bitmap field, whatever spells its prefix.
 //
 // #2159: `flat.Mode +<- 1` was lowered as the plain write `flat.Mode <- 1` --
@@ -26,9 +27,11 @@ struct Holder {
     u8 count;
 }
 
-register MOTOR @ 0x40000000 {
-    CTRL: Flags rw @ 0x00,
+register MotorController {
+    0x00 rw Flags CTRL,
 }
+
+MotorController MOTOR(0x40000000);
 
 mut Flags flat;
 mut Holder[2] gss;

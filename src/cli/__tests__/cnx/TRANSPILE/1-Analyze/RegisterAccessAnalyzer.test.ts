@@ -20,9 +20,9 @@ import testAnalysisContextFor from "./testAnalysisContextFor";
  * line the tests assert where it was.
  */
 const register = (name: string, members: Record<string, string>): string =>
-  `register ${name} @ 0x40000000 { ${Object.entries(members)
-    .map(([member, mod], i) => `${member}: u32 ${mod} @ ${i * 4},`)
-    .join(" ")} } `;
+  `register ${name}Layout { ${Object.entries(members)
+    .map(([member, mod], i) => `${i * 4} ${mod} u32 ${member},`)
+    .join(" ")} } ${name}Layout ${name}(0x40000000); `;
 
 const errors = (source: string) => {
   const { syntax, context } = testAnalysisContextFor(source, {
@@ -212,7 +212,7 @@ describe("RegisterAccessAnalyzer", () => {
   describe("E0872 -- a zero assigned to a field of a write-1 member (#2027)", () => {
     const FIELDS = [
       "bitmap8 Flags { Enable, Mode[3], Rest[4] }",
-      "register PWM @ 0x40000000 { FLAGS: Flags w1c @ 0x00, CTRL: Flags rw @ 0x04, }",
+      "register PwmChannel { 0x00 w1c Flags FLAGS, 0x04 rw Flags CTRL, } PwmChannel PWM(0x40000000);",
     ].join(" ");
 
     it("rejects `false` on a one-bit field and `0` on a wider one", () => {
@@ -256,9 +256,10 @@ describe("RegisterAccessAnalyzer -- E0872 on 1.2's syntax", () => {
   const e0872 = (body: string) =>
     errors(
       [
-        "register GPIO @ 0x40000000 {",
-        "    DR_SET: u32 wo @ 0x04,",
+        "register GpioPort {",
+        "    0x04 wo u32 DR_SET,",
         "}",
+        "GpioPort GPIO(0x40000000);",
         "scope S {",
         "    public void f() {",
         "        u8 i <- 0;",

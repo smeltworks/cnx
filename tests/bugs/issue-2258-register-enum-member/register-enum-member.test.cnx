@@ -1,4 +1,5 @@
 // test-adr: 004
+#pragma target cortex-m7
 // #2258, #2155 review 9: a register member typed by a cnx enum is typed
 // as that enum, so it compares with the enum's members and initializes an
 // enum binding. Round 8 typed it as nothing (false E0434), and `main` typed
@@ -9,9 +10,11 @@ enum EMode {
     STOP
 }
 
-register DEV @ 0x40000000 {
-    EM: EMode rw @ 0x04,
+register Device {
+    0x04 rw EMode EM,
 }
+
+Device DEV(0x40000000);
 
 mut u8 sink;
 

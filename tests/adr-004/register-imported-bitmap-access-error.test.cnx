@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 004
+#pragma target cortex-m7
 // E0870/E0871/E0872 on register members typed by a bitmap from an INCLUDED
 // file (#2155 review 8). The access rules belong to the member, not to its
 // type, so they apply whether its bitmap is declared here or included (since
@@ -7,12 +8,14 @@
 
 #include "register-imported-bitmap-type.cnx"
 
-register LREG @ 0x40001000 {
-    CLR: Ctl w1c @ 0x08,
-    CFG: Ctl wo @ 0x0C,
-    ST: Ctl ro @ 0x04,
-    RW: Ctl rw @ 0x00,
+register LoopBlock {
+    0x08 w1c Ctl CLR,
+    0x0C wo Ctl CFG,
+    0x04 ro Ctl ST,
+    0x00 rw Ctl RW,
 }
+
+LoopBlock LREG(0x40001000);
 
 mut u8 sink;
 

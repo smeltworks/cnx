@@ -1,4 +1,5 @@
 // test-execution
+#pragma target cortex-m7
 // Issue #1972: a dotted member access is measured the way the same expression
 // reads everywhere else. `sizeof`'s resolver once rebuilt it from its first
 // two names (`shared.inner` for `shared.inner.x`, `w.v` for a pointer local,
@@ -22,9 +23,11 @@ struct Pair {
     u32 b;
 }
 
-register GPIO @ 0x40000000 {
-    DR: u32 rw @ 0x00,
+register GpioPort {
+    0x00 rw u32 DR,
 }
+
+GpioPort GPIO(0x40000000);
 
 scope S {
     public Pair cfg;

@@ -29,7 +29,7 @@ describe("UndeclaredValueAnalyzer", () => {
       expect(
         analyze(`
           scope Board {
-              public register Control @ 0x40000000 { DR: u32 rw @ 0x00, }
+              public register ControlBlock { 0x00 rw u32 DR, } public ControlBlock Control(0x40000000);
               public void go() {
                   Control.DR <- 0x01;
               }
@@ -42,7 +42,7 @@ describe("UndeclaredValueAnalyzer", () => {
       expect(
         analyze(`
           scope Board {
-              public register Control @ 0x40000000 { DR: u32 rw @ 0x00, }
+              public register ControlBlock { 0x00 rw u32 DR, } public ControlBlock Control(0x40000000);
               public u32 read() {
                   u32 seen <- Control.DR;
                   return seen;
@@ -70,7 +70,7 @@ describe("UndeclaredValueAnalyzer", () => {
     it("accepts a global register in a value position", () => {
       expect(
         analyze(`
-          register Control @ 0x40000000 { DR: u32 rw @ 0x00, }
+          register ControlBlock { 0x00 rw u32 DR, } ControlBlock Control(0x40000000);
           u32 main() {
               u32 seen <- Control.DR;
               return seen;

@@ -20,11 +20,11 @@ extern "C" {
  */
 typedef uint8_t CtrlBits;
 
-/* Registers (ADR-004) */
-/* Register: MOTOR @ 0x40000000 */
-#define MOTOR__CTRL (*(volatile CtrlBits*)(0x40000000 + 0x00))
-#define MOTOR__FLAGS (*(volatile CtrlBits*)(0x40000000 + 0x04))
-#define MOTOR__CONFIG (*(volatile CtrlBits*)(0x40000000 + 0x08))
+/* Registers (ADR-072) */
+/* Register: MOTOR @ 0x40000000U */
+#define MOTOR__CTRL (*(volatile CtrlBits*)(0x40000000U))
+#define MOTOR__FLAGS (*(volatile CtrlBits*)(0x40000004U))
+#define MOTOR__CONFIG (*(volatile CtrlBits*)(0x40000008U))
 
 /* Function prototypes */
 void Drive__start(void);

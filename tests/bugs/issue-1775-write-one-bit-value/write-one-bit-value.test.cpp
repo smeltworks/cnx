@@ -5,6 +5,7 @@
 
 #include "write-one-bit-value.test.hpp"
 
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -15,8 +16,8 @@
 // rejects a compile-time zero here (E0872), not a runtime one.
 /* Scope: Led */
 
-/* Register: Led__PORT @ 0x40001000 */
-#define Led__PORT__SET (*(volatile uint32_t*)(0x40001000 + 0x00))
+/* Register: Led__PORT @ 0x40001000U */
+#define Led__PORT__SET (*(volatile uint32_t*)(0x40001000U))
 
 
 void Led__show(const bool on) {

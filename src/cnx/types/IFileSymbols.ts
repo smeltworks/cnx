@@ -43,11 +43,9 @@ interface IFileSymbols {
   readonly symbols: ReadonlyArray<TSymbol>;
 
   /**
-   * The qualified names of the enums, structs and bitmaps THIS FILE declares
-   * inside a scope (ADR-057, collected by Declare's pass 0b).
-   *
-   * Registers are excluded (TYPE_FORMING_KINDS): a register declares a
-   * variable at an address, not a type.
+   * The qualified names of the types (TYPE_FORMING_KINDS) THIS FILE declares
+   * inside a scope (ADR-057, collected by Declare's pass 0b). A register type
+   * is one (ADR-072); a register instance is not.
    *
    * This is the per-file half of the question. A file that reopens a scope
    * declared elsewhere contributes only its own half here (#1333), which is

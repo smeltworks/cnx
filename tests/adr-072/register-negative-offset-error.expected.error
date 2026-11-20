@@ -1,0 +1,6 @@
+10:4 error[E0932]: the offset of register member 'DR' is negative
+       help: A register member's offset is resolved at compile time (ADR-072). Use a literal, a const, or arithmetic over them.
+13:0 error[E0931]: the address of register 'P1' is negative
+       help: A register instance's address is resolved at compile time (ADR-072). Use a literal, a const, or arithmetic over them.
+17:8 error[E0932]: the offset of register member 'Q' is negative
+       help: A register member's offset is resolved at compile time (ADR-072). Use a literal, a const, or arithmetic over them.

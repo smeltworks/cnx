@@ -1,12 +1,15 @@
 // test-error
+#pragma target cortex-m7
 // Test: bits[start..end] syntax should produce a parse error
 // This syntax is NOT valid cnx. Use bitmap types instead.
 
-register GPIO @ 0x40000000 {
-    ICR1: u32 rw @ 0x0C {
+register GpioPort {
+    0x0C { rw u32 ICR1
         ICR0: bits[0..2],
     },
 }
+
+GpioPort GPIO(0x40000000);
 
 void main() {
 }

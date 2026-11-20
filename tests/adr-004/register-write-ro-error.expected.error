@@ -1,8 +1,8 @@
-26:4 error[E0871]: cannot assign to read-only register member 'FLAGS' (STATUS_REG.FLAGS has 'ro' access modifier)
+29:4 error[E0871]: cannot assign to read-only register member 'FLAGS' (STATUS_REG.FLAGS has 'ro' access modifier)
        help: An `ro` register member is hardware that cannot be written (ADR-004); the generated C declares it `const`. Write the register's own writable member, or change the declaration if the hardware allows writes.
-33:8 error[E0871]: cannot assign to read-only register member 'FLAGS' (global.STATUS_REG.FLAGS has 'ro' access modifier)
+36:8 error[E0871]: cannot assign to read-only register member 'FLAGS' (global.STATUS_REG.FLAGS has 'ro' access modifier)
        help: An `ro` register member is hardware that cannot be written (ADR-004); the generated C declares it `const`. Write the register's own writable member, or change the declaration if the hardware allows writes.
-34:8 error[E0871]: cannot assign to read-only register member 'FLAGS' (global.STATUS_REG.FLAGS has 'ro' access modifier)
+37:8 error[E0871]: cannot assign to read-only register member 'FLAGS' (global.STATUS_REG.FLAGS has 'ro' access modifier)
        help: An `ro` register member is hardware that cannot be written (ADR-004); the generated C declares it `const`. Write the register's own writable member, or change the declaration if the hardware allows writes.
-35:8 error[E0871]: cannot assign to read-only register member 'FLAGS' (global.STATUS_REG.FLAGS has 'ro' access modifier)
+38:8 error[E0871]: cannot assign to read-only register member 'FLAGS' (global.STATUS_REG.FLAGS has 'ro' access modifier)
        help: An `ro` register member is hardware that cannot be written (ADR-004); the generated C declares it `const`. Write the register's own writable member, or change the declaration if the hardware allows writes.

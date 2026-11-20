@@ -1,3 +1,4 @@
+#pragma target cortex-m7
 // #1776: a bitmap field of a write-only register member is written without
 // reading the member, however the member is spelled. The unscoped spelling
 // emitted a read-modify-write: a read of a `wo` member, which ADR-004 forbids
@@ -12,19 +13,23 @@ bitmap8 CtrlBits {
     Reserved[4],
 }
 
-register MOTOR @ 0x40000000 {
-    CTRL: CtrlBits wo @ 0x00,
-    FLAGS: CtrlBits w1c @ 0x04,
-    CONFIG: CtrlBits rw @ 0x08,
+register MotorController {
+    0x00 wo CtrlBits CTRL,
+    0x04 w1c CtrlBits FLAGS,
+    0x08 rw CtrlBits CONFIG,
 }
 
+MotorController MOTOR(0x40000000);
+
 scope Drive {
-    register PWM @ 0x40001000 {
-        CTRL: CtrlBits wo @ 0x00,
-        FLAGS: CtrlBits w1c @ 0x04,
-        SET: CtrlBits w1s @ 0x08,
-        CONFIG: CtrlBits rw @ 0x0C,
+    register PwmChannel {
+        0x00 wo CtrlBits CTRL,
+        0x04 w1c CtrlBits FLAGS,
+        0x08 w1s CtrlBits SET,
+        0x0C rw CtrlBits CONFIG,
     }
+
+    PwmChannel PWM(0x40001000);
 
     public void start() {
         this.PWM.CTRL.Enable <- true;

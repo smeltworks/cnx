@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 004
+#pragma target cortex-m7
 // #2251: a zero written to a bit of a write-1 register member's bitmap field
 // is E0872, as on the member's own bits. The `true` write is the control.
 bitmap8 Pins {
@@ -11,9 +12,11 @@ bitmap8 Pins {
     R7
 }
 
-register GPIO @ 0x40000000 {
-    SET: Pins wo @ 0x00,
+register GpioPort {
+    0x00 wo Pins SET,
 }
+
+GpioPort GPIO(0x40000000);
 
 void main() {
     GPIO.SET.Mode[1] <- true;

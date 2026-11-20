@@ -1,3 +1,4 @@
+import MemberName from "./MemberName";
 import ParserUtils from "../../utils/ParserUtils";
 import type { ParserRuleContext, ParseTree, TerminalNode } from "antlr4ng";
 import * as Parser from "./grammar/CnxParser";
@@ -24,6 +25,14 @@ type TDirective = IProgramSyntax["directives"][number];
  * needs the parse tree or its token stream. Leading comments are read here,
  * while the token stream is still at hand.
  */
+const REGISTER_ACCESS_MODES: ReadonlySet<string> = new Set([
+  "rw",
+  "ro",
+  "wo",
+  "w1c",
+  "w1s",
+]);
+
 class ProgramLowering {
   static program(
     tree: Parser.ProgramContext,
@@ -144,7 +153,7 @@ class ProgramLowering {
       name: ctx.IDENTIFIER().getText(),
       bitmapType: ctx.bitmapType().getText(),
       members: ctx.bitmapMember().map((member) => ({
-        name: member.IDENTIFIER().getText(),
+        name: member.memberName().getText(),
         width: member.INTEGER_LITERAL()?.getText() ?? null,
         ...SyntaxLowering.node(member),
       })),
@@ -177,20 +186,18 @@ class ProgramLowering {
     const register = ctx.registerDeclaration();
     if (register) {
       return (
-        ProgramLowering.isRepaired(
-          register.IDENTIFIER(),
-          register.expression(),
-        ) ||
-        register
-          .registerMember()
-          .some((member) =>
+        ProgramLowering.isRepaired(register.IDENTIFIER()) ||
+        register.registerMember().some(
+          (member) =>
             ProgramLowering.isRepaired(
-              member.IDENTIFIER(),
+              MemberName.terminal(member.memberName()),
               member.type(),
               member.accessModifier(),
               member.expression(),
-            ),
-          )
+            ) ||
+            // recovery can hand the access slot any token, such as `{`
+            !REGISTER_ACCESS_MODES.has(member.accessModifier()!.getText()),
+        )
       );
     }
     const struct = ctx.structDeclaration();
@@ -200,7 +207,10 @@ class ProgramLowering {
         struct
           .structMember()
           .some((member) =>
-            ProgramLowering.isRepaired(member.IDENTIFIER(), member.type()),
+            ProgramLowering.isRepaired(
+              MemberName.terminal(member.memberName()),
+              member.type(),
+            ),
           )
       );
     }
@@ -219,7 +229,11 @@ class ProgramLowering {
       (ProgramLowering.isRepaired(bitmap.IDENTIFIER(), bitmap.bitmapType()) ||
         bitmap
           .bitmapMember()
-          .some((member) => ProgramLowering.isRepaired(member.IDENTIFIER())))
+          .some((member) =>
+            ProgramLowering.isRepaired(
+              MemberName.terminal(member.memberName()),
+            ),
+          ))
     );
   }
 
@@ -278,9 +292,8 @@ class ProgramLowering {
   ): IRegisterDeclarationSyntax {
     return {
       name: ctx.IDENTIFIER().getText(),
-      address: SyntaxLowering.expression(ctx.expression()),
       members: ctx.registerMember().map((member) => ({
-        name: member.IDENTIFIER().getText(),
+        name: member.memberName().getText(),
         type: SyntaxLowering.type(member.type()),
         access: member.accessModifier().getText() as TRegisterAccessMode,
         offset: SyntaxLowering.expression(member.expression()),
@@ -297,8 +310,10 @@ class ProgramLowering {
       name: ctx.IDENTIFIER().getText(),
       fields: ctx.structMember().map((member) => ({
         type: SyntaxLowering.type(member.type()),
-        name: member.IDENTIFIER().getText(),
-        nameSpan: ProgramLowering.spanOf(member.IDENTIFIER()),
+        name: member.memberName().getText(),
+        nameSpan: ProgramLowering.spanOf(
+          MemberName.required(member.memberName()),
+        ),
         dimensions: member.arrayDimension().map(ProgramLowering.dimensionOf),
         overflow: SyntaxLowering.overflow(member.overflowModifier()),
         ...SyntaxLowering.node(member),

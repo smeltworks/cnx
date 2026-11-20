@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 007
+#pragma target cortex-m7
 // #1760 review: a bit, bit-range or bitmap-field write reads its target and
 // writes it back, so every subscript in the target is evaluated twice. A call
 // or a volatile read there would run twice, and the write could land on a
@@ -12,10 +13,12 @@ bitmap8 Mode {
     level[6]
 }
 
-register GPIO @ 0x40000000 {
-    DR: u32 rw @ 0x00,
-    DR_SET: u32 wo @ 0x04,
+register GpioPort {
+    0x00 rw u32 DR,
+    0x04 wo u32 DR_SET,
 }
+
+GpioPort GPIO(0x40000000);
 
 struct Pair {
     u8 lo;

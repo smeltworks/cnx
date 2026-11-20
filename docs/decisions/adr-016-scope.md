@@ -250,24 +250,25 @@ A previous optimization attempted to convert scope variables used by only one fu
 
 ### Scoped Registers
 
-> **Amended by ADR-072 (once implemented).** The `register GPIO7 @ 0x42004000 { … }` form
-> below is ADR-004's, and ADR-072 removes it: a register definition will carry plain
-> byte offsets with the base address supplied at instantiation, so one definition can
-> produce several instances (`Serial1`, `Serial2`, `Serial3`). ADR-072 is Accepted but
-> not implemented, so the form shown here is still the correct one to write today.
+> **Amended by ADR-072.** ADR-004's `register GPIO7 @ 0x42004000 { … }` form is
+> removed. A register definition is a type carrying byte offsets, and each instance
+> supplies its base address, so one definition can produce several instances
+> (`Serial1`, `Serial2`, `Serial3`).
 
 Scopes can contain register declarations for platform-specific hardware:
 
 ```cnx
 scope Teensy4 {
-    register GPIO7 @ 0x42004000 {
-        DR:         u32 rw @ 0x00,
-        DR_SET:     u32 wo @ 0x84,
-        DR_CLEAR:   u32 wo @ 0x88,
-        DR_TOGGLE:  u32 wo @ 0x8C,
+    register GpioPort {
+        0x00 rw u32 DR,
+        0x84 wo u32 DR_SET,
+        0x88 wo u32 DR_CLEAR,
+        0x8C wo u32 DR_TOGGLE,
     }
 
-    const u32 LED_BIT <- 3;
+    GpioPort GPIO7(0x42004000);
+
+    u32 LED_BIT <- 3;
 
     public void blinkLed() {
         this.GPIO7.DR_TOGGLE[this.LED_BIT] <- true;
@@ -282,11 +283,11 @@ Teensy4.GPIO7.DR_SET[3] <- true;
 Transpiles to:
 
 ```c
-/* Register: Teensy4__GPIO7 @ 0x42004000 */
-#define Teensy4__GPIO7__DR (*(volatile uint32_t*)(0x42004000 + 0x00))
-#define Teensy4__GPIO7__DR_SET (*(volatile uint32_t*)(0x42004000 + 0x84))
-#define Teensy4__GPIO7__DR_CLEAR (*(volatile uint32_t*)(0x42004000 + 0x88))
-#define Teensy4__GPIO7__DR_TOGGLE (*(volatile uint32_t*)(0x42004000 + 0x8C))
+/* Register: Teensy4__GPIO7 @ 0x42004000U */
+#define Teensy4__GPIO7__DR (*(volatile uint32_t*)(0x42004000U))
+#define Teensy4__GPIO7__DR_SET (*(volatile uint32_t*)(0x42004084U))
+#define Teensy4__GPIO7__DR_CLEAR (*(volatile uint32_t*)(0x42004088U))
+#define Teensy4__GPIO7__DR_TOGGLE (*(volatile uint32_t*)(0x4200408CU))
 
 void Teensy4__blinkLed(void) {
     Teensy4__GPIO7__DR_TOGGLE = ((uint32_t)1U << 3U);
@@ -425,9 +426,11 @@ u32 x <- global.count;           // E0431: nothing at file level shadows count
 ```cnx
 u8 defaultValue <- 3; // Global
 
-register GPIO7 @ 0x42004000 {
-    DR_SET: u32 wo @ 0x84,
+register GpioPort {
+    0x84 wo u32 DR_SET,
 }
+
+GpioPort GPIO7(0x42004000);
 
 scope Motor {
     public enum State {
@@ -461,7 +464,7 @@ scope Motor {
 ```c
 const uint8_t defaultValue = 3U;
 
-#define GPIO7__DR_SET (*(volatile uint32_t*)(0x42004000 + 0x84))
+#define GPIO7__DR_SET (*(volatile uint32_t*)(0x42004084U))
 
 typedef enum {
     Motor__State__IDLE = 0,

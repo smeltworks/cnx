@@ -1,5 +1,6 @@
 // test-error
 // test-adr: 004
+#pragma target cortex-m7
 // E0870 in a `for` header's declaration across TWO include hop(s) -- the
 // `for header` / `imported transitive` cell of ADR-004's matrix.
 //

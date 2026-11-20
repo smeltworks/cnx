@@ -16,7 +16,7 @@ describe("ProgramLowering", () => {
   it("lowers every declaration alternative to its own kind, in source order", () => {
     const program = lower(`
       scope Motor { public void run() { } u8 speed; }
-      register GPIO @ 0x40000000 { DR: u32 rw @ 0x04, }
+      register GpioPort { 0x04 rw u32 DR, } GpioPort GPIO(0x40000000);
       struct Point { i32 x; u8 tags[4]; }
       enum Color { RED, GREEN }
       bitmap8 Flags { a, b[7] }
@@ -27,6 +27,7 @@ describe("ProgramLowering", () => {
     expect(program.declarations.map((d) => d.declaration.kind)).toEqual([
       "scope",
       "register",
+      "constructorDeclaration",
       "struct",
       "enum",
       "bitmap",
@@ -80,7 +81,7 @@ describe("ProgramLowering", () => {
       #include <stdint.h>
       #define DEBUG
       scope Motor { public void run() { if (true) { u8 n <- 1; } } u8 speed; }
-      register GPIO @ 0x40000000 { DR: u32 rw @ 0x04, }
+      register GpioPort { 0x04 rw u32 DR, } GpioPort GPIO(0x40000000);
       struct Point { i32 x; u8 tags[4]; }
       enum Color { RED, GREEN }
       bitmap8 Flags { a, b[7] }
@@ -140,12 +141,11 @@ describe("ProgramLowering", () => {
 
   it("records a register's address and each member's type, access and offset", () => {
     const [{ declaration }] = lower(
-      "register GPIO @ 0x40000000 { DR: u32 rw @ 0x04, SR: u8 ro @ 0x08 }",
+      "register GpioPort { 0x04 rw u32 DR, 0x08 ro u8 SR } GpioPort GPIO(0x40000000);",
     ).declarations;
     expect(declaration).toMatchObject({
       kind: "register",
-      name: "GPIO",
-      address: { written: "0x40000000" },
+      name: "GpioPort",
       members: [
         { name: "DR", access: "rw", offset: { written: "0x04" } },
         { name: "SR", access: "ro", offset: { written: "0x08" } },
@@ -229,7 +229,7 @@ describe("ProgramLowering on recovered files", () => {
   const POSITIONS: ReadonlyArray<(run: string) => string> = [
     (run) => run,
     (run) => `struct S {\n${run}\n}`,
-    (run) => `register R @ 0x40000000 {\n${run}\n}`,
+    (run) => `register R {\n${run}\n}`,
     (run) => `scope S {\n${run}\n}`,
     (run) => `void f(${run}) { }`,
     (run) => `enum ${run}`,
@@ -277,7 +277,7 @@ describe("ProgramLowering on recovered files", () => {
     ],
     [
       "a scope keyword in a register body",
-      "register R @ 0x40000000 {\n    scope B { u8 x <- 1; }\n}",
+      "register R {\n    scope B { u8 x <- 1; }\n}",
     ],
   ])("lowers %s as missing", (_, source) => {
     expect(missingCount(source)).toBeGreaterThan(0);

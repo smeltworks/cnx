@@ -19,9 +19,9 @@ typedef enum {
     EMode__STOP = 2
 } EMode;
 
-/* Registers (ADR-004) */
-/* Register: DEV @ 0x40000000 */
-#define DEV__EM (*(volatile EMode*)(0x40000000 + 0x04))
+/* Registers (ADR-072) */
+/* Register: DEV @ 0x40000000U */
+#define DEV__EM (*(volatile EMode*)(0x40000004U))
 
 /* External variables */
 extern uint8_t sink;

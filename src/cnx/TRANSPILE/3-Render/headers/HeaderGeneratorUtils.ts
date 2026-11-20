@@ -616,7 +616,7 @@ class HeaderGeneratorUtils {
     if (blocks.length === 0) {
       return [];
     }
-    return ["/* Registers (ADR-004) */", ...blocks];
+    return ["/* Registers (ADR-072) */", ...blocks];
   }
 
   /**

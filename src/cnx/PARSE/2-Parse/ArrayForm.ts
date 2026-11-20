@@ -56,7 +56,7 @@ class ArrayFormListener extends CnxListener {
       ...(ctx.type().arrayType()?.arrayTypeDimension() ?? []),
       ...ctx.arrayDimension(),
     ];
-    this.checkEmptyDimensions(dimensions, ctx.IDENTIFIER().getText());
+    this.checkEmptyDimensions(dimensions, ctx.memberName().getText());
   };
 
   override enterParameter = (ctx: Parser.ParameterContext): void => {

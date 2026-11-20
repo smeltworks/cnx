@@ -16,6 +16,7 @@
  * without tripping the rule (ADR-010, ADR-063).
  */
 
+import MemberName from "./MemberName";
 import { ParseTreeWalker, TerminalNode } from "antlr4ng";
 import FormError from "./FormError";
 import { CnxListener } from "./grammar/CnxListener";
@@ -145,7 +146,7 @@ class IdentifierSyntaxListener extends CnxListener {
   };
 
   override enterRegisterMember = (ctx: Parser.RegisterMemberContext): void => {
-    this.check(ctx.IDENTIFIER());
+    this.check(MemberName.terminal(ctx.memberName()));
   };
 
   override enterStructDeclaration = (
@@ -155,7 +156,7 @@ class IdentifierSyntaxListener extends CnxListener {
   };
 
   override enterStructMember = (ctx: Parser.StructMemberContext): void => {
-    this.check(ctx.IDENTIFIER());
+    this.check(MemberName.terminal(ctx.memberName()));
   };
 
   override enterEnumDeclaration = (
@@ -175,7 +176,7 @@ class IdentifierSyntaxListener extends CnxListener {
   };
 
   override enterBitmapMember = (ctx: Parser.BitmapMemberContext): void => {
-    this.check(ctx.IDENTIFIER());
+    this.check(MemberName.terminal(ctx.memberName()));
   };
 
   override enterFunctionDeclaration = (
