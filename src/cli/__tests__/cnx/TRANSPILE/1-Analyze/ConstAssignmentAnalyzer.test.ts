@@ -469,26 +469,30 @@ describe("ConstAssignmentAnalyzer (E0915, ADR-006 #1203)", () => {
 describe("ConstAssignmentAnalyzer (E0915, ADR-071 #2238)", () => {
   const header = (): SymbolTable => {
     const symbolTable = new SymbolTable();
-    for (const [name, type, sourceLanguage] of [
-      ["hwFlag", "volatile uint32_t", ESourceLanguage.C],
-      ["hwPlain", "uint32_t", ESourceLanguage.C],
-      ["cppFlag", "volatile uint32_t", ESourceLanguage.Cpp],
+    const base = {
+      kind: "variable",
+      sourceFile: "hw.h",
+      span: TestSourceSpan.at(1),
+      visibility: "public",
+    } as const;
+    for (const [name, type] of [
+      ["hwFlag", "volatile uint32_t"],
+      ["hwPlain", "uint32_t"],
     ] as const) {
-      const symbol = {
+      symbolTable.addCSymbol({
+        ...base,
         name,
-        kind: "variable",
         type,
-        sourceLanguage,
-        sourceFile: "hw.h",
-        span: TestSourceSpan.at(1),
-        visibility: "public",
-      } as const;
-      if (sourceLanguage === ESourceLanguage.C) {
-        symbolTable.addCSymbol(symbol);
-      } else {
-        symbolTable.addCppSymbol(symbol);
-      }
+        sourceLanguage: ESourceLanguage.C,
+      });
     }
+    symbolTable.addCppSymbol({
+      ...base,
+      name: "cppFlag",
+      unqualifiedName: "cppFlag",
+      type: "volatile uint32_t",
+      sourceLanguage: ESourceLanguage.Cpp,
+    });
     return symbolTable;
   };
   const qualified = (args: readonly string[]): string[] => {
