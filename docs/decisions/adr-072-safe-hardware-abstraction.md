@@ -4,7 +4,7 @@
 > from v2 to v1. See [`README.md`](README.md) for the numbering rule and the full mapping
 > table.
 
-**Status:** WIP — Accepted design, implementation in progress (Part 1 register types and instances landed in #2461; register parameters are PR 2; Parts 2–4 to follow)
+**Status:** WIP — Accepted design, implementation in progress (Part 1 register types and instances landed in #2461, register parameters in #2467; Parts 2–4 to follow)
 **Date:** 2026-02-20 (revised 2026-07-04: simplified register syntax; added Parts 4–5. 2026-11-19: Part 5, scaled fields, moved to ADR-073; contradictions settled in rulings 1–10 on #2449; Accepted)
 **Decision Makers:** Language Design Team
 **Supersedes:** ADR-004 (Register Bindings — takes effect when Part 1 is implemented; this ADR removes the `register Name @ address { }` form ADR-004 defines)
@@ -295,7 +295,7 @@ This is straightforward to implement:
    - Evaluate constant expressions at compile time
    - Generate macros with resolved addresses
 
-The key insight: **all expressions are compile-time constants**. No runtime evaluation needed — just constant folding during transpilation.
+The key insight: **every instance address and member offset is a compile-time constant**, folded during transpilation.
 
 #### Type Identity and Generic Peripheral Code
 
@@ -325,10 +325,12 @@ setPin(GPIO2, 0); // OK — GPIO2 is a GpioPort
 setPin(UART1, 0); // ERROR: UART1 is not a GpioPort
 ```
 
-#### Function Specialization
+#### Register Parameters
 
 A register parameter is resolved at compile time. Each call names an instance, never
-a runtime value, so the compiler knows which instance every call reaches.
+a runtime value, so the compiler knows which instance every call reaches. This ADR
+defines that cnx rule only; the C a register parameter compiles to is the
+transpiler's choice (ruling 11 on #2449).
 
 ```cnx
 setPin(GPIO1, 13); // port.DR is GPIO1's DR
@@ -344,7 +346,7 @@ Register template types (`GpioPort`) are **compile-time-only identifiers**, not 
 ```cnx
 GpioPort activePort <- GPIO1; // ERROR: register types are not assignable
 activePort <- GPIO2; // ERROR: cannot reassign register type
-setPin(activePort, 13); // Would require runtime indirection
+setPin(activePort, 13); // ERROR: activePort is not an instance
 
 GpioPort[2] ports <- [GPIO1, GPIO2]; // ERROR: cannot store registers in arrays
 ```
@@ -359,7 +361,7 @@ struct Hal {
 }
 ```
 
-This is intentional — runtime polymorphism over registers would require function pointers or vtables, defeating zero-cost abstraction. If you need dynamic port selection, use explicit branching:
+This is intentional — a register is bound at compile time, so cnx has no register value chosen at runtime. If you need dynamic port selection, use explicit branching:
 
 ```cnx
 void setPinOnPort(u8 portNum, u8 pin) {
@@ -375,7 +377,7 @@ void setPinOnPort(u8 portNum, u8 pin) {
 }
 ```
 
-The compiler may optimize this switch into a lookup table if beneficial, but the register access itself remains a direct memory operation.
+Each branch passes a fixed instance, so every register parameter is still bound at compile time.
 
 ---
 
@@ -779,7 +781,7 @@ bitmaps cover the format completely.
   register's type with its own bytes, like any other variable: `Etc1 etc1;`. There is no
   view over another buffer, so no runtime pointer, lifetime or aliasing question. A
   received frame is copied in before it is read. A global data register has a
-  compile-time address, so generic register functions take it with no runtime pointer.
+  compile-time address, so generic register functions take it as they take a fixed instance.
 - **How bytes get in: whole-register assignment (ruling 8 on #2449).** A data register is
   assigned from a `u8` array of exactly its size, and a `u8` array of that size is assigned
   from it. A size mismatch is a compile error. Field access modes still apply to field
