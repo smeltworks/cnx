@@ -153,7 +153,7 @@ class CallbackAssignmentCheck {
     callee: IFunctionSymbol,
     layout: IRegisterSymbol,
   ): void {
-    const passed = this.registerTypeOf(arg);
+    const passed = OperandTyper.wholeRegisterTypeOf(arg, this.context);
     if (passed === layout.fullyQualifiedCName) return;
     const what =
       passed === null
@@ -166,24 +166,6 @@ class CallbackAssignmentCheck {
       helpText: `Pass an instance of '${layout.name}' declared at file or scope level (\`${layout.name} NAME(address);\`), or a '${layout.name}' parameter (ADR-072).`,
       declaredAt: BindingSite.ofSymbol(callee),
     });
-  }
-
-  /** The register type an argument names whole: an instance's, or a register parameter's */
-  private registerTypeOf(arg: TExpression): string | null {
-    const instance = OperandTyper.registerInstanceOf(arg, this.context);
-    if (instance !== null) {
-      const symbol = this.context.program?.symbolByCName(instance);
-      return RegisterInstance.isInstance(symbol) ? symbol.registerType : null;
-    }
-    if (arg.kind === "postfix" && arg.ops.length > 0) return null;
-    const root = OperandTyper.rootOfTarget(arg, this.context);
-    if (root?.kind !== "local" || root.declaration.kind !== "parameter") {
-      return null;
-    }
-    return (
-      RegisterInstance.typeNamedBy(this.context.program, root.declaration.type)
-        ?.fullyQualifiedCName ?? null
-    );
   }
 
   private static describeTarget(target: TExpression): string {

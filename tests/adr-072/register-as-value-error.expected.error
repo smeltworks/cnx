@@ -1,0 +1,8 @@
+15:13 error[E0942]: 'port' is a 'GpioPort' register, not a value
+       help: A register is hardware at a fixed address (ADR-072): read and write its members (`GPIO1.DR`), or pass it to a register parameter. It is not read, assigned or stored whole.
+19:4 error[E0942]: 'port' is a 'GpioPort' register, not a value
+       help: A register is hardware at a fixed address (ADR-072): read and write its members (`GPIO1.DR`), or pass it to a register parameter. It is not read, assigned or stored whole.
+19:12 error[E0942]: 'GPIO2' is a 'GpioPort' register, not a value
+       help: A register is hardware at a fixed address (ADR-072): read and write its members (`GPIO1.DR`), or pass it to a register parameter. It is not read, assigned or stored whole.
+29:13 error[E0942]: 'GPIO1' is a 'GpioPort' register, not a value
+       help: A register is hardware at a fixed address (ADR-072): read and write its members (`GPIO1.DR`), or pass it to a register parameter. It is not read, assigned or stored whole.

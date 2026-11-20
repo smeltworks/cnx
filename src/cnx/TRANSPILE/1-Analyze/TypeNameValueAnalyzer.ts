@@ -6,9 +6,12 @@
  * (`Point.y.type_byte_length`), and names no value. `Point.x`, `Point.z.type_byte_length`
  * and `u32.foo` reached the C as written, at exit 0, and gcc rejected them.
  *
- * Error code:
+ * Error codes:
  * - E0897: a chain that names a type does not end reading a length of it
+ * - E0942: a register instance or register parameter, whole, where a value
+ *   is read or written (ADR-072); a register parameter's argument is E0940's
  */
+import FunctionReference from "./helpers/FunctionReference";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionShape from "../../utils/ExpressionShape";
 import ExpressionNodes from "../../utils/ExpressionNodes";
@@ -48,11 +51,50 @@ class TypeNameValueAnalyzer {
     const heads = new Set(
       nodes.flatMap((node) => (node.kind === "postfix" ? [node.primary] : [])),
     );
+    const registerArguments = new Set(
+      nodes.flatMap((node) => this.registerArgumentsOf(node)),
+    );
     return nodes.flatMap((expr) => {
       const isChain = expr.kind === "postfix" || expr.kind === "identifier";
-      const error = isChain && !heads.has(expr) ? this.check(expr) : null;
+      if (!isChain || heads.has(expr)) return [];
+      const error = registerArguments.has(expr)
+        ? null
+        : (this.check(expr) ?? this.checkRegister(expr));
       return error === null ? [] : [error];
     });
+  }
+
+  /** The arguments a call places in register parameters: E0940 decides them */
+  private registerArgumentsOf(node: TExpression): TExpression[] {
+    if (node.kind !== "postfix") return [];
+    const call = node.ops.find((op) => op.kind === "call");
+    if (call?.kind !== "call") return [];
+    const callee = FunctionReference.ofCallChain(
+      node,
+      OperandTyper.scopePathAt(node.span, this.context),
+      this.context,
+    );
+    if (callee === null) return [];
+    return call.arguments.flatMap((arg, index) => {
+      const param = callee.parameters[index];
+      return param !== undefined &&
+        RegisterInstance.typeNamedBy(this.context.program, param.type) !== null
+        ? [ExpressionShape.unparenthesized(arg)]
+        : [];
+    });
+  }
+
+  /** E0942: a register, whole, where a value is read or written */
+  private checkRegister(chain: TExpression): ITypeNameValueError | null {
+    const type = OperandTyper.wholeRegisterTypeOf(chain, this.context);
+    if (type === null) return null;
+    return {
+      code: "E0942",
+      span: chain.span,
+      message: `'${chain.written}' is a '${type}' register, not a value`,
+      helpText:
+        "A register is hardware at a fixed address (ADR-072): read and write its members (`GPIO1.DR`), or pass it to a register parameter. It is not read, assigned or stored whole.",
+    };
   }
 
   private check(chain: TExpression): ITypeNameValueError | null {

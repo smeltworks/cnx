@@ -353,6 +353,31 @@ class OperandTyper {
     return current.k === "register" ? current.name : null;
   }
 
+  /**
+   * ADR-072: the register type an expression names whole -- an instance's,
+   * or a register parameter's -- by its C name; null for anything else, a
+   * member of one included
+   */
+  static wholeRegisterTypeOf(
+    expr: TExpression,
+    ctx: ITypingContext,
+  ): string | null {
+    const instance = OperandTyper.registerInstanceOf(expr, ctx);
+    if (instance !== null) {
+      const symbol = ctx.program.symbolByCName(instance);
+      return RegisterInstance.isInstance(symbol) ? symbol.registerType : null;
+    }
+    if (expr.kind === "postfix" && expr.ops.length > 0) return null;
+    const root = OperandTyper.rootOfTarget(expr, ctx);
+    if (root?.kind !== "local" || root.declaration.kind !== "parameter") {
+      return null;
+    }
+    return (
+      RegisterInstance.typeNamedBy(ctx.program, root.declaration.type)
+        ?.fullyQualifiedCName ?? null
+    );
+  }
+
   /** What a target's chain is rooted in: the declaration it writes into */
   static rootOfTarget(
     target: TExpression,
