@@ -7,6 +7,7 @@
 import OperandTyper from "../../../utils/OperandTyper";
 import ExpressionShape from "../../../utils/ExpressionShape";
 import BoundDeclaration from "./BoundDeclaration";
+import WrittenBinding from "./WrittenBinding";
 import type TExpression from "../../../types/syntax/TExpression";
 import type IAnalysisContext from "../types/IAnalysisContext";
 
@@ -23,7 +24,10 @@ class ArgumentQualifier {
     if (chain.steps.some((step) => step.registerMember !== null)) {
       return { is: "a register member", write: "volatile" };
     }
-    const declaration = BoundDeclaration.of(chain.root);
+    // the written binding, not the chain root: `S.shared`, `(cfg).total`
+    const declaration = BoundDeclaration.of(
+      WrittenBinding.ofExpression(arg, context)?.binding ?? null,
+    );
     if (declaration?.isAtomic === true) {
       return { is: "atomic", write: "atomic" };
     }

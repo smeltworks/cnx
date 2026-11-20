@@ -12,6 +12,16 @@ register Blk {
 
 Blk B1(0x40000000);
 
+struct Cfg {
+    u32 total;
+}
+
+volatile mut Cfg cfg;
+
+scope S {
+    public atomic u32 shared <- 0;
+}
+
 volatile mut u32 flag <- 0;
 atomic u32 count <- 0;
 mut u32 plain <- 0;
@@ -25,5 +35,7 @@ void main() {
     bump(count);
     bump(B1.LEN);
     bump((flag));
+    bump(S.shared);
+    bump((cfg).total);
     bump(plain);
 }
