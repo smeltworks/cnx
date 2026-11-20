@@ -336,6 +336,13 @@ class OperandTyper {
     return OperandTyper.walkChain(target, ctx).last;
   }
 
+  /** `expr` without the parentheses around it: `((x))` is `x` */
+  static unparenthesized(expr: TExpression): TExpression {
+    let inner = expr;
+    while (inner.kind === "parenthesized") inner = inner.expression;
+    return inner;
+  }
+
   /**
    * ADR-072: the register instance an expression names as a whole --
    * `GPIO1`, `this.PORT`, `Board.PORT` -- by its C name; null for anything
@@ -345,7 +352,10 @@ class OperandTyper {
     expr: TExpression,
     ctx: ITypingContext,
   ): string | null {
-    const start = OperandTyper.chainStart(expr, ctx);
+    const start = OperandTyper.chainStart(
+      OperandTyper.unparenthesized(expr),
+      ctx,
+    );
     let current = start.value;
     for (const op of start.ops) {
       current = OperandTyper.applyOp(current, op, ctx).next;
@@ -362,6 +372,7 @@ class OperandTyper {
     expr: TExpression,
     ctx: ITypingContext,
   ): string | null {
+    expr = OperandTyper.unparenthesized(expr);
     const instance = OperandTyper.registerInstanceOf(expr, ctx);
     if (instance !== null) {
       const symbol = ctx.program.symbolByCName(instance);
@@ -1854,6 +1865,7 @@ class OperandTyper {
     if (t.typeName === null) return false;
     const struct = ctx.program.symbolByCName(t.typeName);
     if (struct?.kind === "struct") return struct.fields.has(member);
+    if (RegisterInstance.isType(struct)) return struct.members.has(member);
     return ctx.symbolTable.getStructFieldInfo(t.typeName, member) !== undefined;
   }
 
