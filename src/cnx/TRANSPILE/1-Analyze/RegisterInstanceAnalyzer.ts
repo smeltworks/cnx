@@ -8,6 +8,9 @@
  * - E0939: a register member's offset is not a multiple of its size
  *
  * 1.4 Resolve folded every address and offset once; this reads the result.
+ *
+ * E0933 is retired: a register parameter is supported now, bound to an
+ * instance at each call (ADR-072).
  */
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TTypeSyntax from "../../types/syntax/TTypeSyntax";
@@ -128,8 +131,13 @@ class RegisterInstanceAnalyzer {
     register: IRegisterSymbol,
   ): IBaseAnalysisError[] {
     const target = this.context.program.target();
-    const pointerBits =
-      target.kind === "resolved" ? target.description.pointer_bits : null;
+    const widths =
+      target.kind === "resolved"
+        ? {
+            pointerBits: target.description.pointer_bits,
+            intBits: target.description.int_bits,
+          }
+        : { pointerBits: null, intBits: null };
     const found: IBaseAnalysisError[] = [];
     const placed: Array<{
       readonly name: string;
@@ -142,7 +150,7 @@ class RegisterInstanceAnalyzer {
       const member = register.members.get(syntax.name);
       const start = member?.offsetValue ?? null;
       if (member === undefined || start === null || start < 0n) continue;
-      const bytes = this.bytesOf(member, pointerBits);
+      const bytes = this.bytesOf(member, widths);
       if (bytes === null) continue;
       const end = start + bytes;
       const misaligned = this.misaligned(syntax, member, start, bytes);
@@ -238,7 +246,10 @@ class RegisterInstanceAnalyzer {
       const last =
         instance.baseAddress +
         member.offsetValue +
-        this.bytesOf(member, bits)! -
+        this.bytesOf(member, {
+          pointerBits: bits,
+          intBits: target.description.int_bits,
+        })! -
         1n;
       if (last < limit) continue;
       found.push({
@@ -285,14 +296,17 @@ class RegisterInstanceAnalyzer {
     };
   }
 
-  /** Null for an ISR slot when the target, and so its pointer width, is unknown */
+  /** Null where the target, and so a pointer's or an int's width, is unknown */
   private bytesOf(
     member: IRegisterMemberSymbol,
-    pointerBits: number | null,
+    widths: {
+      readonly pointerBits: number | null;
+      readonly intBits: number | null;
+    },
   ): bigint | null {
     return RegisterLayout.bytesOf(
       member,
-      pointerBits,
+      widths,
       this.context.symbols.bitmapBitWidth,
     );
   }

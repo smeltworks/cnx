@@ -2407,8 +2407,13 @@ class CodeGenWalker {
       return "";
     }
     const target = state.program!.target();
-    const pointerBits =
-      target.kind === "resolved" ? target.description.pointer_bits : null;
+    const widths =
+      target.kind === "resolved"
+        ? {
+            pointerBits: target.description.pointer_bits,
+            intBits: target.description.int_bits,
+          }
+        : { pointerBits: null, intBits: null };
     const symbols = state.symbols!;
     const members = [...type.members.values()].map((member) => {
       const cType = symbols.registerMemberCTypes.get(
@@ -2416,7 +2421,7 @@ class CodeGenWalker {
       );
       const bytes = RegisterLayout.bytesOf(
         member,
-        pointerBits,
+        widths,
         symbols.bitmapBitWidth,
       );
       invariant(

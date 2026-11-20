@@ -9,21 +9,35 @@ import type IRegisterMemberSymbol from "../types/symbols/IRegisterMemberSymbol";
 
 class RegisterLayout {
   /** The member's byte width; null for an ISR slot on a target of unknown pointer width */
+  /**
+   * The bytes a member occupies as C lays it out: an ISR slot a pointer's, a
+   * bitmap its backing integer's (a `bitmap24` is a `uint32_t`), an enum a C
+   * `int`'s; null where the target, and so that width, is unknown
+   */
   static bytesOf(
     member: IRegisterMemberSymbol,
-    pointerBits: number | null,
+    widths: {
+      readonly pointerBits: number | null;
+      readonly intBits: number | null;
+    },
     bitmapBitWidth: ReadonlyMap<string, number>,
   ): bigint | null {
     const name = RegisterLayout.typeNameOf(member);
-    // an ISR slot is a function pointer, as wide as the target's pointers
     const bits =
       name === "ISR"
-        ? pointerBits
-        : (TYPE_WIDTH[name] ?? bitmapBitWidth.get(name) ?? 8);
+        ? widths.pointerBits
+        : (TYPE_WIDTH[name] ??
+          RegisterLayout.backingBits(bitmapBitWidth.get(name)) ??
+          widths.intBits);
     return bits === null ? null : BigInt(Math.ceil(bits / 8));
   }
 
-  /** The C union an offset group is written as: `AT_0x00` */
+  /** The bits of the unsigned integer a bitmap of `bits` is typedef'd to */
+  private static backingBits(bits: number | undefined): number | undefined {
+    if (bits === undefined) return undefined;
+    return [8, 16, 32, 64].find((width) => bits <= width) ?? bits;
+  }
+
   static groupName(offset: bigint): string {
     return `AT_${RegisterAddress.hex(offset)}`;
   }
