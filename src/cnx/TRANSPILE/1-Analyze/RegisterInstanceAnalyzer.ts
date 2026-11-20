@@ -136,13 +136,16 @@ class RegisterInstanceAnalyzer {
     for (const member of instance.members.values()) {
       if (member.offsetValue === null || member.offsetValue < 0n) continue;
       const last =
-        instance.baseAddress + member.offsetValue + this.bytesOf(member) - 1n;
+        instance.baseAddress +
+        member.offsetValue +
+        this.bytesOf(member, bits) -
+        1n;
       if (last < limit) continue;
       found.push({
         aboutItsPosition: true,
         code: "E0931",
         span: declaration.span,
-        message: `register member '${declaration.name}.${member.name}' ends at ${RegisterAddress.render(last)}, past the target's ${bits}-bit address range`,
+        message: `register member '${declaration.name}.${member.name}' ends at ${RegisterAddress.hex(last)}, past the target's ${bits}-bit address range`,
         helpText:
           "Every byte of a register member must be addressable on the target (ADR-072). Check the instance's address against the datasheet.",
       });
@@ -150,7 +153,7 @@ class RegisterInstanceAnalyzer {
     return found;
   }
 
-  private bytesOf(member: IRegisterMemberSymbol): bigint {
+  private bytesOf(member: IRegisterMemberSymbol, pointerBits: number): bigint {
     const type = member.type;
     const name =
       type.kind === "primitive"
@@ -158,8 +161,13 @@ class RegisterInstanceAnalyzer {
         : "name" in type
           ? String(type.name)
           : "";
+    // an ISR slot is a function pointer, as wide as the target's pointers
     const bits =
-      TYPE_WIDTH[name] ?? this.context.symbols.bitmapBitWidth.get(name) ?? 8;
+      name === "ISR"
+        ? pointerBits
+        : (TYPE_WIDTH[name] ??
+          this.context.symbols.bitmapBitWidth.get(name) ??
+          8);
     return BigInt(Math.ceil(bits / 8));
   }
 

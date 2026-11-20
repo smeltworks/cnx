@@ -16,4 +16,7 @@ describe("RegisterAddress", () => {
       "0xFFFFFFFF00000000U",
     );
   });
+  it("spells an address for a diagnostic without C's suffix", () => {
+    expect(RegisterAddress.hex(0x10000000bn)).toBe("0x10000000B");
+  });
 });

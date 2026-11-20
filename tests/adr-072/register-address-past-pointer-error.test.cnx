@@ -19,6 +19,23 @@ GpioPort EDGE(0xFFFFFFE6);
 // Negative control: the last member ends exactly at the top of the range
 GpioPort TOP(0xFFFFFFE4);
 
+// An ISR slot is a 4-byte function pointer on cortex-m7, a bitmap32 4 bytes
+register VectorTableLayout {
+    0x00 rw ISR reset,
+}
+
+bitmap32 Flags {
+    Ready,
+    Reserved[31]
+}
+
+register Status {
+    0x00 rw Flags FLAGS,
+}
+
+VectorTableLayout VTOR(0xFFFFFFFE);
+Status STAT(0xFFFFFFFE);
+
 void main() {
     WRAPS.DR <- 1;
     HIGH.DR <- 1;

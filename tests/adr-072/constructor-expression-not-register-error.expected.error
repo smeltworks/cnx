@@ -1,8 +1,8 @@
-9:0 error[E0935]: 'thermocouple' is constructed from an expression, but its type is not a register type
+10:0 error[E0935]: 'thermocouple' is constructed from an expression, but its type is not a register type
        help: Only a register instance takes an address expression (ADR-072). A C++ constructor's arguments are named constants (#375): declare the value as a const and pass its name.
-12:4 error[E0935]: 'probe' is constructed from an expression, but its type is not a register type
+13:4 error[E0935]: 'probe' is constructed from an expression, but its type is not a register type
        help: Only a register instance takes an address expression (ADR-072). A C++ constructor's arguments are named constants (#375): declare the value as a const and pass its name.
-15:8 error[E0935]: 'local' is constructed from an expression, but its type is not a register type
+16:8 error[E0935]: 'local' is constructed from an expression, but its type is not a register type
        help: Only a register instance takes an address expression (ADR-072). A C++ constructor's arguments are named constants (#375): declare the value as a const and pass its name.
-20:4 error[E0935]: 'local' is constructed from an expression, but its type is not a register type
+21:4 error[E0935]: 'local' is constructed from an expression, but its type is not a register type
        help: Only a register instance takes an address expression (ADR-072). A C++ constructor's arguments are named constants (#375): declare the value as a const and pass its name.

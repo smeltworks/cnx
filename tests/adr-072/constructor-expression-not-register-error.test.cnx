@@ -1,10 +1,11 @@
 // test-error
 // test-adr: 072
+// test-cpp-only
 #pragma target cortex-m7
 // ADR-072, E0935: only a register instance takes an address expression; a C++
 // constructor's arguments are named constants (#375).
 
-#include <Adafruit_MAX31856.h>
+#include "constructor-stubs.h"
 
 Adafruit_MAX31856 thermocouple(10 + 1);
 
