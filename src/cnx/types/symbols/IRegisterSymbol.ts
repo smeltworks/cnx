@@ -17,6 +17,13 @@ interface IRegisterSymbol extends IBaseSymbol {
   /** The type an instance is of, by C name; null on the type itself */
   readonly registerType: string | null;
 
+  /**
+   * ADR-072: a register TYPE some function's parameter takes, so it is
+   * written as a C layout struct. Decided once by 1.4, which sees every
+   * function; false on an instance.
+   */
+  readonly isParameterLayout: boolean;
+
   readonly addressExpr: TConstExpr | null;
 
   /**

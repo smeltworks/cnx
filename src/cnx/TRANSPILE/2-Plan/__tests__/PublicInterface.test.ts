@@ -49,6 +49,7 @@ const register = (
 ): IRegisterSymbol => ({
   ...base("register", name, scopePath, visibility),
   registerType: "Peripheral",
+  isParameterLayout: false,
   addressExpr: null,
   baseAddress: 0x40000000n,
   members: TestMembers.asRegisterMembers(

@@ -159,11 +159,7 @@ class HeaderEmissionCapture {
         // since #1520 made `headerCType` the one answer to "what does this
         // header call this type" -- before that, deciding from the symbols
         // meant deriving the type mapping a second time.
-        systemIncludes: HeaderIncludes.decide(
-          exportedSymbols,
-          userIncludes,
-          state.program,
-        ),
+        systemIncludes: HeaderIncludes.decide(exportedSymbols, userIncludes),
       },
       typeInput: typeInputWithSymbolTable,
       allKnownEnums,

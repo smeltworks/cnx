@@ -1155,12 +1155,7 @@ class FilePlanner {
       RegisterInstance.scopePathOf(program, scope),
       name,
     );
-    if (
-      !RegisterInstance.isType(type) ||
-      !RegisterInstance.isParameterType(program, type.fullyQualifiedCName)
-    ) {
-      return;
-    }
+    if (!RegisterInstance.isType(type) || !type.isParameterLayout) return;
     cTypes.add("uint8_t");
     this.requireMemberCTypes(type, cTypes, requirements);
   }

@@ -27,7 +27,6 @@
  * prefer over a text scan that could only ever over-include.
  */
 
-import type IProgram from "../../types/IProgram";
 import type TSymbol from "../../types/symbols/TSymbol";
 import headerCType from "../../utils/headerCType";
 import CTypeIncludes from "./CTypeIncludes";
@@ -45,16 +44,14 @@ class HeaderIncludes {
    *   settled it -- the same list the header is generated from
    * @param writtenIncludes the `#include` lines the header carries through
    *   from the source, whose system headers it must not include twice (#2188)
-   * @param program the program, which says what register layouts are written
    */
   static decide(
     exportedSymbols: readonly TSymbol[],
     writtenIncludes: readonly string[],
-    program: IProgram | null = null,
   ): string[] {
     return UnwrittenIncludes.of(
       CTypeIncludes.decide(
-        [...HeaderTypeNames.collect(exportedSymbols, program)].map((named) =>
+        [...HeaderTypeNames.collect(exportedSymbols)].map((named) =>
           headerCType(named),
         ),
       ),

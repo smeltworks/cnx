@@ -31,27 +31,6 @@ class RegisterInstance {
     return RegisterInstance.isType(symbol) ? symbol : null;
   }
 
-  /** ADR-072: whether any function of the program takes the register type */
-  static isParameterType(
-    program: IProgram | null | undefined,
-    cName: string,
-  ): boolean {
-    if (!program) return false;
-    return program
-      .sourceFiles()
-      .some((file) =>
-        program
-          .symbolsInFile(file)
-          .some(
-            (symbol) =>
-              symbol.kind === "function" &&
-              symbol.parameters.some(
-                (p) => TypeResolver.getTypeName(p.type) === cName,
-              ),
-          ),
-      );
-  }
-
   /**
    * ADR-072: a member's path within the layout struct of the register type
    * named `layout` (`AT__0x00.RBR`), as 1.4 stored it; undefined where the

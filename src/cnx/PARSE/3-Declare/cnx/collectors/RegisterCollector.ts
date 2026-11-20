@@ -96,6 +96,7 @@ class RegisterCollector {
       sourceLanguage: ESourceLanguage.Cnx,
       visibility,
       registerType: null,
+      isParameterLayout: false,
       addressExpr: null,
       baseAddress: null,
       members,

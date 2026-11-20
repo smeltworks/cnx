@@ -2393,10 +2393,7 @@ class CodeGenWalker {
   private generateRegisterLayout(scopePath: string, name: string): string {
     const state = this.host.state;
     const type = state.program?.memberOf(scopePath, name);
-    if (
-      !RegisterInstance.isType(type) ||
-      !RegisterInstance.isParameterType(state.program, type.fullyQualifiedCName)
-    ) {
+    if (!RegisterInstance.isType(type) || !type.isParameterLayout) {
       return "";
     }
     const widths = RegisterLayout.widthsOf(state.program!.target());

@@ -413,6 +413,7 @@ describe("TSymbolInfoAdapter", () => {
           visibility: "public",
         }),
         registerType: "Peripheral",
+        isParameterLayout: false,
         addressExpr: null,
         baseAddress: 0x40000000n,
         members: TestMembers.asRegisterMembers(
@@ -453,6 +454,7 @@ describe("TSymbolInfoAdapter", () => {
           visibility: "public",
         }),
         registerType: "Peripheral",
+        isParameterLayout: false,
         addressExpr: null,
         baseAddress: 0x40001000n,
         members: TestMembers.asRegisterMembers(
@@ -493,6 +495,7 @@ describe("TSymbolInfoAdapter", () => {
           visibility: "public",
         }),
         registerType: "Peripheral",
+        isParameterLayout: false,
         addressExpr: null,
         baseAddress: 0x40002000n,
         members: TestMembers.asRegisterMembers(
@@ -570,6 +573,7 @@ describe("TSymbolInfoAdapter", () => {
           visibility: "public",
         }),
         registerType: "Peripheral",
+        isParameterLayout: false,
         addressExpr: null,
         baseAddress: 0x40003000n,
         members: TestMembers.asRegisterMembers(

@@ -29,6 +29,7 @@ class RegisterInstances {
     environmentOf: (sourceFile: string) => IConstantEnvironment,
   ): Map<string, ReadonlyArray<TSymbol>> {
     const types = new Map<string, IRegisterSymbol>();
+    const taken = RegisterInstances.parameterTypeNames(symbolsByFile);
     const settled = new Map<string, ReadonlyArray<TSymbol>>();
     for (const [sourceFile, symbols] of symbolsByFile) {
       const env = environmentOf(sourceFile);
@@ -38,7 +39,10 @@ class RegisterInstances {
           if (symbol.kind !== "register" || symbol.addressExpr !== null) {
             return symbol;
           }
-          const type = RegisterInstances.withOffsets(symbol, env);
+          const type = {
+            ...RegisterInstances.withOffsets(symbol, env),
+            isParameterLayout: taken.has(symbol.fullyQualifiedCName),
+          };
           types.set(type.fullyQualifiedCName, type);
           return type;
         }),
@@ -66,6 +70,22 @@ class RegisterInstances {
       result.set(sourceFile, bound);
     }
     return result;
+  }
+
+  /** Every type name some function's parameter is declared with */
+  private static parameterTypeNames(
+    symbolsByFile: ReadonlyMap<string, ReadonlyArray<TSymbol>>,
+  ): Set<string> {
+    const names = new Set<string>();
+    for (const symbols of symbolsByFile.values()) {
+      for (const symbol of symbols) {
+        if (symbol.kind !== "function") continue;
+        for (const parameter of symbol.parameters) {
+          names.add(TypeResolver.getTypeName(parameter.type));
+        }
+      }
+    }
+    return names;
   }
 
   /** A function with each parameter of a register type stamped `isRegister` */
@@ -149,6 +169,7 @@ class RegisterInstances {
       sourceLanguage: variable.sourceLanguage,
       visibility: variable.visibility,
       registerType: type.fullyQualifiedCName,
+      isParameterLayout: false,
       addressExpr,
       baseAddress: RegisterInstances.fold(addressExpr, env),
       members,
