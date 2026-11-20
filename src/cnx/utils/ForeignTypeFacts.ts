@@ -754,7 +754,7 @@ class ForeignTypeFacts {
   }
 
   /** Whether a C spelling is `volatile`-qualified */
-  static isVolatile(cType: string): boolean {
+  private static isVolatile(cType: string): boolean {
     return /\bvolatile\b/.test(cType);
   }
 

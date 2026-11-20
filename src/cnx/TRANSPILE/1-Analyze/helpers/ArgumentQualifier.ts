@@ -6,7 +6,6 @@
  */
 import OperandTyper from "../../../utils/OperandTyper";
 import ExpressionShape from "../../../utils/ExpressionShape";
-import ForeignTypeFacts from "../../../utils/ForeignTypeFacts";
 import BoundDeclaration from "./BoundDeclaration";
 import WrittenBinding from "./WrittenBinding";
 import type TExpression from "../../../types/syntax/TExpression";
@@ -27,11 +26,12 @@ class ArgumentQualifier {
     }
     // the written binding, not the chain root: `S.shared`, `(cfg).total`
     const binding = WrittenBinding.ofExpression(arg, context)?.binding ?? null;
-    if (
-      binding?.kind === "foreign" &&
-      ArgumentQualifier.isVolatileForeign(binding.name, context)
-    ) {
-      return { is: "volatile", write: "volatile" };
+    // a header value: the typer's `volatile`, through typedefs and fields
+    if (binding?.kind === "foreign") {
+      const type = OperandTyper.typeOf(arg, context);
+      return type?.form.kind === "foreign" && type.hasSideEffect
+        ? { is: "volatile", write: "volatile" }
+        : null;
     }
     const declaration = BoundDeclaration.of(binding);
     if (declaration?.isAtomic === true) {
@@ -41,19 +41,6 @@ class ArgumentQualifier {
       return { is: "volatile", write: "volatile" };
     }
     return null;
-  }
-
-  /** A C or C++ header variable declared `volatile` */
-  private static isVolatileForeign(
-    name: string,
-    context: IAnalysisContext,
-  ): boolean {
-    const symbol =
-      context.symbolTable.getCSymbol(name) ??
-      context.symbolTable.getCppSymbol(name);
-    return (
-      symbol?.kind === "variable" && ForeignTypeFacts.isVolatile(symbol.type)
-    );
   }
 }
 

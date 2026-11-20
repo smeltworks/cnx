@@ -3,7 +3,8 @@
 #pragma target cortex-m7
 // #2238 review: a `volatile` global declared in a C header loses its
 // qualifier the same way when passed to a `mut` parameter, so it is E0915.
-// CONTROL: a plain header global stays silent.
+// So is one made `volatile` by a typedef or by a struct field (#2468
+// review). CONTROL: a plain header global, typedef and field stay silent.
 #include "hw-globals.h"
 
 void bump(mut u32 n) {
@@ -13,4 +14,8 @@ void bump(mut u32 n) {
 void main() {
     bump(hw_flag);
     bump(hw_plain);
+    bump(hw_reg);
+    bump(hw_plain_reg);
+    bump(regs.status);
+    bump(regs.config);
 }
