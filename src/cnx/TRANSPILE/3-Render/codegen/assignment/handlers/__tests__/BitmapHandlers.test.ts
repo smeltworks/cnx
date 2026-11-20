@@ -230,6 +230,8 @@ describe("BitmapHandlers", () => {
       const ctx = createMockContext({ identifiers, ...overrides });
       return {
         ...ctx,
+        // An instance's member renders as its accessor macro
+        renderBitTarget: () => member,
         target: {
           ...ctx.target,
           // The typer types a bitmap-typed member as its bitmap

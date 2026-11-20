@@ -110,15 +110,17 @@ function handleBitmapField(ctx: IAssignmentContext): string {
 }
 
 /**
- * A field of a register member, however the register is spelled: the typer
- * names the member (#2158), and its access decides the write.
+ * A field of a register member, however the register is spelled -- an
+ * instance or a register parameter: the target renders as every other bit
+ * write's does, the typer names the member (#2158), and its access decides
+ * the write.
  */
 function handleRegisterMemberBitmapField(ctx: IAssignmentContext): string {
   const member = ctx.target.last?.beforeRegisterMember;
   invariant(member, "the classifier routes a field of a register member here");
   const access = ctx.state.symbols!.registerMemberAccess.get(member);
   return writeBitmapField(
-    member,
+    ctx.renderBitTarget(),
     fieldOfTarget(ctx),
     ctx,
     RegisterAccessMode.isWriteOne(access),
