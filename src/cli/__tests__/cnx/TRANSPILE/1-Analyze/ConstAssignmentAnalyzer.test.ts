@@ -465,3 +465,108 @@ describe("ConstAssignmentAnalyzer (E0915, ADR-006 #1203)", () => {
     expect(passed(["(readIt())"])).toEqual(["(readIt())"]);
   });
 });
+
+describe("ConstAssignmentAnalyzer (E0915, ADR-071 #2238)", () => {
+  const header = (): SymbolTable => {
+    const symbolTable = new SymbolTable();
+    for (const [name, type, sourceLanguage] of [
+      ["hwFlag", "volatile uint32_t", ESourceLanguage.C],
+      ["hwPlain", "uint32_t", ESourceLanguage.C],
+      ["cppFlag", "volatile uint32_t", ESourceLanguage.Cpp],
+    ] as const) {
+      const symbol = {
+        name,
+        kind: "variable",
+        type,
+        sourceLanguage,
+        sourceFile: "hw.h",
+        span: TestSourceSpan.at(1),
+        visibility: "public",
+      } as const;
+      if (sourceLanguage === ESourceLanguage.C) {
+        symbolTable.addCSymbol(symbol);
+      } else {
+        symbolTable.addCppSymbol(symbol);
+      }
+    }
+    return symbolTable;
+  };
+  const qualified = (args: readonly string[]): string[] => {
+    const source = [
+      "register Blk {",
+      "    0x00 rw u32 LEN,",
+      "}",
+      "Blk B1(0x40000000);",
+      "struct Cfg { u32 total; }",
+      "volatile mut Cfg cfg;",
+      "volatile mut u32 flag <- 0;",
+      "atomic u32 count <- 0;",
+      "mut u32 plain <- 0;",
+      "scope S {",
+      "    public atomic u32 shared <- 0;",
+      "}",
+      "void bump(mut u32 n) {",
+      "    n +<- 1;",
+      "}",
+      "void f() {",
+      "    volatile mut u32 local <- 0;",
+      ...args.map((arg) => `    bump(${arg});`),
+      "}",
+    ].join("\n");
+    const { syntax, context } = testAnalysisContextFor(source, {
+      symbolTable: header(),
+      cppMode: false,
+    });
+    return new ConstAssignmentAnalyzer(context)
+      .analyze(syntax)
+      .filter((e) => e.code === "E0915")
+      .map(
+        (e) =>
+          `${e.message.split("'")[1]}: ${e.message.split(": it is ")[1]?.split(",")[0]}`,
+      );
+  };
+
+  it("rejects an atomic, volatile, register-member or volatile header argument, by what it is", () => {
+    expect(
+      qualified([
+        "flag",
+        "(flag)",
+        "local",
+        "count",
+        "S.shared",
+        "cfg.total",
+        "(cfg).total",
+        "B1.LEN",
+        "hwFlag",
+        "cppFlag",
+      ]),
+    ).toEqual([
+      "flag: volatile",
+      "(flag): volatile",
+      "local: volatile",
+      "count: atomic",
+      "S.shared: atomic",
+      "cfg.total: volatile",
+      "(cfg).total: volatile",
+      "B1.LEN: a register member",
+      "hwFlag: volatile",
+      "cppFlag: volatile",
+    ]);
+  });
+
+  it("accepts a plain mut variable and a plain header variable", () => {
+    expect(qualified(["plain", "hwPlain"])).toEqual([]);
+  });
+
+  it("tells the caller to copy into a mut local and assign it back", () => {
+    const { syntax, context } = testAnalysisContextFor(
+      "volatile mut u32 flag <- 0;\nvoid bump(mut u32 n) {\n    n +<- 1;\n}\nvoid f() {\n    bump(flag);\n}",
+      { cppMode: false },
+    );
+    const [found] = new ConstAssignmentAnalyzer(context).analyze(syntax);
+    expect(found.code).toBe("E0915");
+    expect(found.helpText).toBe(
+      "Copy it into a `mut` local, pass that, then assign the local back to 'flag' (ADR-071, #2238).",
+    );
+  });
+});
