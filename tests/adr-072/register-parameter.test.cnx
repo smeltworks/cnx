@@ -1,0 +1,70 @@
+// test-execution
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072: a register parameter is bound to an instance at each call. The
+// function reaches the members of whichever instance it is called with,
+// grouped members included, and passes its parameter on to another.
+
+register GpioPort {
+    0x00 rw u32 DR,
+    0x18 w1c u32 ISR,
+}
+
+register Uart {
+    0x00 {
+        ro u8 RBR,
+        wo u8 THR,
+    },
+    0x05 ro u8 LSR,
+}
+
+GpioPort GPIO1(0x401B8000);
+GpioPort GPIO2(0x401BC000);
+Uart UART0(0x40001000);
+
+void setPin(GpioPort port, u8 pin) {
+    port.DR[pin] <- true;
+}
+
+void setAndClear(GpioPort port, u8 pin) {
+    setPin(port, pin);
+    port.ISR <- 1;
+}
+
+void send(Uart u, u8 b) {
+    u.THR <- b;
+}
+
+u8 status(Uart u) {
+    return u.LSR;
+}
+
+scope Board {
+    public register Port {
+        0x00 rw u32 DR,
+    }
+
+    public Port P1(0x40000000);
+
+    public void bare(Port p) {
+        p.DR <- 1;
+    }
+
+    public void viaThis(this.Port p) {
+        p.DR <- 2;
+    }
+}
+
+void qualified(Board.Port p) {
+    p.DR <- 3;
+}
+
+void main() {
+    setPin(GPIO1, 13);
+    setAndClear(GPIO2, 0);
+    send(UART0, 65);
+    u8 s <- status(UART0);
+    Board.bare(Board.P1);
+    Board.viaThis(Board.P1);
+    qualified(Board.P1);
+}

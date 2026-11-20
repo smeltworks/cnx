@@ -1,0 +1,2 @@
+22:4 error[E0941]: 'setHigh' takes register parameter 'port', so it cannot be used as a callback type
+26:19 error[E0941]: 'setHigh' takes register parameter 'port', so it cannot be used as a callback type

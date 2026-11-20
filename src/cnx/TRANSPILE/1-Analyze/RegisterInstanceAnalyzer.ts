@@ -3,8 +3,6 @@
  *
  * - E0931: an instance's address is not a compile-time constant
  * - E0932: a register member's offset is not a compile-time constant
- * - E0933: a function parameter is a register (ADR-072 specializes it per
- *   instance; until that lands it is rejected, not passed as a pointer)
  * - E0934: a register instance is declared inside a function
  * - E0938: two register members overlap outside an offset group
  * - E0939: a register member's offset is not a multiple of its size
@@ -36,17 +34,6 @@ class RegisterInstanceAnalyzer {
         scope,
       );
       if (declaration.kind === "function") {
-        for (const parameter of declaration.parameters ?? []) {
-          if (!this.isRegisterType(parameter.type, scopePath)) continue;
-          found.push({
-            aboutItsPosition: true,
-            code: "E0933",
-            span: parameter.span,
-            message: `parameter '${parameter.name}' is a register; register parameters are not supported yet (ADR-072)`,
-            helpText:
-              "Access the register instance directly (`GPIO1.DR`). ADR-072 resolves a register parameter per instance at compile time; until that is implemented it is rejected rather than passed as a runtime pointer.",
-          });
-        }
         for (const statement of StatementNodes.in(declaration)) {
           if (statement.kind !== "constructorDeclaration") continue;
           if (!this.isRegisterType(statement.type, scopePath)) {

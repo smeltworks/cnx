@@ -1,0 +1,30 @@
+// test-error
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072, E0941: a function with a register parameter is never a callback
+// type (ADR-029). A callback is called through a value; a register
+// parameter is bound to an instance at each call.
+
+register GpioPort {
+    0x00 rw u32 DR,
+}
+
+GpioPort GPIO1(0x401B8000);
+
+void setHigh(GpioPort port) {
+    port.DR <- 0xFFFFFFFF;
+}
+
+// Negative control: a function without one is a callback type
+void tick(u32 n) {}
+
+struct Handlers {
+    setHigh onHigh;
+    tick onTick;
+}
+
+void takesCallback(setHigh cb) {}
+
+void main() {
+    setHigh(GPIO1);
+}

@@ -2031,7 +2031,10 @@ class CodeGenWalker {
       case "register":
         // ADR-072: a register TYPE has no address, so no macros; each
         // instance emits its own. A type a parameter takes is its layout.
-        return this.generateRegisterLayout(declaration.name);
+        return this.generateRegisterLayout(
+          this.host.state.currentScopePath,
+          declaration.name,
+        );
       // Issue #369 / #1164: the struct generator decides for itself what a
       // self-include suppresses. Returning early here also skipped its
       // callback-field effects and dropped the ADR-029 init function, which
@@ -2233,7 +2236,12 @@ class CodeGenWalker {
         };
       }
       case "register":
-        return { kind: "other", adrLine };
+        return {
+          kind: "registerLayout",
+          adrLine,
+          render: () =>
+            this.generateRegisterLayout(declaringScopePath, declaration.name),
+        };
       default:
         return { kind: "other", adrLine };
     }
@@ -2389,9 +2397,9 @@ class CodeGenWalker {
   }
 
   /** ADR-072: a register type a parameter takes, as the struct it points to */
-  private generateRegisterLayout(name: string): string {
+  private generateRegisterLayout(scopePath: string, name: string): string {
     const state = this.host.state;
-    const type = state.program?.memberOf(state.currentScopePath, name);
+    const type = state.program?.memberOf(scopePath, name);
     if (
       !RegisterInstance.isType(type) ||
       !RegisterInstance.isParameterType(state.program, type.fullyQualifiedCName)

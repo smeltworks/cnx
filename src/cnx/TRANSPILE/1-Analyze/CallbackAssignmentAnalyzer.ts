@@ -42,6 +42,8 @@
  * dimension (`u8[4][8]` in a `u8[4][4]` slot) is E0879 for both (#1619).
  */
 
+import type IRegisterSymbol from "../../types/symbols/IRegisterSymbol";
+import RegisterInstance from "../../utils/RegisterInstance";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import ProgramAccesses from "../../utils/ProgramAccesses";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
@@ -125,6 +127,14 @@ class CallbackAssignmentCheck {
     call.arguments.forEach((arg, index) => {
       const param = callee.parameters[index];
       if (param === undefined) return;
+      const layout = RegisterInstance.typeNamedBy(
+        this.context.program,
+        param.type,
+      );
+      if (layout !== null) {
+        this.checkRegisterArgument(arg, param.name, callee, layout);
+        return;
+      }
       this.check(TypeResolver.getTypeName(param.type), arg, {
         verb: "pass",
         description: `parameter '${param.name}' of function '${callee.name}'`,
@@ -133,6 +143,49 @@ class CallbackAssignmentCheck {
   }
 
   /** `this.` and `global.` name where the target is, not a field of it */
+  /**
+   * E0940 (ADR-072): a register parameter's slot takes an instance of its
+   * register type, or a register parameter of that type passed on
+   */
+  private checkRegisterArgument(
+    arg: TExpression,
+    paramName: string,
+    callee: IFunctionSymbol,
+    layout: IRegisterSymbol,
+  ): void {
+    const passed = this.registerTypeOf(arg);
+    if (passed === layout.fullyQualifiedCName) return;
+    const what =
+      passed === null
+        ? "is not a register instance"
+        : `is a register of type '${passed}'`;
+    this.found.push({
+      code: "E0940",
+      span: arg.span,
+      message: `'${arg.written}' ${what}; parameter '${paramName}' of function '${callee.name}' takes a '${layout.name}'`,
+      helpText: `Pass an instance of '${layout.name}' declared at file or scope level (\`${layout.name} NAME(address);\`), or a '${layout.name}' parameter (ADR-072).`,
+      declaredAt: BindingSite.ofSymbol(callee),
+    });
+  }
+
+  /** The register type an argument names whole: an instance's, or a register parameter's */
+  private registerTypeOf(arg: TExpression): string | null {
+    const instance = OperandTyper.registerInstanceOf(arg, this.context);
+    if (instance !== null) {
+      const symbol = this.context.program?.symbolByCName(instance);
+      return RegisterInstance.isInstance(symbol) ? symbol.registerType : null;
+    }
+    if (arg.kind === "postfix" && arg.ops.length > 0) return null;
+    const root = OperandTyper.rootOfTarget(arg, this.context);
+    if (root?.kind !== "local" || root.declaration.kind !== "parameter") {
+      return null;
+    }
+    return (
+      RegisterInstance.typeNamedBy(this.context.program, root.declaration.type)
+        ?.fullyQualifiedCName ?? null
+    );
+  }
+
   private static describeTarget(target: TExpression): string {
     let ops: readonly TPostfixOpSyntax[] = [];
     if (target.kind === "postfix") {

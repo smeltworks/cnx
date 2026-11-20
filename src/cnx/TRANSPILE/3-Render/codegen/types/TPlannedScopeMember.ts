@@ -46,6 +46,8 @@ type TPlannedScopeMember = {
       readonly renderParameterList: () => string;
     }
   | { readonly kind: "register"; readonly planRegister: () => IPlannedRegister }
+  /** ADR-072: a register type, written as its layout when a parameter takes it */
+  | { readonly kind: "registerLayout"; readonly render: () => string }
   /** A member this generator emits nothing for -- a type declaration, say. */
   | { readonly kind: "other" }
 );
