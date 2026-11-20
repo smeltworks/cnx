@@ -99,6 +99,12 @@ interface IOperandType {
   readonly overflow: TOverflowBehavior | null;
   /** Evaluating it calls a function, or reads a volatile or atomic declaration */
   readonly hasSideEffect: boolean;
+  /**
+   * Reading or writing it is a `volatile` access: a declaration's, a
+   * typedef's, a field's or its array's (#2238). Unlike `hasSideEffect`, an
+   * index's or a call's side effect does not set it
+   */
+  readonly volatileAccess: boolean;
   readonly form: TOperandForm;
   /** For a name-rooted operand, what the root name binds to */
   readonly binding: TValueBinding | null;

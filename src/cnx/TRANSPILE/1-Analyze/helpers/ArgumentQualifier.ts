@@ -1,0 +1,56 @@
+/**
+ * What an argument declares that its address loses when it reaches a plain
+ * pointer -- `atomic`, `volatile`, or a register member's volatile access.
+ * The one decision for a scanf-family conversion (#2398), a `mut` parameter
+ * and a safe-division output (#2238).
+ */
+import OperandTyper from "../../../utils/OperandTyper";
+import ExpressionShape from "../../../utils/ExpressionShape";
+import BoundDeclaration from "./BoundDeclaration";
+import WrittenBinding from "./WrittenBinding";
+import type TExpression from "../../../types/syntax/TExpression";
+import type IAnalysisContext from "../types/IAnalysisContext";
+
+class ArgumentQualifier {
+  /** The qualifier the address would drop, or null */
+  static of(
+    arg: TExpression,
+    context: IAnalysisContext,
+  ): {
+    readonly is: string;
+    readonly write: string;
+    readonly access?: string;
+  } | null {
+    const chain = OperandTyper.chainOf(
+      ExpressionShape.unparenthesized(arg),
+      context,
+    );
+    const member = chain.steps.find((step) => step.registerMember !== null);
+    if (member?.registerMember != null) {
+      return {
+        is: "a register member",
+        write: "volatile",
+        access: context.symbols.registerMemberAccess.get(member.registerMember),
+      };
+    }
+    // the written binding, not the chain root: `S.shared`, `(cfg).total`
+    const binding = WrittenBinding.ofExpression(arg, context)?.binding ?? null;
+    // a header value: the typer's `volatile`, through typedefs, fields and
+    // arrays, as E0890 reads it -- not an index's or a call's side effect
+    if (binding?.kind === "foreign") {
+      return OperandTyper.typeOf(arg, context)?.volatileAccess === true
+        ? { is: "volatile", write: "volatile" }
+        : null;
+    }
+    const declaration = BoundDeclaration.of(binding);
+    if (declaration?.isAtomic === true) {
+      return { is: "atomic", write: "atomic" };
+    }
+    if (declaration?.isVolatile === true) {
+      return { is: "volatile", write: "volatile" };
+    }
+    return null;
+  }
+}
+
+export default ArgumentQualifier;

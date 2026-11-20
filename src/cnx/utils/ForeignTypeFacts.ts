@@ -224,6 +224,7 @@ class ForeignTypeFacts {
       // #1760 review: a volatile header value's read has a side effect, so a
       // saturating cast of it reads it once, through its helper
       hasSideEffect: walked?.volatile ?? false,
+      volatileAccess: walked?.volatile ?? false,
       form: { kind: "foreign", indeterminate: false },
       binding: null,
     };
@@ -520,7 +521,9 @@ class ForeignTypeFacts {
         form: { kind: "foreign", indeterminate: true },
       };
     }
-    return first ? { ...first, hasSideEffect: true } : null;
+    return first
+      ? { ...first, hasSideEffect: true, volatileAccess: false }
+      : null;
   }
 
   private static readonly UNTYPED: IOperandType = {
@@ -535,6 +538,7 @@ class ForeignTypeFacts {
     callbackTypeName: null,
     overflow: null,
     hasSideEffect: false,
+    volatileAccess: false,
     form: { kind: "foreign", indeterminate: false },
     binding: null,
   };

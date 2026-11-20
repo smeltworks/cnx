@@ -26,13 +26,13 @@
  */
 
 import OperandTyper from "../../utils/OperandTyper";
-import ExpressionShape from "../../utils/ExpressionShape";
 import CCallee from "./helpers/CCallee";
 import CArgumentWrite from "./helpers/CArgumentWrite";
 import WrittenBinding from "./helpers/WrittenBinding";
 import BoundDeclaration from "./helpers/BoundDeclaration";
 import BindingSite from "../../utils/BindingSite";
 import MutArgument from "./helpers/MutArgument";
+import ArgumentQualifier from "./helpers/ArgumentQualifier";
 import CPointerParameter from "../../utils/CPointerParameter";
 import ScanfFormat from "../../utils/ScanfFormat";
 import DeclarationParts from "../../utils/DeclarationParts";
@@ -135,7 +135,9 @@ class CPointerArgumentCheck {
     for (const index of writes.written) {
       const arg = callee.arguments[index];
       const qualifier =
-        arg === undefined || lost.has(index) ? null : this.qualifierOf(arg);
+        arg === undefined || lost.has(index)
+          ? null
+          : ArgumentQualifier.of(arg, this.context);
       if (qualifier === null) continue;
       this.found.push({
         code: "E0915",
@@ -149,30 +151,6 @@ class CPointerArgumentCheck {
       lost.add(index);
     }
     return lost;
-  }
-
-  /**
-   * #2398: what a conversion's argument declares that its address loses in
-   * `...` -- `atomic`, `volatile`, or a register member's volatile access --
-   * or null
-   */
-  private qualifierOf(
-    arg: TExpression,
-  ): { readonly is: string; readonly write: string } | null {
-    const chain = OperandTyper.chainOf(
-      ExpressionShape.unparenthesized(arg),
-      this.context,
-    );
-    if (chain.steps.some((step) => step.registerMember !== null)) {
-      return { is: "a register member", write: "volatile" };
-    }
-    const declaration = BoundDeclaration.of(chain.root);
-    if (declaration?.isAtomic === true)
-      return { is: "atomic", write: "atomic" };
-    if (declaration?.isVolatile === true) {
-      return { is: "volatile", write: "volatile" };
-    }
-    return null;
   }
 
   /**
