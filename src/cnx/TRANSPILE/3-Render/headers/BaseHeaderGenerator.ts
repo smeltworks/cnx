@@ -207,7 +207,9 @@ abstract class BaseHeaderGenerator {
       HeaderGeneratorUtils.filterCCompatibleTypes(
         externalTypes,
         typesWithHeaders,
-      ).filter((typeName) => !typeInput?.callbackTypes?.has(typeName));
+      )
+        .filter((typeName) => !typeInput?.callbackTypes?.has(typeName))
+        .filter((typeName) => !options.registerTypes?.has(typeName));
 
     // Filter to C-compatible variables
     const cCompatibleVariables =

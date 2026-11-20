@@ -62,6 +62,12 @@ interface IHeaderOptions {
   readonly registerBlocks?: readonly string[];
 
   /**
+   * ADR-072: every register type this header can name. One is never a
+   * forward-declared external struct: its layout is in its own file's header.
+   */
+  readonly registerTypes?: ReadonlySet<string>;
+
+  /**
    * Issue #1517: the system headers this header emits, decided by 2.2 Plan.
    *
    * Not a flag the renderer interprets -- the strings it prints. It used to

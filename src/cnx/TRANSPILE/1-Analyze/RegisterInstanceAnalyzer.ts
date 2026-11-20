@@ -20,7 +20,7 @@ import RegisterAddress from "../../utils/RegisterAddress";
 import RegisterInstance from "../../utils/RegisterInstance";
 import UndeclaredValueAnalyzer from "./UndeclaredValueAnalyzer";
 import TYPE_FORMING_KINDS from "../../PARSE/3-Declare/TYPE_FORMING_KINDS";
-import TYPE_WIDTH from "../../types/TYPE_WIDTH";
+import RegisterLayout from "../../utils/RegisterLayout";
 import type IRegisterSymbol from "../../types/symbols/IRegisterSymbol";
 import type IRegisterMemberSymbol from "../../types/symbols/IRegisterMemberSymbol";
 import StatementNodes from "../../utils/StatementNodes";
@@ -166,7 +166,7 @@ class RegisterInstanceAnalyzer {
           prior.start < end &&
           start < prior.end,
       );
-      const declared = `${member.access} ${this.typeNameOf(member)} ${syntax.name}`;
+      const declared = `${member.access} ${RegisterLayout.typeNameOf(member)} ${syntax.name}`;
       if (other !== undefined) {
         found.push(this.overlap(syntax, start, declared, other));
       }
@@ -219,7 +219,7 @@ class RegisterInstanceAnalyzer {
   ): IBaseAnalysisError | null {
     // a size that is not a power of two (a bitmap24) has no natural alignment
     if ((bytes & (bytes - 1n)) !== 0n || start % bytes === 0n) return null;
-    const type = this.typeNameOf(member);
+    const type = RegisterLayout.typeNameOf(member);
     const next = RegisterAddress.hex(start + bytes - (start % bytes));
     return {
       aboutItsPosition: true,
@@ -303,21 +303,11 @@ class RegisterInstanceAnalyzer {
     member: IRegisterMemberSymbol,
     pointerBits: number | null,
   ): bigint | null {
-    const name = this.typeNameOf(member);
-    // an ISR slot is a function pointer, as wide as the target's pointers
-    const bits =
-      name === "ISR"
-        ? pointerBits
-        : (TYPE_WIDTH[name] ??
-          this.context.symbols.bitmapBitWidth.get(name) ??
-          8);
-    return bits === null ? null : BigInt(Math.ceil(bits / 8));
-  }
-
-  private typeNameOf(member: IRegisterMemberSymbol): string {
-    const type = member.type;
-    if (type.kind === "primitive") return type.primitive;
-    return "name" in type ? String(type.name) : "";
+    return RegisterLayout.bytesOf(
+      member,
+      pointerBits,
+      this.context.symbols.bitmapBitWidth,
+    );
   }
 
   /** `Type name(expr);` whose type is not a register: a C++ constructor (#375) */

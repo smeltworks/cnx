@@ -31,6 +31,27 @@ class RegisterInstance {
     return RegisterInstance.isType(symbol) ? symbol : null;
   }
 
+  /** ADR-072: whether any function of the program takes the register type */
+  static isParameterType(
+    program: IProgram | null | undefined,
+    cName: string,
+  ): boolean {
+    if (!program) return false;
+    return program
+      .sourceFiles()
+      .some((file) =>
+        program
+          .symbolsInFile(file)
+          .some(
+            (symbol) =>
+              symbol.kind === "function" &&
+              symbol.parameters.some(
+                (p) => TypeResolver.getTypeName(p.type) === cName,
+              ),
+          ),
+      );
+  }
+
   static atPath(
     program: IProgram | null | undefined,
     scopePath: string,
