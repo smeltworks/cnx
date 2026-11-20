@@ -213,7 +213,7 @@ class RegisterInstanceAnalyzer {
     start: bigint,
     bytes: bigint,
   ): IBaseAnalysisError | null {
-    // a size that is not a power of two (a bitmap24) has no natural alignment
+    // a size that is not a power of two has no natural alignment
     if ((bytes & (bytes - 1n)) !== 0n || start % bytes === 0n) return null;
     const type = RegisterLayout.typeNameOf(member);
     const next = RegisterAddress.hex(start + bytes - (start % bytes));
