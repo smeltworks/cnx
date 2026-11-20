@@ -35,6 +35,12 @@ interface IRegisterMemberSymbol extends IBaseSymbol {
 
   /** Access mode for the register */
   readonly access: TRegisterAccessMode;
+
+  /**
+   * ADR-072: the offset group it shares with the other members the hardware
+   * reaches through one address, or null when it stands alone
+   */
+  readonly group: number | null;
 }
 
 export default IRegisterMemberSymbol;

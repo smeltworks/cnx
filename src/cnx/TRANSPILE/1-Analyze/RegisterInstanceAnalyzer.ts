@@ -6,6 +6,8 @@
  * - E0933: a function parameter is a register (ADR-072 specializes it per
  *   instance; until that lands it is rejected, not passed as a pointer)
  * - E0934: a register instance is declared inside a function
+ * - E0938: two register members overlap outside an offset group
+ * - E0939: a register member's offset is not a multiple of its size
  *
  * 1.4 Resolve folded every address and offset once; this reads the result.
  */
@@ -119,8 +121,113 @@ class RegisterInstanceAnalyzer {
             "A register member's offset is resolved at compile time (ADR-072). Use a literal, a const, or arithmetic over them.",
         });
       }
+      found.push(...this.layoutOf(declaration, symbol));
     }
     return found.sort(SourceOrder.bySpan);
+  }
+
+  /**
+   * E0938/E0939: a register's members match the hardware's map, so a member
+   * is aligned to its size and overlaps another only inside an offset group
+   */
+  private layoutOf(
+    declaration: {
+      readonly members: ReadonlyArray<{
+        readonly name: string;
+        readonly group: number | null;
+        readonly span: IBaseAnalysisError["span"];
+      }>;
+    },
+    register: IRegisterSymbol,
+  ): IBaseAnalysisError[] {
+    const target = this.context.program.target();
+    const pointerBits =
+      target.kind === "resolved" ? target.description.pointer_bits : null;
+    const found: IBaseAnalysisError[] = [];
+    const placed: Array<{
+      readonly name: string;
+      readonly group: number | null;
+      readonly start: bigint;
+      readonly end: bigint;
+      readonly declared: string;
+    }> = [];
+    for (const syntax of declaration.members) {
+      const member = register.members.get(syntax.name);
+      const start = member?.offsetValue ?? null;
+      if (member === undefined || start === null || start < 0n) continue;
+      const bytes = this.bytesOf(member, pointerBits);
+      if (bytes === null) continue;
+      const end = start + bytes;
+      const misaligned = this.misaligned(syntax, member, start, bytes);
+      if (misaligned !== null) found.push(misaligned);
+      const other = placed.find(
+        (prior) =>
+          (syntax.group === null || prior.group !== syntax.group) &&
+          prior.start < end &&
+          start < prior.end,
+      );
+      const declared = `${member.access} ${this.typeNameOf(member)} ${syntax.name}`;
+      if (other !== undefined) {
+        found.push(this.overlap(syntax, start, declared, other));
+      }
+      placed.push({
+        name: syntax.name,
+        group: syntax.group,
+        start,
+        end,
+        declared,
+      });
+    }
+    return found;
+  }
+
+  private overlap(
+    member: {
+      readonly name: string;
+      readonly span: IBaseAnalysisError["span"];
+    },
+    start: bigint,
+    declared: string,
+    other: {
+      readonly name: string;
+      readonly start: bigint;
+      readonly declared: string;
+    },
+  ): IBaseAnalysisError {
+    const offset = RegisterAddress.hex(start);
+    return {
+      aboutItsPosition: true,
+      code: "E0938",
+      span: member.span,
+      message: `register member '${member.name}' at ${offset} overlaps '${other.name}' at ${RegisterAddress.hex(other.start)}`,
+      helpText:
+        other.start === start
+          ? `Members the hardware reaches through one offset are written as one group (ADR-072): \`${offset} { ${other.declared}, ${declared}, }\`. Otherwise check the offsets against the datasheet.`
+          : "Every member of a group starts at the group's offset, and no other members overlap (ADR-072). Check the offsets against the datasheet.",
+    };
+  }
+
+  /** E0939: on Cortex-M an unaligned access to device memory faults */
+  private misaligned(
+    syntax: {
+      readonly name: string;
+      readonly span: IBaseAnalysisError["span"];
+    },
+    member: IRegisterMemberSymbol,
+    start: bigint,
+    bytes: bigint,
+  ): IBaseAnalysisError | null {
+    // a size that is not a power of two (a bitmap24) has no natural alignment
+    if ((bytes & (bytes - 1n)) !== 0n || start % bytes === 0n) return null;
+    const type = this.typeNameOf(member);
+    const next = RegisterAddress.hex(start + bytes - (start % bytes));
+    return {
+      aboutItsPosition: true,
+      code: "E0939",
+      span: syntax.span,
+      message: `register member '${syntax.name}' is a ${type} at ${RegisterAddress.hex(start)}, which is not a multiple of ${bytes}`,
+      helpText: `A register member is aligned to its size (ADR-072); an unaligned access to device memory faults. Move it to ${next} if the datasheet says so, or declare the narrower parts the hardware reaches.`,
+    };
   }
 
   /**
@@ -144,7 +251,7 @@ class RegisterInstanceAnalyzer {
       const last =
         instance.baseAddress +
         member.offsetValue +
-        this.bytesOf(member, bits) -
+        this.bytesOf(member, bits)! -
         1n;
       if (last < limit) continue;
       found.push({
@@ -191,14 +298,12 @@ class RegisterInstanceAnalyzer {
     };
   }
 
-  private bytesOf(member: IRegisterMemberSymbol, pointerBits: number): bigint {
-    const type = member.type;
-    const name =
-      type.kind === "primitive"
-        ? type.primitive
-        : "name" in type
-          ? String(type.name)
-          : "";
+  /** Null for an ISR slot when the target, and so its pointer width, is unknown */
+  private bytesOf(
+    member: IRegisterMemberSymbol,
+    pointerBits: number | null,
+  ): bigint | null {
+    const name = this.typeNameOf(member);
     // an ISR slot is a function pointer, as wide as the target's pointers
     const bits =
       name === "ISR"
@@ -206,7 +311,13 @@ class RegisterInstanceAnalyzer {
         : (TYPE_WIDTH[name] ??
           this.context.symbols.bitmapBitWidth.get(name) ??
           8);
-    return BigInt(Math.ceil(bits / 8));
+    return bits === null ? null : BigInt(Math.ceil(bits / 8));
+  }
+
+  private typeNameOf(member: IRegisterMemberSymbol): string {
+    const type = member.type;
+    if (type.kind === "primitive") return type.primitive;
+    return "name" in type ? String(type.name) : "";
   }
 
   /** `Type name(expr);` whose type is not a register: a C++ constructor (#375) */

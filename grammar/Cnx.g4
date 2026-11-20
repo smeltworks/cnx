@@ -99,12 +99,27 @@ visibilityModifier
 // Registers (ADR-072 Part 1: a register is a type; instances supply the address)
 // ----------------------------------------------------------------------------
 registerDeclaration
-    : 'register' IDENTIFIER '{' registerMember (',' registerMember)* ','? '}'
+    : 'register' IDENTIFIER '{' registerEntry (',' registerEntry)* ','? '}'
+    ;
+
+registerEntry
+    : registerMember
+    | registerGroup
     ;
 
 // byteOffset access type name -- the offset is a compile-time constant expression
 registerMember
     : expression accessModifier type memberName
+    ;
+
+// ADR-072: the members the hardware reaches through one offset, e.g. a UART's
+// RBR/THR; any other overlap is an error
+registerGroup
+    : expression '{' registerGroupMember (',' registerGroupMember)* ','? '}'
+    ;
+
+registerGroupMember
+    : accessModifier type memberName
     ;
 
 // ADR-072 ruling 2 (#2449): any reserved word may name a member. A member is only

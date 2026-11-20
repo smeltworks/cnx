@@ -73,6 +73,7 @@ class RegisterCollector {
         offsetValue: null,
         type,
         access: accessMod,
+        group: member.group,
       };
 
       members.set(memberName, memberInfo);

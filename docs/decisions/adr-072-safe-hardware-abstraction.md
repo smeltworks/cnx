@@ -844,6 +844,8 @@ Part 1 (register types and fixed instances):
 | E0934 | A register instance is declared inside a function                                                                                           | `tests/adr-072/register-local-instance-error.test.cnx`                                                                                                  |
 | E0935 | `Type name(expr);` whose type is not a register type (a C++ constructor takes named constants, #375)                                        | `tests/adr-072/constructor-expression-not-register-error.test.cnx`                                                                                      |
 | E0936 | A register type anywhere but a one-address file- or scope-level instance (data registers are Part 4)                                        | `tests/adr-072/register-type-position-error.test.cnx`                                                                                                   |
+| E0938 | Two register members overlap outside an offset group (Layout Rules)                                                                         | `tests/adr-072/register-overlap-error.test.cnx`                                                                                                         |
+| E0939 | A register member's offset is not a multiple of its size (Layout Rules)                                                                     | `tests/adr-072/register-misaligned-error.test.cnx`                                                                                                      |
 
 <!-- MATRIX-SEVERITY code: E0931 -->
 
@@ -908,6 +910,70 @@ An instance is declared at file or scope level only (E0934), so the function row
 | for header         | exercised through chain | off      |
 
 A register type is declared at file or scope level only, so the function rows are off. The imported rows are off for the same reason as E0931. The two same-file rows are `warn`, not `error`: E0932 is reported on the member inside the register body, a position the matrix derives no context for, so `register-negative-offset-error` and `register-offset-not-constant-error` assert it without occupying a cell.
+
+<!-- MATRIX-SEVERITY code: E0938 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | warn     |
+| top-level function | same file               | off      |
+| scope member       | same file               | warn     |
+| scope method       | same file               | off      |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | off      |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | off      |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | off      |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | off      |
+| for header         | exercised through chain | off      |
+
+As for E0932: a register type is declared at file or scope level only, so the function and imported rows are off, and E0938 is reported on the member inside the register body, a position the matrix derives no context for, so `register-overlap-error` asserts it without occupying a cell.
+
+<!-- MATRIX-SEVERITY code: E0939 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | warn     |
+| top-level function | same file               | off      |
+| scope member       | same file               | warn     |
+| scope method       | same file               | off      |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | off      |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | off      |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | off      |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | off      |
+| for header         | exercised through chain | off      |
+
+As for E0932: a register type is declared at file or scope level only, so the function and imported rows are off, and E0939 is reported on the member inside the register body, a position the matrix derives no context for, so `register-misaligned-error` asserts it without occupying a cell.
 
 <!-- MATRIX-SEVERITY code: E0933 -->
 

@@ -15,6 +15,8 @@ interface IRegisterDeclarationSyntax extends ISyntaxNode {
       readonly type: TTypeSyntax;
       readonly access: TRegisterAccessMode;
       readonly offset: TExpression;
+      /** ADR-072: the entry index of the offset group it shares, or null */
+      readonly group: number | null;
     }
   >;
 }

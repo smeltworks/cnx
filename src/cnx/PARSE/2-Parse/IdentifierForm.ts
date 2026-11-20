@@ -149,6 +149,12 @@ class IdentifierSyntaxListener extends CnxListener {
     this.check(MemberName.terminal(ctx.memberName()));
   };
 
+  override enterRegisterGroupMember = (
+    ctx: Parser.RegisterGroupMemberContext,
+  ): void => {
+    this.check(MemberName.terminal(ctx.memberName()));
+  };
+
   override enterStructDeclaration = (
     ctx: Parser.StructDeclarationContext,
   ): void => {

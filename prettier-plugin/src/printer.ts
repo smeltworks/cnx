@@ -398,8 +398,29 @@ function printRegisterDeclaration(cursor: ChildCursor): Doc {
     " ",
     name,
     " ",
-    printCommaMemberBlock(cursor, CnxParser.RULE_registerMember),
+    printCommaMemberBlock(cursor, CnxParser.RULE_registerEntry),
   ];
+}
+
+function printRegisterEntry(cursor: ChildCursor): Doc {
+  return cursor.take();
+}
+
+/** ADR-072: `offset { access type name, ... }`, members sharing one offset */
+function printRegisterGroup(cursor: ChildCursor): Doc {
+  const offset = cursor.take();
+  return [
+    offset,
+    " ",
+    printCommaMemberBlock(cursor, CnxParser.RULE_registerGroupMember),
+  ];
+}
+
+function printRegisterGroupMember(cursor: ChildCursor): Doc {
+  const access = cursor.take();
+  const type = cursor.take();
+  const name = cursor.take();
+  return [access, " ", type, " ", name];
 }
 
 /** ADR-072: `offset access type name`; its comma belongs to the block */
@@ -865,6 +886,9 @@ const RULE_LAYOUTS: ReadonlyMap<number, (cursor: ChildCursor) => Doc> = new Map(
     [CnxParser.RULE_scopeMember, printScopeMember],
     [CnxParser.RULE_registerDeclaration, printRegisterDeclaration],
     [CnxParser.RULE_registerMember, printRegisterMember],
+    [CnxParser.RULE_registerEntry, printRegisterEntry],
+    [CnxParser.RULE_registerGroup, printRegisterGroup],
+    [CnxParser.RULE_registerGroupMember, printRegisterGroupMember],
     [CnxParser.RULE_structDeclaration, printStructDeclaration],
     [CnxParser.RULE_structMember, printStructMember],
     [CnxParser.RULE_enumDeclaration, printEnumDeclaration],

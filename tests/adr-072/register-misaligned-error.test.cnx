@@ -1,0 +1,38 @@
+// test-error
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072, E0939: a member's offset is a multiple of its size, since an
+// unaligned access to device memory faults on Cortex-M.
+
+register Odd {
+    0x00 rw u8 CTRL,
+    0x02 rw u32 DATA,
+    0x07 rw u16 HALF,
+    0x0C rw u64 WIDE,
+}
+
+register Grouped {
+    0x02 {
+        ro u16 STATUS,
+        wo u32 CMD,
+    },
+}
+
+scope Board {
+    register Latch {
+        0x01 rw u16 Q,
+    }
+}
+
+// negative control: each member on a multiple of its own size
+register Aligned {
+    0x00 rw u8 A,
+    0x01 rw u8 B,
+    0x02 rw u16 C,
+    0x04 rw u32 D,
+    0x08 rw u64 E,
+}
+
+Aligned AL(0x40002000);
+
+void main() {}

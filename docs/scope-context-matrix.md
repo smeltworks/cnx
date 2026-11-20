@@ -2037,11 +2037,14 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-6 linked fixtures with no derivable context:
+9 linked fixtures with no derivable context:
 
 - `adr-072/cross-file-register-instance.test.cnx`
 - `adr-072/register-isr-member.test.cnx`
+- `adr-072/register-misaligned-error.test.cnx`
+- `adr-072/register-offset-group.test.cnx`
 - `adr-072/register-offset-not-constant-error.test.cnx`
+- `adr-072/register-overlap-error.test.cnx`
 - `adr-072/register-types-and-instances.test.cnx`
 - `adr-072/register-vendor-type-name.test.cnx`
 - `adr-072/reserved-member-names.test.cnx`
@@ -2134,6 +2137,26 @@ cell is declared by the ADR that owns it.
 | top-level function | ok        | -      | -          | warn        | warn       |
 | scope member       | ok        | -      | -          | warn        | warn       |
 | scope method       | ok        | -      | -          | warn        | warn       |
+| for header         | -         | -      | -          | -           | -          |
+
+## ADR-072 E0938
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | warn      | -      | -          | warn        | warn       |
+| top-level function | -         | -      | -          | -           | -          |
+| scope member       | warn      | -      | -          | warn        | warn       |
+| scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
+
+## ADR-072 E0939
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | warn      | -      | -          | warn        | warn       |
+| top-level function | -         | -      | -          | -           | -          |
+| scope member       | warn      | -      | -          | warn        | warn       |
+| scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
 ## Positions

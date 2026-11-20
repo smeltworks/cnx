@@ -14,7 +14,10 @@ import { ScopeDeclarationContext } from "./CnxParser.js";
 import { ScopeMemberContext } from "./CnxParser.js";
 import { VisibilityModifierContext } from "./CnxParser.js";
 import { RegisterDeclarationContext } from "./CnxParser.js";
+import { RegisterEntryContext } from "./CnxParser.js";
 import { RegisterMemberContext } from "./CnxParser.js";
+import { RegisterGroupContext } from "./CnxParser.js";
+import { RegisterGroupMemberContext } from "./CnxParser.js";
 import { MemberNameContext } from "./CnxParser.js";
 import { AccessModifierContext } from "./CnxParser.js";
 import { StructDeclarationContext } from "./CnxParser.js";
@@ -212,6 +215,16 @@ export class CnxListener implements ParseTreeListener {
      */
     exitRegisterDeclaration?: (ctx: RegisterDeclarationContext) => void;
     /**
+     * Enter a parse tree produced by `CnxParser.registerEntry`.
+     * @param ctx the parse tree
+     */
+    enterRegisterEntry?: (ctx: RegisterEntryContext) => void;
+    /**
+     * Exit a parse tree produced by `CnxParser.registerEntry`.
+     * @param ctx the parse tree
+     */
+    exitRegisterEntry?: (ctx: RegisterEntryContext) => void;
+    /**
      * Enter a parse tree produced by `CnxParser.registerMember`.
      * @param ctx the parse tree
      */
@@ -221,6 +234,26 @@ export class CnxListener implements ParseTreeListener {
      * @param ctx the parse tree
      */
     exitRegisterMember?: (ctx: RegisterMemberContext) => void;
+    /**
+     * Enter a parse tree produced by `CnxParser.registerGroup`.
+     * @param ctx the parse tree
+     */
+    enterRegisterGroup?: (ctx: RegisterGroupContext) => void;
+    /**
+     * Exit a parse tree produced by `CnxParser.registerGroup`.
+     * @param ctx the parse tree
+     */
+    exitRegisterGroup?: (ctx: RegisterGroupContext) => void;
+    /**
+     * Enter a parse tree produced by `CnxParser.registerGroupMember`.
+     * @param ctx the parse tree
+     */
+    enterRegisterGroupMember?: (ctx: RegisterGroupMemberContext) => void;
+    /**
+     * Exit a parse tree produced by `CnxParser.registerGroupMember`.
+     * @param ctx the parse tree
+     */
+    exitRegisterGroupMember?: (ctx: RegisterGroupMemberContext) => void;
     /**
      * Enter a parse tree produced by `CnxParser.memberName`.
      * @param ctx the parse tree
