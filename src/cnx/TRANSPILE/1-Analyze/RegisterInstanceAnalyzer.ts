@@ -12,6 +12,7 @@
  * E0933 is retired: a register parameter is supported now, bound to an
  * instance at each call (ADR-072).
  */
+import type ITargetWidths from "../../types/ITargetWidths";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TTypeSyntax from "../../types/syntax/TTypeSyntax";
 import type IBaseAnalysisError from "./types/IBaseAnalysisError";
@@ -299,10 +300,7 @@ class RegisterInstanceAnalyzer {
   /** Null where the target, and so a pointer's or an int's width, is unknown */
   private bytesOf(
     member: IRegisterMemberSymbol,
-    widths: {
-      readonly pointerBits: number | null;
-      readonly intBits: number | null;
-    },
+    widths: ITargetWidths,
   ): bigint | null {
     return RegisterLayout.bytesOf(
       member,

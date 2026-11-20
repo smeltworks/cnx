@@ -3,6 +3,7 @@
  * alignment and pointer-range rules and the layout 2.3 writes in C all read
  * this one answer.
  */
+import type ITargetWidths from "../types/ITargetWidths";
 import TYPE_WIDTH from "../types/TYPE_WIDTH";
 import RegisterAddress from "./RegisterAddress";
 import type IRegisterMemberSymbol from "../types/symbols/IRegisterMemberSymbol";
@@ -16,10 +17,7 @@ class RegisterLayout {
    */
   static bytesOf(
     member: IRegisterMemberSymbol,
-    widths: {
-      readonly pointerBits: number | null;
-      readonly intBits: number | null;
-    },
+    widths: ITargetWidths,
     bitmapBitWidth: ReadonlyMap<string, number>,
   ): bigint | null {
     const name = RegisterLayout.typeNameOf(member);
