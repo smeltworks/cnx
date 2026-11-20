@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1030 fixture(s) assert a diagnostic; 1016 carry a code.
+1034 fixture(s) assert a diagnostic; 1020 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -503,6 +503,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-072/register-offset-not-constant-error.test.cnx                                                 | E0932                             |
 | tests/adr-072/register-overlap-error.test.cnx                                                             | E0938                             |
 | tests/adr-072/register-parameter-error.test.cnx                                                           | E0940                             |
+| tests/adr-072/register-parameter-mut-argument-error.test.cnx                                              | E0915                             |
 | tests/adr-072/register-scoped-local-instance-error.test.cnx                                               | E0934                             |
 | tests/adr-072/register-type-as-value-error.test.cnx                                                       | E0897                             |
 | tests/adr-072/register-type-position-error.test.cnx                                                       | E0936                             |
@@ -948,6 +949,9 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-2196-macro-fill-all/fill-error.test.cnx                                                  | E0866                             |
 | tests/bugs/issue-2209-array-argument-element/element-error.test.cnx                                       | E0866                             |
 | tests/bugs/issue-2236-string-field-initializer/string-field-initializer-error.test.cnx                    | E0863, E0864                      |
+| tests/bugs/issue-2238-qualified-mut-argument/header-volatile-error.test.cnx                               | E0915                             |
+| tests/bugs/issue-2238-qualified-mut-argument/qualified-argument-error.test.cnx                            | E0915                             |
+| tests/bugs/issue-2238-qualified-mut-argument/safe-div-output-error.test.cnx                               | E0915                             |
 | tests/bugs/issue-2239-string-argument-build/string-argument-capacity-error.test.cnx                       | E0864                             |
 | tests/bugs/issue-2240-substring-constant-length/substring-runtime-length-error.test.cnx                   | E0922                             |
 | tests/bugs/issue-2251-bitmap-field-bit-index/field-bit-index-wo-zero-error.test.cnx                       | E0872                             |

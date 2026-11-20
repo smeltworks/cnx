@@ -1,0 +1,10 @@
+22:9 error[E0915]: cannot pass 'b.LEN' to `mut` parameter 'n' of function 'bump': it is a register member, and 'bump' would write it through a plain pointer, so the volatile access would be lost
+       help: Copy it into a `mut` local, pass that, then assign the local back to 'b.LEN' (ADR-071, #2238).
+23:9 error[E0915]: cannot pass '(b.LEN)' to `mut` parameter 'n' of function 'bump': it is a register member, and 'bump' would write it through a plain pointer, so the volatile access would be lost
+       help: Copy it into a `mut` local, pass that, then assign the local back to '(b.LEN)' (ADR-071, #2238).
+24:9 error[E0915]: cannot pass 'b.STATUS' to `mut` parameter 'n' of function 'bump': it is a register member, and 'bump' would write it through a plain pointer, so the volatile access would be lost
+       help: Copy it into a `mut` local and pass that; 'b.STATUS' is `ro`, so the local is not assigned back (ADR-071, #2238).
+28:9 error[E0915]: cannot pass 'b.LEN' to `mut` parameter 'n' of function 'bump': it is a register member, and 'bump' would write it through a plain pointer, so the volatile access would be lost
+       help: Copy it into a `mut` local, pass that, then assign the local back to 'b.LEN' (ADR-071, #2238).
+29:9 error[E0915]: cannot pass 'b.FLAGS' to `mut` parameter 'n' of function 'bump': it is a register member, and 'bump' would write it through a plain pointer, so the volatile access would be lost
+       help: Copy it into a `mut` local, pass that, then assign the local back to 'b.FLAGS'; 'b.FLAGS' is `w1c`, so that write clears every flag still set in the local (ADR-071, #2238).

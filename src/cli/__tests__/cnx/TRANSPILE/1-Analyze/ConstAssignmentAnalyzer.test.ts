@@ -465,3 +465,197 @@ describe("ConstAssignmentAnalyzer (E0915, ADR-006 #1203)", () => {
     expect(passed(["(readIt())"])).toEqual(["(readIt())"]);
   });
 });
+
+describe("ConstAssignmentAnalyzer (E0915, ADR-071 #2238)", () => {
+  const header = (): SymbolTable => {
+    const symbolTable = new SymbolTable();
+    const base = {
+      kind: "variable",
+      sourceFile: "hw.h",
+      span: TestSourceSpan.at(1),
+      visibility: "public",
+    } as const;
+    for (const [name, type] of [
+      ["hwFlag", "volatile uint32_t"],
+      ["hwPlain", "uint32_t"],
+    ] as const) {
+      symbolTable.addCSymbol({
+        ...base,
+        name,
+        type,
+        sourceLanguage: ESourceLanguage.C,
+      });
+    }
+    symbolTable.addCppSymbol({
+      ...base,
+      name: "cppFlag",
+      unqualifiedName: "cppFlag",
+      type: "volatile uint32_t",
+      sourceLanguage: ESourceLanguage.Cpp,
+    });
+    return symbolTable;
+  };
+  const qualified = (args: readonly string[]): string[] => {
+    const source = [
+      "register Blk {",
+      "    0x00 rw u32 LEN,",
+      "}",
+      "Blk B1(0x40000000);",
+      "struct Cfg { u32 total; }",
+      "volatile mut Cfg cfg;",
+      "volatile mut u32 flag <- 0;",
+      "atomic u32 count <- 0;",
+      "mut u32 plain <- 0;",
+      "scope S {",
+      "    public atomic u32 shared <- 0;",
+      "}",
+      "void bump(mut u32 n) {",
+      "    n +<- 1;",
+      "}",
+      "void f() {",
+      "    volatile mut u32 local <- 0;",
+      ...args.map((arg) => `    bump(${arg});`),
+      "}",
+    ].join("\n");
+    const { syntax, context } = testAnalysisContextFor(source, {
+      symbolTable: header(),
+      cppMode: false,
+    });
+    return new ConstAssignmentAnalyzer(context)
+      .analyze(syntax)
+      .filter((e) => e.code === "E0915")
+      .map(
+        (e) =>
+          `${e.message.split("'")[1]}: ${e.message.split(": it is ")[1]?.split(",")[0]}`,
+      );
+  };
+
+  it("rejects an atomic, volatile, register-member or volatile header argument, by what it is", () => {
+    expect(
+      qualified([
+        "flag",
+        "(flag)",
+        "local",
+        "count",
+        "S.shared",
+        "cfg.total",
+        "(cfg).total",
+        "B1.LEN",
+        "hwFlag",
+        "cppFlag",
+      ]),
+    ).toEqual([
+      "flag: volatile",
+      "(flag): volatile",
+      "local: volatile",
+      "count: atomic",
+      "S.shared: atomic",
+      "cfg.total: volatile",
+      "(cfg).total: volatile",
+      "B1.LEN: a register member",
+      "hwFlag: volatile",
+      "cppFlag: volatile",
+    ]);
+  });
+
+  it("accepts a plain mut variable and a plain header variable", () => {
+    expect(qualified(["plain", "hwPlain"])).toEqual([]);
+  });
+
+  it("tells the caller to copy into a mut local and assign it back", () => {
+    const { syntax, context } = testAnalysisContextFor(
+      "volatile mut u32 flag <- 0;\nvoid bump(mut u32 n) {\n    n +<- 1;\n}\nvoid f() {\n    bump(flag);\n}",
+      { cppMode: false },
+    );
+    const [found] = new ConstAssignmentAnalyzer(context).analyze(syntax);
+    expect(found.code).toBe("E0915");
+    expect(found.helpText).toBe(
+      "Copy it into a `mut` local, pass that, then assign the local back to 'flag' (ADR-071, #2238).",
+    );
+  });
+
+  const helpFor = (arg: string): string | undefined => {
+    const { syntax, context } = testAnalysisContextFor(
+      [
+        "register Blk {",
+        "    0x00 rw u32 LEN,",
+        "    0x04 ro u32 STATUS,",
+        "    0x08 w1c u32 FLAGS,",
+        "}",
+        "Blk B1(0x40000000);",
+        "void bump(mut u32 n) {",
+        "    n +<- 1;",
+        "}",
+        "void f() {",
+        `    bump(${arg});`,
+        "}",
+      ].join("\n"),
+      { cppMode: false },
+    );
+    return new ConstAssignmentAnalyzer(context)
+      .analyze(syntax)
+      .find((e) => e.code === "E0915")?.helpText;
+  };
+
+  it("keys the recipe to a register member's access mode", () => {
+    expect(helpFor("B1.LEN")).toBe(
+      "Copy it into a `mut` local, pass that, then assign the local back to 'B1.LEN' (ADR-071, #2238).",
+    );
+    expect(helpFor("B1.STATUS")).toBe(
+      "Copy it into a `mut` local and pass that; 'B1.STATUS' is `ro`, so the local is not assigned back (ADR-071, #2238).",
+    );
+    expect(helpFor("B1.FLAGS")).toBe(
+      "Copy it into a `mut` local, pass that, then assign the local back to 'B1.FLAGS'; 'B1.FLAGS' is `w1c`, so that write clears every flag still set in the local (ADR-071, #2238).",
+    );
+  });
+
+  it("reports a register parameter's member as E0915, not E0900, mut or not", () => {
+    const { syntax, context } = testAnalysisContextFor(
+      [
+        "register Blk {",
+        "    0x00 rw u32 LEN,",
+        "}",
+        "void bump(mut u32 n) {",
+        "    n +<- 1;",
+        "}",
+        "void viaReadOnly(Blk b) {",
+        "    bump(b.LEN);",
+        "}",
+        "void viaMut(mut Blk b) {",
+        "    bump(b.LEN);",
+        "}",
+      ].join("\n"),
+      { cppMode: false },
+    );
+    const codes = new ConstAssignmentAnalyzer(context)
+      .analyze(syntax)
+      .map((e) => e.code);
+    expect(codes).toEqual(["E0915", "E0915"]);
+  });
+
+  it("rejects an atomic or volatile safe-division output, and accepts a plain one", () => {
+    const { syntax, context } = testAnalysisContextFor(
+      [
+        "atomic u32 a <- 0;",
+        "volatile mut u32 v <- 0;",
+        "mut u32 p <- 0;",
+        "void f() {",
+        "    bool x <- safe_div(a, 10, 2, 0);",
+        "    bool y <- safe_mod(v, 10, 3, 0);",
+        "    bool z <- safe_div(p, 10, 2, 0);",
+        "}",
+      ].join("\n"),
+      { cppMode: false },
+    );
+    const found = new ConstAssignmentAnalyzer(context)
+      .analyze(syntax)
+      .filter((e) => e.code === "E0915");
+    expect(found.map((e) => e.message)).toEqual([
+      "cannot pass 'a' as safe_div's output: it is atomic, and safe_div writes it through a plain pointer, so the atomic access would be lost",
+      "cannot pass 'v' as safe_mod's output: it is volatile, and safe_mod writes it through a plain pointer, so the volatile access would be lost",
+    ]);
+    expect(found[0].helpText).toBe(
+      "Pass a `mut` local as the output, then assign it to 'a' (ADR-051, #2238).",
+    );
+  });
+});

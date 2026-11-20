@@ -1,0 +1,43 @@
+// test-error
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072, #2238: a register parameter's member is a register member, so
+// passing it to a `mut` parameter is E0915 whether or not the register
+// parameter is `mut`. Its writes are the member's access mode's to govern
+// (`port.DR <- 1` needs no `mut`), so E0900 never applies to it.
+
+register Blk {
+    0x00 rw u32 LEN,
+    0x04 ro u32 STATUS,
+    0x08 w1c u32 FLAGS,
+}
+
+Blk B1(0x40000000);
+
+void bump(mut u32 n) {
+    n <- n + 1;
+}
+
+void viaReadOnly(Blk b) {
+    bump(b.LEN);
+    bump((b.LEN));
+    bump(b.STATUS);
+}
+
+void viaMut(mut Blk b) {
+    bump(b.LEN);
+    bump(b.FLAGS);
+}
+
+// Negative control: a copy in a `mut` local is passed, then written back
+void viaLocal(Blk b) {
+    mut u32 len <- b.LEN;
+    bump(len);
+    b.LEN <- len;
+}
+
+void main() {
+    viaReadOnly(B1);
+    viaMut(B1);
+    viaLocal(B1);
+}

@@ -1,0 +1,4 @@
+13:23 error[E0915]: cannot pass 'viaAtomic' as safe_div's output: it is atomic, and safe_div writes it through a plain pointer, so the atomic access would be lost
+       help: Pass a `mut` local as the output, then assign it to 'viaAtomic' (ADR-051, #2238).
+14:23 error[E0915]: cannot pass 'viaVolatile' as safe_mod's output: it is volatile, and safe_mod writes it through a plain pointer, so the volatile access would be lost
+       help: Pass a `mut` local as the output, then assign it to 'viaVolatile' (ADR-051, #2238).
