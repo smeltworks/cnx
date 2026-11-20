@@ -142,7 +142,6 @@ class CallbackAssignmentCheck {
     });
   }
 
-  /** `this.` and `global.` name where the target is, not a field of it */
   /**
    * E0940 (ADR-072): a register parameter's slot takes an instance of its
    * register type, or a register parameter of that type passed on
@@ -168,6 +167,7 @@ class CallbackAssignmentCheck {
     });
   }
 
+  /** `this.` and `global.` name where the target is, not a field of it */
   private static describeTarget(target: TExpression): string {
     let ops: readonly TPostfixOpSyntax[] = [];
     if (target.kind === "postfix") {
