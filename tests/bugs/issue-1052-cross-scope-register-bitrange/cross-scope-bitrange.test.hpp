@@ -10,7 +10,7 @@
 extern "C" {
 #endif
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: Hw__GPIO @ 0x40020000U */
 #define Hw__GPIO__Mode (*(volatile uint32_t*)(0x40020000U))
 

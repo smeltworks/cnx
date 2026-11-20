@@ -20,7 +20,7 @@ extern "C" {
  */
 typedef uint8_t CtrlBits;
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: MOTOR @ 0x40000000U */
 #define MOTOR__CTRL (*(volatile CtrlBits*)(0x40000000U))
 #define MOTOR__FLAGS (*(volatile CtrlBits*)(0x40000004U))

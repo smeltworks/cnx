@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: Periph__CTRL @ 0x40004000U */
 #define Periph__CTRL__CR (*(volatile Ctl*)(0x40004000U))
 

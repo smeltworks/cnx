@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: PERIPH @ 0x40000000U */
 #define PERIPH__CTRL (*(volatile uint32_t*)(0x40000000U))
 #define PERIPH__SET (*(volatile uint32_t*)(0x40000004U))

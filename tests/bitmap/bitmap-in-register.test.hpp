@@ -22,7 +22,7 @@ extern "C" {
  */
 typedef uint8_t MotorControl;
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: MOTOR @ 0x40001000U */
 #define MOTOR__CTRL (*(volatile MotorControl*)(0x40001000U))
 #define MOTOR__STATUS (*(volatile uint8_t const *)(0x40001004U))

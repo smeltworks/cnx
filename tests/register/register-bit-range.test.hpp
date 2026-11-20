@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: TIMER @ 0x40010000U */
 #define TIMER__CTRL (*(volatile uint32_t*)(0x40010000U))
 #define TIMER__PRESCALE (*(volatile uint32_t*)(0x40010004U))

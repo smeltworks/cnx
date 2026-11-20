@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: EXPR @ 0x40000100U */
 #define EXPR__SET (*(volatile uint32_t*)(0x40000104U))
 

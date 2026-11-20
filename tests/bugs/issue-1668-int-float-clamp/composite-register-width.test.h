@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: STATUS @ 0x40000000U */
 #define STATUS__COUNT (*(volatile uint32_t const *)(0x40000000U))
 

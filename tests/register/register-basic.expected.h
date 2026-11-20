@@ -10,7 +10,7 @@
 extern "C" {
 #endif
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: GPIO @ 0x40000000U */
 #define GPIO__DR (*(volatile uint32_t*)(0x40000000U))
 #define GPIO__PSR (*(volatile uint32_t const *)(0x40000008U))

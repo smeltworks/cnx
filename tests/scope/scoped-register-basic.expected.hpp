@@ -10,7 +10,7 @@
 extern "C" {
 #endif
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: Teensy4__GPIO7 @ 0x42004000U */
 #define Teensy4__GPIO7__DR (*(volatile uint32_t*)(0x42004000U))
 #define Teensy4__GPIO7__DR_SET (*(volatile uint32_t*)(0x42004084U))

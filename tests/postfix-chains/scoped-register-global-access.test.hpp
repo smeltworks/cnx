@@ -23,7 +23,7 @@ extern "C" {
  */
 typedef uint8_t MotorFlags;
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: MotorController__MOTOR_REG @ 0x40002000U */
 #define MotorController__MOTOR_REG__CTRL (*(volatile MotorFlags*)(0x40002000U))
 #define MotorController__MOTOR_REG__SPEED (*(volatile uint32_t*)(0x40002004U))

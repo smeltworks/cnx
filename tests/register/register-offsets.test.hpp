@@ -10,7 +10,7 @@
 extern "C" {
 #endif
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: UART @ 0x40001000U */
 #define UART__CR (*(volatile uint32_t*)(0x40001000U))
 #define UART__SR (*(volatile uint32_t const *)(0x40001004U))

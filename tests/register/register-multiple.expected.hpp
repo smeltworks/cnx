@@ -10,7 +10,7 @@
 extern "C" {
 #endif
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: GPIOA @ 0x40020000U */
 #define GPIOA__DR (*(volatile uint32_t*)(0x40020000U))
 #define GPIOA__GDIR (*(volatile uint32_t*)(0x40020004U))

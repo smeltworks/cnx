@@ -23,7 +23,7 @@ extern "C" {
  */
 typedef uint8_t Pins;
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: GPIO @ 0x40000000U */
 #define GPIO__DATA (*(volatile Pins*)(0x40000000U))
 #define GPIO__SET (*(volatile Pins*)(0x40000004U))

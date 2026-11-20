@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: HW @ 0x40000000U */
 #define HW__CTRL (*(volatile uint32_t*)(0x40000000U))
 #define HW__STATUS (*(volatile uint32_t const *)(0x40000004U))

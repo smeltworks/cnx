@@ -28,7 +28,7 @@ typedef struct Vector {
     uint8_t wrap;
 } Vector;
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: GPIO1 @ 0x401B8000U */
 #define GPIO1__scope (*(volatile uint32_t*)(0x401B8000U))
 #define GPIO1__atomic (*(volatile uint32_t const *)(0x401B8004U))

@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: GPIO7 @ 0x42004000U */
 #define GPIO7__DR (*(volatile uint32_t*)(0x42004000U))
 #define GPIO7__DR_SET (*(volatile uint32_t*)(0x42004084U))

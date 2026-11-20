@@ -24,7 +24,7 @@ extern "C" {
  */
 typedef uint8_t Local;
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: LREG @ 0x40001000U */
 #define LREG__RW (*(volatile Ctl*)(0x40001000U))
 

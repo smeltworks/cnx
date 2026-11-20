@@ -13,7 +13,7 @@ extern "C" {
 /* ADR-040: ISR function pointer type */
 typedef void (*ISR)(void);
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: VTOR @ 0x20000000U */
 #define VTOR__reset (*(volatile ISR*)(0x20000000U))
 

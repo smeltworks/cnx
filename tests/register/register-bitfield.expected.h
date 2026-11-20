@@ -45,7 +45,7 @@ typedef uint8_t UARTStatus;
  */
 typedef uint16_t TimerConfig;
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: UART @ 0x40010000U */
 #define UART__CTRL (*(volatile UARTControl*)(0x40010000U))
 #define UART__STATUS (*(volatile UARTStatus const *)(0x40010004U))

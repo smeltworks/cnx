@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: INT @ 0x40001000U */
 #define INT__STATUS (*(volatile uint32_t*)(0x40001000U))
 #define INT__PENDING (*(volatile uint32_t*)(0x40001004U))

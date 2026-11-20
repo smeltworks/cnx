@@ -10,7 +10,7 @@
 extern "C" {
 #endif
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: EXTI @ 0x40013C00U */
 #define EXTI__IMR (*(volatile uint32_t*)(0x40013C00U))
 #define EXTI__PR (*(volatile uint32_t*)(0x40013C14U))
