@@ -795,15 +795,15 @@ This ADR covers four features for safe hardware abstraction in cnx:
 
 Part 1 (register types and fixed instances):
 
-| Code  | Meaning                                                                                              | Asserted by                                                        |
-| ----- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| E0937 | A register instance in a type position (`GPIO1 x;`); its register type is the type                   | `tests/bugs/issue-1336-register-in-type-position/`                 |
-| E0931 | A register instance's address is not a compile-time constant                                         | `tests/adr-072/register-address-not-constant-error.test.cnx`       |
-| E0932 | A register member's offset is not a compile-time constant                                            | `tests/adr-072/register-offset-not-constant-error.test.cnx`        |
-| E0933 | A function parameter is a register; rejected until register parameters are specialized per instance  | `tests/adr-072/register-parameter-error.test.cnx`                  |
-| E0934 | A register instance is declared inside a function                                                    | `tests/adr-072/register-local-instance-error.test.cnx`             |
-| E0935 | `Type name(expr);` whose type is not a register type (a C++ constructor takes named constants, #375) | `tests/adr-072/constructor-expression-not-register-error.test.cnx` |
-| E0936 | A register type anywhere but a one-address file- or scope-level instance (data registers are Part 4) | `tests/adr-072/register-type-position-error.test.cnx`              |
+| Code  | Meaning                                                                                                                                     | Asserted by                                                                                                                                             |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| E0937 | A register instance in a type position (`GPIO1 x;`); its register type is the type                                                          | `tests/bugs/issue-1336-register-in-type-position/`                                                                                                      |
+| E0931 | A register instance's address cannot be used: not a compile-time constant, negative, or a member past the target's pointer range (ruling 5) | `tests/adr-072/register-address-not-constant-error.test.cnx`, `register-negative-offset-error.test.cnx`, `register-address-past-pointer-error.test.cnx` |
+| E0932 | A register member's offset is not a compile-time constant                                                                                   | `tests/adr-072/register-offset-not-constant-error.test.cnx`                                                                                             |
+| E0933 | A function parameter is a register; rejected until register parameters are specialized per instance                                         | `tests/adr-072/register-parameter-error.test.cnx`                                                                                                       |
+| E0934 | A register instance is declared inside a function                                                                                           | `tests/adr-072/register-local-instance-error.test.cnx`                                                                                                  |
+| E0935 | `Type name(expr);` whose type is not a register type (a C++ constructor takes named constants, #375)                                        | `tests/adr-072/constructor-expression-not-register-error.test.cnx`                                                                                      |
+| E0936 | A register type anywhere but a one-address file- or scope-level instance (data registers are Part 4)                                        | `tests/adr-072/register-type-position-error.test.cnx`                                                                                                   |
 
 <!-- MATRIX-SEVERITY code: E0931 -->
 
@@ -973,7 +973,7 @@ The imported rows are off: the diagnostic is about the declaration it is written
 | top-level function | same file               | error    |
 | scope member       | same file               | error    |
 | scope method       | same file               | error    |
-| for header         | same file               | warn     |
+| for header         | same file               | error    |
 | global variable    | imported direct         | off      |
 | top-level function | imported direct         | off      |
 | scope member       | imported direct         | off      |
@@ -995,7 +995,7 @@ The imported rows are off: the diagnostic is about the declaration it is written
 | scope method       | exercised through chain | warn     |
 | for header         | exercised through chain | off      |
 
-The imported rows are off: the diagnostic is about the declaration it is written on, even when its register type is imported. `for header` is `warn` until a fixture declares a register-typed loop variable.
+The imported rows are off: the diagnostic is about the declaration it is written on, even when its register type is imported.
 
 <!-- MATRIX-SEVERITY code: E0937 -->
 

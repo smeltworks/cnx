@@ -78,7 +78,7 @@ typedef uint32_t Teensy4__GPIO7Pins;
  */
 typedef uint32_t Teensy4__ICR1Config;
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: Teensy4__GPIO7 @ 0x42004000U */
 #define Teensy4__GPIO7__DataRegister (*(volatile Teensy4__GPIO7Pins*)(0x42004000U))
 #define Teensy4__GPIO7__DirectionRegister (*(volatile Teensy4__GPIO7Pins*)(0x42004004U))

@@ -109,7 +109,7 @@ typedef uint32_t RCC__AHB1Peripherals;
  */
 typedef uint32_t STM32F446__GPIOAPins;
 
-/* Registers (ADR-004) */
+/* Registers (ADR-072) */
 /* Register: RCC__RCC @ 0x40023800U */
 #define RCC__RCC__AHB1ENR (*(volatile RCC__AHB1Peripherals*)(0x40023830U))
 

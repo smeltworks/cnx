@@ -268,7 +268,7 @@ scope Teensy4 {
 
     GpioPort GPIO7(0x42004000);
 
-    const u32 LED_BIT <- 3;
+    u32 LED_BIT <- 3;
 
     public void blinkLed() {
         this.GPIO7.DR_TOGGLE[this.LED_BIT] <- true;
@@ -283,7 +283,7 @@ Teensy4.GPIO7.DR_SET[3] <- true;
 Transpiles to:
 
 ```c
-/* Register: Teensy4__GPIO7 @ 0x42004000 */
+/* Register: Teensy4__GPIO7 @ 0x42004000U */
 #define Teensy4__GPIO7__DR (*(volatile uint32_t*)(0x42004000U))
 #define Teensy4__GPIO7__DR_SET (*(volatile uint32_t*)(0x42004084U))
 #define Teensy4__GPIO7__DR_CLEAR (*(volatile uint32_t*)(0x42004088U))
