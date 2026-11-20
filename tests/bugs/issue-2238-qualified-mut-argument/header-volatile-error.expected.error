@@ -1,8 +1,10 @@
-19:9 error[E0915]: cannot pass 'hw_flag' to `mut` parameter 'n' of function 'bump': it is volatile, and 'bump' would write it through a plain pointer, so the volatile access would be lost
+21:9 error[E0915]: cannot pass 'hw_flag' to `mut` parameter 'n' of function 'bump': it is volatile, and 'bump' would write it through a plain pointer, so the volatile access would be lost
        help: Copy it into a `mut` local, pass that, then assign the local back to 'hw_flag' (ADR-071, #2238).
-21:9 error[E0915]: cannot pass 'hw_reg' to `mut` parameter 'n' of function 'bump': it is volatile, and 'bump' would write it through a plain pointer, so the volatile access would be lost
+23:9 error[E0915]: cannot pass 'hw_reg' to `mut` parameter 'n' of function 'bump': it is volatile, and 'bump' would write it through a plain pointer, so the volatile access would be lost
        help: Copy it into a `mut` local, pass that, then assign the local back to 'hw_reg' (ADR-071, #2238).
-23:9 error[E0915]: cannot pass 'regs.status' to `mut` parameter 'n' of function 'bump': it is volatile, and 'bump' would write it through a plain pointer, so the volatile access would be lost
+25:9 error[E0915]: cannot pass 'regs.status' to `mut` parameter 'n' of function 'bump': it is volatile, and 'bump' would write it through a plain pointer, so the volatile access would be lost
        help: Copy it into a `mut` local, pass that, then assign the local back to 'regs.status' (ADR-071, #2238).
-25:9 error[E0915]: cannot pass 'hw_arr[1]' to `mut` parameter 'n' of function 'bump': it is volatile, and 'bump' would write it through a plain pointer, so the volatile access would be lost
+27:9 error[E0915]: cannot pass 'hw_arr[1]' to `mut` parameter 'n' of function 'bump': it is volatile, and 'bump' would write it through a plain pointer, so the volatile access would be lost
        help: Copy it into a `mut` local, pass that, then assign the local back to 'hw_arr[1]' (ADR-071, #2238).
+30:9 error[E0915]: cannot pass '(device.regs).config' to `mut` parameter 'n' of function 'bump': it is volatile, and 'bump' would write it through a plain pointer, so the volatile access would be lost
+       help: Copy it into a `mut` local, pass that, then assign the local back to '(device.regs).config' (ADR-071, #2238).

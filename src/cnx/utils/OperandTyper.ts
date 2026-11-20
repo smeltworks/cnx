@@ -924,6 +924,7 @@ class OperandTyper {
       hasSideEffect:
         (whenTrue?.hasSideEffect ?? false) ||
         (whenFalse?.hasSideEffect ?? false),
+      volatileAccess: false,
       form: { kind: "ternary", arms: [whenTrue, whenFalse] },
     };
   }
@@ -1067,6 +1068,7 @@ class OperandTyper {
       overflow: expr.overflow ?? inner?.overflow ?? null,
       binding: null,
       hasSideEffect: inner?.hasSideEffect ?? false,
+      volatileAccess: false,
       form: {
         kind: "cast",
         ofLiteral:
@@ -1166,6 +1168,7 @@ class OperandTyper {
           ...OperandTyper.fromType(d.type, d.arrayDimensions, ctx),
           overflow: d.overflowBehavior,
           hasSideEffect: d.isVolatile || d.isAtomic,
+          volatileAccess: d.isVolatile,
           binding,
         };
       }
@@ -1175,6 +1178,7 @@ class OperandTyper {
           ...OperandTyper.fromType(s.type, s.arrayDimensions ?? [], ctx),
           overflow: s.overflowBehavior,
           hasSideEffect: s.isVolatile || s.isAtomic,
+          volatileAccess: s.isVolatile,
           binding,
         };
       }
@@ -1849,6 +1853,7 @@ class OperandTyper {
           ),
           overflow: field.overflowBehavior,
           hasSideEffect: t.hasSideEffect,
+          volatileAccess: t.volatileAccess,
         },
       };
     }
@@ -1915,6 +1920,7 @@ class OperandTyper {
         category: width === 1 ? "boolean" : "unsigned",
         bitWidth: width === 1 ? null : width,
         hasSideEffect: t.hasSideEffect,
+        volatileAccess: t.volatileAccess,
       },
     };
   }
@@ -1952,6 +1958,7 @@ class OperandTyper {
         t: {
           ...foreign,
           hasSideEffect: t.hasSideEffect || foreign.hasSideEffect,
+          volatileAccess: t.volatileAccess || foreign.volatileAccess,
         },
       };
     }
@@ -1966,6 +1973,7 @@ class OperandTyper {
           ...OperandTyper.plain(null),
           cType: info.type,
           hasSideEffect: t.hasSideEffect,
+          volatileAccess: t.volatileAccess,
           form: { kind: "foreign", indeterminate: false },
         },
       };
@@ -2208,7 +2216,12 @@ class OperandTyper {
         ? {
             k: "value",
             registerMember: null,
-            t: { ...current.result, hasSideEffect: true, form: call },
+            t: {
+              ...current.result,
+              hasSideEffect: true,
+              volatileAccess: false,
+              form: call,
+            },
           }
         : UNKNOWN;
     }
@@ -2290,6 +2303,7 @@ class OperandTyper {
       callbackTypeName: null,
       overflow: null,
       hasSideEffect: false,
+      volatileAccess: false,
       form: DECLARED,
       binding: null,
     };

@@ -4,7 +4,6 @@
  * The one decision for a scanf-family conversion (#2398), a `mut` parameter
  * and a safe-division output (#2238).
  */
-import ForeignTypeFacts from "../../../utils/ForeignTypeFacts";
 import OperandTyper from "../../../utils/OperandTyper";
 import ExpressionShape from "../../../utils/ExpressionShape";
 import BoundDeclaration from "./BoundDeclaration";
@@ -36,8 +35,10 @@ class ArgumentQualifier {
     }
     // the written binding, not the chain root: `S.shared`, `(cfg).total`
     const binding = WrittenBinding.ofExpression(arg, context)?.binding ?? null;
+    // a header value: the typer's `volatile`, through typedefs, fields and
+    // arrays, as E0890 reads it -- not an index's or a call's side effect
     if (binding?.kind === "foreign") {
-      return ArgumentQualifier.isVolatileForeign(binding.name, chain, context)
+      return OperandTyper.typeOf(arg, context)?.volatileAccess === true
         ? { is: "volatile", write: "volatile" }
         : null;
     }
@@ -49,37 +50,6 @@ class ArgumentQualifier {
       return { is: "volatile", write: "volatile" };
     }
     return null;
-  }
-
-  /**
-   * A header value's `volatile`: its declaration's, or a field's on the way,
-   * each through its typedefs. Read per step rather than from the operand's
-   * side effect, which an index's call or volatile read also sets (#2468
-   * review).
-   */
-  private static isVolatileForeign(
-    name: string,
-    chain: ReturnType<typeof OperandTyper.chainOf>,
-    context: IAnalysisContext,
-  ): boolean {
-    const target = OperandTyper.target(context);
-    const root = ForeignTypeFacts.variableOperand(
-      name,
-      context.symbolTable,
-      target,
-    );
-    if (root?.hasSideEffect === true) return true;
-    return chain.steps.some(
-      (step) =>
-        step.member !== null &&
-        step.before?.typeName != null &&
-        ForeignTypeFacts.fieldOperand(
-          step.before.typeName,
-          step.member,
-          context.symbolTable,
-          target,
-        )?.hasSideEffect === true,
-    );
   }
 }
 

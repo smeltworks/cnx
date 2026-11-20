@@ -6,7 +6,9 @@
 // So is one made `volatile` by a typedef or by a struct field (#2468
 // review), or an element of a `volatile` header array. CONTROL: a plain
 // header global, typedef, field and array element stay silent, and so does a
-// plain field reached through a `volatile` index.
+// plain field reached through a `volatile` index. A field of a `volatile`
+// struct is volatile, through brackets too; what its pointer field points at
+// is not.
 #include "hw-globals.h"
 
 volatile mut u32 idx <- 0;
@@ -25,4 +27,6 @@ void main() {
     bump(hw_arr[1]);
     bump(hw_plain_arr[1]);
     bump(regs_table[idx].config);
+    bump((device.regs).config);
+    bump(device.buffer[1]);
 }

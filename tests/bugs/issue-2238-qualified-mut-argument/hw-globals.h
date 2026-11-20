@@ -15,4 +15,9 @@ extern regs_t regs;
 extern volatile uint32_t hw_arr[4];
 extern uint32_t hw_plain_arr[4];
 extern regs_t regs_table[2];
+typedef struct {
+    regs_t regs;
+    uint32_t* buffer;
+} device_t;
+extern volatile device_t device;
 #endif

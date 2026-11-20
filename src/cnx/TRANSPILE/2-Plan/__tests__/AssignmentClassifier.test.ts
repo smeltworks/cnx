@@ -136,6 +136,7 @@ function typedLast(
     callbackTypeName: null,
     overflow: null,
     hasSideEffect: false,
+    volatileAccess: false,
     form: { kind: "declared" },
     binding: null,
   };

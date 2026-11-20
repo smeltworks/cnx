@@ -21,6 +21,7 @@ const value = (typeName: string, dimensions: number[] = []): IOperandType => ({
   callbackTypeName: null,
   overflow: null,
   hasSideEffect: false,
+  volatileAccess: false,
   form: { kind: "declared" },
   binding: null,
 });
