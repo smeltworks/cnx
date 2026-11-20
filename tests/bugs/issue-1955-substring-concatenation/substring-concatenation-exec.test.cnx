@@ -1,7 +1,7 @@
 // test-execution
 // test-no-warnings
 // test-adr: 045
-// Tests: #1955 - ADR-045's Substring Concatenation example, a[0, 16] + b[16, 16], copies the first half of a and the second half of b, in a declaration and in an assignment; distinct characters show each part is taken from its own start and stops at its own length
+// Tests: #1955 - ADR-045's Substring Concatenation example, a[0, 16] + b[16, 16], copies the first half of a and the second half of b, in a declaration and in an assignment; distinct characters show each part is taken from its own start and stops at its own length; a source shorter than its range contributes only the characters it holds, so the next part starts right after them
 u32 main() {
     string<32> a <- "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
     string<32> b <- "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
@@ -39,6 +39,24 @@ u32 main() {
     }
     if (repicked.value_char_count != 7) {
         return 8;
+    }
+
+    string<32> partial <- "ab";
+    string<32> joined <- partial[0, 16] + b[16, 16];
+    if (joined != "abBBBBBBBBBBBBBBBB") {
+        return 9;
+    }
+    if (joined.value_char_count != 18) {
+        return 10;
+    }
+
+    mut string<32> rejoined <- "x";
+    rejoined <- partial[0, 16] + b[16, 16];
+    if (rejoined != "abBBBBBBBBBBBBBBBB") {
+        return 11;
+    }
+    if (rejoined.value_char_count != 18) {
+        return 12;
     }
 
     return 0;

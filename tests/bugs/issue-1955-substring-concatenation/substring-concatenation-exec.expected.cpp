@@ -25,7 +25,7 @@ static inline void cnx_string_copy(char* target, const char* source, uint32_t ca
 // test-execution
 // test-no-warnings
 // test-adr: 045
-// Tests: #1955 - ADR-045's Substring Concatenation example, a[0, 16] + b[16, 16], copies the first half of a and the second half of b, in a declaration and in an assignment; distinct characters show each part is taken from its own start and stops at its own length
+// Tests: #1955 - ADR-045's Substring Concatenation example, a[0, 16] + b[16, 16], copies the first half of a and the second half of b, in a declaration and in an assignment; distinct characters show each part is taken from its own start and stops at its own length; a source shorter than its range contributes only the characters it holds, so the next part starts right after them
 int main(void) {
     const char a[33] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
     const char b[33] = "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
@@ -87,6 +87,36 @@ int main(void) {
     }
     if ((uint32_t) strlen(repicked) != 7) {
         return 8U;
+    }
+    const char partial[33] = "ab";
+    char joined[33] = "";
+    cnx_string_copy(joined, partial + 0, 16U);
+    {
+        const uint32_t cnx_used = (uint32_t) strlen(joined);
+        cnx_string_copy(&joined[cnx_used], b + 16, ((32U - cnx_used) < 16U) ? (32U - cnx_used) : 16U);
+    }
+    if (strcmp(joined, "abBBBBBBBBBBBBBBBB") != 0) {
+        return 9U;
+    }
+    if ((uint32_t) strlen(joined) != 18) {
+        return 10U;
+    }
+    char rejoined[33] = "x";
+    /* MISRA C:2012 Rule 19.1: string built in a temporary, then copied in by `cnx_string_copy` (copying the parts in place would overwrite characters a later part still reads when a part reads the string written). */
+    {
+        char cnx_tmp2[33] = "";
+        cnx_string_copy(cnx_tmp2, partial + 0U, 16U);
+        {
+            const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp2);
+            cnx_string_copy(&cnx_tmp2[cnx_used], b + 16U, ((32U - cnx_used) < 16U) ? (32U - cnx_used) : 16U);
+        }
+        cnx_string_copy(rejoined, cnx_tmp2, 32U);
+    }
+    if (strcmp(rejoined, "abBBBBBBBBBBBBBBBB") != 0) {
+        return 11U;
+    }
+    if ((uint32_t) strlen(rejoined) != 18) {
+        return 12U;
     }
     return 0U;
 }
