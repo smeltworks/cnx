@@ -16,6 +16,7 @@ import type IAnalysisContext from "./types/IAnalysisContext";
 import SourceOrder from "../../utils/SourceOrder";
 import RegisterAddress from "../../utils/RegisterAddress";
 import RegisterInstance from "../../utils/RegisterInstance";
+import UndeclaredValueAnalyzer from "./UndeclaredValueAnalyzer";
 import TYPE_FORMING_KINDS from "../../PARSE/3-Declare/TYPE_FORMING_KINDS";
 import TYPE_WIDTH from "../../types/TYPE_WIDTH";
 import type IRegisterSymbol from "../../types/symbols/IRegisterSymbol";
@@ -81,6 +82,11 @@ class RegisterInstanceAnalyzer {
         continue;
       }
       if (declaration.kind === "constructorDeclaration") {
+        const unbound = this.unboundSoleName(declaration);
+        if (unbound !== null) {
+          found.push(unbound);
+          continue;
+        }
         if (symbol.baseAddress === null || symbol.baseAddress < 0n) {
           found.push({
             aboutItsPosition: true,
@@ -151,6 +157,38 @@ class RegisterInstanceAnalyzer {
       });
     }
     return found;
+  }
+
+  /**
+   * `GpioPort G(MISSING);` names its address with one bare name, which 1.2
+   * lowers as a constructor argument, not an expression, so no value walk
+   * sees it. A name that binds nothing there is what `G(MISSING + 0)`
+   * reports: E0427, not E0931's "not a compile-time constant".
+   */
+  private unboundSoleName(declaration: {
+    readonly arguments: ReadonlyArray<{
+      readonly name: string;
+      readonly span: IBaseAnalysisError["span"];
+    }>;
+  }): IBaseAnalysisError | null {
+    if (declaration.arguments.length !== 1) return null;
+    const [argument] = declaration.arguments;
+    const at = { line: argument.span.line, column: argument.span.column };
+    if (
+      new UndeclaredValueAnalyzer(this.context).isVisible(
+        argument.name,
+        null,
+        at,
+      )
+    ) {
+      return null;
+    }
+    return {
+      aboutItsPosition: true,
+      code: "E0427",
+      span: argument.span,
+      message: `'${argument.name}' is not defined`,
+    };
   }
 
   private bytesOf(member: IRegisterMemberSymbol, pointerBits: number): bigint {
