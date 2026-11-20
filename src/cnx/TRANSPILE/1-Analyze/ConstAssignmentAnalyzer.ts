@@ -28,6 +28,7 @@
  * statement and are checked here on the same terms.
  */
 
+import ArgumentQualifier from "./helpers/ArgumentQualifier";
 import type ISourceSite from "../../types/ISourceSite";
 import OperandTyper from "../../utils/OperandTyper";
 import SourceOrder from "../../utils/SourceOrder";
@@ -239,7 +240,10 @@ class ConstAssignmentCheck {
       }
       this.noteWrite(target?.binding ?? null);
       const argName = ConstAssignmentCheck.constArgumentName(arg, target);
-      if (argName === null) return;
+      if (argName === null) {
+        this.rejectQualified(arg, param.name, calledAs);
+        return;
+      }
       this.found.push({
         code: "E0900",
         span: arg.span,
@@ -248,6 +252,26 @@ class ConstAssignmentCheck {
           "The callee writes through that parameter, so the argument must be declared `mut` (ADR-071).",
         declaredAt: BindingSite.of(target?.binding ?? null, this.context),
       });
+    });
+  }
+
+  /**
+   * E0915 (ADR-071, #2238): a `mut` parameter is a plain pointer, so an
+   * `atomic`, `volatile` or register-member argument would lose its qualifier
+   */
+  private rejectQualified(
+    arg: TExpression,
+    parameter: string,
+    calledAs: string,
+  ): void {
+    const qualifier = ArgumentQualifier.of(arg, this.context);
+    if (qualifier === null) return;
+    this.found.push({
+      code: "E0915",
+      span: arg.span,
+      declaredAt: BindingSite.ofChain(arg, this.context),
+      message: `cannot pass '${arg.written}' to \`mut\` parameter '${parameter}' of function '${calledAs}': it is ${qualifier.is}, and '${calledAs}' would write it through a plain pointer, so the ${qualifier.write} access would be lost`,
+      helpText: `Copy it into a \`mut\` local, pass that, then assign the local back to '${arg.written}' (ADR-071, #2238).`,
     });
   }
 

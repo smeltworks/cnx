@@ -1,0 +1,29 @@
+// test-error
+// test-adr: 071
+#pragma target cortex-m7
+// #2238: a `mut` parameter is a plain pointer in C, so an `atomic`, a
+// `volatile` or a register member passed to one would lose its qualifier
+// (`bump(&g)` against `uint32_t*`). Each is E0915, as #2398 ruled for a
+// scanf-family argument. CONTROL: a plain `mut` global stays silent.
+
+register Blk {
+    0x00 rw u32 LEN,
+}
+
+Blk B1(0x40000000);
+
+volatile mut u32 flag <- 0;
+atomic u32 count <- 0;
+mut u32 plain <- 0;
+
+void bump(mut u32 n) {
+    n <- n + 1;
+}
+
+void main() {
+    bump(flag);
+    bump(count);
+    bump(B1.LEN);
+    bump((flag));
+    bump(plain);
+}
