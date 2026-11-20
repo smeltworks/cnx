@@ -595,6 +595,25 @@ u32 data <- GPIO7.DR;           // Read
 GPIO7.DR <- 0xFF;               // Write
 GPIO7.DR_SET[3] <- true;        // Set bit 3 (atomic)
 
+// Members the hardware reaches through one offset are one group; any other
+// overlap is E0938, and a member off its size's alignment is E0939.
+register Uart {
+    0x00 {
+        ro u8 RBR,  // read: received byte
+        wo u8 THR,  // write: byte to send
+    },
+    0x05 ro u8 LSR,
+}
+
+// A register parameter is bound to an instance at each call. It is never a
+// value: not read, assigned or stored whole (E0942), and its function is
+// never a callback (E0941).
+void setPin(GpioPort port, u8 pin) {
+    port.DR[pin] <- true;
+}
+
+setPin(GPIO7, 3);               // a Uart instance here is E0940
+
 // =============================================================================
 // 15. ATOMIC & CRITICAL SECTIONS
 // =============================================================================
