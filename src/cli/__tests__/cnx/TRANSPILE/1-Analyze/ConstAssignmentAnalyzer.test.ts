@@ -573,4 +573,65 @@ describe("ConstAssignmentAnalyzer (E0915, ADR-071 #2238)", () => {
       "Copy it into a `mut` local, pass that, then assign the local back to 'flag' (ADR-071, #2238).",
     );
   });
+
+  const helpFor = (arg: string): string | undefined => {
+    const { syntax, context } = testAnalysisContextFor(
+      [
+        "register Blk {",
+        "    0x00 rw u32 LEN,",
+        "    0x04 ro u32 STATUS,",
+        "    0x08 w1c u32 FLAGS,",
+        "}",
+        "Blk B1(0x40000000);",
+        "void bump(mut u32 n) {",
+        "    n +<- 1;",
+        "}",
+        "void f() {",
+        `    bump(${arg});`,
+        "}",
+      ].join("\n"),
+      { cppMode: false },
+    );
+    return new ConstAssignmentAnalyzer(context)
+      .analyze(syntax)
+      .find((e) => e.code === "E0915")?.helpText;
+  };
+
+  it("keys the recipe to a register member's access mode", () => {
+    expect(helpFor("B1.LEN")).toBe(
+      "Copy it into a `mut` local, pass that, then assign the local back to 'B1.LEN' (ADR-071, #2238).",
+    );
+    expect(helpFor("B1.STATUS")).toBe(
+      "Copy it into a `mut` local and pass that; 'B1.STATUS' is `ro`, so the local is not assigned back (ADR-071, #2238).",
+    );
+    expect(helpFor("B1.FLAGS")).toBe(
+      "Copy it into a `mut` local, pass that, then assign the local back to 'B1.FLAGS'; 'B1.FLAGS' is `w1c`, so that write clears every flag still set in the local (ADR-071, #2238).",
+    );
+  });
+
+  it("rejects an atomic or volatile safe-division output, and accepts a plain one", () => {
+    const { syntax, context } = testAnalysisContextFor(
+      [
+        "atomic u32 a <- 0;",
+        "volatile mut u32 v <- 0;",
+        "mut u32 p <- 0;",
+        "void f() {",
+        "    bool x <- safe_div(a, 10, 2, 0);",
+        "    bool y <- safe_mod(v, 10, 3, 0);",
+        "    bool z <- safe_div(p, 10, 2, 0);",
+        "}",
+      ].join("\n"),
+      { cppMode: false },
+    );
+    const found = new ConstAssignmentAnalyzer(context)
+      .analyze(syntax)
+      .filter((e) => e.code === "E0915");
+    expect(found.map((e) => e.message)).toEqual([
+      "cannot pass 'a' as safe_div's output: it is atomic, and safe_div writes it through a plain pointer, so the atomic access would be lost",
+      "cannot pass 'v' as safe_mod's output: it is volatile, and safe_mod writes it through a plain pointer, so the volatile access would be lost",
+    ]);
+    expect(found[0].helpText).toBe(
+      "Pass a `mut` local as the output, then assign it to 'a' (ADR-051, #2238).",
+    );
+  });
 });
