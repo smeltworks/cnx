@@ -9,6 +9,11 @@
 type TMemberStep =
   | { readonly kind: "scope-member"; readonly cName: string }
   | { readonly kind: "register-member"; readonly cName: string }
-  | { readonly kind: "access"; readonly separator: "." | "->" | "::" };
+  | {
+      readonly kind: "access";
+      readonly separator: "." | "->" | "::";
+      /** ADR-072: the union an offset group's member is reached through */
+      readonly group?: string;
+    };
 
 export default TMemberStep;

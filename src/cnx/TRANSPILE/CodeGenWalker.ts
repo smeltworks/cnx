@@ -1572,6 +1572,15 @@ class CodeGenWalker {
         this.host.state.symbols!.memberCNames.get(registerCName)?.get(member),
       rootMemberSeparator: (holding: IRootHolding) =>
         memberAccessChain.rootMemberSeparator(holding, this.host.state.cppMode),
+      registerGroup: (layout: string, member: string) => {
+        const type = this.host.state.program?.symbolByCName(layout);
+        const info = RegisterInstance.isType(type)
+          ? type.members.get(member)
+          : undefined;
+        return info?.group == null || info.offsetValue === null
+          ? undefined
+          : RegisterLayout.groupName(info.offsetValue);
+      },
     };
   }
 

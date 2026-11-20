@@ -10,6 +10,8 @@ interface IRootHolding {
    * its type info, so it is not wrapped the way a parameter is.
    */
   readonly isPointerLocal: boolean;
+  /** ADR-072: the register type a register parameter points to, else null */
+  readonly registerLayout: string | null;
 }
 
 export default IRootHolding;

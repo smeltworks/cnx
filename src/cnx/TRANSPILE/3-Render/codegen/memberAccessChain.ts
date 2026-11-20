@@ -60,6 +60,8 @@ function rootHolding(
     | {
         readonly isStruct?: boolean;
         readonly forcePointerSemantics?: boolean;
+        readonly isRegister?: boolean;
+        readonly baseType?: string;
       }
     | undefined,
   rootTypeInfo: TTypeInfo | undefined,
@@ -70,11 +72,15 @@ function rootHolding(
       isStructParam: paramInfo.isStruct ?? false,
       forcePointerSemantics: paramInfo.forcePointerSemantics ?? false,
       isPointerLocal: false,
+      registerLayout: paramInfo.isRegister
+        ? (paramInfo.baseType ?? null)
+        : null,
     };
   }
   return {
     isStructParam: false,
     forcePointerSemantics: false,
+    registerLayout: null,
     isPointerLocal:
       rootTypeInfo?.isPointer === true &&
       facts.isKnownStruct(rootTypeInfo.baseType) &&

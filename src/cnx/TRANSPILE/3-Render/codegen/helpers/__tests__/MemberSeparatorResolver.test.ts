@@ -15,6 +15,7 @@ const NOT_HELD: IRootHolding = {
   isStructParam: false,
   forcePointerSemantics: false,
   isPointerLocal: false,
+  registerLayout: null,
 };
 const STRUCT_PARAM: IRootHolding = { ...NOT_HELD, isStructParam: true };
 const POINTER_LOCAL: IRootHolding = { ...NOT_HELD, isPointerLocal: true };
@@ -36,6 +37,7 @@ describe("MemberSeparatorResolver", () => {
           `${registerCName}__${member}`,
       ),
       rootMemberSeparator: vi.fn((): "." | "->" => "->"),
+      registerGroup: vi.fn((): string | undefined => undefined),
       ...overrides,
     };
   }
