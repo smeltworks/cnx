@@ -132,11 +132,16 @@ removed — the base ceremony was pure boilerplate the transpiler can supply.
 
 ```antlr
 registerDefinition
-    : 'register' IDENTIFIER '{' registerField (',' registerField)* ','? '}'
+    : 'register' IDENTIFIER '{' registerEntry (',' registerEntry)* ','? '}'
     ;
 
-registerField
-    : byteOffset access type memberName
+registerEntry
+    : byteOffset access type memberName                          // one member
+    | byteOffset '{' groupMember (',' groupMember)* ','? '}'     // members sharing an offset
+    ;
+
+groupMember
+    : access type memberName
     ;
 
 memberName
@@ -213,6 +218,46 @@ fields and struct fields: a keyword restricts naming only where it would make th
 program ambiguous (ruling 2 on #2449, #2029). Names that are C keywords are a separate
 question (#2222).
 
+#### Layout Rules
+
+A register's members match the hardware's map exactly, so the compiler rejects a layout
+that cannot be one.
+
+**Members that share an offset are written as one group.** Some hardware reaches more
+than one register through one address. A 16550 UART reads received data, writes data
+to send and, while a control bit is set, reads and writes the baud divisor, all at
+`0x00`:
+
+```cnx
+register Uart {
+    0x00 {
+        ro u8 RBR,
+        wo u8 THR,
+        rw u8 DLL,
+    },
+    0x05 ro u8 LSR,
+}
+```
+
+Every member of a group starts at the group's offset, and each keeps its own access
+mode, so reading `THR` is still an error. Any other overlap is a compile error: two
+separate members at one offset (the copy-pasted offset is the common register-map typo),
+or a member that starts inside another. A gap needs no declaration; the offsets show it.
+
+**A member is aligned to its size.** A member's offset is a multiple of its size: a
+`u16` on 2, a `u32` on 4, a `u64` on 8, and a group's offset suits every member in it.
+Cortex-M faults on an unaligned access to device memory, so an unaligned member is a
+runtime fault the compiler can rule out. A 32-bit value that a datasheet places at
+`0x02` is declared as the two halves the hardware can reach:
+
+```cnx
+register Odd {
+    0x00 rw u8 CTRL,
+    0x02 rw u16 DATA_LO,
+    0x04 rw u16 DATA_HI,
+}
+```
+
 #### Transpilation
 
 ```cnx
@@ -280,20 +325,15 @@ setPin(UART1, 0); // ERROR: UART1 is not a GpioPort
 
 #### Function Specialization
 
-A register parameter is resolved at compile time. Each call names an instance whose
-address the compiler knows, so every access through the parameter is a direct access
-to that instance's address. There is no runtime indirection: no base pointer is passed,
-stored or dereferenced.
+A register parameter is resolved at compile time. Each call names an instance, never
+a runtime value, so the compiler knows which instance every call reaches.
 
 ```cnx
 setPin(GPIO1, 13); // port.DR is GPIO1's DR
 setPin(GPIO2, 0); // port.DR is GPIO2's DR
 ```
 
-How the generated C achieves this (one specialized function per instance passed,
-inlining, or both) is an emission choice, not part of this decision.
-
-This enables writing reusable HAL code without runtime overhead or duplicating source code per instance.
+This enables reusable HAL code without duplicating source code per instance.
 
 #### Compile-Time-Only Constraint
 
