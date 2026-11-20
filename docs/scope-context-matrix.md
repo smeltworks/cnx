@@ -1942,7 +1942,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-12 linked fixtures with no derivable context:
+13 linked fixtures with no derivable context:
 
 - `adr-071/c-callback-mut-match.test.cnx`
 - `adr-071/callback-initializer-wiring.test.cnx`
@@ -1956,6 +1956,7 @@ cell is declared by the ADR that owns it.
 - `adr-071/opaque-handle-copy.test.cnx`
 - `adr-071/read-only-by-default.test.cnx`
 - `bugs/issue-2117-address-of/scanf-out-parameter.test.cnx`
+- `bugs/issue-2238-qualified-mut-argument/header-volatile-error.test.cnx`
 
 ## ADR-071 E0879
 
