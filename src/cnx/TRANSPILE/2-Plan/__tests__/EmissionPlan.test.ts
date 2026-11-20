@@ -19,6 +19,7 @@ const NOTHING: IEmissionFacts = {
   needsLimits: false,
   needsStddef: false,
   needsFloatStaticAssert: false,
+  needsRegisterLayoutAssert: false,
   needsIrqWrappers: false,
   needsISR: false,
   selfIncludeAdded: false,

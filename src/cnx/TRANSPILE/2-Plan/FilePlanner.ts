@@ -1157,6 +1157,9 @@ class FilePlanner {
     );
     if (!RegisterInstance.isType(type) || !type.isParameterLayout) return;
     cTypes.add("uint8_t");
+    // Its offsets and widths are asserted with `offsetof`
+    requirements.require("stddef");
+    requirements.require("register_layout_assert");
     this.requireMemberCTypes(type, cTypes, requirements);
   }
 
@@ -3399,6 +3402,9 @@ class FilePlanner {
       needsLimits: requirements.requires("limits"),
       needsStddef: requirements.requires("stddef"),
       needsFloatStaticAssert: requirements.requires("float_static_assert"),
+      needsRegisterLayoutAssert: requirements.requires(
+        "register_layout_assert",
+      ),
       needsIrqWrappers: requirements.requires("irq_wrappers"),
       needsISR: requirements.requires("isr"),
       selfIncludeAdded,

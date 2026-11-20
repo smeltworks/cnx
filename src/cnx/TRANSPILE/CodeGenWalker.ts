@@ -105,6 +105,7 @@ import bitmapGenerator from "./3-Render/codegen/generators/declarationGenerators
 import RegisterAddress from "../utils/RegisterAddress";
 import RegisterLayout from "../utils/RegisterLayout";
 import renderRegisterLayout from "./3-Render/codegen/generators/declarationGenerators/RegisterLayoutGenerator";
+import renderRegisterLayoutAsserts from "./3-Render/codegen/generators/declarationGenerators/RegisterLayoutAssertGenerator";
 import RegisterBlockPlacement from "./3-Render/codegen/generators/declarationGenerators/RegisterBlockPlacement";
 import type IRegisterSymbol from "../types/symbols/IRegisterSymbol";
 import generateRegisterDeclaration from "./3-Render/codegen/generators/declarationGenerators/RegisterGenerator";
@@ -2420,10 +2421,20 @@ class CodeGenWalker {
         union: member.layoutUnion,
       };
     });
-    return RegisterBlockPlacement.place(
-      type.fullyQualifiedCName,
-      renderRegisterLayout({ name: type.fullyQualifiedCName, members }),
-      state,
+    const planned = { name: type.fullyQualifiedCName, members };
+    const asserts = state.emissionPlan().registerLayoutAssert;
+    invariant(
+      asserts?.keyword != null,
+      "2.2 plans the asserts of every layout",
+    );
+    // The asserts stay in the `.c`, which includes the header a public layout
+    // is placed in and owns the requirement they cost
+    return (
+      RegisterBlockPlacement.place(
+        type.fullyQualifiedCName,
+        renderRegisterLayout(planned),
+        state,
+      ) + renderRegisterLayoutAsserts(planned, asserts.keyword)
     );
   }
 

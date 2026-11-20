@@ -17,6 +17,9 @@ type TRequirementKey =
   // --- float bit indexing ---
   | "float-assert-c11"
   | "float-assert-cpp11"
+  // --- register layout asserts (ADR-072) ---
+  | "register-layout-assert-c11"
+  | "register-layout-assert-cpp11"
   // --- critical sections (ADR-050), one key per platform arm ---
   | "critical-arm-gnu"
   | "critical-arduino"

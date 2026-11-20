@@ -12,12 +12,14 @@
  * - limits: limits.h for float-to-int clamp casts
  * - stddef: stddef.h for the `NULL` a C file writes (#1610)
  * - isr: ISR function pointer typedef (ADR-040)
+ * - register_layout_assert: offset and width asserts for an ADR-072 layout
  */
 type TIncludeHeader =
   | "string"
   | "cmsis"
   | "irq_wrappers"
   | "float_static_assert"
+  | "register_layout_assert"
   | "limits"
   | "stddef"
   | "isr";

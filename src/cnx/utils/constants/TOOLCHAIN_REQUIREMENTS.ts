@@ -86,6 +86,38 @@ const TOOLCHAIN_REQUIREMENTS: Record<TRequirementKey, IToolchainRequirement> = {
     misra: [],
   },
 
+  "register-layout-assert-c11": {
+    key: "register-layout-assert-c11",
+    modes: ["c"],
+    feature: "register layout",
+    standard: "C11",
+    compiler: null,
+    extensions: [],
+    platformLib: null,
+    condition: null,
+    reason: "_Static_assert of offsetof",
+    incurredBy: "a function taking a register parameter",
+    probe: /_Static_assert\(offsetof\(/,
+    adr: "ADR-072",
+    misra: ["1.1"],
+  },
+
+  "register-layout-assert-cpp11": {
+    key: "register-layout-assert-cpp11",
+    modes: ["cpp"],
+    feature: "register layout",
+    standard: "C++11",
+    compiler: null,
+    extensions: [],
+    platformLib: null,
+    condition: null,
+    reason: "static_assert of offsetof",
+    incurredBy: "a function taking a register parameter with --cpp",
+    probe: /static_assert\(offsetof\(/,
+    adr: "ADR-072",
+    misra: [],
+  },
+
   "critical-arm-gnu": {
     key: "critical-arm-gnu",
     modes: ["c", "cpp"],

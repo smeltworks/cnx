@@ -10,10 +10,22 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 // ADR-072: a register parameter is bound to an instance at each call. The
 // function reaches the members of whichever instance it is called with,
 // grouped members included, and passes its parameter on to another.
+static_assert(offsetof(GpioPort, DR) == 0x00U, "GpioPort.DR is at 0x00");
+static_assert(sizeof(((GpioPort*)0)->DR) == 4U, "GpioPort.DR is 4 byte(s)");
+static_assert(offsetof(GpioPort, ISR) == 0x18U, "GpioPort.ISR is at 0x18");
+static_assert(sizeof(((GpioPort*)0)->ISR) == 4U, "GpioPort.ISR is 4 byte(s)");
+
+static_assert(offsetof(Uart, AT__0x00) == 0x00U, "Uart.AT__0x00 is at 0x00");
+static_assert(sizeof(((Uart*)0)->AT__0x00.RBR) == 1U, "Uart.RBR is 1 byte(s)");
+static_assert(sizeof(((Uart*)0)->AT__0x00.THR) == 1U, "Uart.THR is 1 byte(s)");
+static_assert(offsetof(Uart, LSR) == 0x05U, "Uart.LSR is at 0x05");
+static_assert(sizeof(((Uart*)0)->LSR) == 1U, "Uart.LSR is 1 byte(s)");
+
 void setPin(GpioPort* port, const uint8_t pin) {
     port->DR = (port->DR & ~((uint32_t)1U << pin)) | ((uint32_t)1U << pin);
 }
@@ -32,6 +44,10 @@ uint8_t status(Uart* u) {
 }
 
 /* Scope: Board */
+
+static_assert(offsetof(Board__Port, DR) == 0x00U, "Board__Port.DR is at 0x00");
+static_assert(sizeof(((Board__Port*)0)->DR) == 4U, "Board__Port.DR is 4 byte(s)");
+
 
 
 

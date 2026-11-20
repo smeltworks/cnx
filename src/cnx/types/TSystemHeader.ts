@@ -12,6 +12,9 @@ import type TIncludeHeader from "./TIncludeHeader";
 type TSystemHeader =
   | "stdint"
   | "stdbool"
-  | Exclude<TIncludeHeader, "isr" | "float_static_assert" | "irq_wrappers">;
+  | Exclude<
+      TIncludeHeader,
+      "isr" | "float_static_assert" | "register_layout_assert" | "irq_wrappers"
+    >;
 
 export default TSystemHeader;
