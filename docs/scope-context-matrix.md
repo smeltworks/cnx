@@ -1657,6 +1657,16 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | ok     | ok         | warn        | warn       |
 | for header         | ok        | ok     | ok         | warn        | warn       |
 
+## ADR-051 E0915
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | ok        | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
+
 ## ADR-057
 
 | Context            | same file | direct | transitive | from 1 away | thru chain |

@@ -118,7 +118,9 @@ an unwritten parameter, local, global and scope member as not written.
    argument, or a register member, is E0915 as well: scan into a `mut` local, then assign it (#2398).
    A `mut` cnx parameter receives its argument's address the same way, as a plain pointer, so an
    `atomic`, `volatile` or register-member argument to one is E0915 too: copy it into a `mut`
-   local, pass that, then assign the local back (owner ruling 2026-11-20 on #2238).
+   local, pass that, then assign the local back (owner ruling 2026-11-20 on #2238). A `ro` register
+   member is not assigned back, and assigning a `w1c` member back clears every flag still set. An ADR-051
+   `safe_div`/`safe_mod` output is written the same way, so an `atomic` or `volatile` output is E0915 too.
    An array or a `string<N>` is already passed as a pointer to its first element. A format that
    is not a string literal is E0930. cnx has no wide string literal yet, so the wide variants
    take a format only through a C header. Past any other variadic function's parameters, an

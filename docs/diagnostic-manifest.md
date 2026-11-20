@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1028 fixture(s) assert a diagnostic; 1014 carry a code.
+1029 fixture(s) assert a diagnostic; 1015 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -946,6 +946,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-2236-string-field-initializer/string-field-initializer-error.test.cnx                    | E0863, E0864                      |
 | tests/bugs/issue-2238-qualified-mut-argument/header-volatile-error.test.cnx                               | E0915                             |
 | tests/bugs/issue-2238-qualified-mut-argument/qualified-argument-error.test.cnx                            | E0915                             |
+| tests/bugs/issue-2238-qualified-mut-argument/safe-div-output-error.test.cnx                               | E0915                             |
 | tests/bugs/issue-2239-string-argument-build/string-argument-capacity-error.test.cnx                       | E0864                             |
 | tests/bugs/issue-2240-substring-constant-length/substring-runtime-length-error.test.cnx                   | E0922                             |
 | tests/bugs/issue-2251-bitmap-field-bit-index/field-bit-index-wo-zero-error.test.cnx                       | E0872                             |

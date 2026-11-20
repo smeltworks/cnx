@@ -1,8 +1,8 @@
 /**
  * What an argument declares that its address loses when it reaches a plain
  * pointer -- `atomic`, `volatile`, or a register member's volatile access.
- * One decision for both places cnx takes an argument's address: a
- * scanf-family conversion (#2398) and a `mut` parameter (#2238).
+ * The one decision for a scanf-family conversion (#2398), a `mut` parameter
+ * and a safe-division output (#2238).
  */
 import OperandTyper from "../../../utils/OperandTyper";
 import ExpressionShape from "../../../utils/ExpressionShape";
