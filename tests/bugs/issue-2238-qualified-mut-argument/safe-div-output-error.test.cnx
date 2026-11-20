@@ -1,0 +1,16 @@
+// test-error
+// test-adr: 051
+#pragma target cortex-m7
+// #2238: a safe_div or safe_mod output is written through a plain pointer,
+// so an `atomic` or `volatile` output would lose its qualifier. Each is
+// E0915. CONTROL: a plain `mut` output stays silent.
+
+atomic u32 viaAtomic <- 0;
+volatile mut u32 viaVolatile <- 0;
+mut u32 viaPlain <- 0;
+
+void main() {
+    bool a <- safe_div(viaAtomic, 10, 2, 0);
+    bool v <- safe_mod(viaVolatile, 10, 3, 0);
+    bool p <- safe_div(viaPlain, 10, 2, 0);
+}

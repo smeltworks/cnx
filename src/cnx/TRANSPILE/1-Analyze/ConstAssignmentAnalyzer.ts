@@ -181,7 +181,10 @@ class ConstAssignmentCheck {
     // Always a BARE name: `outputName` accepts only a plain identifier, so a
     // `this.`-rooted first argument returns null above and is E0885's to report.
     const kind = ConstAssignmentCheck.constKind(written.binding);
-    if (kind === null) return;
+    if (kind === null) {
+      this.rejectQualifiedOutput(call.args[0], call.name);
+      return;
+    }
     this.found.push({
       code: "E0900",
       span: call.args[0].span,
@@ -252,6 +255,19 @@ class ConstAssignmentCheck {
           "The callee writes through that parameter, so the argument must be declared `mut` (ADR-071).",
         declaredAt: BindingSite.of(target?.binding ?? null, this.context),
       });
+    });
+  }
+
+  /** E0915 (ADR-051, #2238): a safe-division output is a plain pointer too */
+  private rejectQualifiedOutput(output: TExpression, builtin: string): void {
+    const qualifier = ArgumentQualifier.of(output, this.context);
+    if (qualifier === null) return;
+    this.found.push({
+      code: "E0915",
+      span: output.span,
+      declaredAt: BindingSite.ofChain(output, this.context),
+      message: `cannot pass '${output.written}' as ${builtin}'s output: it is ${qualifier.is}, and ${builtin} writes it through a plain pointer, so the ${qualifier.write} access would be lost`,
+      helpText: `Pass a \`mut\` local as the output, then assign it to '${output.written}' (ADR-051, #2238).`,
     });
   }
 
