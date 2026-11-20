@@ -2050,10 +2050,20 @@ cell is declared by the ADR that owns it.
 
 | Context            | same file | direct | transitive | from 1 away | thru chain |
 | ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | ok        | -      | -          | -           | -          |
+| top-level function | -         | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
+
+## ADR-072 E0897
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
 | global variable    | -         | -      | -          | -           | -          |
 | top-level function | ok        | -      | -          | -           | -          |
 | scope member       | -         | -      | -          | -           | -          |
-| scope method       | -         | -      | -          | -           | -          |
+| scope method       | ok        | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
 ## ADR-072 E0931
@@ -2114,7 +2124,7 @@ cell is declared by the ADR that owns it.
 | top-level function | ok        | -      | -          | warn        | warn       |
 | scope member       | ok        | -      | -          | warn        | warn       |
 | scope method       | ok        | -      | -          | warn        | warn       |
-| for header         | warn      | -      | -          | -           | -          |
+| for header         | ok        | -      | -          | -           | -          |
 
 ## ADR-072 E0937
 
