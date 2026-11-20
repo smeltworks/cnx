@@ -166,17 +166,6 @@ class ParameterInputAdapter {
     );
   }
 
-  /**
-   * Convert IParameterSymbol to normalized IParameterInput.
-   * Used by BaseHeaderGenerator.generateParameter().
-   *
-   * The caller pre-computes isPassByValue (ISR, float, enum, passByValueSet).
-   * Non-PBV, non-array, non-string types use pass-by-reference.
-   *
-   * @param param - The parameter symbol
-   * @param deps - Dependencies for type mapping
-   * @returns Normalized IParameterInput
-   */
   /** ADR-072: a register parameter, the same in the `.c` and the `.h` */
   private static _buildRegisterInput(
     name: string,
@@ -197,6 +186,17 @@ class ParameterInputAdapter {
     };
   }
 
+  /**
+   * Convert IParameterSymbol to normalized IParameterInput.
+   * Used by BaseHeaderGenerator.generateParameter().
+   *
+   * The caller pre-computes isPassByValue (ISR, float, enum, passByValueSet).
+   * Non-PBV, non-array, non-string types use pass-by-reference.
+   *
+   * @param param - The parameter symbol
+   * @param deps - Dependencies for type mapping
+   * @returns Normalized IParameterInput
+   */
   static fromSymbol(
     param: IParameterSymbol,
     deps: IFromSymbolDeps,

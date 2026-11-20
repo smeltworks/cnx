@@ -1,6 +1,5 @@
 import ParameterPassing from "./ParameterPassing";
 import ParameterByValue from "../../utils/ParameterByValue";
-import RegisterInstance from "../../utils/RegisterInstance";
 import type TParameterInfo from "../../types/TParameterInfo";
 import type IFunctionContextCallbacks from "./types/IFunctionContextCallbacks";
 import type IPlannedFunctionParameter from "./types/IPlannedFunctionParameter";
@@ -65,9 +64,9 @@ class ParameterInfoPlanner {
     //   (primitives use forcePointerSemantics for dereference instead)
     // Issue #958: C-header typedef struct types are always treated as struct (pointer semantics)
     // ADR-072: a register parameter is a pointer to its layout in C and C++
-    const isRegister = RegisterInstance.isType(
-      state.program?.symbolByCName(typeInfo.typeName),
-    );
+    const isRegister =
+      ParameterByValue.settledParameters(functionName, state)[paramIndex]
+        ?.isRegister === true;
 
     const isStruct =
       (typeInfo.isStruct && !passing.byValue) || isOpaqueHandle || isRegister;

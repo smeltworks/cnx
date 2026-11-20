@@ -1,6 +1,5 @@
 import TypedefParamParser from "../../utils/TypedefParamParser";
 import ParameterByValue from "../../utils/ParameterByValue";
-import RegisterInstance from "../../utils/RegisterInstance";
 import type ICallbackTypeInfo from "../../types/ICallbackTypeInfo";
 import type TranspileState from "../TranspileState";
 import type IParameterPassing from "../../types/IParameterPassing";
@@ -37,7 +36,7 @@ class ParameterPassing {
     ];
     const isOpaqueHandle = param.isOpaqueHandle === true;
     // ADR-072: a register argument is the instance's layout, through a pointer
-    if (RegisterInstance.typeNamedBy(facts.program, param.type) !== null) {
+    if (param.isRegister === true) {
       return ParameterPassing.passing(false, false, false, false);
     }
 

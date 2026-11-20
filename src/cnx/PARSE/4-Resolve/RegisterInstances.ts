@@ -6,6 +6,10 @@ import type TConstExpr from "../../types/TConstExpr";
 import type IConstantEnvironment from "../../utils/types/IConstantEnvironment";
 import ConstantEvaluator from "../../utils/ConstantEvaluator";
 import RegisterLayout from "../../utils/RegisterLayout";
+import TypeResolver from "../../utils/TypeResolver";
+import ScopeFunctions from "./ScopeFunctions";
+import type IFunctionSymbol from "../../types/symbols/IFunctionSymbol";
+import type IParameterInfo from "../../types/symbols/IParameterInfo";
 import MemberSymbolBase from "../3-Declare/cnx/utils/MemberSymbolBase";
 
 /**
@@ -41,19 +45,43 @@ class RegisterInstances {
       );
     }
     const result = new Map<string, ReadonlyArray<TSymbol>>();
+    const stamped = new Map<TSymbol, TSymbol>();
     for (const [sourceFile, symbols] of settled) {
       const env = environmentOf(sourceFile);
-      result.set(
-        sourceFile,
-        symbols.map((symbol) => {
-          const type = RegisterInstances.typeOf(symbol, types);
-          return type === null || symbol.kind !== "variable"
-            ? symbol
-            : RegisterInstances.instance(symbol, type, env);
-        }),
-      );
+      const bound = symbols.map((symbol) => {
+        if (symbol.kind === "function") {
+          const withStamp = RegisterInstances.withRegisterParameters(
+            symbol,
+            types,
+          );
+          stamped.set(symbol, withStamp);
+          return withStamp;
+        }
+        const type = RegisterInstances.typeOf(symbol, types);
+        return type === null || symbol.kind !== "variable"
+          ? symbol
+          : RegisterInstances.instance(symbol, type, env);
+      });
+      ScopeFunctions.adopt(bound, stamped);
+      result.set(sourceFile, bound);
     }
     return result;
+  }
+
+  /** A function with each parameter of a register type stamped `isRegister` */
+  private static withRegisterParameters(
+    func: IFunctionSymbol,
+    types: ReadonlyMap<string, IRegisterSymbol>,
+  ): IFunctionSymbol {
+    const isRegister = (parameter: IParameterInfo): boolean =>
+      types.has(TypeResolver.getTypeName(parameter.type));
+    if (!func.parameters.some(isRegister)) return func;
+    return {
+      ...func,
+      parameters: func.parameters.map((parameter) =>
+        isRegister(parameter) ? { ...parameter, isRegister: true } : parameter,
+      ),
+    };
   }
 
   /** The register type a constructed variable is an instance of, if any */
