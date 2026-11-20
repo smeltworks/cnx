@@ -1,0 +1,16 @@
+// test-error
+// test-adr: 071
+#pragma target cortex-m7
+// #2238 review: a `volatile` global declared in a C header loses its
+// qualifier the same way when passed to a `mut` parameter, so it is E0915.
+// CONTROL: a plain header global stays silent.
+#include "hw-globals.h"
+
+void bump(mut u32 n) {
+    n <- n + 1;
+}
+
+void main() {
+    bump(hw_flag);
+    bump(hw_plain);
+}
