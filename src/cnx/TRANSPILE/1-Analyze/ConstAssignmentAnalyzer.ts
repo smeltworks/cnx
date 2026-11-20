@@ -287,7 +287,7 @@ class ConstAssignmentCheck {
       span: arg.span,
       declaredAt: BindingSite.ofChain(arg, this.context),
       message: `cannot pass '${arg.written}' to \`mut\` parameter '${parameter}' of function '${calledAs}': it is ${qualifier.is}, and '${calledAs}' would write it through a plain pointer, so the ${qualifier.write} access would be lost`,
-      helpText: `Copy it into a \`mut\` local, pass that, then assign the local back to '${arg.written}' (ADR-071, #2238).`,
+      helpText: ConstAssignmentCheck.copyRecipe(arg.written, qualifier.access),
     });
   }
 
@@ -318,6 +318,21 @@ class ConstAssignmentCheck {
       helpText:
         "A `#define` is text replacement, not a value (ADR-006), so a `mut` parameter cannot take one; pass the variable it names, or a `mut` variable.",
     });
+  }
+
+  /** #2238 review: the copy recipe, keyed to a register member's access mode */
+  private static copyRecipe(
+    written: string,
+    access: string | undefined,
+  ): string {
+    if (access === "ro") {
+      return `Copy it into a \`mut\` local and pass that; '${written}' is \`ro\`, so the local is not assigned back (ADR-071, #2238).`;
+    }
+    const recipe = `Copy it into a \`mut\` local, pass that, then assign the local back to '${written}'`;
+    if (access === "w1c") {
+      return `${recipe}; '${written}' is \`w1c\`, so that write clears every flag still set in the local (ADR-071, #2238).`;
+    }
+    return `${recipe} (ADR-071, #2238).`;
   }
 
   /** A call through a value, as written: `h.cb`, not the callback's type */

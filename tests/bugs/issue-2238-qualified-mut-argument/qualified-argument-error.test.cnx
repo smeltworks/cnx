@@ -8,6 +8,8 @@
 
 register Blk {
     0x00 rw u32 LEN,
+    0x04 ro u32 STATUS,
+    0x08 w1c u32 FLAGS,
 }
 
 Blk B1(0x40000000);
@@ -36,6 +38,8 @@ void main() {
     bump(B1.LEN);
     bump((flag));
     bump((B1.LEN));
+    bump(B1.STATUS);
+    bump(B1.FLAGS);
     bump(S.shared);
     bump((cfg).total);
     bump(plain);

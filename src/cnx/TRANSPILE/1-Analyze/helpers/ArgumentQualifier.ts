@@ -16,13 +16,22 @@ class ArgumentQualifier {
   static of(
     arg: TExpression,
     context: IAnalysisContext,
-  ): { readonly is: string; readonly write: string } | null {
+  ): {
+    readonly is: string;
+    readonly write: string;
+    readonly access?: string;
+  } | null {
     const chain = OperandTyper.chainOf(
       ExpressionShape.unparenthesized(arg),
       context,
     );
-    if (chain.steps.some((step) => step.registerMember !== null)) {
-      return { is: "a register member", write: "volatile" };
+    const member = chain.steps.find((step) => step.registerMember !== null);
+    if (member?.registerMember != null) {
+      return {
+        is: "a register member",
+        write: "volatile",
+        access: context.symbols.registerMemberAccess.get(member.registerMember),
+      };
     }
     // the written binding, not the chain root: `S.shared`, `(cfg).total`
     const binding = WrittenBinding.ofExpression(arg, context)?.binding ?? null;

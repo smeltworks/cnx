@@ -1,14 +1,18 @@
-34:9 error[E0915]: cannot pass 'flag' to `mut` parameter 'n' of function 'bump': it is volatile, and 'bump' would write it through a plain pointer, so the volatile access would be lost
+36:9 error[E0915]: cannot pass 'flag' to `mut` parameter 'n' of function 'bump': it is volatile, and 'bump' would write it through a plain pointer, so the volatile access would be lost
        help: Copy it into a `mut` local, pass that, then assign the local back to 'flag' (ADR-071, #2238).
-35:9 error[E0915]: cannot pass 'count' to `mut` parameter 'n' of function 'bump': it is atomic, and 'bump' would write it through a plain pointer, so the atomic access would be lost
+37:9 error[E0915]: cannot pass 'count' to `mut` parameter 'n' of function 'bump': it is atomic, and 'bump' would write it through a plain pointer, so the atomic access would be lost
        help: Copy it into a `mut` local, pass that, then assign the local back to 'count' (ADR-071, #2238).
-36:9 error[E0915]: cannot pass 'B1.LEN' to `mut` parameter 'n' of function 'bump': it is a register member, and 'bump' would write it through a plain pointer, so the volatile access would be lost
+38:9 error[E0915]: cannot pass 'B1.LEN' to `mut` parameter 'n' of function 'bump': it is a register member, and 'bump' would write it through a plain pointer, so the volatile access would be lost
        help: Copy it into a `mut` local, pass that, then assign the local back to 'B1.LEN' (ADR-071, #2238).
-37:9 error[E0915]: cannot pass '(flag)' to `mut` parameter 'n' of function 'bump': it is volatile, and 'bump' would write it through a plain pointer, so the volatile access would be lost
+39:9 error[E0915]: cannot pass '(flag)' to `mut` parameter 'n' of function 'bump': it is volatile, and 'bump' would write it through a plain pointer, so the volatile access would be lost
        help: Copy it into a `mut` local, pass that, then assign the local back to '(flag)' (ADR-071, #2238).
-38:9 error[E0915]: cannot pass '(B1.LEN)' to `mut` parameter 'n' of function 'bump': it is a register member, and 'bump' would write it through a plain pointer, so the volatile access would be lost
+40:9 error[E0915]: cannot pass '(B1.LEN)' to `mut` parameter 'n' of function 'bump': it is a register member, and 'bump' would write it through a plain pointer, so the volatile access would be lost
        help: Copy it into a `mut` local, pass that, then assign the local back to '(B1.LEN)' (ADR-071, #2238).
-39:9 error[E0915]: cannot pass 'S.shared' to `mut` parameter 'n' of function 'bump': it is atomic, and 'bump' would write it through a plain pointer, so the atomic access would be lost
+41:9 error[E0915]: cannot pass 'B1.STATUS' to `mut` parameter 'n' of function 'bump': it is a register member, and 'bump' would write it through a plain pointer, so the volatile access would be lost
+       help: Copy it into a `mut` local and pass that; 'B1.STATUS' is `ro`, so the local is not assigned back (ADR-071, #2238).
+42:9 error[E0915]: cannot pass 'B1.FLAGS' to `mut` parameter 'n' of function 'bump': it is a register member, and 'bump' would write it through a plain pointer, so the volatile access would be lost
+       help: Copy it into a `mut` local, pass that, then assign the local back to 'B1.FLAGS'; 'B1.FLAGS' is `w1c`, so that write clears every flag still set in the local (ADR-071, #2238).
+43:9 error[E0915]: cannot pass 'S.shared' to `mut` parameter 'n' of function 'bump': it is atomic, and 'bump' would write it through a plain pointer, so the atomic access would be lost
        help: Copy it into a `mut` local, pass that, then assign the local back to 'S.shared' (ADR-071, #2238).
-40:9 error[E0915]: cannot pass '(cfg).total' to `mut` parameter 'n' of function 'bump': it is volatile, and 'bump' would write it through a plain pointer, so the volatile access would be lost
+44:9 error[E0915]: cannot pass '(cfg).total' to `mut` parameter 'n' of function 'bump': it is volatile, and 'bump' would write it through a plain pointer, so the volatile access would be lost
        help: Copy it into a `mut` local, pass that, then assign the local back to '(cfg).total' (ADR-071, #2238).
