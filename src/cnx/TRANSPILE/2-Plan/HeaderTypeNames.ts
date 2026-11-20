@@ -28,6 +28,8 @@
  * need an include".
  */
 
+import type IProgram from "../../types/IProgram";
+import RegisterInstance from "../../utils/RegisterInstance";
 import type TSymbol from "../../types/symbols/TSymbol";
 import TypeResolver from "../../utils/TypeResolver";
 
@@ -38,17 +40,24 @@ class HeaderTypeNames {
    * @param symbols the file's public interface, as `PublicInterface.forFile`
    *   settled it
    */
-  static collect(symbols: readonly TSymbol[]): Set<string> {
+  static collect(
+    symbols: readonly TSymbol[],
+    program: IProgram | null = null,
+  ): Set<string> {
     const named = new Set<string>();
     for (const symbol of symbols) {
-      HeaderTypeNames.addNamesOf(symbol, named);
+      HeaderTypeNames.addNamesOf(symbol, named, program);
     }
     named.delete("");
     return named;
   }
 
   /** The type names one symbol contributes, by kind. */
-  private static addNamesOf(symbol: TSymbol, into: Set<string>): void {
+  private static addNamesOf(
+    symbol: TSymbol,
+    into: Set<string>,
+    program: IProgram | null,
+  ): void {
     if (symbol.kind === "variable") {
       into.add(TypeResolver.getTypeName(symbol.type));
       return;
@@ -86,6 +95,19 @@ class HeaderTypeNames {
     // caught it, for the second time on the same construct.
     if (symbol.kind === "bitmap") {
       into.add(symbol.backingType);
+      return;
+    }
+
+    // ADR-072: a register type a parameter takes is written as its layout,
+    // which spells each member's type and pads its gaps with `uint8_t`
+    if (
+      RegisterInstance.isType(symbol) &&
+      RegisterInstance.isParameterType(program, symbol.fullyQualifiedCName)
+    ) {
+      for (const member of symbol.members.values()) {
+        into.add(TypeResolver.getTypeName(member.type));
+      }
+      into.add("u8");
     }
   }
 }
