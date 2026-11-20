@@ -64,6 +64,10 @@ function createMockContext(
     // controls what this returns.
     renderTarget: () =>
       HandlerTestUtils.planner().generateAssignmentTarget(null as never),
+    // An instance's member is written through its accessor macro
+    renderBitTarget: () =>
+      (overrides.target ?? registerTarget(identifiers.join("__"), "")).last
+        ?.beforeRegisterMember ?? identifiers.join("__"),
     analyzeTargetForBitAccess: () =>
       HandlerTestUtils.planner().analyzeMemberChainForBitAccess(null as never),
     targetLine: 1,

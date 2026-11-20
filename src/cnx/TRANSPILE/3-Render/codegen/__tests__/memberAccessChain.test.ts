@@ -97,6 +97,7 @@ describe("memberAccessChain.rootHolding", () => {
       isStructParam: true,
       forcePointerSemantics: true,
       isPointerLocal: false,
+      registerLayout: null,
     });
   });
 
@@ -119,6 +120,7 @@ describe("memberAccessChain.rootHolding", () => {
       isStructParam: false,
       forcePointerSemantics: false,
       isPointerLocal: false,
+      registerLayout: null,
     });
   });
 

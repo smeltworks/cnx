@@ -288,6 +288,7 @@ describe("HeaderSymbolAdapter", () => {
       state.program = {
         symbolTable: () => new SymbolTable(),
         isOpaqueType: () => false,
+        symbolByCName: () => undefined,
       } as unknown as IProgram;
       const tSymbol: IFunctionSymbol = {
         ...TestSymbolUtils.base({
