@@ -12,4 +12,7 @@ typedef struct {
     uint32_t config;
 } regs_t;
 extern regs_t regs;
+extern volatile uint32_t hw_arr[4];
+extern uint32_t hw_plain_arr[4];
+extern regs_t regs_table[2];
 #endif

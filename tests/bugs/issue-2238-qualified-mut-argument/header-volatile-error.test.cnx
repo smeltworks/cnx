@@ -4,8 +4,12 @@
 // #2238 review: a `volatile` global declared in a C header loses its
 // qualifier the same way when passed to a `mut` parameter, so it is E0915.
 // So is one made `volatile` by a typedef or by a struct field (#2468
-// review). CONTROL: a plain header global, typedef and field stay silent.
+// review), or an element of a `volatile` header array. CONTROL: a plain
+// header global, typedef, field and array element stay silent, and so does a
+// plain field reached through a `volatile` index.
 #include "hw-globals.h"
+
+volatile mut u32 idx <- 0;
 
 void bump(mut u32 n) {
     n <- n + 1;
@@ -18,4 +22,7 @@ void main() {
     bump(hw_plain_reg);
     bump(regs.status);
     bump(regs.config);
+    bump(hw_arr[1]);
+    bump(hw_plain_arr[1]);
+    bump(regs_table[idx].config);
 }
