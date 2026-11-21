@@ -279,13 +279,13 @@ While Option C works and requires no new syntax, it's convention-based and verbo
 
 ### Why This Is Different From C Bit Fields
 
-| C Bit Fields                   | cnx `bitmap`                                 |
-| ------------------------------ | -------------------------------------------- |
-| Compiler chooses bit ordering  | cnx guarantees LSB-first                     |
-| Implementation-defined padding | Compiler enforces exact bit count            |
-| Silent truncation on overflow  | Compile error for literals, clamp at runtime |
-| Struct-level declaration only  | Standalone reusable type                     |
-| No portability                 | Fully portable (cnx controls layout)         |
+| C Bit Fields                   | cnx `bitmap`                                              |
+| ------------------------------ | --------------------------------------------------------- |
+| Compiler chooses bit ordering  | cnx guarantees LSB-first                                  |
+| Implementation-defined padding | Compiler enforces exact bit count                         |
+| Silent truncation on overflow  | Compile error: a literal by value, a typed value by width |
+| Struct-level declaration only  | Standalone reusable type                                  |
+| No portability                 | Fully portable (cnx controls layout)                      |
 
 ---
 
@@ -379,10 +379,13 @@ A compound operator on a bitmap field (`flags.Mode +<- 1`) is an error
   ```cnx
   status.flags.Mode <- 10;  // ERROR: 10 exceeds 3-bit max (7)
   ```
-- **Runtime values**: Clamp to field maximum per ADR-044
+- **Typed values**: Error if the value's type is wider than the field (E0869), a
+  constant included; name the bits with bit indexing. ADR-072 ruling 17 on #2449
+  replaced the earlier runtime clamp, which was never built (the field writer masked).
   ```cnx
   u8 value <- getUserInput();
-  status.flags.Mode <- value;  // Clamped to 0-7 at runtime
+  status.flags.Mode <- value;        // ERROR E0869: u8 into a 3-bit field
+  status.flags.Mode <- value[0, 3];  // OK: the low 3 bits, explicitly
   ```
 
 ### Transpilation

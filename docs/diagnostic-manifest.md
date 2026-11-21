@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1037 fixture(s) assert a diagnostic; 1023 carry a code.
+1039 fixture(s) assert a diagnostic; 1025 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -289,6 +289,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-034/bitmap-compound-imported-transitive-error.test.cnx                                          | E0857                             |
 | tests/adr-034/bitmap-compound-same-file-error.test.cnx                                                    | E0857                             |
 | tests/adr-034/bitmap-error-overflow.test.cnx                                                              | E0881                             |
+| tests/adr-034/bitmap-field-narrowing-error.test.cnx                                                       | E0869                             |
 | tests/adr-034/bitmap-unknown-field-error.test.cnx                                                         | E0882                             |
 | tests/adr-034/bitmap-unknown-field-through-chain-error.test.cnx                                           | E0881, E0882, E0883               |
 | tests/adr-035/array-count-included-error.test.cnx                                                         | E0866                             |
@@ -495,6 +496,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-072/register-address-past-pointer-error.test.cnx                                                | E0931                             |
 | tests/adr-072/register-address-undeclared-name-error.test.cnx                                             | E0427                             |
 | tests/adr-072/register-as-value-error.test.cnx                                                            | E0942                             |
+| tests/adr-072/register-bitmap-field-width-error.test.cnx                                                  | E0869                             |
 | tests/adr-072/register-callback-type-error.test.cnx                                                       | E0941                             |
 | tests/adr-072/register-instance-as-type-error.test.cnx                                                    | E0937                             |
 | tests/adr-072/register-local-instance-error.test.cnx                                                      | E0934                             |

@@ -34,7 +34,7 @@ void set(const uint8_t m) {
     }
     {
         /* ADR-049 / Issue #1789: atomic read-modify-write as a compare-exchange retry loop, for a target with neither LDREX/STREX nor an interrupt mask. The GNU __atomic builtins are a compiler extension (MISRA C:2012 Rule 1.2). The value is evaluated once, before the loop, so a failed exchange does not evaluate it again (Issue #1807). */
-        uint8_t __operand = m;
+        uint8_t __operand = static_cast<uint8_t>(((m) & 0x7U));
         uint16_t __old;
         uint16_t __new;
         __atomic_load(&fl, &__old, __ATOMIC_RELAXED);
@@ -43,7 +43,7 @@ void set(const uint8_t m) {
         } while (!__atomic_compare_exchange(&fl, &__old, &__new, 0, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED));
     }
     pl += 1;
-    pl = (uint16_t)((pl & ~(0x7U << 1)) | ((m & 0x7U) << 1));
+    pl = (uint16_t)((pl & ~(0x7U << 1)) | ((static_cast<uint8_t>(((m) & 0x7U)) & 0x7U) << 1));
 }
 
 int main(void) {

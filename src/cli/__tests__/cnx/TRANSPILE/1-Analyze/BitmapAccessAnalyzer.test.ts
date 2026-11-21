@@ -51,9 +51,9 @@ describe("BitmapAccessAnalyzer (E0881)", () => {
     );
   });
 
-  // #1760 second review: a const is its value, folded by the one binder,
-  // and a local const shadows a file-scope one where it is written
-  it("folds a const and a const expression, as the binder binds them", () => {
+  // ADR-072 ruling 17: only an untyped value is judged by its value. A typed
+  // one, a const included, is judged by its type, which E0869 owns.
+  it("folds an untyped constant expression, and leaves a typed const to E0869", () => {
     const found = errors(
       [
         FLAGS,
@@ -63,15 +63,13 @@ describe("BitmapAccessAnalyzer (E0881)", () => {
         "void t() {",
         "    f.Mode <- BIG;",
         "    f.Mode <- FITS + 1;",
-        "    f.Mode <- FITS;",
-        "    u8 BIG <- 3;",
-        "    f.Mode <- BIG;",
+        "    f.Mode <- 7 + 1;",
+        "    f.Mode <- 3 + 4;",
         "}",
       ].join("\n"),
     );
     expect(found.map((e) => [e.code, e.span.line, e.message])).toEqual([
-      ["E0881", 6, "Value 20 exceeds 3-bit field 'Mode' maximum of 7"],
-      ["E0881", 7, "Value 8 exceeds 3-bit field 'Mode' maximum of 7"],
+      ["E0881", 8, "Value 8 exceeds 3-bit field 'Mode' maximum of 7"],
     ]);
   });
 

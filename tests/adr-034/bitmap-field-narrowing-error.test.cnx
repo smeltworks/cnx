@@ -1,0 +1,55 @@
+// test-error
+// test-adr: 034
+// ADR-072 ruling 17 (Part 2 width safety): a value written to a bitmap field
+// must fit the field by its type. A wider type is E0869 (ADR-024 narrowing),
+// and its help names the field's width. A typed constant is judged by its
+// type, as it is for a variable.
+
+#include "bitmap-field-narrowing-types.cnx"
+
+bitmap8 Flags {
+    Mode[3],
+    Enable[1],
+    Reserved[4]
+}
+
+mut Flags f <- 0;
+mut Ctrl c <- 0;
+u8 FITS <- 7;
+u8 BIG <- 20;
+
+scope Port {
+    mut Flags state <- 0;
+
+    public void set(u8 m) {
+        // CONTEXT: scope member, through `this.`
+        this.state.Mode <- m;
+    }
+}
+
+void main() {
+    u8 m <- 5;
+    u16 w <- 3;
+    i8 s <- 2;
+    u8 a <- 1;
+    u8 b <- 2;
+
+    // NEGATIVE CONTROLS -- each stays silent.
+    f.Mode <- m[0, 3];
+    f.Mode <- 7;
+    c.Wide <- m;
+    c.Mode <- w[0, 3];
+    Port.set(m);
+
+    // ASSERTIONS
+    f.Mode <- m;
+    f.Mode <- w;
+    f.Mode <- s;
+    f.Mode <- FITS;
+    f.Mode <- BIG;
+    f.Mode <- a + b;
+    f.Mode <- (m > 2) ? a : b;
+    f.Reserved <- m;
+    c.Mode <- m;
+    c.Wide <- w;
+}

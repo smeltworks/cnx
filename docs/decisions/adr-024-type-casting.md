@@ -508,14 +508,14 @@ Casts are primarily removed from the language. Bit indexing (ADR-007) handles na
 
 ### Error Messages
 
-| Code  | Meaning                                                                                        | Fixtures                                                                                             |
-| ----- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| E0810 | Operands of different essential type categories, under one operator or in a conditional's arms | `tests/adr-024/category-*-error`, `tests/bugs/issue-1668-int-float-clamp/`                           |
-| E0811 | An integer combined by `+`, `-` or `*` with a header macro whose type cnx cannot read          | `tests/adr-024/category-*-error`, `tests/bugs/issue-1688-float-macro/unreadable-macro-error`         |
-| E0812 | An integer combined with such a macro by any other operator E0810 covers, or in a conditional  | `tests/adr-024/category-*-error`, `tests/bugs/issue-1688-float-macro/unreadable-macro-error`         |
-| E0868 | An integer literal does not fit its target's range                                             | `tests/adr-024/literal-*-error`                                                                      |
-| E0869 | An implicit narrowing or sign-changing integer conversion, a cast included                     | `tests/adr-024/conversion-*-error`, `narrowing-*-error`, `sign-*-error`, `composite-narrowing-error` |
-| E0891 | An implicit conversion from a floating value to an integer                                     | `tests/adr-024/float-*-error`                                                                        |
+| Code  | Meaning                                                                                        | Fixtures                                                                                                                                                                                              |
+| ----- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| E0810 | Operands of different essential type categories, under one operator or in a conditional's arms | `tests/adr-024/category-*-error`, `tests/bugs/issue-1668-int-float-clamp/`                                                                                                                            |
+| E0811 | An integer combined by `+`, `-` or `*` with a header macro whose type cnx cannot read          | `tests/adr-024/category-*-error`, `tests/bugs/issue-1688-float-macro/unreadable-macro-error`                                                                                                          |
+| E0812 | An integer combined with such a macro by any other operator E0810 covers, or in a conditional  | `tests/adr-024/category-*-error`, `tests/bugs/issue-1688-float-macro/unreadable-macro-error`                                                                                                          |
+| E0868 | An integer literal does not fit its target's range                                             | `tests/adr-024/literal-*-error`                                                                                                                                                                       |
+| E0869 | An implicit narrowing or sign-changing integer conversion, a cast included                     | `tests/adr-024/conversion-*-error`, `narrowing-*-error`, `sign-*-error`, `composite-narrowing-error`, `tests/adr-034/bitmap-field-narrowing-error`, `tests/adr-072/register-bitmap-field-width-error` |
+| E0891 | An implicit conversion from a floating value to an integer                                     | `tests/adr-024/float-*-error`                                                                                                                                                                         |
 
 ```
 ERROR: Cannot narrow u32 to u8 (potential data loss)
@@ -786,7 +786,9 @@ quiet across an include rather than fail.
 is checked on an assignment statement as it is on a declaration's initializer,
 and an assignment is checked against the declared type of the variable or
 field it writes, not its root's: with `u32 a, b`, `u8 g` and a `u8` field `f`,
-both `g <- a + b` and `p.f <- a` are E0869 (narrowing).
+both `g <- a + b` and `p.f <- a` are E0869 (narrowing). A bitmap field's width is its
+own, not the `u8` holding it: `flags.Mode <- a` with a `u8 a` and a 3-bit `Mode` is E0869,
+and its help names the field's width, `value[0, 3]` (ADR-072 ruling 17 on #2449).
 
 ### Positions (#1618)
 

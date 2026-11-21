@@ -203,12 +203,15 @@ class IntegerConversionCheck {
     ) {
       return;
     }
-    const targetType =
-      OperandTyper.typeOfTarget(target, this.context)?.typeName ?? "";
+    const targetTyping = OperandTyper.typeOfTarget(target, this.context);
+    const targetType = targetTyping?.typeName ?? "";
     if (!TypeCheckUtils.isInteger(targetType)) return;
+    // The bits the target holds: its type's, or a bitmap field's own width,
+    // which a `u8` holding it is wider than (ADR-072 Part 2, ruling 17)
+    const targetWidth = targetTyping?.bitWidth ?? TYPE_WIDTH[targetType];
     const declaredAt = BindingSite.ofChain(target, this.context);
     if (site.operator === "<-") {
-      this.check(targetType, site.value, true, declaredAt);
+      this.check(targetType, site.value, true, declaredAt, targetWidth);
       return;
     }
     this.checkCompound(targetType, site, declaredAt);
@@ -570,6 +573,7 @@ class IntegerConversionCheck {
     value: TExpression,
     typeComposites: boolean,
     declaredAt: ISourceSite | undefined,
+    width: number = TYPE_WIDTH[target],
   ): void {
     const text = IntegerConversionCheck.integerLiteralText(value);
     if (text !== null) {
@@ -579,13 +583,15 @@ class IntegerConversionCheck {
     if (this.checkFloating(target, value)) return;
     const ternary = IntegerConversionCheck.ternaryOf(value);
     if (ternary !== null) {
-      this.check(target, ternary.whenTrue, typeComposites, declaredAt);
-      this.check(target, ternary.whenFalse, typeComposites, declaredAt);
+      this.check(target, ternary.whenTrue, typeComposites, declaredAt, width);
+      this.check(target, ternary.whenFalse, typeComposites, declaredAt, width);
       return;
     }
     this.checkLiteralLeaves(target, value, "value", declaredAt);
     const source = this.conversionSource(value, typeComposites);
-    if (source !== null) this.checkConversion(target, source, value, "assign");
+    if (source !== null) {
+      this.checkConversion(target, source, value, "assign", width);
+    }
   }
 
   /** The ternary a value is, past its parentheses: each arm lands (ADR-022) */
@@ -659,18 +665,22 @@ class IntegerConversionCheck {
     source: string,
     at: TExpression,
     kind: "assign" | "cast",
+    targetWidth: number = TYPE_WIDTH[target],
   ): void {
-    if (source === target || !TypeCheckUtils.isInteger(source)) return;
+    if (!TypeCheckUtils.isInteger(source)) return;
     const verb = kind === "cast" ? "cast" : "assign";
     const subject = kind === "cast" ? "expr" : "value";
-    const targetWidth = TYPE_WIDTH[target];
+    const into =
+      targetWidth === TYPE_WIDTH[target]
+        ? target
+        : `a ${targetWidth}-bit field`;
 
     if (TYPE_WIDTH[source] > targetWidth) {
       this.found.push({
         code: "E0869",
         span: at.span,
         declaredAt: BindingSite.ofOperands([at], this.context),
-        message: `Cannot ${verb} ${source} to ${target} (narrowing)`,
+        message: `Cannot ${verb} ${source} to ${into} (narrowing)`,
         helpText: `Use bit indexing to say which bits you mean: ${subject}[0, ${targetWidth}]`,
       });
       return;
@@ -680,7 +690,7 @@ class IntegerConversionCheck {
         code: "E0869",
         span: at.span,
         declaredAt: BindingSite.ofOperands([at], this.context),
-        message: `Cannot ${verb} ${source} to ${target} (sign change)`,
+        message: `Cannot ${verb} ${source} to ${into} (sign change)`,
         helpText: `Use bit indexing to reinterpret the bits explicitly: ${subject}[0, ${targetWidth}]`,
       });
     }

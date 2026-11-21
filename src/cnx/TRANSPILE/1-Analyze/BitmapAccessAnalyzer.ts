@@ -29,11 +29,11 @@ import type IValuePositions from "../../types/IValuePositions";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import OperandTyper from "../../utils/OperandTyper";
+import ConstantEvaluator from "../../utils/ConstantEvaluator";
 import BitmapFieldStep from "../../utils/BitmapFieldStep";
 import type IBitmapFieldTarget from "../../types/IBitmapFieldTarget";
 import type TExpressionOf from "../../types/syntax/TExpressionOf";
 import PROPERTY_NAMES from "../../utils/constants/PROPERTY_NAMES";
-import ConstantExpression from "./helpers/ConstantExpression";
 import IBitmapAccessError from "./types/IBitmapAccessError";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import SourceOrder from "../../utils/SourceOrder";
@@ -56,12 +56,15 @@ class BitmapAccessCheck {
     const field = this.checkChain(site.target);
     if (field === null) return;
 
-    // E0881: the value must fit the field it is written to. Folded by the
-    // one binder, so a const is its value (#1760 second review: reading the
-    // literal text let `f.Mode <- BIG` truncate silently).
-    const value = ConstantExpression.valueAt(site.value, this.context);
+    // E0881: a known value must fit the field it is written to. Only an
+    // untyped one -- a literal, or a header macro cnx can read -- is judged
+    // by its value; a typed value is judged by its type, which E0869 owns
+    // (ADR-072 ruling 17).
+    const result = OperandTyper.constantResultOf(site.value, this.context);
+    if (result.kind !== "value" || result.typeName !== null) return;
+    const value = ConstantEvaluator.toNumber(result.value);
     const maximum = 2 ** field.layout.width - 1;
-    if (value === null || value <= maximum) return;
+    if (value === undefined || value <= maximum) return;
     this.found.push({
       code: "E0881",
       span: site.value.span,

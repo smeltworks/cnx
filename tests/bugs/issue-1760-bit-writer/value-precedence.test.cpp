@@ -37,7 +37,7 @@ int main(void) {
     low8 = 0x10U;
     const uint8_t one = 0x1U;
     Flags f = 0;
-    f = (uint8_t)((f & ~(0x7U << 1)) | (((low8 | one) & 0x7U) << 1));
+    f = (uint8_t)((f & ~(0x7U << 1)) | ((static_cast<uint8_t>((((low8 | one)) & 0x7U)) & 0x7U) << 1));
     if (((f >> 1) & 0x7) != 1) {
         return 4U;
     }

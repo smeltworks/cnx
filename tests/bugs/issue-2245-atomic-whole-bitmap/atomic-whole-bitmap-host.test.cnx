@@ -16,9 +16,9 @@ mut F pl;
 
 void set(u8 m) {
     fl +<- 1;
-    fl.Mode <- m;
+    fl.Mode <- m[0, 3];
     pl +<- 1;
-    pl.Mode <- m;
+    pl.Mode <- m[0, 3];
 }
 
 u32 main() {

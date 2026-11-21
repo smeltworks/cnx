@@ -90,6 +90,31 @@ describe("IntegerConversionAnalyzer", () => {
       expect(errors(inMain("    u32 x <- (u32)byte;"))).toEqual([]);
     });
 
+    // ADR-072 ruling 17: a bitmap field holds its own width, not the u8's
+    it("judges a bitmap field write against the field's width", () => {
+      const field = (body: string): string =>
+        `bitmap16 F { Mode[3], Wide[8], Flag, Rest[4] }\nmut F f <- 0;\nu8 FITS <- 7;\n${inMain(body)}`;
+      const found = errors(
+        field(
+          "    f.Mode <- byte;\n    f.Mode <- neg;\n    f.Mode <- FITS;\n    f.Wide <- wide;",
+        ),
+      );
+      expect(found.map((e) => e.message)).toEqual([
+        "Cannot assign u8 to a 3-bit field (narrowing)",
+        "Cannot assign i32 to a 3-bit field (narrowing)",
+        "Cannot assign u8 to a 3-bit field (narrowing)",
+        "Cannot assign u32 to u8 (narrowing)",
+      ]);
+      expect(found[0].helpText).toContain("[0, 3]");
+      expect(
+        errors(
+          field(
+            "    f.Mode <- byte[0, 3];\n    f.Mode <- 7;\n    f.Wide <- byte;",
+          ),
+        ),
+      ).toEqual([]);
+    });
+
     it("accepts a bit extraction -- the explicit reinterpret the message asks for", () => {
       // Typing `wide[0, 8]` would make the sanctioned form fail the very check
       // it exists to satisfy.
