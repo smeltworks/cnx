@@ -1,2 +1,10 @@
-20:13 error[E0933]: parameter 'port' is a register; register parameters are not supported yet (ADR-072)
-       help: Access the register instance directly (`GPIO1.DR`). ADR-072 resolves a register parameter per instance at compile time; until that is implemented it is rejected rather than passed as a runtime pointer.
+28:12 error[E0940]: 'u' is a register of type 'Uart'; parameter 'port' of function 'setHigh' takes a 'GpioPort'
+       help: Pass an instance of 'GpioPort' declared at file or scope level (`GpioPort NAME(address);`), or a 'GpioPort' parameter (ADR-072).
+33:16 error[E0940]: 'UART0' is a register of type 'Uart'; parameter 'port' of function 'setHigh' takes a 'GpioPort'
+       help: Pass an instance of 'GpioPort' declared at file or scope level (`GpioPort NAME(address);`), or a 'GpioPort' parameter (ADR-072).
+39:12 error[E0940]: 'UART0' is a register of type 'Uart'; parameter 'port' of function 'setHigh' takes a 'GpioPort'
+       help: Pass an instance of 'GpioPort' declared at file or scope level (`GpioPort NAME(address);`), or a 'GpioPort' parameter (ADR-072).
+41:12 error[E0940]: 'value' is not a register instance; parameter 'port' of function 'setHigh' takes a 'GpioPort'
+       help: Pass an instance of 'GpioPort' declared at file or scope level (`GpioPort NAME(address);`), or a 'GpioPort' parameter (ADR-072).
+42:12 error[E0940]: 'GPIO1.DR' is not a register instance; parameter 'port' of function 'setHigh' takes a 'GpioPort'
+       help: Pass an instance of 'GpioPort' declared at file or scope level (`GpioPort NAME(address);`), or a 'GpioPort' parameter (ADR-072).

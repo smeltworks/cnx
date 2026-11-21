@@ -1,0 +1,8 @@
+10:4 error[E0938]: register member 'CNT' at 0x14 overlaps 'CMP' at 0x14
+       help: Members the hardware reaches through one offset are written as one group (ADR-072): `0x14 { rw u32 CMP, rw u32 CNT, }`. Otherwise check the offsets against the datasheet.
+12:4 error[E0938]: register member 'PRE' at 0x1A overlaps 'LOAD' at 0x18
+       help: Every member of a group starts at the group's offset, and no other members overlap (ADR-072). Check the offsets against the datasheet.
+20:4 error[E0938]: register member 'DLL' at 0x00 overlaps 'RBR' at 0x00
+       help: Members the hardware reaches through one offset are written as one group (ADR-072): `0x00 { ro u8 RBR, rw u8 DLL, }`. Otherwise check the offsets against the datasheet.
+27:8 error[E0938]: register member 'QH' at 0x01 overlaps 'Q' at 0x00
+       help: Every member of a group starts at the group's offset, and no other members overlap (ADR-072). Check the offsets against the datasheet.

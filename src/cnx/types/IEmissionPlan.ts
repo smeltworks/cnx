@@ -48,6 +48,12 @@ interface IEmissionPlan {
   readonly floatStaticAssert: IPlannedBlock | null;
 
   /**
+   * ADR-072: the static asserts that check each register layout's offsets and
+   * widths against C's, or null when the file defines no layout.
+   */
+  readonly registerLayoutAssert: IPlannedBlock | null;
+
+  /**
    * The IRQ wrapper chain, or null when the file opens no critical section.
    *
    * Carries ALL four platform requirements, never one: the emitted block is a

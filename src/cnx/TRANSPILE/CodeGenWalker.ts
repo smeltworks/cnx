@@ -103,6 +103,9 @@ import type TPlannedCaseLabel from "./3-Render/codegen/types/TPlannedCaseLabel";
 import enumGenerator from "./3-Render/codegen/generators/declarationGenerators/EnumGenerator";
 import bitmapGenerator from "./3-Render/codegen/generators/declarationGenerators/BitmapGenerator";
 import RegisterAddress from "../utils/RegisterAddress";
+import renderRegisterLayout from "./3-Render/codegen/generators/declarationGenerators/RegisterLayoutGenerator";
+import renderRegisterLayoutAsserts from "./3-Render/codegen/generators/declarationGenerators/RegisterLayoutAssertGenerator";
+import RegisterBlockPlacement from "./3-Render/codegen/generators/declarationGenerators/RegisterBlockPlacement";
 import type IRegisterSymbol from "../types/symbols/IRegisterSymbol";
 import generateRegisterDeclaration from "./3-Render/codegen/generators/declarationGenerators/RegisterGenerator";
 import type IPlannedRegister from "./3-Render/codegen/types/IPlannedRegister";
@@ -1569,6 +1572,8 @@ class CodeGenWalker {
         this.host.state.symbols!.memberCNames.get(registerCName)?.get(member),
       rootMemberSeparator: (holding: IRootHolding) =>
         memberAccessChain.rootMemberSeparator(holding, this.host.state.cppMode),
+      registerMemberPath: (layout: string, member: string) =>
+        RegisterInstance.layoutPathOf(this.host.state.program, layout, member),
     };
   }
 
@@ -2017,9 +2022,12 @@ class CodeGenWalker {
           this.planScope(declaration),
         );
       case "register":
-        // ADR-072 Part 1: a register TYPE has no address, so no macros; each
-        // instance emits its own
-        return "";
+        // ADR-072: a register TYPE has no address, so no macros; each
+        // instance emits its own. A type a parameter takes is its layout.
+        return this.generateRegisterLayout(
+          this.host.state.currentScopePath,
+          declaration.name,
+        );
       // Issue #369 / #1164: the struct generator decides for itself what a
       // self-include suppresses. Returning early here also skipped its
       // callback-field effects and dropped the ADR-029 init function, which
@@ -2221,7 +2229,12 @@ class CodeGenWalker {
         };
       }
       case "register":
-        return { kind: "other", adrLine };
+        return {
+          kind: "registerLayout",
+          adrLine,
+          render: () =>
+            this.generateRegisterLayout(declaringScopePath, declaration.name),
+        };
       default:
         return { kind: "other", adrLine };
     }
@@ -2373,6 +2386,49 @@ class CodeGenWalker {
     return this.invokeGenerator(
       generateRegisterDeclaration,
       this.planRegister(instance),
+    );
+  }
+
+  /** ADR-072: a register type a parameter takes, as the struct it points to */
+  private generateRegisterLayout(scopePath: string, name: string): string {
+    const state = this.host.state;
+    const type = state.program?.memberOf(scopePath, name);
+    if (!RegisterInstance.isType(type) || !type.isParameterLayout) {
+      return "";
+    }
+    const symbols = state.symbols!;
+    const members = [...type.members.values()].map((member) => {
+      const cType = symbols.registerMemberCTypes.get(
+        member.fullyQualifiedCName,
+      );
+      const bytes = member.bytes;
+      invariant(
+        cType !== undefined && member.offsetValue !== null && bytes !== null,
+        "1.4 settles every register member's C type, offset and width",
+      );
+      return {
+        name: member.layoutField,
+        cType,
+        access: member.access,
+        offset: member.offsetValue,
+        bytes,
+        union: member.layoutUnion,
+      };
+    });
+    const planned = { name: type.fullyQualifiedCName, members };
+    const asserts = state.emissionPlan().registerLayoutAssert;
+    invariant(
+      asserts?.keyword != null,
+      "2.2 plans the asserts of every layout",
+    );
+    // The asserts stay in the `.c`, which includes the header a public layout
+    // is placed in and owns the requirement they cost
+    return (
+      RegisterBlockPlacement.place(
+        type.fullyQualifiedCName,
+        renderRegisterLayout(planned),
+        state,
+      ) + renderRegisterLayoutAsserts(planned, asserts.keyword)
     );
   }
 
@@ -2819,6 +2875,7 @@ class CodeGenWalker {
         callbackTypes: this.host.state.callbackTypes,
         passing,
         isOpaqueHandle: registered.isOpaqueHandle ?? false,
+        isRegister: registered.isRegister ?? false,
         declarationOf: (typeName) => this.host.state.declarationOf(typeName),
       },
     );

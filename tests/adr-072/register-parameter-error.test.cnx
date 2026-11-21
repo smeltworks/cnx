@@ -1,24 +1,43 @@
 // test-error
 // test-adr: 072
 #pragma target cortex-m7
-// ADR-072, E0933: a register parameter is specialized per instance at compile
-// time. Until that is implemented it is rejected, never passed as a pointer.
+// ADR-072, E0940: a register parameter takes an instance of its register
+// type, or a register parameter of that type.
 
 register GpioPort {
     0x00 rw u32 DR,
 }
 
-GpioPort GPIO1(0x401B8000);
-
-// Negative control: a struct parameter is no register
-struct Pair {
-    u32 a;
+register Uart {
+    0x00 rw u8 DATA,
 }
 
-void useStruct(Pair p) {}
+GpioPort GPIO1(0x401B8000);
+Uart UART0(0x40001000);
 
-void setHigh(GpioPort port) {}
+void setHigh(GpioPort port) {
+    port.DR <- 0xFFFFFFFF;
+}
+
+// Negative control: a register parameter passed on is accepted
+void forward(GpioPort port) {
+    setHigh(port);
+}
+
+void wrongUart(Uart u) {
+    setHigh(u);
+}
+
+scope Board {
+    public void wrongInScope() {
+        setHigh(UART0);
+    }
+}
 
 void main() {
-    GPIO1.DR <- 1;
+    setHigh(GPIO1);
+    setHigh(UART0);
+    u32 value <- 5;
+    setHigh(value);
+    setHigh(GPIO1.DR);
 }

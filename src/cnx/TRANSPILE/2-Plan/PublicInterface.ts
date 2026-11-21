@@ -1,3 +1,4 @@
+import RegisterInstance from "../../utils/RegisterInstance";
 import type IResolvedSymbols from "../../types/IResolvedSymbols";
 import type TSymbol from "../../types/symbols/TSymbol";
 import type TType from "../../types/TType";
@@ -150,10 +151,12 @@ class PublicInterface {
     // once by 1.4 Resolve, so it names nothing this header must define.
     const definedBy = new Map<string, TSymbol>();
     for (const symbol of symbols) {
+      // ADR-072: a register type a public signature takes is its layout
       if (
         symbol.kind === "struct" ||
         symbol.kind === "enum" ||
-        symbol.kind === "bitmap"
+        symbol.kind === "bitmap" ||
+        RegisterInstance.isType(symbol)
       ) {
         definedBy.set(symbol.fullyQualifiedCName, symbol);
       }

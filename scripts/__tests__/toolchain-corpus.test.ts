@@ -43,8 +43,14 @@ const ACCOUNTED_TOKENS: ReadonlyArray<{
 }> = [
   { pattern: /\b__asm\b/, keys: ["critical-arm-gnu"] },
   { pattern: /\b__attribute__\b/, keys: ["critical-arm-gnu"] },
-  { pattern: /\b_Static_assert\b/, keys: ["float-assert-c11"] },
-  { pattern: /\bstatic_assert\b/, keys: ["float-assert-cpp11"] },
+  {
+    pattern: /\b_Static_assert\b/,
+    keys: ["float-assert-c11", "register-layout-assert-c11"],
+  },
+  {
+    pattern: /\bstatic_assert\b/,
+    keys: ["float-assert-cpp11", "register-layout-assert-cpp11"],
+  },
   { pattern: /\b__LDREX[BHW]?\b/, keys: ["atomic-ldrex-cmsis"] },
   { pattern: /\b__STREX[BHW]?\b/, keys: ["atomic-ldrex-cmsis"] },
   { pattern: /\bSREG\b/, keys: ["critical-avr-libc"] },

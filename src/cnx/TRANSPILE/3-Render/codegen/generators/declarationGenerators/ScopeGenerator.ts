@@ -303,6 +303,11 @@ function renderScopeMember(
       return ["", result.code];
     }
 
+    case "registerLayout": {
+      const code = member.render();
+      return code === "" ? [] : ["", code];
+    }
+
     case "other":
       return [];
   }

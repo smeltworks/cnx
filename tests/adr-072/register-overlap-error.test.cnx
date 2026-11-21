@@ -1,0 +1,45 @@
+// test-error
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072, E0938: two members overlap only inside an offset group. A repeated
+// offset is the copy-pasted register-map typo; a member starting inside
+// another is no hardware layout.
+
+register Timer {
+    0x14 rw u32 CMP,
+    0x14 rw u32 CNT,
+    0x18 rw u32 LOAD,
+    0x1A rw u8 PRE,
+}
+
+register Uart {
+    0x00 {
+        ro u8 RBR,
+        wo u8 THR,
+    },
+    0x00 rw u8 DLL,
+    0x04 ro u8 LSR,
+}
+
+scope Board {
+    register Latch {
+        0x00 rw u16 Q,
+        0x01 rw u8 QH,
+    }
+}
+
+// negative control: neighbouring members that touch but do not overlap
+register Clean {
+    0x00 rw u16 A,
+    0x02 rw u16 B,
+    0x04 {
+        ro u32 STATUS,
+        wo u32 CMD,
+    },
+}
+
+Timer TMR1(0x40038000);
+Uart UART0(0x40001000);
+Clean C0(0x40002000);
+
+void main() {}

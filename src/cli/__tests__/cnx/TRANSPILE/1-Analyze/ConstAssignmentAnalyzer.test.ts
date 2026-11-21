@@ -609,6 +609,30 @@ describe("ConstAssignmentAnalyzer (E0915, ADR-071 #2238)", () => {
     );
   });
 
+  it("reports a register parameter's member as E0915, not E0900, mut or not", () => {
+    const { syntax, context } = testAnalysisContextFor(
+      [
+        "register Blk {",
+        "    0x00 rw u32 LEN,",
+        "}",
+        "void bump(mut u32 n) {",
+        "    n +<- 1;",
+        "}",
+        "void viaReadOnly(Blk b) {",
+        "    bump(b.LEN);",
+        "}",
+        "void viaMut(mut Blk b) {",
+        "    bump(b.LEN);",
+        "}",
+      ].join("\n"),
+      { cppMode: false },
+    );
+    const codes = new ConstAssignmentAnalyzer(context)
+      .analyze(syntax)
+      .map((e) => e.code);
+    expect(codes).toEqual(["E0915", "E0915"]);
+  });
+
   it("rejects an atomic or volatile safe-division output, and accepts a plain one", () => {
     const { syntax, context } = testAnalysisContextFor(
       [

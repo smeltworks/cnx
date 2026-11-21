@@ -28,6 +28,7 @@ import type IOperandType from "../../types/IOperandType";
 import type ISourceSite from "../../types/ISourceSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TExpression from "../../types/syntax/TExpression";
+import RegisterInstance from "../../utils/RegisterInstance";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import type IMemberAccessError from "./types/IMemberAccessError";
 
@@ -91,7 +92,9 @@ class MemberAccessAnalyzer {
     if (t.dimensions.length > 0) return false;
     if (t.bitmapTypeName !== null) return true;
     if (t.typeName === null) return false;
-    if (this.context.program.symbolByCName(t.typeName)?.kind === "struct") {
+    const symbol = this.context.program.symbolByCName(t.typeName);
+    // ADR-072: a register parameter's type is a register type
+    if (symbol?.kind === "struct" || RegisterInstance.isType(symbol)) {
       return true;
     }
     return ForeignTypeFacts.isStructType(

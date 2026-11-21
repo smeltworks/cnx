@@ -1,4 +1,6 @@
+import type IRegisterSymbol from "../../types/symbols/IRegisterSymbol";
 import RegisterInstance from "../../utils/RegisterInstance";
+import RegisterAddress from "../../utils/RegisterAddress";
 import BindingSite from "../../utils/BindingSite";
 import ForeignTypeFacts from "../../utils/ForeignTypeFacts";
 import SubscriptDepthValidator from "./SubscriptDepthValidator";
@@ -1120,8 +1122,11 @@ class FilePlanner {
     cTypes: Set<string>,
     requirements: PlannedRequirements,
   ): readonly TDeclarationSyntax[] {
-    const memberCTypes = this.state.symbols!.registerMemberCTypes;
     return program.members.flatMap(({ declaration, scope }) => {
+      if (declaration.kind === "register") {
+        this.registerLayout(scope, declaration.name, cTypes, requirements);
+        return [];
+      }
       if (declaration.kind !== "constructorDeclaration") return [];
       const instance = RegisterInstance.inScope(
         this.state.program,
@@ -1129,18 +1134,49 @@ class FilePlanner {
         declaration.name,
       );
       if (instance === null) return [];
-      // Its macros spell each member's C type, so its header is required
-      for (const member of instance.members.values()) {
-        const cType = memberCTypes.get(member.fullyQualifiedCName);
-        if (cType === undefined) continue;
-        cTypes.add(cType);
-        // An `ISR` member's typedef comes from its own header
-        const include =
-          TypeGenerationHelper.generatePrimitiveType(cType).include;
-        if (include !== null) requirements.require(include);
-      }
+      // Its macros spell each member's C type
+      this.requireMemberCTypes(instance, cTypes, requirements);
       return [declaration];
     });
+  }
+
+  /**
+   * ADR-072: a register type a parameter takes is written as a struct, which
+   * spells each member's C type and pads its gaps with `uint8_t`
+   */
+  private registerLayout(
+    scope: string | null,
+    name: string,
+    cTypes: Set<string>,
+    requirements: PlannedRequirements,
+  ): void {
+    const program = this.state.program;
+    const type = program?.memberOf(
+      RegisterInstance.scopePathOf(program, scope),
+      name,
+    );
+    if (!RegisterInstance.isType(type) || !type.isParameterLayout) return;
+    cTypes.add("uint8_t");
+    // Its offsets and widths are asserted with `offsetof`
+    requirements.require("stddef");
+    requirements.require("register_layout_assert");
+    this.requireMemberCTypes(type, cTypes, requirements);
+  }
+
+  /** Each member's C type, and the header an `ISR` member's typedef needs */
+  private requireMemberCTypes(
+    register: IRegisterSymbol,
+    cTypes: Set<string>,
+    requirements: PlannedRequirements,
+  ): void {
+    const memberCTypes = this.state.symbols!.registerMemberCTypes;
+    for (const member of register.members.values()) {
+      const cType = memberCTypes.get(member.fullyQualifiedCName);
+      if (cType === undefined) continue;
+      cTypes.add(cType);
+      const include = TypeGenerationHelper.generatePrimitiveType(cType).include;
+      if (include !== null) requirements.require(include);
+    }
   }
 
   private planInlinedConsts(
@@ -1843,6 +1879,11 @@ class FilePlanner {
     >,
   ): TArgumentForm {
     const object = ExpressionShape.unparenthesized(expression);
+    const instance = OperandTyper.registerInstanceOf(
+      object,
+      this.state.typingContext(),
+    );
+    if (instance !== null) return this.registerForm(instance);
     const form = ArgumentForm.of(
       this.boundArgumentName(object) !== null,
       passing.param?.baseType,
@@ -1857,6 +1898,21 @@ class FilePlanner {
       "2.1 rejected every `mut` argument that is not an object (ADR-006, E0915)",
     );
     return form;
+  }
+
+  /** ADR-072: an instance passed to a register parameter, at its address */
+  private registerForm(instance: string): TArgumentForm {
+    const register = this.state.program?.symbolByCName(instance);
+    invariant(
+      RegisterInstance.isInstance(register) &&
+        register.registerType !== null &&
+        register.baseAddress !== null,
+      `2.1 rejected an instance whose address does not fold (E0931, '${instance}')`,
+    );
+    return {
+      kind: "register",
+      pointer: `(${register.registerType}*)${RegisterAddress.render(register.baseAddress)}`,
+    };
   }
 
   private planExpectedTypes(
@@ -3346,6 +3402,9 @@ class FilePlanner {
       needsLimits: requirements.requires("limits"),
       needsStddef: requirements.requires("stddef"),
       needsFloatStaticAssert: requirements.requires("float_static_assert"),
+      needsRegisterLayoutAssert: requirements.requires(
+        "register_layout_assert",
+      ),
       needsIrqWrappers: requirements.requires("irq_wrappers"),
       needsISR: requirements.requires("isr"),
       selfIncludeAdded,

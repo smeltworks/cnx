@@ -40,6 +40,8 @@ interface IEmissionFacts {
   readonly needsStddef: boolean;
 
   readonly needsFloatStaticAssert: boolean;
+  /** ADR-072: the file defines a register layout, whose offsets it asserts */
+  readonly needsRegisterLayoutAssert: boolean;
   readonly needsIrqWrappers: boolean;
   readonly needsISR: boolean;
 

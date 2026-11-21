@@ -44,6 +44,14 @@ interface IParameterInfo {
    * stamp rather than asking the type again, so they cannot disagree.
    */
   readonly isOpaqueHandle?: boolean;
+
+  /**
+   * ADR-072: the parameter's type is a register type, so it is held through a
+   * pointer to that type's layout. Decided once, by 1.4 Resolve, which first
+   * knows the program's register types; the `.c` signature, its call sites
+   * and the `.h` prototype all read this stamp.
+   */
+  readonly isRegister?: boolean;
 }
 
 export default IParameterInfo;

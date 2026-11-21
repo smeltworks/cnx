@@ -3,14 +3,18 @@
  *
  * - E0931: an instance's address is not a compile-time constant
  * - E0932: a register member's offset is not a compile-time constant
- * - E0933: a function parameter is a register (ADR-072 specializes it per
- *   instance; until that lands it is rejected, not passed as a pointer)
  * - E0934: a register instance is declared inside a function
+ * - E0938: two register members overlap outside an offset group
+ * - E0939: a register member's offset is not a multiple of its size
  *
  * 1.4 Resolve folded every address and offset once; this reads the result.
+ *
+ * E0933 is retired: a register parameter is supported now, bound to an
+ * instance at each call (ADR-072).
  */
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TTypeSyntax from "../../types/syntax/TTypeSyntax";
+import type IFunctionDeclarationSyntax from "../../types/syntax/IFunctionDeclarationSyntax";
 import type IBaseAnalysisError from "./types/IBaseAnalysisError";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import SourceOrder from "../../utils/SourceOrder";
@@ -18,7 +22,7 @@ import RegisterAddress from "../../utils/RegisterAddress";
 import RegisterInstance from "../../utils/RegisterInstance";
 import UndeclaredValueAnalyzer from "./UndeclaredValueAnalyzer";
 import TYPE_FORMING_KINDS from "../../PARSE/3-Declare/TYPE_FORMING_KINDS";
-import TYPE_WIDTH from "../../types/TYPE_WIDTH";
+import RegisterLayout from "../../utils/RegisterLayout";
 import type IRegisterSymbol from "../../types/symbols/IRegisterSymbol";
 import type IRegisterMemberSymbol from "../../types/symbols/IRegisterMemberSymbol";
 import StatementNodes from "../../utils/StatementNodes";
@@ -34,17 +38,7 @@ class RegisterInstanceAnalyzer {
         scope,
       );
       if (declaration.kind === "function") {
-        for (const parameter of declaration.parameters ?? []) {
-          if (!this.isRegisterType(parameter.type, scopePath)) continue;
-          found.push({
-            aboutItsPosition: true,
-            code: "E0933",
-            span: parameter.span,
-            message: `parameter '${parameter.name}' is a register; register parameters are not supported yet (ADR-072)`,
-            helpText:
-              "Access the register instance directly (`GPIO1.DR`). ADR-072 resolves a register parameter per instance at compile time; until that is implemented it is rejected rather than passed as a runtime pointer.",
-          });
-        }
+        found.push(...this.mutRegisterParameters(declaration, scopePath));
         for (const statement of StatementNodes.in(declaration)) {
           if (statement.kind !== "constructorDeclaration") continue;
           if (!this.isRegisterType(statement.type, scopePath)) {
@@ -119,8 +113,113 @@ class RegisterInstanceAnalyzer {
             "A register member's offset is resolved at compile time (ADR-072). Use a literal, a const, or arithmetic over them.",
         });
       }
+      found.push(...this.layoutOf(declaration, symbol));
     }
     return found.sort(SourceOrder.bySpan);
+  }
+
+  /**
+   * E0938/E0939: a register's members match the hardware's map, so a member
+   * is aligned to its size and overlaps another only inside an offset group
+   */
+  private layoutOf(
+    declaration: {
+      readonly members: ReadonlyArray<{
+        readonly name: string;
+        readonly group: number | null;
+        readonly span: IBaseAnalysisError["span"];
+      }>;
+    },
+    register: IRegisterSymbol,
+  ): IBaseAnalysisError[] {
+    const found: IBaseAnalysisError[] = [];
+    const placed: Array<{
+      readonly name: string;
+      readonly group: number | null;
+      readonly start: bigint;
+      readonly end: bigint;
+      readonly declared: string;
+    }> = [];
+    for (const syntax of declaration.members) {
+      const member = register.members.get(syntax.name);
+      const start = member?.offsetValue ?? null;
+      if (member === undefined || start === null || start < 0n) continue;
+      const bytes = member.bytes;
+      if (bytes === null) continue;
+      const end = start + bytes;
+      // Ruling 13: only a hardware map faults on an unaligned access
+      const misaligned = register.isHardwareLayout
+        ? this.misaligned(syntax, member, start, bytes)
+        : null;
+      if (misaligned !== null) found.push(misaligned);
+      const other = placed.find(
+        (prior) =>
+          (syntax.group === null || prior.group !== syntax.group) &&
+          prior.start < end &&
+          start < prior.end,
+      );
+      const declared = `${member.access} ${RegisterLayout.typeNameOf(member)} ${syntax.name}`;
+      if (other !== undefined) {
+        found.push(this.overlap(syntax, start, declared, other));
+      }
+      placed.push({
+        name: syntax.name,
+        group: syntax.group,
+        start,
+        end,
+        declared,
+      });
+    }
+    return found;
+  }
+
+  private overlap(
+    member: {
+      readonly name: string;
+      readonly span: IBaseAnalysisError["span"];
+    },
+    start: bigint,
+    declared: string,
+    other: {
+      readonly name: string;
+      readonly start: bigint;
+      readonly declared: string;
+    },
+  ): IBaseAnalysisError {
+    const offset = RegisterAddress.hex(start);
+    return {
+      aboutItsPosition: true,
+      code: "E0938",
+      span: member.span,
+      message: `register member '${member.name}' at ${offset} overlaps '${other.name}' at ${RegisterAddress.hex(other.start)}`,
+      helpText:
+        other.start === start
+          ? `Members the hardware reaches through one offset are written as one group (ADR-072): \`${offset} { ${other.declared}, ${declared}, }\`. Otherwise check the offsets against the datasheet.`
+          : "Every member of a group starts at the group's offset, and no other members overlap (ADR-072). Check the offsets against the datasheet.",
+    };
+  }
+
+  /** E0939: on Cortex-M an unaligned access to device memory faults */
+  private misaligned(
+    syntax: {
+      readonly name: string;
+      readonly span: IBaseAnalysisError["span"];
+    },
+    member: IRegisterMemberSymbol,
+    start: bigint,
+    bytes: bigint,
+  ): IBaseAnalysisError | null {
+    // a size that is not a power of two has no natural alignment
+    if ((bytes & (bytes - 1n)) !== 0n || start % bytes === 0n) return null;
+    const type = RegisterLayout.typeNameOf(member);
+    const next = RegisterAddress.hex(start + bytes - (start % bytes));
+    return {
+      aboutItsPosition: true,
+      code: "E0939",
+      span: syntax.span,
+      message: `register member '${syntax.name}' is a ${type} at ${RegisterAddress.hex(start)}, which is not a multiple of ${bytes}`,
+      helpText: `A register member is aligned to its size (ADR-072); an unaligned access to device memory faults. Move it to ${next} if the datasheet says so, or declare the narrower parts the hardware reaches.`,
+    };
   }
 
   /**
@@ -142,10 +241,7 @@ class RegisterInstanceAnalyzer {
     for (const member of instance.members.values()) {
       if (member.offsetValue === null || member.offsetValue < 0n) continue;
       const last =
-        instance.baseAddress +
-        member.offsetValue +
-        this.bytesOf(member, bits) -
-        1n;
+        instance.baseAddress + member.offsetValue + member.bytes! - 1n;
       if (last < limit) continue;
       found.push({
         aboutItsPosition: true,
@@ -191,24 +287,6 @@ class RegisterInstanceAnalyzer {
     };
   }
 
-  private bytesOf(member: IRegisterMemberSymbol, pointerBits: number): bigint {
-    const type = member.type;
-    const name =
-      type.kind === "primitive"
-        ? type.primitive
-        : "name" in type
-          ? String(type.name)
-          : "";
-    // an ISR slot is a function pointer, as wide as the target's pointers
-    const bits =
-      name === "ISR"
-        ? pointerBits
-        : (TYPE_WIDTH[name] ??
-          this.context.symbols.bitmapBitWidth.get(name) ??
-          8);
-    return BigInt(Math.ceil(bits / 8));
-  }
-
   /** `Type name(expr);` whose type is not a register: a C++ constructor (#375) */
   private notRegister(declaration: {
     readonly name: string;
@@ -222,6 +300,29 @@ class RegisterInstanceAnalyzer {
       helpText:
         "Only a register instance takes an address expression (ADR-072). A C++ constructor's arguments are named constants (#375): declare the value as a const and pass its name.",
     };
+  }
+
+  /**
+   * E0943 (ruling 12): `mut` does not apply to a register. Each member's
+   * access mode (`rw`, `ro`, `wo`, `w1c`, `w1s`) is what governs its writes.
+   */
+  private mutRegisterParameters(
+    declaration: IFunctionDeclarationSyntax,
+    scopePath: string,
+  ): IBaseAnalysisError[] {
+    return (declaration.parameters ?? [])
+      .filter(
+        (parameter) =>
+          parameter.mut && this.isRegisterType(parameter.type, scopePath),
+      )
+      .map((parameter) => ({
+        aboutItsPosition: true,
+        code: "E0943",
+        span: parameter.nameSpan,
+        message: `register parameter '${parameter.name}' cannot be \`mut\``,
+        helpText:
+          "A register's members are written according to their access mode (rw, ro, wo, w1c, w1s), not `mut` (ADR-072). Remove `mut`.",
+      }));
   }
 
   /** The register type a written type names, in the scope it is written in */

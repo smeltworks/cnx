@@ -48,6 +48,7 @@ import type IStructSymbol from "../../../../../types/symbols/IStructSymbol";
 import OperandTyper from "../../../../../utils/OperandTyper";
 import invariant from "../../../../../utils/invariant";
 import DeclaredTypeFacts from "../../../../../utils/DeclaredTypeFacts";
+import RegisterInstance from "../../../../../utils/RegisterInstance";
 import PrivateConstValue from "../../PrivateConstValue";
 
 // ========================================================================
@@ -844,7 +845,7 @@ const generateMemberAccess = (
     tryKnownScopeAccess(ctx, orchestrator) ??
     tryEnumMemberAccess(ctx, input) ??
     tryRegisterMemberAccess(ctx, input) ??
-    tryStructParamAccess(ctx, orchestrator) ??
+    tryStructParamAccess(ctx, input, orchestrator) ??
     tryRegisterBitmapAccess(ctx, input, effects, orchestrator) ??
     tryStructBitmapAccess(ctx, input, effects, orchestrator) ??
     generateDefaultAccess(ctx)
@@ -1017,6 +1018,7 @@ const tryRegisterMemberAccess = (
  */
 const tryStructParamAccess = (
   ctx: IMemberAccessContext,
+  input: IGeneratorInput,
   orchestrator: IOrchestrator,
 ): MemberAccessResult | null => {
   const held = ctx.holding.isStructParam || ctx.holding.isPointerLocal;
@@ -1031,6 +1033,18 @@ const tryStructParamAccess = (
     orchestrator.isCppMode(),
   );
 
+  // ADR-072: a register parameter's member is reached at its layout path,
+  // through its offset group's union -- the path the write path joins too
+  const layout = ctx.holding.registerLayout;
+  const path =
+    layout === null
+      ? undefined
+      : RegisterInstance.layoutPathOf(input.program, layout, ctx.memberName);
+  if (path !== undefined) {
+    const output = initializeMemberOutput(ctx);
+    output.result = `${ctx.result}${structParamSep}${path}`;
+    return output;
+  }
   return advanceMemberAccess(ctx, structParamSep);
 };
 

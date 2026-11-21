@@ -52,6 +52,7 @@ describe("TargetMatrix.toolchainForInline", () => {
     "#pragma double_bits 64",
     "#pragma long_double_bits 64",
     "#pragma big_endian false",
+    "#pragma short_enums true",
     "#pragma external_identifier_chars 31",
     "#pragma internal_identifier_chars 63",
   ];

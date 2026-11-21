@@ -28,6 +28,7 @@ import CompositeType from "./CompositeType";
 import LengthProperty from "./LengthProperty";
 import TypeHead from "./TypeHead";
 import RegisterInstance from "./RegisterInstance";
+import type IRegisterMemberSymbol from "../types/symbols/IRegisterMemberSymbol";
 import ResolvedTarget from "./ResolvedTarget";
 import PROPERTY_NAMES from "./constants/PROPERTY_NAMES";
 import SubscriptClassifier from "./SubscriptClassifier";
@@ -333,6 +334,52 @@ class OperandTyper {
     ctx: ITypingContext,
   ): IOperandType | null {
     return OperandTyper.walkChain(target, ctx).last;
+  }
+
+  /**
+   * ADR-072: the register instance an expression names as a whole --
+   * `GPIO1`, `this.PORT`, `Board.PORT` -- by its C name; null for anything
+   * else, a member of one included
+   */
+  static registerInstanceOf(
+    expr: TExpression,
+    ctx: ITypingContext,
+  ): string | null {
+    const start = OperandTyper.chainStart(
+      ExpressionShape.unparenthesized(expr),
+      ctx,
+    );
+    let current = start.value;
+    for (const op of start.ops) {
+      current = OperandTyper.applyOp(current, op, ctx).next;
+    }
+    return current.k === "register" ? current.name : null;
+  }
+
+  /**
+   * ADR-072: the register type an expression names whole -- an instance's,
+   * or a register parameter's -- by its C name; null for anything else, a
+   * member of one included
+   */
+  static wholeRegisterTypeOf(
+    expr: TExpression,
+    ctx: ITypingContext,
+  ): string | null {
+    expr = ExpressionShape.unparenthesized(expr);
+    const instance = OperandTyper.registerInstanceOf(expr, ctx);
+    if (instance !== null) {
+      const symbol = ctx.program.symbolByCName(instance);
+      return RegisterInstance.isInstance(symbol) ? symbol.registerType : null;
+    }
+    if (expr.kind === "postfix" && expr.ops.length > 0) return null;
+    const root = OperandTyper.rootOfTarget(expr, ctx);
+    if (root?.kind !== "local" || root.declaration.kind !== "parameter") {
+      return null;
+    }
+    return (
+      RegisterInstance.typeNamedBy(ctx.program, root.declaration.type)
+        ?.fullyQualifiedCName ?? null
+    );
   }
 
   /** What a target's chain is rooted in: the declaration it writes into */
@@ -1664,8 +1711,75 @@ class OperandTyper {
     if (OperandTyper.readsProperty(t, member, ctx)) {
       return OperandTyper.propertyOf(t, member, true, onBitField);
     }
+    // ADR-072: a register type names no field; only a value of it -- a
+    // register parameter -- reaches its members (E0897 reports the type)
+    if (
+      t.typeName !== null &&
+      RegisterInstance.isType(ctx.program.symbolByCName(t.typeName))
+    ) {
+      return UNKNOWN;
+    }
     const field = OperandTyper.fieldOf(t, member, ctx, false);
     return field.k === "value" ? { k: "type", t: field.t } : field;
+  }
+
+  /**
+   * A member of a register: of an instance (`GPIO1.DR`), or of the type a
+   * register parameter names (`port.DR`, ADR-072). Its access rules apply
+   * to it whatever its type (#2155 review 8).
+   */
+  private static registerMemberOf(
+    register: string,
+    info: IRegisterMemberSymbol,
+    ctx: ITypingContext,
+  ): TChainValue {
+    // #2155 review 8: the member is named whatever its type, so its
+    // access rules apply to it
+    const registerMember = {
+      register,
+      cName: info.fullyQualifiedCName,
+    };
+    // #1514: whether it names a bitmap is asked of the names this file
+    // SEES, so an included bitmap counts
+    const bitmap = DeclaredTypeFacts.registerMemberBitmap(
+      ctx.symbols,
+      registerMember.cName,
+    );
+    if (bitmap !== null) {
+      const t = {
+        ...OperandTyper.plain(bitmap),
+        bitmapTypeName: bitmap,
+      };
+      return { k: "value", registerMember, t };
+    }
+    const cType = ctx.symbols.registerMemberCTypes.get(registerMember.cName);
+    // A register this file's view does not hold. `global.` cannot reach
+    // one (E0427); `this.` through a scope spanned from an un-included
+    // file still can, at exit 0 (#2275). Named, so its access rules apply,
+    // of unknown type -- TODO(#2275): unreachable once that is rejected
+    if (cType === undefined) {
+      return { k: "value", registerMember, t: OperandTyper.plain(null) };
+    }
+    // A member records its C spelling (`uint16_t`)
+    const foreign = ForeignTypeFacts.operandType(
+      cType,
+      ctx.symbolTable,
+      OperandTyper.target(ctx),
+    );
+    if (foreign !== null) {
+      return {
+        k: "value",
+        registerMember,
+        t: { ...foreign, form: DECLARED },
+      };
+    }
+    // A cnx enum types the member as that enum (#2155 review 9)
+    const named = OperandTyper.namedFacts(cType, ctx);
+    const t =
+      named.category === "enum"
+        ? { ...OperandTyper.plain(cType), ...named }
+        : OperandTyper.plain(null);
+    return { k: "value", registerMember, t };
   }
 
   private static memberOf(
@@ -1699,55 +1813,7 @@ class OperandTyper {
             ? register.members.get(member)
             : null;
         if (!info) return UNKNOWN;
-        // #2155 review 8: the member is named whatever its type, so its
-        // access rules apply to it
-        const registerMember = {
-          register: current.name,
-          cName: info.fullyQualifiedCName,
-        };
-        // #1514: whether it names a bitmap is asked of the names this file
-        // SEES, so an included bitmap counts
-        const bitmap = DeclaredTypeFacts.registerMemberBitmap(
-          ctx.symbols,
-          registerMember.cName,
-        );
-        if (bitmap !== null) {
-          const t = {
-            ...OperandTyper.plain(bitmap),
-            bitmapTypeName: bitmap,
-          };
-          return { k: "value", registerMember, t };
-        }
-        const cType = ctx.symbols.registerMemberCTypes.get(
-          registerMember.cName,
-        );
-        // A register this file's view does not hold. `global.` cannot reach
-        // one (E0427); `this.` through a scope spanned from an un-included
-        // file still can, at exit 0 (#2275). Named, so its access rules apply,
-        // of unknown type -- TODO(#2275): unreachable once that is rejected
-        if (cType === undefined) {
-          return { k: "value", registerMember, t: OperandTyper.plain(null) };
-        }
-        // A member records its C spelling (`uint16_t`)
-        const foreign = ForeignTypeFacts.operandType(
-          cType,
-          ctx.symbolTable,
-          OperandTyper.target(ctx),
-        );
-        if (foreign !== null) {
-          return {
-            k: "value",
-            registerMember,
-            t: { ...foreign, form: DECLARED },
-          };
-        }
-        // A cnx enum types the member as that enum (#2155 review 9)
-        const named = OperandTyper.namedFacts(cType, ctx);
-        const t =
-          named.category === "enum"
-            ? { ...OperandTyper.plain(cType), ...named }
-            : OperandTyper.plain(null);
-        return { k: "value", registerMember, t };
+        return OperandTyper.registerMemberOf(current.name, info, ctx);
       }
       case "foreignPath":
         return OperandTyper.foreignPathOf(
@@ -1796,6 +1862,7 @@ class OperandTyper {
     if (t.typeName === null) return false;
     const struct = ctx.program.symbolByCName(t.typeName);
     if (struct?.kind === "struct") return struct.fields.has(member);
+    if (RegisterInstance.isType(struct)) return struct.members.has(member);
     return ctx.symbolTable.getStructFieldInfo(t.typeName, member) !== undefined;
   }
 
@@ -1839,6 +1906,12 @@ class OperandTyper {
       return OperandTyper.bitmapFieldOf(t, t.bitmapTypeName, member, ctx);
     }
     const struct = ctx.program.symbolByCName(t.typeName);
+    if (RegisterInstance.isType(struct)) {
+      const info = struct.members.get(member);
+      return info
+        ? OperandTyper.registerMemberOf(t.typeName, info, ctx)
+        : UNKNOWN;
+    }
     if (struct?.kind === "struct") {
       const field = struct.fields.get(member);
       if (!field) return UNKNOWN;

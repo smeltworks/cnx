@@ -24,6 +24,11 @@ class ParameterSignatureBuilder {
    * @returns The formatted parameter string (e.g., "const uint32_t* value")
    */
   static build(param: IParameterInput, refSuffix: string): string {
+    // ADR-072: the layout is written through, so the pointee is never const
+    if (param.isRegister) {
+      return `${param.mappedType}* ${param.name}`;
+    }
+
     // Callback parameters: just typedef name and param name
     if (param.isCallback && param.callbackTypedefName) {
       return `${param.callbackTypedefName} ${param.name}`;

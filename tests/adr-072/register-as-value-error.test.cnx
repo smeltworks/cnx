@@ -1,0 +1,34 @@
+// test-error
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072, E0942: a register is hardware at a fixed address, not a value. An
+// instance or a register parameter is never read, assigned or stored whole.
+
+register GpioPort {
+    0x00 rw u32 DR,
+}
+
+GpioPort GPIO1(0x401B8000);
+GpioPort GPIO2(0x401BC000);
+
+void readParam(GpioPort port) {
+    u32 y <- port;
+}
+
+void assignParam(GpioPort port) {
+    port <- GPIO2;
+}
+
+// Negative controls: a member is a value, and an argument to a register
+// parameter is passed, not read
+void setHigh(GpioPort port) {
+    port.DR <- 0xFFFFFFFF;
+}
+
+void main() {
+    u32 x <- GPIO1;
+    u32 ok <- GPIO1.DR;
+    setHigh(GPIO1);
+    readParam(GPIO1);
+    assignParam(GPIO1);
+}

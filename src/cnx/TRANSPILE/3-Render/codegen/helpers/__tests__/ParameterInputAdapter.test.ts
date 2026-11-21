@@ -92,6 +92,7 @@ function createDefaultASTDeps(overrides?: {
     isModified: overrides?.isModified ?? false,
     passing: overrides?.passing ?? passing(),
     isOpaqueHandle: overrides?.isOpaqueHandle ?? false,
+    isRegister: false,
   };
 }
 

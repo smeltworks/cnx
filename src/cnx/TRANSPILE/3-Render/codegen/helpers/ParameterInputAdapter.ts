@@ -50,6 +50,9 @@ interface IFromASTDeps {
    */
   isOpaqueHandle: boolean;
 
+  /** ADR-072: whether the parameter is a register, decided once in 2.2 */
+  isRegister: boolean;
+
   /** #1402: where a parameter's type is declared, for ADR-029/030 provenance */
   declarationOf: (typeName: string) => ISourceSite | undefined;
 }
@@ -83,6 +86,9 @@ class ParameterInputAdapter {
     deps: IFromASTDeps,
   ): IParameterInput {
     const { name, typeName, mappedType, isConst } = planned;
+    if (deps.isRegister) {
+      return this._buildRegisterInput(name, typeName, mappedType);
+    }
 
     // Check for callback type
     // #1984: the planned type's answer; the map only spells the typedef
@@ -160,6 +166,26 @@ class ParameterInputAdapter {
     );
   }
 
+  /** ADR-072: a register parameter, the same in the `.c` and the `.h` */
+  private static _buildRegisterInput(
+    name: string,
+    baseType: string,
+    mappedType: string,
+  ): IParameterInput {
+    return {
+      name,
+      baseType,
+      mappedType,
+      isConst: false,
+      isArray: false,
+      isCallback: false,
+      isString: false,
+      isPassByValue: false,
+      isPassByReference: false,
+      isRegister: true,
+    };
+  }
+
   /**
    * Convert IParameterSymbol to normalized IParameterInput.
    * Used by BaseHeaderGenerator.generateParameter().
@@ -176,6 +202,13 @@ class ParameterInputAdapter {
     deps: IFromSymbolDeps,
   ): IParameterInput {
     const mappedType = deps.mapType(param.type);
+    if (param.isRegister) {
+      return this._buildRegisterInput(
+        param.emittedName,
+        param.type,
+        mappedType,
+      );
+    }
 
     // Array parameters
     if (

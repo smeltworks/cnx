@@ -153,6 +153,7 @@ class HeaderEmissionCapture {
         // #1453: same contract, same reason -- copied at capture, never read
         // live by the render.
         registerBlocks: [...state.exportedRegisterBlocks],
+        registerTypes: new Set(state.symbols?.knownRegisterTypes ?? []),
         externalTypeHeaders,
         // #1517: 2.2 Plan decides; the header generator prints. Possible only
         // since #1520 made `headerCType` the one answer to "what does this

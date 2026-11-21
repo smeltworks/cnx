@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1029 fixture(s) assert a diagnostic; 1015 carry a code.
+1037 fixture(s) assert a diagnostic; 1023 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -494,12 +494,20 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-072/register-address-not-constant-error.test.cnx                                                | E0931                             |
 | tests/adr-072/register-address-past-pointer-error.test.cnx                                                | E0931                             |
 | tests/adr-072/register-address-undeclared-name-error.test.cnx                                             | E0427                             |
+| tests/adr-072/register-as-value-error.test.cnx                                                            | E0942                             |
+| tests/adr-072/register-callback-type-error.test.cnx                                                       | E0941                             |
 | tests/adr-072/register-instance-as-type-error.test.cnx                                                    | E0937                             |
 | tests/adr-072/register-local-instance-error.test.cnx                                                      | E0934                             |
+| tests/adr-072/register-misaligned-error.test.cnx                                                          | E0939                             |
+| tests/adr-072/register-mut-parameter-error.test.cnx                                                       | E0943                             |
 | tests/adr-072/register-negative-offset-error.test.cnx                                                     | E0931, E0932                      |
 | tests/adr-072/register-offset-not-constant-error.test.cnx                                                 | E0932                             |
-| tests/adr-072/register-parameter-error.test.cnx                                                           | E0933                             |
-| tests/adr-072/register-scoped-parameter-error.test.cnx                                                    | E0933, E0934                      |
+| tests/adr-072/register-overlap-error.test.cnx                                                             | E0938                             |
+| tests/adr-072/register-parameter-error.test.cnx                                                           | E0940                             |
+| tests/adr-072/register-parameter-mut-argument-error.test.cnx                                              | E0915                             |
+| tests/adr-072/register-scoped-local-instance-error.test.cnx                                               | E0934                             |
+| tests/adr-072/register-scoped-type-name-error.test.cnx                                                    | E0940                             |
+| tests/adr-072/register-scoped-type-value-error.test.cnx                                                   | E0942                             |
 | tests/adr-072/register-type-as-value-error.test.cnx                                                       | E0897                             |
 | tests/adr-072/register-type-position-error.test.cnx                                                       | E0936                             |
 | tests/analysis/division-by-const-zero.test.cnx                                                            | E0800                             |

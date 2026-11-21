@@ -71,6 +71,9 @@ interface IParameterInput {
    * says each element is a handle, so the element is spelled `T*` (#996).
    */
   isOpaqueHandle?: boolean;
+
+  /** ADR-072: a register parameter, written `Layout* name` in C and C++ */
+  isRegister?: boolean;
 }
 
 export default IParameterInput;

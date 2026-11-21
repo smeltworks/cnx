@@ -80,6 +80,7 @@ import VisibleSymbols from "./VisibleSymbols";
 import ConstantNames from "./ConstantNames";
 import ConstantEvaluator from "../../utils/ConstantEvaluator";
 import RegisterInstances from "./RegisterInstances";
+import RegisterLayout from "../../utils/RegisterLayout";
 import EnumMemberValues from "../../utils/EnumMemberValues";
 import type IConstantEnvironment from "../../utils/types/IConstantEnvironment";
 import type IConstantNameFacts from "./types/IConstantNameFacts";
@@ -679,6 +680,7 @@ class Program {
             files: fileFacts,
           }),
         ),
+      RegisterLayout.widthsOf(target),
     );
     return {
       symbolsByFile,

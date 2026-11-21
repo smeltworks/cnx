@@ -33,7 +33,7 @@ typedef uint8_t Local;
 
 /* Register: DREG @ 0x40005000U */
 #define DREG__D (*(volatile Deep*)(0x40005000U))
-#define DREG__M (*(volatile EMode*)(0x40005002U))
+#define DREG__M (*(volatile EMode*)(0x40005004U))
 
 /* Function prototypes */
 void Dev__go(void);

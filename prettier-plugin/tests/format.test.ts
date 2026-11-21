@@ -334,6 +334,14 @@ u32 x <- 5;`;
       const result = await format(input);
       expect(result).toBe(input);
     });
+
+    it("formats an offset group stably (ADR-072)", async () => {
+      const input =
+        "register Uart {\n    0x00 {\n        ro u8 RBR, // read\n        wo u8 THR,\n    },\n    0x05 ro u8 LSR,\n}\n";
+      const result = await format(input);
+      expect(result).toBe(input);
+      expect(await format(result)).toBe(input);
+    });
   });
 
   describe("Blank line preservation", () => {

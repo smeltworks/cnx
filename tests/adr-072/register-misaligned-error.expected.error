@@ -1,0 +1,10 @@
+10:4 error[E0939]: register member 'DATA' is a u32 at 0x02, which is not a multiple of 4
+       help: A register member is aligned to its size (ADR-072); an unaligned access to device memory faults. Move it to 0x04 if the datasheet says so, or declare the narrower parts the hardware reaches.
+11:4 error[E0939]: register member 'HALF' is a u16 at 0x07, which is not a multiple of 2
+       help: A register member is aligned to its size (ADR-072); an unaligned access to device memory faults. Move it to 0x08 if the datasheet says so, or declare the narrower parts the hardware reaches.
+12:4 error[E0939]: register member 'WIDE' is a u64 at 0x0C, which is not a multiple of 8
+       help: A register member is aligned to its size (ADR-072); an unaligned access to device memory faults. Move it to 0x10 if the datasheet says so, or declare the narrower parts the hardware reaches.
+18:8 error[E0939]: register member 'CMD' is a u32 at 0x02, which is not a multiple of 4
+       help: A register member is aligned to its size (ADR-072); an unaligned access to device memory faults. Move it to 0x04 if the datasheet says so, or declare the narrower parts the hardware reaches.
+24:8 error[E0939]: register member 'Q' is a u16 at 0x01, which is not a multiple of 2
+       help: A register member is aligned to its size (ADR-072); an unaligned access to device memory faults. Move it to 0x02 if the datasheet says so, or declare the narrower parts the hardware reaches.

@@ -111,6 +111,7 @@ describe("a cell nothing compiles fails", () => {
         "#pragma double_bits 64",
         "#pragma long_double_bits 64",
         "#pragma big_endian false",
+        "#pragma short_enums false",
         "#pragma external_identifier_chars 31",
         "#pragma internal_identifier_chars 63",
         "u32 main() {",

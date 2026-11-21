@@ -1,0 +1,57 @@
+// test-execution
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072: a grouped member read through a register parameter is reached
+// through its offset group's union, the same path its write takes.
+
+register Uart {
+    0x00 {
+        ro u8 RBR,
+        wo u8 THR,
+        rw u8 DLL,
+    },
+    0x05 ro u8 LSR,
+}
+
+bitmap8 Ctrl {
+    EN,
+    Reserved[7]
+}
+
+register Dev {
+    0x00 {
+        rw Ctrl CTRL,
+        ro u8 STATUS,
+    },
+}
+
+Uart UART0(0x40001000);
+Dev DEV0(0x40002000);
+
+u8 recv(Uart u) {
+    return u.RBR;
+}
+
+u8 divisor(Uart u) {
+    u.DLL <- 3;
+    u8 d <- u.DLL;
+    return d;
+}
+
+bool enabled(Dev d) {
+    d.CTRL.EN <- true;
+    bool e <- d.CTRL.EN;
+    return e;
+}
+
+u8 status(Dev d) {
+    u8 s <- d.STATUS;
+    return s;
+}
+
+void main() {
+    u8 r <- recv(UART0);
+    u8 v <- divisor(UART0);
+    bool e <- enabled(DEV0);
+    u8 s <- status(DEV0);
+}

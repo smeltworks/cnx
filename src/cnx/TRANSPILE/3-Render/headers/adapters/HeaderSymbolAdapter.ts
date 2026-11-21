@@ -80,6 +80,7 @@ class HeaderSymbolAdapter {
         // `isHeldThroughPointer` itself, a second decision that agreed with the
         // `.c`'s only because both called one predicate.
         isOpaqueHandle: p.isOpaqueHandle || undefined,
+        isRegister: p.isRegister || undefined,
       };
     });
 

@@ -35,6 +35,10 @@ class ParameterPassing {
       paramIndex
     ];
     const isOpaqueHandle = param.isOpaqueHandle === true;
+    // ADR-072: a register argument is the instance's layout, through a pointer
+    if (param.isRegister === true) {
+      return ParameterPassing.passing(false, false, false, false);
+    }
 
     // Issue #895: a C callback typedef the function is wired to decides
     // pointer or value. A `mut` parameter keeps its pointer even where the

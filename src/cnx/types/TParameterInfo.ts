@@ -40,6 +40,9 @@ type TParameterInfo = {
 
   /** #1639: the C parameter is the value itself, as 2.2 decided */
   isPassByValue?: boolean;
+
+  /** ADR-072: a register parameter, a pointer to its layout in C and C++ */
+  isRegister?: boolean;
 };
 
 export default TParameterInfo;

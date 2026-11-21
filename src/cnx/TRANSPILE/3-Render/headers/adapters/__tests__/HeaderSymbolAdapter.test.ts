@@ -288,6 +288,7 @@ describe("HeaderSymbolAdapter", () => {
       state.program = {
         symbolTable: () => new SymbolTable(),
         isOpaqueType: () => false,
+        symbolByCName: () => undefined,
       } as unknown as IProgram;
       const tSymbol: IFunctionSymbol = {
         ...TestSymbolUtils.base({
@@ -508,6 +509,8 @@ describe("HeaderSymbolAdapter", () => {
           visibility: "public",
         }),
         registerType: "Peripheral",
+        isParameterLayout: false,
+        isHardwareLayout: false,
         addressExpr: null,
         baseAddress: 0x40000000n,
         members: TestMembers.asRegisterMembers(
@@ -563,6 +566,8 @@ describe("HeaderSymbolAdapter", () => {
           visibility: "public",
         }),
         registerType: "Peripheral",
+        isParameterLayout: false,
+        isHardwareLayout: false,
         addressExpr: null,
         baseAddress: 0x50000000n,
         members: new Map(),

@@ -187,16 +187,21 @@ class ProgramLowering {
     if (register) {
       return (
         ProgramLowering.isRepaired(register.IDENTIFIER()) ||
-        register.registerMember().some(
-          (member) =>
-            ProgramLowering.isRepaired(
-              MemberName.terminal(member.memberName()),
-              member.type(),
-              member.accessModifier(),
-              member.expression(),
-            ) ||
-            // recovery can hand the access slot any token, such as `{`
-            !REGISTER_ACCESS_MODES.has(member.accessModifier()!.getText()),
+        register.registerEntry().some(
+          (entry) =>
+            (entry.registerMember()?.expression() ??
+              entry.registerGroup()?.expression() ??
+              null) === null ||
+            ProgramLowering.registerMembersOf(entry).some(
+              (member) =>
+                ProgramLowering.isRepaired(
+                  MemberName.terminal(member.memberName()),
+                  member.type(),
+                  member.accessModifier(),
+                ) ||
+                // recovery can hand the access slot any token, such as `{`
+                !REGISTER_ACCESS_MODES.has(member.accessModifier()!.getText()),
+            ),
         )
       );
     }
@@ -292,15 +297,32 @@ class ProgramLowering {
   ): IRegisterDeclarationSyntax {
     return {
       name: ctx.IDENTIFIER().getText(),
-      members: ctx.registerMember().map((member) => ({
-        name: member.memberName().getText(),
-        type: SyntaxLowering.type(member.type()),
-        access: member.accessModifier().getText() as TRegisterAccessMode,
-        offset: SyntaxLowering.expression(member.expression()),
-        ...SyntaxLowering.node(member),
-      })),
+      members: ctx.registerEntry().flatMap((entry, index) => {
+        const group = entry.registerGroup();
+        const offset = SyntaxLowering.expression(
+          entry.registerMember()?.expression() ?? group!.expression(),
+        );
+        return ProgramLowering.registerMembersOf(entry).map((member) => ({
+          name: member.memberName().getText(),
+          type: SyntaxLowering.type(member.type()),
+          access: member.accessModifier().getText() as TRegisterAccessMode,
+          offset,
+          group: group ? index : null,
+          ...SyntaxLowering.node(member),
+        }));
+      }),
       ...SyntaxLowering.node(ctx),
     };
+  }
+
+  /** ADR-072: a register entry's members, one, or a group sharing an offset */
+  private static registerMembersOf(
+    entry: Parser.RegisterEntryContext,
+  ): ReadonlyArray<
+    Parser.RegisterMemberContext | Parser.RegisterGroupMemberContext
+  > {
+    const member = entry.registerMember();
+    return member ? [member] : entry.registerGroup()!.registerGroupMember();
   }
 
   private static struct(

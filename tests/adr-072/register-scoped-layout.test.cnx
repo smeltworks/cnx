@@ -1,0 +1,18 @@
+// test-execution
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072: a scope's register type that only a parameter takes is still
+// written as its struct, with the headers its member types need.
+
+scope Board {
+    register Port {
+        0x00 rw u32 DR,
+        0x08 rw u32 ODR,
+    }
+
+    public void set(Port p) {
+        p.DR <- 1;
+    }
+}
+
+void main() {}

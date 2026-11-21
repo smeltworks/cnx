@@ -1,0 +1,2 @@
+15:8 error[E0934]: register instance 'LOCAL' must be declared at file or scope level
+       help: A register instance names hardware at a fixed address for the whole program (ADR-072), so it is not a local. Declare it beside the register type or as a scope member.

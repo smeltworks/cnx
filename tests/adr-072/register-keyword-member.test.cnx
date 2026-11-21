@@ -1,0 +1,27 @@
+// test-execution
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072 ruling 15: a register member named with a C or C++ keyword keeps
+// its cnx name; its type's C layout spells the field with the reserved cnx__
+// prefix, so the struct compiles as C and as C++.
+
+register Ctl {
+    0x00 rw u32 this,
+    0x04 rw u32 template,
+    0x08 rw u32 delete,
+    0x0C ro u32 auto,
+}
+
+Ctl CTL0(0x40000000);
+
+u32 reset(Ctl c) {
+    c.this <- 0;
+    c.template <- 1;
+    c.delete <- 2;
+    return c.auto;
+}
+
+void main() {
+    u32 status <- reset(CTL0);
+    CTL0.this <- status;
+}

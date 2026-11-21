@@ -1,0 +1,26 @@
+// test-execution
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072: members the hardware reaches through one offset are written as one
+// group, each keeping its own access mode, as a 16550 UART's RBR/THR/DLL.
+
+register Uart {
+    0x00 {
+        ro u8 RBR,
+        wo u8 THR,
+        rw u8 DLL,
+    },
+    0x05 ro u8 LSR,
+}
+
+Uart UART0(0x40001000);
+
+void send(u8 b) {
+    UART0.THR <- b;
+}
+
+u8 receive() {
+    return UART0.RBR;
+}
+
+void main() {}

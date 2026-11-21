@@ -42,6 +42,8 @@
  * dimension (`u8[4][8]` in a `u8[4][4]` slot) is E0879 for both (#1619).
  */
 
+import type IRegisterSymbol from "../../types/symbols/IRegisterSymbol";
+import RegisterInstance from "../../utils/RegisterInstance";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import ProgramAccesses from "../../utils/ProgramAccesses";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
@@ -125,10 +127,44 @@ class CallbackAssignmentCheck {
     call.arguments.forEach((arg, index) => {
       const param = callee.parameters[index];
       if (param === undefined) return;
+      const layout = RegisterInstance.typeNamedBy(
+        this.context.program,
+        param.type,
+      );
+      if (layout !== null) {
+        this.checkRegisterArgument(arg, param.name, callee, layout);
+        return;
+      }
       this.check(TypeResolver.getTypeName(param.type), arg, {
         verb: "pass",
         description: `parameter '${param.name}' of function '${callee.name}'`,
       });
+    });
+  }
+
+  /**
+   * E0940 (ADR-072): a register parameter's slot takes an instance of its
+   * register type, or a register parameter of that type passed on
+   */
+  private checkRegisterArgument(
+    arg: TExpression,
+    paramName: string,
+    callee: IFunctionSymbol,
+    layout: IRegisterSymbol,
+  ): void {
+    const passed = OperandTyper.wholeRegisterTypeOf(arg, this.context);
+    if (passed === layout.fullyQualifiedCName) return;
+    const what =
+      passed === null
+        ? "is not a register instance"
+        : `is a register of type '${RegisterInstance.cnxNameOf(this.context.program, passed)}'`;
+    const wanted = layout.cnxScopedName;
+    this.found.push({
+      code: "E0940",
+      span: arg.span,
+      message: `'${arg.written}' ${what}; parameter '${paramName}' of function '${callee.name}' takes a '${wanted}'`,
+      helpText: `Pass an instance of '${wanted}' declared at file or scope level (\`${layout.name} NAME(address);\`), or a '${wanted}' parameter (ADR-072).`,
+      declaredAt: BindingSite.ofSymbol(callee),
     });
   }
 

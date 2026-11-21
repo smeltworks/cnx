@@ -4,18 +4,21 @@
 > from v2 to v1. See [`README.md`](README.md) for the numbering rule and the full mapping
 > table.
 
-**Status:** WIP — Accepted design, implementation in progress (Part 1 register types and instances landed in #2461; register parameters are PR 2; Parts 2–4 to follow)
+**Status:** WIP — Accepted design, implementation in progress (Part 1 register types and instances landed in #2461, register parameters in #2467; Parts 2–4 to follow)
 **Date:** 2026-02-20 (revised 2026-07-04: simplified register syntax; added Parts 4–5. 2026-11-19: Part 5, scaled fields, moved to ADR-073; contradictions settled in rulings 1–10 on #2449; Accepted)
 **Decision Makers:** Language Design Team
 **Supersedes:** ADR-004 (Register Bindings — takes effect when Part 1 is implemented; this ADR removes the `register Name @ address { }` form ADR-004 defines)
 **Amends:** ADR-016 (`### Scoped Registers` — takes effect when Part 1 is implemented; that section's `@ address` examples go with it)
 **Related ADRs:** ADR-034 (Bitmap Types), ADR-033 (Packed Structs — Rejected; Part 4 is the safe alternative), ADR-073 (Scaled Fields — formerly Part 5), ADR-074 (Byte-Order Reversal)
 
-> **Part 1 is partly implemented.** Register types, fixed-address instances,
+> **Part 1 is implemented.** Register types, fixed-address instances,
 > compile-time addresses and reserved member names compile (#2461), and the
-> `@ address` form is gone. A register parameter (E0933) and a register type in any
-> position but a one-address instance (E0936) are rejected until the rest of Part 1
-> and Part 4 land. Parts 2–4 are not implemented.
+> `@ address` form is gone. A register parameter is bound to an instance at
+> each call; offset groups and the overlap rule (E0938) hold for every
+> register, and the alignment rule (E0939) for every register that maps
+> hardware. A register type in any position but a
+> one-address instance or a parameter (E0936) is rejected until Part 4 lands.
+> Parts 2–4 are not implemented.
 
 ## Context
 
@@ -132,11 +135,16 @@ removed — the base ceremony was pure boilerplate the transpiler can supply.
 
 ```antlr
 registerDefinition
-    : 'register' IDENTIFIER '{' registerField (',' registerField)* ','? '}'
+    : 'register' IDENTIFIER '{' registerEntry (',' registerEntry)* ','? '}'
     ;
 
-registerField
-    : byteOffset access type memberName
+registerEntry
+    : byteOffset access type memberName                          // one member
+    | byteOffset '{' groupMember (',' groupMember)* ','? '}'     // members sharing an offset
+    ;
+
+groupMember
+    : access type memberName
     ;
 
 memberName
@@ -213,6 +221,66 @@ fields and struct fields: a keyword restricts naming only where it would make th
 program ambiguous (ruling 2 on #2449, #2029). Names that are C keywords are a separate
 question (#2222).
 
+#### Layout Rules
+
+A register's members match the hardware's map exactly, so the compiler rejects a layout
+that cannot be one.
+
+**Members that share an offset are written as one group.** Some hardware reaches more
+than one register through one address. A 16550 UART reads received data, writes data
+to send and, while a control bit is set, reads and writes the baud divisor, all at
+`0x00`:
+
+```cnx
+register Uart {
+    0x00 {
+        ro u8 RBR,
+        wo u8 THR,
+        rw u8 DLL,
+    },
+    0x05 ro u8 LSR,
+}
+```
+
+Every member of a group starts at the group's offset, and each keeps its own access
+mode, so reading `THR` is still an error. Any other overlap is a compile error: two
+separate members at one offset (the copy-pasted offset is the common register-map typo),
+or a member that starts inside another. A gap needs no declaration; the offsets show it.
+
+**A member is aligned to its size.** A member's offset is a multiple of its size: a
+`u16` on 2, a `u32` on 4, a `u64` on 8, and a group's offset suits every member in it.
+Cortex-M faults on an unaligned access to device memory, so an unaligned member is a
+runtime fault the compiler can rule out. A 32-bit value that a datasheet places at
+`0x02` is declared as the two halves the hardware can reach:
+
+```cnx
+register Odd {
+    0x00 rw u8 CTRL,
+    0x02 rw u16 DATA_LO,
+    0x04 rw u16 DATA_HI,
+}
+```
+
+Alignment is a rule for a register that maps hardware: a type with a fixed-address
+instance, or one a parameter takes (ruling 13 on #2449). A declaration alone may place a
+`u16` at an odd offset, as Part 4's J1939 frame does; Part 4 decides how such a field in
+normal memory is read.
+
+**A member is as wide as its type is on the target.** An enum member is as wide as the
+target's C compiler makes the enum (ruling 14). With short enums, a fact each target
+records and the toolchain probe checks, that is the narrowest of 8, 16 or 32 bits that
+holds every enumerator; otherwise it is the target's C `int`. The same register map can
+therefore be legal on one target and break the overlap (E0938) or alignment (E0939) rule on another:
+
+```cnx
+enum Mode { IDLE, RUN }
+
+register Blk {
+    0x00 rw Mode MODE,   // cortex-m7 (short enums): 1 byte
+    0x01 rw u8 FLAG,     // legal on cortex-m7; E0938 on atmega328p, a 2-byte int
+}
+```
+
 #### Transpilation
 
 ```cnx
@@ -248,7 +316,7 @@ This is straightforward to implement:
    - Evaluate constant expressions at compile time
    - Generate macros with resolved addresses
 
-The key insight: **all expressions are compile-time constants**. No runtime evaluation needed — just constant folding during transpilation.
+The key insight: **every instance address and member offset is a compile-time constant**, folded during transpilation.
 
 #### Type Identity and Generic Peripheral Code
 
@@ -278,22 +346,35 @@ setPin(GPIO2, 0); // OK — GPIO2 is a GpioPort
 setPin(UART1, 0); // ERROR: UART1 is not a GpioPort
 ```
 
-#### Function Specialization
+#### Register Parameters
 
-A register parameter is resolved at compile time. Each call names an instance whose
-address the compiler knows, so every access through the parameter is a direct access
-to that instance's address. There is no runtime indirection: no base pointer is passed,
-stored or dereferenced.
+A register parameter is resolved at compile time. Each call names an instance, never
+a runtime value, so the compiler knows which instance every call reaches. This ADR
+defines that cnx rule only; the C a register parameter compiles to is the
+transpiler's choice (ruling 11 on #2449).
 
 ```cnx
 setPin(GPIO1, 13); // port.DR is GPIO1's DR
 setPin(GPIO2, 0); // port.DR is GPIO2's DR
 ```
 
-How the generated C achieves this (one specialized function per instance passed,
-inlining, or both) is an emission choice, not part of this decision.
+This enables reusable HAL code without duplicating source code per instance.
 
-This enables writing reusable HAL code without runtime overhead or duplicating source code per instance.
+A register parameter is never `mut` (ruling 12, E0943). A member's own access mode
+(`rw`, `ro`, `wo`, `w1c`, `w1s`) decides whether it can be written, through a parameter
+as through a fixed instance:
+
+```cnx
+void drive(GpioPort port) { port.DR <- 0xFF; } // DR is rw: written without mut
+void bad(mut GpioPort port) { }                // E0943: mut does not apply to a register
+```
+
+The C a register parameter compiles to is the transpiler's, with two consequences a
+user sees. A member named with a C or C++ keyword (`default`, `this`) keeps its cnx
+name, and its field in the generated C layout is spelled `cnx__default` (ruling 15;
+ADR-063 reserves `cnx__`). The layout's offsets and widths are checked by C11
+`_Static_assert` (C++11 `static_assert`), so a file with a register parameter requires
+C11, as float bit indexing already does (ruling 16).
 
 #### Compile-Time-Only Constraint
 
@@ -302,14 +383,14 @@ Register template types (`GpioPort`) are **compile-time-only identifiers**, not 
 ```cnx
 GpioPort activePort <- GPIO1; // ERROR: register types are not assignable
 activePort <- GPIO2; // ERROR: cannot reassign register type
-setPin(activePort, 13); // Would require runtime indirection
+setPin(activePort, 13); // ERROR: activePort is not an instance
 
 GpioPort[2] ports <- [GPIO1, GPIO2]; // ERROR: cannot store registers in arrays
 ```
 
-The same holds for a function with a register parameter. It has no single body to
-point at, one per instance it is called with, so it can be called but never used as a
-callback (ADR-029): not passed, stored or named as a callback type.
+The same holds for a function with a register parameter. Its register is bound to an
+instance at each call, so it can be called but never used as a callback (ADR-029): not
+passed, stored or named as a callback type (E0941).
 
 ```cnx
 struct Hal {
@@ -317,7 +398,7 @@ struct Hal {
 }
 ```
 
-This is intentional — runtime polymorphism over registers would require function pointers or vtables, defeating zero-cost abstraction. If you need dynamic port selection, use explicit branching:
+This is intentional — a register is bound at compile time, so cnx has no register value chosen at runtime. If you need dynamic port selection, use explicit branching:
 
 ```cnx
 void setPinOnPort(u8 portNum, u8 pin) {
@@ -333,7 +414,7 @@ void setPinOnPort(u8 portNum, u8 pin) {
 }
 ```
 
-The compiler may optimize this switch into a lookup table if beneficial, but the register access itself remains a direct memory operation.
+Each branch passes a fixed instance, so every register parameter is still bound at compile time.
 
 ---
 
@@ -737,7 +818,7 @@ bitmaps cover the format completely.
   register's type with its own bytes, like any other variable: `Etc1 etc1;`. There is no
   view over another buffer, so no runtime pointer, lifetime or aliasing question. A
   received frame is copied in before it is read. A global data register has a
-  compile-time address, so generic register functions take it with no runtime pointer.
+  compile-time address, so generic register functions take it as they take a fixed instance.
 - **How bytes get in: whole-register assignment (ruling 8 on #2449).** A data register is
   assigned from a `u8` array of exactly its size, and a `u8` array of that size is assigned
   from it. A size mismatch is a compile error. Field access modes still apply to field
@@ -800,10 +881,15 @@ Part 1 (register types and fixed instances):
 | E0937 | A register instance in a type position (`GPIO1 x;`); its register type is the type                                                          | `tests/bugs/issue-1336-register-in-type-position/`                                                                                                      |
 | E0931 | A register instance's address cannot be used: not a compile-time constant, negative, or a member past the target's pointer range (ruling 5) | `tests/adr-072/register-address-not-constant-error.test.cnx`, `register-negative-offset-error.test.cnx`, `register-address-past-pointer-error.test.cnx` |
 | E0932 | A register member's offset is not a compile-time constant                                                                                   | `tests/adr-072/register-offset-not-constant-error.test.cnx`                                                                                             |
-| E0933 | A function parameter is a register; rejected until register parameters are specialized per instance                                         | `tests/adr-072/register-parameter-error.test.cnx`                                                                                                       |
 | E0934 | A register instance is declared inside a function                                                                                           | `tests/adr-072/register-local-instance-error.test.cnx`                                                                                                  |
 | E0935 | `Type name(expr);` whose type is not a register type (a C++ constructor takes named constants, #375)                                        | `tests/adr-072/constructor-expression-not-register-error.test.cnx`                                                                                      |
 | E0936 | A register type anywhere but a one-address file- or scope-level instance (data registers are Part 4)                                        | `tests/adr-072/register-type-position-error.test.cnx`                                                                                                   |
+| E0938 | Two register members overlap outside an offset group (Layout Rules)                                                                         | `tests/adr-072/register-overlap-error.test.cnx`                                                                                                         |
+| E0939 | A register member's offset is not a multiple of its size (Layout Rules)                                                                     | `tests/adr-072/register-misaligned-error.test.cnx`                                                                                                      |
+| E0940 | The argument to a register parameter is not an instance of its register type, nor a register parameter of that type                         | `tests/adr-072/register-parameter-error.test.cnx`                                                                                                       |
+| E0941 | A function with a register parameter is used as a callback type (ADR-029)                                                                   | `tests/adr-072/register-callback-type-error.test.cnx`                                                                                                   |
+| E0942 | A register instance or register parameter is read, assigned or stored whole, where a value goes                                             | `tests/adr-072/register-as-value-error.test.cnx`                                                                                                        |
+| E0943 | A register parameter is declared `mut`; a member's access mode governs its writes (ruling 12)                                               | `tests/adr-072/register-mut-parameter-error.test.cnx`                                                                                                   |
 
 <!-- MATRIX-SEVERITY code: E0931 -->
 
@@ -869,7 +955,71 @@ An instance is declared at file or scope level only (E0934), so the function row
 
 A register type is declared at file or scope level only, so the function rows are off. The imported rows are off for the same reason as E0931. The two same-file rows are `warn`, not `error`: E0932 is reported on the member inside the register body, a position the matrix derives no context for, so `register-negative-offset-error` and `register-offset-not-constant-error` assert it without occupying a cell.
 
-<!-- MATRIX-SEVERITY code: E0933 -->
+<!-- MATRIX-SEVERITY code: E0938 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | warn     |
+| top-level function | same file               | off      |
+| scope member       | same file               | warn     |
+| scope method       | same file               | off      |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | off      |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | off      |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | off      |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | off      |
+| for header         | exercised through chain | off      |
+
+As for E0932: a register type is declared at file or scope level only, so the function and imported rows are off, and E0938 is reported on the member inside the register body, a position the matrix derives no context for, so `register-overlap-error` asserts it without occupying a cell.
+
+<!-- MATRIX-SEVERITY code: E0939 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | warn     |
+| top-level function | same file               | off      |
+| scope member       | same file               | warn     |
+| scope method       | same file               | off      |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | off      |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | off      |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | off      |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | off      |
+| for header         | exercised through chain | off      |
+
+As for E0932: a register type is declared at file or scope level only, so the function and imported rows are off, and E0939 is reported on the member inside the register body, a position the matrix derives no context for, so `register-misaligned-error` asserts it without occupying a cell.
+
+<!-- MATRIX-SEVERITY code: E0940 -->
 
 | Context            | Relationship            | Severity |
 | ------------------ | ----------------------- | -------- |
@@ -899,7 +1049,103 @@ A register type is declared at file or scope level only, so the function rows ar
 | scope method       | exercised through chain | warn     |
 | for header         | exercised through chain | off      |
 
-A parameter exists only on a function, so the variable rows are off. The imported rows are off: the diagnostic is about the parameter's own declaration.
+An argument is written in a call, which only a function body holds, so the variable rows are off. The imported rows are off: the diagnostic is about the argument at the call, wherever the function is declared.
+
+<!-- MATRIX-SEVERITY code: E0941 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | off      |
+| top-level function | same file               | error    |
+| scope member       | same file               | off      |
+| scope method       | same file               | off      |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | off      |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | off      |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | off      |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | off      |
+| for header         | exercised through chain | off      |
+
+E0941 is reported at the callback type's position. A parameter's type is a function's own, so that row is an error; a struct field's type is written in the struct body, a position the matrix derives no context for, so `register-callback-type-error` asserts it without occupying a cell.
+
+<!-- MATRIX-SEVERITY code: E0942 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | off      |
+| top-level function | same file               | error    |
+| scope member       | same file               | off      |
+| scope method       | same file               | off      |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | off      |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | off      |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | off      |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | off      |
+| for header         | exercised through chain | off      |
+
+E0942 is reported where a register stands as a value: a read, an assignment's target or value. The fixture's are in function bodies. The imported rows are off: the diagnostic is about the expression, wherever the register is declared.
+
+<!-- MATRIX-SEVERITY code: E0943 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | off      |
+| top-level function | same file               | error    |
+| scope member       | same file               | off      |
+| scope method       | same file               | error    |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | off      |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | off      |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | off      |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | off      |
+| for header         | exercised through chain | off      |
+
+E0943 is reported on a function's parameter, so it applies wherever a function is declared: a top-level function and a scope method. A variable and a `for` header declare no parameters, and the imported rows are off: the diagnostic is about the declaration, not a use of the register.
 
 <!-- MATRIX-SEVERITY code: E0934 -->
 

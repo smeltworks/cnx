@@ -5,6 +5,12 @@ import type IVariableSymbol from "../../types/symbols/IVariableSymbol";
 import type TConstExpr from "../../types/TConstExpr";
 import type IConstantEnvironment from "../../utils/types/IConstantEnvironment";
 import ConstantEvaluator from "../../utils/ConstantEvaluator";
+import RegisterLayout from "../../utils/RegisterLayout";
+import type ITargetWidths from "../../types/ITargetWidths";
+import TypeResolver from "../../utils/TypeResolver";
+import ScopeFunctions from "./ScopeFunctions";
+import type IFunctionSymbol from "../../types/symbols/IFunctionSymbol";
+import type IParameterInfo from "../../types/symbols/IParameterInfo";
 import MemberSymbolBase from "../3-Declare/cnx/utils/MemberSymbolBase";
 
 /**
@@ -22,8 +28,14 @@ class RegisterInstances {
   static bind(
     symbolsByFile: ReadonlyMap<string, ReadonlyArray<TSymbol>>,
     environmentOf: (sourceFile: string) => IConstantEnvironment,
+    widths: ITargetWidths,
   ): Map<string, ReadonlyArray<TSymbol>> {
     const types = new Map<string, IRegisterSymbol>();
+    const bitmapBitWidth = RegisterInstances.namedTypeBits(
+      symbolsByFile,
+      widths,
+    );
+    const taken = RegisterInstances.parameterTypeNames(symbolsByFile);
     const settled = new Map<string, ReadonlyArray<TSymbol>>();
     for (const [sourceFile, symbols] of symbolsByFile) {
       const env = environmentOf(sourceFile);
@@ -33,26 +45,126 @@ class RegisterInstances {
           if (symbol.kind !== "register" || symbol.addressExpr !== null) {
             return symbol;
           }
-          const type = RegisterInstances.withOffsets(symbol, env);
+          const type = {
+            ...RegisterInstances.withOffsets(
+              symbol,
+              env,
+              widths,
+              bitmapBitWidth,
+            ),
+            isParameterLayout: taken.has(symbol.fullyQualifiedCName),
+          };
+          types.set(type.fullyQualifiedCName, type);
+          return type;
+        }),
+      );
+    }
+    const instanced = new Set<string>();
+    for (const symbols of settled.values()) {
+      for (const symbol of symbols) {
+        const type = RegisterInstances.typeOf(symbol, types);
+        if (type !== null) instanced.add(type.fullyQualifiedCName);
+      }
+    }
+    for (const [sourceFile, symbols] of settled) {
+      settled.set(
+        sourceFile,
+        symbols.map((symbol) => {
+          if (symbol.kind !== "register" || symbol.addressExpr !== null) {
+            return symbol;
+          }
+          const type = {
+            ...symbol,
+            isHardwareLayout:
+              symbol.isParameterLayout ||
+              instanced.has(symbol.fullyQualifiedCName),
+          };
           types.set(type.fullyQualifiedCName, type);
           return type;
         }),
       );
     }
     const result = new Map<string, ReadonlyArray<TSymbol>>();
+    const stamped = new Map<TSymbol, TSymbol>();
     for (const [sourceFile, symbols] of settled) {
       const env = environmentOf(sourceFile);
-      result.set(
-        sourceFile,
-        symbols.map((symbol) => {
-          const type = RegisterInstances.typeOf(symbol, types);
-          return type === null || symbol.kind !== "variable"
-            ? symbol
-            : RegisterInstances.instance(symbol, type, env);
-        }),
-      );
+      const bound = symbols.map((symbol) => {
+        if (symbol.kind === "function") {
+          const withStamp = RegisterInstances.withRegisterParameters(
+            symbol,
+            types,
+          );
+          stamped.set(symbol, withStamp);
+          return withStamp;
+        }
+        const type = RegisterInstances.typeOf(symbol, types);
+        return type === null || symbol.kind !== "variable"
+          ? symbol
+          : RegisterInstances.instance(symbol, type, env);
+      });
+      ScopeFunctions.adopt(bound, stamped);
+      result.set(sourceFile, bound);
     }
     return result;
+  }
+
+  /**
+   * Each bitmap's and enum's bit width, by C name: a bitmap member is its
+   * backing integer, an enum member as wide as the target's compiler makes
+   * the enum (ruling 14)
+   */
+  private static namedTypeBits(
+    symbolsByFile: ReadonlyMap<string, ReadonlyArray<TSymbol>>,
+    targetWidths: ITargetWidths,
+  ): Map<string, number> {
+    const bits = new Map<string, number>();
+    for (const symbols of symbolsByFile.values()) {
+      for (const symbol of symbols) {
+        if (symbol.kind === "bitmap") {
+          bits.set(symbol.fullyQualifiedCName, symbol.bitWidth);
+        }
+        if (symbol.kind === "enum") {
+          const values = [...symbol.members.values()].map(
+            (member) => member.value ?? 0,
+          );
+          const enumBits = RegisterLayout.enumBits(values, targetWidths);
+          if (enumBits !== null) bits.set(symbol.fullyQualifiedCName, enumBits);
+        }
+      }
+    }
+    return bits;
+  }
+
+  /** Every type name some function's parameter is declared with */
+  private static parameterTypeNames(
+    symbolsByFile: ReadonlyMap<string, ReadonlyArray<TSymbol>>,
+  ): Set<string> {
+    const names = new Set<string>();
+    for (const symbols of symbolsByFile.values()) {
+      for (const symbol of symbols) {
+        if (symbol.kind !== "function") continue;
+        for (const parameter of symbol.parameters) {
+          names.add(TypeResolver.getTypeName(parameter.type));
+        }
+      }
+    }
+    return names;
+  }
+
+  /** A function with each parameter of a register type stamped `isRegister` */
+  private static withRegisterParameters(
+    func: IFunctionSymbol,
+    types: ReadonlyMap<string, IRegisterSymbol>,
+  ): IFunctionSymbol {
+    const isRegister = (parameter: IParameterInfo): boolean =>
+      types.has(TypeResolver.getTypeName(parameter.type));
+    if (!func.parameters.some(isRegister)) return func;
+    return {
+      ...func,
+      parameters: func.parameters.map((parameter) =>
+        isRegister(parameter) ? { ...parameter, isRegister: true } : parameter,
+      ),
+    };
   }
 
   /** The register type a constructed variable is an instance of, if any */
@@ -73,12 +185,20 @@ class RegisterInstances {
   private static withOffsets(
     type: IRegisterSymbol,
     env: IConstantEnvironment,
+    widths: ITargetWidths,
+    bitmapBitWidth: ReadonlyMap<string, number>,
   ): IRegisterSymbol {
     const members = new Map<string, IRegisterMemberSymbol>();
     for (const [name, member] of type.members) {
+      const offsetValue = RegisterInstances.fold(member.offset, env);
       members.set(name, {
         ...member,
-        offsetValue: RegisterInstances.fold(member.offset, env),
+        offsetValue,
+        bytes: RegisterLayout.bytesOf(member, widths, bitmapBitWidth),
+        layoutUnion:
+          member.group === null || offsetValue === null
+            ? null
+            : RegisterLayout.groupName(offsetValue),
       });
     }
     return { ...type, members };
@@ -115,6 +235,8 @@ class RegisterInstances {
       sourceLanguage: variable.sourceLanguage,
       visibility: variable.visibility,
       registerType: type.fullyQualifiedCName,
+      isParameterLayout: false,
+      isHardwareLayout: false,
       addressExpr,
       baseAddress: RegisterInstances.fold(addressExpr, env),
       members,

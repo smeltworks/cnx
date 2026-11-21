@@ -9,6 +9,14 @@
 type TMemberStep =
   | { readonly kind: "scope-member"; readonly cName: string }
   | { readonly kind: "register-member"; readonly cName: string }
-  | { readonly kind: "access"; readonly separator: "." | "->" | "::" };
+  | {
+      readonly kind: "access";
+      readonly separator: "." | "->" | "::";
+      /**
+       * ADR-072: the member's path within a register layout, through its
+       * offset group's union (`AT__0x00.RBR`)
+       */
+      readonly path?: string;
+    };
 
 export default TMemberStep;

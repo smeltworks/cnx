@@ -1,0 +1,43 @@
+// test-execution
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072: a register type's C layout puts each member at its declared
+// offset whatever its type -- an enum as wide as the target compiler makes it (ruling 14: one byte on
+// cortex-m7, which uses short enums), a bitmap24 as
+// the uint32_t it is. A member may be named `length`, and a register in
+// parentheses is still that register.
+
+enum Mode {
+    IDLE,
+    RUN,
+}
+
+bitmap24 Ctl {
+    EN,
+    LEVEL[2],
+    SPARE[21],
+}
+
+register Blk {
+    0x00 rw Mode MODE,
+    0x04 rw Ctl CTL,
+    0x08 rw u32 length,
+}
+
+Blk B1(0x40000000);
+
+void start(Blk b) {
+    b.MODE <- Mode.RUN;
+    b.CTL.EN <- true;
+    u32 n <- b.length;
+    b.length <- n;
+}
+
+void forward(Blk b) {
+    start((b));
+}
+
+void main() {
+    start((B1));
+    forward(B1);
+}

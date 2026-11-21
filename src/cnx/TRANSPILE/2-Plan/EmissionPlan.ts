@@ -96,6 +96,7 @@ class EmissionPlan {
     const plan: IEmissionPlan = {
       systemIncludes: EmissionPlan.decideSystemIncludes(facts),
       floatStaticAssert: EmissionPlan.decideFloatStaticAssert(facts),
+      registerLayoutAssert: EmissionPlan.decideRegisterLayoutAssert(facts),
       irqWrappers: EmissionPlan.decideIrqWrappers(facts),
       isrTypedef:
         facts.needsISR &&
@@ -128,6 +129,7 @@ class EmissionPlan {
       : never]-?: true;
   } = {
     floatStaticAssert: true,
+    registerLayoutAssert: true,
     irqWrappers: true,
     panicOverflowHelpers: true,
   };
@@ -255,6 +257,25 @@ class EmissionPlan {
       keyword: facts.cppMode ? "static_assert" : "_Static_assert",
       requirements: [facts.cppMode ? "float-assert-cpp11" : "float-assert-c11"],
       sites: [...facts.floatAssertSites],
+    };
+  }
+
+  /**
+   * ADR-072: the register layout asserts, keyword and requirement key decided
+   * together as the float asserts' are
+   */
+  private static decideRegisterLayoutAssert(
+    facts: IEmissionFacts,
+  ): IPlannedBlock | null {
+    if (!facts.needsRegisterLayoutAssert) return null;
+    return {
+      keyword: facts.cppMode ? "static_assert" : "_Static_assert",
+      requirements: [
+        facts.cppMode
+          ? "register-layout-assert-cpp11"
+          : "register-layout-assert-c11",
+      ],
+      sites: [],
     };
   }
 

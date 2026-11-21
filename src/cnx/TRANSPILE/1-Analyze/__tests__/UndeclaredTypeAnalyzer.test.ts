@@ -328,4 +328,35 @@ describe("UndeclaredTypeAnalyzer", () => {
       ).toHaveLength(0);
     });
   });
+
+  describe("a function with a register parameter as a callback type (E0941, ADR-072)", () => {
+    const SOURCE = `
+      ${REGISTER}
+      void setHigh(ControlBlock port) {
+          port.DR <- 1;
+      }
+      void tick(u32 n) {}
+    `;
+
+    it("rejects it as a struct field's type and as a parameter's", () => {
+      const errors = analyze(`
+        ${SOURCE}
+        struct Handlers {
+            setHigh onHigh;
+        }
+        void takesCallback(setHigh cb) {}
+      `);
+      expect(errors.map((e) => e.code)).toEqual(["E0941", "E0941"]);
+    });
+
+    it("accepts a function with no register parameter", () => {
+      const errors = analyze(`
+        ${SOURCE}
+        struct Handlers {
+            tick onTick;
+        }
+      `);
+      expect(errors).toEqual([]);
+    });
+  });
 });

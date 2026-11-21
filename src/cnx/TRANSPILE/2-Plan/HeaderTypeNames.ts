@@ -28,6 +28,7 @@
  * need an include".
  */
 
+import RegisterInstance from "../../utils/RegisterInstance";
 import type TSymbol from "../../types/symbols/TSymbol";
 import TypeResolver from "../../utils/TypeResolver";
 
@@ -86,6 +87,16 @@ class HeaderTypeNames {
     // caught it, for the second time on the same construct.
     if (symbol.kind === "bitmap") {
       into.add(symbol.backingType);
+      return;
+    }
+
+    // ADR-072: a register type a parameter takes is written as its layout,
+    // which spells each member's type and pads its gaps with `uint8_t`
+    if (RegisterInstance.isType(symbol) && symbol.isParameterLayout) {
+      for (const member of symbol.members.values()) {
+        into.add(TypeResolver.getTypeName(member.type));
+      }
+      into.add("u8");
     }
   }
 }

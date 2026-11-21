@@ -47,6 +47,7 @@ import IUndeclaredTypeError from "./types/IUndeclaredTypeError";
 import BindingSite from "../../utils/BindingSite";
 import NameExistence from "../../PARSE/3-Declare/NameExistence";
 import RegisterInstance from "../../utils/RegisterInstance";
+import type IFunctionSymbol from "../../types/symbols/IFunctionSymbol";
 import StatementNodes from "../../utils/StatementNodes";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionChildren from "../../utils/ExpressionChildren";
@@ -174,7 +175,7 @@ class UndeclaredTypeAnalyzer {
   /**
    * ADR-072: the type positions whose register type another rule decides --
    * a file- or scope-level instance (its one allowed position), a parameter
-   * (E0933) and a local instance (E0934). Every other position of a register
+   * (bound to an instance at each call) and a local instance (E0934). Every other position of a register
    * type is E0936, decided here because this walk visits them all.
    */
   registerPositionsOf(
@@ -225,6 +226,7 @@ class UndeclaredTypeAnalyzer {
       this.addNotInstanceError(typeName, span);
       return;
     }
+    if (this.isRegisterCallback(bound, typeName, span)) return;
     // ADR-057: inside a scope a bare `T` may name a scope-declared type,
     // recorded under its qualified name. The bare spelling stays acceptable
     // because a scope may also reference a global type.
@@ -268,6 +270,7 @@ class UndeclaredTypeAnalyzer {
       this.addNotInstanceError(written, span);
       return;
     }
+    if (this.isRegisterCallback(member, written, span)) return;
     this.checkNamed(
       written,
       member?.cnxScopedName,
@@ -419,6 +422,33 @@ class UndeclaredTypeAnalyzer {
       `'${typeName}' is a register instance, not a type; its register type is the type`,
       {},
     );
+  }
+
+  /**
+   * E0941 (ADR-072): a function with a register parameter written as a
+   * callback type (ADR-029) -- a callback is called through a value, and a
+   * register parameter is bound at each call
+   */
+  private isRegisterCallback(
+    bound: { readonly kind: string } | undefined,
+    written: string,
+    span: ISourceSpan,
+  ): boolean {
+    if (bound?.kind !== "function") return false;
+    const register = (bound as IFunctionSymbol).parameters.find(
+      (parameter) =>
+        RegisterInstance.typeNamedBy(this.context.program, parameter.type) !==
+        null,
+    );
+    if (register === undefined) return false;
+    this._push(
+      "E0941",
+      written,
+      span,
+      `'${written}' takes register parameter '${register.name}', so it cannot be used as a callback type`,
+      { aboutItsPosition: true },
+    );
+    return true;
   }
 
   /** E0936: a register type anywhere but the type of a one-address instance */

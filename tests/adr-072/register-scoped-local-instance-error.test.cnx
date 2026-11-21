@@ -1,8 +1,8 @@
 // test-error
 // test-adr: 072
 #pragma target cortex-m7
-// ADR-072, E0933 and E0934 for a register type declared in a scope, written
-// bare, as this.T and as Scope.T.
+// ADR-072, E0934: a register instance names hardware for the whole program,
+// so a scope method does not declare one either.
 
 scope Board {
     public register Port {
@@ -11,16 +11,10 @@ scope Board {
 
     public Port P1(0x40000000);
 
-    public void bare(Port p) {}
-
-    public void viaThis(this.Port p) {}
-
     public void local() {
         Port LOCAL(0x40001000);
     }
 }
-
-void qualified(Board.Port p) {}
 
 void main() {
     Board.P1.DR <- 1;

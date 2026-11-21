@@ -14,7 +14,10 @@ import { ScopeDeclarationContext } from "./CnxParser.js";
 import { ScopeMemberContext } from "./CnxParser.js";
 import { VisibilityModifierContext } from "./CnxParser.js";
 import { RegisterDeclarationContext } from "./CnxParser.js";
+import { RegisterEntryContext } from "./CnxParser.js";
 import { RegisterMemberContext } from "./CnxParser.js";
+import { RegisterGroupContext } from "./CnxParser.js";
+import { RegisterGroupMemberContext } from "./CnxParser.js";
 import { MemberNameContext } from "./CnxParser.js";
 import { AccessModifierContext } from "./CnxParser.js";
 import { StructDeclarationContext } from "./CnxParser.js";
@@ -171,11 +174,29 @@ export class CnxVisitor<Result> extends AbstractParseTreeVisitor<Result> {
      */
     visitRegisterDeclaration?: (ctx: RegisterDeclarationContext) => Result;
     /**
+     * Visit a parse tree produced by `CnxParser.registerEntry`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitRegisterEntry?: (ctx: RegisterEntryContext) => Result;
+    /**
      * Visit a parse tree produced by `CnxParser.registerMember`.
      * @param ctx the parse tree
      * @return the visitor result
      */
     visitRegisterMember?: (ctx: RegisterMemberContext) => Result;
+    /**
+     * Visit a parse tree produced by `CnxParser.registerGroup`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitRegisterGroup?: (ctx: RegisterGroupContext) => Result;
+    /**
+     * Visit a parse tree produced by `CnxParser.registerGroupMember`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitRegisterGroupMember?: (ctx: RegisterGroupMemberContext) => Result;
     /**
      * Visit a parse tree produced by `CnxParser.memberName`.
      * @param ctx the parse tree
