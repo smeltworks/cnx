@@ -87,6 +87,11 @@ describe("IntegerConversionAnalyzer", () => {
         "sign change",
       );
       expect(errors(inMain("    u32 x <- byte;"))).toEqual([]);
+      // The help never extracts more bits than the source has
+      expect(errors(inMain("    i16 x <- byte;"))[0].helpText).toContain(
+        "value[0, 8]",
+      );
+      expect(errors(inMain("    i16 x <- byte[0, 8];"))).toEqual([]);
       expect(errors(inMain("    u32 x <- (u32)byte;"))).toEqual([]);
     });
 
@@ -121,6 +126,9 @@ describe("IntegerConversionAnalyzer", () => {
         "Cannot assign a 4-bit field to a 3-bit field (narrowing)",
         "Cannot assign a 4-bit extraction to a 3-bit field (narrowing)",
       ]);
+      expect(errors(field("    i8 x <- f.Mode;"))[0].helpText).toContain(
+        "value[0, 3]",
+      );
     });
 
     it("accepts a bit extraction -- the explicit reinterpret the message asks for", () => {

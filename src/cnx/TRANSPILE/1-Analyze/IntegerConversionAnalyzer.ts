@@ -706,7 +706,8 @@ class IntegerConversionCheck {
         span: at.span,
         declaredAt: BindingSite.ofOperands([at], this.context),
         message: `Cannot ${verb} ${source.name} to ${into} (sign change)`,
-        helpText: `Use bit indexing to reinterpret the bits explicitly: ${subject}[0, ${targetWidth}]`,
+        // No wider than the source, or the extraction is out of bounds
+        helpText: `Use bit indexing to reinterpret the bits explicitly: ${subject}[0, ${Math.min(source.width, targetWidth)}]`,
       });
     }
   }
