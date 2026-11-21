@@ -129,6 +129,11 @@ describe("IntegerConversionAnalyzer", () => {
       expect(errors(field("    i8 x <- f.Mode;"))[0].helpText).toContain(
         "value[0, 3]",
       );
+      // An extraction already names its bits: the help narrows it, rather
+      // than subscripting it again (E0856)
+      expect(errors(field("    f.Mode <- byte[0, 4];"))[0].helpText).toBe(
+        "Extract no more bits than the target holds: [start, 3]",
+      );
     });
 
     it("accepts a bit extraction -- the explicit reinterpret the message asks for", () => {

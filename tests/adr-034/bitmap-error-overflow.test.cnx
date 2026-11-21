@@ -15,6 +15,16 @@ mut Flags f <- 0;
 u8 ONE <- 1;
 u8 TWO <- 2;
 
+// Each arm of a ternary lands in the field (ADR-022), so a literal arm is
+// judged by its value when the condition is a runtime one.
+void pick(bool c) {
+    // NEGATIVE CONTROL
+    f.Mode <- (c = true) ? 7 : 0;
+    // ASSERTIONS
+    f.Mode <- (c = true) ? 9 : 1;
+    f.Enable <- (c = true) ? 2 : 0;
+}
+
 void main() {
     // NEGATIVE CONTROLS -- declared before the assertions. The widest value
     // each field holds, in each literal base, and as a folded literal sum.

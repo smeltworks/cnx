@@ -14,7 +14,13 @@ bitmap8 Flags {
     Reserved[4]
 }
 
+bitmap16 Wide {
+    Field12[12],
+    Top[4]
+}
+
 mut Flags f <- 0;
+mut Wide wb <- 0;
 mut Ctrl c <- 0;
 u8 FITS <- 7;
 u8 BIG <- 20;
@@ -41,6 +47,9 @@ void main() {
     c.Wide <- m;
     c.Mode <- w[0, 3];
     Port.set(m);
+    // A field read is an unsigned value of the field's own width
+    u8 readMode <- f.Mode;
+    u16 readWide <- wb.Field12;
     f.Mode <- c.Mode;
     f.Reserved <- c.Mode;
 
@@ -57,4 +66,7 @@ void main() {
     c.Wide <- w;
     f.Mode <- c.Rest;
     f.Mode <- m[0, 4];
+    u8 readNarrow <- wb.Field12;
+    i8 readSigned <- f.Mode;
+    i16 readSigned16 <- f.Mode;
 }

@@ -29,6 +29,7 @@ import type IValuePositions from "../../types/IValuePositions";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import OperandTyper from "../../utils/OperandTyper";
+import ExpressionShape from "../../utils/ExpressionShape";
 import ConstantEvaluator from "../../utils/ConstantEvaluator";
 import BitmapFieldStep from "../../utils/BitmapFieldStep";
 import type IBitmapFieldTarget from "../../types/IBitmapFieldTarget";
@@ -55,12 +56,29 @@ class BitmapAccessCheck {
     if (site.target.kind !== "postfix") return;
     const field = this.checkChain(site.target);
     if (field === null) return;
+    this.checkFits(site, field, site.value);
+  }
 
-    // E0881: a known value must fit the field it is written to. A typed
-    // value written to a multi-bit field is judged by its type, which E0869
-    // owns (ADR-072 ruling 17); a one-bit field is a bool, which E0869 does
-    // not judge, so every known value written to one is judged here.
-    const result = OperandTyper.constantResultOf(site.value, this.context);
+  /**
+   * E0881: a known value must fit the field it is written to. A typed
+   * value written to a multi-bit field is judged by its type, which E0869
+   * owns (ADR-072 ruling 17); a one-bit field is a bool, which E0869 does
+   * not judge, so every known value written to one is judged here. A
+   * ternary that does not fold is judged arm by arm, since each arm lands in
+   * the field (ADR-022); one that folds is judged by the arm it picks.
+   */
+  private checkFits(
+    site: IAssignmentSyntax,
+    field: IBitmapFieldTarget,
+    expr: TExpression,
+  ): void {
+    const result = OperandTyper.constantResultOf(expr, this.context);
+    const inner = ExpressionShape.unparenthesized(expr);
+    if (result.kind !== "value" && inner.kind === "ternary") {
+      this.checkFits(site, field, inner.whenTrue);
+      this.checkFits(site, field, inner.whenFalse);
+      return;
+    }
     if (result.kind !== "value") return;
     if (result.typeName !== null && field.layout.width > 1) return;
     const value = ConstantEvaluator.toNumber(result.value);
@@ -68,7 +86,7 @@ class BitmapAccessCheck {
     if (value === undefined || value <= maximum) return;
     this.found.push({
       code: "E0881",
-      span: site.value.span,
+      span: expr.span,
       declaredAt: BindingSite.ofChain(site.target, this.context),
       message: `Value ${value} exceeds ${field.layout.width}-bit field '${field.fieldName}' maximum of ${maximum}`,
       helpText: `A ${field.layout.width}-bit field holds 0 through ${maximum}; widen the field in the bitmap declaration, or write a value that fits (ADR-034).`,

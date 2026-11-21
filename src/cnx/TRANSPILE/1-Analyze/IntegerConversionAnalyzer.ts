@@ -693,7 +693,11 @@ class IntegerConversionCheck {
         span: at.span,
         declaredAt: BindingSite.ofOperands([at], this.context),
         message: `Cannot ${verb} ${source.name} to ${into} (narrowing)`,
-        helpText: `Use bit indexing to say which bits you mean: ${subject}[0, ${targetWidth}]`,
+        // An extraction already says which bits; it must take fewer of them
+        helpText:
+          source.signed === null
+            ? `Extract no more bits than the target holds: [start, ${targetWidth}]`
+            : `Use bit indexing to say which bits you mean: ${subject}[0, ${targetWidth}]`,
       });
       return;
     }
@@ -744,7 +748,7 @@ class IntegerConversionCheck {
     }
     if (t.form.kind === "bitRange") {
       const width = t.form.width;
-      return width === null || width === 1
+      return width === null
         ? null
         : { width, signed: null, name: `a ${width}-bit extraction` };
     }

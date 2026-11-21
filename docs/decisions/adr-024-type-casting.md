@@ -790,7 +790,9 @@ both `g <- a + b` and `p.f <- a` are E0869 (narrowing). A bitmap field's width i
 own, not the `u8` holding it: `flags.Mode <- a` with a `u8 a` and a 3-bit `Mode` is E0869,
 and its help names the field's width, `value[0, 3]` (ADR-072 ruling 17 on #2449).
 The value is judged by the bits it carries the same way: a 4-bit field copied into
-`Mode`, or `a[0, 4]`, is E0869 too.
+`Mode`, or `a[0, 4]`, is E0869 too. A field read into a variable is an unsigned value of the
+field's own width: with a 12-bit `Field12`, `u8 y <- b.Field12` is E0869 (narrowing), and
+`i8 x <- f.Mode` is E0869 (sign change).
 
 ### Positions (#1618)
 
