@@ -9,8 +9,11 @@ bitmap8 Flags {
 }
 
 mut Flags f <- 0;
-// A typed constant is judged by its type, E0869 (ADR-072 ruling 17):
-// tests/adr-034/bitmap-field-narrowing-error.test.cnx
+// A typed constant written to a multi-bit field is judged by its type, E0869
+// (ADR-072 ruling 17): tests/adr-034/bitmap-field-narrowing-error.test.cnx.
+// A one-bit field is a bool, which E0869 does not judge, so it stays here.
+u8 ONE <- 1;
+u8 TWO <- 2;
 
 void main() {
     // NEGATIVE CONTROLS -- declared before the assertions. The widest value
@@ -21,6 +24,7 @@ void main() {
     f.Enable <- 1;
     f.Reserved <- 15;
     f.Mode <- 3 + 4;
+    f.Enable <- ONE;
 
     // ASSERTIONS -- one over the maximum, in each base.
     f.Mode <- 8;
@@ -29,4 +33,5 @@ void main() {
     f.Enable <- 2;
     f.Reserved <- 16;
     f.Mode <- 7 + 1;
+    f.Enable <- TWO;
 }

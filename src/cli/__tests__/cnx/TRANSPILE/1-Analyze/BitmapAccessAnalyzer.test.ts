@@ -53,7 +53,7 @@ describe("BitmapAccessAnalyzer (E0881)", () => {
 
   // ADR-072 ruling 17: only an untyped value is judged by its value. A typed
   // one, a const included, is judged by its type, which E0869 owns.
-  it("folds an untyped constant expression, and leaves a typed const to E0869", () => {
+  it("folds an untyped constant expression, and leaves a typed const to E0869 unless the field is one bit", () => {
     const found = errors(
       [
         FLAGS,
@@ -65,11 +65,13 @@ describe("BitmapAccessAnalyzer (E0881)", () => {
         "    f.Mode <- FITS + 1;",
         "    f.Mode <- 7 + 1;",
         "    f.Mode <- 3 + 4;",
+        "    f.Enable <- BIG;",
         "}",
       ].join("\n"),
     );
     expect(found.map((e) => [e.code, e.span.line, e.message])).toEqual([
       ["E0881", 8, "Value 8 exceeds 3-bit field 'Mode' maximum of 7"],
+      ["E0881", 10, "Value 20 exceeds 1-bit field 'Enable' maximum of 1"],
     ]);
   });
 

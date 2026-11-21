@@ -56,12 +56,13 @@ class BitmapAccessCheck {
     const field = this.checkChain(site.target);
     if (field === null) return;
 
-    // E0881: a known value must fit the field it is written to. Only an
-    // untyped one -- a literal, or a header macro cnx can read -- is judged
-    // by its value; a typed value is judged by its type, which E0869 owns
-    // (ADR-072 ruling 17).
+    // E0881: a known value must fit the field it is written to. A typed
+    // value written to a multi-bit field is judged by its type, which E0869
+    // owns (ADR-072 ruling 17); a one-bit field is a bool, which E0869 does
+    // not judge, so every known value written to one is judged here.
     const result = OperandTyper.constantResultOf(site.value, this.context);
-    if (result.kind !== "value" || result.typeName !== null) return;
+    if (result.kind !== "value") return;
+    if (result.typeName !== null && field.layout.width > 1) return;
     const value = ConstantEvaluator.toNumber(result.value);
     const maximum = 2 ** field.layout.width - 1;
     if (value === undefined || value <= maximum) return;
