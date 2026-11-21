@@ -76,7 +76,7 @@ bool LED__isOn(void) {
 }
 
 void LED__configureInterrupt(void) {
-    Teensy4__GPIO7__InterruptConfig1 = (Teensy4__GPIO7__InterruptConfig1 & ~((uint32_t)0x3U << 6)) | (((uint8_t)Teensy4__InterruptType__RISING_EDGE & (uint32_t)0x3U) << 6);
+    Teensy4__GPIO7__InterruptConfig1 = (Teensy4__GPIO7__InterruptConfig1 & ~((uint32_t)0x3U << 6)) | (((uint8_t)((((uint8_t)Teensy4__InterruptType__RISING_EDGE)) & 0x3U) & (uint32_t)0x3U) << 6);
     Teensy4__GPIO7__InterruptMaskRegister = (Teensy4__GPIO7__InterruptMaskRegister & ~((uint32_t)1U << 3)) | ((uint32_t)1U << 3);
 }
 
