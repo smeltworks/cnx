@@ -517,7 +517,7 @@ base: bare, `this.` and `global.`.
 
 ---
 
-## E0931–E0942 — Register Types and Instances (ADR-072)
+## E0931–E0943 — Register Types and Instances (ADR-072)
 
 | Code  | Message                                                                                                                                                                                                  | Help                                                                                                                            | Source                                              |
 | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
@@ -533,6 +533,7 @@ base: bare, `this.` and `global.`.
 | E0940 | The argument to a register parameter is not an instance of the parameter's register type: an instance of another register type, or not a register instance at all                                        | Pass an instance of the parameter's register type (`GPIO1`), or a register parameter of that type                               | `TRANSPILE/1-Analyze/CallbackAssignmentAnalyzer.ts` |
 | E0941 | A function with a register parameter is used as a callback type (ADR-029): a struct field's, a parameter's or a variable's type                                                                          | Call it with a register instance; a register is bound at each call, so the function is not a callback                           | `TRANSPILE/1-Analyze/UndeclaredTypeAnalyzer.ts`     |
 | E0942 | A register instance or register parameter is read, assigned or stored whole, where a value goes                                                                                                          | Read and write its members (`GPIO1.DR`), or pass it to a register parameter                                                     | `TRANSPILE/1-Analyze/TypeNameValueAnalyzer.ts`      |
+| E0943 | A register parameter is declared `mut`; `mut` does not apply to a register                                                                                                                               | Remove `mut`: a member's access mode (`rw`, `ro`, `wo`, `w1c`, `w1s`) governs its writes                                        | `TRANSPILE/1-Analyze/RegisterInstanceAnalyzer.ts`   |
 
 ---
 

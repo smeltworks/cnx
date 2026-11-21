@@ -2048,10 +2048,11 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-14 linked fixtures with no derivable context:
+16 linked fixtures with no derivable context:
 
 - `adr-072/cross-file-register-instance.test.cnx`
 - `adr-072/register-isr-member.test.cnx`
+- `adr-072/register-keyword-member.test.cnx`
 - `adr-072/register-layout-generated-names.test.cnx`
 - `adr-072/register-misaligned-error.test.cnx`
 - `adr-072/register-offset-group.test.cnx`
@@ -2062,6 +2063,7 @@ cell is declared by the ADR that owns it.
 - `adr-072/register-parameter.test.cnx`
 - `adr-072/register-scoped-layout.test.cnx`
 - `adr-072/register-types-and-instances.test.cnx`
+- `adr-072/register-unaligned-declaration.test.cnx`
 - `adr-072/register-vendor-type-name.test.cnx`
 - `adr-072/reserved-member-names.test.cnx`
 
@@ -2203,6 +2205,16 @@ cell is declared by the ADR that owns it.
 | top-level function | ok        | -      | -          | -           | -          |
 | scope member       | -         | -      | -          | -           | -          |
 | scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
+
+## ADR-072 E0943
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | ok        | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | ok        | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
 ## Positions

@@ -15,7 +15,7 @@ void readParam(GpioPort port) {
     u32 y <- port;
 }
 
-void assignParam(mut GpioPort port) {
+void assignParam(GpioPort port) {
     port <- GPIO2;
 }
 

@@ -607,7 +607,8 @@ register Uart {
 
 // A register parameter is bound to an instance at each call. It is never a
 // value: not read, assigned or stored whole (E0942), and its function is
-// never a callback (E0941).
+// never a callback (E0941). It is never `mut` (E0943): each member's access
+// mode decides whether it can be written.
 void setPin(GpioPort port, u8 pin) {
     port.DR[pin] <- true;
 }

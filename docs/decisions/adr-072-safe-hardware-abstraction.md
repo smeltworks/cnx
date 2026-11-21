@@ -14,8 +14,9 @@
 > **Part 1 is implemented.** Register types, fixed-address instances,
 > compile-time addresses and reserved member names compile (#2461), and the
 > `@ address` form is gone. A register parameter is bound to an instance at
-> each call; offset groups, the overlap rule (E0938) and the alignment rule
-> (E0939) hold for every register. A register type in any position but a
+> each call; offset groups and the overlap rule (E0938) hold for every
+> register, and the alignment rule (E0939) for every register that maps
+> hardware. A register type in any position but a
 > one-address instance or a parameter (E0936) is rejected until Part 4 lands.
 > Parts 2–4 are not implemented.
 
@@ -260,6 +261,26 @@ register Odd {
 }
 ```
 
+Alignment is a rule for a register that maps hardware: a type with a fixed-address
+instance, or one a parameter takes (ruling 13 on #2449). A declaration alone may place a
+`u16` at an odd offset, as Part 4's J1939 frame does; Part 4 decides how such a field in
+normal memory is read.
+
+**A member is as wide as its type is on the target.** An enum member is as wide as the
+target's C compiler makes the enum (ruling 14). With short enums, a fact each target
+records and the toolchain probe checks, that is the narrowest of 8, 16 or 32 bits that
+holds every enumerator; otherwise it is the target's C `int`. The same register map can
+therefore be legal on one target and overlap (E0938) or misalign (E0939) on another:
+
+```cnx
+enum Mode { IDLE, RUN }
+
+register Blk {
+    0x00 rw Mode MODE,   // cortex-m7 (short enums): 1 byte
+    0x01 rw u8 FLAG,     // legal on cortex-m7; E0938 on atmega328p, a 2-byte int
+}
+```
+
 #### Transpilation
 
 ```cnx
@@ -338,6 +359,22 @@ setPin(GPIO2, 0); // port.DR is GPIO2's DR
 ```
 
 This enables reusable HAL code without duplicating source code per instance.
+
+A register parameter is never `mut` (ruling 12, E0943). A member's own access mode
+(`rw`, `ro`, `wo`, `w1c`, `w1s`) decides whether it can be written, through a parameter
+as through a fixed instance:
+
+```cnx
+void drive(GpioPort port) { port.DR <- 0xFF; } // DR is rw: written without mut
+void bad(mut GpioPort port) { }                // E0943: mut does not apply to a register
+```
+
+The C a register parameter compiles to is the transpiler's, with two consequences a
+user sees. A member named with a C or C++ keyword (`default`, `this`) keeps its cnx
+name, and its field in the generated C layout is spelled `cnx__default` (ruling 15;
+ADR-063 reserves `cnx__`). The layout's offsets and widths are checked by C11
+`_Static_assert` (C++11 `static_assert`), so a file with a register parameter requires
+C11, as float bit indexing already does (ruling 16).
 
 #### Compile-Time-Only Constraint
 
@@ -852,6 +889,7 @@ Part 1 (register types and fixed instances):
 | E0940 | The argument to a register parameter is not an instance of its register type, nor a register parameter of that type                         | `tests/adr-072/register-parameter-error.test.cnx`                                                                                                       |
 | E0941 | A function with a register parameter is used as a callback type (ADR-029)                                                                   | `tests/adr-072/register-callback-type-error.test.cnx`                                                                                                   |
 | E0942 | A register instance or register parameter is read, assigned or stored whole, where a value goes                                             | `tests/adr-072/register-as-value-error.test.cnx`                                                                                                        |
+| E0943 | A register parameter is declared `mut`; a member's access mode governs its writes (ruling 12)                                               | `tests/adr-072/register-mut-parameter-error.test.cnx`                                                                                                   |
 
 <!-- MATRIX-SEVERITY code: E0931 -->
 
@@ -1076,6 +1114,38 @@ E0941 is reported at the callback type's position. A parameter's type is a funct
 | for header         | exercised through chain | off      |
 
 E0942 is reported where a register stands as a value: a read, an assignment's target or value. The fixture's are in function bodies. The imported rows are off: the diagnostic is about the expression, wherever the register is declared.
+
+<!-- MATRIX-SEVERITY code: E0943 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| global variable    | same file               | off      |
+| top-level function | same file               | error    |
+| scope member       | same file               | off      |
+| scope method       | same file               | error    |
+| for header         | same file               | off      |
+| global variable    | imported direct         | off      |
+| top-level function | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| global variable    | imported transitive     | off      |
+| top-level function | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | off      |
+| top-level function | exercised from one away | off      |
+| scope member       | exercised from one away | off      |
+| scope method       | exercised from one away | off      |
+| for header         | exercised from one away | off      |
+| global variable    | exercised through chain | off      |
+| top-level function | exercised through chain | off      |
+| scope member       | exercised through chain | off      |
+| scope method       | exercised through chain | off      |
+| for header         | exercised through chain | off      |
+
+E0943 is reported on a function's parameter, so it applies wherever a function is declared: a top-level function and a scope method. A variable and a `for` header declare no parameters, and the imported rows are off: the diagnostic is about the declaration, not a use of the register.
 
 <!-- MATRIX-SEVERITY code: E0934 -->
 

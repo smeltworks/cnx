@@ -14,6 +14,7 @@
  */
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TTypeSyntax from "../../types/syntax/TTypeSyntax";
+import type IFunctionDeclarationSyntax from "../../types/syntax/IFunctionDeclarationSyntax";
 import type IBaseAnalysisError from "./types/IBaseAnalysisError";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import SourceOrder from "../../utils/SourceOrder";
@@ -37,6 +38,7 @@ class RegisterInstanceAnalyzer {
         scope,
       );
       if (declaration.kind === "function") {
+        found.push(...this.mutRegisterParameters(declaration, scopePath));
         for (const statement of StatementNodes.in(declaration)) {
           if (statement.kind !== "constructorDeclaration") continue;
           if (!this.isRegisterType(statement.type, scopePath)) {
@@ -298,6 +300,29 @@ class RegisterInstanceAnalyzer {
       helpText:
         "Only a register instance takes an address expression (ADR-072). A C++ constructor's arguments are named constants (#375): declare the value as a const and pass its name.",
     };
+  }
+
+  /**
+   * E0943 (ruling 12): `mut` does not apply to a register. Each member's
+   * access mode (`rw`, `ro`, `wo`, `w1c`, `w1s`) is what governs its writes.
+   */
+  private mutRegisterParameters(
+    declaration: IFunctionDeclarationSyntax,
+    scopePath: string,
+  ): IBaseAnalysisError[] {
+    return (declaration.parameters ?? [])
+      .filter(
+        (parameter) =>
+          parameter.mut && this.isRegisterType(parameter.type, scopePath),
+      )
+      .map((parameter) => ({
+        aboutItsPosition: true,
+        code: "E0943",
+        span: parameter.nameSpan,
+        message: `register parameter '${parameter.name}' cannot be \`mut\``,
+        helpText:
+          "A register's members are written according to their access mode (rw, ro, wo, w1c, w1s), not `mut` (ADR-072). Remove `mut`.",
+      }));
   }
 
   /** The register type a written type names, in the scope it is written in */

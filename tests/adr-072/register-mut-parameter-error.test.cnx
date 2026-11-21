@@ -1,0 +1,41 @@
+// test-error
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072 ruling 12, E0943: `mut` does not apply to a register parameter.
+// Each member's access mode (rw, ro, wo, w1c, w1s) governs its writes.
+
+register Port {
+    0x00 rw u32 DR,
+    0x04 ro u32 PSR,
+}
+
+Port GPIO1(0x401B8000);
+
+void drive(mut Port p) {
+    p.DR <- 0xFF;
+}
+
+u32 status(u8 pin, mut Port p) {
+    return p.PSR >> pin;
+}
+
+scope Board {
+    register Latch {
+        0x00 rw u32 Q,
+    }
+
+    void hold(mut Latch latch) {
+        latch.Q <- 1;
+    }
+}
+
+// negative control: without `mut`, a member is written by its access mode
+void driveReadOnly(Port p) {
+    p.DR <- 0xFF;
+}
+
+void main() {
+    drive(GPIO1);
+    u32 s <- status(1, GPIO1);
+    driveReadOnly(GPIO1);
+}

@@ -1,0 +1,6 @@
+14:20 error[E0943]: register parameter 'p' cannot be `mut`
+       help: A register's members are written according to their access mode (rw, ro, wo, w1c, w1s), not `mut` (ADR-072). Remove `mut`.
+18:28 error[E0943]: register parameter 'p' cannot be `mut`
+       help: A register's members are written according to their access mode (rw, ro, wo, w1c, w1s), not `mut` (ADR-072). Remove `mut`.
+27:24 error[E0943]: register parameter 'latch' cannot be `mut`
+       help: A register's members are written according to their access mode (rw, ro, wo, w1c, w1s), not `mut` (ADR-072). Remove `mut`.

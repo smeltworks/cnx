@@ -2,9 +2,9 @@
 // test-adr: 072
 #pragma target cortex-m7
 // ADR-072, #2238: a register parameter's member is a register member, so
-// passing it to a `mut` parameter is E0915 whether or not the register
-// parameter is `mut`. Its writes are the member's access mode's to govern
-// (`port.DR <- 1` needs no `mut`), so E0900 never applies to it.
+// passing it to a `mut` parameter is E0915. Its writes are the member's
+// access mode's to govern (`port.DR <- 1` needs no `mut`, ruling 12), so
+// E0900 never applies to it.
 
 register Blk {
     0x00 rw u32 LEN,
@@ -18,14 +18,10 @@ void bump(mut u32 n) {
     n <- n + 1;
 }
 
-void viaReadOnly(Blk b) {
+void viaParameter(Blk b) {
     bump(b.LEN);
     bump((b.LEN));
     bump(b.STATUS);
-}
-
-void viaMut(mut Blk b) {
-    bump(b.LEN);
     bump(b.FLAGS);
 }
 
@@ -37,7 +33,6 @@ void viaLocal(Blk b) {
 }
 
 void main() {
-    viaReadOnly(B1);
-    viaMut(B1);
+    viaParameter(B1);
     viaLocal(B1);
 }
