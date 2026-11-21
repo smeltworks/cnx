@@ -13,7 +13,8 @@
 #include <stddef.h>
 
 // ADR-072: a register type's C layout puts each member at its declared
-// offset whatever its type -- an enum is as wide as a C int, a bitmap24 as
+// offset whatever its type -- an enum as wide as the target compiler makes it (ruling 14: one byte on
+// cortex-m7, which uses short enums), a bitmap24 as
 // the uint32_t it is. A member may be named `length`, and a register in
 // parentheses is still that register.
 /* ADR-072: Blk must sit at the offsets and widths its register declares */

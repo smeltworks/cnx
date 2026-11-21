@@ -5,6 +5,7 @@
  * Produces TType-based IRegisterSymbol with proper IScopeSymbol references.
  */
 
+import C_CPP_KEYWORDS from "../../../../utils/constants/C_CPP_KEYWORDS";
 import ConstExprLowering from "../../../../utils/ConstExprLowering";
 import type IRegisterDeclarationSyntax from "../../../../types/syntax/IRegisterDeclarationSyntax";
 import ESourceLanguage from "../../../../utils/types/ESourceLanguage";
@@ -74,7 +75,10 @@ class RegisterCollector {
         type,
         access: accessMod,
         group: member.group,
-        layoutField: memberName,
+        // ADR-072 ruling 15: a C/C++ keyword cannot name a C struct field
+        layoutField: C_CPP_KEYWORDS.has(memberName)
+          ? `cnx__${memberName}`
+          : memberName,
         layoutUnion: null,
         bytes: null,
       };
