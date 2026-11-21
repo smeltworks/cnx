@@ -270,7 +270,7 @@ normal memory is read.
 target's C compiler makes the enum (ruling 14). With short enums, a fact each target
 records and the toolchain probe checks, that is the narrowest of 8, 16 or 32 bits that
 holds every enumerator; otherwise it is the target's C `int`. The same register map can
-therefore be legal on one target and overlap (E0938) or misalign (E0939) on another:
+therefore be legal on one target and break the overlap (E0938) or alignment (E0939) rule on another:
 
 ```cnx
 enum Mode { IDLE, RUN }
