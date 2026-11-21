@@ -7,6 +7,8 @@ interface ITargetWidths {
   readonly pointerBits: number | null;
   readonly intBits: number | null;
   readonly doubleBits: number | null;
+  /** ADR-072 ruling 14: the compiler sizes an enum by its values */
+  readonly shortEnums: boolean | null;
 }
 
 export default ITargetWidths;

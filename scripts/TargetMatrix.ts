@@ -267,6 +267,8 @@ class TargetMatrix {
       `_Static_assert((__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) == ${row.big_endian ? 1 : 0}, "big_endian");`,
       `_Static_assert(CNX_LDREX == ${row.ldrex_strex ? 1 : 0}, "ldrex_strex");`,
       `_Static_assert(CNX_BASEPRI == ${row.basepri ? 1 : 0}, "basepri");`,
+      "enum cnx__probe { CNX__PROBE_ONLY };",
+      `_Static_assert((sizeof(enum cnx__probe) == 1) == ${row.short_enums ? 1 : 0}, "short_enums");`,
       ...(row.interrupt_mask
         ? ["#include <stdint.h>", ...InterruptMask.wrappers()]
         : []),

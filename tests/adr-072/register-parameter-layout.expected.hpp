@@ -29,6 +29,7 @@ typedef uint32_t Ctl;
 /* Registers (ADR-072) */
 typedef struct Blk {
     volatile Mode MODE;
+    uint8_t RESERVED__0x01[3];
     volatile Ctl CTL;
     volatile uint32_t length;
 } Blk;

@@ -36,6 +36,8 @@ interface ITargetDescription {
   /** Storage size, at least `double_bits` */
   readonly long_double_bits: number;
   readonly big_endian: boolean;
+  /** ADR-072: the compiler sizes an enum to the smallest type holding its values (`-fshort-enums`) */
+  readonly short_enums: boolean;
   /** MISRA C:2012 Rule 5.1 */
   readonly external_identifier_chars: number;
   /** MISRA C:2012 Rule 5.9 (recorded, not yet enforced: #1338) */

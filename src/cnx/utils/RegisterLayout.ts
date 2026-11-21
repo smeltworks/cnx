@@ -35,12 +35,18 @@ class RegisterLayout {
   /** The widths a layout depends on, from the program's target */
   static widthsOf(target: TRunTarget | null): ITargetWidths {
     if (target?.kind !== "resolved") {
-      return { pointerBits: null, intBits: null, doubleBits: null };
+      return {
+        pointerBits: null,
+        intBits: null,
+        doubleBits: null,
+        shortEnums: null,
+      };
     }
     return {
       pointerBits: target.description.pointer_bits,
       intBits: target.description.int_bits,
       doubleBits: target.description.double_bits,
+      shortEnums: target.description.short_enums,
     };
   }
 
@@ -54,6 +60,27 @@ class RegisterLayout {
    * The union an offset group is written as. ADR-063 keeps `__` out of a cnx
    * name, so no member can take this one, nor `reservedName`'s
    */
+  /**
+   * ADR-072 ruling 14: an enum's width as the target's compiler sizes it --
+   * with short enums, the narrowest of 8, 16 or 32 bits holding every value;
+   * otherwise a C int. Null where the target is unknown.
+   */
+  static enumBits(
+    values: readonly number[],
+    widths: ITargetWidths,
+  ): number | null {
+    if (widths.shortEnums !== true) return widths.intBits;
+    const min = Math.min(0, ...values);
+    const max = Math.max(0, ...values);
+    return (
+      [8, 16].find((bits) =>
+        min < 0
+          ? min >= -(2 ** (bits - 1)) && max < 2 ** (bits - 1)
+          : max < 2 ** bits,
+      ) ?? 32
+    );
+  }
+
   static groupName(offset: bigint): string {
     return `AT__${RegisterAddress.hex(offset)}`;
   }

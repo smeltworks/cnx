@@ -32,6 +32,7 @@ const TARGET_DESCRIPTION_FIELDS: {
     allowed: [32, 64, 96, 128],
   },
   big_endian: { kind: "boolean", optional: false },
+  short_enums: { kind: "boolean", optional: false },
   external_identifier_chars: { kind: "unsigned", optional: false, min: 6 },
   internal_identifier_chars: { kind: "unsigned", optional: false, min: 31 },
   toolchain_triple: { kind: "string", optional: true },

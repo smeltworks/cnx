@@ -19,7 +19,7 @@
 // parentheses is still that register.
 /* ADR-072: Blk must sit at the offsets and widths its register declares */
 _Static_assert(offsetof(Blk, MODE) == 0x00U, "Blk.MODE is at 0x00");
-_Static_assert(sizeof(((Blk*)0)->MODE) == 4U, "Blk.MODE is 4 byte(s)");
+_Static_assert(sizeof(((Blk*)0)->MODE) == 1U, "Blk.MODE is 1 byte(s)");
 _Static_assert(offsetof(Blk, CTL) == 0x04U, "Blk.CTL is at 0x04");
 _Static_assert(sizeof(((Blk*)0)->CTL) == 4U, "Blk.CTL is 4 byte(s)");
 _Static_assert(offsetof(Blk, length) == 0x08U, "Blk.length is at 0x08");
