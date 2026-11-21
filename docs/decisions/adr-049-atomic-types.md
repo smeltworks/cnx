@@ -517,6 +517,7 @@ _(Schema version 2, 2026-10-17, #1789: adds `interrupt_mask`. A compiler that re
 | `double_bits`               | unsigned integer  | 32, 64          |                                                                                                                                                                             |
 | `long_double_bits`          | unsigned integer  | 32, 64, 96, 128 | storage size, at least `double_bits`                                                                                                                                        |
 | `big_endian`                | Boolean           |                 |                                                                                                                                                                             |
+| `short_enums`               | Boolean           |                 | the compiler sizes an enum to the narrowest of 8, 16 or 32 bits holding its values (`-fshort-enums`); ADR-072 ruling 14                                                     |
 | `external_identifier_chars` | unsigned integer  | at least 6      | MISRA C:2012 Rule 5.1                                                                                                                                                       |
 | `internal_identifier_chars` | unsigned integer  | at least 31     | MISRA C:2012 Rule 5.9                                                                                                                                                       |
 | `toolchain_triple`          | string (optional) |                 | a compiler configuration used to check generated code; never changes the program's meaning                                                                                  |
@@ -579,6 +580,7 @@ A program's description pragmas together form one description, for a platform th
 #pragma double_bits 64
 #pragma long_double_bits 64
 #pragma big_endian false
+#pragma short_enums true
 #pragma external_identifier_chars 31
 #pragma internal_identifier_chars 63
 
@@ -593,7 +595,7 @@ A partial description is an error that lists the missing fields. For a file whos
 
 ```
 Error: myfile.cnx:1:0 error[E0514]: incomplete target description
-       help: missing: ldrex_strex, basepri, interrupt_mask, char_bits, char_signed, short_bits, int_bits, long_bits, long_long_bits, size_t_bits, pointer_bits, float_bits, double_bits, long_double_bits, big_endian, external_identifier_chars, internal_identifier_chars. Either use '#pragma target <name>' or give every field (ADR-049).
+       help: missing: ldrex_strex, basepri, interrupt_mask, char_bits, char_signed, short_bits, int_bits, long_bits, long_long_bits, size_t_bits, pointer_bits, float_bits, double_bits, long_double_bits, big_endian, short_enums, external_identifier_chars, internal_identifier_chars. Either use '#pragma target <name>' or give every field (ADR-049).
 ```
 
 #### One target per program

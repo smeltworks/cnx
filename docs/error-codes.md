@@ -20,8 +20,8 @@ codes that already have a fixture.
 | E06xx     | Sizeof Expressions                                                                                                                                                                                                | 3       |
 | E07xx     | Control Flow                                                                                                                                                                                                      | 15      |
 | E08xx     | Arithmetic/Array Safety                                                                                                                                                                                           | 61      |
-| E09xx     | NULL Safety, Compile-Time Values, Literal Form, String Conversions, Interrupt Masking, `mut` Arguments, `for` Arrays, Config File Names, Environment Variables, Operator Operands, Parameter Lists, Member Access | 43      |
-| **Total** |                                                                                                                                                                                                                   | **169** |
+| E09xx     | NULL Safety, Compile-Time Values, Literal Form, String Conversions, Interrupt Masking, `mut` Arguments, `for` Arrays, Config File Names, Environment Variables, Operator Operands, Parameter Lists, Member Access | 44      |
+| **Total** |                                                                                                                                                                                                                   | **170** |
 
 ---
 

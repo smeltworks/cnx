@@ -1,2 +1,2 @@
 5:0 error[E0512]: unknown pragma 'once'
-       help: A pragma names the program's target (ADR-049). Its keys are: target, word_size, ldrex_strex, basepri, interrupt_mask, char_bits, char_signed, short_bits, int_bits, long_bits, long_long_bits, size_t_bits, pointer_bits, float_bits, double_bits, long_double_bits, big_endian, external_identifier_chars, internal_identifier_chars.
+       help: A pragma names the program's target (ADR-049). Its keys are: target, word_size, ldrex_strex, basepri, interrupt_mask, char_bits, char_signed, short_bits, int_bits, long_bits, long_long_bits, size_t_bits, pointer_bits, float_bits, double_bits, long_double_bits, big_endian, short_enums, external_identifier_chars, internal_identifier_chars.
