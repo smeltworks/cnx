@@ -109,10 +109,18 @@ describe("IntegerConversionAnalyzer", () => {
       expect(
         errors(
           field(
-            "    f.Mode <- byte[0, 3];\n    f.Mode <- 7;\n    f.Wide <- byte;",
+            "    f.Mode <- byte[0, 3];\n    f.Mode <- 7;\n    f.Wide <- byte;\n    f.Rest <- f.Mode;\n    i8 x <- wide[0, 8];",
           ),
         ),
       ).toEqual([]);
+      expect(
+        errors(field("    f.Mode <- f.Rest;\n    f.Mode <- byte[0, 4];")).map(
+          (e) => e.message,
+        ),
+      ).toEqual([
+        "Cannot assign a 4-bit field to a 3-bit field (narrowing)",
+        "Cannot assign a 4-bit extraction to a 3-bit field (narrowing)",
+      ]);
     });
 
     it("accepts a bit extraction -- the explicit reinterpret the message asks for", () => {

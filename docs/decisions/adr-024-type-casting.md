@@ -789,6 +789,8 @@ field it writes, not its root's: with `u32 a, b`, `u8 g` and a `u8` field `f`,
 both `g <- a + b` and `p.f <- a` are E0869 (narrowing). A bitmap field's width is its
 own, not the `u8` holding it: `flags.Mode <- a` with a `u8 a` and a 3-bit `Mode` is E0869,
 and its help names the field's width, `value[0, 3]` (ADR-072 ruling 17 on #2449).
+The value is judged by the bits it carries the same way: a 4-bit field copied into
+`Mode`, or `a[0, 4]`, is E0869 too.
 
 ### Positions (#1618)
 

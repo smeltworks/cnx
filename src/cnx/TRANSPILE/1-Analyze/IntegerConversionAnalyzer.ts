@@ -107,6 +107,17 @@ const CONSTANT_FORMS: ReadonlySet<TExpression["kind"]> = new Set([
 
 type TFold = ReturnType<typeof OperandTyper.constantResultOf>;
 
+/**
+ * What a source converts from: the bits it carries, whether they are
+ * signed -- null for a bit extraction, the explicit reinterpret, whose sign
+ * is not judged -- and how a message names it.
+ */
+type TSource = {
+  readonly width: number;
+  readonly signed: boolean | null;
+  readonly name: string;
+};
+
 class IntegerConversionCheck {
   /**
    * A literal's exact value. BigInt, not parseInt: a u64 bound is past 2^53,
@@ -229,10 +240,12 @@ class IntegerConversionCheck {
   ): void {
     const binary = CompoundOperator.binaryOf(site.operator);
     const shift = binary === "<<" || binary === ">>";
-    const source = CompositeType.integerOf([
+    const integer = CompositeType.integerOf([
       OperandTyper.typeOfTarget(site.target, this.context),
       ...(shift ? [] : OperandTyper.valueLeaves(site.value, this.context)),
     ]);
+    const source =
+      integer === null ? null : IntegerConversionCheck.named(integer);
     if (!shift) {
       this.checkLiteralLeaves(
         targetType,
@@ -662,12 +675,11 @@ class IntegerConversionCheck {
 
   private checkConversion(
     target: string,
-    source: string,
+    source: TSource,
     at: TExpression,
     kind: "assign" | "cast",
     targetWidth: number = TYPE_WIDTH[target],
   ): void {
-    if (!TypeCheckUtils.isInteger(source)) return;
     const verb = kind === "cast" ? "cast" : "assign";
     const subject = kind === "cast" ? "expr" : "value";
     const into =
@@ -675,22 +687,25 @@ class IntegerConversionCheck {
         ? target
         : `a ${targetWidth}-bit field`;
 
-    if (TYPE_WIDTH[source] > targetWidth) {
+    if (source.width > targetWidth) {
       this.found.push({
         code: "E0869",
         span: at.span,
         declaredAt: BindingSite.ofOperands([at], this.context),
-        message: `Cannot ${verb} ${source} to ${into} (narrowing)`,
+        message: `Cannot ${verb} ${source.name} to ${into} (narrowing)`,
         helpText: `Use bit indexing to say which bits you mean: ${subject}[0, ${targetWidth}]`,
       });
       return;
     }
-    if (TypeCheckUtils.isSigned(source) !== TypeCheckUtils.isSigned(target)) {
+    if (
+      source.signed !== null &&
+      source.signed !== TypeCheckUtils.isSigned(target)
+    ) {
       this.found.push({
         code: "E0869",
         span: at.span,
         declaredAt: BindingSite.ofOperands([at], this.context),
-        message: `Cannot ${verb} ${source} to ${into} (sign change)`,
+        message: `Cannot ${verb} ${source.name} to ${into} (sign change)`,
         helpText: `Use bit indexing to reinterpret the bits explicitly: ${subject}[0, ${targetWidth}]`,
       });
     }
@@ -699,13 +714,15 @@ class IntegerConversionCheck {
   // --- What type a source is ------------------------------------------------
 
   /**
-   * The integer type a source converts from, as a cnx integer name, or
-   * null when the rule does not judge it (#1668, the design's §5 row):
+   * What a source converts from, or null when the rule does not judge it
+   * (#1668, the design's §5 row):
    *
    * - a top-level ternary, which only a cast brings here: `check` takes
    *   each arm where it stands;
    * - a lone bit extraction, `large[0, 8]`: ADR-024's explicit reinterpret,
-   *   the form this rule tells the author to use;
+   *   the form this rule tells the author to use, judged by the bits it
+   *   takes and never by sign;
+   * - a bitmap field, by its own width, not its `u8`'s (ruling 17);
    * - a composite, `a + b`: its integer type, as the typer settled it -- the
    *   one rule 2.2 sizes its clamp helper by -- unless `composites` is false,
    *   as for a cast;
@@ -715,22 +732,41 @@ class IntegerConversionCheck {
   private conversionSource(
     expr: TExpression,
     composites: boolean,
-  ): string | null {
+  ): TSource | null {
     if (expr.kind === "ternary") return null;
     const t = OperandTyper.typeOf(expr, this.context);
     if (t === null) return null;
     if (t.form.kind === "composite") {
-      return composites && t.bitWidth !== null ? t.typeName : null;
+      return composites && t.bitWidth !== null && t.typeName !== null
+        ? IntegerConversionCheck.named(t.typeName)
+        : null;
     }
-    if (t.form.kind === "bitRange") return null;
-    return IntegerConversionCheck.integerName(t);
+    if (t.form.kind === "bitRange") {
+      const width = t.form.width;
+      return width === null || width === 1
+        ? null
+        : { width, signed: null, name: `a ${width}-bit extraction` };
+    }
+    return IntegerConversionCheck.integerSource(t);
   }
 
-  private static integerName(t: IOperandType): string | null {
+  private static named(typeName: string): TSource | null {
+    if (!TypeCheckUtils.isInteger(typeName)) return null;
+    return {
+      width: TYPE_WIDTH[typeName],
+      signed: TypeCheckUtils.isSigned(typeName),
+      name: typeName,
+    };
+  }
+
+  private static integerSource(t: IOperandType): TSource | null {
     if (t.dimensions.length > 0 || t.bitWidth === null) return null;
-    if (t.category === "signed") return `i${t.bitWidth}`;
-    if (t.category === "unsigned") return `u${t.bitWidth}`;
-    return null;
+    if (t.category !== "signed" && t.category !== "unsigned") return null;
+    const signed = t.category === "signed";
+    const name = `${signed ? "i" : "u"}${t.bitWidth}`;
+    if (TypeCheckUtils.isInteger(name))
+      return { width: t.bitWidth, signed, name };
+    return { width: t.bitWidth, signed, name: `a ${t.bitWidth}-bit field` };
   }
 }
 

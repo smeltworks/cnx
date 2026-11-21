@@ -3,7 +3,8 @@
 // ADR-072 ruling 17 (Part 2 width safety): a value written to a bitmap field
 // must fit the field by its type. A wider type is E0869 (ADR-024 narrowing),
 // and its help names the field's width. A typed constant is judged by its
-// type, as it is for a variable.
+// type, as it is for a variable. A field copied into a narrower field, and a
+// bit extraction wider than the field, are judged by the bits they carry.
 
 #include "bitmap-field-narrowing-types.cnx"
 
@@ -40,6 +41,8 @@ void main() {
     c.Wide <- m;
     c.Mode <- w[0, 3];
     Port.set(m);
+    f.Mode <- c.Mode;
+    f.Reserved <- c.Mode;
 
     // ASSERTIONS
     f.Mode <- m;
@@ -52,4 +55,6 @@ void main() {
     f.Reserved <- m;
     c.Mode <- m;
     c.Wide <- w;
+    f.Mode <- c.Rest;
+    f.Mode <- m[0, 4];
 }
