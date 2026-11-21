@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1039 fixture(s) assert a diagnostic; 1025 carry a code.
+1040 fixture(s) assert a diagnostic; 1026 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -210,6 +210,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-024/conversion-positions-imported-transitive-error.test.cnx                                     | E0869                             |
 | tests/adr-024/conversion-scope-imported-direct-error.test.cnx                                             | E0869                             |
 | tests/adr-024/conversion-scope-imported-transitive-error.test.cnx                                         | E0869                             |
+| tests/adr-024/extraction-width-error.test.cnx                                                             | E0869                             |
 | tests/adr-024/float-imported-direct-error.test.cnx                                                        | E0891                             |
 | tests/adr-024/float-imported-transitive-error.test.cnx                                                    | E0891                             |
 | tests/adr-024/float-same-file-error.test.cnx                                                              | E0891                             |

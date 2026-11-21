@@ -485,7 +485,12 @@ A C function's result (`global.cWide()`) leaked at the return and the
 argument the same way. Each position is now asked the type its position gives
 the value, the one question E0891 already asked, so the three rules are
 checked at the same places. The bit extraction (`wide[0, 32]`) stays silent at
-every one.
+every one, because it takes no more bits than a `u32` holds. An extraction is
+judged by the bits it takes at each of these positions, the same as a variable
+is judged by its type (ADR-072 ruling 18 on #2449): with a `u32 w`, `u8 x <- w[0, 16]`,
+`u16 z <- w[0, 32]`, `take(w[0, 16])` into a `u8` parameter, `return w[0, 16];`
+in a `u8` function and `(u8)w[0, 16]` are each E0869 (narrowing), and the help
+reads `Extract no more bits than the target holds: [start, 8]`.
 
 ---
 
