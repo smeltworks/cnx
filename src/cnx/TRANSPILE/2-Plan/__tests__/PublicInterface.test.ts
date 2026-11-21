@@ -50,6 +50,7 @@ const register = (
   ...base("register", name, scopePath, visibility),
   registerType: "Peripheral",
   isParameterLayout: false,
+  isHardwareLayout: false,
   addressExpr: null,
   baseAddress: 0x40000000n,
   members: TestMembers.asRegisterMembers(

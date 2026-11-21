@@ -2,7 +2,8 @@
 // test-adr: 072
 #pragma target cortex-m7
 // ADR-072, E0939: a member's offset is a multiple of its size, since an
-// unaligned access to device memory faults on Cortex-M.
+// unaligned access to device memory faults on Cortex-M. Ruling 13: only a
+// register that maps hardware is checked.
 
 register Odd {
     0x00 rw u8 CTRL,
@@ -22,7 +23,13 @@ scope Board {
     register Latch {
         0x01 rw u16 Q,
     }
+
+    void hold(Latch latch) {}
 }
+
+// Ruling 13: each maps hardware, through an instance or a parameter
+Odd ODD0(0x40000000);
+Grouped GR0(0x40001000);
 
 // negative control: each member on a multiple of its own size
 register Aligned {

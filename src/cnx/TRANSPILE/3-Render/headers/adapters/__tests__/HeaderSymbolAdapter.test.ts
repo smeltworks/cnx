@@ -510,6 +510,7 @@ describe("HeaderSymbolAdapter", () => {
         }),
         registerType: "Peripheral",
         isParameterLayout: false,
+        isHardwareLayout: false,
         addressExpr: null,
         baseAddress: 0x40000000n,
         members: TestMembers.asRegisterMembers(
@@ -566,6 +567,7 @@ describe("HeaderSymbolAdapter", () => {
         }),
         registerType: "Peripheral",
         isParameterLayout: false,
+        isHardwareLayout: false,
         addressExpr: null,
         baseAddress: 0x50000000n,
         members: new Map(),

@@ -98,6 +98,7 @@ class RegisterCollector {
       visibility,
       registerType: null,
       isParameterLayout: false,
+      isHardwareLayout: false,
       addressExpr: null,
       baseAddress: null,
       members,

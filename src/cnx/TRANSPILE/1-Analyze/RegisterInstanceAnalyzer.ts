@@ -145,7 +145,10 @@ class RegisterInstanceAnalyzer {
       const bytes = member.bytes;
       if (bytes === null) continue;
       const end = start + bytes;
-      const misaligned = this.misaligned(syntax, member, start, bytes);
+      // Ruling 13: only a hardware map faults on an unaligned access
+      const misaligned = register.isHardwareLayout
+        ? this.misaligned(syntax, member, start, bytes)
+        : null;
       if (misaligned !== null) found.push(misaligned);
       const other = placed.find(
         (prior) =>

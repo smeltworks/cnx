@@ -24,6 +24,13 @@ interface IRegisterSymbol extends IBaseSymbol {
    */
   readonly isParameterLayout: boolean;
 
+  /**
+   * ADR-072 ruling 13: a register TYPE that maps hardware -- one with a
+   * fixed-address instance, or one a parameter takes -- so its members must
+   * be aligned (E0939). Decided once by 1.4; false on an instance.
+   */
+  readonly isHardwareLayout: boolean;
+
   readonly addressExpr: TConstExpr | null;
 
   /**

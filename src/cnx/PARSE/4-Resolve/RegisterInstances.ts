@@ -59,6 +59,31 @@ class RegisterInstances {
         }),
       );
     }
+    const instanced = new Set<string>();
+    for (const symbols of settled.values()) {
+      for (const symbol of symbols) {
+        const type = RegisterInstances.typeOf(symbol, types);
+        if (type !== null) instanced.add(type.fullyQualifiedCName);
+      }
+    }
+    for (const [sourceFile, symbols] of settled) {
+      settled.set(
+        sourceFile,
+        symbols.map((symbol) => {
+          if (symbol.kind !== "register" || symbol.addressExpr !== null) {
+            return symbol;
+          }
+          const type = {
+            ...symbol,
+            isHardwareLayout:
+              symbol.isParameterLayout ||
+              instanced.has(symbol.fullyQualifiedCName),
+          };
+          types.set(type.fullyQualifiedCName, type);
+          return type;
+        }),
+      );
+    }
     const result = new Map<string, ReadonlyArray<TSymbol>>();
     const stamped = new Map<TSymbol, TSymbol>();
     for (const [sourceFile, symbols] of settled) {
@@ -211,6 +236,7 @@ class RegisterInstances {
       visibility: variable.visibility,
       registerType: type.fullyQualifiedCName,
       isParameterLayout: false,
+      isHardwareLayout: false,
       addressExpr,
       baseAddress: RegisterInstances.fold(addressExpr, env),
       members,
