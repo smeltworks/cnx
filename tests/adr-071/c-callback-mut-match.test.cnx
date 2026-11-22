@@ -22,7 +22,7 @@ void logs(mut string<32> msg) {
 }
 
 void readsLog(string<32> msg) {
-    seenChar <- msg[0];
+    seenChar <- (u8)msg[0];
 }
 
 void wire() {

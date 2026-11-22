@@ -1,6 +1,7 @@
 /**
  * ADR-024 integer conversions: E0868, E0869 and E0891, and E0910 where a
- * value known at compile time overflows outside a static initializer.
+ * value known at compile time overflows outside a static initializer; E0945
+ * where a value crosses essential type categories (MISRA C:2012 Rule 10.3).
  *
  * #1322. Six rules across `TypeResolver` and `CodeGenerator`, reached through
  * three entry points -- a declaration's initializer, an assignment, a cast --
@@ -61,6 +62,7 @@
  * headers included (#1726).
  */
 
+import type TEssentialCategory from "../../types/TEssentialCategory";
 import type ISourceSite from "../../types/ISourceSite";
 import BindingSite from "../../utils/BindingSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
@@ -88,6 +90,29 @@ import SourceOrder from "../../utils/SourceOrder";
 import BitFieldIntegerType from "../../utils/BitFieldIntegerType";
 
 const INTEGER_LITERAL = /^-?(?:\d+|0[xX][0-9a-fA-F]+|0[bB][01]+)$/;
+
+/** How each essential category is named in E0945's message */
+const CATEGORY_NAME: Record<TEssentialCategory, string> = {
+  signed: "a signed integer",
+  unsigned: "an unsigned integer",
+  floating: "a floating",
+  boolean: "a bool",
+  enum: "an enum",
+  character: "a character",
+  none: "an untyped",
+};
+
+/** E0945's help for each category an integer target does not take */
+const INTO_INTEGER: Partial<
+  Record<TEssentialCategory, (target: string) => string>
+> = {
+  boolean: () =>
+    "A bool is not a number (ADR-024); write the number it stands for: (value = true) ? 1 : 0",
+  character: (target) =>
+    `Cast the character to say it is a number: (${target})value (ADR-024)`,
+  enum: (target) =>
+    `Cast the enum value to say it is a number: (${target})value (ADR-024)`,
+};
 
 /** What a literal operand must fit: the range, the width, or nothing */
 type TLiteralRole = "value" | "bits" | "exempt";
@@ -144,13 +169,13 @@ class IntegerConversionCheck {
     if (!declaration.initializer) return;
     if (this.checkStringsAt(declaration.initializer)) return;
     const target = declaration.type.text;
+    const declaredAt = BindingSite.ofSpan(declaration.span, this.context);
+    if (target === "bool") {
+      this.checkBoolean(declaration.initializer, declaredAt);
+      return;
+    }
     if (!TypeCheckUtils.isInteger(target)) return;
-    this.check(
-      target,
-      declaration.initializer,
-      true,
-      BindingSite.ofSpan(declaration.span, this.context),
-    );
+    this.check(target, declaration.initializer, true, declaredAt);
   }
 
   /** The values typed by their position: arguments, fields, elements (#1618) */
@@ -193,6 +218,7 @@ class IntegerConversionCheck {
     const target = StructInitializerType.valueTypeAt(
       ValuePositions.at(this.positions, value),
     );
+    if (target === "bool") this.checkBoolean(value, declaredAt);
     if (target !== null && TypeCheckUtils.isInteger(target)) {
       this.check(target, value, true, declaredAt);
     }
@@ -217,6 +243,10 @@ class IntegerConversionCheck {
     }
     const targetTyping = OperandTyper.typeOfTarget(target, this.context);
     const targetType = BitFieldIntegerType.of(targetTyping);
+    if (targetType === "bool" && site.operator === "<-") {
+      this.checkBoolean(site.value, BindingSite.ofChain(target, this.context));
+      return;
+    }
     if (!TypeCheckUtils.isInteger(targetType)) return;
     // The bits the target holds: its type's, or a bitmap field's own width,
     // which a `u8` holding it is wider than (ADR-072 Part 2, ruling 17)
@@ -601,11 +631,91 @@ class IntegerConversionCheck {
       this.check(target, ternary.whenFalse, typeComposites, declaredAt, width);
       return;
     }
+    if (this.checkCategory(target, value, declaredAt)) return;
     this.checkLiteralLeaves(target, value, "value", declaredAt);
     const source = this.conversionSource(value, typeComposites);
     if (source !== null) {
       this.checkConversion(target, source, value, "assign", width);
     }
+  }
+
+  /**
+   * E0945: MISRA C:2012 Rule 10.3 -- an integer takes no Boolean, character
+   * or enum value (ADR-024, #2372). True when reported.
+   */
+  private checkCategory(
+    target: string,
+    value: TExpression,
+    declaredAt: ISourceSite | undefined,
+  ): boolean {
+    const t = IntegerConversionCheck.categorized(value, this.context);
+    const help = t === null ? undefined : INTO_INTEGER[t.category];
+    if (help === undefined) return false;
+    this.reportCategory(
+      value,
+      CATEGORY_NAME[t!.category],
+      target,
+      help(target),
+      declaredAt,
+    );
+    return true;
+  }
+
+  /**
+   * E0945: Rule 10.3 -- a Boolean takes only a Boolean (ADR-024, #2372): no
+   * integer, literal or not, no character, enum or float. Each arm of a
+   * ternary lands on its own.
+   */
+  private checkBoolean(
+    value: TExpression,
+    declaredAt: ISourceSite | undefined,
+  ): void {
+    const ternary = IntegerConversionCheck.ternaryOf(value);
+    if (ternary !== null) {
+      this.checkBoolean(ternary.whenTrue, declaredAt);
+      this.checkBoolean(ternary.whenFalse, declaredAt);
+      return;
+    }
+    const literal = IntegerConversionCheck.integerLiteralText(value) !== null;
+    const from = literal
+      ? "signed"
+      : IntegerConversionCheck.categorized(value, this.context)?.category;
+    if (from === undefined || from === "boolean" || from === "none") return;
+    this.reportCategory(
+      value,
+      literal ? "an integer literal" : CATEGORY_NAME[from],
+      "bool",
+      "A number is not a bool (ADR-024); say what makes it true: value != 0",
+      declaredAt,
+    );
+  }
+
+  /**
+   * The value's type, unless it is a bit extraction: a subscript into a
+   * scalar reinterprets bits and carries no category (ADR-024)
+   */
+  private static categorized(
+    value: TExpression,
+    context: IAnalysisContext,
+  ): IOperandType | null {
+    const t = OperandTyper.typeOf(value, context);
+    return t === null || t.form.kind === "bitRange" ? null : t;
+  }
+
+  private reportCategory(
+    value: TExpression,
+    what: string,
+    target: string,
+    helpText: string,
+    declaredAt: ISourceSite | undefined,
+  ): void {
+    this.found.push({
+      code: "E0945",
+      span: value.span,
+      declaredAt: declaredAt ?? BindingSite.ofOperands([value], this.context),
+      message: `Cannot assign ${what} value to ${target} (MISRA C:2012 Rule 10.3): '${value.written}'`,
+      helpText,
+    });
   }
 
   /** The ternary a value is, past its parentheses: each arm lands (ADR-022) */

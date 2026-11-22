@@ -22,7 +22,7 @@ uint32_t process(const uint32_t crc, const uint8_t byte) {
 
 uint32_t testEnumBoolMembers(const SensorConfig& cfg) {
     uint32_t crc = 0U;
-    crc = process(crc, cfg.enabled);
+    crc = process(crc, (cfg.enabled == true) ? 1U : 0U);
     crc = process(crc, static_cast<uint8_t>(cfg.pressureType));
     crc = process(crc, static_cast<uint8_t>(cfg.thermocoupleType));
     crc = process(crc, cfg.value);

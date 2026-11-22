@@ -46,7 +46,7 @@ scope Fine {
     u32 viaThisOk <- this.own;
     u32 publicOk <- Gate.width;
     u32 EShade <- 5;
-    u32 shadeOk <- global.EShade.DARK;
+    u32 shadeOk <- (u32)global.EShade.DARK;
 }
 
 u32 main() {

@@ -15,7 +15,7 @@
 #include <stdbool.h>
 
 /* Scope: S */
-static const uint8_t S__first = static_cast<uint8_t>('A');
+static const uint8_t S__first = (uint8_t)'A';
 static const uint32_t S__fromMacro = (LIMIT);
 
 uint32_t S__check(void) {

@@ -3,6 +3,8 @@ import type IVariableSymbol from "../types/symbols/IVariableSymbol";
 import type TConstLiteral from "../types/TConstLiteral";
 import type TSettledConst from "../types/TSettledConst";
 import ConstantFold from "./ConstantFold";
+import CNX_TO_C_TYPE_MAP from "./constants/TypeMappings";
+import type TConstExpr from "../types/TConstExpr";
 
 /**
  * The C constant a const is written as where its value is used, or null when
@@ -129,13 +131,9 @@ class ConstLiteral {
     settled: TSettledConst | null,
   ): TConstLiteral | null {
     const expr = symbol.initialValueExpr!;
-    if (
-      settled?.kind === "notConstant" &&
-      settled.reason === "character" &&
-      expr.kind === "other" &&
-      expr.what === "character"
-    ) {
-      return { kind: "char", text: symbol.initialValue! };
+    if (settled?.kind === "notConstant" && settled.reason === "character") {
+      const text = ConstLiteral.characterText(expr);
+      if (text !== null) return { kind: "char", text };
     }
     if (
       settled?.kind === "foreign" &&
@@ -146,6 +144,24 @@ class ConstLiteral {
       return { kind: "macro", name: expr.path[0] };
     }
     return null;
+  }
+
+  /**
+   * A char literal as C writes it, cast as written: `(u8)'A'` is C's
+   * `(uint8_t)'A'`, a constant expression of the value the author chose
+   * (ADR-024, #2372). cnx does not fold the character, whose value is the
+   * execution character set's.
+   */
+  private static characterText(expr: TConstExpr): string | null {
+    if (expr.kind === "other") {
+      return expr.what === "character" ? expr.spelling : null;
+    }
+    if (expr.kind !== "cast") return null;
+    const cType = CNX_TO_C_TYPE_MAP[expr.typeName];
+    const operand = ConstLiteral.characterText(expr.operand);
+    return cType === undefined || operand === null
+      ? null
+      : `(${cType})${operand}`;
   }
 
   /** A literal initializer keeps its notation (`0xAB`); the rest are digits */

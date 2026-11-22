@@ -3031,12 +3031,23 @@ class FilePlanner {
           : [];
       });
     };
+    // A cast is its operand's conversion, written, so `(u8)'A'` is cast once:
+    // nothing under a cast is narrowed to the type the cast stands in
+    const underCast = new Set<TExpression>();
+    const markUnder = (node: TExpression): void => {
+      underCast.add(node);
+      ExpressionChildren.of(node).forEach(markUnder);
+    };
+    for (const value of expectedTypes.keys()) {
+      if (value.kind === "cast") markUnder(value.operand);
+    }
     const narrowings = new Map<TExpression, Map<number, TPlannedNarrowing>>();
     for (const [value, planned] of expectedTypes) {
       const target = planned.type;
-      if (target === null) continue;
+      if (target === null || underCast.has(value)) continue;
       const visit = (node: TExpression): void => {
         if (node !== value && expectedTypes.has(node)) return;
+        if (node.kind === "cast") return;
         for (const [index, source] of promotedSources(node)) {
           const narrowing = NarrowingCastHelper.narrowingOf(source, target);
           if (narrowing === null) continue;
