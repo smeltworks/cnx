@@ -105,6 +105,11 @@ interface IOperandType {
    * index's or a call's side effect does not set it
    */
   readonly volatileAccess: boolean;
+  /**
+   * A header bit-field whose type says neither `signed` nor `unsigned`, so
+   * the C compiler chooses whether it is signed (ADR-072 ruling 20)
+   */
+  readonly signChosenByCompiler: boolean;
   readonly form: TOperandForm;
   /** For a name-rooted operand, what the root name binds to */
   readonly binding: TValueBinding | null;

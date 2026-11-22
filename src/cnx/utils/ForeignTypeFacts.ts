@@ -202,7 +202,27 @@ class ForeignTypeFacts {
     target: ITargetDescription | null,
     dimensions: ReadonlyArray<number | string> = [],
   ): IOperandType | null {
+    return ForeignTypeFacts.walkedOperand(cType, lookup, target, dimensions)
+      .operand;
+  }
+
+  /** `operandType`, and the spelling its element was named by */
+  private static walkedOperand(
+    cType: string,
+    lookup: IForeignSymbolLookup,
+    target: ITargetDescription | null,
+    dimensions: ReadonlyArray<number | string>,
+  ): { operand: IOperandType | null; named: string | null } {
     const walked = ForeignTypeFacts.elementOf(cType, lookup, target);
+    const named = walked?.named ?? null;
+    const operand = ForeignTypeFacts.operandOf(walked, dimensions);
+    return { operand, named };
+  }
+
+  private static operandOf(
+    walked: ReturnType<typeof ForeignTypeFacts.elementOf>,
+    dimensions: ReadonlyArray<number | string>,
+  ): IOperandType | null {
     const element = walked?.element ?? null;
     // The declaration's own dimensions lead: `vec3 gv[2]` is `float[2][3]`
     const allDimensions = [...dimensions, ...(walked?.dimensions ?? [])];
@@ -225,6 +245,7 @@ class ForeignTypeFacts {
       // saturating cast of it reads it once, through its helper
       hasSideEffect: walked?.volatile ?? false,
       volatileAccess: walked?.volatile ?? false,
+      signChosenByCompiler: false,
       form: { kind: "foreign", indeterminate: false },
       binding: null,
     };
@@ -311,15 +332,38 @@ class ForeignTypeFacts {
   ): IOperandType | null {
     const info = lookup.getStructFieldInfo(structName, field);
     if (!info?.type) return null;
-    const typed = ForeignTypeFacts.operandType(
+    const walked = ForeignTypeFacts.walkedOperand(
       info.type,
       lookup,
       target,
       info.arrayDimensions ?? [],
     );
+    const typed = walked.operand;
     const width = ForeignTypeFacts.bitFieldWidth(info);
     if (typed === null || width === undefined) return typed;
-    return width === null ? null : { ...typed, bitWidth: width };
+    if (width === null) return null;
+    return {
+      ...typed,
+      bitWidth: width,
+      signChosenByCompiler: ForeignTypeFacts.signChosenByCompiler(
+        typed,
+        walked.named,
+      ),
+    };
+  }
+
+  /**
+   * ADR-072 ruling 20: C lets the compiler choose whether a bit-field is
+   * signed when its type, typedefs followed, says neither `signed` nor
+   * `unsigned` (C11 6.7.2p5), and `-funsigned-bitfields` changes the choice.
+   * `int32_t` is one: cnx reads it by name, and newlib spells it `long int`.
+   */
+  private static signChosenByCompiler(
+    t: IOperandType,
+    named: string | null,
+  ): boolean {
+    if (t.category !== "signed" && t.category !== "character") return false;
+    return named === null || !named.split(" ").includes("signed");
   }
 
   /**
@@ -539,6 +583,7 @@ class ForeignTypeFacts {
     overflow: null,
     hasSideEffect: false,
     volatileAccess: false,
+    signChosenByCompiler: false,
     form: { kind: "foreign", indeterminate: false },
     binding: null,
   };
@@ -560,6 +605,8 @@ class ForeignTypeFacts {
      * to it, when cnx does not fix its width (see IOperandType.cType)
      */
     spelling: string | null;
+    /** The spelling the element was named by, typedefs followed to it */
+    named: string | null;
   } | null {
     const dimensions: Array<number | string> = [];
     // Read before `spellingOf` strips it: a `volatile` at any hop -- the
@@ -578,7 +625,13 @@ class ForeignTypeFacts {
       if (step === null) {
         // An array of something this cannot type is still an array
         return dimensions.length > 0
-          ? { element: null, dimensions, volatile, spelling: null }
+          ? {
+              element: null,
+              dimensions,
+              volatile,
+              spelling: null,
+              named: null,
+            }
           : null;
       }
       if ("element" in step) {
@@ -587,7 +640,13 @@ class ForeignTypeFacts {
           !ForeignTypeFacts.fixesWidth(type)
             ? type
             : null;
-        return { element: step.element, dimensions, volatile, spelling };
+        return {
+          element: step.element,
+          dimensions,
+          volatile,
+          spelling,
+          named: type,
+        };
       }
       dimensions.push(...step.dimensions);
       typedefName = type;

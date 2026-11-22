@@ -242,6 +242,7 @@ function typed(
     overflow: null,
     hasSideEffect: false,
     volatileAccess: false,
+    signChosenByCompiler: false,
     form: { kind: "declared" },
     binding: null,
     ...extra,

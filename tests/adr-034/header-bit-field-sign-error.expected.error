@@ -1,0 +1,16 @@
+24:5 error[E0944]: The C compiler chooses whether bit-field 'pi' is signed
+       help: A bit-field typed int, short, long, char or int32_t is signed or unsigned as the compiler and its flags choose (-funsigned-bitfields). Declare it signed int or unsigned int in its header (ADR-034).
+25:16 error[E0944]: The C compiler chooses whether bit-field 'pi' is signed
+       help: A bit-field typed int, short, long, char or int32_t is signed or unsigned as the compiler and its flags choose (-funsigned-bitfields). Declare it signed int or unsigned int in its header (ADR-034).
+26:5 error[E0944]: The C compiler chooses whether bit-field 'ps' is signed
+       help: A bit-field typed int, short, long, char or int32_t is signed or unsigned as the compiler and its flags choose (-funsigned-bitfields). Declare it signed int or unsigned int in its header (ADR-034).
+27:5 error[E0944]: The C compiler chooses whether bit-field 'pl' is signed
+       help: A bit-field typed int, short, long, char or int32_t is signed or unsigned as the compiler and its flags choose (-funsigned-bitfields). Declare it signed int or unsigned int in its header (ADR-034).
+28:5 error[E0944]: The C compiler chooses whether bit-field 'pc' is signed
+       help: A bit-field typed int, short, long, char or int32_t is signed or unsigned as the compiler and its flags choose (-funsigned-bitfields). Declare it signed int or unsigned int in its header (ADR-034).
+29:5 error[E0944]: The C compiler chooses whether bit-field 'fixed' is signed
+       help: A bit-field typed int, short, long, char or int32_t is signed or unsigned as the compiler and its flags choose (-funsigned-bitfields). Declare it signed int or unsigned int in its header (ADR-034).
+30:5 error[E0944]: The C compiler chooses whether bit-field 'alias' is signed
+       help: A bit-field typed int, short, long, char or int32_t is signed or unsigned as the compiler and its flags choose (-funsigned-bitfields). Declare it signed int or unsigned int in its header (ADR-034).
+31:16 error[E0944]: The C compiler chooses whether bit-field 'fixed' is signed
+       help: A bit-field typed int, short, long, char or int32_t is signed or unsigned as the compiler and its flags choose (-funsigned-bitfields). Declare it signed int or unsigned int in its header (ADR-034).

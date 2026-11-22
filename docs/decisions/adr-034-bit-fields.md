@@ -412,6 +412,28 @@ r.mode +<- 1;        // ERROR E0857: 7 plus 1 would read back 0
 u8 x <- r.wide;      // ERROR E0869 for `unsigned int wide : 12`
 ```
 
+A bit-field whose type, typedefs followed, says neither `signed` nor
+`unsigned` is neither read nor written (ADR-072 ruling 20 on #2449). C lets the
+compiler choose whether it is signed (C11 6.7.2p5), and `-funsigned-bitfields`
+changes the choice, so no range cnx could judge it by is right for every build.
+`int32_t` is one: cnx reads it by name, and newlib spells it `long int`, which
+arm-none-eabi-gcc makes unsigned under that flag. An unsigned bit-field always
+says `unsigned`, so `uint32_t` and `unsigned int` fields are unaffected:
+
+```c
+typedef struct {
+    int pi : 3;          // -4..3 by default, 0..7 with -funsigned-bitfields
+    int32_t fixed : 3;   // the same on arm-none-eabi
+    signed int si : 3;   // -4..3 everywhere
+} SReg;
+```
+
+```cnx
+r.pi <- 1;           // ERROR E0944: declare it signed int or unsigned int
+i8 q <- r.fixed;     // ERROR E0944
+r.si <- -4;          // OK
+```
+
 ### Transpilation
 
 ```c
@@ -440,6 +462,7 @@ uint8_t mode = ((status.flags >> 3) & 0x7);
 | E0883 | A bitmap is addressed by bit index rather than by named field                    | `tests/adr-034/bitmap-bracket-indexing-error.test.cnx`, `tests/adr-034/bitmap-codes-same-file-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-direct-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-transitive-error.test.cnx`                                                   |
 | E0893 | A bitmap's field widths do not add up to its size, at the bitmap                 | `tests/bitmap/bitmap-error-bits.test.cnx`, `tests/bugs/issue-1531-declaration-rejections/cross-file-bitmap.test.cnx`                                                                                                                                                                          |
 | E0921 | A field is read or written on a bitmap array that names no whole element (#2186) | `tests/bugs/issue-2186-bitmap-array-field/bitmap-array-field.test.cnx`, `tests/adr-034/bitmap-codes-same-file-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-direct-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-transitive-error.test.cnx`                                   |
+| E0944 | A C bit-field whose type says neither signed nor unsigned is read or written     | `tests/adr-034/header-bit-field-sign-error.test.cnx`                                                                                                                                                                                                                                          |
 
 A bitmap is reached two ways -- through a variable declared with a bitmap type,
 and through a register member typed by one -- and E0881, E0882, E0883 and

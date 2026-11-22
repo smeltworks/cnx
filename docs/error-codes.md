@@ -10,18 +10,18 @@ codes that already have a fixture.
 
 ## Error Code Ranges
 
-| Range     | Category                                                                                                                                                                                                          | Count   |
-| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| E00xx     | Reserved/Test                                                                                                                                                                                                     | 1       |
-| E02xx     | Identifier/Param Naming                                                                                                                                                                                           | 5       |
-| E03xx     | Struct Fields/Init                                                                                                                                                                                                | 6       |
-| E04xx     | Symbol Resolution                                                                                                                                                                                                 | 16      |
-| E05xx     | Include/Preprocessor                                                                                                                                                                                              | 19      |
-| E06xx     | Sizeof Expressions                                                                                                                                                                                                | 3       |
-| E07xx     | Control Flow                                                                                                                                                                                                      | 15      |
-| E08xx     | Arithmetic/Array Safety                                                                                                                                                                                           | 61      |
-| E09xx     | NULL Safety, Compile-Time Values, Literal Form, String Conversions, Interrupt Masking, `mut` Arguments, `for` Arrays, Config File Names, Environment Variables, Operator Operands, Parameter Lists, Member Access | 44      |
-| **Total** |                                                                                                                                                                                                                   | **170** |
+| Range     | Category                                                                                                                                                                                                                                | Count   |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| E00xx     | Reserved/Test                                                                                                                                                                                                                           | 1       |
+| E02xx     | Identifier/Param Naming                                                                                                                                                                                                                 | 5       |
+| E03xx     | Struct Fields/Init                                                                                                                                                                                                                      | 6       |
+| E04xx     | Symbol Resolution                                                                                                                                                                                                                       | 16      |
+| E05xx     | Include/Preprocessor                                                                                                                                                                                                                    | 19      |
+| E06xx     | Sizeof Expressions                                                                                                                                                                                                                      | 3       |
+| E07xx     | Control Flow                                                                                                                                                                                                                            | 15      |
+| E08xx     | Arithmetic/Array Safety                                                                                                                                                                                                                 | 61      |
+| E09xx     | NULL Safety, Compile-Time Values, Literal Form, String Conversions, Interrupt Masking, `mut` Arguments, `for` Arrays, Config File Names, Environment Variables, Operator Operands, Parameter Lists, Member Access, Bit-Field Signedness | 45      |
+| **Total** |                                                                                                                                                                                                                                         | **171** |
 
 ---
 
@@ -538,6 +538,12 @@ base: bare, `this.` and `global.`.
 ---
 
 ---
+
+## E0944 — A Header Bit-Field Whose Sign the Compiler Chooses (ADR-034)
+
+| Code  | Message                                                                                                                                                                                                                                                                                                                                                      | Help                                                           | Source                                        |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- | --------------------------------------------- |
+| E0944 | A C header bit-field is read or written whose type, typedefs followed, says neither `signed` nor `unsigned` (`int`, `short`, `long`, `char`, `int32_t`). C lets the compiler choose whether it is signed (C11 6.7.2p5), and `-funsigned-bitfields` changes the choice, so the same bits read back -1 under one build and 7 under another (ADR-072 ruling 20) | Declare the field `signed int` or `unsigned int` in its header | `TRANSPILE/1-Analyze/BitFieldSignAnalyzer.ts` |
 
 ## Adding New Error Codes
 

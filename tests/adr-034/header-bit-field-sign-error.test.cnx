@@ -1,0 +1,32 @@
+// test-error
+// test-adr: 034
+// ADR-072 ruling 20: a C header bit-field whose type says neither signed nor
+// unsigned holds what the C compiler chooses. GCC reads 7 stored in
+// `int pi : 3` back as -1, and as 7 with -funsigned-bitfields. `int32_t` is
+// one: newlib spells it `long int`. So such a field is neither read nor
+// written. A field whose header says signed or unsigned has one range.
+
+#include "header-bit-field-sign.h"
+
+mut SReg r;
+
+void main() {
+    // NEGATIVE CONTROLS -- each stays silent.
+    r.si <- -4;
+    r.sb <- 3;
+    r.salias <- -1;
+    r.ui <- 7;
+    r.u32 <- 7;
+    r.whole <- -1;
+    i8 level <- r.si;
+
+    // ASSERTIONS
+    r.pi <- 1;
+    i8 read <- r.pi;
+    r.ps <- 1;
+    r.pl <- 1;
+    r.pc <- 1;
+    r.fixed <- 1;
+    r.alias <- 1;
+    u8 bits <- r.fixed[0, 2];
+}
