@@ -22,6 +22,7 @@ class BareOperand {
       hasSideEffect: false,
       volatileAccess: false,
       signChosenByCompiler: false,
+      bitWidthUnread: false,
       form,
       binding: null,
     };

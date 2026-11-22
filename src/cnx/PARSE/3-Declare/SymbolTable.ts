@@ -772,6 +772,20 @@ class SymbolTable implements IResolvedSymbols {
   }
 
   /**
+   * #2494: each bit-field width written as an expression, `1 + 2` or
+   * `MODE_BITS`, settled to the number C reads, where cnx can read it
+   */
+  settleBitFieldWidths(widthOf: (text: string) => number | null): void {
+    for (const fields of this.structFields.values()) {
+      for (const [name, info] of fields) {
+        if (typeof info.bitWidth !== "string") continue;
+        const width = widthOf(info.bitWidth);
+        if (width !== null) fields.set(name, { ...info, bitWidth: width });
+      }
+    }
+  }
+
+  /**
    * Get struct field info (type and array dimensions)
    * @param structName Name of the struct
    * @param fieldName Name of the field

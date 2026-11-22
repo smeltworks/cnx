@@ -346,6 +346,25 @@ describe("SymbolTable", () => {
       ).toBeUndefined();
     });
 
+    // #2494: a width written as an expression is settled once, where read
+    it("settles a bit-field width it can read, and keeps one it cannot", () => {
+      symbolTable.addStructField("Reg", "sum", "uint32_t", undefined, "1+2");
+      symbolTable.addStructField("Reg", "odd", "uint32_t", undefined, "W");
+      symbolTable.addStructField("Reg", "lit", "uint32_t", undefined, 4);
+      symbolTable.addStructField("Reg", "whole", "uint32_t");
+      const seen: string[] = [];
+      symbolTable.settleBitFieldWidths((text) => {
+        seen.push(text);
+        return text === "1+2" ? 3 : null;
+      });
+      const fields = symbolTable.getStructFields("Reg");
+      expect(fields?.get("sum")?.bitWidth).toBe(3);
+      expect(fields?.get("odd")?.bitWidth).toBe("W");
+      expect(fields?.get("lit")?.bitWidth).toBe(4);
+      expect(fields?.get("whole")?.bitWidth).toBeUndefined();
+      expect(seen).toEqual(["1+2", "W"]);
+    });
+
     it("should get all fields for a struct", () => {
       symbolTable.addStructField("Point", "x", "int");
       symbolTable.addStructField("Point", "y", "int");

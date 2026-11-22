@@ -247,6 +247,7 @@ class ForeignTypeFacts {
       hasSideEffect: walked?.volatile ?? false,
       volatileAccess: walked?.volatile ?? false,
       signChosenByCompiler: false,
+      bitWidthUnread: false,
       form: { kind: "foreign", indeterminate: false },
       binding: null,
     };
@@ -346,14 +347,13 @@ class ForeignTypeFacts {
       typed,
       walked.named,
     );
-    // A width cnx cannot read (#2494) leaves the field untyped, unless its
-    // sign alone already rules out every read and write of it
-    if (width === null) {
-      return signChosenByCompiler
-        ? { ...typed, bitWidth: null, signChosenByCompiler }
-        : null;
-    }
-    return { ...typed, bitWidth: width, signChosenByCompiler };
+    // A width cnx cannot read gives the field no range (#2494)
+    return {
+      ...typed,
+      bitWidth: width,
+      signChosenByCompiler,
+      bitWidthUnread: width === null,
+    };
   }
 
   /**
@@ -373,8 +373,8 @@ class ForeignTypeFacts {
   /**
    * #1975 review (owner ruling): a bit-field holds its declared width, as a
    * cnx bitmap field does -- `uint32_t a : 3` is 3 bits, not its storage
-   * type's 32. Null for a width that is no integer literal; undefined for a
-   * field that is no bit-field.
+   * type's 32. Null for a width cnx could not read (#2494: 1.4 settles an
+   * expression or macro it can); undefined for a field that is no bit-field.
    */
   static bitFieldWidth(info: IStructFieldInfo): number | null | undefined {
     if (info.bitWidth === undefined) return undefined;

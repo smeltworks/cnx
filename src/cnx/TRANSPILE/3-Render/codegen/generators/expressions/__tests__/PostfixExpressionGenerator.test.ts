@@ -243,6 +243,7 @@ function typed(
     hasSideEffect: false,
     volatileAccess: false,
     signChosenByCompiler: false,
+    bitWidthUnread: false,
     form: { kind: "declared" },
     binding: null,
     ...extra,

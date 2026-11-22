@@ -327,3 +327,40 @@ describe("HeaderMacros.integerTypes (#1619)", () => {
     expect(HeaderMacros.integerTypes("#define FOO 1").size).toBe(0);
   });
 });
+
+describe("HeaderMacros.integerValue (#2494)", () => {
+  const macros = HeaderMacros.collect(
+    [
+      "#define MODE_BITS 3",
+      "#define WIDE_BITS (MODE_BITS * 2 + 1)",
+      "#define WRAPS (32767 + 1)",
+      "#define SCALE 2.5",
+    ].join("\n"),
+  );
+
+  it.each([
+    ["an integer expression", "1 + 2", 3],
+    ["a macro", "MODE_BITS", 3],
+    ["a macro of a macro", "WIDE_BITS", 7],
+    ["an expression of a macro", "(MODE_BITS << 1) | 1", 7],
+  ])("reads %s", (_name, text, value) => {
+    expect(HeaderMacros.integerValue(text, [macros])).toBe(value);
+  });
+
+  it.each([
+    ["sizeof", "sizeof(uint8_t)"],
+    ["an unknown name", "UNKNOWN_BITS"],
+    ["a floating macro", "SCALE"],
+    ["a value that differs by int width", "WRAPS"],
+  ])("does not read %s", (_name, text) => {
+    expect(HeaderMacros.integerValue(text, [macros])).toBeNull();
+  });
+
+  it("reads a macro two files agree on, not one they disagree on", () => {
+    const other = HeaderMacros.collect("#define MODE_BITS 4");
+    const same = HeaderMacros.collect("#define MODE_BITS 3");
+    expect(HeaderMacros.integerValue("MODE_BITS", [macros, same])).toBe(3);
+    expect(HeaderMacros.integerValue("MODE_BITS", [macros, other])).toBeNull();
+    expect(HeaderMacros.integerValue("MODE_BITS", [new Map(), macros])).toBe(3);
+  });
+});
