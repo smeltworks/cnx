@@ -38,6 +38,11 @@ class Resolve {
         integerTypes.set(name, type);
       }
     }
+    // #2494: a bit-field's width is read once, as C reads it, before any
+    // field is typed from the table
+    table.settleBitFieldWidths((text) =>
+      HeaderMacros.integerValue(text, macros.values()),
+    );
     const program = Program.build(
       declared.map((entry) => entry.fileSymbols),
       {

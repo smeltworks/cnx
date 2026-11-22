@@ -1,0 +1,4 @@
+17:5 error[E0946]: cnx cannot read the width of bit-field 'sized'
+       help: cnx judges what fits a bit-field by its width, and reads a width written as integer literals, arithmetic and bitwise operators, parentheses and macros of them. Write the width as one in its header (ADR-034).
+18:13 error[E0946]: cnx cannot read the width of bit-field 'sized'
+       help: cnx judges what fits a bit-field by its width, and reads a width written as integer literals, arithmetic and bitwise operators, parentheses and macros of them. Write the width as one in its header (ADR-034).

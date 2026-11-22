@@ -1,0 +1,22 @@
+// test-error
+// test-adr: 034
+// #2494: a bit-field whose width is a macro, `mode : MODE_BITS`, holds the
+// bits the macro names, so a u8 written to it is narrowing, as it is for
+// `mode : 3`. The help names the macro's 3 bits.
+
+#include "header-bit-field-width.h"
+
+mut WReg r;
+
+void main() {
+    u8 v <- 9;
+
+    // NEGATIVE CONTROLS -- each stays silent.
+    r.mode <- v[0, 3];
+    u8 m <- r.wide;
+    u8 n <- r.wide[0, 3];
+
+    // ASSERTIONS
+    r.mode <- v;
+    r.sum <- r.wide;
+}

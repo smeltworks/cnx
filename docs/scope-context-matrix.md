@@ -1111,6 +1111,16 @@ cell is declared by the ADR that owns it.
 | scope method       | warn      | warn   | warn       | warn        | warn       |
 | for header         | warn      | warn   | warn       | warn        | warn       |
 
+## ADR-034 E0946
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | warn      | warn   | warn       | warn        | warn       |
+| top-level function | ok        | warn   | warn       | warn        | warn       |
+| scope member       | warn      | warn   | warn       | warn        | warn       |
+| scope method       | warn      | warn   | warn       | warn        | warn       |
+| for header         | warn      | warn   | warn       | warn        | warn       |
+
 ## ADR-035
 
 | Context            | same file | direct | transitive | from 1 away | thru chain |

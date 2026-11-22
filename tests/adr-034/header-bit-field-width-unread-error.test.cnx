@@ -1,0 +1,19 @@
+// test-error
+// test-adr: 034
+// #2494: a bit-field width cnx cannot read, `sized : sizeof(uint8_t)`, gives
+// the field no range to judge a value by, so it is neither read nor written.
+// The struct's other fields still are.
+
+#include "header-bit-field-width.h"
+
+mut WReg r;
+
+void main() {
+    // NEGATIVE CONTROLS -- each stays silent.
+    r.sum <- 7;
+    u8 m <- r.mode;
+
+    // ASSERTIONS
+    r.sized <- 1;
+    u8 s <- r.sized;
+}

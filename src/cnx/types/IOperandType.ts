@@ -110,6 +110,11 @@ interface IOperandType {
    * the C compiler chooses whether it is signed (ADR-072 ruling 20)
    */
   readonly signChosenByCompiler: boolean;
+  /**
+   * A header bit-field whose width cnx cannot read, `f : sizeof(int)`, so it
+   * has no range a value could be judged by (#2494)
+   */
+  readonly bitWidthUnread: boolean;
   readonly form: TOperandForm;
   /** For a name-rooted operand, what the root name binds to */
   readonly binding: TValueBinding | null;

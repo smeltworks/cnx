@@ -123,6 +123,47 @@ class HeaderMacros {
     return [...dump.matchAll(ANY_DEFINE)].map((match) => match[1]);
   }
 
+  /**
+   * #2494: a C integer constant expression's value -- a bit-field's width,
+   * `1 + 2` or `MODE_BITS` -- read as a macro's expansion is, through the
+   * macros each file's C includes define. Null where cnx cannot read it,
+   * where two files' macros give it two values, or where its value depends
+   * on the target's `int` width.
+   */
+  static integerValue(
+    text: string,
+    macrosByFile: Iterable<ReadonlyMap<string, THeaderMacro>>,
+  ): number | null {
+    const files = [...macrosByFile];
+    const tokens = HeaderMacros.tokens(text);
+    const values = INT_BITS.map((bits) =>
+      HeaderMacros.valueOf(tokens, 2 ** (bits - 1) - 1, (name) =>
+        HeaderMacros.agreedValue(name, bits, files),
+      ),
+    );
+    return values.every((value) => value === values[0]) ? values[0] : null;
+  }
+
+  /** An integer macro's value under one `int` width, where every file agrees */
+  private static agreedValue(
+    name: string,
+    bits: number,
+    files: readonly ReadonlyMap<string, THeaderMacro>[],
+  ): number | null {
+    const values = files.flatMap((macros) => {
+      const macro = macros.get(name);
+      if (macro === undefined) return [];
+      return [
+        macro.kind === "integer"
+          ? (macro.valueByIntBits.get(bits) ?? null)
+          : null,
+      ];
+    });
+    return values.length > 0 && values.every((value) => value === values[0])
+      ? values[0]
+      : null;
+  }
+
   /** Every object-like macro a `-dM` dump defines, by name */
   static collect(dump: string): ReadonlyMap<string, THeaderMacro> {
     const bodies = new Map<string, string>();

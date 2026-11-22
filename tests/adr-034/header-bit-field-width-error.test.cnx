@@ -1,0 +1,24 @@
+// test-error
+// test-adr: 034
+// #2494: a C bit-field's width written as an expression or a macro is read
+// as C reads it, so `sum : 1 + 2` holds 3 bits as `sum : 3` does, and a
+// write that does not fit it is the same error.
+
+#include "header-bit-field-width.h"
+
+mut WReg r;
+
+void main() {
+    u8 v <- 9;
+
+    // NEGATIVE CONTROLS -- each stays silent.
+    r.sum <- 7;
+    r.mode <- v[0, 3];
+    r.wide <- 127;
+    u8 m <- r.mode;
+    r.rest <- 1;
+
+    // ASSERTIONS
+    r.sum <- 13;
+    r.wide <- 128;
+}
