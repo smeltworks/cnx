@@ -1283,6 +1283,13 @@ class FilePlanner {
       if (label.kind !== "identifier") continue;
       note(this.state.bindingAt(label.root, label.name, label.nameSpan), true);
     }
+    // A constructor's arguments are written by name (ADR-030)
+    for (const statement of StatementNodes.in(func)) {
+      if (statement.kind !== "constructorDeclaration") continue;
+      for (const argument of statement.arguments) {
+        note(this.state.bindingAt(null, argument.name, argument.span), true);
+      }
+    }
     return reads;
   }
 

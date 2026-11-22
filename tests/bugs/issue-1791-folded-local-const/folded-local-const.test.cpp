@@ -12,13 +12,11 @@
 // declaration is not emitted. A const that is also read at runtime keeps its
 // declaration: KEEP_W and KEEP_N are the controls.
 int main(void) {
-    const uint8_t W = 32U;
     uint32_t b = 0U;
     b = (b & ~((uint32_t)0xFFFFFFFFU << 0)) | ((5U & (uint32_t)0xFFFFFFFFU) << 0);
     if (((b) & 0xFFFFFFFFU) != 5) {
         return 1U;
     }
-    const uint32_t N = 2U;
     uint8_t ok[2] = {0U, 0U};
     ok[1] = 7U;
     if (ok[1U] != 7) {
