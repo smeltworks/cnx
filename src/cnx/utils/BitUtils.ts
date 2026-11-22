@@ -204,9 +204,8 @@ class BitUtils {
     storage?: string,
     written: TPlannedBitValue | null = null,
   ): string {
-    const mask = BitUtils.shiftedMask(BitUtils.widthOf(width), storage);
-    const masked = BitUtils.writtenBits(value, mask, storage, written);
-    const rhs = `(${read} & ~(${mask} << ${offset})) | (${masked} << ${offset})`;
+    const field = BitUtils.fieldBits(width, value, storage, written);
+    const rhs = `(${read} & ~(${field.mask} << ${offset})) | (${field.masked} << ${offset})`;
     return BitUtils.narrowed(rhs, storage);
   }
 
@@ -253,10 +252,23 @@ class BitUtils {
     storage?: string,
     written: TPlannedBitValue | null = null,
   ): string {
-    const mask = BitUtils.shiftedMask(BitUtils.widthOf(width), storage);
     const cast = BitUtils.narrowCast(storage);
-    const masked = BitUtils.writtenBits(value, mask, storage, written);
-    return `${target} = ${cast}(${masked} << ${offset});`;
+    const field = BitUtils.fieldBits(width, value, storage, written);
+    return `${target} = ${cast}(${field.masked} << ${offset});`;
+  }
+
+  /** A multi-bit field's mask, and the value it stores masked once (#2483) */
+  private static fieldBits(
+    width: number | IBitWidth,
+    value: string,
+    storage: string | undefined,
+    written: TPlannedBitValue | null,
+  ): { mask: string; masked: string } {
+    const mask = BitUtils.shiftedMask(BitUtils.widthOf(width), storage);
+    return {
+      mask,
+      masked: BitUtils.writtenBits(value, mask, storage, written),
+    };
   }
 
   /**
