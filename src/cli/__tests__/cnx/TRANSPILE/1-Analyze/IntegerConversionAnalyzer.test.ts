@@ -507,4 +507,63 @@ describe("IntegerConversionAnalyzer -- on 1.2's syntax", () => {
       expect(codesOf('    s <- "abc";')).toEqual([]);
     });
   });
+
+  describe("E0945 -- a value keeps its essential type category (#2372)", () => {
+    const declarations =
+      "enum Color { RED, GREEN }\nmut Color color;\nmut bool flag;\n";
+    const category = (body: string) =>
+      errors(declarations + inMain(body)).filter((e) => e.code === "E0945");
+
+    it("rejects a bool, character or enum into an integer, with its help", () => {
+      const found = category(
+        "    u8 a <- flag;\n    u8 b <- 'a';\n    u8 c <- color;",
+      );
+      expect(found.map((e) => e.message)).toEqual([
+        "Cannot assign a bool value to u8 (MISRA C:2012 Rule 10.3): 'flag'",
+        "Cannot assign a character value to u8 (MISRA C:2012 Rule 10.3): ''a''",
+        "Cannot assign an enum value to u8 (MISRA C:2012 Rule 10.3): 'color'",
+      ]);
+      expect(found[0].helpText).toContain("(value = true) ? 1 : 0");
+      expect(found[1].helpText).toContain("(u8)value");
+      expect(found[2].helpText).toContain("(u8)value");
+    });
+
+    it("accepts each conversion written, and a bit extraction", () => {
+      expect(
+        category(
+          "    u8 a <- (u8)'a';\n    u8 b <- (u8)color;\n    u8 c <- (flag = true) ? 1 : 0;\n    u8 d <- wide[0, 8];",
+        ),
+      ).toEqual([]);
+    });
+
+    it("rejects a number into a bool, a literal past parentheses or folded", () => {
+      const found = category(
+        "    bool a <- 1;\n    bool b <- (1);\n    bool c <- 1 + 1;\n    bool d <- wide;\n    bool e <- 'y';",
+      );
+      expect(found.map((e) => e.message)).toEqual([
+        "Cannot assign an integer literal value to bool (MISRA C:2012 Rule 10.3): '1'",
+        "Cannot assign an integer literal value to bool (MISRA C:2012 Rule 10.3): '1'",
+        "Cannot assign an integer literal value to bool (MISRA C:2012 Rule 10.3): '1 + 1'",
+        "Cannot assign an unsigned integer value to bool (MISRA C:2012 Rule 10.3): 'wide'",
+        "Cannot assign a character value to bool (MISRA C:2012 Rule 10.3): ''y''",
+      ]);
+      expect(found[0].helpText).toContain("value != 0");
+    });
+
+    it("judges each ternary arm into a bool on its own", () => {
+      expect(
+        category("    bool a <- (wide = 1) ? true : 0;").map((e) => e.message),
+      ).toEqual([
+        "Cannot assign an integer literal value to bool (MISRA C:2012 Rule 10.3): '0'",
+      ]);
+    });
+
+    it("accepts a bool, a comparison and a bit extraction into a bool", () => {
+      expect(
+        category(
+          "    bool a <- ((true));\n    bool b <- wide != 0;\n    bool c <- flag;\n    bool d <- wide[0, 1];",
+        ),
+      ).toEqual([]);
+    });
+  });
 });
