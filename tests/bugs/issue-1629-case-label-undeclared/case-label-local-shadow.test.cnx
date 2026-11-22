@@ -1,10 +1,9 @@
 // test-execution
 // test-adr: 025, 057
-// test-target-xfail: host cortex-m7 atmega328p c #2033 "case label does not reduce to an integer constant"
 // #2075: a local `LIMIT` shadows the file's, and `global.LIMIT` reaches past
 // it. They are two consts with two values, 5 and 1, so the two labels are two
-// C cases and E0713 stays silent. C mode writes the local as its name, which
-// is no integer constant (#2033); C++ compiles and runs it.
+// C cases and E0713 stays silent. The local label is written as its value,
+// an integer constant C switches on (#2493).
 u8 LIMIT <- 1;
 
 u32 shadowed(u8 s) {
