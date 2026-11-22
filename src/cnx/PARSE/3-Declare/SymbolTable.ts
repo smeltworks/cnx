@@ -1036,9 +1036,12 @@ class SymbolTable implements IResolvedSymbols {
   /**
    * #2494 review: the macros the header at `path` `#undef`s. Kept by header,
    * not in the struct state, so a header's cache record holds its own.
+   * Additive: a recovered slice of the header, already preprocessed, has no
+   * `#undef` left to report, and must not erase the header's.
    */
   markUndefinedMacros(path: string, names: readonly string[]): void {
-    this.undefinedMacrosByFile.set(path, names);
+    const known = this.undefinedMacrosByFile.get(path) ?? [];
+    this.undefinedMacrosByFile.set(path, [...new Set([...known, ...names])]);
   }
 
   /** #2494 review: the macros the header at `path` `#undef`s */

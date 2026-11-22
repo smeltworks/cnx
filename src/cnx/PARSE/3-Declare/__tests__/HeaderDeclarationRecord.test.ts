@@ -16,6 +16,13 @@ describe("HeaderDeclarationRecord undefined macros (#2494 review)", () => {
     ]);
   });
 
+  it("keeps a header's #undefs when a recovered slice reports none", () => {
+    const recovered = new SymbolTable();
+    recovered.markUndefinedMacros("a.h", ["LATE_BITS"]);
+    recovered.markUndefinedMacros("a.h", []);
+    expect([...recovered.undefinedMacros()]).toEqual(["LATE_BITS"]);
+  });
+
   it("restores them for that header", () => {
     const fresh = new SymbolTable();
     HeaderDeclarationRecord.restore(
