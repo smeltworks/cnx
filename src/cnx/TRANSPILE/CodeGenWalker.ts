@@ -57,6 +57,7 @@ import TParameterInfo from "../types/TParameterInfo";
 import type IBoundParameter from "./types/IBoundParameter";
 import TypeValidator from "./2-Plan/TypeValidator";
 import IGeneratorOutput from "./3-Render/codegen/generators/IGeneratorOutput";
+import type ILocalDeclaration from "../types/ILocalDeclaration";
 import ComplianceAnnotations from "./2-Plan/ComplianceAnnotations";
 import emittedLocalName from "../utils/emittedLocalName";
 import OperandTyper from "../utils/OperandTyper";
@@ -4273,13 +4274,15 @@ class CodeGenWalker {
     const binding = this.host.state.bindingAt(root, name, at);
     const declared = CodeGenWalker.boundCName(binding);
     const constant =
-      declared === null
-        ? null
-        : PrivateConstValue.constant(
-            this.host.getState(),
-            this.planner.transpileState,
-            declared,
-          );
+      binding?.kind === "local"
+        ? this.localCaseConst(binding.declaration)
+        : declared === null
+          ? null
+          : PrivateConstValue.constant(
+              this.host.getState(),
+              this.planner.transpileState,
+              declared,
+            );
     if (constant !== null) {
       // ADR-025's const label, recorded where it is written as its value so
       // a codegen-only fixture occupies its matrix cell (#1241)
@@ -4303,6 +4306,19 @@ class CodeGenWalker {
       (typeName: string) => this.host.isKnownStruct(typeName),
       this.host.state,
     );
+  }
+
+  /** #2493: a local const label, written as the value 2.2 spelled for it */
+  private localCaseConst(local: ILocalDeclaration): IGeneratorOutput | null {
+    const spelling = this.planner.localConstSpelling(local);
+    return spelling === null
+      ? null
+      : PrivateConstValue.written(
+          this.host.getState(),
+          this.planner.transpileState,
+          spelling,
+          null,
+        );
   }
 
   /** The C name of the declaration a binding names, when it has one */

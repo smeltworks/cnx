@@ -155,6 +155,8 @@ import type TSymbol from "../../types/symbols/TSymbol";
 import type ICallbackTypeInfo from "../../types/ICallbackTypeInfo";
 import PlannedRequirements from "./PlannedRequirements";
 import PrivateConstSpelling from "./PrivateConstSpelling";
+import ConstantFold from "../../utils/ConstantFold";
+import type IConstSpelling from "./types/IConstSpelling";
 import FloatBitType from "./FloatBitType";
 import ArgumentForm from "./ArgumentForm";
 import type TArgumentShape from "./types/TArgumentShape";
@@ -402,6 +404,22 @@ class FilePlanner {
         OperandTyper.typeOf(node, typing)?.binding?.kind === "local",
     );
     return readsLocal ? undefined : this.constantOf(expr);
+  }
+
+  /**
+   * #2493: a local const as C writes it where only a constant expression is
+   * taken -- a case label (C11 6.8.4.2p3), which a const object is not -- or
+   * null when its value is none C takes
+   */
+  localConstSpelling(local: ILocalDeclaration): IConstSpelling | null {
+    const typeName = ConstantFold.typeNameOf(local.type);
+    return local.constValue === null || typeName === null
+      ? null
+      : PrivateConstSpelling.ofValue(
+          this.state.typingContext().program,
+          local.constValue,
+          typeName,
+        );
   }
 
   /** Try to evaluate a constant expression at compile time */
@@ -1278,10 +1296,19 @@ class FilePlanner {
         !folded.has(node),
       );
     }
-    // A `case` label names its const (#2493)
+    // A `case` label reads its const only when it is not written as its value (#2493)
     for (const label of StatementNodes.caseLabels(func)) {
       if (label.kind !== "identifier") continue;
-      note(this.state.bindingAt(label.root, label.name, label.nameSpan), true);
+      const binding = this.state.bindingAt(
+        label.root,
+        label.name,
+        label.nameSpan,
+      );
+      note(
+        binding,
+        binding?.kind !== "local" ||
+          this.localConstSpelling(binding.declaration) === null,
+      );
     }
     // A constructor's arguments are written by name (ADR-030)
     for (const statement of StatementNodes.in(func)) {
