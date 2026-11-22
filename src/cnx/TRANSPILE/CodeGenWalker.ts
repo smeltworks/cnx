@@ -1119,7 +1119,12 @@ class CodeGenWalker {
       case "variableDeclaration":
       case "constructorDeclaration":
         // #1791: 2.2 found no C expression that reads it
-        if (this.filePlan.unreadLocals.has(statement)) return "";
+        if (
+          statement.kind === "variableDeclaration" &&
+          this.filePlan.unreadLocals.has(statement)
+        ) {
+          return "";
+        }
         return (
           this.nameMoveComments(statement) +
           this.nullPointerNote(statement) +
