@@ -1106,7 +1106,7 @@ cell is declared by the ADR that owns it.
 | Context            | same file | direct | transitive | from 1 away | thru chain |
 | ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
 | global variable    | warn      | warn   | warn       | warn        | warn       |
-| top-level function | ok        | warn   | warn       | warn        | warn       |
+| top-level function | ok        | ok     | warn       | warn        | warn       |
 | scope member       | warn      | warn   | warn       | warn        | warn       |
 | scope method       | warn      | warn   | warn       | warn        | warn       |
 | for header         | warn      | warn   | warn       | warn        | warn       |
@@ -1116,7 +1116,7 @@ cell is declared by the ADR that owns it.
 | Context            | same file | direct | transitive | from 1 away | thru chain |
 | ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
 | global variable    | warn      | warn   | warn       | warn        | warn       |
-| top-level function | ok        | warn   | warn       | warn        | warn       |
+| top-level function | ok        | ok     | warn       | warn        | warn       |
 | scope member       | warn      | warn   | warn       | warn        | warn       |
 | scope method       | warn      | warn   | warn       | warn        | warn       |
 | for header         | warn      | warn   | warn       | warn        | warn       |

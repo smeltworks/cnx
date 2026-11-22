@@ -137,7 +137,7 @@ class HeaderMacros {
   static integerValue(
     text: string,
     bodiesByFile: Iterable<ReadonlyMap<string, string>>,
-    redefinable: ReadonlySet<string>,
+    undefinedNames: ReadonlySet<string>,
   ): number | null {
     const tokens = HeaderMacros.tokens(text);
     const names = tokens.flatMap((token) =>
@@ -153,7 +153,7 @@ class HeaderMacros {
           tokens,
           bodies,
           new Set(),
-          redefinable,
+          undefinedNames,
         );
         return INT_BITS.map((bits) =>
           expanded === null
@@ -171,18 +171,18 @@ class HeaderMacros {
    * #2494 review: tokens with each macro replaced by its body, as the
    * preprocessor substitutes text -- so `W * 2` with `#define W 1 + 2` is
    * `1 + 2 * 2`, 5, as C reads it, not 6. Null for a cycle, or an expansion
-   * past `MAX_EXPANSION` tokens, or a name in `redefinable`; a name no macro
+   * past `MAX_EXPANSION` tokens, or a name in `undefinedNames`; a name no macro
    * defines stays a name.
    */
   private static expanded(
     tokens: readonly TMacroToken[],
     bodies: ReadonlyMap<string, string>,
     expanding: ReadonlySet<string>,
-    redefinable: ReadonlySet<string> = new Set(),
+    undefinedNames: ReadonlySet<string> = new Set(),
   ): TMacroToken[] | null {
     const out: TMacroToken[] = [];
     for (const token of tokens) {
-      if (token.kind === "name" && redefinable.has(token.name)) return null;
+      if (token.kind === "name" && undefinedNames.has(token.name)) return null;
       const body = token.kind === "name" ? bodies.get(token.name) : undefined;
       if (token.kind !== "name" || body === undefined) {
         out.push(token);
@@ -193,7 +193,7 @@ class HeaderMacros {
         HeaderMacros.tokens(body),
         bodies,
         new Set([...expanding, token.name]),
-        redefinable,
+        undefinedNames,
       );
       if (inner === null) return null;
       out.push(...inner);

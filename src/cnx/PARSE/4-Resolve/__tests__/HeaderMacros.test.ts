@@ -381,14 +381,14 @@ describe("HeaderMacros.integerValue and #undef (#2494 review)", () => {
     ["#define LATE 8", "#define VIA (LATE + 1)", "#define KEPT 3"].join("\n"),
   );
   it.each([
-    ["a macro a header #undefs", "LATE"],
+    ["a macro a header removes with #undef", "LATE"],
     ["a macro whose body reads one", "VIA"],
   ])("does not read %s", (_label, text) => {
     expect(
       HeaderMacros.integerValue(text, [bodies], new Set(["LATE"])),
     ).toBeNull();
   });
-  it("still reads a macro no header #undefs", () => {
+  it("still reads a macro no header removes with #undef", () => {
     expect(HeaderMacros.integerValue("KEPT", [bodies], new Set(["LATE"]))).toBe(
       3,
     );

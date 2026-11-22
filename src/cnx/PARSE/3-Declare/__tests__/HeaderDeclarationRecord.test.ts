@@ -7,7 +7,7 @@ describe("HeaderDeclarationRecord undefined macros (#2494 review)", () => {
   table.markUndefinedMacros("a.h", ["LATE_BITS"]);
   table.markUndefinedMacros("b.h", []);
 
-  it("records only the macros its own header #undefs", () => {
+  it("records only the macros its own header removes with #undef", () => {
     expect(HeaderDeclarationRecord.of("b.h", table).undefinedMacros).toEqual(
       [],
     );
@@ -16,7 +16,7 @@ describe("HeaderDeclarationRecord undefined macros (#2494 review)", () => {
     ]);
   });
 
-  it("keeps a header's #undefs when a recovered slice reports none", () => {
+  it("keeps a header's undefined macros when a recovered slice reports none", () => {
     const recovered = new SymbolTable();
     recovered.markUndefinedMacros("a.h", ["LATE_BITS"]);
     recovered.markUndefinedMacros("a.h", []);
