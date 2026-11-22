@@ -39,7 +39,7 @@ int main(void) {
     if (((p >> 4) & 0x7) != 6) {
         return 4U;
     }
-    p = (p & ~(0x3U << 4U)) | ((1U & 0x3U) << 4U);
+    p = (p & ~(0x3U << 4U)) | (1U << 4U);
     if (((p >> 4) & 0x7) != 5) {
         return 5U;
     }

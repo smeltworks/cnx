@@ -21,7 +21,7 @@ volatile Pins ap = {0};
 
 void set(const uint8_t i) {
     GPIO__SET = (uint8_t)(1U << 5U);
-    GPIO__SET = (uint8_t)((3U & 0x3U) << 4U);
+    GPIO__SET = (uint8_t)(3U << 4U);
     GPIO__DATA = (uint8_t)((GPIO__DATA & ~(1U << (4U + i))) | (1U << (4U + i)));
     {
         /* ADR-049 / Issue #1807: atomic read-modify-write as an LDREX/STREX retry loop. The value is evaluated once, before the loop, so a failed store-exclusive does not evaluate it again. */

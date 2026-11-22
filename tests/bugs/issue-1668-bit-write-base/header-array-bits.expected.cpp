@@ -20,7 +20,7 @@ int main(void) {
         return 1U;
     }
     gbuf[2] = 0U;
-    gbuf[2] = (uint8_t)((gbuf[2] & ~(0xFU << 0)) | ((5U & 0xFU) << 0));
+    gbuf[2] = (uint8_t)((gbuf[2] & ~(0xFU << 0)) | (5U << 0));
     if (gbuf[2U] != 5) {
         return 2U;
     }

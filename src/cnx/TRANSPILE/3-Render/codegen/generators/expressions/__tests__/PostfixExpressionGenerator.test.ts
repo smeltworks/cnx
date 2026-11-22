@@ -313,6 +313,7 @@ function createMockPostfixOp(options?: {
       floatBits: options?.floatBits ?? null,
       step: null,
       narrowing: null,
+      maskedByWriter: false,
     } as TPlannedPostfixOp & { widthText?: string };
   }
 

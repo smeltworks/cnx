@@ -17,6 +17,7 @@ import type IVariableDeclarationSyntax from "../../../types/syntax/IVariableDecl
 import type TExpression from "../../../types/syntax/TExpression";
 import type TExpressionOf from "../../../types/syntax/TExpressionOf";
 import type TPostfixOpSyntax from "../../../types/syntax/TPostfixOpSyntax";
+import type TPlannedBitValue from "../../../types/TPlannedBitValue";
 import type TTypeSyntax from "../../../types/syntax/TTypeSyntax";
 import type IPlannedCast from "./IPlannedCast";
 import type IPlannedOverflowChain from "./IPlannedOverflowChain";
@@ -165,6 +166,10 @@ interface IFilePlan {
    * member is written through, for each write that is one memory access
    */
   readonly registerAccesses: ReadonlyMap<IAssignmentSyntax, string>;
+  /** #2483: each `<-` bit write whose value's bits 2.2 knows, and what it knows */
+  readonly bitWriteValues: ReadonlyMap<IAssignmentSyntax, TPlannedBitValue>;
+  /** #2483: each bit range read that the bit write it is the value of masks */
+  readonly writerMaskedRanges: ReadonlySet<TPostfixOpSyntax>;
   /** ADR-044: every overflow helper the file calls, by the name 2.2 decided */
   readonly overflowHelpers: ReadonlyMap<string, IPlannedOverflowHelper>;
   /** #1927: the C types the file's text uses, which decide `<stdint.h>`/`<stdbool.h>` */

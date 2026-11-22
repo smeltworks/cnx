@@ -387,6 +387,15 @@ A compound operator on a bitmap field (`flags.Mode +<- 1`) is an error
   status.flags.Mode <- value;        // ERROR E0869: u8 into a 3-bit field
   status.flags.Mode <- value[0, 3];  // OK: the low 3 bits, explicitly
   ```
+- **One mask per write (#2483)**: the write masks the value it stores once. A bit
+  range no wider than the field is masked by the write at the range's width, and an
+  integer literal the field holds is stored as written:
+  ```c
+  // status.flags.Mode <- value[0, 3];
+  flags = (uint8_t)((flags & ~(0x7U << 1)) | (((value) & 0x7U) << 1));
+  // status.flags.Mode <- 5;
+  flags = (uint8_t)((flags & ~(0x7U << 1)) | (5U << 1));
+  ```
 
 ### C Header Bit-Fields
 

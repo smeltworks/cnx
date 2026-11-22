@@ -29,29 +29,29 @@ int main(void) {
         return 4U;
     }
     uint32_t value = 0U;
-    value = (value & ~((uint32_t)0x7U << 0)) | ((5U & (uint32_t)0x7U) << 0);
+    value = (value & ~((uint32_t)0x7U << 0)) | ((uint32_t)5U << 0);
     if (value != 0x00000005) {
         return 5U;
     }
-    value = (value & ~((uint32_t)0xFU << 4)) | ((10U & (uint32_t)0xFU) << 4);
+    value = (value & ~((uint32_t)0xFU << 4)) | ((uint32_t)10U << 4);
     if (value != 0x000000A5) {
         return 6U;
     }
-    value = (value & ~((uint32_t)0xFFU << 8)) | ((255U & (uint32_t)0xFFU) << 8);
+    value = (value & ~((uint32_t)0xFFU << 8)) | ((uint32_t)255U << 8);
     if (value != 0x0000FFA5) {
         return 7U;
     }
     uint32_t bits = 0xFFFFFFFFU;
-    bits = (bits & ~((uint32_t)0xFU << 0)) | ((0U & (uint32_t)0xFU) << 0);
+    bits = (bits & ~((uint32_t)0xFU << 0)) | ((uint32_t)0U << 0);
     if (bits != 0xFFFFFFF0) {
         return 8U;
     }
-    bits = (bits & ~((uint32_t)0xFU << 4)) | ((5U & (uint32_t)0xFU) << 4);
+    bits = (bits & ~((uint32_t)0xFU << 4)) | ((uint32_t)5U << 4);
     if (bits != 0xFFFFFF50) {
         return 9U;
     }
     uint8_t smallFlags = 0U;
-    smallFlags = (uint8_t)((smallFlags & ~(0xFU << 0)) | ((15U & 0xFU) << 0));
+    smallFlags = (uint8_t)((smallFlags & ~(0xFU << 0)) | (15U << 0));
     if (smallFlags != 0x0F) {
         return 10U;
     }
@@ -60,11 +60,11 @@ int main(void) {
         return 11U;
     }
     uint16_t mediumFlags = 0U;
-    mediumFlags = (uint16_t)((mediumFlags & ~(0xFFU << 0)) | ((0xFFU & 0xFFU) << 0));
+    mediumFlags = (uint16_t)((mediumFlags & ~(0xFFU << 0)) | (0xFFU << 0));
     if (mediumFlags != 0x00FF) {
         return 12U;
     }
-    mediumFlags = (uint16_t)((mediumFlags & ~(0xFU << 8)) | ((0x0AU & 0xFU) << 8));
+    mediumFlags = (uint16_t)((mediumFlags & ~(0xFU << 8)) | (0x0AU << 8));
     if (mediumFlags != 0x0AFF) {
         return 13U;
     }

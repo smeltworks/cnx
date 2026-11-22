@@ -43,7 +43,7 @@ void set(const uint8_t m) {
         } while (!__atomic_compare_exchange(&fl, &__old, &__new, 0, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED));
     }
     pl += 1;
-    pl = (uint16_t)((pl & ~(0x7U << 1)) | (((uint8_t)((m) & 0x7U) & 0x7U) << 1));
+    pl = (uint16_t)((pl & ~(0x7U << 1)) | (((m) & 0x7U) << 1));
 }
 
 int main(void) {

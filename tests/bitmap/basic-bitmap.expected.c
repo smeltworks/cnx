@@ -18,12 +18,12 @@ int main(void) {
     flags = (uint8_t)((flags & ~(1U << 0)) | (1U << 0));
     flags = (uint8_t)((flags & ~(1U << 1)) | (0U << 1));
     flags = (uint8_t)((flags & ~(1U << 2)) | (1U << 2));
-    flags = (uint8_t)((flags & ~(0x7U << 3)) | ((5U & 0x7U) << 3));
+    flags = (uint8_t)((flags & ~(0x7U << 3)) | (5U << 3));
     const bool isRunning = ((((flags >> 0) & 1)) != 0U);
     const bool hasFault = ((((flags >> 2) & 1)) != 0U);
     const uint8_t mode = (uint8_t)((flags >> 3) & 0x7);
     if (((flags >> 0) & 1) == true) {
-        flags = (uint8_t)((flags & ~(0x7U << 3)) | ((3U & 0x7U) << 3));
+        flags = (uint8_t)((flags & ~(0x7U << 3)) | (3U << 3));
     }
     const uint8_t doubleMode = (uint8_t)((flags >> 3) & 0x7) * 2U;
 }

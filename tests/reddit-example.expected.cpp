@@ -10,8 +10,8 @@
 // Tests: bit indexing example for Reddit post
 int main(void) {
     uint8_t header = 0U;
-    header = (uint8_t)((header & ~(0xFU << 0)) | ((5U & 0xFU) << 0));
-    header = (uint8_t)((header & ~(0x3U << 4)) | ((2U & 0x3U) << 4));
+    header = (uint8_t)((header & ~(0xFU << 0)) | (5U << 0));
+    header = (uint8_t)((header & ~(0x3U << 4)) | (2U << 4));
     header = (uint8_t)((header & ~(1U << 6)) | (1U << 6));
     header = (uint8_t)((header & ~(1U << 7)) | (0U << 7));
     const uint8_t msgType = static_cast<uint8_t>(((header) & 0xFU));

@@ -114,6 +114,7 @@ import type TExpressionOf from "../../types/syntax/TExpressionOf";
 import ExpressionChildren from "../../utils/ExpressionChildren";
 import type TStructInitializerForm from "./types/TStructInitializerForm";
 import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
+import type TPlannedBitValue from "../../types/TPlannedBitValue";
 import type TPlannedLazyTernary from "./types/TPlannedLazyTernary";
 import type TTypeSyntax from "../../types/syntax/TTypeSyntax";
 import type ISourcePosition from "../../utils/types/ISourcePosition";
@@ -1506,6 +1507,13 @@ class FilePlanner {
       decidedCTypes,
       requirements,
     );
+    const bitWrites = this.planBitWriteValues(
+      program,
+      bitmapFieldWrites,
+      atomicForms,
+      floatBits.writes,
+      registerAccesses,
+    );
     const sliceSources = new Map<IAssignmentSyntax, IPlannedSliceSource>();
     const compoundCasts = new Map<IAssignmentSyntax, string>();
     this.planAssignmentCTypes(
@@ -1550,6 +1558,8 @@ class FilePlanner {
       compoundOverflows: clamps.compound,
       compoundCasts,
       registerAccesses,
+      bitWriteValues: bitWrites.values,
+      writerMaskedRanges: bitWrites.ranges,
       overflowHelpers: requirements.overflowHelpers,
       sliceSources,
       stringCopies: stringCopies.copies,
@@ -3183,6 +3193,99 @@ class FilePlanner {
       }
     }
     return writes;
+  }
+
+  /**
+   * #2483: what each `<-` bit write knows of its value's bits, so the write
+   * masks them once: a bit range no wider than the target is read unmasked
+   * and masked by the write at its own width, and an integer literal the
+   * target holds is written as it is. Not for an atomic write, which holds
+   * the value in a temporary of the value's type, a float's bits, or a
+   * write-only register member's single access, which stores it unmasked.
+   */
+  private planBitWriteValues(
+    program: IProgramSyntax,
+    bitmapFieldWrites: ReadonlyMap<
+      IAssignmentSyntax,
+      IBitmapFieldTarget | null
+    >,
+    atomicForms: ReadonlyMap<IAssignmentSyntax, IPlannedAtomic | null>,
+    floatBitWrites: ReadonlyMap<TExpression, IPlannedFloatBits | null>,
+    registerAccesses: ReadonlyMap<IAssignmentSyntax, string>,
+  ): {
+    values: ReadonlyMap<IAssignmentSyntax, TPlannedBitValue>;
+    ranges: ReadonlySet<TPostfixOpSyntax>;
+  } {
+    const values = new Map<IAssignmentSyntax, TPlannedBitValue>();
+    const ranges = new Set<TPostfixOpSyntax>();
+    for (const entry of program.members) {
+      for (const site of StatementNodes.assignments(entry.declaration)) {
+        if (
+          site.operator !== "<-" ||
+          (atomicForms.get(site) ?? null) !== null ||
+          (floatBitWrites.get(site.target) ?? null) !== null ||
+          registerAccesses.has(site)
+        ) {
+          continue;
+        }
+        const width = this.bitWriteWidth(
+          site.target,
+          bitmapFieldWrites.get(site) ?? null,
+        );
+        const value = width === null ? null : this.bitWriteValue(site, width);
+        if (value === null) continue;
+        values.set(site, value);
+        if (value.kind === "range") ranges.add(value.op);
+      }
+    }
+    return { values, ranges };
+  }
+
+  /** The bits a multi-bit write stores, when constant; null for any other write */
+  private bitWriteWidth(
+    target: TExpression,
+    field: IBitmapFieldTarget | null,
+  ): number | null {
+    const last = this.targetDeclaration(target).last;
+    if (BitmapFieldStep.writesOneBit(last, field)) return null;
+    if (field !== null) return field.layout.width;
+    const op = target.kind === "postfix" ? target.ops.at(-1) : undefined;
+    return last?.subscript === "bit_range" && op?.kind === "subscript"
+      ? (this.constantOf(op.length) ?? null)
+      : null;
+  }
+
+  /** What a bit write of `width` bits knows of its value's bits (#2483) */
+  private bitWriteValue(
+    site: IAssignmentSyntax,
+    width: number,
+  ): TPlannedBitValue | null {
+    const value = site.value;
+    if (value.kind === "literal") {
+      // An unsuffixed integer literal, written with its `U` (MISRA 7.2)
+      if (!/^(0x[0-9a-f_]+|0b[01_]+|\d[\d_]*)$/i.test(value.text)) return null;
+      const folded = this.constantOf(value);
+      return folded !== undefined && folded >= 0 && folded < 2 ** width
+        ? { kind: "fits" }
+        : null;
+    }
+    if (value.kind !== "postfix") return null;
+    const op = value.ops.at(-1);
+    const step = OperandTyper.chainOf(
+      value,
+      this.state.typingContext(),
+    ).steps.at(-1);
+    if (
+      op?.kind !== "subscript" ||
+      step?.subscript !== "bit_range" ||
+      FloatBits.typeOf(step) !== null
+    ) {
+      return null;
+    }
+    const bits = this.constantOf(op.length);
+    return bits !== undefined && bits <= width
+      ? { kind: "range", op, width: bits }
+      : null;
   }
 
   /**
