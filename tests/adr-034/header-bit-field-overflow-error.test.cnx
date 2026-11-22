@@ -1,0 +1,25 @@
+// test-error
+// test-adr: 034
+// ADR-072 ruling 19: a C header struct's bit-field takes a bitmap field's
+// rules. A known value is judged against the bits the field declares, not its
+// C type: `unsigned int mode : 3` holds 0 through 7, and C would keep only the
+// low 3 bits of 13. A signed bit-field holds -4 through 3.
+
+#include "header-bit-field.h"
+
+mut CReg r;
+
+void main() {
+    // NEGATIVE CONTROLS -- each stays silent.
+    r.mode <- 7;
+    r.level <- 3;
+    r.level <- -4;
+    r.flag <- 1;
+    r.count <- 13;
+
+    // ASSERTIONS
+    r.mode <- 13;
+    r.level <- 4;
+    r.level <- -5;
+    r.flag <- 2;
+}

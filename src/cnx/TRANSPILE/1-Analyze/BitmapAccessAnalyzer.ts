@@ -39,6 +39,17 @@ import IBitmapAccessError from "./types/IBitmapAccessError";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import SourceOrder from "../../utils/SourceOrder";
 
+/** The bits an assignment target holds: a bitmap field, or a C bit-field */
+type TFieldBits = {
+  readonly width: number;
+  readonly name: string;
+  readonly signed: boolean;
+  /** Whether E0869 judges a typed value written to it (ADR-072 ruling 17) */
+  readonly judgedByType: boolean;
+  /** How the help says to make the field wider */
+  readonly widen: string;
+};
+
 class BitmapAccessCheck {
   private readonly found: IBitmapAccessError[] = [];
 
@@ -55,21 +66,53 @@ class BitmapAccessCheck {
   public checkSite(site: IAssignmentSyntax): void {
     if (site.target.kind !== "postfix") return;
     const field = this.checkChain(site.target);
-    if (field === null) return;
-    this.checkFits(site, field, site.value);
+    const bits =
+      field === null
+        ? this.headerBitField(site.target)
+        : BitmapAccessCheck.bitmapBits(field);
+    if (bits === null) return;
+    this.checkFits(site, bits, site.value);
+  }
+
+  private static bitmapBits(field: IBitmapFieldTarget): TFieldBits {
+    return {
+      width: field.layout.width,
+      name: field.fieldName,
+      signed: false,
+      judgedByType: field.layout.width > 1,
+      widen: "widen the field in the bitmap declaration",
+    };
+  }
+
+  /**
+   * A C header struct's bit-field holds its declared width, as a cnx bitmap
+   * field does (#1975), and takes a bitmap field's rules (ADR-072 ruling 19)
+   */
+  private headerBitField(target: TExpressionOf<"postfix">): TFieldBits | null {
+    if (!OperandTyper.chainOf(target, this.context).endsOnBitField) return null;
+    const t = OperandTyper.typeOfTarget(target, this.context);
+    const name = target.ops.at(-1);
+    if (t?.bitWidth == null || name?.kind !== "member") return null;
+    return {
+      width: t.bitWidth,
+      name: name.name,
+      signed: t.category === "signed",
+      judgedByType: true,
+      widen: "widen the bit-field in its header",
+    };
   }
 
   /**
    * E0881: a known value must fit the field it is written to. A typed
    * value written to a multi-bit field is judged by its type, which E0869
-   * owns (ADR-072 ruling 17); a one-bit field is a bool, which E0869 does
-   * not judge, so every known value written to one is judged here. A
+   * owns (ADR-072 ruling 17); a one-bit bitmap field is a bool, which E0869
+   * does not judge, so every known value written to one is judged here. A
    * ternary that does not fold is judged arm by arm, since each arm lands in
    * the field (ADR-022); one that folds is judged by the arm it picks.
    */
   private checkFits(
     site: IAssignmentSyntax,
-    field: IBitmapFieldTarget,
+    field: TFieldBits,
     expr: TExpression,
   ): void {
     const result = OperandTyper.constantResultOf(expr, this.context);
@@ -80,16 +123,23 @@ class BitmapAccessCheck {
       return;
     }
     if (result.kind !== "value") return;
-    if (result.typeName !== null && field.layout.width > 1) return;
+    if (result.typeName !== null && field.judgedByType) return;
     const value = ConstantEvaluator.toNumber(result.value);
-    const maximum = 2 ** field.layout.width - 1;
-    if (value === undefined || value <= maximum) return;
+    if (value === undefined) return;
+    const width = field.width;
+    const minimum = field.signed ? -(2 ** (width - 1)) : 0;
+    const maximum = field.signed ? 2 ** (width - 1) - 1 : 2 ** width - 1;
+    // A negative value written to an unsigned field is E0868's
+    if (value <= maximum && (value >= minimum || !field.signed)) return;
+    const bound = value > maximum ? "exceeds" : "is below";
+    const limit =
+      value > maximum ? `maximum of ${maximum}` : `minimum of ${minimum}`;
     this.found.push({
       code: "E0881",
       span: expr.span,
       declaredAt: BindingSite.ofChain(site.target, this.context),
-      message: `Value ${value} exceeds ${field.layout.width}-bit field '${field.fieldName}' maximum of ${maximum}`,
-      helpText: `A ${field.layout.width}-bit field holds 0 through ${maximum}; widen the field in the bitmap declaration, or write a value that fits (ADR-034).`,
+      message: `Value ${value} ${bound} ${width}-bit field '${field.name}' ${limit}`,
+      helpText: `A ${width}-bit field holds ${minimum} through ${maximum}; ${field.widen}, or write a value that fits (ADR-034).`,
     });
   }
 

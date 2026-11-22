@@ -1,0 +1,8 @@
+21:14 error[E0881]: Value 13 exceeds 3-bit field 'mode' maximum of 7
+       help: A 3-bit field holds 0 through 7; widen the bit-field in its header, or write a value that fits (ADR-034).
+22:15 error[E0881]: Value 4 exceeds 3-bit field 'level' maximum of 3
+       help: A 3-bit field holds -4 through 3; widen the bit-field in its header, or write a value that fits (ADR-034).
+23:15 error[E0881]: Value -5 is below 3-bit field 'level' minimum of -4
+       help: A 3-bit field holds -4 through 3; widen the bit-field in its header, or write a value that fits (ADR-034).
+24:14 error[E0881]: Value 2 exceeds 1-bit field 'flag' maximum of 1
+       help: A 1-bit field holds 0 through 1; widen the bit-field in its header, or write a value that fits (ADR-034).

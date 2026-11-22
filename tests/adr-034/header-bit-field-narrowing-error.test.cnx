@@ -1,0 +1,24 @@
+// test-error
+// test-adr: 034
+// ADR-072 ruling 19: a C header struct's bit-field is judged by the bits it
+// declares, as a bitmap field is (ADR-072 ruling 17), both as a target and as
+// a source.
+
+#include "header-bit-field.h"
+
+mut CReg r;
+
+void main() {
+    u8 m <- 5;
+
+    // NEGATIVE CONTROLS -- each stays silent.
+    r.mode <- m[0, 3];
+    u8 mode <- r.mode;
+    u16 wide <- r.wide;
+    r.count <- m;
+
+    // ASSERTIONS
+    r.mode <- m;
+    u8 narrow <- r.wide;
+    i8 signed <- r.mode;
+}

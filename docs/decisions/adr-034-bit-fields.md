@@ -388,6 +388,30 @@ A compound operator on a bitmap field (`flags.Mode +<- 1`) is an error
   status.flags.Mode <- value[0, 3];  // OK: the low 3 bits, explicitly
   ```
 
+### C Header Bit-Fields
+
+A bit-field of a struct declared in a C header takes a bitmap field's rules
+(ADR-072 ruling 19 on #2449). The number after `:` is the bits it holds; its C
+type gives only its signedness and the storage it is packed in, so
+`unsigned int mode : 3` holds 0 through 7 on every target. C keeps only the low
+bits of a value that does not fit, so `r.mode = 13` would read back 5:
+
+```c
+typedef struct {
+    unsigned int mode : 3;
+    signed int level : 3;
+} CReg;
+```
+
+```cnx
+r.mode <- 13;        // ERROR E0881: 13 exceeds the 3-bit maximum of 7
+r.level <- -5;       // ERROR E0881: below the 3-bit minimum of -4
+r.mode <- m;         // ERROR E0869: u8 into a 3-bit field
+r.mode <- m[0, 3];   // OK
+r.mode +<- 1;        // ERROR E0857: 7 plus 1 would read back 0
+u8 x <- r.wide;      // ERROR E0869 for `unsigned int wide : 12`
+```
+
 ### Transpilation
 
 ```c
@@ -408,14 +432,14 @@ uint8_t mode = ((status.flags >> 3) & 0x7);
 
 ## Diagnostics
 
-| Code  | Reported when                                                                    | Asserted by                                                                                                                                                                                                                                                 |
-| ----- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| E0857 | A compound operator such as `+<-` writes a bitmap field (#2159)                  | `tests/compound-assign/bitmap-field-compound.test.cnx`, `tests/adr-034/bitmap-compound-same-file-error.test.cnx`, `tests/adr-034/bitmap-compound-imported-transitive-error.test.cnx`                                                                        |
-| E0881 | A value written to a bitmap field does not fit the field's declared width        | `tests/adr-034/bitmap-error-overflow.test.cnx`, `tests/adr-034/bitmap-codes-same-file-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-direct-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-transitive-error.test.cnx`                         |
-| E0882 | A member access names something the bitmap does not declare                      | `tests/adr-034/bitmap-unknown-field-error.test.cnx`, `tests/adr-034/bitmap-codes-same-file-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-direct-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-transitive-error.test.cnx`                    |
-| E0883 | A bitmap is addressed by bit index rather than by named field                    | `tests/adr-034/bitmap-bracket-indexing-error.test.cnx`, `tests/adr-034/bitmap-codes-same-file-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-direct-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-transitive-error.test.cnx`                 |
-| E0893 | A bitmap's field widths do not add up to its size, at the bitmap                 | `tests/bitmap/bitmap-error-bits.test.cnx`, `tests/bugs/issue-1531-declaration-rejections/cross-file-bitmap.test.cnx`                                                                                                                                        |
-| E0921 | A field is read or written on a bitmap array that names no whole element (#2186) | `tests/bugs/issue-2186-bitmap-array-field/bitmap-array-field.test.cnx`, `tests/adr-034/bitmap-codes-same-file-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-direct-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-transitive-error.test.cnx` |
+| Code  | Reported when                                                                    | Asserted by                                                                                                                                                                                                                                                                                   |
+| ----- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| E0857 | A compound operator such as `+<-` writes a bitmap field (#2159) or a C bit-field | `tests/compound-assign/bitmap-field-compound.test.cnx`, `tests/adr-034/header-bit-field-compound-error.test.cnx`, `tests/adr-034/bitmap-compound-same-file-error.test.cnx`, `tests/adr-034/bitmap-compound-imported-transitive-error.test.cnx`                                                |
+| E0881 | A value written to a bitmap field does not fit the field's declared width        | `tests/adr-034/bitmap-error-overflow.test.cnx`, `tests/adr-034/header-bit-field-overflow-error.test.cnx`, `tests/adr-034/bitmap-codes-same-file-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-direct-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-transitive-error.test.cnx` |
+| E0882 | A member access names something the bitmap does not declare                      | `tests/adr-034/bitmap-unknown-field-error.test.cnx`, `tests/adr-034/bitmap-codes-same-file-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-direct-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-transitive-error.test.cnx`                                                      |
+| E0883 | A bitmap is addressed by bit index rather than by named field                    | `tests/adr-034/bitmap-bracket-indexing-error.test.cnx`, `tests/adr-034/bitmap-codes-same-file-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-direct-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-transitive-error.test.cnx`                                                   |
+| E0893 | A bitmap's field widths do not add up to its size, at the bitmap                 | `tests/bitmap/bitmap-error-bits.test.cnx`, `tests/bugs/issue-1531-declaration-rejections/cross-file-bitmap.test.cnx`                                                                                                                                                                          |
+| E0921 | A field is read or written on a bitmap array that names no whole element (#2186) | `tests/bugs/issue-2186-bitmap-array-field/bitmap-array-field.test.cnx`, `tests/adr-034/bitmap-codes-same-file-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-direct-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-transitive-error.test.cnx`                                   |
 
 A bitmap is reached two ways -- through a variable declared with a bitmap type,
 and through a register member typed by one -- and E0881, E0882, E0883 and
