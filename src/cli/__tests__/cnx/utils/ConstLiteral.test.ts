@@ -26,6 +26,4 @@ describe("ConstLiteral", () => {
     expect(code).toContain("const uint8_t CH = (uint8_t)'A';");
     expect(code).toContain("const uint8_t first = (uint8_t)'A';");
   });
-
-});
 });
