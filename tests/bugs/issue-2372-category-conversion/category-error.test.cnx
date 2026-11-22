@@ -37,6 +37,8 @@ void main() {
     // ASSERTIONS
     a <- true;
     b <- n;
+    b <- (1);
+    b <- 1 + 1;
     a <- c;
     u8 d <- 'a';
     f.Mode <- 'a';

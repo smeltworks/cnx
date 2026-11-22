@@ -676,14 +676,23 @@ class IntegerConversionCheck {
       this.checkBoolean(ternary.whenFalse, declaredAt);
       return;
     }
-    const literal = IntegerConversionCheck.integerLiteralText(value) !== null;
-    const from = literal
-      ? "signed"
-      : IntegerConversionCheck.categorized(value, this.context)?.category;
-    if (from === undefined || from === "boolean" || from === "none") return;
+    if (value.kind === "parenthesized") {
+      this.checkBoolean(value.expression, declaredAt);
+      return;
+    }
+    // An untyped value of integer literals alone (`1`, `-1`, `1 + 1`) is a number
+    const literal = OperandTyper.valueLeafExpressions(value).every(
+      (leaf) => IntegerConversionCheck.integerLiteralText(leaf) !== null,
+    );
+    const from = IntegerConversionCheck.categorized(
+      value,
+      this.context,
+    )?.category;
+    if (from === undefined || from === "boolean") return;
+    if (from === "none" && !literal) return;
     this.reportCategory(
       value,
-      literal ? "an integer literal" : CATEGORY_NAME[from],
+      from === "none" ? "an integer literal" : CATEGORY_NAME[from],
       "bool",
       "A number is not a bool (ADR-024); say what makes it true: value != 0",
       declaredAt,
