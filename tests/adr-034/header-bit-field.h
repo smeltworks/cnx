@@ -10,6 +10,7 @@ typedef struct {
     unsigned int flag : 1;
     unsigned int rest : 13;
     uint32_t count;
+    uint_fast8_t fast : 3;
 } CReg;
 
 #endif

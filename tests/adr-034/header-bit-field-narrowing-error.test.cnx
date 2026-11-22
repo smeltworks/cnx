@@ -2,7 +2,8 @@
 // test-adr: 034
 // ADR-072 ruling 19: a C header struct's bit-field is judged by the bits it
 // declares, as a bitmap field is (ADR-072 ruling 17), both as a target and as
-// a source.
+// a source. A `uint_fast8_t` bit-field, whose C type has no known width, is
+// judged by the same 3 bits.
 
 #include "header-bit-field.h"
 
@@ -16,9 +17,11 @@ void main() {
     u8 mode <- r.mode;
     u16 wide <- r.wide;
     r.count <- m;
+    r.fast <- m[0, 3];
 
     // ASSERTIONS
     r.mode <- m;
     u8 narrow <- r.wide;
     i8 signed <- r.mode;
+    r.fast <- m;
 }

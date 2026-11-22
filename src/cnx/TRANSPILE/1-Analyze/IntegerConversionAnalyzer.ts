@@ -215,7 +215,7 @@ class IntegerConversionCheck {
       return;
     }
     const targetTyping = OperandTyper.typeOfTarget(target, this.context);
-    const targetType = targetTyping?.typeName ?? "";
+    const targetType = IntegerConversionCheck.targetTypeOf(targetTyping);
     if (!TypeCheckUtils.isInteger(targetType)) return;
     // The bits the target holds: its type's, or a bitmap field's own width,
     // which a `u8` holding it is wider than (ADR-072 Part 2, ruling 17)
@@ -762,6 +762,23 @@ class IntegerConversionCheck {
       signed: TypeCheckUtils.isSigned(typeName),
       name: typeName,
     };
+  }
+
+  /**
+   * The cnx integer a target is judged as. A C bit-field holds its declared
+   * width whatever its C type (ADR-072 ruling 19), so a `uint_fast8_t f : 3`,
+   * whose C type has no known width, is judged as the 3 bits it declares.
+   */
+  private static targetTypeOf(t: IOperandType | null): string {
+    const typeName = t?.typeName ?? "";
+    const bits = t?.bitWidth ?? null;
+    if (t === null || bits === null || TypeCheckUtils.isInteger(typeName)) {
+      return typeName;
+    }
+    if (t.category !== "signed" && t.category !== "unsigned") return typeName;
+    const holder = [8, 16, 32, 64].find((width) => width >= bits);
+    if (holder === undefined) return typeName;
+    return `${t.category === "signed" ? "i" : "u"}${holder}`;
   }
 
   private static integerSource(t: IOperandType): TSource | null {
