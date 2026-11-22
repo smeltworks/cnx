@@ -45,7 +45,8 @@ class BitFieldSignAnalyzer {
     return [
       {
         code: "E0944",
-        span: chain.ops[index].span,
+        // A rooted chain (`global.r.pi`) has one op its steps start after
+        span: chain.ops[chain.ops.length - steps.length + index].span,
         message: `The C compiler chooses whether bit-field '${steps[index].member}' is signed`,
         helpText: HELP,
         declaredAt: BindingSite.ofChain(chain, this.context),

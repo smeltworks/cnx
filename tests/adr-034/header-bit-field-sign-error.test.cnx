@@ -19,6 +19,7 @@ void main() {
     r.u32 <- 7;
     r.whole <- -1;
     i8 level <- r.si;
+    global.r.si <- 1;
 
     // ASSERTIONS
     r.pi <- 1;
@@ -29,4 +30,6 @@ void main() {
     r.fixed <- 1;
     r.alias <- 1;
     u8 bits <- r.fixed[0, 2];
+    global.r.pi <- 1;
+    r.computed <- 1;
 }
