@@ -45,7 +45,6 @@ function createInitialStructState(): IStructSymbolState {
     typedefToTag: new Map(),
     structTagsWithBodies: new Set(),
     pointerTypedefs: new Set(),
-    undefinedMacros: new Set(),
     structLayouts: new Map(),
   };
 }
@@ -113,6 +112,9 @@ class SymbolTable implements IResolvedSymbols {
   // ========================================================================
 
   /** Struct field information: struct name -> (field name -> field info) */
+  /** #2494 review: header path -> the macros it `#undef`s */
+  private readonly undefinedMacrosByFile = new Map<string, readonly string[]>();
+
   private readonly structFields: Map<string, Map<string, IStructFieldInfo>> =
     new Map();
 
@@ -929,7 +931,6 @@ class SymbolTable implements IResolvedSymbols {
       structTagsWithBodies: Array.from(this.structState.structTagsWithBodies),
       pointerTypedefs: Array.from(this.structState.pointerTypedefs),
       structLayouts: Array.from(this.structState.structLayouts),
-      undefinedMacros: Array.from(this.structState.undefinedMacros),
     };
   }
 
@@ -964,7 +965,6 @@ class SymbolTable implements IResolvedSymbols {
       structLayouts: new Map(
         state.structLayouts.filter(SymbolTable.isLayoutEntry),
       ),
-      undefinedMacros: new Set(state.undefinedMacros),
     };
 
     this.structState = produce(this.structState, (draft) => {
@@ -1033,17 +1033,22 @@ class SymbolTable implements IResolvedSymbols {
   /**
    * Issue #957/#1164: record a typedef of a pointer to a struct.
    */
-  /** #2494 review: macros a header `#undef`s */
-  markUndefinedMacros(names: readonly string[]): void {
-    if (names.length === 0) return;
-    this.structState = produce(this.structState, (draft) => {
-      for (const name of names) draft.undefinedMacros.add(name);
-    });
+  /**
+   * #2494 review: the macros the header at `path` `#undef`s. Kept by header,
+   * not in the struct state, so a header's cache record holds its own.
+   */
+  markUndefinedMacros(path: string, names: readonly string[]): void {
+    this.undefinedMacrosByFile.set(path, names);
+  }
+
+  /** #2494 review: the macros the header at `path` `#undef`s */
+  undefinedMacrosOf(path: string): readonly string[] {
+    return this.undefinedMacrosByFile.get(path) ?? [];
   }
 
   /** #2494 review: macros some header `#undef`s */
   undefinedMacros(): ReadonlySet<string> {
-    return this.structState.undefinedMacros;
+    return new Set([...this.undefinedMacrosByFile.values()].flat());
   }
 
   markPointerTypedef(typeName: string): void {

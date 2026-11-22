@@ -40,11 +40,6 @@ interface IStructSymbolState {
    * A struct absent here sums its fields.
    */
   structLayouts: Map<string, TStructLayout>;
-  /**
-   * #2494 review: macros some header `#undef`s, so a bit-field width naming
-   * one may not be the value its final definition gives
-   */
-  undefinedMacros: Set<string>;
 }
 
 export default IStructSymbolState;
