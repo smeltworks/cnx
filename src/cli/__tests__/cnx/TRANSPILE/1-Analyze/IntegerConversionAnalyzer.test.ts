@@ -280,11 +280,11 @@ describe("IntegerConversionAnalyzer", () => {
       ).toEqual(["E0914", "E0914"]);
     });
 
-    it("accepts a string into a string and a char into a u8", () => {
+    it("accepts a string into a string and a cast char into a u8", () => {
       expect(
         codes(
           inMain(
-            '    string<8> s <- (wide = 1) ? "x" : "y";\n    u8 c <- \'A\';',
+            '    string<8> s <- (wide = 1) ? "x" : "y";\n    u8 c <- (u8)\'A\';',
           ),
         ),
       ).toEqual([]);
