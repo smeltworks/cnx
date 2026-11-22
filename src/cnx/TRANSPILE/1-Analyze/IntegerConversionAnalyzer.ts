@@ -768,6 +768,8 @@ class IntegerConversionCheck {
    * The cnx integer a target is judged as. A C bit-field holds its declared
    * width whatever its C type (ADR-072 ruling 19), so a `uint_fast8_t f : 3`,
    * whose C type has no known width, is judged as the 3 bits it declares.
+   * Its arithmetic's width is still unknown, so a constant folds at the
+   * widest integer and only the declared width can reject it.
    */
   private static targetTypeOf(t: IOperandType | null): string {
     const typeName = t?.typeName ?? "";
@@ -776,9 +778,8 @@ class IntegerConversionCheck {
       return typeName;
     }
     if (t.category !== "signed" && t.category !== "unsigned") return typeName;
-    const holder = [8, 16, 32, 64].find((width) => width >= bits);
-    if (holder === undefined) return typeName;
-    return `${t.category === "signed" ? "i" : "u"}${holder}`;
+    if (bits > 64) return typeName;
+    return t.category === "signed" ? "i64" : "u64";
   }
 
   private static integerSource(t: IOperandType): TSource | null {

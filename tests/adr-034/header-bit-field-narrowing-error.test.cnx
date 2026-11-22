@@ -18,6 +18,7 @@ void main() {
     u16 wide <- r.wide;
     r.count <- m;
     r.fast <- m[0, 3];
+    r.fast <- 256 >> 8;
 
     // ASSERTIONS
     r.mode <- m;
