@@ -1244,7 +1244,7 @@ class FilePlanner {
     const nodes = parts.flatMap(ExpressionNodes.of);
     const folded = new Set<TExpression>(
       parts.flatMap((part) =>
-        part.kind === "type" ? ExpressionNodes.of(part) : [],
+        part.kind === "type" || part.constant ? ExpressionNodes.of(part) : [],
       ),
     );
     for (const node of nodes) {
