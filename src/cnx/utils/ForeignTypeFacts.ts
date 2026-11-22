@@ -3,6 +3,7 @@ import ESourceLanguage from "./types/ESourceLanguage";
 import type TTypeInfo from "../types/TTypeInfo";
 import TYPE_WIDTH from "../types/TYPE_WIDTH";
 import LengthProperty from "./LengthProperty";
+import BareOperand from "./BareOperand";
 import type TCSymbol from "../types/symbols/c/TCSymbol";
 import type TCppSymbol from "../types/symbols/cpp/TCppSymbol";
 import type IForeignSymbolLookup from "../types/IForeignSymbolLookup";
@@ -573,23 +574,10 @@ class ForeignTypeFacts {
       : null;
   }
 
-  private static readonly UNTYPED: IOperandType = {
-    typeName: null,
-    cType: null,
-    dimensions: [],
-    category: "none",
-    bitWidth: null,
-    stringCapacity: null,
-    enumTypeName: null,
-    bitmapTypeName: null,
-    callbackTypeName: null,
-    overflow: null,
-    hasSideEffect: false,
-    volatileAccess: false,
-    signChosenByCompiler: false,
-    form: { kind: "foreign", indeterminate: false },
-    binding: null,
-  };
+  private static readonly UNTYPED: IOperandType = BareOperand.of(null, {
+    kind: "foreign",
+    indeterminate: false,
+  });
 
   /**
    * The element type a spelling denotes, walking typedefs spelling-first, and

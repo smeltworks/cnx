@@ -12,7 +12,6 @@
  * - E0944: a read or write of such a bit-field
  */
 import BindingSite from "../../utils/BindingSite";
-import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import OperandTyper from "../../utils/OperandTyper";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
@@ -28,10 +27,8 @@ class BitFieldSignAnalyzer {
 
   /** Every chain, read or written */
   public analyze(program: IProgramSyntax): IBitFieldSignError[] {
-    return program.members.flatMap((member) =>
-      DeclarationParts.of(member.declaration).flatMap((part) =>
-        ExpressionNodes.of(part).flatMap((expr) => this.check(expr)),
-      ),
+    return ExpressionNodes.ofProgram(program).flatMap((expr) =>
+      this.check(expr),
     );
   }
 

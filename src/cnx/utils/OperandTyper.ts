@@ -23,6 +23,7 @@ import PrimitiveKindUtils from "./PrimitiveKindUtils";
 import TypeCheckUtils from "./TypeCheckUtils";
 import TYPE_WIDTH from "../types/TYPE_WIDTH";
 import ForeignTypeFacts from "./ForeignTypeFacts";
+import BareOperand from "./BareOperand";
 import LiteralUtils from "./LiteralUtils";
 import CompositeType from "./CompositeType";
 import LengthProperty from "./LengthProperty";
@@ -2364,23 +2365,7 @@ class OperandTyper {
 
   /** An operand with a type name and nothing else settled */
   private static plain(typeName: string | null): IOperandType {
-    return {
-      typeName,
-      cType: null,
-      dimensions: [],
-      category: "none",
-      bitWidth: null,
-      stringCapacity: null,
-      enumTypeName: null,
-      bitmapTypeName: null,
-      callbackTypeName: null,
-      overflow: null,
-      hasSideEffect: false,
-      volatileAccess: false,
-      signChosenByCompiler: false,
-      form: DECLARED,
-      binding: null,
-    };
+    return BareOperand.of(typeName, DECLARED);
   }
 
   /** The run's target description, or null while 1.4 has not resolved it */

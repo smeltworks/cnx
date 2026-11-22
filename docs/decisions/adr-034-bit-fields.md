@@ -510,6 +510,38 @@ Severity follows the eslint model: `off` records that a cell **cannot exist**,
 
 off: since #1620 only the bitmap field write lowering occupies this table, and a field write is a statement, which no initializer can hold.
 
+<!-- MATRIX-SEVERITY code: E0944 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | error    |
+| scope method       | same file               | warn     |
+| global variable    | same file               | warn     |
+| scope member       | same file               | warn     |
+| for header         | same file               | warn     |
+| top-level function | imported direct         | warn     |
+| scope method       | imported direct         | warn     |
+| global variable    | imported direct         | warn     |
+| scope member       | imported direct         | warn     |
+| for header         | imported direct         | warn     |
+| top-level function | imported transitive     | warn     |
+| scope method       | imported transitive     | warn     |
+| global variable    | imported transitive     | warn     |
+| scope member       | imported transitive     | warn     |
+| for header         | imported transitive     | warn     |
+| top-level function | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| global variable    | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| for header         | exercised from one away | warn     |
+| top-level function | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| global variable    | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| for header         | exercised through chain | warn     |
+
+warn: the fixture reads and writes the header bit-fields in a same-file top-level function; every other context reaches the same `signChosenByCompiler` fact on the field, so it is the same decision.
+
 <!-- MATRIX-SEVERITY code: E0857 -->
 
 | Context            | Relationship            | Severity |
