@@ -341,15 +341,18 @@ class ForeignTypeFacts {
     const typed = walked.operand;
     const width = ForeignTypeFacts.bitFieldWidth(info);
     if (typed === null || width === undefined) return typed;
-    if (width === null) return null;
-    return {
-      ...typed,
-      bitWidth: width,
-      signChosenByCompiler: ForeignTypeFacts.signChosenByCompiler(
-        typed,
-        walked.named,
-      ),
-    };
+    const signChosenByCompiler = ForeignTypeFacts.signChosenByCompiler(
+      typed,
+      walked.named,
+    );
+    // A width cnx cannot read (#2494) leaves the field untyped, unless its
+    // sign alone already rules out every read and write of it
+    if (width === null) {
+      return signChosenByCompiler
+        ? { ...typed, bitWidth: null, signChosenByCompiler }
+        : null;
+    }
+    return { ...typed, bitWidth: width, signChosenByCompiler };
   }
 
   /**

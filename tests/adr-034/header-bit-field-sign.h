@@ -18,6 +18,8 @@ typedef struct {
     s32_t salias : 3;
     unsigned int ui : 3;
     uint32_t u32 : 3;
+    int computed : 1 + 2;
+    unsigned int ucomputed : 1 + 2;
     int whole;
 } SReg;
 
