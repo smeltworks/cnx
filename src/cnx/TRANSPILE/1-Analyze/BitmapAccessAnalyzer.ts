@@ -38,6 +38,7 @@ import PROPERTY_NAMES from "../../utils/constants/PROPERTY_NAMES";
 import IBitmapAccessError from "./types/IBitmapAccessError";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import SourceOrder from "../../utils/SourceOrder";
+import BitFieldIntegerType from "../../utils/BitFieldIntegerType";
 
 /** The bits an assignment target holds: a bitmap field, or a C bit-field */
 type TFieldBits = {
@@ -48,6 +49,8 @@ type TFieldBits = {
   readonly judgedByType: boolean;
   /** How the help says to make the field wider */
   readonly widen: string;
+  /** The integer a constant written to it folds at; null for a cnx field */
+  readonly foldAs: string | null;
 };
 
 class BitmapAccessCheck {
@@ -81,6 +84,7 @@ class BitmapAccessCheck {
       signed: false,
       judgedByType: field.layout.width > 1,
       widen: "widen the field in the bitmap declaration",
+      foldAs: null,
     };
   }
 
@@ -99,6 +103,7 @@ class BitmapAccessCheck {
       signed: t.category === "signed",
       judgedByType: true,
       widen: "widen the bit-field in its header",
+      foldAs: BitFieldIntegerType.of(t),
     };
   }
 
@@ -115,7 +120,11 @@ class BitmapAccessCheck {
     field: TFieldBits,
     expr: TExpression,
   ): void {
-    const result = OperandTyper.constantResultOf(expr, this.context);
+    const result = OperandTyper.constantResultOf(
+      expr,
+      this.context,
+      field.foldAs,
+    );
     const inner = ExpressionShape.unparenthesized(expr);
     if (result.kind !== "value" && inner.kind === "ternary") {
       this.checkFits(site, field, inner.whenTrue);

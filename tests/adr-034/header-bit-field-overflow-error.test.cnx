@@ -3,7 +3,9 @@
 // ADR-072 ruling 19: a C header struct's bit-field takes a bitmap field's
 // rules. A known value is judged against the bits the field declares, not its
 // C type: `unsigned int mode : 3` holds 0 through 7, and C would keep only the
-// low 3 bits of 13. A signed bit-field holds -4 through 3.
+// low 3 bits of 13. A signed bit-field holds -4 through 3. A `uint_fast8_t`
+// bit-field's arithmetic has no known width, so its constant is folded whole
+// and judged by the 3 bits.
 
 #include "header-bit-field.h"
 
@@ -16,10 +18,12 @@ void main() {
     r.level <- -4;
     r.flag <- 1;
     r.count <- 13;
+    r.fast <- 256 >> 8;
 
     // ASSERTIONS
     r.mode <- 13;
     r.level <- 4;
     r.level <- -5;
     r.flag <- 2;
+    r.fast <- 0xFFFFFFFF + 1;
 }

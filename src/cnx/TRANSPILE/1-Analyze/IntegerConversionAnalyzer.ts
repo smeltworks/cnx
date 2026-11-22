@@ -85,6 +85,7 @@ import type IAnalysisContext from "./types/IAnalysisContext";
 import type IValuePosition from "../../types/IValuePosition";
 import type IOperandType from "../../types/IOperandType";
 import SourceOrder from "../../utils/SourceOrder";
+import BitFieldIntegerType from "../../utils/BitFieldIntegerType";
 
 const INTEGER_LITERAL = /^-?(?:\d+|0[xX][0-9a-fA-F]+|0[bB][01]+)$/;
 
@@ -215,7 +216,7 @@ class IntegerConversionCheck {
       return;
     }
     const targetTyping = OperandTyper.typeOfTarget(target, this.context);
-    const targetType = IntegerConversionCheck.targetTypeOf(targetTyping);
+    const targetType = BitFieldIntegerType.of(targetTyping);
     if (!TypeCheckUtils.isInteger(targetType)) return;
     // The bits the target holds: its type's, or a bitmap field's own width,
     // which a `u8` holding it is wider than (ADR-072 Part 2, ruling 17)
@@ -762,24 +763,6 @@ class IntegerConversionCheck {
       signed: TypeCheckUtils.isSigned(typeName),
       name: typeName,
     };
-  }
-
-  /**
-   * The cnx integer a target is judged as. A C bit-field holds its declared
-   * width whatever its C type (ADR-072 ruling 19), so a `uint_fast8_t f : 3`,
-   * whose C type has no known width, is judged as the 3 bits it declares.
-   * Its arithmetic's width is still unknown, so a constant folds at the
-   * widest integer and only the declared width can reject it.
-   */
-  private static targetTypeOf(t: IOperandType | null): string {
-    const typeName = t?.typeName ?? "";
-    const bits = t?.bitWidth ?? null;
-    if (t === null || bits === null || TypeCheckUtils.isInteger(typeName)) {
-      return typeName;
-    }
-    if (t.category !== "signed" && t.category !== "unsigned") return typeName;
-    if (bits > 64) return typeName;
-    return t.category === "signed" ? "i64" : "u64";
   }
 
   private static integerSource(t: IOperandType): TSource | null {
