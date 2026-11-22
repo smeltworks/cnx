@@ -27,10 +27,12 @@ class Resolve {
     // #1619: one compiler reads every file's headers, so its predefined
     // `<stdint.h>` types are the same in each dump
     const integerTypes = new Map<string, string>();
+    const macroBodies: ReadonlyMap<string, string>[] = [];
     for (const [path, read] of input.discovery.headerMacroDumps) {
       if (!read.complete) macrosUnread.add(path);
       if (read.dump === null) continue;
       macros.set(path, HeaderMacros.collect(read.dump));
+      macroBodies.push(HeaderMacros.bodies(read.dump));
       const names = HeaderMacros.names(read.dump);
       visibleMacros.set(path, new Set(names));
       for (const name of names) macroNames.add(name);
@@ -41,7 +43,7 @@ class Resolve {
     // #2494: a bit-field's width is read once, as C reads it, before any
     // field is typed from the table
     table.settleBitFieldWidths((text) =>
-      HeaderMacros.integerValue(text, macros.values()),
+      HeaderMacros.integerValue(text, macroBodies),
     );
     const program = Program.build(
       declared.map((entry) => entry.fileSymbols),

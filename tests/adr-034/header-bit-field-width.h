@@ -4,14 +4,16 @@
 #include <stdint.h>
 
 #define MODE_BITS 3
+#define LOOSE_BITS 1 + 2
 #define WIDE_BITS (MODE_BITS * 2 + 1)
 
 typedef struct {
     uint32_t sum : 1 + 2;
+    uint32_t five : LOOSE_BITS * 2;
     uint32_t mode : MODE_BITS;
     uint32_t wide : WIDE_BITS;
     uint32_t sized : sizeof(uint8_t);
-    uint32_t rest : 18;
+    uint32_t rest : 13;
 } WReg;
 
 #endif

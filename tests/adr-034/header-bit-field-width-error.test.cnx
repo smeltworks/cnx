@@ -2,7 +2,8 @@
 // test-adr: 034
 // #2494: a C bit-field's width written as an expression or a macro is read
 // as C reads it, so `sum : 1 + 2` holds 3 bits as `sum : 3` does, and a
-// write that does not fit it is the same error.
+// write that does not fit it is the same error. A macro is substituted as
+// text: `five : LOOSE_BITS * 2` is `1 + 2 * 2`, 5 bits, not 6.
 
 #include "header-bit-field-width.h"
 
@@ -17,8 +18,10 @@ void main() {
     r.wide <- 127;
     u8 m <- r.mode;
     r.rest <- 1;
+    r.five <- 31;
 
     // ASSERTIONS
     r.sum <- 13;
     r.wide <- 128;
+    r.five <- 32;
 }
