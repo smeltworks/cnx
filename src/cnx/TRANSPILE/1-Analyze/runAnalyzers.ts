@@ -295,7 +295,10 @@ function runAnalyzers(
       // its range, since such a bit-field has no range to judge it by
       label:
         "header bit-fields with no range cnx knows (ADR-034, E0944, E0946)",
-      run: () => new BitFieldRangeAnalyzer(context).analyze(parsed.program),
+      run: () =>
+        new BitFieldRangeAnalyzer(context, positions().positions).analyze(
+          parsed.program,
+        ),
     },
     {
       label: "call analysis (ADR-030: define-before-use)",

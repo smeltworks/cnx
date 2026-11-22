@@ -12,8 +12,10 @@ void main() {
     // NEGATIVE CONTROLS -- each stays silent.
     r.sum <- 7;
     u8 m <- r.mode;
+    WReg fits <- { sum: 7, mode: 1 };
 
     // ASSERTIONS
     r.sized <- 1;
     u8 s <- r.sized;
+    WReg init <- { sum: 7, sized: 1 };
 }
