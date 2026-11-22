@@ -1,4 +1,5 @@
 import type IFunctionDeclarationSyntax from "../types/syntax/IFunctionDeclarationSyntax";
+import type ISyntaxNode from "../types/syntax/ISyntaxNode";
 import type IVariableDeclarationSyntax from "../types/syntax/IVariableDeclarationSyntax";
 import type TMemberDeclaration from "../types/syntax/TMemberDeclaration";
 import type TExpression from "../types/syntax/TExpression";
@@ -67,10 +68,14 @@ class DeclarationParts {
     ];
   }
 
-  static statements(statements: readonly TStatement[]): readonly TSyntaxPart[] {
+  /** Each statement's parts and its nested statements', but none of `omitted`'s own */
+  static statements(
+    statements: readonly TStatement[],
+    omitted: ReadonlySet<ISyntaxNode> = new Set(),
+  ): readonly TSyntaxPart[] {
     return statements.flatMap((statement) => [
-      ...DeclarationParts.statement(statement),
-      ...DeclarationParts.statements(StatementChildren.of(statement)),
+      ...(omitted.has(statement) ? [] : DeclarationParts.statement(statement)),
+      ...DeclarationParts.statements(StatementChildren.of(statement), omitted),
     ]);
   }
 

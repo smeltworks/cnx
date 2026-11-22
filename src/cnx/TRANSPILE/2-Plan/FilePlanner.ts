@@ -58,6 +58,8 @@ import OverflowBehaviorUtils from "../../utils/OverflowBehaviorUtils";
 import CompositeType from "../../utils/CompositeType";
 import type IOperandType from "../../types/IOperandType";
 import type TValueBinding from "../../types/TValueBinding";
+import type ILocalDeclaration from "../../types/ILocalDeclaration";
+import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TOverflowBehavior from "../../types/TOverflowBehavior";
 import type TDeclarationKind from "../../types/TDeclarationKind";
 import type IEmissionFacts from "../../types/IEmissionFacts";
@@ -1179,6 +1181,111 @@ class FilePlanner {
     }
   }
 
+  /**
+   * #1094: each bit-range width that folds to its value, which 2.3 writes
+   * into a precomputed mask rather than reading the width at runtime
+   */
+  private planFoldedWidths(
+    program: IProgramSyntax,
+  ): ReadonlyMap<TExpression, number> {
+    const widths = new Map<TExpression, number>();
+    const nodes = program.members.flatMap(({ declaration }) =>
+      DeclarationParts.of(declaration).flatMap(ExpressionNodes.of),
+    );
+    for (const node of nodes) {
+      if (node.kind !== "postfix") continue;
+      for (const op of node.ops) {
+        if (op.kind !== "subscript" || op.length === null) continue;
+        const width = this.constantOf(op.length);
+        if (width !== undefined) widths.set(op.length, width);
+      }
+    }
+    return widths;
+  }
+
+  /**
+   * #1791: each local const no C expression reads, so it is not declared.
+   * Every use of it is a dimension, which always folds (ADR-023: no VLAs), or
+   * a bit-range width that folds; a declaration left with no reader is what
+   * `-Wunused-variable` rejects, and an unused object is dead code (MISRA C:2012
+   * Rule 2.2). A local with no uses at all keeps its declaration.
+   */
+  private planUnreadLocals(
+    program: IProgramSyntax,
+    foldedWidths: ReadonlyMap<TExpression, number>,
+  ): ReadonlySet<Extract<TStatement, { kind: "variableDeclaration" }>> {
+    const unread = new Set<
+      Extract<TStatement, { kind: "variableDeclaration" }>
+    >();
+    for (const { declaration } of program.members) {
+      if (declaration.kind !== "function") continue;
+      const readAtRuntime = this.localReads(declaration, foldedWidths);
+      for (const statement of StatementNodes.in(declaration)) {
+        if (statement.kind !== "variableDeclaration") continue;
+        const local = this.state.ownLocalDeclaration(statement);
+        if (
+          local?.kind === "local" &&
+          local.constValue !== null &&
+          readAtRuntime.get(local) === false
+        ) {
+          unread.add(statement);
+        }
+      }
+    }
+    return unread;
+  }
+
+  /** Each local a function names, and whether any C expression reads it */
+  private localReads(
+    func: Extract<TMemberDeclaration, { kind: "function" }>,
+    foldedWidths: ReadonlyMap<TExpression, number>,
+  ): ReadonlyMap<ILocalDeclaration, boolean> {
+    const parts = DeclarationParts.of(func);
+    const nodes = parts.flatMap(ExpressionNodes.of);
+    const folded = new Set<TExpression>(
+      parts.flatMap((part) =>
+        part.kind === "type" ? ExpressionNodes.of(part) : [],
+      ),
+    );
+    for (const node of nodes) {
+      const foldedHere = [
+        ...ExpressionNodes.namedTypes(node).flatMap(ExpressionNodes.of),
+        ...(node.kind === "postfix"
+          ? node.ops.flatMap((op) =>
+              op.kind === "subscript" &&
+              op.length !== null &&
+              foldedWidths.has(op.length)
+                ? ExpressionNodes.direct(op.length)
+                : [],
+            )
+          : []),
+      ];
+      for (const inner of foldedHere) folded.add(inner);
+    }
+    const typing = this.state.typingContext();
+    const reads = new Map<ILocalDeclaration, boolean>();
+    const note = (binding: TValueBinding | null, read: boolean): void => {
+      if (binding?.kind !== "local") return;
+      reads.set(
+        binding.declaration,
+        (reads.get(binding.declaration) ?? false) || read,
+      );
+    };
+    for (const node of nodes) {
+      if (node.kind !== "identifier") continue;
+      note(
+        OperandTyper.typeOf(node, typing)?.binding ?? null,
+        !folded.has(node),
+      );
+    }
+    // A `case` label names its const (#2493)
+    for (const label of StatementNodes.caseLabels(func)) {
+      if (label.kind !== "identifier") continue;
+      note(this.state.bindingAt(label.root, label.name, label.nameSpan), true);
+    }
+    return reads;
+  }
+
   private planInlinedConsts(
     program: IProgramSyntax,
     cTypes: Set<string>,
@@ -1368,10 +1475,13 @@ class FilePlanner {
       decidedCTypes,
     );
     const inlinedConsts = this.planInlinedConsts(program, decidedCTypes);
+    const foldedWidths = this.planFoldedWidths(program);
+    const unreadLocals = this.planUnreadLocals(program, foldedWidths);
     const statics = this.planStaticValues(program, valuePositions);
     const unwritten: IUnwrittenSyntax = {
       declarations: new Set([
         ...inlinedConsts,
+        ...unreadLocals,
         ...this.registerInstances(program, decidedCTypes, requirements),
       ]),
       values: new Set(
@@ -1527,6 +1637,8 @@ class FilePlanner {
       selfInclude,
       includeDirectives,
       inlinedConsts,
+      foldedWidths,
+      unreadLocals,
       nullInitialized,
       staticValues: statics.values,
       staticValueNotes: statics.notes,

@@ -27,7 +27,7 @@ class WrittenParts {
           (scope === null || !WrittenParts.headerText(declaration)),
       )
       .flatMap(({ declaration, scope }) =>
-        WrittenParts.inDeclaration(declaration, scope),
+        WrittenParts.inDeclaration(declaration, scope, unwritten),
       );
   }
 
@@ -56,13 +56,24 @@ class WrittenParts {
     );
   }
 
+  /** A function body's local 2.2 decided is not declared (#1791) writes none of its parts */
   private static inDeclaration(
     declaration: TMemberDeclaration,
     scope: string | null,
+    unwritten: IUnwrittenSyntax,
   ): IWrittenPart[] {
-    return DeclarationParts.of(WrittenParts.asSpelled(declaration)).map(
-      (part) => ({ part, scope }),
-    );
+    const spelled = WrittenParts.asSpelled(declaration);
+    const parts =
+      spelled.kind === "function"
+        ? [
+            ...DeclarationParts.signature(spelled),
+            ...DeclarationParts.statements(
+              spelled.body.statements,
+              unwritten.declarations,
+            ),
+          ]
+        : DeclarationParts.of(spelled);
+    return parts.map((part) => ({ part, scope }));
   }
 
   /** `main(string args[])` is written `int main(int argc, char *argv[])`, so 2.3 spells none of its parameters */

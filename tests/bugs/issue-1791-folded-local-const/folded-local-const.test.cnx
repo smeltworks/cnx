@@ -1,0 +1,46 @@
+// test-execution
+// test-no-warnings
+// #1791 (and #1875): a local const whose every use folds to its value -- a
+// bit-range width, an array dimension -- is read by nothing in the C, so its
+// declaration is not emitted. A const that is also read at runtime keeps its
+// declaration: KEEP_W and KEEP_N are the controls.
+
+u32 main() {
+    // Read only as a bit-range width, by a write and by a read
+    u8 W <- 32;
+    mut u32 b <- 0;
+    b[0, W] <- 5;
+    if (b[0, W] != 5) {
+        return 1;
+    }
+
+    // Read only as an array dimension
+    u32 N <- 2;
+    mut u8[N] ok <- [0*];
+    ok[1] <- 7;
+    if (ok[1] != 7) {
+        return 2;
+    }
+
+    // Read as a width and at runtime: its declaration stays
+    u8 KEEP_W <- 8;
+    u32 wide <- 0x1FF;
+    if (wide[0, KEEP_W] != 0xFF) {
+        return 3;
+    }
+    if (KEEP_W != 8) {
+        return 4;
+    }
+
+    // Read as a dimension and at runtime: its declaration stays
+    u32 KEEP_N <- 3;
+    u8[KEEP_N] three <- [1*];
+    if (three[2] != 1) {
+        return 5;
+    }
+    if (KEEP_N != 3) {
+        return 6;
+    }
+
+    return 0;
+}

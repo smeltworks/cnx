@@ -772,7 +772,10 @@ class CodeGenWalker {
           kind: "subscript",
           renderIndexes: () =>
             indexes.map((index) => this.renderExpression(index)),
-          foldWidth: () => this.planner.constantOf(op.length),
+          foldWidth: () =>
+            op.length === null
+              ? undefined
+              : this.filePlan.foldedWidths.get(op.length),
           typedAs,
           step,
           floatBits: this.filePlan.floatBitReads.get(op) ?? null,
@@ -1115,6 +1118,8 @@ class CodeGenWalker {
     switch (statement.kind) {
       case "variableDeclaration":
       case "constructorDeclaration":
+        // #1791: 2.2 found no C expression that reads it
+        if (this.filePlan.unreadLocals.has(statement)) return "";
         return (
           this.nameMoveComments(statement) +
           this.nullPointerNote(statement) +
@@ -3693,8 +3698,8 @@ class CodeGenWalker {
       kind: "subscript",
       renderIndexes: () => indexes.map((index) => this.renderExpression(index)),
       foldWidth: () =>
-        op.kind === "subscript"
-          ? this.planner.constantOf(op.length)
+        op.kind === "subscript" && op.length !== null
+          ? this.filePlan.foldedWidths.get(op.length)
           : undefined,
     };
   }
@@ -3789,6 +3794,7 @@ class CodeGenWalker {
         this.analyzeMemberChainForBitAccess(target, lastStep),
       generateExpression: (expr) => this.renderExpression(expr),
       tryEvaluateConstant: (expr) => this.planner.tryEvaluateConstant(expr),
+      foldedWidth: (expr) => this.filePlan.foldedWidths.get(expr),
       foldWrittenValue: (expr) => this.planner.foldWrittenValue(expr),
       expressionType: (expr) => this.planner.directTypeOf(expr),
       integerExpressionType: (expr) => this.planner.integerTypeOf(expr),

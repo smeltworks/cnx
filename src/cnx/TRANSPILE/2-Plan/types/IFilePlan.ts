@@ -49,6 +49,10 @@ interface IFilePlan {
 
   /** Which private scope consts are inlined, not declared (#282) */
   readonly inlinedConsts: ReadonlySet<TDeclarationSyntax>;
+  /** #1094: each bit-range width written as its folded value */
+  readonly foldedWidths: ReadonlyMap<TExpression, number>;
+  /** #1791: each local const no C expression reads, which is not declared */
+  readonly unreadLocals: ReadonlySet<IVariableDeclarationSyntax>;
   /** ADR-015 / #1610: each uninitialized scalar whose C type is a pointer, at any site: its zero is the null pointer */
   readonly nullInitialized: ReadonlySet<IVariableDeclarationSyntax>;
   /** #1735: each static-storage value written as its folded value, as it is spelled */
