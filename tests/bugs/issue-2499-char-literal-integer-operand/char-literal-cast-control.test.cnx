@@ -1,0 +1,37 @@
+// test-execution
+// test-adr: 024
+// Control for #2499: the spelling E0810's help names compiles and compares
+// byte values -- a hex digit parsed from a string<N> through a u8, with each
+// character literal cast to u8 (ADR-024).
+u8 hexValue(u8 c) {
+    if ((c >= (u8)'0') && (c <= (u8)'9')) {
+        return c - (u8)'0';
+    }
+    if ((c >= (u8)'a') && (c <= (u8)'f')) {
+        return (c - (u8)'a') + 10;
+    }
+    return 255;
+}
+
+u32 main() {
+    string<8> s <- "7c:";
+    u8 hi <- (u8)s[0];
+    u8 lo <- (u8)s[1];
+    u8 sep <- (u8)s[2];
+    u8 hiValue <- hexValue(hi);
+    u8 loValue <- hexValue(lo);
+    u8 badValue <- hexValue((u8)'g');
+    if (hiValue != 7) {
+        return 1;
+    }
+    if (loValue != 12) {
+        return 2;
+    }
+    if (sep != (u8)':') {
+        return 3;
+    }
+    if (badValue != 255) {
+        return 4;
+    }
+    return 0;
+}

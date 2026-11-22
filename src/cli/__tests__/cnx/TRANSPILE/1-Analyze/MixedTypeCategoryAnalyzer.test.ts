@@ -637,6 +637,46 @@ describe("MixedTypeCategoryAnalyzer", () => {
       ).toHaveLength(0);
     });
 
+    // #2499: a character literal is not a u8, so the help names the cast
+    // that makes it one, wherever the character and the integer meet
+    it.each([
+      ["an unsigned compared with a character literal", "bool r <- ch = 'A';"],
+      [
+        "a character literal compared with a signed",
+        "i32 s <- 1; bool r <- 'A' < s;",
+      ],
+      [
+        "a string<N> byte compared with an unsigned",
+        'string<4> t <- "ab"; bool r <- t[0] = ch;',
+      ],
+      ["a character subtracted in a compound", "a -<- 'A';"],
+      ["a conditional's character arm", "u32 r <- (b = true) ? a : 'A';"],
+      ["an exempt pair beside an integer", "u32 r <- (a + 'A') * a;"],
+    ])("helps %s with a cast of the character", (_label, body) => {
+      const errors = analyze(`${ENUMS} void main() { ${LOCALS} ${body} }`);
+      expect(errors.map((e) => e.helpText)).toEqual([
+        "MISRA C:2012 Rule 10.4: both operands must share an essential type category. Cast the character to the integer operand's type, e.g. (u8)'A' (ADR-024).",
+      ]);
+    });
+
+    it("helps a character compound target, which cannot be cast, by writing it out", () => {
+      const errors = analyze(
+        `${ENUMS} void main() { ${LOCALS} mut string<4> t <- "ab"; t[0] -<- ch; }`,
+      );
+      expect(errors.map((e) => e.helpText)).toEqual([
+        "MISRA C:2012 Rule 10.4: both operands must share an essential type category. The target cannot be converted: write the assignment out with the character cast, e.g. s[0] <- (u8)s[0] - n (ADR-024).",
+      ]);
+    });
+
+    it("keeps the general help for a character beside a Boolean", () => {
+      const errors = analyze(
+        `${ENUMS} void main() { ${LOCALS} bool r <- (b = true) ? b : 'A'; }`,
+      );
+      expect(errors.map((e) => e.helpText)).toEqual([
+        "MISRA C:2012 Rule 10.4: both operands must share an essential type category. Convert one operand explicitly, e.g. with a cast (ADR-024).",
+      ]);
+    });
+
     it("rejects an unsigned plus a C header enum, named by its typedef", () => {
       const symbolTable = new SymbolTable();
       const at = {

@@ -1,0 +1,30 @@
+15:15 error[E0810]: Binary operator combines operands of different essential type categories (unsigned and character)
+       help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Cast the character to the integer operand's type, e.g. (u8)'A' (ADR-024).
+38:20 error[E0810]: Binary operator combines operands of different essential type categories (unsigned and character)
+       help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Cast the character to the integer operand's type, e.g. (u8)'A' (ADR-024).
+39:19 error[E0810]: Binary operator combines operands of different essential type categories (unsigned and character)
+       help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Cast the character to the integer operand's type, e.g. (u8)'A' (ADR-024).
+40:19 error[E0810]: Binary operator combines operands of different essential type categories (unsigned and character)
+       help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Cast the character to the integer operand's type, e.g. (u8)'A' (ADR-024).
+41:20 error[E0810]: Binary operator combines operands of different essential type categories (unsigned and character)
+       help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Cast the character to the integer operand's type, e.g. (u8)'A' (ADR-024).
+42:20 error[E0810]: Binary operator combines operands of different essential type categories (unsigned and character)
+       help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Cast the character to the integer operand's type, e.g. (u8)'A' (ADR-024).
+43:22 error[E0810]: Binary operator combines operands of different essential type categories (character and unsigned)
+       help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Cast the character to the integer operand's type, e.g. (u8)'A' (ADR-024).
+44:24 error[E0810]: Binary operator combines operands of different essential type categories (unsigned and character)
+       help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Cast the character to the integer operand's type, e.g. (u8)'A' (ADR-024).
+45:19 error[E0810]: Binary operator combines operands of different essential type categories (unsigned and character)
+       help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Cast the character to the integer operand's type, e.g. (u8)'A' (ADR-024).
+46:19 error[E0810]: Binary operator combines operands of different essential type categories (unsigned and character)
+       help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Cast the character to the integer operand's type, e.g. (u8)'A' (ADR-024).
+47:20 error[E0810]: Binary operator combines operands of different essential type categories (signed and character)
+       help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Cast the character to the integer operand's type, e.g. (u8)'A' (ADR-024).
+48:18 error[E0810]: Binary operator combines operands of different essential type categories (unsigned and character)
+       help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Cast the character to the integer operand's type, e.g. (u8)'A' (ADR-024).
+49:23 error[E0810]: Binary operator combines operands of different essential type categories (character and unsigned)
+       help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Cast the character to the integer operand's type, e.g. (u8)'A' (ADR-024).
+50:28 error[E0810]: Conditional operator's value arms have different essential type categories (unsigned and character)
+       help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Cast the character to the integer operand's type, e.g. (u8)'A' (ADR-024).
+52:13 error[E0810]: Compound assignment combines a target and a value of different essential type categories (character and unsigned)
+       help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. The target cannot be converted: write the assignment out with the character cast, e.g. s[0] <- (u8)s[0] - n (ADR-024).

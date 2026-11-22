@@ -437,6 +437,11 @@ class MixedTypeCategoryAnalyzer {
       (left === "floating" && integer(right)) ||
       (right === "floating" && integer(left));
     const signedness = integer(left) && integer(right);
+    // A character literal is essentially character, not a u8 (ADR-024), so
+    // `c = ':'` with a u8 c is the mix, and the cast goes on the character
+    const character =
+      (left === "character" && integer(right)) ||
+      (right === "character" && integer(left));
     let pair = `${MixedTypeCategoryAnalyzer.label(left)} and ${MixedTypeCategoryAnalyzer.label(right)}`;
     if (floating) pair = "integer and floating";
     if (signedness) pair = "signed and unsigned";
@@ -450,6 +455,13 @@ class MixedTypeCategoryAnalyzer {
         what === "compound" && integer(left)
           ? `${rule}The target cannot be converted: write the assignment out with explicit conversions, e.g. x <- (u32)((f32)x * k) (ADR-024).`
           : `${rule}Convert the integer operand with an explicit cast, e.g. (f32)value (ADR-024).`;
+    }
+    if (character) {
+      // ...unless it is a compound's target, which cannot be cast
+      helpText =
+        what === "compound" && left === "character"
+          ? `${rule}The target cannot be converted: write the assignment out with the character cast, e.g. s[0] <- (u8)s[0] - n (ADR-024).`
+          : `${rule}Cast the character to the integer operand's type, e.g. (u8)'A' (ADR-024).`;
     }
     if (signedness && !castOnly) {
       helpText = `${rule}Reinterpret one operand's bits to match the other with bit indexing, e.g. value[0, 32] (ADR-007/ADR-024).`;

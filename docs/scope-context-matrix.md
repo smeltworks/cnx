@@ -671,7 +671,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-17 linked fixtures with no derivable context:
+18 linked fixtures with no derivable context:
 
 - `bugs/issue-1268-qualified-zero-const/float-cast-bit-width.test.cnx`
 - `bugs/issue-1268-qualified-zero-const/float-cast-const-dimension.test.cnx`
@@ -690,6 +690,7 @@ cell is declared by the ADR that owns it.
 - `bugs/issue-1688-float-macro/unreadable-macro-cast.test.cnx`
 - `bugs/issue-1806-memory-length-u32/memory-length-imported-direct-narrowing-error.test.cnx`
 - `bugs/issue-1806-memory-length-u32/memory-length-imported-transitive-narrowing-error.test.cnx`
+- `bugs/issue-2499-char-literal-integer-operand/char-literal-cast-control.test.cnx`
 
 ## ADR-024 E0807
 
