@@ -1119,6 +1119,64 @@ extern Frame frame;`,
         subscriptOf("u32 w <- 16;\nbool r <- w[4];", new SymbolTable()),
       ).toBe("bit_range");
     });
+
+    // #2497: a cnx declaration of a header type is subscripted as the
+    // header's own value of that type is. A pointer typedef is one the typer
+    // cannot read, so its subscript is an element, as `ptr[1]` above is.
+    describe("on a cnx declaration of a header type (#2497)", () => {
+      const typedefs = header(`#include <stdint.h>
+typedef const uint8_t *bytes_t;
+typedef bytes_t bytes2_t;
+typedef uint32_t reg_t;
+typedef enum { MODE_A, MODE_B } mode_t;`);
+
+      it.each([
+        [
+          "a pointer typedef's local is elements",
+          "bytes_t p;\nu8 r <- p[1];",
+          "array_element",
+        ],
+        [
+          "a typedef of a pointer typedef is elements",
+          "bytes2_t p;\nu8 r <- p[1];",
+          "array_element",
+        ],
+        [
+          "an integer typedef's local is bits (ADR-024)",
+          "reg_t w <- 5;\nbool r <- w[4];",
+          "bit_range",
+        ],
+        [
+          "an enum typedef's local keeps its bit",
+          "mode_t m <- MODE_A;\nbool r <- m[0];",
+          "bit_range",
+        ],
+      ])("%s", (_why, body, expected) => {
+        expect(subscriptOf(body, typedefs)).toBe(expected);
+      });
+
+      it("is elements on a cnx struct's field and a parameter", () => {
+        const source = `struct Rec {
+    bytes_t data;
+}
+void f(Rec rec, bytes_t p) {
+    u8 r <- rec.data[1];
+    u8 q <- p[2];
+}`;
+        for (const name of ["r", "q"]) {
+          const { node, ctx } = initializerOf(source, name, typedefs);
+          const postfix = ExpressionUnwrapper.getPostfixExpression(node);
+          expect(postfix).not.toBeNull();
+          const chain = OperandTyper.chainOf(
+            SyntaxLowering.expressionNode(postfix!),
+            ctx,
+          );
+          expect(chain.steps.at(-1)?.subscript).toBe("array_element");
+          // The typer cannot see into the pointee, as for a header `T*`
+          expect(chain.steps.at(-1)?.after).toBeNull();
+        }
+      });
+    });
   });
 
   it("consumes a this. root's first member", () => {

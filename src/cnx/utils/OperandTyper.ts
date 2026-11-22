@@ -1257,12 +1257,7 @@ class OperandTyper {
     if (
       type.kind === "external" ||
       (OperandTyper.isNamedKind(type) &&
-        !OperandTyper.declaresNamedType(type.name, ctx) &&
-        ForeignTypeFacts.isForeignType(
-          type.name,
-          ctx.symbolTable,
-          OperandTyper.target(ctx),
-        ))
+        OperandTyper.namesHeaderType(type.name, ctx))
     ) {
       const foreign = ForeignTypeFacts.operandType(
         type.name,
@@ -1295,6 +1290,21 @@ class OperandTyper {
       default:
         return base;
     }
+  }
+
+  /**
+   * Whether a cnx declaration's type name is a header's type: no cnx struct,
+   * enum or bitmap this file sees, and a C type or a header's
+   */
+  private static namesHeaderType(name: string, ctx: ITypingContext): boolean {
+    return (
+      !OperandTyper.declaresNamedType(name, ctx) &&
+      ForeignTypeFacts.isForeignType(
+        name,
+        ctx.symbolTable,
+        OperandTyper.target(ctx),
+      )
+    );
   }
 
   private static isNamedKind(
@@ -2113,6 +2123,7 @@ class OperandTyper {
    */
   private static subscriptedShape(
     t: IOperandType | null,
+    ctx: ITypingContext,
   ): { isArray: boolean; isString: boolean } | null {
     if (t === null) return null;
     const isArray = t.dimensions.length > 0;
@@ -2120,13 +2131,40 @@ class OperandTyper {
     // `double`'s subscript was read as an element) -- is bit-indexed as a
     // cnx one is (ADR-007); anything else there is untyped
     if (
-      t.form.kind === "foreign" &&
       !isArray &&
-      !OperandTyper.hasWritableBits(t)
+      !OperandTyper.hasWritableBits(t) &&
+      OperandTyper.isHeaderValue(t, ctx)
     ) {
       return null;
     }
     return { isArray, isString: OperandTyper.isString(t) };
+  }
+
+  /**
+   * Whether `subscriptedShape` reads a value as a header's: one a header
+   * declares, or a cnx declaration of a header type the typer cannot read.
+   *
+   * #2497: a C pointer typedef (`typedef const uint8_t *bytes_t;`) is such a
+   * type -- `ForeignTypeFacts.operandType`'s typedef walk stops at the `*`,
+   * so `fromType` gives a cnx field, parameter or variable of it 1.3's
+   * guessed kind and the `declared` form. Read by form alone, its subscript
+   * was a bit of a pointer, `((p >> i) & 0x1U)`, where a header's `T*` field
+   * or variable is an element (ADR-024: a pointer is not an integer operand).
+   * A header type the typer does read -- an integer, an enum -- keeps the
+   * facts `fromType` gave it.
+   */
+  private static isHeaderValue(t: IOperandType, ctx: ITypingContext): boolean {
+    if (t.form.kind === "foreign") return true;
+    return (
+      t.form.kind === "declared" &&
+      t.typeName !== null &&
+      OperandTyper.namesHeaderType(t.typeName, ctx) &&
+      ForeignTypeFacts.operandType(
+        t.typeName,
+        ctx.symbolTable,
+        OperandTyper.target(ctx),
+      ) === null
+    );
   }
 
   private static subscriptOf(
@@ -2138,7 +2176,7 @@ class OperandTyper {
     const length = OperandTyper.foldedWidth(op.length, ctx);
     const t = current.k === "value" ? current.t : null;
     const subscript = SubscriptClassifier.classify({
-      typeInfo: OperandTyper.subscriptedShape(t),
+      typeInfo: OperandTyper.subscriptedShape(t, ctx),
       length,
       isRegisterAccess:
         current.k === "value" && current.registerMember !== null,

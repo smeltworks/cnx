@@ -1,0 +1,84 @@
+// test-execution
+// Issue #2497: a subscript on a cnx declaration whose type is a C pointer
+// typedef is an element access. A cnx struct field, a parameter, a global and
+// a local of `CsiBytes` were bit-indexed, `((r->data >> i) & 0x1U)`, which C
+// rejects; a header struct's `CsiBytes` field was already an element.
+#include "csi-bytes.h"
+
+struct Rec {
+    CsiBytes data;
+    CsiMutBytes out;
+}
+
+mut CsiBytes gBytes;
+
+u8 fromField(Rec r, u32 i) {
+    return r.data[i];
+}
+
+u8 fromParam(CsiBytes p, u32 i) {
+    return p[i];
+}
+
+u8 fromAlias(CsiBytesAlias p, u32 i) {
+    return p[i];
+}
+
+u8 fromGlobal(u32 i) {
+    return gBytes[i];
+}
+
+u8 fromHeaderStruct(CsiRecord h, u32 i) {
+    return h.data[i] + h.raw[i];
+}
+
+void writeField(mut Rec r, u32 i, u8 v) {
+    r.out[i] <- v;
+    r.out[i] +<- 1;
+}
+
+u32 main() {
+    mut Rec rec <- { data: csi_frame(), out: csi_scratch() };
+    u8 field <- fromField(rec, 1);
+    if (field != 0x21) {
+        return 1;
+    }
+    u8 param <- fromParam(csi_frame(), 2);
+    if (param != 0x32) {
+        return 2;
+    }
+    u8 alias <- fromAlias(csi_frame(), 3);
+    if (alias != 0x43) {
+        return 3;
+    }
+    gBytes <- csi_frame();
+    u8 fromG <- fromGlobal(0);
+    if (fromG != 0x10) {
+        return 4;
+    }
+    CsiBytes local <- csi_frame();
+    u8 viaLocal <- local[3];
+    if (viaLocal != 0x43) {
+        return 5;
+    }
+    CsiRecord hrec <- csi_record();
+    u8 header <- fromHeaderStruct(hrec, 1);
+    if (header != 0x42) {
+        return 6;
+    }
+    writeField(rec, 2, 0x55);
+    CsiMutBytes scratch <- csi_scratch();
+    if (scratch[2] != 0x56) {
+        return 7;
+    }
+    // Control: an integer typedef and a cnx integer keep their bit index
+    csi_reg_t reg <- 0x4;
+    if (reg[2] != true) {
+        return 8;
+    }
+    u32 word <- 0x8;
+    if (word[3] != true) {
+        return 9;
+    }
+    return 0;
+}
