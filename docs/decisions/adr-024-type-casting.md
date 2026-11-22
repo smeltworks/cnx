@@ -808,7 +808,7 @@ target through a declaration, an assignment, or a cast.
 | scope method       | exercised through chain | warn     |
 | for header         | exercised through chain | warn     |
 
-warn: the fixture assigns across categories in a same-file top-level function; every other context reaches the same `IntegerConversionAnalyzer` check at the same conversion positions, so it is the same decision.
+warn: the fixture assigns across categories in a same-file top-level function; every other context reaches the same category check at the same conversion positions, so it is the same decision.
 
 A conversion happens wherever a value meets a typed target, so it reaches an
 initializer as well as a function body -- all four same-file contexts. The two
