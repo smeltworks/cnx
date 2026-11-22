@@ -45,6 +45,7 @@ function createInitialStructState(): IStructSymbolState {
     typedefToTag: new Map(),
     structTagsWithBodies: new Set(),
     pointerTypedefs: new Set(),
+    undefinedMacros: new Set(),
     structLayouts: new Map(),
   };
 }
@@ -928,6 +929,7 @@ class SymbolTable implements IResolvedSymbols {
       structTagsWithBodies: Array.from(this.structState.structTagsWithBodies),
       pointerTypedefs: Array.from(this.structState.pointerTypedefs),
       structLayouts: Array.from(this.structState.structLayouts),
+      undefinedMacros: Array.from(this.structState.undefinedMacros),
     };
   }
 
@@ -962,6 +964,7 @@ class SymbolTable implements IResolvedSymbols {
       structLayouts: new Map(
         state.structLayouts.filter(SymbolTable.isLayoutEntry),
       ),
+      undefinedMacros: new Set(state.undefinedMacros),
     };
 
     this.structState = produce(this.structState, (draft) => {
@@ -1030,6 +1033,19 @@ class SymbolTable implements IResolvedSymbols {
   /**
    * Issue #957/#1164: record a typedef of a pointer to a struct.
    */
+  /** #2494 review: macros a header `#undef`s */
+  markUndefinedMacros(names: readonly string[]): void {
+    if (names.length === 0) return;
+    this.structState = produce(this.structState, (draft) => {
+      for (const name of names) draft.undefinedMacros.add(name);
+    });
+  }
+
+  /** #2494 review: macros some header `#undef`s */
+  undefinedMacros(): ReadonlySet<string> {
+    return this.structState.undefinedMacros;
+  }
+
   markPointerTypedef(typeName: string): void {
     this.structState = produce(this.structState, (draft) => {
       draft.pointerTypedefs.add(typeName);

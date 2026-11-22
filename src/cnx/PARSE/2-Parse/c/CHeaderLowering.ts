@@ -39,7 +39,9 @@ interface IQualifiedSpecifiers {
 }
 
 class CHeaderLowering {
-  static header(tree: CompilationUnitContext): ICHeaderSyntax {
+  static header(
+    tree: CompilationUnitContext,
+  ): Omit<ICHeaderSyntax, "undefinedMacros"> {
     const declarations: TCExternalDeclarationSyntax[] = [];
     for (const externalDeclaration of tree
       .translationUnit()

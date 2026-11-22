@@ -41,7 +41,9 @@ import LiteralUtils from "../../../utils/LiteralUtils";
 import ParserUtils from "../../../utils/ParserUtils";
 
 class CppHeaderLowering {
-  static header(tree: TranslationUnitContext): ICppHeaderSyntax {
+  static header(
+    tree: TranslationUnitContext,
+  ): Omit<ICppHeaderSyntax, "undefinedMacros"> {
     return {
       declarations: CppHeaderLowering.declarations(
         tree.declarationseq()?.declaration() ?? [],
