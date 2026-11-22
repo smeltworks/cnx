@@ -28,7 +28,6 @@ static inline uint32_t cnx_clamp_add_u32(uint32_t a, uint64_t b) {
 // The const width now folds to a precomputed mask byte-identical to the literal
 // form b[0, 24] (was a runtime `1U << WIDTH` before the #1094 fix).
 int main(void) {
-    const uint8_t WIDTH = 24U;
     uint8_t buf[8] = {};
     const uint8_t a = 0U;
     const uint32_t b = 0x12345678U;
