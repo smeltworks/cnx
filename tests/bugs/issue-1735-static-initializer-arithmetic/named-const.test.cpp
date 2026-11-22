@@ -35,7 +35,7 @@ static inline uint32_t cnx_clamp_add_u32(uint32_t a, uint64_t b) {
 
 extern const uint8_t CH = static_cast<uint8_t>('A');
 
-extern const uint8_t first = (uint8_t)'A';
+extern const uint8_t first = static_cast<uint8_t>('A');
 
 extern const uint32_t FROM_MACRO = STATIC_LIMIT;
 
@@ -47,13 +47,13 @@ const uint32_t S__LIMIT = STATIC_LIMIT;
 const uint32_t S__COUNT = 3U;
 const EColor S__COLOR = EColor__GREEN;
 
-extern const uint8_t scoped = (uint8_t)'B';
+extern const uint8_t scoped = static_cast<uint8_t>('B');
 
 extern const uint32_t scopedMacro = (STATIC_LIMIT);
 
 extern const uint32_t scopedSum = 4U;
 
-extern const uint8_t provided = (uint8_t)'C';
+extern const uint8_t provided = static_cast<uint8_t>('C');
 
 extern const uint32_t A = 4U;
 

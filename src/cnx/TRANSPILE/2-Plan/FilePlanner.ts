@@ -1275,6 +1275,7 @@ class FilePlanner {
           text: StaticInitializers.cText(value, program, sourceFile),
           typeName: value.typeName,
           verbatim: true,
+          casts: [],
         },
         narrowing: null,
       };
@@ -1339,6 +1340,9 @@ class FilePlanner {
       inlined.add(declaration);
       const narrowing = PrivateConstSpelling.narrowingOf(constants, cName);
       if (narrowing?.kind === "cast") cTypes.add(narrowing.cType);
+      PrivateConstSpelling.spelling(constants, cName)?.casts.forEach((cType) =>
+        cTypes.add(cType),
+      );
     }
   }
 

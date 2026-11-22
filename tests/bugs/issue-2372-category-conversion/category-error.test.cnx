@@ -1,11 +1,22 @@
 // test-error
+// test-adr: 024
 // #2372, #2492: MISRA C:2012 Rule 10.3 -- a value is not assigned to an
 // object of another essential type category (ADR-024). An integer takes no
 // bool, character or enum value, and a bool takes no number, at every
 // position a conversion is checked.
-enum Color { RED, GREEN }
-bitmap8 Flags { Mode[3], Enable, Reserved[4] }
-struct Pair { u8 lo; bool on; }
+enum Color {
+    RED,
+    GREEN
+}
+bitmap8 Flags {
+    Mode[3],
+    Enable,
+    Reserved[4]
+}
+struct Pair {
+    u8 lo;
+    bool on;
+}
 
 mut u8 a;
 mut bool b;
@@ -14,7 +25,7 @@ mut Flags f <- 0;
 bool ON <- true;
 u8 n <- 3;
 
-void take(u8 v) { }
+void take(u8 v) {}
 
 u8 give() {
     return 'r';

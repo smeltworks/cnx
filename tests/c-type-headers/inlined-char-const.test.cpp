@@ -12,10 +12,9 @@
 // (MISRA 10.3), so the file needs <stdint.h> though it writes no u8 itself.
 // 2.2 plans that cast before 2.3 writes it (#1991).
 /* Scope: Keys */
-static const uint8_t Keys__A = static_cast<uint8_t>('a');
 
 bool Keys__isA(void) {
-    return Keys__A == 97;
+    return static_cast<uint8_t>('a') == 97;
 }
 
 int main(void) {

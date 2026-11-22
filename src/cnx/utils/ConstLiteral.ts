@@ -42,8 +42,8 @@ class ConstLiteral {
     );
   }
 
-  /** How C writes the answer */
-  private static spell(literal: TConstLiteral): string {
+  /** How C writes the answer, a char's casts aside (`casts`) */
+  static spell(literal: TConstLiteral): string {
     switch (literal.kind) {
       case "member":
         return literal.cName;
@@ -132,8 +132,8 @@ class ConstLiteral {
   ): TConstLiteral | null {
     const expr = symbol.initialValueExpr!;
     if (settled?.kind === "notConstant" && settled.reason === "character") {
-      const text = ConstLiteral.characterText(expr);
-      if (text !== null) return { kind: "char", text };
+      const character = ConstLiteral.character(expr);
+      if (character !== null) return { kind: "char", ...character };
     }
     if (
       settled?.kind === "foreign" &&
@@ -147,21 +147,25 @@ class ConstLiteral {
   }
 
   /**
-   * A char literal as C writes it, cast as written: `(u8)'A'` is C's
-   * `(uint8_t)'A'`, a constant expression of the value the author chose
-   * (ADR-024, #2372). cnx does not fold the character, whose value is the
-   * execution character set's.
+   * A char literal and the casts written on it: `(u8)'A'` is `'A'` cast to
+   * `uint8_t`, a constant expression of the value the author chose (ADR-024,
+   * #2372). cnx does not fold the character, whose value is the execution
+   * character set's.
    */
-  private static characterText(expr: TConstExpr): string | null {
+  private static character(
+    expr: TConstExpr,
+  ): { text: string; casts: readonly string[] } | null {
     if (expr.kind === "other") {
-      return expr.what === "character" ? expr.spelling : null;
+      return expr.what === "character"
+        ? { text: expr.spelling, casts: [] }
+        : null;
     }
     if (expr.kind !== "cast") return null;
     const cType = CNX_TO_C_TYPE_MAP[expr.typeName];
-    const operand = ConstLiteral.characterText(expr.operand);
+    const operand = ConstLiteral.character(expr.operand);
     return cType === undefined || operand === null
       ? null
-      : `(${cType})${operand}`;
+      : { text: operand.text, casts: [cType, ...operand.casts] };
   }
 
   /** A literal initializer keeps its notation (`0xAB`); the rest are digits */

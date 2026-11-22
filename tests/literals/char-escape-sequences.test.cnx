@@ -50,7 +50,15 @@ u32 main() {
     // ===== Escape sequences in arrays =====
 
     // Test escape sequences as array elements
-    u8[7] escapes <- [(u8)'\n', (u8)'\t', (u8)'\r', (u8)'\0', (u8)'\\', (u8)'\'', (u8)'\"'];
+    u8[7] escapes <- [
+        (u8)'\n',
+        (u8)'\t',
+        (u8)'\r',
+        (u8)'\0',
+        (u8)'\\',
+        (u8)'\'',
+        (u8)'\"'
+    ];
     if (escapes[0] != 10) {
         return 8; // newline
     }

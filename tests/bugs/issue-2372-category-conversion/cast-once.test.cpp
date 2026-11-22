@@ -13,7 +13,7 @@
 // argument under a cast is still narrowed to its own parameter.
 extern const uint8_t CH = static_cast<uint8_t>('A');
 
-extern const uint8_t first = (uint8_t)'A';
+extern const uint8_t first = static_cast<uint8_t>('A');
 
 uint8_t take(const uint8_t v) {
     return v;

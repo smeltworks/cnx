@@ -778,6 +778,38 @@ target through a declaration, an assignment, or a cast.
 | scope method       | exercised through chain | warn     |
 | for header         | exercised through chain | warn     |
 
+<!-- MATRIX-SEVERITY code: E0945 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | error    |
+| scope method       | same file               | warn     |
+| global variable    | same file               | warn     |
+| scope member       | same file               | warn     |
+| top-level function | imported direct         | warn     |
+| scope method       | imported direct         | warn     |
+| global variable    | imported direct         | warn     |
+| scope member       | imported direct         | warn     |
+| top-level function | imported transitive     | warn     |
+| scope method       | imported transitive     | warn     |
+| global variable    | imported transitive     | warn     |
+| scope member       | imported transitive     | warn     |
+| for header         | same file               | warn     |
+| for header         | imported direct         | warn     |
+| for header         | imported transitive     | warn     |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | warn     |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | warn     |
+
+warn: the fixture assigns across categories in a same-file top-level function; every other context reaches the same `IntegerConversionAnalyzer` check at the same conversion positions, so it is the same decision.
+
 A conversion happens wherever a value meets a typed target, so it reaches an
 initializer as well as a function body -- all four same-file contexts. The two
 scope contexts are where the rule had been SILENT: `u8 narrow <- this.wide;`
