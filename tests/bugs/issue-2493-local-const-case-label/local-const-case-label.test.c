@@ -15,7 +15,7 @@ int main(void) {
     const uint8_t s = 1U;
     uint8_t r = 0U;
     switch (s) {
-        case REAL: {
+        case 1U: {
             r = 1U;
             break;
         }
@@ -30,7 +30,7 @@ int main(void) {
     const int16_t KEEP = -3;
     const int16_t t = -3;
     switch (t) {
-        case KEEP: {
+        case (-3): {
             r = 3U;
             break;
         }
