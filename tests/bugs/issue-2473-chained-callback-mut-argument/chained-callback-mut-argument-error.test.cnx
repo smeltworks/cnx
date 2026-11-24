@@ -1,0 +1,26 @@
+// test-error
+// Tests: each call in a chain is checked against its own callee's mut parameters (#2473)
+#pragma target cortex-m7
+
+u32 bump(mut u32 n) {
+    n <- n + 1;
+    return n;
+}
+
+struct Ops {
+    bump op;
+}
+
+volatile mut u32 flag <- 0;
+u32 rdonly <- 3;
+
+Ops make() {
+    Ops o <- {op: bump};
+    return o;
+}
+
+void main() {
+    u32 a <- make().op(flag);
+    u32 b <- make().op(rdonly);
+    u32 c <- make().op(5);
+}

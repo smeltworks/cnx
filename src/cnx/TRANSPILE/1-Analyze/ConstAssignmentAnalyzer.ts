@@ -220,23 +220,43 @@ class ConstAssignmentCheck {
    */
   public checkExpression(expr: TExpression): void {
     if (expr.kind !== "postfix") return;
-    const call = expr.ops.find((op) => op.kind === "call");
-    if (call?.kind !== "call") return;
+    const firstCall = expr.ops.findIndex((op) => op.kind === "call");
+    if (firstCall < 0) return;
     this.checkSafeDivisionOutput(expr);
     this.checkMethodReceiver(expr);
-    const cCallee = CCallee.of(expr, this.context);
-    if (cCallee !== null) {
-      // Its read-only arguments are E0900's too, which CPointerArgumentAnalyzer reports
-      this.noteCPointerWrites(cCallee);
-      return;
-    }
     const scopePath = OperandTyper.scopePathAt(expr.span, this.context);
-    const callee = FunctionReference.ofCall(expr, scopePath, this.context);
+    // Each call in a chain has its own callee (`make().op(x)`, #2473)
+    expr.ops.forEach((op, callAt) => {
+      if (op.kind !== "call") return;
+      if (callAt === firstCall) {
+        const cCallee = CCallee.of(expr, this.context);
+        if (cCallee !== null) {
+          // Its read-only arguments are E0900's too, which CPointerArgumentAnalyzer reports
+          this.noteCPointerWrites(cCallee);
+          return;
+        }
+      }
+      this.checkCallArguments(expr, callAt, op.arguments, scopePath);
+    });
+  }
+
+  private checkCallArguments(
+    expr: TExpressionOf<"postfix">,
+    callAt: number,
+    args: readonly TExpression[],
+    scopePath: string,
+  ): void {
+    const callee = FunctionReference.ofCall(
+      expr,
+      scopePath,
+      this.context,
+      callAt,
+    );
     if (callee === null) {
       // A function no header the transpiler read declares may write any
       // argument, so none of
       // their `mut`s is unused (Decision 6). The C compiler checks the rest.
-      for (const arg of call.arguments) {
+      for (const arg of args) {
         this.noteWrite(
           WrittenBinding.ofExpression(arg, this.context)?.binding ?? null,
         );
@@ -244,11 +264,13 @@ class ConstAssignmentCheck {
       return;
     }
     if (callee.sourceLanguage !== ESourceLanguage.Cnx) return;
-    const calledAs =
-      FunctionReference.ofCallChain(expr, scopePath, this.context) === null
-        ? ConstAssignmentCheck.calleeAsWritten(expr)
-        : callee.name;
-    call.arguments.forEach((arg, index) => {
+    const isNamed =
+      callAt === expr.ops.findIndex((op) => op.kind === "call") &&
+      FunctionReference.ofCallChain(expr, scopePath, this.context) !== null;
+    const calledAs = isNamed
+      ? callee.name
+      : ConstAssignmentCheck.calleeAsWritten(expr, callAt);
+    args.forEach((arg, index) => {
       const param = callee.parameters[index];
       if (param === undefined || param.isConst) return;
       const target = WrittenBinding.ofExpression(arg, this.context);
@@ -359,8 +381,10 @@ class ConstAssignmentCheck {
   }
 
   /** A call through a value, as written: `h.cb`, not the callback's type */
-  private static calleeAsWritten(chain: TExpressionOf<"postfix">): string {
-    const callAt = chain.ops.findIndex((op) => op.kind === "call");
+  private static calleeAsWritten(
+    chain: TExpressionOf<"postfix">,
+    callAt: number,
+  ): string {
     return [chain.primary, ...chain.ops.slice(0, callAt)]
       .map((node) => node.written)
       .join("");

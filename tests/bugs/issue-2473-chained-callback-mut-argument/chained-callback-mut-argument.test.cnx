@@ -1,0 +1,28 @@
+// test-execution
+// Tests: a mut variable passed through a chained callback call is written (#2473)
+
+u32 bump(mut u32 n) {
+    n <- n + 1;
+    return n;
+}
+
+struct Ops {
+    bump op;
+}
+
+Ops make() {
+    Ops o <- {op: bump};
+    return o;
+}
+
+u32 main() {
+    mut u32 v <- 4;
+    u32 r <- make().op(v);
+    if (v != 5) {
+        return 1;
+    }
+    if (r != 5) {
+        return 2;
+    }
+    return 0;
+}
