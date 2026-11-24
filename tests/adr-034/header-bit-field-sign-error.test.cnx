@@ -32,4 +32,5 @@ void main() {
     u8 bits <- r.fixed[0, 2];
     global.r.pi <- 1;
     r.computed <- 1;
+    SReg init <- { si: 1, pi: 1 };
 }

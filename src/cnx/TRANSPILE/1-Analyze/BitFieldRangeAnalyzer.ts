@@ -16,7 +16,14 @@
  */
 import BindingSite from "../../utils/BindingSite";
 import ExpressionNodes from "../../utils/ExpressionNodes";
+import ForeignTypeFacts from "../../utils/ForeignTypeFacts";
 import OperandTyper from "../../utils/OperandTyper";
+import StructInitializerType from "./helpers/StructInitializerType";
+import ValuePositions from "./helpers/ValuePositions";
+import type IOperandType from "../../types/IOperandType";
+import type ISourceSite from "../../types/ISourceSite";
+import type ISourceSpan from "../../types/ISourceSpan";
+import type IValuePosition from "../../types/IValuePosition";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import type IAnalysisContext from "./types/IAnalysisContext";
@@ -28,38 +35,97 @@ const WIDTH_HELP =
   "cnx judges what fits a bit-field by its width, and reads a width written as integer literals, arithmetic and bitwise operators, parentheses and macros of them. Write the width as one in its header (ADR-034).";
 
 class BitFieldRangeAnalyzer {
-  constructor(private readonly context: IAnalysisContext) {}
+  constructor(
+    private readonly context: IAnalysisContext,
+    private readonly positions: ReadonlyMap<TExpression, IValuePosition>,
+  ) {}
 
-  /** Every chain, read or written */
+  /** Every chain, read or written, and every `{ field: value }` write */
   public analyze(program: IProgramSyntax): IBitFieldRangeError[] {
     return ExpressionNodes.ofProgram(program).flatMap((expr) =>
-      this.check(expr),
+      expr.kind === "structInitializer"
+        ? this.checkInitializer(expr)
+        : this.check(expr),
     );
   }
 
   private check(chain: TExpression): IBitFieldRangeError[] {
     if (chain.kind !== "postfix") return [];
     const steps = OperandTyper.chainOf(chain, this.context).steps;
-    const index = steps.findIndex(
-      (step) =>
-        step.after?.signChosenByCompiler === true ||
-        step.after?.bitWidthUnread === true,
+    const index = steps.findIndex((step) =>
+      BitFieldRangeAnalyzer.hasNoRange(step.after),
     );
     if (index < 0) return [];
-    const member = steps[index].member;
-    const sign = steps[index].after?.signChosenByCompiler === true;
     return [
-      {
-        code: sign ? "E0944" : "E0946",
+      BitFieldRangeAnalyzer.error(
+        steps[index].after,
+        steps[index].member,
         // A rooted chain (`global.r.pi`) has one op its steps start after
-        span: chain.ops[chain.ops.length - steps.length + index].span,
-        message: sign
-          ? `The C compiler chooses whether bit-field '${member}' is signed`
-          : `cnx cannot read the width of bit-field '${member}'`,
-        helpText: sign ? SIGN_HELP : WIDTH_HELP,
-        declaredAt: BindingSite.ofChain(chain, this.context),
-      },
+        chain.ops[chain.ops.length - steps.length + index].span,
+        BindingSite.ofChain(chain, this.context),
+      ),
     ];
+  }
+
+  /** A header struct's fields, written by `{ field: value }` */
+  private checkInitializer(
+    expr: Extract<TExpression, { kind: "structInitializer" }>,
+  ): IBitFieldRangeError[] {
+    const position = ValuePositions.at(this.positions, expr);
+    const typeText = StructInitializerType.valueTypeAt(position);
+    if (typeText === null) return [];
+    const cName = this.context.program.cTypeNameAt(
+      this.context.sourceFile,
+      typeText,
+      expr.span,
+    );
+    const declaredAt = StructInitializerType.declarationOf(
+      position,
+      expr.span,
+      this.context,
+    );
+    return expr.fields.flatMap((field) => {
+      const operand = ForeignTypeFacts.fieldOperand(
+        cName,
+        field.name,
+        this.context.symbolTable,
+        OperandTyper.target(this.context),
+      );
+      return BitFieldRangeAnalyzer.hasNoRange(operand)
+        ? [
+            BitFieldRangeAnalyzer.error(
+              operand,
+              field.name,
+              field.span,
+              declaredAt,
+            ),
+          ]
+        : [];
+    });
+  }
+
+  private static hasNoRange(operand: IOperandType | null | undefined): boolean {
+    return (
+      operand?.signChosenByCompiler === true || operand?.bitWidthUnread === true
+    );
+  }
+
+  private static error(
+    operand: IOperandType | null | undefined,
+    member: string | null,
+    span: ISourceSpan,
+    declaredAt: ISourceSite | undefined,
+  ): IBitFieldRangeError {
+    const sign = operand?.signChosenByCompiler === true;
+    return {
+      code: sign ? "E0944" : "E0946",
+      span,
+      message: sign
+        ? `The C compiler chooses whether bit-field '${member}' is signed`
+        : `cnx cannot read the width of bit-field '${member}'`,
+      helpText: sign ? SIGN_HELP : WIDTH_HELP,
+      declaredAt,
+    };
   }
 }
 

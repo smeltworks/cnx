@@ -59,6 +59,9 @@ const BINARY_PRECEDENCE: readonly (readonly string[])[] = [
  */
 const INT_BITS: readonly number[] = TARGET_DESCRIPTION_FIELDS.int_bits.allowed!;
 
+/** The most tokens a macro's expansion is read to (#2494 review) */
+const MAX_EXPANSION = 4096;
+
 const UNREADABLE: THeaderMacro = { kind: "unreadable" };
 const CHARACTER: THeaderMacro = { kind: "character" };
 
@@ -125,51 +128,92 @@ class HeaderMacros {
 
   /**
    * #2494: a C integer constant expression's value -- a bit-field's width,
-   * `1 + 2` or `MODE_BITS` -- read as a macro's expansion is, through the
-   * macros each file's C includes define. Null where cnx cannot read it,
-   * where two files' macros give it two values, or where its value depends
-   * on the target's `int` width.
+   * `1 + 2` or `MODE_BITS` -- read as C reads it, its macros expanded as
+   * text through the bodies each file's C includes define. Null where cnx
+   * cannot read it, where two files' macros give it two values, or where its
+   * value depends on the target's `int` width -- or where it reads a macro a
+   * header `#undef`s, whose final body may not be the one C read here.
    */
   static integerValue(
     text: string,
-    macrosByFile: Iterable<ReadonlyMap<string, THeaderMacro>>,
+    bodiesByFile: Iterable<ReadonlyMap<string, string>>,
+    undefinedNames: ReadonlySet<string>,
   ): number | null {
-    const files = [...macrosByFile];
     const tokens = HeaderMacros.tokens(text);
-    const values = INT_BITS.map((bits) =>
-      HeaderMacros.valueOf(tokens, 2 ** (bits - 1) - 1, (name) =>
-        HeaderMacros.agreedValue(name, bits, files),
-      ),
+    const names = tokens.flatMap((token) =>
+      token.kind === "name" ? [token.name] : [],
     );
-    return values.every((value) => value === values[0]) ? values[0] : null;
-  }
-
-  /** An integer macro's value under one `int` width, where every file agrees */
-  private static agreedValue(
-    name: string,
-    bits: number,
-    files: readonly ReadonlyMap<string, THeaderMacro>[],
-  ): number | null {
-    const values = files.flatMap((macros) => {
-      const macro = macros.get(name);
-      if (macro === undefined) return [];
-      return [
-        macro.kind === "integer"
-          ? (macro.valueByIntBits.get(bits) ?? null)
-          : null,
-      ];
-    });
+    // A file whose includes define none of its macros does not read it
+    const files = [...bodiesByFile].filter((bodies) =>
+      names.every((name) => bodies.has(name)),
+    );
+    const values = (names.length === 0 ? [new Map()] : files).flatMap(
+      (bodies) => {
+        const expanded = HeaderMacros.expanded(
+          tokens,
+          bodies,
+          new Set(),
+          undefinedNames,
+        );
+        return INT_BITS.map((bits) =>
+          expanded === null
+            ? null
+            : HeaderMacros.valueOf(expanded, 2 ** (bits - 1) - 1, () => null),
+        );
+      },
+    );
     return values.length > 0 && values.every((value) => value === values[0])
       ? values[0]
       : null;
   }
 
-  /** Every object-like macro a `-dM` dump defines, by name */
-  static collect(dump: string): ReadonlyMap<string, THeaderMacro> {
+  /**
+   * #2494 review: tokens with each macro replaced by its body, as the
+   * preprocessor substitutes text -- so `W * 2` with `#define W 1 + 2` is
+   * `1 + 2 * 2`, 5, as C reads it, not 6. Null for a cycle, or an expansion
+   * past `MAX_EXPANSION` tokens, or a name in `undefinedNames`; a name no macro
+   * defines stays a name.
+   */
+  private static expanded(
+    tokens: readonly TMacroToken[],
+    bodies: ReadonlyMap<string, string>,
+    expanding: ReadonlySet<string>,
+    undefinedNames: ReadonlySet<string> = new Set(),
+  ): TMacroToken[] | null {
+    const out: TMacroToken[] = [];
+    for (const token of tokens) {
+      if (token.kind === "name" && undefinedNames.has(token.name)) return null;
+      const body = token.kind === "name" ? bodies.get(token.name) : undefined;
+      if (token.kind !== "name" || body === undefined) {
+        out.push(token);
+        continue;
+      }
+      if (expanding.has(token.name)) return null;
+      const inner = HeaderMacros.expanded(
+        HeaderMacros.tokens(body),
+        bodies,
+        new Set([...expanding, token.name]),
+        undefinedNames,
+      );
+      if (inner === null) return null;
+      out.push(...inner);
+      if (out.length > MAX_EXPANSION) return null;
+    }
+    return out;
+  }
+
+  /** Every object-like macro a `-dM` dump defines, by name, to its body */
+  static bodies(dump: string): ReadonlyMap<string, string> {
     const bodies = new Map<string, string>();
     for (const match of dump.matchAll(OBJECT_LIKE_DEFINE)) {
       bodies.set(match[1], (match[2] ?? "").trim());
     }
+    return bodies;
+  }
+
+  /** Every object-like macro a `-dM` dump defines, by name */
+  static collect(dump: string): ReadonlyMap<string, THeaderMacro> {
+    const bodies = HeaderMacros.bodies(dump);
     const typed = new Map<string, THeaderMacro>();
     for (const name of bodies.keys()) {
       HeaderMacros.typeOf(name, bodies, typed, new Set());
@@ -233,17 +277,16 @@ class HeaderMacros {
         typeName: HeaderMacros.usualFloating(floating),
       };
     }
+    // #2494 review: its macros as text, so precedence is the expansion's
+    const expanded = HeaderMacros.expanded(tokens, bodies, new Set());
     return {
       kind: "integer",
       valueByIntBits: new Map(
         INT_BITS.map((bits) => [
           bits,
-          HeaderMacros.valueOf(tokens, 2 ** (bits - 1) - 1, (name) => {
-            const macro = typed.get(name);
-            return macro?.kind === "integer"
-              ? (macro.valueByIntBits.get(bits) ?? null)
-              : null;
-          }),
+          expanded === null
+            ? null
+            : HeaderMacros.valueOf(expanded, 2 ** (bits - 1) - 1, () => null),
         ]),
       ),
     };

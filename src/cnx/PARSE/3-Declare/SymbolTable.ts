@@ -112,6 +112,9 @@ class SymbolTable implements IResolvedSymbols {
   // ========================================================================
 
   /** Struct field information: struct name -> (field name -> field info) */
+  /** #2494 review: header path -> the macros it `#undef`s */
+  private readonly undefinedMacrosByFile = new Map<string, readonly string[]>();
+
   private readonly structFields: Map<string, Map<string, IStructFieldInfo>> =
     new Map();
 
@@ -1030,6 +1033,27 @@ class SymbolTable implements IResolvedSymbols {
   /**
    * Issue #957/#1164: record a typedef of a pointer to a struct.
    */
+  /**
+   * #2494 review: the macros the header at `path` `#undef`s. Kept by header,
+   * not in the struct state, so a header's cache record holds its own.
+   * Additive: a recovered slice of the header, already preprocessed, has no
+   * `#undef` left to report, and must not erase the header's.
+   */
+  markUndefinedMacros(path: string, names: readonly string[]): void {
+    const known = this.undefinedMacrosByFile.get(path) ?? [];
+    this.undefinedMacrosByFile.set(path, [...new Set([...known, ...names])]);
+  }
+
+  /** #2494 review: the macros the header at `path` `#undef`s */
+  undefinedMacrosOf(path: string): readonly string[] {
+    return this.undefinedMacrosByFile.get(path) ?? [];
+  }
+
+  /** #2494 review: macros some header `#undef`s */
+  undefinedMacros(): ReadonlySet<string> {
+    return new Set([...this.undefinedMacrosByFile.values()].flat());
+  }
+
   markPointerTypedef(typeName: string): void {
     this.structState = produce(this.structState, (draft) => {
       draft.pointerTypedefs.add(typeName);
