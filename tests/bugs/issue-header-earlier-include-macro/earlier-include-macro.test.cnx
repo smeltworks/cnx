@@ -1,18 +1,38 @@
 // test-execution
-// A header's array bound comes from a macro an earlier include defines:
-// sensor-config.h sets SENSOR_WIDE, so C reads samples[8], and so must cnx.
+// A header is read as C reads it, after the includes before it:
+// - samples: sensor-config.h sets SENSOR_WIDE, so C reads samples[8]
+// - generated: a macro declares it under the same SENSOR_WIDE, size 6
+// - frame: config-then-buffer.h sets FRAME_WIDE, then includes frame-buffer.h
+// - log_buffer: optional-config.h never opens wide-config.h, so C reads [4]
 #include "lib/sensor-config.h"
 #include "lib/sensor-buffer.h"
+#include "lib/generated-buffer.h"
+#include "lib/config-then-buffer.h"
+#include "lib/frame-buffer.h"
+#include "lib/optional-config.h"
+#include "lib/log-buffer.h"
 
 mut u8[samples.type_element_count] copy;
+mut u8[generated.type_element_count] made;
+mut u8[frame.type_element_count] frames;
+mut u8[log_buffer.type_element_count] logs;
 
 u32 main() {
     if (copy.type_element_count != 8) {
         return 1;
     }
+    if (made.type_element_count != 6) {
+        return 2;
+    }
+    if (frames.type_element_count != 8) {
+        return 3;
+    }
+    if (logs.type_element_count != 4) {
+        return 4;
+    }
     copy[7] <- 3;
     if (copy[7] != 3) {
-        return 2;
+        return 5;
     }
     return 0;
 }

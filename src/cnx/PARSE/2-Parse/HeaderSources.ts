@@ -78,13 +78,11 @@ class HeaderSources {
    * retry. So each header is handed the headers before it, and waits for them
    * only if it has to retry.
    *
-   * A header that preprocessed cleanly is read after the headers before it
-   * instead when their macros change its lines, as an earlier `#define BIG`
-   * changes `#ifdef BIG`: alone, it is not the text a C compile meets.
-   *
    * A header that cannot be preprocessed even so is settled from its slice
    * of `unit` preprocessed whole (#985): that slice is the text a C compile
-   * meets. One the unit does not reach either is `unsettled`: nothing judges
+   * meets. So is one whose slice differs from its text alone: an earlier
+   * include's `#define BIG` picked its `#ifdef BIG` branch. The unit runs to
+   * find out whenever a counted header has a conditional. One the unit does not reach either is `unsettled`: nothing judges
    * a header on the text as written (owner ruling 6 of 2026-10-03, #1542).
    *
    * Only a header a C compile opens counts (owner ruling of 2026-10-07 on
@@ -141,9 +139,12 @@ class HeaderSources {
     const index = new Map(headers.map((file, i) => [resolve(file.path), i]));
     const counted = new Set<number>();
     HeaderSources._count([...unit.headers], index, alone, counted);
-    const recovery =
+    const recovers =
       unit.searchesSystemPath ||
-      [...counted].some((i) => alone[i].source === null)
+      [...counted].some((i) => alone[i].source === null);
+    const recovery =
+      recovers ||
+      [...counted].some((i) => HeaderSources._hasConditional(alone[i].raw))
         ? await ExternalDeclarationOracle.recover(
             unit.directives,
             settings.preprocessor,
@@ -167,11 +168,25 @@ class HeaderSources {
     headers.forEach((file, i) => {
       if (!counted.has(i)) return;
       const header = alone[i];
+      const slice = slices.get(resolve(file.path));
       if (header.source !== null) {
-        sources.set(file.path, header.source);
+        sources.set(
+          file.path,
+          // The unit is read as C; a C++ header alone, as C++ (#211)
+          slice === undefined ||
+            file.type === EFileType.CppHeader ||
+            HeaderSources._sameText(
+              slice,
+              LineMarkers.ownText(header.preprocessed, file.path) ?? "",
+            )
+            ? header.source
+            : Object.freeze({
+                text: slice,
+                language: HeaderSources._languageOf(file.type, slice),
+              }),
+        );
         return;
       }
-      const slice = slices.get(resolve(file.path));
       if (slice === undefined) {
         unsettled.set(file.path, header.error);
         return;
@@ -196,12 +211,22 @@ class HeaderSources {
     return {
       sources,
       recovered:
-        recovery === null
+        recovery === null || !recovers
           ? null
           : HeaderSources._recovered(headers, sources, recovery),
       unsettled,
       opened,
     };
+  }
+
+  /** Whether a header has an `#if`, `#ifdef`, `#ifndef` or `#elif` */
+  private static _hasConditional(raw: string): boolean {
+    return /^[ \t]*#[ \t]*(?:el)?if/m.test(raw);
+  }
+
+  /** Whether two preprocessed texts hold the same tokens */
+  private static _sameText(a: string, b: string): boolean {
+    return a.replace(/\s+/g, "") === b.replace(/\s+/g, "");
   }
 
   /**
@@ -316,18 +341,6 @@ class HeaderSources {
       settings.preprocessor.preprocess(file.path, options),
     );
     if (result.success) {
-      const after = await HeaderSources._afterEarlier(
-        file,
-        raw,
-        result.content,
-        {
-          options,
-          earlierFiles,
-          earlier,
-          settings,
-        },
-      );
-      if (after !== null) return after;
       return HeaderSources._settled(
         file,
         raw,
@@ -368,64 +381,6 @@ class HeaderSources {
       source: null,
       raw,
       error: result.diagnostics?.trim() || (result.error ?? "unknown error"),
-    };
-  }
-
-  /**
-   * `file` read after the headers before it that preprocessed cleanly, when
-   * their macros change its own lines (`#ifdef BIG` in it, `#define BIG` in an
-   * earlier one); null when they do not, or when that run fails
-   */
-  private static async _afterEarlier(
-    file: IDiscoveredFile,
-    raw: string,
-    alone: string,
-    context: {
-      readonly options: IPreprocessOptions;
-      readonly earlierFiles: readonly IDiscoveredFile[];
-      readonly earlier: readonly Promise<TAlone>[];
-      readonly settings: IHeaderSourceSettings & {
-        readonly limit: TPreprocessLimit;
-      };
-    },
-  ): Promise<TAlone | null> {
-    if (!/^[ \t]*#[ \t]*(?:el)?if/m.test(raw)) return null;
-    const before = await Promise.all(context.earlier);
-    const path = resolve(file.path);
-    // One that opens this header defines its guard, and would empty it
-    const imacros = context.earlierFiles
-      .filter((_, i) => {
-        const header = before[i];
-        return header.source !== null && !header.entered.has(path);
-      })
-      .map((header) => header.path);
-    if (imacros.length === 0) return null;
-    const options = { ...context.options, imacros };
-    const after = await context.settings.limit(() =>
-      context.settings.preprocessor.preprocess(file.path, options),
-    );
-    if (
-      !after.success ||
-      LineMarkers.ownText(after.content, file.path) ===
-        LineMarkers.ownText(alone, file.path)
-    ) {
-      return null;
-    }
-    const settled = HeaderSources._settled(
-      file,
-      raw,
-      after.content,
-      await HeaderSources._directives(file, options, context.settings),
-    );
-    invariant(settled.source !== null, "_settled settles a header");
-    // An earlier header's guard can hide an include from this run, but the
-    // compile still opens that file from this header where it comes first
-    return {
-      ...settled,
-      entered: new Set([
-        ...settled.entered,
-        ...LineMarkers.entered(alone, file.path),
-      ]),
     };
   }
 

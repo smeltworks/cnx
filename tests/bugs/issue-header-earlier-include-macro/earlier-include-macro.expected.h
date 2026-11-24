@@ -14,6 +14,9 @@ extern "C" {
 
 /* External variables */
 extern uint8_t copy[8];
+extern uint8_t made[6];
+extern uint8_t frames[8];
+extern uint8_t logs[4];
 
 #ifdef __cplusplus
 }

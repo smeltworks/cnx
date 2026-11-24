@@ -6,22 +6,45 @@
 #include "earlier-include-macro.test.h"
 
 // test-execution
-// A header's array bound comes from a macro an earlier include defines:
-// sensor-config.h sets SENSOR_WIDE, so C reads samples[8], and so must cnx.
+// A header is read as C reads it, after the includes before it:
+// - samples: sensor-config.h sets SENSOR_WIDE, so C reads samples[8]
+// - generated: a macro declares it under the same SENSOR_WIDE, size 6
+// - frame: config-then-buffer.h sets FRAME_WIDE, then includes frame-buffer.h
+// - log_buffer: optional-config.h never opens wide-config.h, so C reads [4]
 #include "lib/sensor-config.h"
 #include "lib/sensor-buffer.h"
+#include "lib/generated-buffer.h"
+#include "lib/config-then-buffer.h"
+#include "lib/frame-buffer.h"
+#include "lib/optional-config.h"
+#include "lib/log-buffer.h"
 
 #include <stdint.h>
 
 uint8_t copy[8] = {0};
 
+uint8_t made[6] = {0};
+
+uint8_t frames[8] = {0};
+
+uint8_t logs[4] = {0};
+
 int main(void) {
     if (8 != 8) {
         return 1U;
     }
+    if (6 != 6) {
+        return 2U;
+    }
+    if (8 != 8) {
+        return 3U;
+    }
+    if (4 != 4) {
+        return 4U;
+    }
     copy[7] = 3U;
     if (copy[7U] != 3) {
-        return 2U;
+        return 5U;
     }
     return 0U;
 }
