@@ -907,12 +907,7 @@ class TranspileState {
    * is the single place that question now has to be answered.
    */
   callbackTypedefTypeFor(functionName: string): string | undefined {
-    const typedefName = this.program
-      ?.callbackCompatibleFunctions()
-      .get(functionName);
-    if (!typedefName) return undefined;
-
-    return this.getTypedefType(typedefName);
+    return this.program?.callbackCompatibleFunctions().get(functionName)?.type;
   }
 
   getTypedefType(typedefName: string): string | undefined {

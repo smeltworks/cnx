@@ -8,6 +8,7 @@ import type ISourcePosition from "../../../utils/types/ISourcePosition";
 import type IForeignValue from "./IForeignValue";
 import type TSettledConst from "../../../types/TSettledConst";
 import type IFileConstantFacts from "./IFileConstantFacts";
+import type TType from "../../../types/TType";
 
 /**
  * What `ConstantNames` asks while it walks a name's chain (#1175, #1669), as
@@ -50,12 +51,12 @@ interface IConstantNameFacts {
   foreignValue(name: string): IForeignValue | null;
   /** #2076: `IFileConstantFacts.headerStructFields` */
   headerStructFields: IFileConstantFacts["headerStructFields"];
-  /** #2076: `IFileConstantFacts.headerTypeBits` */
-  headerTypeBits: IFileConstantFacts["headerTypeBits"];
+  /** #2076: `IFileConstantFacts.headerTypeBits`, for this file */
+  headerTypeBits(cType: string): number | null;
   /** #2116: `IFileConstantFacts.qualifiedTypeName`, for this file */
   qualifiedTypeName(written: string): string;
-  /** #1975 review: `IFileConstantFacts.headerTypeHead` */
-  headerTypeHead: IFileConstantFacts["headerTypeHead"];
+  /** #1975 review: `IFileConstantFacts.headerTypeHead`, for this file */
+  headerTypeHead(name: string): TType | null;
   /** #1975 review: `IFileConstantFacts.headerFieldCount` */
   headerFieldCount: IFileConstantFacts["headerFieldCount"];
   /** `IFileConstantFacts.headerNeedsStructKeyword` */

@@ -23,10 +23,13 @@ interface IFileConstantFacts {
   headerStructFields(
     structName: string,
   ): ReadonlyMap<string, IStructFieldInfo> | undefined;
-  /** #2076: `ForeignTypeFacts.typeBits` of a header's C type, for the run's target */
-  headerTypeBits(cType: string): number | null;
-  /** #1975 review: `TypeHead.header` over the run's headers */
-  headerTypeHead(name: string): TType | null;
+  /**
+   * #2076: `ForeignTypeFacts.typeBits` of a header's C type, for the run's
+   * target, as `sourceFile` reads the headers (#2474)
+   */
+  headerTypeBits(sourceFile: string, cType: string): number | null;
+  /** #1975 review: `TypeHead.header` over the headers `sourceFile` reads (#2474) */
+  headerTypeHead(sourceFile: string, name: string): TType | null;
   /** #1975 review: `ForeignTypeFacts.fieldCount` over the run's headers */
   headerFieldCount(structName: string): number | null;
   /** A header struct declared without a typedef, which C names `struct X` */

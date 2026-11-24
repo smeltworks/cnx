@@ -25,6 +25,7 @@
  * not declaring them on `IProgram`.
  */
 
+import type ICTypedefSymbol from "../../types/symbols/c/ICTypedefSymbol";
 import LexicalFrames from "./LexicalFrames";
 import type ILexicalFrame from "../../types/ILexicalFrame";
 import type ILocalDeclaration from "../../types/ILocalDeclaration";
@@ -189,18 +190,10 @@ class Program {
     // and handed in. The orchestrator and the test harness both did, and the
     // harness's copy had already dropped the callback map.
     const symbolTable = inputs.symbolTable ?? new SymbolTable();
-    // #2474: each file's view of it, built on its first use
-    const symbolTablesByFile = new Map<string, IResolvedSymbols>();
-    const symbolTableFor = (sourceFile: string): IResolvedSymbols => {
-      let view = symbolTablesByFile.get(sourceFile);
-      if (view === undefined) {
-        view = symbolTable.seenFrom(
-          inputs.headerPathsByFile?.get(sourceFile) ?? EMPTY_NAMES,
-        );
-        symbolTablesByFile.set(sourceFile, view);
-      }
-      return view;
-    };
+    const symbolTableFor = Program.fileViews(
+      symbolTable,
+      inputs.headerPathsByFile,
+    );
     const functionParamLists = new Map(
       files.flatMap((file) => [...file.parameterLists]),
     );
@@ -350,7 +343,7 @@ class Program {
         visibleByFile.get(sourceFile),
       passByValueParams: (): ReadonlyMap<string, ReadonlySet<string>> =>
         passByValueParams,
-      callbackCompatibleFunctions: (): ReadonlyMap<string, string> =>
+      callbackCompatibleFunctions: (): ReadonlyMap<string, ICTypedefSymbol> =>
         callbackCompatibleFunctions,
       callbackFunctions: (): ReadonlySet<string> => callbackFunctions,
       lexicalFrameAt: (sourceFile: string, at: TPosition): ILexicalFrame => {
@@ -531,6 +524,10 @@ class Program {
     const opaqueTypes = Program.deriveOpaqueTypes(foreign);
     const target = inputs.target ?? null;
     const headers = inputs.symbolTable ?? null;
+    const headersFor =
+      headers === null
+        ? null
+        : Program.fileViews(headers, inputs.headerPathsByFile);
     // #2116: each file's written `Scope.T` / `Ns.T`, as 1.3 spelled it for
     // that file -- kept per file, so two files' spellings never meet
     const qualifiedTypeNames = new Map(
@@ -570,12 +567,12 @@ class Program {
       seesForeignSymbol,
       hidesHeaderName,
       headerStructFields: (structName) => headers?.getStructFields(structName),
-      headerTypeBits: (cType) =>
-        headers === null
+      headerTypeBits: (sourceFile, cType) =>
+        headersFor === null
           ? null
           : ForeignTypeFacts.typeBits(
               cType,
-              headers,
+              headersFor(sourceFile),
               ResolvedTarget.of(target),
             ),
       headerFieldCount: (structName) =>
@@ -584,10 +581,14 @@ class Program {
           : ForeignTypeFacts.fieldCount(structName, headers),
       headerNeedsStructKeyword: (structName) =>
         headers?.checkNeedsStructKeyword(structName) ?? false,
-      headerTypeHead: (name) =>
-        headers === null
+      headerTypeHead: (sourceFile, name) =>
+        headersFor === null
           ? null
-          : TypeHead.header(name, headers, ResolvedTarget.of(target)),
+          : TypeHead.header(
+              name,
+              headersFor(sourceFile),
+              ResolvedTarget.of(target),
+            ),
     };
     const settledByFile = Program.settleEveryFile(
       files,
@@ -1281,10 +1282,10 @@ class Program {
         ),
       headerStructFields: (structName) =>
         options.files.headerStructFields(structName),
-      headerTypeBits: (cType) => options.files.headerTypeBits(cType),
+      headerTypeBits: (cType) => options.files.headerTypeBits(file(), cType),
       qualifiedTypeName: (written) =>
         options.files.qualifiedTypeName(file(), written),
-      headerTypeHead: (name) => options.files.headerTypeHead(name),
+      headerTypeHead: (name) => options.files.headerTypeHead(file(), name),
       headerFieldCount: (structName) =>
         options.files.headerFieldCount(structName),
       headerNeedsStructKeyword: (structName) =>
@@ -1923,13 +1924,39 @@ class Program {
     return values;
   }
 
-  /** #2474: the value `name` names in a file -- the one its own headers declare */
+  /**
+   * #2474: `table` as each file reads it, a view built on the file's first
+   * ask -- the one place a file's headers choose among same-named declarations
+   */
+  private static fileViews(
+    table: SymbolTable,
+    headerPathsByFile: ReadonlyMap<string, ReadonlySet<string>> | undefined,
+  ): (sourceFile: string) => IResolvedSymbols {
+    const views = new Map<string, IResolvedSymbols>();
+    return (sourceFile) => {
+      let view = views.get(sourceFile);
+      if (view === undefined) {
+        view = table.seenFrom(
+          headerPathsByFile?.get(sourceFile) ?? EMPTY_NAMES,
+        );
+        views.set(sourceFile, view);
+      }
+      return view;
+    };
+  }
+
+  /**
+   * #2474: the value `name` names in a file -- its own headers' last
+   * declaration, as for the whole build, so a sized redeclaration
+   * (`uint8_t t[4];` after `extern uint8_t t[];`) gives the bound
+   */
   private static foreignValueIn(
     declared: ReadonlyArray<IDeclaredForeignValue> | undefined,
     sees: (origin: IForeignOrigin) => boolean,
   ): IForeignValue | null {
     if (declared === undefined) return null;
-    return (declared.find((entry) => sees(entry.origin)) ?? declared[0]).value;
+    const own = declared.filter((entry) => sees(entry.origin));
+    return (own.at(-1) ?? declared.at(-1))?.value ?? null;
   }
 
   /**

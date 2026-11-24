@@ -1,0 +1,9 @@
+// Issue #2474 review: a header declares samples unsized, then sized. The
+// sized redeclaration gives the bound, so a cnx array can be sized from it.
+#include "lib/redeclared-array.h"
+
+mut u8[samples.type_element_count] copy;
+
+void main() {
+    copy[0] <- 1;
+}

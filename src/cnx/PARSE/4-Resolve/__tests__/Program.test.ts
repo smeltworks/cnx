@@ -1151,7 +1151,7 @@ scope Gauge {
         { cppMode: false, registry, symbolTable },
       );
 
-      expect(program.callbackCompatibleFunctions().get("on_point")).toBe(
+      expect(program.callbackCompatibleFunctions().get("on_point")?.name).toBe(
         "PointCallback",
       );
       expect(program.callbackCompatibleFunctions().has("counted")).toBe(false);

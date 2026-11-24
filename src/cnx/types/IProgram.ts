@@ -1,3 +1,4 @@
+import type ICTypedefSymbol from "./symbols/c/ICTypedefSymbol";
 import type IFunctionSymbol from "./symbols/IFunctionSymbol";
 import type IFoldedConstant from "./IFoldedConstant";
 import type TConstExpr from "./TConstExpr";
@@ -253,9 +254,10 @@ interface IProgram {
    * shape, so it takes neither auto-const nor pass-by-value. The use can sit in
    * a different file from the declaration, which makes this cross-file — and it
    * was previously accumulated as files rendered, so an early file decided its
-   * signatures on a partial answer (#1511).
+   * signatures on a partial answer (#1511). The typedef is the declaration the
+   * using file sees (#2474), one answer for the definition and every call.
    */
-  callbackCompatibleFunctions(): ReadonlyMap<string, string>;
+  callbackCompatibleFunctions(): ReadonlyMap<string, ICTypedefSymbol>;
 
   /**
    * ADR-071: every cnx function used as a callback at all (a type, or a
