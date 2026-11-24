@@ -856,7 +856,8 @@ describe("runTest on an error fixture that stopped erroring (#1316)", () => {
     expect(second.passed).toBe(false);
     expect(second.message).toBe(first.message);
     expect(second.message).not.toContain("stale generated artifacts");
-  });
+    // Two runs of about 3s each on a 2-CPU machine, past vitest's 5s default
+  }, 30_000);
 
   it("still updates the snapshot of a fixture that keeps erroring", async () => {
     // Negative control: --update must stay useful for a fixture whose diagnostic

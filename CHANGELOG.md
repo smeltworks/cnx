@@ -103,6 +103,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A local const whose every use folds is not declared** (ADR-016, Issues #1791, #1875). A
+  local const read only as an array dimension, a bit-range width that folds, a `case` label or
+  the initializer of another such const is written as its value at each use, so its declaration
+  had no reader and `-Wall -Werror` rejected it as unused. Its declaration is now left out, as
+  ADR-016 leaves out a private scope const's. A const also read at runtime, passed as a
+  constructor argument or named as a C++ template argument keeps its declaration.
+
+- **A local const `case` label compiles in C** (ADR-025, Issues #2493, #2105). It was written by
+  name, and C switches only on an integer constant expression (C11 6.8.4.2p3), which a const
+  object is not. It is now written as its value, as a file-scope const's label is (#2033). A
+  u64 label past 2^53 is no longer E0717, and an enum-typed local label no longer stops on an
+  internal error.
+
 - **A memory length is a `u32` operand** (ADR-058, ADR-024, Issue #1806). `.memory_bit_length`,
   `.memory_byte_length` and a string's `.memory_char_count` took the width of the operand beside
   them: with a `u8[300] buf` and a `u8 b`, `buf.memory_byte_length + b` clamped at `u8` and gave

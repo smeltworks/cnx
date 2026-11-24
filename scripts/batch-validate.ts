@@ -367,7 +367,6 @@ function runClangTidy() {
           file,
           "--",
           stdFlag,
-          "-Wno-unused-variable",
           "-I",
           INCLUDE_DIR,
           "-I",
