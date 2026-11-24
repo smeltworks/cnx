@@ -389,10 +389,15 @@ class HeaderSources {
       };
     },
   ): Promise<TAlone | null> {
-    if (!/^\s*#\s*(?:if|ifdef|ifndef|elif)\b/m.test(raw)) return null;
+    if (!/^[ \t]*#[ \t]*(?:el)?if/m.test(raw)) return null;
     const before = await Promise.all(context.earlier);
+    const path = resolve(file.path);
+    // One that opens this header defines its guard, and would empty it
     const imacros = context.earlierFiles
-      .filter((_, i) => before[i].source !== null)
+      .filter((_, i) => {
+        const header = before[i];
+        return header.source !== null && !header.entered.has(path);
+      })
       .map((header) => header.path);
     if (imacros.length === 0) return null;
     const options = { ...context.options, imacros };
@@ -406,12 +411,22 @@ class HeaderSources {
     ) {
       return null;
     }
-    return HeaderSources._settled(
+    const settled = HeaderSources._settled(
       file,
       raw,
       after.content,
       await HeaderSources._directives(file, options, context.settings),
     );
+    invariant(settled.source !== null, "_settled settles a header");
+    // An earlier header's guard can hide an include from this run, but the
+    // compile still opens that file from this header where it comes first
+    return {
+      ...settled,
+      entered: new Set([
+        ...settled.entered,
+        ...LineMarkers.entered(alone, file.path),
+      ]),
+    };
   }
 
   /**
