@@ -114,7 +114,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   name, and C switches only on an integer constant expression (C11 6.8.4.2p3), which a const
   object is not. It is now written as its value, as a file-scope const's label is (#2033). A
   u64 label past 2^53 is no longer E0717, and an enum-typed local label no longer stops on an
-  internal error.
+  internal error. A float or bool const label, local or file-scope, is now E0717: it has a value
+  but not an integer one, and a file-scope bool was written as `case true:`, hiding a duplicate
+  `case 1`.
 
 - **A memory length is a `u32` operand** (ADR-058, ADR-024, Issue #1806). `.memory_bit_length`,
   `.memory_byte_length` and a string's `.memory_char_count` took the width of the operand beside

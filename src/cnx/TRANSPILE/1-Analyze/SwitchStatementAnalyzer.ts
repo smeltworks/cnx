@@ -32,7 +32,6 @@ import type TConstLiteral from "../../types/TConstLiteral";
 import type TChainRoot from "../../types/TChainRoot";
 import type TValueBinding from "../../types/TValueBinding";
 import type TSymbol from "../../types/symbols/TSymbol";
-import type IVariableSymbol from "../../types/symbols/IVariableSymbol";
 import OperandTyper from "../../utils/OperandTyper";
 import StatementNodes from "../../utils/StatementNodes";
 import EnumValueResolver from "./EnumValueResolver";
@@ -185,11 +184,18 @@ class SwitchStatementCheck {
     for (const caseCtx of cases) {
       for (const label of caseCtx.labels) {
         if (this.isConstantLabel(label)) continue;
+        const binding = this.labelBinding(label);
+        const literal =
+          binding === null ? null : this.boundLiteral(binding, label);
+        const written = SwitchStatementCheck.caseLabelValue(label);
         this.found.push({
           code: "E0717",
           span: label.span,
-          declaredAt: BindingSite.of(this.labelBinding(label), this.context),
-          message: `Case label '${SwitchStatementCheck.caseLabelValue(label)}' is not a constant`,
+          declaredAt: BindingSite.of(binding, this.context),
+          message:
+            literal === null
+              ? `Case label '${written}' is not a constant`
+              : `Case label '${written}' is a ${literal.kind} const, not an integer`,
           helpText:
             "A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.",
         });
@@ -310,17 +316,9 @@ class SwitchStatementCheck {
       case "foreign":
         return true;
       case "variable":
-        return (
-          label.kind === "identifier" &&
-          ConstLiteral.textOf(program, binding.symbol) !== null
-        );
-      // #2493: a local's settled value, as its label is written (a u64 past
-      // 2^53, an enum member: #2105)
       case "local":
-        return (
-          label.kind === "identifier" &&
-          ConstLiteral.textOfValue(program, binding.declaration.constValue) !==
-            null
+        return SwitchStatementCheck.isIntegral(
+          this.boundLiteral(binding, label),
         );
       case "function":
         return false;
@@ -336,12 +334,47 @@ class SwitchStatementCheck {
             program.memberOf(binding.scopePath, label.path[1])?.kind,
           );
         }
-        return (
-          member.kind === "variable" &&
-          ConstLiteral.textOf(program, member) !== null
+        return SwitchStatementCheck.isIntegral(
+          this.boundLiteral(binding, label),
         );
       }
     }
+  }
+
+  /**
+   * C switches only on an integer constant expression (C11 6.8.4.2p3): a
+   * float or bool const has a value, but no integer one
+   */
+  private static isIntegral(literal: TConstLiteral | null): boolean {
+    return (
+      literal !== null && literal.kind !== "float" && literal.kind !== "bool"
+    );
+  }
+
+  /**
+   * The literal a const label is written as, from the declaration its
+   * spelling binds (`ConstLiteral`, `settledConstOf`); a local's from its
+   * settled value (#2493: a u64 past 2^53, #2105's enum member). Null for a
+   * label that names no const.
+   */
+  private boundLiteral(
+    binding: TValueBinding,
+    label: TCaseLabelSyntax,
+  ): TConstLiteral | null {
+    const { program } = this.context;
+    if (label.kind === "identifier") {
+      if (binding.kind === "variable") {
+        return ConstLiteral.of(program, binding.symbol);
+      }
+      return binding.kind === "local"
+        ? ConstLiteral.valueLiteral(program, binding.declaration.constValue)
+        : null;
+    }
+    if (label.kind !== "qualified" || binding.kind !== "scope") return null;
+    const member = this.scopeMember(label, binding.scopePath);
+    return member?.kind === "variable"
+      ? ConstLiteral.of(program, member)
+      : null;
   }
 
   /**
@@ -393,32 +426,9 @@ class SwitchStatementCheck {
    * a lone header macro its name. Null for a label that names no const.
    */
   private constKey(label: TCaseLabelSyntax): string | null {
-    const { program } = this.context;
     const binding = this.labelBinding(label);
     if (binding === null) return null;
-    if (label.kind === "identifier") {
-      // #2493: the value its label is written as (a u64 past 2^53, #2105's enum)
-      if (binding.kind === "local") {
-        return this.literalKey(
-          ConstLiteral.valueLiteral(program, binding.declaration.constValue),
-        );
-      }
-      return binding.kind === "variable"
-        ? this.settledKey(binding.symbol)
-        : null;
-    }
-    if (label.kind !== "qualified" || binding.kind !== "scope") return null;
-    const member = this.scopeMember(label, binding.scopePath);
-    return member?.kind === "variable" ? this.settledKey(member) : null;
-  }
-
-  /** The key of the answer render writes for a const (`ConstLiteral.of`) */
-  private settledKey(symbol: IVariableSymbol): string | null {
-    return this.literalKey(ConstLiteral.of(this.context.program, symbol));
-  }
-
-  /** The key of a literal render writes */
-  private literalKey(literal: TConstLiteral | null): string | null {
+    const literal = this.boundLiteral(binding, label);
     if (literal === null) return null;
     switch (literal.kind) {
       case "integer":
