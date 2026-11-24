@@ -14,6 +14,7 @@ extern "C" {
 
 /* External variables */
 extern uint8_t copy[4];
+extern uint8_t last[4];
 
 #ifdef __cplusplus
 }

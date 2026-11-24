@@ -1946,9 +1946,9 @@ class Program {
   }
 
   /**
-   * #2474: the value `name` names in a file -- its own headers' last
-   * declaration, as for the whole build, so a sized redeclaration
-   * (`uint8_t t[4];` after `extern uint8_t t[];`) gives the bound
+   * #2474: the value `name` names in a file -- one its own headers declare.
+   * As C composes an array's type, a sized declaration gives the bound in
+   * either order: `extern uint8_t t[];` before or after `uint8_t t[4];`
    */
   private static foreignValueIn(
     declared: ReadonlyArray<IDeclaredForeignValue> | undefined,
@@ -1956,7 +1956,12 @@ class Program {
   ): IForeignValue | null {
     if (declared === undefined) return null;
     const own = declared.filter((entry) => sees(entry.origin));
-    return (own.at(-1) ?? declared.at(-1))?.value ?? null;
+    const candidates = own.length > 0 ? own : declared;
+    const sized = candidates.filter(
+      (entry) =>
+        entry.value.kind !== "variable" || !entry.value.dimensions.includes(""),
+    );
+    return (sized.at(-1) ?? candidates.at(-1))?.value ?? null;
   }
 
   /**

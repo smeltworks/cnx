@@ -1,9 +1,12 @@
-// Issue #2474 review: a header declares samples unsized, then sized. The
-// sized redeclaration gives the bound, so a cnx array can be sized from it.
+// Issue #2474 review: a header declares samples unsized, then sized, and
+// readings sized, then unsized. As in C, the sized declaration gives the
+// bound in either order, so a cnx array can be sized from it.
 #include "lib/redeclared-array.h"
 
 mut u8[samples.type_element_count] copy;
+mut u8[readings.type_element_count] last;
 
 void main() {
     copy[0] <- 1;
+    last[3] <- 2;
 }
