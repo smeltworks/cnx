@@ -14,6 +14,7 @@ extern "C" {
 
 /* External variables */
 extern uint8_t rows[8];
+extern uint8_t nested[7];
 
 #ifdef __cplusplus
 }

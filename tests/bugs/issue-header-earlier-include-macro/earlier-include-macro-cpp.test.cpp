@@ -8,17 +8,24 @@
 // test-execution
 // test-cpp-only
 // A C++ header is read as a C++ compile reads it, after the includes before
-// it: table-config.h sets TABLE_WIDE, so C++ reads table[8].
+// it: table-config.h sets TABLE_WIDE, so C++ reads table[8], and
+// TABLE_NESTED (in C++ only), so table-outer.hpp opens table-nested.hpp's nested_rows[7].
 #include "lib/table-config.h"
 #include "lib/table-buffer.hpp"
+#include "lib/table-outer.hpp"
 
 #include <stdint.h>
 
 uint8_t rows[8] = {};
 
+uint8_t nested[7] = {};
+
 int main(void) {
     if (8 != 8) {
         return 1U;
+    }
+    if (7 != 7) {
+        return 3U;
     }
     rows[7] = 3U;
     if (rows[7U] != 3) {

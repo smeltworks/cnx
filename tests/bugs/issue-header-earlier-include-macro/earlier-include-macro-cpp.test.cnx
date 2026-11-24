@@ -1,15 +1,21 @@
 // test-execution
 // test-cpp-only
 // A C++ header is read as a C++ compile reads it, after the includes before
-// it: table-config.h sets TABLE_WIDE, so C++ reads table[8].
+// it: table-config.h sets TABLE_WIDE, so C++ reads table[8], and
+// TABLE_NESTED (in C++ only), so table-outer.hpp opens table-nested.hpp's nested_rows[7].
 #include "lib/table-config.h"
 #include "lib/table-buffer.hpp"
+#include "lib/table-outer.hpp"
 
 mut u8[table.type_element_count] rows;
+mut u8[nested_rows.type_element_count] nested;
 
 u32 main() {
     if (rows.type_element_count != 8) {
         return 1;
+    }
+    if (nested.type_element_count != 7) {
+        return 3;
     }
     rows[7] <- 3;
     if (rows[7] != 3) {

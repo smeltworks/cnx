@@ -81,9 +81,11 @@ class HeaderSources {
    * A header that cannot be preprocessed even so is settled from its slice
    * of `unit` preprocessed whole (#985): that slice is the text a C compile
    * meets. So is one whose slice differs from its text alone: an earlier
-   * include's `#define BIG` picked its `#ifdef BIG` branch. The unit runs to
-   * find out whenever a counted header has a conditional. One the unit does not reach either is `unsettled`: nothing judges
-   * a header on the text as written (owner ruling 6 of 2026-10-03, #1542).
+   * include's `#define BIG` picked its `#ifdef BIG` branch, or its macro
+   * wrote a declaration. Any header can read an earlier one's macros, so the
+   * unit runs whenever a C header counts, and again as C++ (#211) whenever a
+   * C++ header does. One the unit does not reach either is `unsettled`:
+   * nothing judges a header on the text as written (owner ruling 6 of 2026-10-03, #1542).
    *
    * Only a header a C compile opens counts (owner ruling of 2026-10-07 on
    * #1914): one a `.cnx` file includes, or one a counted header's
@@ -148,23 +150,25 @@ class HeaderSources {
       includePaths: [...unit.includePaths],
       defines: { ...settings.defines },
     };
-    const conditional = (cpp: boolean): boolean =>
+    const counts = (cpp: boolean): boolean =>
       [...counted].some(
-        (i) =>
-          (headers[i].type === EFileType.CppHeader) === cpp &&
-          HeaderSources._hasConditional(alone[i].raw),
+        (i) => (headers[i].type === EFileType.CppHeader) === cpp,
       );
     const recovery =
-      recovers || conditional(false)
+      recovers || counts(false)
         ? await ExternalDeclarationOracle.recover(
             unit.directives,
             settings.preprocessor,
             unitOptions,
           )
         : null;
+    const slices = HeaderSources._resolvedKeys(
+      recovery?.perFileContent ?? null,
+    );
+    HeaderSources._count(slices.keys(), index, alone, counted);
     // A C++ header is read as C++ (#211), so its slice is a C++ unit's
     const cppSlices = HeaderSources._resolvedKeys(
-      conditional(true)
+      counts(true)
         ? await ExternalDeclarationOracle.cppSlices(
             unit.directives,
             settings.preprocessor,
@@ -172,20 +176,16 @@ class HeaderSources {
           )
         : null,
     );
-    const slices = HeaderSources._resolvedKeys(
-      recovery?.perFileContent ?? null,
-    );
-    HeaderSources._count(slices.keys(), index, alone, counted);
+    HeaderSources._count(cppSlices.keys(), index, alone, counted);
     const sources = new Map<string, IHeaderSource>();
     const unsettled = new Map<string, string>();
     headers.forEach((file, i) => {
       if (!counted.has(i)) return;
       const header = alone[i];
-      const slice = slices.get(resolve(file.path));
+      const met = (file.type === EFileType.CppHeader ? cppSlices : slices).get(
+        resolve(file.path),
+      );
       if (header.source !== null) {
-        const met = (
-          file.type === EFileType.CppHeader ? cppSlices : slices
-        ).get(resolve(file.path));
         sources.set(
           file.path,
           met === undefined ||
@@ -201,6 +201,7 @@ class HeaderSources {
         );
         return;
       }
+      const slice = met ?? slices.get(resolve(file.path));
       if (slice === undefined) {
         unsettled.set(file.path, header.error);
         return;
@@ -245,11 +246,6 @@ class HeaderSources {
       resolved.set(resolve(path), text);
     }
     return resolved;
-  }
-
-  /** Whether a header has an `#if`, `#ifdef`, `#ifndef` or `#elif` */
-  private static _hasConditional(raw: string): boolean {
-    return /^[ \t]*#[ \t]*(?:el)?if/m.test(raw);
   }
 
   /** Whether two preprocessed texts hold the same tokens */
