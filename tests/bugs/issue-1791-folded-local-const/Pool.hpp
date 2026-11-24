@@ -6,6 +6,6 @@ class Pool {
   public:
     uint8_t items[Size];
     uint32_t count;
-    Pool() : count(Size) {}
+    Pool() : items(), count(Size) {}
 };
 #endif
