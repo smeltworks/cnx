@@ -142,26 +142,39 @@ class HeaderSources {
     const recovers =
       unit.searchesSystemPath ||
       [...counted].some((i) => alone[i].source === null);
+    // #1723: the unit holds every file's C includes, so it is searched
+    // along every file's search path, not --include alone.
+    const unitOptions = {
+      includePaths: [...unit.includePaths],
+      defines: { ...settings.defines },
+    };
+    const conditional = (cpp: boolean): boolean =>
+      [...counted].some(
+        (i) =>
+          (headers[i].type === EFileType.CppHeader) === cpp &&
+          HeaderSources._hasConditional(alone[i].raw),
+      );
     const recovery =
-      recovers ||
-      [...counted].some((i) => HeaderSources._hasConditional(alone[i].raw))
+      recovers || conditional(false)
         ? await ExternalDeclarationOracle.recover(
             unit.directives,
             settings.preprocessor,
-            {
-              // #1723: the unit holds every file's C includes, so it is searched
-              // along every file's search path, not --include alone.
-              includePaths: [...unit.includePaths],
-              defines: { ...settings.defines },
-            },
+            unitOptions,
           )
         : null;
-    // The preprocessor names a header by the path it found it along; the
-    // walk, by the one it resolved. Both name the same file.
-    const slices = new Map<string, string>();
-    for (const [path, text] of recovery?.perFileContent ?? []) {
-      slices.set(resolve(path), text);
-    }
+    // A C++ header is read as C++ (#211), so its slice is a C++ unit's
+    const cppSlices = HeaderSources._resolvedKeys(
+      conditional(true)
+        ? await ExternalDeclarationOracle.cppSlices(
+            unit.directives,
+            settings.preprocessor,
+            unitOptions,
+          )
+        : null,
+    );
+    const slices = HeaderSources._resolvedKeys(
+      recovery?.perFileContent ?? null,
+    );
     HeaderSources._count(slices.keys(), index, alone, counted);
     const sources = new Map<string, IHeaderSource>();
     const unsettled = new Map<string, string>();
@@ -170,19 +183,20 @@ class HeaderSources {
       const header = alone[i];
       const slice = slices.get(resolve(file.path));
       if (header.source !== null) {
+        const met = (
+          file.type === EFileType.CppHeader ? cppSlices : slices
+        ).get(resolve(file.path));
         sources.set(
           file.path,
-          // The unit is read as C; a C++ header alone, as C++ (#211)
-          slice === undefined ||
-            file.type === EFileType.CppHeader ||
+          met === undefined ||
             HeaderSources._sameText(
-              slice,
+              met,
               LineMarkers.ownText(header.preprocessed, file.path) ?? "",
             )
             ? header.source
             : Object.freeze({
-                text: slice,
-                language: HeaderSources._languageOf(file.type, slice),
+                text: met,
+                language: HeaderSources._languageOf(file.type, met),
               }),
         );
         return;
@@ -217,6 +231,20 @@ class HeaderSources {
       unsettled,
       opened,
     };
+  }
+
+  /**
+   * The preprocessor names a header by the path it found it along; the walk,
+   * by the one it resolved. Both name the same file.
+   */
+  private static _resolvedKeys(
+    slices: ReadonlyMap<string, string> | null,
+  ): ReadonlyMap<string, string> {
+    const resolved = new Map<string, string>();
+    for (const [path, text] of slices ?? []) {
+      resolved.set(resolve(path), text);
+    }
+    return resolved;
   }
 
   /** Whether a header has an `#if`, `#ifdef`, `#ifndef` or `#elif` */

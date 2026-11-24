@@ -1,0 +1,19 @@
+// test-execution
+// test-cpp-only
+// A C++ header is read as a C++ compile reads it, after the includes before
+// it: table-config.h sets TABLE_WIDE, so C++ reads table[8].
+#include "lib/table-config.h"
+#include "lib/table-buffer.hpp"
+
+mut u8[table.type_element_count] rows;
+
+u32 main() {
+    if (rows.type_element_count != 8) {
+        return 1;
+    }
+    rows[7] <- 3;
+    if (rows[7] != 3) {
+        return 2;
+    }
+    return 0;
+}

@@ -45,6 +45,8 @@ const LINE_MARKER = /^#\s+(\d+)\s+"([^"]+)"(.*)$/;
 // Synthetic TU filename (appears in preprocessor errors, keyed on to locate a
 // failing include by its line number).
 const TU_NAME = "cnx-external-decl-oracle.c";
+/** The same unit, read as a C++ compile reads it */
+const CPP_TU_NAME = "cnx-external-decl-oracle.cpp";
 /** #1881: a `-dD` dump's `#define NAME ...` or `#undef NAME` */
 const DEFINE_OR_UNDEF = /^#(define|undef)\s+([A-Za-z_]\w*)/;
 
@@ -65,6 +67,32 @@ interface IExternalRecovery {
 }
 
 class ExternalDeclarationOracle {
+  /**
+   * Each header's own preprocessed slice of `includeDirectives` read as one
+   * C++ unit: the text a C++ compile meets in a C++ header (#211)
+   */
+  static async cppSlices(
+    includeDirectives: readonly string[],
+    preprocessor: IHeaderPreprocessor,
+    options: IPreprocessOptions,
+  ): Promise<Map<string, string> | null> {
+    if (includeDirectives.length === 0 || !preprocessor.isAvailable()) {
+      return null;
+    }
+    const working = await ExternalDeclarationOracle.preprocessLargestWorkingTu(
+      [...includeDirectives],
+      preprocessor,
+      { ...options, keepLineDirectives: true },
+      CPP_TU_NAME,
+    );
+    return working === null
+      ? null
+      : ExternalDeclarationOracle.splitByFile(
+          working.content,
+          working.directives,
+        ).perFileContent;
+  }
+
   /**
    * Preprocess `includeDirectives` (e.g. `"<freertos/task.h>"`) as one TU and
    * return each header's own preprocessed slice plus function-like-macro names.
@@ -269,6 +297,7 @@ class ExternalDeclarationOracle {
     directives: string[],
     preprocessor: IHeaderPreprocessor,
     base: IPreprocessOptions,
+    tuName: string = TU_NAME,
   ): Promise<{ content: string; directives: string[] } | null> {
     const remaining = directives;
     // At most one drop per iteration; bound iterations by the ORIGINAL directive
@@ -283,7 +312,7 @@ class ExternalDeclarationOracle {
     ) {
       const result = await preprocessor.preprocessString(
         ExternalDeclarationOracle.buildTu(remaining),
-        TU_NAME,
+        tuName,
         base,
       );
       if (result.success) {
