@@ -24,14 +24,6 @@ import invariant from "../../utils/invariant";
 import SourceOrder from "../../utils/SourceOrder";
 
 /** What 1.2 reads a run's headers from: 1.1's walk of them */
-/** What a run with no compiler read its headers with: nothing */
-const NO_READING = {
-  compilerPath: null,
-  defines: {},
-  includeSearchPaths: [],
-  headerSearchPaths: new Map<string, readonly string[]>(),
-} as const;
-
 type THeaderGraph = Pick<
   ISourceGraph,
   | "cnxFiles"
@@ -102,7 +94,7 @@ class HeaderReading {
       return reading._result(
         [],
         NOTHING_SETTLED,
-        { cppMode: false, reader: HeaderCompiler.identity(null, NO_READING) },
+        { cppMode: false, readers: new Map() },
         new Map(),
         new Map(),
       );
@@ -124,7 +116,7 @@ class HeaderReading {
         return reading._result(
           [],
           NOTHING_SETTLED,
-          { cppMode: false, reader: HeaderCompiler.identity(null, NO_READING) },
+          { cppMode: false, readers: new Map() },
           new Map(),
           new Map(),
         );
@@ -172,11 +164,18 @@ class HeaderReading {
         headerSearchPaths: graph.headerSearchPaths,
       },
     );
+    const readers = new Map(
+      headerFiles.map((file) => {
+        const source = settled.sources.get(file.path);
+        invariant(source !== undefined, "1.2 reads only settled headers");
+        return [file.path, HeaderCompiler.readerOf(reader, source.text)];
+      }),
+    );
     return reading._result(
       headerFiles,
       settled,
-      { cppMode, reader },
-      HeaderReading._cachedHeaders(headerFiles, services.headerCache, reader),
+      { cppMode, readers },
+      HeaderReading._cachedHeaders(headerFiles, services.headerCache, readers),
       await HeaderMacroDumps.read(
         graph.cnxFiles,
         graph.includes.c,
@@ -192,7 +191,7 @@ class HeaderReading {
   private _result(
     headerFiles: readonly IDiscoveredFile[],
     settled: TSettled,
-    read: Pick<IReadHeaders, "cppMode" | "reader">,
+    read: Pick<IReadHeaders, "cppMode" | "readers">,
     cached: ReadonlyMap<string, TCachedHeaderRead>,
     macroDumps: IReadHeaders["macroDumps"],
   ): IReadHeaders {
@@ -202,7 +201,7 @@ class HeaderReading {
       cached,
       recovered: settled.recovered,
       cppMode: read.cppMode,
-      reader: read.reader,
+      readers: read.readers,
       macroDumps,
       errors: this.errors,
     };
@@ -433,11 +432,13 @@ class HeaderReading {
   private static _cachedHeaders(
     headers: readonly IDiscoveredFile[],
     cache: THeaderDeclarationCache | null,
-    reader: string,
+    readers: ReadonlyMap<string, string>,
   ): ReadonlyMap<string, TCachedHeaderRead> {
     const reads = new Map<string, TCachedHeaderRead>();
     if (cache === null) return reads;
     for (const file of headers) {
+      const reader = readers.get(file.path);
+      invariant(reader !== undefined, "1.2 names what read each header");
       try {
         const record = cache(file.path, reader);
         if (record !== null) reads.set(file.path, { kind: "cached", record });

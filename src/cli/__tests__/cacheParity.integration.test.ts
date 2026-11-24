@@ -219,3 +219,47 @@ describe("cache parity (integration, #1225)", () => {
     expect(await transpileOnce()).toEqual(expected);
   });
 });
+
+// A header's record is good only for the text it was read as: arr.h's file
+// does not change when cfg.h stops defining BIG, but the text C reads does.
+describe("cache parity after an earlier header changes a header's branch", () => {
+  let dir: string;
+
+  beforeAll(() => {
+    dir = mkdtempSync(join(tmpdir(), "cnx-cache-context-"));
+    writeFileSync(join(dir, "cnx.config.json"), "{}\n");
+    writeFileSync(join(dir, "cfg.h"), "#define BIG 1\n");
+    writeFileSync(
+      join(dir, "arr.h"),
+      "#include <stdint.h>\n#ifdef BIG\nextern uint8_t one[8];\n#else\nextern uint8_t one[4];\n#endif\n",
+    );
+    writeFileSync(
+      join(dir, "main.cnx"),
+      '#include "cfg.h"\n#include "arr.h"\n\nmut u8[one.type_element_count] a;\n\nvoid main() {\n    a[0] <- 1;\n}\n',
+    );
+  });
+
+  afterAll(() => {
+    if (dir) rmSync(dir, { recursive: true, force: true });
+  });
+
+  async function emitted(): Promise<string> {
+    const result = await new Transpiler(
+      {
+        input: join(dir, "main.cnx"),
+        includeDirs: [dir],
+        outDir: join(dir, "out"),
+        target: "host",
+      },
+      NodeFileSystem.instance,
+    ).transpile({ kind: "files" });
+    expect(result.success).toBe(true);
+    return readFileSync(join(dir, "out", "main.c"), "utf8");
+  }
+
+  it("reads the header again rather than restore the other branch", async () => {
+    expect(await emitted()).toContain("uint8_t a[8]");
+    writeFileSync(join(dir, "cfg.h"), "#define SMALL 1\n");
+    expect(await emitted()).toContain("uint8_t a[4]");
+  });
+});
