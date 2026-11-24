@@ -62,18 +62,10 @@ class WrittenParts {
     scope: string | null,
     unwritten: IUnwrittenSyntax,
   ): IWrittenPart[] {
-    const spelled = WrittenParts.asSpelled(declaration);
-    const parts =
-      spelled.kind === "function"
-        ? [
-            ...DeclarationParts.signature(spelled),
-            ...DeclarationParts.statements(
-              spelled.body.statements,
-              unwritten.declarations,
-            ),
-          ]
-        : DeclarationParts.of(spelled);
-    return parts.map((part) => ({ part, scope }));
+    return DeclarationParts.of(
+      WrittenParts.asSpelled(declaration),
+      unwritten.declarations,
+    ).map((part) => ({ part, scope }));
   }
 
   /** `main(string args[])` is written `int main(int argc, char *argv[])`, so 2.3 spells none of its parameters */

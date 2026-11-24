@@ -19,7 +19,11 @@ import TypeParts from "./TypeParts";
  * until it is placed (#1991).
  */
 class DeclarationParts {
-  static of(declaration: TMemberDeclaration): readonly TSyntaxPart[] {
+  /** `omitted`: statements in a function body that 2.2 decided write nothing (#1791) */
+  static of(
+    declaration: TMemberDeclaration,
+    omitted: ReadonlySet<ISyntaxNode> = new Set(),
+  ): readonly TSyntaxPart[] {
     switch (declaration.kind) {
       case "variableDeclaration":
       case "constructorDeclaration":
@@ -27,7 +31,7 @@ class DeclarationParts {
       case "function":
         return [
           ...DeclarationParts.signature(declaration),
-          ...DeclarationParts.statements(declaration.body.statements),
+          ...DeclarationParts.statements(declaration.body.statements, omitted),
         ];
       case "register":
         return [
@@ -74,13 +78,18 @@ class DeclarationParts {
     omitted: ReadonlySet<ISyntaxNode> = new Set(),
   ): readonly TSyntaxPart[] {
     return statements.flatMap((statement) => [
-      ...(omitted.has(statement) ? [] : DeclarationParts.statement(statement)),
+      ...(omitted.has(statement)
+        ? []
+        : DeclarationParts.statement(statement, omitted)),
       ...DeclarationParts.statements(StatementChildren.of(statement), omitted),
     ]);
   }
 
   /** The statement's own parts, not those of statements nested in it */
-  static statement(statement: TStatement): readonly TSyntaxPart[] {
+  static statement(
+    statement: TStatement,
+    omitted: ReadonlySet<ISyntaxNode> = new Set(),
+  ): readonly TSyntaxPart[] {
     switch (statement.kind) {
       case "variableDeclaration":
         return DeclarationParts.variable(statement);
@@ -104,7 +113,7 @@ class DeclarationParts {
         return [DeclarationParts.expression(statement.condition)];
       case "for":
         return [
-          ...(statement.init === null
+          ...(statement.init === null || omitted.has(statement.init)
             ? []
             : DeclarationParts.statement(statement.init)),
           ...DeclarationParts.expressions([
