@@ -116,11 +116,16 @@ describe("a C header's own includes (#1723)", () => {
           includePaths?: string[];
           dumpMacros?: boolean;
           directivesOnly?: boolean;
+          imacros?: string[];
         },
       ) => {
         // #1688's macro dump of the file's includes is not a header's run,
-        // and #2096's directives-only pass re-reads a header already counted
-        if (!options?.dumpMacros && !options?.directivesOnly) {
+        // and #2096's directives-only pass re-reads a header already counted,
+        // as does the run after the headers before it, which checks whether
+        // their macros change the header's lines; it gets the path too
+        if (options?.imacros !== undefined) {
+          expect(options.includePaths).toContain(libB);
+        } else if (!options?.dumpMacros && !options?.directivesOnly) {
           handed.push([...(options?.includePaths ?? [])]);
         }
         // #1844: with the line markers a compiler writes, which say that A.h
