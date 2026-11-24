@@ -64,23 +64,27 @@ class TypeNameValueAnalyzer {
     });
   }
 
-  /** The arguments a call places in register parameters: E0940 decides them */
+  /** The arguments a chain's calls place in register parameters: E0940 decides them */
   private registerArgumentsOf(node: TExpression): TExpression[] {
     if (node.kind !== "postfix") return [];
-    const call = node.ops.find((op) => op.kind === "call");
-    if (call?.kind !== "call") return [];
-    const callee = FunctionReference.ofCallChain(
-      node,
-      OperandTyper.scopePathAt(node.span, this.context),
-      this.context,
-    );
-    if (callee === null) return [];
-    return call.arguments.flatMap((arg, index) => {
-      const param = callee.parameters[index];
-      return param !== undefined &&
-        RegisterInstance.typeNamedBy(this.context.program, param.type) !== null
-        ? [ExpressionShape.unparenthesized(arg)]
-        : [];
+    const scopePath = OperandTyper.scopePathAt(node.span, this.context);
+    return node.ops.flatMap((op, callAt) => {
+      if (op.kind !== "call") return [];
+      const callee = FunctionReference.ofCall(
+        node,
+        scopePath,
+        this.context,
+        callAt,
+      );
+      if (callee === null) return [];
+      return op.arguments.flatMap((arg, index) => {
+        const param = callee.parameters[index];
+        return param !== undefined &&
+          RegisterInstance.typeNamedBy(this.context.program, param.type) !==
+            null
+          ? [ExpressionShape.unparenthesized(arg)]
+          : [];
+      });
     });
   }
 

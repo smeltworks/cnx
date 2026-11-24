@@ -28,6 +28,9 @@
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TExpression from "../../types/syntax/TExpression";
+import type TExpressionOf from "../../types/syntax/TExpressionOf";
+import FunctionReference from "./helpers/FunctionReference";
+import TypeResolver from "../../utils/TypeResolver";
 import StatementNodes from "../../utils/StatementNodes";
 import StdlibFunctions from "./StdlibFunctions";
 import CalleeNameResolver from "./helpers/CalleeNameResolver";
@@ -156,10 +159,20 @@ class ReturnValueUseAnalyzer {
     expr: TExpression,
     scopePath: string,
     context: IAnalysisContext,
-  ): string | null {
+  ): { name: string; declaredAt: ISourceSite | undefined } | null {
     if (ReturnValueUseAnalyzer.isVoidCast(expr)) return null;
     const call = ReturnValueUseAnalyzer.asBareCall(expr);
-    if (call === null) return null;
+    if (call?.kind !== "postfix") return null;
+    const lastCall = call.ops.length - 1;
+    if (lastCall !== call.ops.findIndex((op) => op.kind === "call")) {
+      // `make().op()` discards what `op` returns, not `make` (#2473)
+      return ReturnValueUseAnalyzer.discardedChainCall(
+        call,
+        lastCall,
+        scopePath,
+        context,
+      );
+    }
     const resolved = CalleeNameResolver.resolveDetailed(
       call,
       scopePath,
@@ -167,7 +180,41 @@ class ReturnValueUseAnalyzer {
       context.program,
     );
     if (!resolved) return null;
-    return ReturnValueUseAnalyzer.nonVoidCallee(resolved, scopePath, context);
+    const name = ReturnValueUseAnalyzer.nonVoidCallee(
+      resolved,
+      scopePath,
+      context,
+    );
+    if (name === null) return null;
+    return {
+      name,
+      declaredAt: ReturnValueUseAnalyzer.declarationOf(name, context),
+    };
+  }
+
+  /** A later call in a chain: the callback it calls through, when visible */
+  private static discardedChainCall(
+    chain: TExpressionOf<"postfix">,
+    callAt: number,
+    scopePath: string,
+    context: IAnalysisContext,
+  ): { name: string; declaredAt: ISourceSite | undefined } | null {
+    const callee = FunctionReference.ofCall(chain, scopePath, context, callAt);
+    if (
+      callee === null ||
+      TypeResolver.getTypeName(callee.returnType) === "void"
+    )
+      return null;
+    return {
+      name: FunctionReference.calledAs(
+        chain,
+        callAt,
+        callee,
+        scopePath,
+        context,
+      ),
+      declaredAt: BindingSite.ofSymbol(callee),
+    };
   }
 
   /**
@@ -191,18 +238,18 @@ class ReturnValueUseAnalyzer {
     for (const { declaration, scope } of program.members) {
       for (const statement of StatementNodes.in(declaration)) {
         if (statement.kind !== "expression") continue;
-        const funcName = ReturnValueUseAnalyzer.discardedCallee(
+        const discarded = ReturnValueUseAnalyzer.discardedCallee(
           statement.expression,
           scope ?? "",
           context,
         );
-        if (funcName === null) continue;
+        if (discarded === null) continue;
         errors.push({
           span: statement.span,
           code: "E0708",
-          message: `Return value of non-void function '${funcName}' is discarded`,
-          helpText: `Use the value, or discard it explicitly: (void) ${funcName}(...);`,
-          declaredAt: ReturnValueUseAnalyzer.declarationOf(funcName, context),
+          message: `Return value of non-void function '${discarded.name}' is discarded`,
+          helpText: `Use the value, or discard it explicitly: (void) ${discarded.name}(...);`,
+          declaredAt: discarded.declaredAt,
         });
       }
     }

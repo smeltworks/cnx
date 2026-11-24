@@ -264,12 +264,13 @@ class ConstAssignmentCheck {
       return;
     }
     if (callee.sourceLanguage !== ESourceLanguage.Cnx) return;
-    const isNamed =
-      callAt === expr.ops.findIndex((op) => op.kind === "call") &&
-      FunctionReference.ofCallChain(expr, scopePath, this.context) !== null;
-    const calledAs = isNamed
-      ? callee.name
-      : ConstAssignmentCheck.calleeAsWritten(expr, callAt);
+    const calledAs = FunctionReference.calledAs(
+      expr,
+      callAt,
+      callee,
+      scopePath,
+      this.context,
+    );
     args.forEach((arg, index) => {
       const param = callee.parameters[index];
       if (param === undefined || param.isConst) return;
@@ -378,16 +379,6 @@ class ConstAssignmentCheck {
       return `${recipe}; '${written}' is \`w1c\`, so that write clears every flag still set in the local (ADR-071, #2238).`;
     }
     return `${recipe} (ADR-071, #2238).`;
-  }
-
-  /** A call through a value, as written: `h.cb`, not the callback's type */
-  private static calleeAsWritten(
-    chain: TExpressionOf<"postfix">,
-    callAt: number,
-  ): string {
-    return [chain.primary, ...chain.ops.slice(0, callAt)]
-      .map((node) => node.written)
-      .join("");
   }
 
   /**

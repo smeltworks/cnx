@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1038 fixture(s) assert a diagnostic; 1024 carry a code.
+1040 fixture(s) assert a diagnostic; 1026 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -970,6 +970,8 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-2380-same-level-names/variable-beside-scope-error.test.cnx                               | E0425                             |
 | tests/bugs/issue-2380-same-level-names/variable-beside-struct-error.test.cnx                              | E0425                             |
 | tests/bugs/issue-2385-string-span-write/span-write-bounds-error.test.cnx                                  | E0860, E0861                      |
+| tests/bugs/issue-2473-chained-callback-mut-argument/chained-callback-argument-type-error.test.cnx         | E0879                             |
+| tests/bugs/issue-2473-chained-callback-mut-argument/chained-callback-discarded-error.test.cnx             | E0708                             |
 | tests/bugs/issue-2473-chained-callback-mut-argument/chained-callback-mut-argument-error.test.cnx          | E0900, E0915                      |
 | tests/bugs/issue-847-misra-17-7-lowering/bare-intra-scope-discard.test.cnx                                | E0708                             |
 | tests/bugs/issue-847-misra-17-7-lowering/cross-file-scope-discard.test.cnx                                | E0708                             |

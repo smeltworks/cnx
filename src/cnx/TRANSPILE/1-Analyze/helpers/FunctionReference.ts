@@ -142,6 +142,27 @@ class FunctionReference {
   }
 
   /**
+   * How a diagnostic names the function a call reaches: its own name when the
+   * chain names it (`S.f(...)`), else the chain as written before the call
+   * (`h.cb`, `make().op`), not the callback's type (#2473)
+   */
+  static calledAs(
+    chain: TExpressionOf<"postfix">,
+    callAt: number,
+    callee: IFunctionSymbol,
+    scopePath: string,
+    context: IAnalysisContext,
+  ): string {
+    const isNamed =
+      callAt === chain.ops.findIndex((op) => op.kind === "call") &&
+      FunctionReference.ofCallChain(chain, scopePath, context) !== null;
+    if (isNamed) return callee.name;
+    return [chain.primary, ...chain.ops.slice(0, callAt)]
+      .map((node) => node.written)
+      .join("");
+  }
+
+  /**
    * The function an expression NAMES without calling it -- `onUp`,
    * `this.handler`, `global.onUp`, `S.handler` -- or null for anything else:
    * a variable of callback type, a call, a subscript, an expression.

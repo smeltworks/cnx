@@ -1,0 +1,24 @@
+// test-error
+// Tests: a callback argument to a later call in a chain is checked against that call's callee (#2473)
+#pragma target cortex-m7
+
+void handler(u32 v) {}
+
+void wrong(u8 a, u8 b) {}
+
+void takes(handler h) {
+    h(1);
+}
+
+struct Ops {
+    takes t;
+}
+
+Ops make() {
+    Ops o <- { t: takes };
+    return o;
+}
+
+void main() {
+    make().t(wrong);
+}

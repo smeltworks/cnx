@@ -1,0 +1,20 @@
+// test-error
+// Tests: a bare chained call discards what its last call returns (#2473)
+#pragma target cortex-m7
+
+u32 ident(u32 v) {
+    return v;
+}
+
+struct Ops {
+    ident op;
+}
+
+Ops make() {
+    Ops o <- { op: ident };
+    return o;
+}
+
+void main() {
+    make().op(1);
+}

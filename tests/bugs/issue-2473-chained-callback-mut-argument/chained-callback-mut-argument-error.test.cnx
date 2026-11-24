@@ -15,7 +15,7 @@ volatile mut u32 flag <- 0;
 u32 rdonly <- 3;
 
 Ops make() {
-    Ops o <- {op: bump};
+    Ops o <- { op: bump };
     return o;
 }
 

@@ -103,7 +103,7 @@ class CallbackAssignmentCheck {
     });
   }
 
-  /** A struct initializer's fields, and the arguments of a chain's first call */
+  /** A struct initializer's fields, and the arguments of each call in a chain */
   public checkExpression(expr: TExpression): void {
     if (expr.kind === "structInitializer") {
       for (const field of expr.fields) {
@@ -116,28 +116,38 @@ class CallbackAssignmentCheck {
       return;
     }
     if (expr.kind !== "postfix") return;
-    const call = expr.ops.find((op) => op.kind === "call");
-    if (call?.kind !== "call") return;
-    const callee = FunctionReference.ofCallChain(
-      expr,
-      OperandTyper.scopePathAt(expr.span, this.context),
-      this.context,
-    );
-    if (callee === null) return;
-    call.arguments.forEach((arg, index) => {
-      const param = callee.parameters[index];
-      if (param === undefined) return;
-      const layout = RegisterInstance.typeNamedBy(
-        this.context.program,
-        param.type,
+    const scopePath = OperandTyper.scopePathAt(expr.span, this.context);
+    expr.ops.forEach((op, callAt) => {
+      if (op.kind !== "call") return;
+      const callee = FunctionReference.ofCall(
+        expr,
+        scopePath,
+        this.context,
+        callAt,
       );
-      if (layout !== null) {
-        this.checkRegisterArgument(arg, param.name, callee, layout);
-        return;
-      }
-      this.check(TypeResolver.getTypeName(param.type), arg, {
-        verb: "pass",
-        description: `parameter '${param.name}' of function '${callee.name}'`,
+      if (callee === null) return;
+      const calledAs = FunctionReference.calledAs(
+        expr,
+        callAt,
+        callee,
+        scopePath,
+        this.context,
+      );
+      op.arguments.forEach((arg, index) => {
+        const param = callee.parameters[index];
+        if (param === undefined) return;
+        const layout = RegisterInstance.typeNamedBy(
+          this.context.program,
+          param.type,
+        );
+        if (layout !== null) {
+          this.checkRegisterArgument(arg, param.name, callee, calledAs, layout);
+          return;
+        }
+        this.check(TypeResolver.getTypeName(param.type), arg, {
+          verb: "pass",
+          description: `parameter '${param.name}' of function '${calledAs}'`,
+        });
       });
     });
   }
@@ -150,6 +160,7 @@ class CallbackAssignmentCheck {
     arg: TExpression,
     paramName: string,
     callee: IFunctionSymbol,
+    calledAs: string,
     layout: IRegisterSymbol,
   ): void {
     const passed = OperandTyper.wholeRegisterTypeOf(arg, this.context);
@@ -162,7 +173,7 @@ class CallbackAssignmentCheck {
     this.found.push({
       code: "E0940",
       span: arg.span,
-      message: `'${arg.written}' ${what}; parameter '${paramName}' of function '${callee.name}' takes a '${wanted}'`,
+      message: `'${arg.written}' ${what}; parameter '${paramName}' of function '${calledAs}' takes a '${wanted}'`,
       helpText: `Pass an instance of '${wanted}' declared at file or scope level (\`${layout.name} NAME(address);\`), or a '${wanted}' parameter (ADR-072).`,
       declaredAt: BindingSite.ofSymbol(callee),
     });

@@ -11,7 +11,7 @@ struct Ops {
 }
 
 Ops make() {
-    Ops o <- {op: bump};
+    Ops o <- { op: bump };
     return o;
 }
 
