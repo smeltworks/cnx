@@ -1301,6 +1301,7 @@ scope Gauge {
         "sourceFiles",
         "symbolByCName",
         "symbolTable",
+        "symbolTableFor",
         "symbolsInFile",
         "target",
         "typesDeclaredIn",

@@ -180,6 +180,63 @@ describe("SymbolTable", () => {
     });
   });
 
+  describe("seenFrom (#2474)", () => {
+    const stateIn = (sourceFile: string, type: string): TCSymbol => ({
+      kind: "variable",
+      name: "state",
+      sourceFile,
+      span: TestSourceSpan.at(1),
+      sourceLanguage: ESourceLanguage.C,
+      visibility: "public",
+      type,
+      isConst: false,
+      isArray: false,
+    });
+    const classIn = (sourceFile: string): TCppSymbol => ({
+      kind: "class",
+      name: "Widget",
+      unqualifiedName: "Widget",
+      sourceFile,
+      span: TestSourceSpan.at(1),
+      sourceLanguage: ESourceLanguage.Cpp,
+      visibility: "public",
+    });
+
+    beforeEach(() => {
+      symbolTable.addCSymbol(stateIn("/a.h", "volatile uint32_t"));
+      symbolTable.addCSymbol(stateIn("/b.h", "uint32_t"));
+      symbolTable.addCppSymbol(classIn("/a.hpp"));
+      symbolTable.addCppSymbol(classIn("/b.hpp"));
+    });
+
+    it("resolves a name two headers declare to the reading file's own", () => {
+      const fromB = symbolTable.seenFrom(new Set(["/b.h", "/b.hpp"]));
+      expect(fromB.getCSymbol("state")?.sourceFile).toBe("/b.h");
+      expect(fromB.getCppSymbol("Widget")?.sourceFile).toBe("/b.hpp");
+      expect(fromB.getCOverloads("state").map((s) => s.sourceFile)).toEqual([
+        "/b.h",
+        "/a.h",
+      ]);
+      expect(fromB.getCppOverloads("Widget").map((s) => s.sourceFile)).toEqual([
+        "/b.hpp",
+        "/a.hpp",
+      ]);
+    });
+
+    it("leaves the run-wide table and a file that sees neither unchanged", () => {
+      symbolTable.seenFrom(new Set(["/b.h"]));
+      expect(symbolTable.getCSymbol("state")?.sourceFile).toBe("/a.h");
+      const fromNeither = symbolTable.seenFrom(new Set());
+      expect(fromNeither.getCSymbol("state")?.sourceFile).toBe("/a.h");
+    });
+
+    it("shares the table's indexes, so a later symbol is seen too", () => {
+      const fromC = symbolTable.seenFrom(new Set(["/c.h"]));
+      symbolTable.addCSymbol(stateIn("/c.h", "uint8_t"));
+      expect(fromC.getCSymbol("state")?.sourceFile).toBe("/c.h");
+    });
+  });
+
   // ========================================================================
   // TCppSymbol (C++) Operations
   // ========================================================================

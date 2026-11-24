@@ -106,6 +106,11 @@ interface IProgram {
   symbolsInFile(sourceFile: string): ReadonlyArray<TSymbol>;
   /** The run's symbol table, complete: 1.3's header symbols plus the cnx ones 1.4 resolved (#1991). */
   symbolTable(): IResolvedSymbols;
+  /**
+   * The run's symbol table as `sourceFile` reads it (#2474): a header name
+   * two headers declare is the declaration the file's own C includes bring in.
+   */
+  symbolTableFor(sourceFile: string): IResolvedSymbols;
 
   /** Every file the program declared, in the order they were declared. */
   sourceFiles(): ReadonlyArray<string>;

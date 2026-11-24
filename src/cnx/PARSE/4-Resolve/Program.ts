@@ -66,6 +66,7 @@ import type IBindingFacts from "./types/IBindingFacts";
 import ConflictDetector from "./ConflictDetector";
 import type IForeignSymbols from "./types/IForeignSymbols";
 import type IForeignValue from "./types/IForeignValue";
+import type IDeclaredForeignValue from "./types/IDeclaredForeignValue";
 import type IConflict from "../../types/IConflict";
 import CallbackCompatibility from "./CallbackCompatibility";
 import SymbolTable from "../3-Declare/SymbolTable";
@@ -188,12 +189,24 @@ class Program {
     // and handed in. The orchestrator and the test harness both did, and the
     // harness's copy had already dropped the callback map.
     const symbolTable = inputs.symbolTable ?? new SymbolTable();
+    // #2474: each file's view of it, built on its first use
+    const symbolTablesByFile = new Map<string, IResolvedSymbols>();
+    const symbolTableFor = (sourceFile: string): IResolvedSymbols => {
+      let view = symbolTablesByFile.get(sourceFile);
+      if (view === undefined) {
+        view = symbolTable.seenFrom(
+          inputs.headerPathsByFile?.get(sourceFile) ?? EMPTY_NAMES,
+        );
+        symbolTablesByFile.set(sourceFile, view);
+      }
+      return view;
+    };
     const functionParamLists = new Map(
       files.flatMap((file) => [...file.parameterLists]),
     );
     const callbackCompatibleFunctions = CallbackCompatibility.derive(
       files,
-      symbolTable,
+      symbolTableFor,
     );
     const callbackFunctions = CallbackCompatibility.usedAsCallback(files);
 
@@ -270,6 +283,7 @@ class Program {
     return Object.freeze({
       isScopeTypeVisibleFrom,
       symbolTable: (): IResolvedSymbols => symbolTable,
+      symbolTableFor,
       symbolByCName: (cName: string): TSymbol | undefined =>
         symbolsByCName.get(cName),
       memberOf: (scopePath: string, name: string): TSymbol | undefined =>
@@ -1261,7 +1275,10 @@ class Program {
       hidesHeaderName: (name) => options.files.hidesHeaderName(file(), name),
       mayBeHeaderName: (root, name, at) =>
         Program.mayBeHeaderName(facts, options.files, file(), root, name, at),
-      foreignValue: (name) => facts.foreignValues.get(name) ?? null,
+      foreignValue: (name) =>
+        Program.foreignValueIn(facts.foreignValues.get(name), (origin) =>
+          options.files.seesForeignSymbol(file(), origin),
+        ),
       headerStructFields: (structName) =>
         options.files.headerStructFields(structName),
       headerTypeBits: (cType) => options.files.headerTypeBits(cType),
@@ -1885,20 +1902,34 @@ class Program {
 
   private static foreignValues(
     foreign: IForeignSymbols,
-  ): ReadonlyMap<string, IForeignValue> {
-    const values = new Map<string, IForeignValue>();
+  ): ReadonlyMap<string, ReadonlyArray<IDeclaredForeignValue>> {
+    const values = new Map<string, IDeclaredForeignValue[]>();
     for (const symbol of [...foreign.c, ...foreign.cpp]) {
-      if (symbol.kind === "variable") {
-        values.set(symbol.name, {
-          kind: "variable",
-          type: symbol.type,
-          dimensions: symbol.arrayDimensions ?? [],
-        });
-      } else if (symbol.kind === "function") {
-        values.set(symbol.name, { kind: "function" });
-      }
+      const value: IForeignValue | null =
+        symbol.kind === "variable"
+          ? {
+              kind: "variable",
+              type: symbol.type,
+              dimensions: symbol.arrayDimensions ?? [],
+            }
+          : symbol.kind === "function"
+            ? { kind: "function" }
+            : null;
+      if (value === null) continue;
+      const declared = values.get(symbol.name) ?? [];
+      declared.push({ origin: symbol, value });
+      values.set(symbol.name, declared);
     }
     return values;
+  }
+
+  /** #2474: the value `name` names in a file -- the one its own headers declare */
+  private static foreignValueIn(
+    declared: ReadonlyArray<IDeclaredForeignValue> | undefined,
+    sees: (origin: IForeignOrigin) => boolean,
+  ): IForeignValue | null {
+    if (declared === undefined) return null;
+    return (declared.find((entry) => sees(entry.origin)) ?? declared[0]).value;
   }
 
   /**

@@ -29,7 +29,7 @@ function callbacksIn(
       registry,
     ),
   );
-  return CallbackCompatibility.derive(files, symbolTable);
+  return CallbackCompatibility.derive(files, () => symbolTable);
 }
 
 /** A C typedef, of a function pointer or not. */

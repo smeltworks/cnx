@@ -27,19 +27,20 @@
  * at transpile exit 0.
  */
 
-import type SymbolTable from "../3-Declare/SymbolTable";
+import type IResolvedSymbols from "../../types/IResolvedSymbols";
 import type IFileSymbols from "../../types/IFileSymbols";
 import type TCallbackUse from "../../types/TCallbackUse";
 
 class CallbackCompatibility {
   /**
    * @param files every file's `IFileSymbols`, in declaration order
-   * @param symbolTable the C and C++ header symbols, for the typedefs
+   * @param symbolTableFor the C and C++ header symbols as a file reads them,
+   *   for the typedefs (#2474)
    * @returns function name to the callback typedef it is used as
    */
   static derive(
     files: ReadonlyArray<IFileSymbols>,
-    symbolTable: SymbolTable,
+    symbolTableFor: (sourceFile: string) => IResolvedSymbols,
   ): ReadonlyMap<string, string> {
     const programFunctions = CallbackCompatibility.programFunctions(files);
 
@@ -50,7 +51,7 @@ class CallbackCompatibility {
       for (const use of file.callbackUses) {
         const typedef = CallbackCompatibility.callbackTypedefOf(
           use,
-          symbolTable,
+          symbolTableFor(file.sourceFile),
         );
         if (typedef !== null && programFunctions.has(use.functionName)) {
           callbacks.set(use.functionName, typedef);
@@ -107,7 +108,7 @@ class CallbackCompatibility {
    */
   private static callbackTypedefOf(
     use: TCallbackUse,
-    symbolTable: SymbolTable,
+    symbolTable: IResolvedSymbols,
   ): string | null {
     // ADR-071's uses say only that a function is a callback, not which typedef
     if (use.kind === "assignment" || use.kind === "type") return null;

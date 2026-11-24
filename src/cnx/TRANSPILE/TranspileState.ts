@@ -526,7 +526,9 @@ class TranspileState {
       this.program !== null,
       "1.4 Resolve built Program before a pass read its symbol table",
     );
-    return this.program.symbolTable();
+    return this.sourcePath === null
+      ? this.program.symbolTable()
+      : this.program.symbolTableFor(this.sourcePath);
   }
 
   // ===========================================================================

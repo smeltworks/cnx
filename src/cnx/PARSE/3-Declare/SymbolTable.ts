@@ -144,6 +144,13 @@ class SymbolTable implements IResolvedSymbols {
    */
   private readonly enumBitWidth: Map<string, number> = new Map();
 
+  /**
+   * #2474: the headers the reading file's own C includes bring in. A name two
+   * headers declare is the declaration one of these makes, not the build's
+   * first; null on the run-wide table, which prefers none.
+   */
+  private visibleHeaders: ReadonlySet<string> | null = null;
+
   // ========================================================================
   // cnx Symbol Methods (TSymbol)
   // ========================================================================
@@ -337,8 +344,29 @@ class SymbolTable implements IResolvedSymbols {
    * Get a C symbol by name (returns first match, or undefined)
    */
   getCSymbol(name: string): TCSymbol | undefined {
-    const symbols = this.cSymbols.get(name);
-    return symbols?.[0];
+    return this.getCOverloads(name)[0];
+  }
+
+  /**
+   * This table as `sourceFile` reads it (#2474): a C or C++ name more than
+   * one header declares resolves to the declaration a header in `headers`
+   * makes. The view shares this table's indexes and never writes them.
+   */
+  seenFrom(headers: ReadonlySet<string>): IResolvedSymbols {
+    const view: SymbolTable = Object.create(SymbolTable.prototype);
+    return Object.assign(view, this, { visibleHeaders: headers });
+  }
+
+  /** `symbols` with the reading file's headers' declarations first (#2474) */
+  private visibleFirst<T extends { readonly sourceFile: string }>(
+    symbols: readonly T[],
+  ): T[] {
+    const headers = this.visibleHeaders;
+    if (headers === null) return [...symbols];
+    return [
+      ...symbols.filter((symbol) => headers.has(symbol.sourceFile)),
+      ...symbols.filter((symbol) => !headers.has(symbol.sourceFile)),
+    ];
   }
 
   /**
@@ -385,7 +413,7 @@ class SymbolTable implements IResolvedSymbols {
    * Get all C symbols with a given name
    */
   getCOverloads(name: string): TCSymbol[] {
-    return this.cSymbols.get(name) ?? [];
+    return this.visibleFirst(this.cSymbols.get(name) ?? []);
   }
 
   /**
@@ -438,15 +466,14 @@ class SymbolTable implements IResolvedSymbols {
    * Get a C++ symbol by name (returns first match, or undefined)
    */
   getCppSymbol(name: string): TCppSymbol | undefined {
-    const symbols = this.cppSymbols.get(name);
-    return symbols?.[0];
+    return this.getCppOverloads(name)[0];
   }
 
   /**
    * Get all C++ symbols with a given name
    */
   getCppOverloads(name: string): TCppSymbol[] {
-    return this.cppSymbols.get(name) ?? [];
+    return this.visibleFirst(this.cppSymbols.get(name) ?? []);
   }
 
   /**
