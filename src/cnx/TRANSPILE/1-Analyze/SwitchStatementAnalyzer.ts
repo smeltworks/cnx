@@ -28,6 +28,7 @@ import LengthProperty from "../../utils/LengthProperty";
 import CaseLabelSymbol from "../../utils/CaseLabelSymbol";
 import ScopeUtils from "../../utils/ScopeUtils";
 import ConstLiteral from "../../utils/ConstLiteral";
+import type TConstLiteral from "../../types/TConstLiteral";
 import type TChainRoot from "../../types/TChainRoot";
 import type TValueBinding from "../../types/TValueBinding";
 import type TSymbol from "../../types/symbols/TSymbol";
@@ -313,9 +314,13 @@ class SwitchStatementCheck {
           label.kind === "identifier" &&
           ConstLiteral.textOf(program, binding.symbol) !== null
         );
+      // #2493: a local's settled value, as its label is written (a u64 past
+      // 2^53, an enum member: #2105)
       case "local":
         return (
-          label.kind === "identifier" && program.constantOf(binding) !== null
+          label.kind === "identifier" &&
+          ConstLiteral.textOfValue(program, binding.declaration.constValue) !==
+            null
         );
       case "function":
         return false;
@@ -392,9 +397,11 @@ class SwitchStatementCheck {
     const binding = this.labelBinding(label);
     if (binding === null) return null;
     if (label.kind === "identifier") {
+      // #2493: the value its label is written as (a u64 past 2^53, #2105's enum)
       if (binding.kind === "local") {
-        const local = program.constantOf(binding);
-        return local === null ? null : `value:${local.value}`;
+        return this.literalKey(
+          ConstLiteral.valueLiteral(program, binding.declaration.constValue),
+        );
       }
       return binding.kind === "variable"
         ? this.settledKey(binding.symbol)
@@ -407,7 +414,11 @@ class SwitchStatementCheck {
 
   /** The key of the answer render writes for a const (`ConstLiteral.of`) */
   private settledKey(symbol: IVariableSymbol): string | null {
-    const literal = ConstLiteral.of(this.context.program, symbol);
+    return this.literalKey(ConstLiteral.of(this.context.program, symbol));
+  }
+
+  /** The key of a literal render writes */
+  private literalKey(literal: TConstLiteral | null): string | null {
     if (literal === null) return null;
     switch (literal.kind) {
       case "integer":

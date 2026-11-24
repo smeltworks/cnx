@@ -1,0 +1,45 @@
+// test-execution
+// test-no-warnings
+// #2493 review: a local u64 label past 2^53 keeps its value exactly, and an
+// enum-typed local label (#2105) is written as its member. Each is read only
+// as a label, so neither is declared.
+enum EMode { IDLE, RUN }
+
+u32 pick(EMode s) {
+    EMode m <- EMode.IDLE;
+    switch (s) {
+        case m {
+            return 1;
+        }
+        case EMode.RUN {
+            return 2;
+        }
+    }
+    return 0;
+}
+
+u32 main() {
+    u64 BIG <- 9007199254740993;
+    u64 s <- 9007199254740993;
+    mut u32 r <- 0;
+    switch (s) {
+        case BIG {
+            r <- 1;
+        }
+        default {
+            r <- 2;
+        }
+    }
+    if (r != 1) {
+        return 1;
+    }
+    u32 idle <- pick(EMode.IDLE);
+    if (idle != 1) {
+        return 2;
+    }
+    u32 run <- pick(EMode.RUN);
+    if (run != 2) {
+        return 3;
+    }
+    return 0;
+}
