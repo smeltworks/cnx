@@ -118,6 +118,10 @@ import type TStructInitializerForm from "./types/TStructInitializerForm";
 import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
 import type TPlannedLazyTernary from "./types/TPlannedLazyTernary";
 import type TTypeSyntax from "../../types/syntax/TTypeSyntax";
+import type TCaseLabelSyntax from "../../types/syntax/TCaseLabelSyntax";
+import type TSyntaxPart from "../../types/syntax/TSyntaxPart";
+import type TTemplateArgumentSyntax from "../../types/syntax/TTemplateArgumentSyntax";
+import TypeParts from "../../utils/TypeParts";
 import type ISourcePosition from "../../utils/types/ISourcePosition";
 import TypeGenerationHelper from "./TypeGenerationHelper";
 import type IPlannedType from "./types/IPlannedType";
@@ -184,6 +188,9 @@ const NO_EXPECTED_TYPE: IPlannedExpectedType = {
  * before any of it is written. `CodeGenWalker.plan` delegates here, so the
  * plan-render-state and depcruise rules for `2-Plan/` see the planning code.
  */
+type TVariableStatement = Extract<TStatement, { kind: "variableDeclaration" }>;
+type TNameArgument = Extract<TTemplateArgumentSyntax, { kind: "name" }>;
+
 class FilePlanner {
   private readonly state: TranspileState;
   private readonly queries: PlanQueries;
@@ -404,22 +411,6 @@ class FilePlanner {
         OperandTyper.typeOf(node, typing)?.binding?.kind === "local",
     );
     return readsLocal ? undefined : this.constantOf(expr);
-  }
-
-  /**
-   * #2493: a local const as C writes it where only a constant expression is
-   * taken -- a case label (C11 6.8.4.2p3), which a const object is not -- or
-   * null when its value is none C takes
-   */
-  localConstSpelling(local: ILocalDeclaration): IConstSpelling | null {
-    const typeName = ConstantFold.typeNameOf(local.type);
-    return local.constValue === null || typeName === null
-      ? null
-      : PrivateConstSpelling.ofValue(
-          this.state.typingContext().program,
-          local.constValue,
-          typeName,
-        );
   }
 
   /** Try to evaluate a constant expression at compile time */
@@ -1222,44 +1213,109 @@ class FilePlanner {
   }
 
   /**
+   * #2493: each case label naming a local const, spelled as its value: C
+   * switches only on an integer constant expression (C11 6.8.4.2p3), which a
+   * const object is not
+   */
+  private planLocalLabels(
+    program: IProgramSyntax,
+  ): ReadonlyMap<TCaseLabelSyntax, IConstSpelling> {
+    const labels = new Map<TCaseLabelSyntax, IConstSpelling>();
+    for (const { declaration } of program.members) {
+      for (const label of StatementNodes.caseLabels(declaration)) {
+        if (label.kind !== "identifier") continue;
+        const binding = this.state.bindingAt(
+          label.root,
+          label.name,
+          label.nameSpan,
+        );
+        if (binding?.kind !== "local") continue;
+        const spelling = PrivateConstSpelling.ofValue(
+          this.state.typingContext().program,
+          binding.declaration.constValue,
+          ConstantFold.typeNameOf(binding.declaration.type),
+        );
+        if (spelling !== null) labels.set(label, spelling);
+      }
+    }
+    return labels;
+  }
+
+  /**
    * #1791: each local const no C expression reads, so it is not declared.
-   * Every use of it is a dimension, which always folds (ADR-023: no VLAs), or
-   * a bit-range width that folds; a declaration left with no reader is what
-   * `-Wunused-variable` rejects, and an unused object is dead code (MISRA C:2012
-   * Rule 2.2). A local with no uses at all keeps its declaration.
+   * Every use of it is a dimension, which always folds (ADR-023: no VLAs), a
+   * bit-range width that folds, a case label written as its value, or the
+   * initializer of another const not declared: a declaration left with no
+   * reader is what `-Wunused-variable` rejects, and an unused object is dead
+   * code (MISRA C:2012 Rule 2.2). A local with no uses at all keeps its
+   * declaration.
    */
   private planUnreadLocals(
     program: IProgramSyntax,
     foldedWidths: ReadonlyMap<TExpression, number>,
-  ): ReadonlySet<Extract<TStatement, { kind: "variableDeclaration" }>> {
-    const unread = new Set<
-      Extract<TStatement, { kind: "variableDeclaration" }>
-    >();
+    localLabels: ReadonlyMap<TCaseLabelSyntax, IConstSpelling>,
+  ): ReadonlySet<TVariableStatement> {
+    const unread = new Set<TVariableStatement>();
     for (const { declaration } of program.members) {
       if (declaration.kind !== "function") continue;
-      const readAtRuntime = this.localReads(declaration, foldedWidths);
-      for (const statement of StatementNodes.in(declaration)) {
-        if (statement.kind !== "variableDeclaration") continue;
-        const local = this.state.ownLocalDeclaration(statement);
-        if (
-          local?.kind === "local" &&
-          local.constValue !== null &&
-          readAtRuntime.get(local) === false
-        ) {
-          unread.add(statement);
-        }
+      const consts = this.localConsts(declaration);
+      // A const read only by one not declared is read by nothing: grow the
+      // set until it stops, which it must, as it only grows
+      let found = new Set<TVariableStatement>();
+      for (;;) {
+        const reads = this.localReads(
+          declaration,
+          { foldedWidths, localLabels },
+          found,
+        );
+        const next = new Set(
+          consts
+            .filter(({ local }) => reads.get(local) === false)
+            .map(({ statement }) => statement),
+        );
+        if (next.size === found.size) break;
+        found = next;
       }
+      for (const statement of found) unread.add(statement);
     }
     return unread;
   }
 
-  /** Each local a function names, and whether any C expression reads it */
+  /** Each const a function body declares, a `for` header's too (`StatementNodes.in` lists it) */
+  private localConsts(
+    func: Extract<TMemberDeclaration, { kind: "function" }>,
+  ): readonly {
+    readonly statement: TVariableStatement;
+    readonly local: ILocalDeclaration;
+  }[] {
+    return StatementNodes.in(func).flatMap((statement) => {
+      if (statement.kind !== "variableDeclaration") return [];
+      const local = this.state.ownLocalDeclaration(statement);
+      return local !== undefined &&
+        (local.kind === "local" || local.kind === "for") &&
+        local.constValue !== null
+        ? [{ statement, local }]
+        : [];
+    });
+  }
+
+  /**
+   * Each local a function names, and whether a C expression reads it. A
+   * mention in an `omitted` declaration's own parts reads nothing, as 2.3
+   * writes none of them.
+   */
   private localReads(
     func: Extract<TMemberDeclaration, { kind: "function" }>,
-    foldedWidths: ReadonlyMap<TExpression, number>,
+    planned: {
+      readonly foldedWidths: ReadonlyMap<TExpression, number>;
+      readonly localLabels: ReadonlyMap<TCaseLabelSyntax, IConstSpelling>;
+    },
+    omitted: ReadonlySet<TVariableStatement>,
   ): ReadonlyMap<ILocalDeclaration, boolean> {
     const parts = DeclarationParts.of(func);
+    const writtenParts = DeclarationParts.of(func, omitted);
     const nodes = parts.flatMap(ExpressionNodes.of);
+    const written = new Set(writtenParts.flatMap(ExpressionNodes.of));
     const folded = new Set<TExpression>(
       parts.flatMap((part) =>
         part.kind === "type" || part.constant ? ExpressionNodes.of(part) : [],
@@ -1272,7 +1328,7 @@ class FilePlanner {
           ? node.ops.flatMap((op) =>
               op.kind === "subscript" &&
               op.length !== null &&
-              foldedWidths.has(op.length)
+              planned.foldedWidths.has(op.length)
                 ? ExpressionNodes.direct(op.length)
                 : [],
             )
@@ -1293,21 +1349,15 @@ class FilePlanner {
       if (node.kind !== "identifier") continue;
       note(
         OperandTyper.typeOf(node, typing)?.binding ?? null,
-        !folded.has(node),
+        written.has(node) && !folded.has(node),
       );
     }
     // A `case` label reads its const only when it is not written as its value (#2493)
     for (const label of StatementNodes.caseLabels(func)) {
       if (label.kind !== "identifier") continue;
-      const binding = this.state.bindingAt(
-        label.root,
-        label.name,
-        label.nameSpan,
-      );
       note(
-        binding,
-        binding?.kind !== "local" ||
-          this.localConstSpelling(binding.declaration) === null,
+        this.state.bindingAt(label.root, label.name, label.nameSpan),
+        !planned.localLabels.has(label),
       );
     }
     // A constructor's arguments are written by name (ADR-030)
@@ -1317,7 +1367,34 @@ class FilePlanner {
         note(this.state.bindingAt(null, argument.name, argument.span), true);
       }
     }
+    // A C++ template's name argument is written as it stands (#291)
+    for (const argument of FilePlanner.templateNames(writtenParts)) {
+      note(this.state.bindingAt(null, argument.name, argument.span), true);
+    }
     return reads;
+  }
+
+  /** Each name argument of a template written in `parts`, a cast's type's too */
+  private static templateNames(
+    parts: readonly TSyntaxPart[],
+  ): readonly TNameArgument[] {
+    return parts.flatMap((part) =>
+      part.kind === "type"
+        ? FilePlanner.templateNamesIn(part.type)
+        : ExpressionNodes.of(part)
+            .flatMap(ExpressionNodes.namedTypes)
+            .flatMap((cast) => FilePlanner.templateNames([cast])),
+    );
+  }
+
+  private static templateNamesIn(type: TTypeSyntax): readonly TNameArgument[] {
+    const own =
+      type.kind === "template"
+        ? type.arguments.flatMap((argument) =>
+            argument.kind === "name" ? [argument] : [],
+          )
+        : [];
+    return [...own, ...FilePlanner.templateNames(TypeParts.of(type))];
   }
 
   private planInlinedConsts(
@@ -1510,7 +1587,12 @@ class FilePlanner {
     );
     const inlinedConsts = this.planInlinedConsts(program, decidedCTypes);
     const foldedWidths = this.planFoldedWidths(program);
-    const unreadLocals = this.planUnreadLocals(program, foldedWidths);
+    const localLabels = this.planLocalLabels(program);
+    const unreadLocals = this.planUnreadLocals(
+      program,
+      foldedWidths,
+      localLabels,
+    );
     const statics = this.planStaticValues(program, valuePositions);
     const unwritten: IUnwrittenSyntax = {
       declarations: new Set([
@@ -1672,6 +1754,7 @@ class FilePlanner {
       includeDirectives,
       inlinedConsts,
       foldedWidths,
+      localLabels,
       unreadLocals,
       nullInitialized,
       staticValues: statics.values,

@@ -57,7 +57,6 @@ import TParameterInfo from "../types/TParameterInfo";
 import type IBoundParameter from "./types/IBoundParameter";
 import TypeValidator from "./2-Plan/TypeValidator";
 import IGeneratorOutput from "./3-Render/codegen/generators/IGeneratorOutput";
-import type ILocalDeclaration from "../types/ILocalDeclaration";
 import ComplianceAnnotations from "./2-Plan/ComplianceAnnotations";
 import emittedLocalName from "../utils/emittedLocalName";
 import OperandTyper from "../utils/OperandTyper";
@@ -4140,6 +4139,8 @@ class CodeGenWalker {
     init: Extract<TStatement, { kind: "for" }>["init"],
   ): IPlannedFor["init"] {
     if (init?.kind === "variableDeclaration") {
+      // #1791: 2.2 found no C expression that reads it
+      if (this.filePlan.unreadLocals.has(init)) return null;
       return { kind: "varDecl", plan: this.planForVarDecl(init) };
     }
     if (init?.kind === "assignment") {
@@ -4231,6 +4232,7 @@ class CodeGenWalker {
           label.root,
           label.name,
           label.span,
+          label,
         );
         if (label.root === null) {
           return { kind: "identifier", name: label.name, resolved };
@@ -4270,12 +4272,13 @@ class CodeGenWalker {
     root: TChainRoot,
     name: string,
     at: ISourcePosition,
+    label: TCaseLabelSyntax,
   ): string | null {
     const binding = this.host.state.bindingAt(root, name, at);
     const declared = CodeGenWalker.boundCName(binding);
     const constant =
       binding?.kind === "local"
-        ? this.localCaseConst(binding.declaration)
+        ? this.localCaseConst(label)
         : declared === null
           ? null
           : PrivateConstValue.constant(
@@ -4309,8 +4312,8 @@ class CodeGenWalker {
   }
 
   /** #2493: a local const label, written as the value 2.2 spelled for it */
-  private localCaseConst(local: ILocalDeclaration): IGeneratorOutput | null {
-    const spelling = this.planner.localConstSpelling(local);
+  private localCaseConst(label: TCaseLabelSyntax): IGeneratorOutput | null {
+    const spelling = this.filePlan.localLabels.get(label) ?? null;
     return spelling === null
       ? null
       : PrivateConstValue.written(

@@ -15,6 +15,8 @@ import type IProgramSyntax from "../../../types/syntax/IProgramSyntax";
 import type TDeclarationSyntax from "../../../types/syntax/TDeclarationSyntax";
 import type IVariableDeclarationSyntax from "../../../types/syntax/IVariableDeclarationSyntax";
 import type TExpression from "../../../types/syntax/TExpression";
+import type TCaseLabelSyntax from "../../../types/syntax/TCaseLabelSyntax";
+import type IConstSpelling from "./IConstSpelling";
 import type TExpressionOf from "../../../types/syntax/TExpressionOf";
 import type TPostfixOpSyntax from "../../../types/syntax/TPostfixOpSyntax";
 import type TTypeSyntax from "../../../types/syntax/TTypeSyntax";
@@ -51,6 +53,8 @@ interface IFilePlan {
   readonly inlinedConsts: ReadonlySet<TDeclarationSyntax>;
   /** #1094: each bit-range width written as its folded value */
   readonly foldedWidths: ReadonlyMap<TExpression, number>;
+  /** #2493: each case label naming a local const, as its value is written */
+  readonly localLabels: ReadonlyMap<TCaseLabelSyntax, IConstSpelling>;
   /** #1791: each local const no C expression reads, which is not declared */
   readonly unreadLocals: ReadonlySet<IVariableDeclarationSyntax>;
   /** ADR-015 / #1610: each uninitialized scalar whose C type is a pointer, at any site: its zero is the null pointer */
