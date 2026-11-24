@@ -39,6 +39,12 @@ type TAlone =
       readonly entered: ReadonlySet<string>;
       /** That preprocessing's output, with its line markers */
       readonly preprocessed: string;
+      /**
+       * Whether the header's own lines read differently after the headers
+       * before it: a macro one of them defines picks its branches, so its
+       * text alone is not the text a C compile meets
+       */
+      readonly contextual: boolean;
     }
   | { readonly source: null; readonly raw: string; readonly error: string };
 
@@ -80,7 +86,9 @@ class HeaderSources {
    *
    * A header that cannot be preprocessed even so is settled from its slice
    * of `unit` preprocessed whole (#985): that slice is the text a C compile
-   * meets. One the unit does not reach either is `unsettled`: nothing judges
+   * meets. So is one whose own lines read differently after the headers
+   * before it, as `#ifdef BIG` does after an earlier `#define BIG`: alone, it
+   * is not that text. One the unit does not reach either is `unsettled`: nothing judges
    * a header on the text as written (owner ruling 6 of 2026-10-03, #1542).
    *
    * Only a header a C compile opens counts (owner ruling of 2026-10-07 on
@@ -139,7 +147,10 @@ class HeaderSources {
     HeaderSources._count([...unit.headers], index, alone, counted);
     const recovery =
       unit.searchesSystemPath ||
-      [...counted].some((i) => alone[i].source === null)
+      [...counted].some(
+        (i) =>
+          alone[i].source === null || HeaderSources._isContextual(alone[i]),
+      )
         ? await ExternalDeclarationOracle.recover(
             unit.directives,
             settings.preprocessor,
@@ -163,12 +174,16 @@ class HeaderSources {
     headers.forEach((file, i) => {
       if (!counted.has(i)) return;
       const header = alone[i];
-      if (header.source !== null) {
+      const slice = slices.get(resolve(file.path));
+      if (
+        header.source !== null &&
+        (slice === undefined || !HeaderSources._isContextual(header))
+      ) {
         sources.set(file.path, header.source);
         return;
       }
-      const slice = slices.get(resolve(file.path));
       if (slice === undefined) {
+        invariant(header.source === null, "a settled header is kept above");
         unsettled.set(file.path, header.error);
         return;
       }
@@ -317,6 +332,12 @@ class HeaderSources {
         raw,
         result.content,
         await HeaderSources._directives(file, options, settings),
+        await HeaderSources._readsEarlierMacros(file, result.content, {
+          options,
+          earlierFiles,
+          earlier,
+          settings,
+        }),
       );
     }
 
@@ -345,6 +366,7 @@ class HeaderSources {
             { ...options, imacros },
             settings,
           ),
+          false,
         );
       }
     }
@@ -353,6 +375,48 @@ class HeaderSources {
       raw,
       error: result.diagnostics?.trim() || (result.error ?? "unknown error"),
     };
+  }
+
+  /**
+   * Whether `file`'s own lines change when the headers before it, those that
+   * preprocessed cleanly, have run first: `#ifdef BIG` in it, `#define BIG`
+   * in an earlier one. Its text alone then is not the text a C compile
+   * meets, so the run's unit settles it.
+   */
+  private static async _readsEarlierMacros(
+    file: IDiscoveredFile,
+    alone: string,
+    context: {
+      readonly options: IPreprocessOptions;
+      readonly earlierFiles: readonly IDiscoveredFile[];
+      readonly earlier: readonly Promise<TAlone>[];
+      readonly settings: IHeaderSourceSettings & {
+        readonly limit: TPreprocessLimit;
+      };
+    },
+  ): Promise<boolean> {
+    const raw = context.settings.texts.get(file.path) ?? "";
+    if (!/^\s*#\s*(?:if|ifdef|ifndef|elif)\b/m.test(raw)) return false;
+    const before = await Promise.all(context.earlier);
+    const imacros = context.earlierFiles
+      .filter((_, i) => before[i].source !== null)
+      .map((header) => header.path);
+    if (imacros.length === 0) return false;
+    const after = await context.settings.limit(() =>
+      context.settings.preprocessor.preprocess(file.path, {
+        ...context.options,
+        imacros,
+      }),
+    );
+    return (
+      !after.success ||
+      LineMarkers.ownText(after.content, file.path) !==
+        LineMarkers.ownText(alone, file.path)
+    );
+  }
+
+  private static _isContextual(header: TAlone): boolean {
+    return header.source !== null && header.contextual;
   }
 
   /**
@@ -380,6 +444,7 @@ class HeaderSources {
     raw: string,
     preprocessed: string,
     directives: string | null,
+    contextual: boolean,
   ): TAlone {
     const own = LineMarkers.ownText(preprocessed, file.path);
     invariant(
@@ -396,6 +461,7 @@ class HeaderSources {
       raw,
       entered: LineMarkers.entered(preprocessed, file.path),
       preprocessed,
+      contextual,
     };
   }
 

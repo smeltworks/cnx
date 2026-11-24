@@ -1,0 +1,18 @@
+// test-execution
+// A header's array bound comes from a macro an earlier include defines:
+// sensor-config.h sets SENSOR_WIDE, so C reads samples[8], and so must cnx.
+#include "lib/sensor-config.h"
+#include "lib/sensor-buffer.h"
+
+mut u8[samples.type_element_count] copy;
+
+u32 main() {
+    if (copy.type_element_count != 8) {
+        return 1;
+    }
+    copy[7] <- 3;
+    if (copy[7] != 3) {
+        return 2;
+    }
+    return 0;
+}
