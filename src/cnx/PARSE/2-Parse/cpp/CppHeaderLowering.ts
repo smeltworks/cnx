@@ -208,7 +208,7 @@ class CppHeaderLowering {
       functionPointerParams: null,
       parameters: [],
       arrayDimensions: [],
-      bitWidth: LiteralUtils.exactIntegerLiteral(width) ?? width,
+      bitWidth: LiteralUtils.cIntegerLiteral(width) ?? width,
     };
   }
 

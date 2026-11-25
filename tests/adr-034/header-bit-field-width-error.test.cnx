@@ -3,7 +3,9 @@
 // #2494: a C bit-field's width written as an expression or a macro is read
 // as C reads it, so `sum : 1 + 2` holds 3 bits as `sum : 3` does, and a
 // write that does not fit it is the same error. A macro is substituted as
-// text: `five : LOOSE_BITS * 2` is `1 + 2 * 2`, 5 bits, not 6.
+// text: `five : LOOSE_BITS * 2` is `1 + 2 * 2`, 5 bits, not 6. A literal
+// width with a leading zero is octal, as C reads it: `lit : 010` is 8 bits,
+// written bare or in parentheses.
 
 #include "header-bit-field-width.h"
 
@@ -19,9 +21,14 @@ void main() {
     u8 m <- r.mode;
     r.rest <- 1;
     r.five <- 31;
+    r.lit <- 255;
+    u8 low <- r.lit;
+    r.paren <- 255;
 
     // ASSERTIONS
     r.sum <- 13;
     r.wide <- 128;
     r.five <- 32;
+    r.lit <- 300;
+    r.paren <- 256;
 }

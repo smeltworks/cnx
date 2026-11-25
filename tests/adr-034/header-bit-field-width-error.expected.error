@@ -1,6 +1,10 @@
-24:13 error[E0881]: Value 13 exceeds 3-bit field 'sum' maximum of 7
+29:13 error[E0881]: Value 13 exceeds 3-bit field 'sum' maximum of 7
        help: A 3-bit field holds 0 through 7; widen the bit-field in its header, or write a value that fits (ADR-034).
-25:14 error[E0881]: Value 128 exceeds 7-bit field 'wide' maximum of 127
+30:14 error[E0881]: Value 128 exceeds 7-bit field 'wide' maximum of 127
        help: A 7-bit field holds 0 through 127; widen the bit-field in its header, or write a value that fits (ADR-034).
-26:14 error[E0881]: Value 32 exceeds 5-bit field 'five' maximum of 31
+31:14 error[E0881]: Value 32 exceeds 5-bit field 'five' maximum of 31
        help: A 5-bit field holds 0 through 31; widen the bit-field in its header, or write a value that fits (ADR-034).
+32:13 error[E0881]: Value 300 exceeds 8-bit field 'lit' maximum of 255
+       help: A 8-bit field holds 0 through 255; widen the bit-field in its header, or write a value that fits (ADR-034).
+33:15 error[E0881]: Value 256 exceeds 8-bit field 'paren' maximum of 255
+       help: A 8-bit field holds 0 through 255; widen the bit-field in its header, or write a value that fits (ADR-034).

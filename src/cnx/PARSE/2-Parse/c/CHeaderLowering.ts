@@ -389,7 +389,7 @@ class CHeaderLowering {
       if (lowered && width !== undefined) {
         lowered = {
           ...lowered,
-          bitWidth: LiteralUtils.exactIntegerLiteral(width) ?? width,
+          bitWidth: LiteralUtils.cIntegerLiteral(width) ?? width,
         };
       }
       return lowered ? [{ type, declarator: lowered }] : [];

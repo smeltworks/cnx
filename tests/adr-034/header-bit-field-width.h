@@ -16,6 +16,8 @@ typedef struct {
     uint32_t sized : sizeof(uint8_t);
     uint32_t late : LATE_BITS;
     uint32_t rest : 10;
+    uint32_t lit : 010;
+    uint32_t paren : (010);
 } WReg;
 
 /* C read `late` as 3 bits; cnx sees only the final 8 */

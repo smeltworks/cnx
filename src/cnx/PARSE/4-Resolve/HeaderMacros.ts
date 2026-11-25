@@ -10,6 +10,7 @@
  * headers and the compiler's builtins: one definition per name, the one C
  * sees.
  */
+import LiteralUtils from "../../utils/LiteralUtils";
 import TARGET_DESCRIPTION_FIELDS from "../2-Parse/TARGET_DESCRIPTION_FIELDS";
 import type THeaderMacro from "../../types/THeaderMacro";
 
@@ -396,17 +397,9 @@ class HeaderMacros {
       : null;
   }
 
-  /** An integer literal's value: hex, binary, octal (a leading 0) or decimal */
+  /** An integer literal's value as C reads it; NaN for one it cannot read */
   private static literalValue(literal: string): number {
-    let end = literal.length;
-    while ("uUlL".includes(literal[end - 1])) end--;
-    const digits = literal.slice(0, end);
-    if (/^0[xX]/.test(digits)) return Number.parseInt(digits.slice(2), 16);
-    if (/^0[bB]/.test(digits)) return Number.parseInt(digits.slice(2), 2);
-    if (/^0\d/.test(digits)) {
-      return /^0[0-7]+$/.test(digits) ? Number.parseInt(digits, 8) : Number.NaN;
-    }
-    return Number(digits);
+    return LiteralUtils.cIntegerLiteral(literal) ?? Number.NaN;
   }
 
   private static tokens(body: string): TMacroToken[] {
