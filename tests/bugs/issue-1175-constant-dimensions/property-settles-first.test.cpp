@@ -24,7 +24,6 @@ uint8_t other[4] = {};
 
 int main(void) {
     uint8_t loc[4] = {};
-    const uint32_t K = 4;
     uint8_t after[5] = {};
     uint8_t direct[2] = {};
     loc[0] = 1U;

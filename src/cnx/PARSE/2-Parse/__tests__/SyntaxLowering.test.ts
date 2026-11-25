@@ -298,6 +298,7 @@ describe("SyntaxLowering on recovered trees", () => {
     }
   }
 
+  // 2000 parses: under 1s alone, past vitest's 5s default on a loaded CI runner
   it("never throws, and reaches every position", () => {
     const next = random(1932);
     const lowered = { count: 0, targets: 0, statements: 0 };
@@ -318,7 +319,7 @@ describe("SyntaxLowering on recovered trees", () => {
     expect(lowered.count).toBeGreaterThan(recovered);
     expect(lowered.targets).toBeGreaterThan(100);
     expect(lowered.statements).toBeGreaterThan(100);
-  });
+  }, 30_000);
 
   // #1950 review: each threw before statements had a `missing` kind
   it.each([

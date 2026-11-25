@@ -6204,7 +6204,8 @@ describe("CodeGenWalker", () => {
         sourcePath: "test.cnx",
       });
 
-      expect(code).toContain("SIZE");
+      // #1791: SIZE is read only as a dimension, which folds, so it is not declared
+      expect(code).not.toContain("SIZE");
       // Const value is evaluated at compile time
       expect(code).toContain("data[5]");
     });

@@ -64,7 +64,6 @@ static inline uint32_t cnx_clamp_add_u32(uint32_t a, uint64_t b) {
 // NEGATIVE CONTROLS. `dec` and `decPlain` are the spelling that always worked:
 // a fix that widened the const path by breaking the decimal one fails here.
 int main(void) {
-    const uint32_t COUNT = 4U;
     // cppcheck-suppress misra-c2012-9.3
     // cppcheck-suppress misra-c2012-9.4
     const char hex[4][9] = {"ab", "ab", "ab", "ab"};

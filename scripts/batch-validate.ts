@@ -363,16 +363,7 @@ function runClangTidy() {
     try {
       execFileSync(
         "clang-tidy",
-        [
-          file,
-          "--",
-          stdFlag,
-          "-Wno-unused-variable",
-          "-I",
-          INCLUDE_DIR,
-          "-I",
-          dirname(file),
-        ],
+        [file, "--", stdFlag, "-I", INCLUDE_DIR, "-I", dirname(file)],
         { encoding: "utf-8", timeout: 30000, stdio: "pipe" },
       );
     } catch (error: unknown) {
