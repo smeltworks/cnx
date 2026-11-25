@@ -159,6 +159,10 @@ describe("detectCppSyntax", () => {
       ["a tab-indented label", "\n\tprotected:\n", true],
       ["a colon on the following line", "public\n:", true],
       ["a blank line before the colon", "private\n\n  :", true],
+      // #2504 review: a label that opens a one-line class body, or follows a
+      // member on its line, is one too
+      ["a label after a one-line class's brace", "class A { public: };", true],
+      ["a label after a member", "struct B { int x; private: int y; };", true],
     ])("detects %s", (_label, source, expected) => {
       expect(detectCppSyntax(source)).toBe(expected);
     });
@@ -170,12 +174,6 @@ describe("detectCppSyntax", () => {
       ["a label with code before it on the line", "x = public:"],
       ["a keyword with no colon", "public"],
       ["a bare colon", ":"],
-      // A label needs its own line: only whitespace may precede it. A one-line
-      // `class A { public: };` is therefore not detected by this check, and
-      // the inheritance check above wants `class A : public B`, so it misses
-      // too. That is the existing heuristic's boundary, unchanged by the scan
-      // that replaced the regex -- both agree here.
-      ["a label mid-line inside a one-line class body", "class A { public: };"],
       ["empty input", ""],
     ])("does not treat %s as an access specifier", (_label, source) => {
       expect(detectCppSyntax(source)).toBe(false);

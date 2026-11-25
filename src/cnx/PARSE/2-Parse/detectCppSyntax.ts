@@ -36,7 +36,11 @@ function hasAccessSpecifierLabel(content: string): boolean {
   return false;
 }
 
-/** Only whitespace before it on its line, and a colon after any whitespace. */
+/**
+ * Only whitespace before it on its line, or since a `{`, `;` or `}` that
+ * opens a member (`class C { public: int x; };`), and a colon after any
+ * whitespace.
+ */
 function isAccessSpecifierAt(
   content: string,
   start: number,
@@ -44,6 +48,7 @@ function isAccessSpecifierAt(
 ): boolean {
   let before = start - 1;
   while (before >= 0 && content[before] !== "\n") {
+    if ("{;}".includes(content[before])) break;
     if (!/\s/.test(content[before])) {
       return false;
     }
