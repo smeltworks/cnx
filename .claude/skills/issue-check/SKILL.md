@@ -53,8 +53,8 @@ Identify everything currently being worked on so we don't recommend conflicting 
 # descending. An open PR older than the 30 newest reads as absent, and the
 # issue it is fixing then reads as free work (#1416).
 gh pr list --state open --limit 1000 \
-  --json number,title,headRefName,body,author,updatedAt,labels,closingIssuesReferences \
-  --jq '.[] | {number, title, branch: .headRefName, author: .author.login, updated: .updatedAt, labels: [.labels[].name], closes: [.closingIssuesReferences[] | select(.repository.name == "cnx") | .number], refs: ([(.body // "") | scan("(?:^|[^\\w/.-])(#[0-9]+)") | .[0]] | unique)}'
+  --json number,title,headRefName,body,author,updatedAt,labels \
+  --jq '.[] | {number, title, branch: .headRefName, author: .author.login, updated: .updatedAt, labels: [.labels[].name], refs: ([(.body // "") | scan("(?i)\\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?|part of):?\\s+(#[0-9]+)") | .[0]] | unique)}'
 ```
 
 ```
@@ -67,9 +67,10 @@ ASSERT the returned PR count is strictly less than the --limit above. If it
 FOR each open PR:
   EXTRACT linked issue numbers from:
     - PR title (e.g., "Fix #123", "#123")
-    - `closes`: GitHub's closing references (a pull request whose base is `main` and whose body says "Closes #123")
-    - `refs`: every bare `#N` in the WHOLE body (`smeltworks/vscode-cnx#11` is another repository's issue and is not kept) ("Part of #123", a stacked PR's "Closes #123"). Not a prefix of it: the
-      template puts Related Issues last, past character 2000
+    - `refs`: the issues the WHOLE body names after a closing keyword or "Part of" ("Closes #123",
+      "Fixes #123", "Resolves #123", "Part of #123"), a stacked PR's included. A bare mention ("see #123")
+      is not in-flight work, and `smeltworks/vscode-cnx#11` is another repository's issue, so neither is kept.
+      `gh pr list` has no `closingIssuesReferences` field on gh 2.45.0, so the keywords are read here
     - Branch name (e.g., "fix/123-description", "feature/123-thing", "issue-123")
 
   STORE as IN_FLIGHT_ISSUES: [{issue_number, pr_number, pr_title, author, domain_labels}]
