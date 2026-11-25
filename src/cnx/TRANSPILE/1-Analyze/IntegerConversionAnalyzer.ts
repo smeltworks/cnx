@@ -659,7 +659,7 @@ class IntegerConversionCheck {
     this.reportCategory(
       value,
       CATEGORY_NAME[t!.category],
-      target,
+      width < TYPE_WIDTH[target] ? BitFieldText.named(width) : target,
       help(
         width < TYPE_WIDTH[target]
           ? `((${target})value)[0, ${width}]`

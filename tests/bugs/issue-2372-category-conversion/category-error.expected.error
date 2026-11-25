@@ -12,13 +12,13 @@
        help: Cast the enum value to say it is a number: (u8)value (ADR-024)
 54:12 error[E0945]: Cannot assign a character value to u8 (MISRA C:2012 Rule 10.3): ''a''
        help: Cast the character to say it is a number: (u8)value (ADR-024)
-55:14 error[E0945]: Cannot assign a character value to u8 (MISRA C:2012 Rule 10.3): ''a''
+55:14 error[E0945]: Cannot assign a character value to a 3-bit field (MISRA C:2012 Rule 10.3): ''a''
        help: Cast the character to say it is a number: ((u8)value)[0, 3] (ADR-024)
-56:14 error[E0945]: Cannot assign a bool value to u8 (MISRA C:2012 Rule 10.3): 'ON'
+56:14 error[E0945]: Cannot assign a bool value to a 3-bit field (MISRA C:2012 Rule 10.3): 'ON'
        help: A bool is not a number (ADR-024); write the number it stands for: (value = true) ? 1 : 0
-57:14 error[E0945]: Cannot assign a bool value to u8 (MISRA C:2012 Rule 10.3): 'b'
+57:14 error[E0945]: Cannot assign a bool value to a 3-bit field (MISRA C:2012 Rule 10.3): 'b'
        help: A bool is not a number (ADR-024); write the number it stands for: (value = true) ? 1 : 0
-58:14 error[E0945]: Cannot assign an enum value to u8 (MISRA C:2012 Rule 10.3): 'c'
+58:14 error[E0945]: Cannot assign an enum value to a 3-bit field (MISRA C:2012 Rule 10.3): 'c'
        help: Cast the enum value to say it is a number: ((u8)value)[0, 3] (ADR-024)
 59:16 error[E0945]: Cannot assign an integer literal value to bool (MISRA C:2012 Rule 10.3): '1'
        help: A number is not a bool (ADR-024); say what makes it true: value != 0
