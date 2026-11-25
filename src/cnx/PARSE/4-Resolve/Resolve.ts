@@ -53,7 +53,9 @@ class Resolve {
     // field is typed from the table -- through the macros of the files that
     // include the struct's header, which are the files whose C reads it
     table.settleBitFieldWidths((text, structName) => {
-      const header = table.getCSymbol(structName)?.sourceFile;
+      const header =
+        table.getCSymbol(structName)?.sourceFile ??
+        table.getCppSymbol(structName)?.sourceFile;
       const including = macroReaders.filter(
         (reader) => header !== undefined && reader.headerFiles.has(header),
       );

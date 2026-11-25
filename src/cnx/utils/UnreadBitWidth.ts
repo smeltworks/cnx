@@ -36,9 +36,14 @@ class UnreadBitWidth {
     second: { readonly file: string; readonly value: number },
   ): IUnreadBitWidth {
     return {
-      why: `${names.join(", ")} gives it ${first.value} in ${first.file} and ${second.value} in ${second.file}`,
+      why: `${names.join(", ")} gives it ${first.value} in ${UnreadBitWidth.fileName(first.file)} and ${second.value} in ${UnreadBitWidth.fileName(second.file)}`,
       help: "Give the width's macros one value in every file that includes its header (ADR-034).",
     };
+  }
+
+  /** A file as a message names it: its last path segment */
+  private static fileName(file: string): string {
+    return file.split(/[\\/]/).at(-1) ?? file;
   }
 }
 

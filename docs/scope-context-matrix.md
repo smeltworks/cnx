@@ -1034,8 +1034,9 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | ok     | warn       | warn        | warn       |
 | for header         | -         | -      | -          | -           | -          |
 
-5 linked fixtures with no derivable context:
+6 linked fixtures with no derivable context:
 
+- `adr-034/width-by-including-file-cpp/width-by-including-file-cpp.test.cnx`
 - `adr-034/width-by-including-file/width-by-including-file.test.cnx`
 - `bitmap/bitmap-error-bits.test.cnx`
 - `bugs/issue-1514-cross-file-bitmap-register/cross-file-bitmap-register.test.cnx`
