@@ -5,4 +5,5 @@
 #define READY (1 && 1)
 #define EITHER (MODE || ON_FLAG)
 #define COUNT ((MODE && ON_FLAG) + 1)
+#define READY_ALIAS READY
 #endif

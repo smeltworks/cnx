@@ -2,8 +2,9 @@
 // test-adr: 024
 // #2484 review: a header's integer macro is a number, as an integer literal
 // is, so it is no bool and no one-bit bitmap field (E0945). A macro whose
-// outermost operator is `&&` or `||` is a Boolean, so it stays accepted; one
-// that adds to such a result is a number again.
+// outermost operator is `&&` or `||` is a Boolean, so it stays accepted, and
+// so does a macro that expands to one; one that adds to such a result is a
+// number again. A Boolean macro is no number: `n <- READY` is rejected.
 #include "integer-macro.h"
 
 bitmap8 Flags {
@@ -22,10 +23,12 @@ void main() {
     f.Enable <- ON_FLAG != 0;
     b <- READY;
     f.Enable <- EITHER;
+    b <- READY_ALIAS;
 
     // ASSERTIONS
     f.Enable <- MODE;
     b <- MODE;
     b <- ON_FLAG + 1;
     b <- COUNT;
+    n <- READY;
 }

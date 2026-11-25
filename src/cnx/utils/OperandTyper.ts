@@ -1589,8 +1589,19 @@ class OperandTyper {
     return OperandTyper.macroOperand(unread ? UNREAD_MACRO : macro);
   }
 
-  /** A floating, character or unreadable header macro's type; null for others */
+  /**
+   * A floating, character, Boolean or unreadable header macro's type; null
+   * for an integer one. #2484 review: a macro whose outermost operator is
+   * `&&` or `||` is a Boolean, as the same expression written inline is.
+   */
   private static macroOperand(macro: THeaderMacro | null): IOperandType | null {
+    if (macro?.kind === "integer" && macro.isBoolean === true) {
+      return {
+        ...OperandTyper.plain("bool"),
+        category: "boolean",
+        form: { kind: "foreign", indeterminate: false },
+      };
+    }
     if (macro === null || macro.kind === "integer") return null;
     if (macro.kind === "character") return OperandTyper.characterLiteral();
     if (macro.kind === "unreadable") {
