@@ -210,7 +210,7 @@ class CppHeaderLowering {
    * #2473 review: the functions a member template declares, `template
    * <typename T> void op(T)`, by the arguments they take. One whose count
    * cnx cannot read -- a pack, or a trailing return type -- takes any call,
-   * which only leaves more calls unjudged.
+   * which only leaves more calls unchecked.
    */
   private static memberTemplates(
     decl: MemberdeclarationContext,

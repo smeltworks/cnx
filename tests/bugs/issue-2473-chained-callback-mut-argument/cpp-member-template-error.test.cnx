@@ -1,6 +1,6 @@
 // test-error
 // test-cpp-only
-// Tests: a member template leaves a call unjudged only when it can take the
+// Tests: a member template leaves a call unchecked only when it can take the
 // call's arguments (#2473 review). `Tw::set` has a template of two
 // arguments, so `tw.set(p)` reaches the method alone: a read-only argument
 // is E0900 and a u16 at uint32_t* is E0895.
