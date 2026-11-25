@@ -2318,7 +2318,7 @@ ADR declares a position table.
 | Position                  | Severity | Fixtures |
 | ------------------------- | -------- | -------- |
 | declaration initializer   | error    | ok (22)  |
-| assignment                | error    | ok (2)   |
+| assignment                | error    | ok (3)   |
 | array element assignment  | error    | ok (1)   |
 | struct field assignment   | error    | ok (2)   |
 | compound assignment       | error    | ok (4)   |

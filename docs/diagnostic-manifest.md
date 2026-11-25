@@ -974,7 +974,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-2341-included-scope-type-bare-use/no-scope-type.test.cnx                                 | E0426                             |
 | tests/bugs/issue-2354-bool-bit-index/bool-bit-index-error.test.cnx                                        | E0856                             |
 | tests/bugs/issue-2366-void-param-diagnostic/void-param.test.cnx                                           | E0926                             |
-| tests/bugs/issue-2372-category-conversion/category-error.test.cnx                                         | E0945                             |
+| tests/bugs/issue-2372-category-conversion/category-error.test.cnx                                         | E0869, E0945                      |
 | tests/bugs/issue-2372-category-conversion/integer-macro-bool-arithmetic-error.test.cnx                    | E0807                             |
 | tests/bugs/issue-2372-category-conversion/integer-macro-bool-error.test.cnx                               | E0945                             |
 | tests/bugs/issue-2373-string-range-write/string-range-write-capacity-error.test.cnx                       | E0864                             |
