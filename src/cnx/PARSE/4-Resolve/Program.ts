@@ -1948,10 +1948,10 @@ class Program {
   }
 
   /**
-   * #2474: the value `name` names in a file, by the rule the file's symbol
-   * table view reads it (`ForeignRedeclaration`): its own headers'
-   * declarations, the last of them, so a trailing `extern uint8_t t[];`
-   * leaves the bound unknown rather than folding one from another branch
+   * #2474: the value `name` names in a file: the last of the declarations
+   * its own headers make (`ForeignRedeclaration.pool`), so a trailing
+   * `extern uint8_t t[];` leaves a bound unknown rather than folding one
+   * the translation unit may not have seen
    */
   private static foreignValueIn(
     declared: ReadonlyArray<IDeclaredForeignValue> | undefined,
