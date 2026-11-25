@@ -64,6 +64,11 @@ interface ITranslationUnit {
   readonly cppRequired: boolean | undefined;
 }
 
+/** By real path; null when two files' compiles read the header differently */
+type TReadings = ReadonlyMap<string, string | null>;
+
+const NO_READINGS: TReadings = new Map();
+
 /** One `.cnx` file's C includes and the path its compile searches */
 interface IFileUnit {
   readonly directives: readonly string[];
@@ -187,7 +192,7 @@ class HeaderSources {
     const read = { settings, limit, realOf, index, alone, counted };
     const cReadings = counts(false)
       ? await HeaderSources._readings(unit.files, false, read)
-      : new Map<string, string | null>();
+      : NO_READINGS;
     const cppBuild =
       unit.cppRequired ??
       [...counted].some(
@@ -200,45 +205,52 @@ class HeaderSources {
     const cppReadings =
       counts(true) || (cppBuild && counts(false))
         ? await HeaderSources._readings(unit.cppFiles, true, read)
-        : new Map<string, string | null>();
+        : NO_READINGS;
+    const keyOf = (file: IDiscoveredFile): string =>
+      realOf.get(resolve(file.path)) ?? resolve(file.path);
+    const cppOf = (file: IDiscoveredFile): boolean =>
+      file.type === EFileType.CppHeader || cppBuild;
+    const readingsOf = (file: IDiscoveredFile): TReadings =>
+      cppOf(file) ? cppReadings : cReadings;
+    // A header whose unit reading differs from its own, or that has none
+    const fromUnit = headers.flatMap((file, i) => {
+      if (!counted.has(i)) return [];
+      const header = alone[i];
+      const met = readingsOf(file).get(keyOf(file)) ?? undefined;
+      if (header.source === null) {
+        const slice = met ?? slices.get(resolve(file.path));
+        return slice === undefined ? [] : [{ i, slice }];
+      }
+      return met === undefined ||
+        HeaderSources._sameText(
+          met,
+          LineMarkers.ownText(header.preprocessed, file.path) ?? "",
+        )
+        ? []
+        : [{ i, slice: met }];
+    });
     const sources = new Map<string, IHeaderSource>();
     const unsettled = new Map<string, string>();
+    const sliced = new Map(fromUnit.map((entry) => [entry.i, entry.slice]));
     headers.forEach((file, i) => {
       if (!counted.has(i)) return;
       const header = alone[i];
-      const key = realOf.get(resolve(file.path)) ?? resolve(file.path);
-      const asCpp = file.type === EFileType.CppHeader || cppBuild;
-      const met = (asCpp ? cppReadings : cReadings).get(key) ?? undefined;
-      // #1542 ruling 4: a header's language is judged on the text C meets
-      const judged = cReadings.get(key) ?? met;
-      if (header.source !== null) {
-        sources.set(
-          file.path,
-          met === undefined ||
-            HeaderSources._sameText(
-              met,
-              LineMarkers.ownText(header.preprocessed, file.path) ?? "",
-            )
-            ? header.source
-            : Object.freeze({
-                text: met,
-                language: HeaderSources._languageOf(file.type, judged ?? met),
-              }),
-        );
-        return;
-      }
-      const slice = met ?? slices.get(resolve(file.path));
+      const slice = sliced.get(i);
       if (slice === undefined) {
-        unsettled.set(file.path, header.error);
+        if (header.source === null) unsettled.set(file.path, header.error);
+        else sources.set(file.path, header.source);
         return;
       }
+      // #1542 ruling 4: a header's language is judged on the text C meets
+      const judged = cReadings.get(keyOf(file)) ?? slice;
       sources.set(
         file.path,
         HeaderSources._sourceOf(file, {
           raw: header.raw,
-          unexpanded: header.raw,
+          // #985: a unit slice exists only expanded, as C reads it
+          unexpanded: null,
           preprocessed: slice,
-          own: slice,
+          own: judged,
         }),
       );
     });
@@ -294,7 +306,7 @@ class HeaderSources {
       readonly alone: readonly TAlone[];
       readonly counted: Set<number>;
     },
-  ): Promise<ReadonlyMap<string, string | null>> {
+  ): Promise<TReadings> {
     const distinct = new Map(
       files.map((file) => [JSON.stringify(file), file] as const),
     );
