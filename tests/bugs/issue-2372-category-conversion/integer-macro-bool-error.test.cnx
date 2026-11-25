@@ -1,0 +1,26 @@
+// test-error
+// test-adr: 024
+// #2484 review: a header's integer macro is a number, as an integer literal
+// is, so it is no bool and no one-bit bitmap field (E0945).
+#include "integer-macro.h"
+
+bitmap8 Flags {
+    Enable,
+    Rest[7]
+}
+
+mut Flags f;
+mut bool b;
+mut u8 n;
+
+void main() {
+    // NEGATIVE CONTROLS -- each stays silent.
+    n <- MODE;
+    b <- MODE != 0;
+    f.Enable <- ON_FLAG != 0;
+
+    // ASSERTIONS
+    f.Enable <- MODE;
+    b <- MODE;
+    b <- ON_FLAG + 1;
+}

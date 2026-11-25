@@ -1,0 +1,5 @@
+#ifndef ISSUE_2372_INTEGER_MACRO_H
+#define ISSUE_2372_INTEGER_MACRO_H
+#define MODE 2
+#define ON_FLAG 1
+#endif

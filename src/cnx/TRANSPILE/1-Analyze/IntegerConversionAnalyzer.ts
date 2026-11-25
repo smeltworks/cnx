@@ -689,19 +689,33 @@ class IntegerConversionCheck {
       this.checkBoolean(value.expression, declaredAt);
       return;
     }
-    // An untyped value of integer literals alone (`1`, `-1`, `1 + 1`) is a number
-    const literal = OperandTyper.valueLeafExpressions(value).every(
+    // An untyped value of integer literals alone (`1`, `-1`, `1 + 1`) is a
+    // number, and so is a header's integer macro (`#define MODE 2`)
+    const leaves = OperandTyper.valueLeafExpressions(value);
+    const literal = leaves.every(
       (leaf) => IntegerConversionCheck.integerLiteralText(leaf) !== null,
     );
+    const integerMacro =
+      !literal &&
+      leaves.every(
+        (leaf) =>
+          IntegerConversionCheck.integerLiteralText(leaf) !== null ||
+          this.isIntegerMacro(leaf),
+      );
     const from = IntegerConversionCheck.categorized(
       value,
       this.context,
     )?.category;
-    if (from === undefined || from === "boolean") return;
-    if (from === "none" && !literal) return;
+    const number = literal || integerMacro;
+    if (from === "boolean" || (from === undefined && !number)) return;
+    if (from === "none" && !number) return;
+    let named = from === undefined ? "" : CATEGORY_NAME[from];
+    if (from === undefined || from === "none") {
+      named = literal ? "an integer literal" : "an integer macro";
+    }
     this.reportCategory(
       value,
-      from === "none" ? "an integer literal" : CATEGORY_NAME[from],
+      named,
       "bool",
       "A number is not a bool (ADR-024); say what makes it true: value != 0",
       declaredAt,
@@ -747,6 +761,15 @@ class IntegerConversionCheck {
   }
 
   /** An integer literal, or a minus over one, as one token: `-1`, `0xFF` */
+  /** A bare name the file's headers define as an integer macro */
+  private isIntegerMacro(leaf: TExpression): boolean {
+    return (
+      leaf.kind === "identifier" &&
+      this.context.program.headerMacro(this.context.sourceFile, leaf.name)
+        ?.kind === "integer"
+    );
+  }
+
   private static integerLiteralText(value: TExpression): string | null {
     const negated = value.kind === "unary" && value.operator === "-";
     const literal = negated ? value.operand : value;
