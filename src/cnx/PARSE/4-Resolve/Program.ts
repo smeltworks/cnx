@@ -583,14 +583,10 @@ class Program {
           : ForeignTypeFacts.fieldCount(structName, headersFor(sourceFile)),
       headerNeedsStructKeyword: (structName) =>
         headers?.checkNeedsStructKeyword(structName) ?? false,
-      headerTypeHead: (sourceFile, name) =>
-        headersFor === null
+      headerTypeHead: (name) =>
+        headers === null
           ? null
-          : TypeHead.header(
-              name,
-              headersFor(sourceFile),
-              ResolvedTarget.of(target),
-            ),
+          : TypeHead.header(name, headers, ResolvedTarget.of(target)),
     };
     const settledByFile = Program.settleEveryFile(
       files,
@@ -1287,7 +1283,7 @@ class Program {
       headerTypeBits: (cType) => options.files.headerTypeBits(file(), cType),
       qualifiedTypeName: (written) =>
         options.files.qualifiedTypeName(file(), written),
-      headerTypeHead: (name) => options.files.headerTypeHead(file(), name),
+      headerTypeHead: (name) => options.files.headerTypeHead(name),
       headerFieldCount: (structName) =>
         options.files.headerFieldCount(file(), structName),
       headerNeedsStructKeyword: (structName) =>

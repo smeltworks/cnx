@@ -58,8 +58,8 @@ interface IConstantNameFacts {
   headerTypeBits(cType: string): number | null;
   /** #2116: `IFileConstantFacts.qualifiedTypeName`, for this file */
   qualifiedTypeName(written: string): string;
-  /** #1975 review: `IFileConstantFacts.headerTypeHead`, for this file */
-  headerTypeHead(name: string): TType | null;
+  /** #1975 review: `IFileConstantFacts.headerTypeHead` */
+  headerTypeHead: IFileConstantFacts["headerTypeHead"];
   /** #1975 review: `IFileConstantFacts.headerFieldCount`, for this file */
   headerFieldCount(structName: string): number | null;
   /** `IFileConstantFacts.headerNeedsStructKeyword` */
