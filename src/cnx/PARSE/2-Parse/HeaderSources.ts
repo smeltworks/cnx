@@ -206,13 +206,19 @@ class HeaderSources {
     const cReadings = counts(false)
       ? await HeaderSources._readings(unit.files, false, read)
       : NO_READINGS;
+    // #1542 ruling 4: a header's language is judged on the text C meets
+    const cTextOf = (file: IDiscoveredFile): string | undefined =>
+      cReadings.get(realOf.get(resolve(file.path)) ?? resolve(file.path))?.text;
     const cppBuild =
       unit.cppRequired ??
-      [...counted].some(
-        (i) =>
-          headers[i].type === EFileType.CppHeader ||
-          alone[i].source?.language === EHeaderLanguage.Cpp,
-      );
+      [...counted].some((i) => {
+        if (headers[i].type === EFileType.CppHeader) return true;
+        const cText = cTextOf(headers[i]);
+        return cText === undefined
+          ? alone[i].source?.language === EHeaderLanguage.Cpp
+          : HeaderSources._languageOf(headers[i].type, cText) ===
+              EHeaderLanguage.Cpp;
+      });
     // A C++ header is read as C++ (#211), and so is every header a C++
     // build's compile meets: which declarations it gets is the text g++ reads
     const cppReadings =
@@ -237,13 +243,20 @@ class HeaderSources {
           ? []
           : [{ i, reading: { text: slice, directives: null } }];
       }
-      return met === undefined ||
-        HeaderSources._sameText(
-          met.text,
-          LineMarkers.ownText(header.preprocessed, file.path) ?? "",
-        )
-        ? []
-        : [{ i, reading: met }];
+      const own = LineMarkers.ownText(header.preprocessed, file.path) ?? "";
+      const cText = cTextOf(file);
+      // A C reading that differs judges the header's language, even where
+      // the C++ text it is read from is its own
+      const judgedApart =
+        file.type !== EFileType.CppHeader &&
+        cText !== undefined &&
+        !HeaderSources._sameText(cText, own);
+      if (met !== undefined && !HeaderSources._sameText(met.text, own)) {
+        return [{ i, reading: met }];
+      }
+      return judgedApart
+        ? [{ i, reading: met ?? { text: own, directives: null } }]
+        : [];
     });
     // #2096: the directives-only slice is parsed only when it says what the
     // unit's expanded one does. A macro an earlier include defines writes what
@@ -286,8 +299,7 @@ class HeaderSources {
         else sources.set(file.path, header.source);
         return;
       }
-      // #1542 ruling 4: a header's language is judged on the text C meets
-      const judged = cReadings.get(keyOf(file))?.text ?? reading.text;
+      const judged = cTextOf(file) ?? reading.text;
       sources.set(
         file.path,
         HeaderSources._sourceOf(file, {
