@@ -1,0 +1,7 @@
+// Issue #2474 review helper: this file's sample_t is b-types.h's u32, and
+// its generated header needs it for passB's parameter.
+#include "b-types.h"
+
+u32 passB(sample_t s) {
+    return s;
+}
