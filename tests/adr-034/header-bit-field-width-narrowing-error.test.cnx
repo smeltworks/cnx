@@ -2,7 +2,8 @@
 // test-adr: 034
 // #2494: a bit-field whose width is a macro, `mode : MODE_BITS`, holds the
 // bits the macro names, so a u8 written to it is narrowing, as it is for
-// `mode : 3`. The help names the macro's 3 bits.
+// `mode : 3`. The help names the macro's 3 bits, and a character's help
+// takes them after its cast.
 
 #include "header-bit-field-width.h"
 
@@ -19,4 +20,5 @@ void main() {
     // ASSERTIONS
     r.mode <- v;
     r.sum <- r.wide;
+    r.mode <- 'a';
 }

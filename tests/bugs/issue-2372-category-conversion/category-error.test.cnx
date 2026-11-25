@@ -55,6 +55,7 @@ void main() {
     f.Mode <- 'a';
     f.Mode <- ON;
     f.Mode <- b;
+    f.Mode <- c;
     f.Enable <- 1;
     f.Enable <- n;
     take('t');

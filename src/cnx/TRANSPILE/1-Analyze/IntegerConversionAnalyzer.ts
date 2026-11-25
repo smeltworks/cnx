@@ -105,14 +105,14 @@ const CATEGORY_NAME: Record<TEssentialCategory, string> = {
 
 /** E0945's help for each category an integer target does not take */
 const INTO_INTEGER: Partial<
-  Record<TEssentialCategory, (target: string) => string>
+  Record<TEssentialCategory, (asNumber: string) => string>
 > = {
   boolean: () =>
     "A bool is not a number (ADR-024); write the number it stands for: (value = true) ? 1 : 0",
-  character: (target) =>
-    `Cast the character to say it is a number: (${target})value (ADR-024)`,
-  enum: (target) =>
-    `Cast the enum value to say it is a number: (${target})value (ADR-024)`,
+  character: (asNumber) =>
+    `Cast the character to say it is a number: ${asNumber} (ADR-024)`,
+  enum: (asNumber) =>
+    `Cast the enum value to say it is a number: ${asNumber} (ADR-024)`,
 };
 
 /** What a literal operand must fit: the range, the width, or nothing */
@@ -633,7 +633,7 @@ class IntegerConversionCheck {
       this.check(target, ternary.whenFalse, typeComposites, declaredAt, width);
       return;
     }
-    if (this.checkCategory(target, value, declaredAt)) return;
+    if (this.checkCategory(target, value, declaredAt, width)) return;
     this.checkLiteralLeaves(target, value, "value", declaredAt);
     const source = this.conversionSource(value, typeComposites);
     if (source !== null) {
@@ -643,12 +643,15 @@ class IntegerConversionCheck {
 
   /**
    * E0945: MISRA C:2012 Rule 10.3 -- an integer takes no Boolean, character
-   * or enum value (ADR-024, #2372). True when reported.
+   * or enum value (ADR-024, #2372). True when reported. At a field narrower
+   * than its storage type the help takes the field's bits as well, since the
+   * cast alone is E0869 there.
    */
   private checkCategory(
     target: string,
     value: TExpression,
     declaredAt: ISourceSite | undefined,
+    width: number = TYPE_WIDTH[target],
   ): boolean {
     const t = IntegerConversionCheck.categorized(value, this.context);
     const help = t === null ? undefined : INTO_INTEGER[t.category];
@@ -657,7 +660,11 @@ class IntegerConversionCheck {
       value,
       CATEGORY_NAME[t!.category],
       target,
-      help(target),
+      help(
+        width < TYPE_WIDTH[target]
+          ? `((${target})value)[0, ${width}]`
+          : `(${target})value`,
+      ),
       declaredAt,
     );
     return true;
