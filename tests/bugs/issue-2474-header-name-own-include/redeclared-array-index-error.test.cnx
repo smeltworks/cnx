@@ -1,15 +1,14 @@
 // test-error
-// Issue #2474 review: the index check reads the bound C composes from a
-// header's redeclarations, the same 4 a length property reads, whichever
-// declaration is sized. Neither array has an element 6.
+// Issue #2474 review: the index check reads the same declaration a length
+// property reads, the header's last, which gives samples 4 elements. There is
+// no element 6.
 #include "lib/redeclared-array.h"
 
-u8 readBoth() {
+u8 readSample() {
     u8 s <- samples[6];
-    u8 r <- readings[6];
-    return s + r;
+    return s;
 }
 
 void main() {
-    (void)readBoth();
+    (void)readSample();
 }

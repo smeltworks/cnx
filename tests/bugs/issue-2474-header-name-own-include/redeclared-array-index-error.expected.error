@@ -1,4 +1,2 @@
 8:19 error[E0854]: Array index out of bounds: 6 >= 4 for 'samples' dimension 1
        help: The last valid index is 3 (ADR-036).
-9:20 error[E0854]: Array index out of bounds: 6 >= 4 for 'readings' dimension 1
-       help: The last valid index is 3 (ADR-036).

@@ -1949,9 +1949,9 @@ class Program {
 
   /**
    * #2474: the value `name` names in a file, by the rule the file's symbol
-   * table view reads it (`ForeignRedeclaration`): its own headers' first
-   * declaration, an array's bound composed from their redeclarations, so
-   * `extern uint8_t t[];` and `uint8_t t[4];` give 4 in either order
+   * table view reads it (`ForeignRedeclaration`): its own headers'
+   * declarations, the last of them, so a trailing `extern uint8_t t[];`
+   * leaves the bound unknown rather than folding one from another branch
    */
   private static foreignValueIn(
     declared: ReadonlyArray<IDeclaredForeignValue> | undefined,
@@ -1960,17 +1960,7 @@ class Program {
     const pool = ForeignRedeclaration.pool(declared ?? [], (entry) =>
       sees(entry.origin),
     );
-    const first = pool[0]?.value ?? null;
-    if (first?.kind !== "variable" || !first.dimensions.includes("")) {
-      return first;
-    }
-    const redeclared = pool.flatMap((entry) =>
-      entry.value.kind === "variable" ? [entry.value.dimensions] : [],
-    );
-    return {
-      ...first,
-      dimensions: ForeignRedeclaration.dimensions(first.dimensions, redeclared),
-    };
+    return pool.at(-1)?.value ?? null;
   }
 
   /**

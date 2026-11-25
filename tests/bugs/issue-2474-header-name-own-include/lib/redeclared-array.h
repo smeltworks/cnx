@@ -3,6 +3,4 @@
 #include <stdint.h>
 extern uint8_t samples[];
 extern uint8_t samples[4];
-extern uint8_t readings[4];
-extern uint8_t readings[];
 #endif

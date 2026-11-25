@@ -387,22 +387,11 @@ class SymbolTable implements IResolvedSymbols {
       symbols,
       (symbol) => headers?.has(symbol.sourceFile) ?? true,
     );
-    const first = pool[0];
-    if (first?.kind !== "variable" || !first.arrayDimensions?.includes("")) {
-      return first;
-    }
-    const redeclared = pool.flatMap((symbol) =>
-      symbol.kind === "variable" && symbol.arrayDimensions
-        ? [symbol.arrayDimensions]
-        : [],
+    return ForeignRedeclaration.read(
+      pool,
+      (symbol) =>
+        symbol.kind === "variable" && !!symbol.arrayDimensions?.length,
     );
-    return {
-      ...first,
-      arrayDimensions: ForeignRedeclaration.dimensions(
-        first.arrayDimensions,
-        redeclared,
-      ),
-    };
   }
 
   /** `symbols` with the reading file's headers' declarations first (#2474) */
