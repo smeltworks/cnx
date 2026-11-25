@@ -9,5 +9,5 @@ void test() {
     mut SeaDash.Parse.ParseResult result;
 
     // Assignment after declaration - must use :: not _
-    result <- { data: [1, 2, 3], count: 3, success: true };
+    result <- { data: [1, 2, 3, 0, 0, 0, 0, 0], count: 3, success: true };
 }

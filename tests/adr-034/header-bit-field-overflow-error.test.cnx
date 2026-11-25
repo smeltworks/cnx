@@ -22,7 +22,7 @@ void main() {
     r.count <- 13;
     r.fast <- 256 >> 8;
     CReg built <- { mode: 7, level: -4 };
-    CBank partial <- { regs: [{ mode: 7 }], data: [1, 2] };
+    CBank partial <- { regs: [{ mode: 7 }, { mode: 0 }], data: [1, 2, 0, 0] };
 
     // ASSERTIONS
     r.mode <- 13;
