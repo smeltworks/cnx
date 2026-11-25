@@ -64,10 +64,23 @@ interface ITranslationUnit {
   readonly cppRequired: boolean | undefined;
 }
 
+/**
+ * A header's slice of a compile: as C reads it, and with its conditionals
+ * evaluated and nothing expanded (#2096) -- null when that run failed or two
+ * files' compiles read it differently
+ */
+interface IReading {
+  readonly text: string;
+  readonly directives: string | null;
+}
+
 /** By real path; null when two files' compiles read the header differently */
-type TReadings = ReadonlyMap<string, string | null>;
+type TReadings = ReadonlyMap<string, IReading | null>;
 
 const NO_READINGS: TReadings = new Map();
+
+/** `#define NAME(`: a function-like macro, whose `(` follows its name */
+const FUNCTION_LIKE_DEFINE = /^[ \t]*#[ \t]*define[ \t]+\w+\(/m;
 
 /** One `.cnx` file's C includes and the path its compile searches */
 interface IFileUnit {
@@ -218,38 +231,69 @@ class HeaderSources {
       const header = alone[i];
       const met = readingsOf(file).get(keyOf(file)) ?? undefined;
       if (header.source === null) {
-        const slice = met ?? slices.get(resolve(file.path));
-        return slice === undefined ? [] : [{ i, slice }];
+        if (met !== undefined) return [{ i, reading: met }];
+        const slice = slices.get(resolve(file.path));
+        return slice === undefined
+          ? []
+          : [{ i, reading: { text: slice, directives: null } }];
       }
       return met === undefined ||
         HeaderSources._sameText(
-          met,
+          met.text,
           LineMarkers.ownText(header.preprocessed, file.path) ?? "",
         )
         ? []
-        : [{ i, slice: met }];
+        : [{ i, reading: met }];
     });
+    // #2096: the directives-only slice is parsed only when it says what the
+    // unit's expanded one does. A macro an earlier include defines writes what
+    // the parser cannot expand (`DECLARE_SIZED(declared, 5)`), and so does
+    // one the header defines with parameters (`DECLARE_BUFFER(generated)`)
+    const faithful = await Promise.all(
+      fromUnit.map(async (entry) => {
+        const directives = entry.reading.directives;
+        if (directives === null) return entry;
+        // The parser reads a function-like macro's use as a call
+        if (FUNCTION_LIKE_DEFINE.test(directives)) {
+          return {
+            i: entry.i,
+            reading: { ...entry.reading, directives: null },
+          };
+        }
+        const alike = await limit(() =>
+          ExternalDeclarationOracle.expandsAlone(
+            directives,
+            entry.reading.text,
+            settings.preprocessor,
+            { defines: { ...settings.defines } },
+            cppOf(headers[entry.i]),
+          ),
+        );
+        return alike
+          ? entry
+          : { i: entry.i, reading: { ...entry.reading, directives: null } };
+      }),
+    );
     const sources = new Map<string, IHeaderSource>();
     const unsettled = new Map<string, string>();
-    const sliced = new Map(fromUnit.map((entry) => [entry.i, entry.slice]));
+    const sliced = new Map(faithful.map((entry) => [entry.i, entry.reading]));
     headers.forEach((file, i) => {
       if (!counted.has(i)) return;
       const header = alone[i];
-      const slice = sliced.get(i);
-      if (slice === undefined) {
+      const reading = sliced.get(i);
+      if (reading === undefined) {
         if (header.source === null) unsettled.set(file.path, header.error);
         else sources.set(file.path, header.source);
         return;
       }
       // #1542 ruling 4: a header's language is judged on the text C meets
-      const judged = cReadings.get(keyOf(file)) ?? slice;
+      const judged = cReadings.get(keyOf(file))?.text ?? reading.text;
       sources.set(
         file.path,
         HeaderSources._sourceOf(file, {
           raw: header.raw,
-          // #985: a unit slice exists only expanded, as C reads it
-          unexpanded: null,
-          preprocessed: slice,
+          unexpanded: reading.directives,
+          preprocessed: reading.text,
           own: judged,
         }),
       );
@@ -310,45 +354,88 @@ class HeaderSources {
     const distinct = new Map(
       files.map((file) => [JSON.stringify(file), file] as const),
     );
-    const perFile = await Promise.all(
-      [...distinct.values()].map((file) =>
-        read.limit(() =>
-          ExternalDeclarationOracle.slices(
+    const sliceOf = (
+      file: IFileUnit,
+      directivesOnly: boolean,
+    ): Promise<ReadonlyMap<string, string>> =>
+      read.limit(async () =>
+        HeaderSources._byRealPath(
+          await ExternalDeclarationOracle.slices(
             file.directives,
             read.settings.preprocessor,
             {
               includePaths: [...file.includePaths],
               defines: { ...read.settings.defines },
+              directivesOnly,
             },
             cpp,
           ),
+          read.realOf,
         ),
-      ),
+      );
+    const perFile = await Promise.all(
+      [...distinct.values()].map(async (file) => ({
+        expanded: await sliceOf(file, false),
+        directives: await sliceOf(file, true),
+      })),
     );
-    const readings = new Map<string, string | null>();
+    const readings = new Map<string, IReading | null>();
+    const directivesAgree = new Map<string, string | null>();
     for (const slices of perFile) {
-      const resolved = HeaderSources._resolvedKeys(slices);
       HeaderSources._count(
-        resolved.keys(),
+        slices.expanded.keys(),
         read.index,
         read.alone,
         read.counted,
       );
-      const own = new Map<string, string>();
-      for (const [path, text] of resolved) {
-        const key = read.realOf.get(path) ?? path;
-        const earlier = own.get(key);
-        own.set(key, earlier === undefined ? text : `${earlier}\n${text}`);
-      }
-      for (const [key, text] of own) {
+      for (const [key, text] of slices.expanded) {
         const earlier = readings.get(key);
-        if (earlier === undefined) readings.set(key, text);
-        else if (earlier !== null && !HeaderSources._sameText(earlier, text)) {
+        if (earlier === undefined)
+          readings.set(key, { text, directives: null });
+        else if (
+          earlier !== null &&
+          !HeaderSources._sameText(earlier.text, text)
+        ) {
           readings.set(key, null);
         }
+        const directives = slices.directives.get(key) ?? null;
+        const seen = directivesAgree.get(key);
+        directivesAgree.set(
+          key,
+          seen === undefined ||
+            (seen !== null &&
+              directives !== null &&
+              HeaderSources._sameText(seen, directives))
+            ? directives
+            : null,
+        );
       }
     }
+    for (const [key, reading] of readings) {
+      if (reading === null) continue;
+      readings.set(key, {
+        text: reading.text,
+        directives: directivesAgree.get(key) ?? null,
+      });
+    }
     return readings;
+  }
+
+  /**
+   * A compile's slices by real path: two spellings of one file (`"dev.h"`,
+   * `"../lib/dev.h"`, a symlink) are one file's lines, joined
+   */
+  private static _byRealPath(
+    slices: ReadonlyMap<string, string> | null,
+    realOf: ReadonlyMap<string, string>,
+  ): ReadonlyMap<string, string> {
+    const own = new Map<string, string>();
+    for (const [path, text] of HeaderSources._resolvedKeys(slices)) {
+      const key = realOf.get(path) ?? path;
+      const earlier = own.get(key);
+      own.set(key, earlier === undefined ? text : `${earlier}\n${text}`);
+    }
+    return own;
   }
 
   /** Whether two preprocessed texts hold the same tokens */

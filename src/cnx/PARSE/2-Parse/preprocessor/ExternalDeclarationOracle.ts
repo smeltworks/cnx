@@ -87,6 +87,29 @@ class ExternalDeclarationOracle {
   }
 
   /**
+   * Whether `directives`, a header's slice with its conditionals evaluated and
+   * nothing expanded, expands on its own to `expanded`, its slice as the unit
+   * expanded it: true when no macro from outside the header writes any of it
+   */
+  static async expandsAlone(
+    directives: string,
+    expanded: string,
+    preprocessor: IHeaderPreprocessor,
+    options: IPreprocessOptions,
+    cpp: boolean,
+  ): Promise<boolean> {
+    const alone = await preprocessor.preprocessString(
+      directives,
+      cpp ? CPP_TU_NAME : TU_NAME,
+      { ...options, keepLineDirectives: false },
+    );
+    return (
+      alone.success &&
+      alone.content.replace(/\s+/g, "") === expanded.replace(/\s+/g, "")
+    );
+  }
+
+  /**
    * Preprocess `includeDirectives` (e.g. `"<freertos/task.h>"`) as one TU and
    * return each header's own preprocessed slice plus function-like-macro names.
    *
