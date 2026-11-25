@@ -5,7 +5,7 @@
 // C type: `unsigned int mode : 3` holds 0 through 7, and C would keep only the
 // low 3 bits of 13. A signed bit-field holds -4 through 3. A `uint_fast8_t`
 // bit-field's arithmetic has no known width, so its constant is folded whole
-// and judged by the 3 bits.
+// and judged by the 3 bits. A `{ field: value }` initializer is judged the same.
 
 #include "header-bit-field.h"
 
@@ -19,6 +19,7 @@ void main() {
     r.flag <- 1;
     r.count <- 13;
     r.fast <- 256 >> 8;
+    CReg built <- { mode: 7, level: -4 };
 
     // ASSERTIONS
     r.mode <- 13;
@@ -26,4 +27,6 @@ void main() {
     r.level <- -5;
     r.flag <- 2;
     r.fast <- 0xFFFFFFFF + 1;
+    CReg init <- { mode: 13 };
+    COuter outer <- { reg: { level: 4 }, tag: 1 };
 }

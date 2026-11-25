@@ -23,4 +23,9 @@ typedef struct {
     int whole;
 } SReg;
 
+typedef struct {
+    SReg inner;
+    uint32_t tag;
+} SOuter;
+
 #endif

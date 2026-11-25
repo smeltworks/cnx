@@ -38,6 +38,11 @@ import PROPERTY_NAMES from "../../utils/constants/PROPERTY_NAMES";
 import IBitmapAccessError from "./types/IBitmapAccessError";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import SourceOrder from "../../utils/SourceOrder";
+import ValuePositions from "./helpers/ValuePositions";
+import StructInitializerType from "./helpers/StructInitializerType";
+import type IValuePosition from "../../types/IValuePosition";
+import type IOperandType from "../../types/IOperandType";
+import type ISourceSite from "../../types/ISourceSite";
 import BitFieldIntegerType from "../../utils/BitFieldIntegerType";
 
 /** The bits an assignment target holds: a bitmap field, or a C bit-field */
@@ -56,7 +61,10 @@ type TFieldBits = {
 class BitmapAccessCheck {
   private readonly found: IBitmapAccessError[] = [];
 
-  public constructor(private readonly context: IAnalysisContext) {}
+  public constructor(
+    private readonly context: IAnalysisContext,
+    private readonly positions: ReadonlyMap<TExpression, IValuePosition>,
+  ) {}
 
   public errors(): IBitmapAccessError[] {
     return this.found;
@@ -64,6 +72,23 @@ class BitmapAccessCheck {
 
   public checkExpression(expr: TExpression): void {
     if (expr.kind === "postfix") this.checkChain(expr);
+    if (expr.kind === "structInitializer") this.checkInitializer(expr);
+  }
+
+  /** A header struct's bit-field written by `{ field: value }`, as by `<-` */
+  private checkInitializer(
+    expr: Extract<TExpression, { kind: "structInitializer" }>,
+  ): void {
+    const declaredAt = StructInitializerType.declarationOf(
+      ValuePositions.at(this.positions, expr),
+      expr.span,
+      this.context,
+    );
+    for (const field of expr.fields) {
+      const t = ValuePositions.at(this.positions, field.value).headerField;
+      const bits = BitmapAccessCheck.headerBits(t, field.name);
+      if (bits !== null) this.checkFits(declaredAt, bits, field.value);
+    }
   }
 
   public checkSite(site: IAssignmentSyntax): void {
@@ -74,7 +99,11 @@ class BitmapAccessCheck {
         ? this.headerBitField(site.target)
         : BitmapAccessCheck.bitmapBits(field);
     if (bits === null) return;
-    this.checkFits(site, bits, site.value);
+    this.checkFits(
+      BindingSite.ofChain(site.target, this.context),
+      bits,
+      site.value,
+    );
   }
 
   private static bitmapBits(field: IBitmapFieldTarget): TFieldBits {
@@ -94,12 +123,22 @@ class BitmapAccessCheck {
    */
   private headerBitField(target: TExpressionOf<"postfix">): TFieldBits | null {
     if (!OperandTyper.chainOf(target, this.context).endsOnBitField) return null;
-    const t = OperandTyper.typeOfTarget(target, this.context);
     const name = target.ops.at(-1);
-    if (t?.bitWidth == null || name?.kind !== "member") return null;
+    if (name?.kind !== "member") return null;
+    return BitmapAccessCheck.headerBits(
+      OperandTyper.typeOfTarget(target, this.context),
+      name.name,
+    );
+  }
+
+  private static headerBits(
+    t: IOperandType | null,
+    name: string,
+  ): TFieldBits | null {
+    if (t?.bitWidth == null) return null;
     return {
       width: t.bitWidth,
-      name: name.name,
+      name,
       signed: t.category === "signed",
       judgedByType: true,
       widen: "widen the bit-field in its header",
@@ -116,7 +155,7 @@ class BitmapAccessCheck {
    * the field (ADR-022); one that folds is judged by the arm it picks.
    */
   private checkFits(
-    site: IAssignmentSyntax,
+    declaredAt: ISourceSite | undefined,
     field: TFieldBits,
     expr: TExpression,
   ): void {
@@ -127,8 +166,8 @@ class BitmapAccessCheck {
     );
     const inner = ExpressionShape.unparenthesized(expr);
     if (result.kind !== "value" && inner.kind === "ternary") {
-      this.checkFits(site, field, inner.whenTrue);
-      this.checkFits(site, field, inner.whenFalse);
+      this.checkFits(declaredAt, field, inner.whenTrue);
+      this.checkFits(declaredAt, field, inner.whenFalse);
       return;
     }
     if (result.kind !== "value") return;
@@ -146,7 +185,7 @@ class BitmapAccessCheck {
     this.found.push({
       code: "E0881",
       span: expr.span,
-      declaredAt: BindingSite.ofChain(site.target, this.context),
+      declaredAt,
       message: `Value ${value} ${bound} ${width}-bit field '${field.name}' ${limit}`,
       helpText: `A ${width}-bit field holds ${minimum} through ${maximum}; ${field.widen}, or write a value that fits (ADR-034).`,
     });
@@ -245,7 +284,7 @@ class BitmapAccessAnalyzer {
     program: IProgramSyntax,
     valuePositions: IValuePositions,
   ): IBitmapAccessError[] {
-    const check = new BitmapAccessCheck(this.context);
+    const check = new BitmapAccessCheck(this.context, valuePositions.positions);
     ProgramAccesses.checkReadsAndWrites(program, valuePositions, check);
     return check.errors().sort(SourceOrder.bySpan);
   }

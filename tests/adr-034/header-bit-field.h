@@ -13,4 +13,9 @@ typedef struct {
     uint_fast8_t fast : 3;
 } CReg;
 
+typedef struct {
+    CReg reg;
+    uint32_t tag;
+} COuter;
+
 #endif

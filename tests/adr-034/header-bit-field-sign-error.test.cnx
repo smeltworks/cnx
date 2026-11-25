@@ -33,4 +33,5 @@ void main() {
     global.r.pi <- 1;
     r.computed <- 1;
     SReg init <- { si: 1, pi: 1 };
+    SOuter outer <- { inner: { pi: 1 }, tag: 2 };
 }

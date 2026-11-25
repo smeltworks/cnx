@@ -215,12 +215,13 @@ class IntegerConversionCheck {
    */
   public checkAt(value: TExpression, declaredAt?: ISourceSite): void {
     if (this.checkStringsAt(value)) return;
-    const target = StructInitializerType.valueTypeAt(
-      ValuePositions.at(this.positions, value),
-    );
+    const position = ValuePositions.at(this.positions, value);
+    const target = StructInitializerType.valueTypeAt(position);
     if (target === "bool") this.checkBoolean(value, declaredAt);
     if (target !== null && TypeCheckUtils.isInteger(target)) {
-      this.check(target, value, true, declaredAt);
+      // A header bit-field holds its own width (ADR-072 ruling 19)
+      const width = position.headerField?.bitWidth ?? TYPE_WIDTH[target];
+      this.check(target, value, true, declaredAt, width);
     }
   }
 

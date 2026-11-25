@@ -3,7 +3,8 @@
 // ADR-072 ruling 19: a C header struct's bit-field is judged by the bits it
 // declares, as a bitmap field is (ADR-072 ruling 17), both as a target and as
 // a source. A `uint_fast8_t` bit-field, whose C type has no known width, is
-// judged by the same 3 bits.
+// judged by the same 3 bits. A `{ field: value }` initializer writes a field
+// as `<-` does, nested in another header struct too.
 
 #include "header-bit-field.h"
 
@@ -19,10 +20,16 @@ void main() {
     r.count <- m;
     r.fast <- m[0, 3];
     r.fast <- 256 >> 8;
+    CReg built <- { mode: m[0, 3], count: m };
+    COuter nested <- { reg: { mode: m[0, 3] }, tag: 1 };
 
     // ASSERTIONS
     r.mode <- m;
     u8 narrow <- r.wide;
     i8 signed <- r.mode;
     r.fast <- m;
+    CReg init <- { mode: m };
+    COuter outer <- { reg: { mode: m }, tag: 1 };
+    u64 big <- 5;
+    CReg whole <- { count: big };
 }
