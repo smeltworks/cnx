@@ -136,11 +136,12 @@ class CCallee {
         ];
       }
     }
+    // A C++ method declared `()` takes no arguments, and records none
     return context.symbolTable.getCppOverloads(name).flatMap((symbol) =>
-      symbol.kind === "function" && symbol.parameters
+      symbol.kind === "function"
         ? [
             {
-              parameters: symbol.parameters,
+              parameters: symbol.parameters ?? [],
               isVariadic: symbol.isVariadic === true,
               returnType: symbol.type ?? null,
             },
@@ -226,8 +227,9 @@ class CCallee {
           isArray: false,
         })),
         isVariadic:
-          declared.length !== parsed.params.length &&
-          parsed.params.some((param) => param.baseType === "..."),
+          parsed.isUnprototyped === true ||
+          (declared.length !== parsed.params.length &&
+            parsed.params.some((param) => param.baseType === "...")),
       },
     };
   }

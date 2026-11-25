@@ -1,0 +1,21 @@
+// test-error
+// test-cpp-only
+// test-adr: 070
+// Tests: a bare C++ method call is judged by the overloads that can take its
+// arguments (#2473). `o.op(1)` reaches only the int overload, its second
+// argument defaulted, so the result is discarded. `o.op(1, 2, 3)` reaches a
+// member template cnx does not record, so it is not judged.
+#include "lib/cpp-ops.hpp"
+
+Ops o;
+
+void main() {
+    // NEGATIVE CONTROLS -- each stays silent.
+    o.op();
+    o.op(1, 2, 3);
+    (void)o.op(1);
+
+    // ASSERTIONS
+    o.op(1);
+    o.op(1, 2);
+}
