@@ -39,12 +39,14 @@ const FLOATING_LITERAL = String.raw`0[xX][0-9a-fA-F]*\.?[0-9a-fA-F]*[pP][+-]?\d+
 const INTEGER_LITERAL = String.raw`0[xX][0-9a-fA-F]+[uUlL]*|0[bB][01]+[uUlL]*|\d+[uUlL]*`;
 /** The operators an integer expansion may hold: arithmetic and bitwise */
 const INTEGER_OPERATOR = "<<|>>|[-+*/%&|^~]";
+/** `&&` and `||` are no integer operator: a macro of them is a Boolean, not read */
+const LOGICAL_OPERATOR = String.raw`&&|\|\|`;
 /** A character constant, `'A'` or `'\\n'`; a prefixed one (`L'A'`) is not read */
 const CHARACTER_LITERAL = String.raw`'(?:\\.|[^'\\])+'`;
 
 /** One token per match; `other` takes any character no other group does */
 const MACRO_TOKEN = new RegExp(
-  String.raw`\s+|(${FLOATING_LITERAL})|(${INTEGER_LITERAL})|([A-Za-z_]\w*)|(${INTEGER_OPERATOR})|([()])|(${CHARACTER_LITERAL})|(.)`,
+  String.raw`\s+|(${FLOATING_LITERAL})|(${INTEGER_LITERAL})|([A-Za-z_]\w*)|(${LOGICAL_OPERATOR})|(${INTEGER_OPERATOR})|([()])|(${CHARACTER_LITERAL})|(.)`,
   "g",
 );
 
@@ -458,13 +460,13 @@ class HeaderMacros {
         tokens.push({ kind: "integer", text: match[2] });
       } else if (match[3] !== undefined) {
         tokens.push({ kind: "name", name: match[3] });
-      } else if (match[4] !== undefined) {
-        tokens.push({ kind: "operator", text: match[4] });
       } else if (match[5] !== undefined) {
-        tokens.push({ kind: "paren", text: match[5] });
+        tokens.push({ kind: "operator", text: match[5] });
       } else if (match[6] !== undefined) {
-        tokens.push({ kind: "character" });
+        tokens.push({ kind: "paren", text: match[6] });
       } else if (match[7] !== undefined) {
+        tokens.push({ kind: "character" });
+      } else if (match[4] !== undefined || match[8] !== undefined) {
         tokens.push({ kind: "other" });
       }
     }

@@ -247,6 +247,15 @@ describe("HeaderMacros.collect", () => {
     }
   });
 
+  it("leaves a macro of && or || unreadable, not an integer of two & or | (#2484 review)", () => {
+    const macros = HeaderMacros.collect(
+      ["#define READY (1 && 1)", "#define EITHER (2 || 0)"].join("\n"),
+    );
+    for (const name of ["READY", "EITHER"]) {
+      expect(macros.get(name), name).toEqual({ kind: "unreadable" });
+    }
+  });
+
   it("types a character constant alone as character, and mixed as unreadable", () => {
     const macros = HeaderMacros.collect(
       [

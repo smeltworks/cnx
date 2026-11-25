@@ -1,7 +1,8 @@
 // test-error
 // test-adr: 024
 // #2484 review: a header's integer macro is a number, as an integer literal
-// is, so it is no bool and no one-bit bitmap field (E0945).
+// is, so it is no bool and no one-bit bitmap field (E0945). One of `&&` or
+// `||` is a Boolean, not an integer macro, so it stays accepted.
 #include "integer-macro.h"
 
 bitmap8 Flags {
@@ -18,6 +19,8 @@ void main() {
     n <- MODE;
     b <- MODE != 0;
     f.Enable <- ON_FLAG != 0;
+    b <- READY;
+    f.Enable <- EITHER;
 
     // ASSERTIONS
     f.Enable <- MODE;
