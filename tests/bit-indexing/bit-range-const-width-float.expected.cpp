@@ -15,7 +15,6 @@ static_assert(sizeof(double) == 8, "Float bit indexing requires 64-bit double");
 // (__bits.u & ((1U << W) - 1)) is UB at full width (1U << 32 for f32,
 // 1ULL << 64 for f64), so a full-width extraction returned 0 instead of the bits.
 int main(void) {
-    const uint8_t W32 = 32U;
     const float x = 1.5;
     /* MISRA C:2012 Rule 21.15: float bits accessed through a union (memcpy would pass incompatible pointer types: float* vs uint32_t*). */
     union { float f; uint32_t u; } __bits_x;
@@ -24,7 +23,6 @@ int main(void) {
     if (xbits != 0x3FC00000) {
         return 1U;
     }
-    const uint8_t W64 = 64U;
     const double y = 1.5;
     /* MISRA C:2012 Rule 21.15: float bits accessed through a union (memcpy would pass incompatible pointer types: double* vs uint64_t*). */
     union { double f; uint64_t u; } __bits_y;

@@ -24,7 +24,6 @@ uint8_t b[3] = {0};
 const uint64_t MASK = 0xFFFFFFFFFFFFFFFFULL;
 
 int main(void) {
-    const uint64_t TOP = MASK >> 60ULL;
     uint8_t fifteen[15] = {0};
     const int64_t big = 2147483648;
     const int64_t prod = 4294967296;

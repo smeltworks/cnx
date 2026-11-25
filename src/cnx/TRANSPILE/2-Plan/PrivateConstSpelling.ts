@@ -100,7 +100,7 @@ class PrivateConstSpelling {
   static ofValue(
     program: IProgram,
     settled: TSettledConst | null,
-    typeName: string,
+    typeName: string | null,
   ): IConstSpelling | null {
     if (PrivateConstSpelling.isI64Min(settled)) return I64_MIN_SPELLED;
     const text = ConstLiteral.textOfValue(program, settled);

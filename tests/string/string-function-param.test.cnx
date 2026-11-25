@@ -1,12 +1,18 @@
 // ADR-045: String as function parameter
+// test-execution
 // test-no-warnings
 // Tests: passing bounded string to function
-void printMessage(string<64> msg) {
+u32 measure(string<64> msg) {
     // Use the string (read-only)
     u32 len <- msg.value_char_count;
+    return len;
 }
 
-void main() {
+u32 main() {
     string<64> greeting <- "Hello, World!";
-    printMessage(greeting);
+    u32 measured <- measure(greeting);
+    if (measured != 13) {
+        return 1;
+    }
+    return 0;
 }

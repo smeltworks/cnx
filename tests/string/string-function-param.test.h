@@ -6,12 +6,14 @@
  * Header file for cross-language interoperability
  */
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Function prototypes */
-void printMessage(const char* msg);
+uint32_t measure(const char* msg);
 
 #ifdef __cplusplus
 }

@@ -15,7 +15,6 @@ const uint32_t GY = 2U;
 uint8_t gok[2] = {0};
 
 int main(void) {
-    const uint32_t y = 2U;
     uint8_t ok[2] = {0U, 0U};
     ok[1] = 7U;
     gok[1] = 9U;

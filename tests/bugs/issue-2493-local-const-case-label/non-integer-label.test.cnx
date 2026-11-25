@@ -1,0 +1,40 @@
+// test-error
+// test-adr: 025
+// #2495 review: C switches only on an integer constant (C11 6.8.4.2p3). A
+// float or bool const has a value but no integer one, so as a label it is
+// E0717, local or file-scope. The integer const beside each stays silent.
+f32 FILE_F <- 1.0;
+bool FILE_B <- true;
+u8 FILE_OK <- 2;
+
+u32 main() {
+    f32 F <- 1.0;
+    bool B <- true;
+    u8 OK <- 3;
+    u8 s <- 1;
+    mut u32 r <- 0;
+    switch (s) {
+        case F {
+            r <- 1;
+        }
+        case B {
+            r <- 2;
+        }
+        case FILE_F {
+            r <- 3;
+        }
+        case FILE_B {
+            r <- 4;
+        }
+        case OK {
+            r <- 5;
+        }
+        case FILE_OK {
+            r <- 6;
+        }
+        default {
+            r <- 7;
+        }
+    }
+    return r;
+}

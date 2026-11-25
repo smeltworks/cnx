@@ -727,6 +727,10 @@ class TestUtils {
    * because they are the same decision -- "how does this corpus compile a
    * fixture?" -- and splitting them would leave three copies of half of it.
    *
+   * #1791: an unused local is not suppressed. `-Wno-unused-variable` here hid
+   * every unused declaration the generator emitted from `// test-no-warnings`,
+   * so the marker could not catch a const whose every use had folded away.
+   *
    * #1544: the include path is the fixture's SOURCE ROOT -- the entry's
    * directory -- and is the same for every translation unit in the fixture,
    * which is why this takes that directory rather than the file being
@@ -744,7 +748,6 @@ class TestUtils {
    */
   static fixtureCompileFlags(sourceRootDir: string, rootDir: string): string[] {
     return [
-      "-Wno-unused-variable",
       "-Wno-main",
       "-I",
       join(rootDir, "tests/include"),
