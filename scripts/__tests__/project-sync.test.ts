@@ -305,6 +305,7 @@ describe("project-sync.yml — a pull request closed without a merge", () => {
         [10, "OPEN", ["other"]],
         [11, "OPEN", []],
         [12, "OPEN", []],
+        [15, "OPEN", []],
         [13, "CLOSED", []],
       ),
       GH_STUB_PRS_11: closing([20, "OPEN"]),
@@ -316,6 +317,7 @@ describe("project-sync.yml — a pull request closed without a merge", () => {
       "Open pull request #20 closes #11; leaving it in WIP.",
     );
     expect(run.stdout).toContain("Set I_12: 'WIP' -> 'Backlog'.");
+    expect(run.stdout).toContain("Set I_15: 'WIP' -> 'Backlog'.");
     expect(run.stdout).not.toContain("I_13");
     expect(run.calls).toContain("number=2505");
     expect(run.calls.match(/projectV2\(number/g)).toHaveLength(1);
