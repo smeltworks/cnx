@@ -248,8 +248,8 @@ describe("SymbolTable", () => {
   describe("indexBoundsOf (#2474)", () => {
     const arrayIn = (
       sourceFile: string,
-      arrayDimensions: ReadonlyArray<number | string>,
-    ): TCSymbol => ({
+      arrayDimensions: ReadonlyArray<number | string> | undefined,
+    ): Extract<TCSymbol, { kind: "variable" }> => ({
       kind: "variable",
       name: "samples",
       sourceFile,
@@ -266,7 +266,8 @@ describe("SymbolTable", () => {
       symbolTable.addCSymbol(arrayIn("/a.h", [""]));
       symbolTable.addCSymbol(arrayIn("/a.h", [4]));
       expect(symbolTable.indexBoundsOf("samples")).toEqual([4]);
-      expect(symbolTable.getCSymbol("samples")?.arrayDimensions).toEqual([""]);
+      const first = symbolTable.getCSymbol("samples");
+      expect(first?.kind === "variable" && first.arrayDimensions).toEqual([""]);
     });
 
     it("composes only the reading file's own headers' declarations", () => {
@@ -286,6 +287,7 @@ describe("SymbolTable", () => {
       symbolTable.addCppSymbol({
         kind: "variable",
         name: "frames",
+        unqualifiedName: "frames",
         sourceFile: "/a.hpp",
         span: TestSourceSpan.at(1),
         sourceLanguage: ESourceLanguage.Cpp,
@@ -300,10 +302,9 @@ describe("SymbolTable", () => {
 
     it("has no bounds for a name that is not a header array", () => {
       symbolTable.addCSymbol({
-        ...arrayIn("/a.h", [4]),
+        ...arrayIn("/a.h", undefined),
         name: "count",
         isArray: false,
-        arrayDimensions: undefined,
       });
       expect(symbolTable.indexBoundsOf("count")).toBeUndefined();
       expect(symbolTable.indexBoundsOf("missing")).toBeUndefined();
