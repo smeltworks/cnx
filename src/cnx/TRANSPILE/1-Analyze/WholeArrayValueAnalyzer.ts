@@ -31,6 +31,7 @@ import type IFunctionDeclarationSyntax from "../../types/syntax/IFunctionDeclara
 import ForHeaderVariable from "../../utils/ForHeaderVariable";
 import TypeCheckUtils from "../../utils/TypeCheckUtils";
 import TypeText from "../../utils/TypeText";
+import StringUtils from "../../utils/StringUtils";
 import type IValuePosition from "../../types/IValuePosition";
 import type IValuePositions from "../../types/IValuePositions";
 import type TExpression from "../../types/syntax/TExpression";
@@ -282,8 +283,34 @@ class WholeArrayValueAnalyzer {
         at.headerField !== null,
       );
     }
-    if (ExpressionShape.givesWholeArray(value, element)) return [];
-    return [ArrayListCount.notAList(value)];
+    if (!ExpressionShape.givesWholeArray(value, element)) {
+      return [ArrayListCount.notAList(value)];
+    }
+    return element === "char"
+      ? WholeArrayValueAnalyzer.terminated(value, at.dimensions[0])
+      : [];
+  }
+
+  /**
+   * #2484 review: a header's `char` array is a C string, read by `strcmp`, so
+   * a literal must leave room for its terminator. C takes `char t[3] = "cfg"`
+   * with none, and a comparison then reads past the field (E0864).
+   */
+  private static terminated(
+    value: TExpression,
+    size: number | string | undefined,
+  ): IArrayDeclarationError[] {
+    if (value.kind !== "literal" || typeof size !== "number") return [];
+    const length = StringUtils.literalLength(value.text);
+    if (length < size) return [];
+    return [
+      {
+        code: "E0864",
+        span: value.span,
+        message: `String literal (${length} chars) and its terminator exceed char[${size}]`,
+        helpText: `Widen the header's array to char[${length + 1}], or shorten the value.`,
+      },
+    ];
   }
 
   /**

@@ -26,6 +26,7 @@ typedef struct {
 typedef struct {
     uint8_t octal[010];
     char name[8];
+    char tag[3];
 } CNamed;
 
 #endif
