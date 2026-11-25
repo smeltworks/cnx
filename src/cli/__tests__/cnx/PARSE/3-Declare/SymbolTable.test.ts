@@ -398,8 +398,22 @@ describe("SymbolTable", () => {
 
   describe("struct fields", () => {
     it("should add and retrieve struct field information", () => {
-      symbolTable.addStructField("Point", "x", "int");
-      symbolTable.addStructField("Point", "y", "int");
+      symbolTable.addStructField(
+        "Point",
+        "x",
+        "int",
+        undefined,
+        undefined,
+        "test.h",
+      );
+      symbolTable.addStructField(
+        "Point",
+        "y",
+        "int",
+        undefined,
+        undefined,
+        "test.h",
+      );
 
       expect(symbolTable.getStructFields("Point")?.get("x")?.type).toBe("int");
       expect(symbolTable.getStructFields("Point")?.get("y")?.type).toBe("int");
@@ -412,8 +426,22 @@ describe("SymbolTable", () => {
     });
 
     it("should get all fields for a struct", () => {
-      symbolTable.addStructField("Point", "x", "int");
-      symbolTable.addStructField("Point", "y", "int");
+      symbolTable.addStructField(
+        "Point",
+        "x",
+        "int",
+        undefined,
+        undefined,
+        "test.h",
+      );
+      symbolTable.addStructField(
+        "Point",
+        "y",
+        "int",
+        undefined,
+        undefined,
+        "test.h",
+      );
 
       const fields = symbolTable.getStructFields("Point");
       expect(fields?.size).toBe(2);

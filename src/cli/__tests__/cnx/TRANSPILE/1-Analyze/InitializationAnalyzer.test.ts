@@ -72,7 +72,14 @@ describe("InitializationAnalyzer", () => {
         visibility: "public",
       });
       // Add the field so the analyzer knows about it
-      TestSymbolTable.of(state).addStructField("CppMessage", "pgn", "u16");
+      TestSymbolTable.of(state).addStructField(
+        "CppMessage",
+        "pgn",
+        "u16",
+        undefined,
+        undefined,
+        "test.h",
+      );
 
       // Build external struct fields from symbol table
       state.program = Program.build([], {
@@ -132,7 +139,14 @@ describe("InitializationAnalyzer", () => {
         span: TestSourceSpan.at(1),
         visibility: "public",
       });
-      TestSymbolTable.of(state).addStructField("CppStruct", "value", "u32");
+      TestSymbolTable.of(state).addStructField(
+        "CppStruct",
+        "value",
+        "u32",
+        undefined,
+        undefined,
+        "test.h",
+      );
 
       // Build external struct fields from symbol table
       state.program = Program.build([], {
@@ -166,7 +180,14 @@ describe("InitializationAnalyzer", () => {
         visibility: "public",
         isUnion: false,
       });
-      TestSymbolTable.of(state).addStructField("CStruct", "value", "u32");
+      TestSymbolTable.of(state).addStructField(
+        "CStruct",
+        "value",
+        "u32",
+        undefined,
+        undefined,
+        "test.h",
+      );
 
       // Build external struct fields from symbol table (as pipeline does)
       state.program = Program.build([], {

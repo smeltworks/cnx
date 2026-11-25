@@ -322,7 +322,9 @@ describe("CResolver - Structs", () => {
   it("marks named struct as needing struct keyword", () => {
     const tree = TestHelpers.parseC(`struct Point { int x; int y; };`);
     const symbolTable = new SymbolTable();
-    CResolver.resolve(tree!, "test.h", symbolTable);
+    symbolTable.addCSymbols(
+      CResolver.resolve(tree!, "test.h", symbolTable).symbols,
+    );
 
     expect(symbolTable.checkNeedsStructKeyword("Point")).toBe(true);
   });
@@ -340,7 +342,9 @@ describe("CResolver - Structs", () => {
   it("does not mark typedef struct as needing struct keyword", () => {
     const tree = TestHelpers.parseC(`typedef struct { int x; int y; } Point;`);
     const symbolTable = new SymbolTable();
-    CResolver.resolve(tree!, "test.h", symbolTable);
+    symbolTable.addCSymbols(
+      CResolver.resolve(tree!, "test.h", symbolTable).symbols,
+    );
 
     expect(symbolTable.checkNeedsStructKeyword("Point")).toBe(false);
   });
@@ -384,7 +388,9 @@ describe("CResolver - Struct Fields", () => {
   it("collects struct fields into symbol table", () => {
     const tree = TestHelpers.parseC(`struct Point { int x; int y; };`);
     const symbolTable = new SymbolTable();
-    CResolver.resolve(tree!, "test.h", symbolTable);
+    symbolTable.addCSymbols(
+      CResolver.resolve(tree!, "test.h", symbolTable).symbols,
+    );
 
     const fieldsMap = symbolTable.getStructFields("Point");
     expect(fieldsMap).toBeDefined();
@@ -398,7 +404,9 @@ describe("CResolver - Struct Fields", () => {
       `struct Person { char name[32]; int age; float height; };`,
     );
     const symbolTable = new SymbolTable();
-    CResolver.resolve(tree!, "test.h", symbolTable);
+    symbolTable.addCSymbols(
+      CResolver.resolve(tree!, "test.h", symbolTable).symbols,
+    );
 
     const fieldsMap = symbolTable.getStructFields("Person");
     expect(fieldsMap).toBeDefined();
@@ -411,7 +419,9 @@ describe("CResolver - Struct Fields", () => {
   it("collects array field dimensions", () => {
     const tree = TestHelpers.parseC(`struct Buffer { char data[256]; };`);
     const symbolTable = new SymbolTable();
-    CResolver.resolve(tree!, "test.h", symbolTable);
+    symbolTable.addCSymbols(
+      CResolver.resolve(tree!, "test.h", symbolTable).symbols,
+    );
 
     const fieldsMap = symbolTable.getStructFields("Buffer");
     expect(fieldsMap?.get("data")?.arrayDimensions).toEqual([256]);
@@ -420,7 +430,9 @@ describe("CResolver - Struct Fields", () => {
   it("collects multi-dimensional array fields", () => {
     const tree = TestHelpers.parseC(`struct Matrix { int data[3][3]; };`);
     const symbolTable = new SymbolTable();
-    CResolver.resolve(tree!, "test.h", symbolTable);
+    symbolTable.addCSymbols(
+      CResolver.resolve(tree!, "test.h", symbolTable).symbols,
+    );
 
     const fieldsMap = symbolTable.getStructFields("Matrix");
     expect(fieldsMap?.get("data")?.arrayDimensions).toEqual([3, 3]);
@@ -432,7 +444,9 @@ describe("CResolver - Struct Fields", () => {
       struct Outer { struct Inner inner; };
     `);
     const symbolTable = new SymbolTable();
-    CResolver.resolve(tree!, "test.h", symbolTable);
+    symbolTable.addCSymbols(
+      CResolver.resolve(tree!, "test.h", symbolTable).symbols,
+    );
 
     const fieldsMap = symbolTable.getStructFields("Outer");
     expect(fieldsMap?.get("inner")?.type).toBe("Inner");
@@ -460,7 +474,7 @@ describe("CResolver - Struct field declarators", () => {
     uint8_t **grid;
     uint8_t arr[4];
 } Ops;`);
-    CResolver.resolve(tree!, "ops.h", table);
+    table.addCSymbols(CResolver.resolve(tree!, "ops.h", table).symbols);
     const fields = table.getStructFields("Ops");
     expect(fields?.get("readLevel")?.type).toBe("float (*)(void)");
     expect(fields?.get("buf")?.type).toBe("uint8_t*");
@@ -581,7 +595,9 @@ describe("CResolver - Complex Declarators", () => {
   it("handles array field declarator (Issue #355)", () => {
     const tree = TestHelpers.parseC(`struct Test { char buf[8]; };`);
     const symbolTable = new SymbolTable();
-    CResolver.resolve(tree!, "test.h", symbolTable);
+    symbolTable.addCSymbols(
+      CResolver.resolve(tree!, "test.h", symbolTable).symbols,
+    );
 
     const fieldsMap = symbolTable.getStructFields("Test");
     expect(fieldsMap?.get("buf")).toBeDefined();
@@ -591,7 +607,9 @@ describe("CResolver - Complex Declarators", () => {
   it("handles multi-dimensional array field declarator", () => {
     const tree = TestHelpers.parseC(`struct Matrix { int data[4][4]; };`);
     const symbolTable = new SymbolTable();
-    CResolver.resolve(tree!, "test.h", symbolTable);
+    symbolTable.addCSymbols(
+      CResolver.resolve(tree!, "test.h", symbolTable).symbols,
+    );
 
     const fieldsMap = symbolTable.getStructFields("Matrix");
     expect(fieldsMap?.get("data")).toBeDefined();
@@ -604,6 +622,7 @@ describe("CResolver - Edge Cases", () => {
     const tree = TestHelpers.parseC(`struct Minimal { int x; };`);
     const symbolTable = new SymbolTable();
     const result = CResolver.resolve(tree!, "test.h", symbolTable);
+    symbolTable.addCSymbols(result.symbols);
 
     expect(result.symbols.find((s) => s.name === "Minimal")).toBeDefined();
     expect(symbolTable.getStructFields("Minimal")?.size).toBe(1);
@@ -612,7 +631,9 @@ describe("CResolver - Edge Cases", () => {
   it("handles struct with type qualifiers", () => {
     const tree = TestHelpers.parseC(`struct Test { const int value; };`);
     const symbolTable = new SymbolTable();
-    CResolver.resolve(tree!, "test.h", symbolTable);
+    symbolTable.addCSymbols(
+      CResolver.resolve(tree!, "test.h", symbolTable).symbols,
+    );
 
     const fieldsMap = symbolTable.getStructFields("Test");
     expect(fieldsMap?.get("value")).toBeDefined();
@@ -682,7 +703,9 @@ describe("CResolver - Additional Edge Cases", () => {
       `struct Outer { struct { int x; } inner; };`,
     );
     const symbolTable = new SymbolTable();
-    CResolver.resolve(tree!, "test.h", symbolTable);
+    symbolTable.addCSymbols(
+      CResolver.resolve(tree!, "test.h", symbolTable).symbols,
+    );
 
     const fieldsMap = symbolTable.getStructFields("Outer");
     expect(fieldsMap?.get("inner")).toBeDefined();
@@ -765,7 +788,9 @@ describe("CResolver - Opaque Type Detection (Issue #948)", () => {
   it("marks typedef struct forward declaration as opaque", () => {
     const tree = TestHelpers.parseC(`typedef struct _widget_t widget_t;`);
     const symbolTable = new SymbolTable();
-    CResolver.resolve(tree!, "test.h", symbolTable);
+    symbolTable.addCSymbols(
+      CResolver.resolve(tree!, "test.h", symbolTable).symbols,
+    );
 
     expect(symbolTable.isOpaqueType("widget_t")).toBe(true);
   });
@@ -775,7 +800,9 @@ describe("CResolver - Opaque Type Detection (Issue #948)", () => {
       `typedef struct _point { int x; int y; } point_t;`,
     );
     const symbolTable = new SymbolTable();
-    CResolver.resolve(tree!, "test.h", symbolTable);
+    symbolTable.addCSymbols(
+      CResolver.resolve(tree!, "test.h", symbolTable).symbols,
+    );
 
     expect(symbolTable.isOpaqueType("point_t")).toBe(false);
   });
@@ -785,7 +812,9 @@ describe("CResolver - Opaque Type Detection (Issue #948)", () => {
       `typedef struct _point { int x; int y; } point_t;\ntypedef struct _foo foo_t;`,
     );
     const symbolTable = new SymbolTable();
-    CResolver.resolve(tree!, "test.h", symbolTable);
+    symbolTable.addCSymbols(
+      CResolver.resolve(tree!, "test.h", symbolTable).symbols,
+    );
 
     expect(symbolTable.getStructTagForTypedef("point_t")).toBe("_point");
     expect(symbolTable.getStructTagForTypedef("foo_t")).toBe("_foo");
@@ -794,7 +823,9 @@ describe("CResolver - Opaque Type Detection (Issue #948)", () => {
   it("does not mark typedef struct with anonymous body as opaque", () => {
     const tree = TestHelpers.parseC(`typedef struct { int x; } point_t;`);
     const symbolTable = new SymbolTable();
-    CResolver.resolve(tree!, "test.h", symbolTable);
+    symbolTable.addCSymbols(
+      CResolver.resolve(tree!, "test.h", symbolTable).symbols,
+    );
     expect(symbolTable.isOpaqueType("point_t")).toBe(false);
   });
 
@@ -802,13 +833,17 @@ describe("CResolver - Opaque Type Detection (Issue #948)", () => {
     // Forward declaration first
     const tree1 = TestHelpers.parseC(`typedef struct _foo foo_t;`);
     const symbolTable = new SymbolTable();
-    CResolver.resolve(tree1!, "test.h", symbolTable);
+    symbolTable.addCSymbols(
+      CResolver.resolve(tree1!, "test.h", symbolTable).symbols,
+    );
 
     expect(symbolTable.isOpaqueType("foo_t")).toBe(true);
 
     // Full definition later — query-time resolution sees body
     const tree2 = TestHelpers.parseC(`struct _foo { int value; };`);
-    CResolver.resolve(tree2!, "test.h", symbolTable);
+    symbolTable.addCSymbols(
+      CResolver.resolve(tree2!, "test.h", symbolTable).symbols,
+    );
 
     expect(symbolTable.isOpaqueType("foo_t")).toBe(false);
   });
@@ -819,7 +854,9 @@ describe("CResolver - Opaque Type Detection (Issue #948)", () => {
       struct _point_t { int x; int y; };
     `);
     const symbolTable = new SymbolTable();
-    CResolver.resolve(tree!, "test.h", symbolTable);
+    symbolTable.addCSymbols(
+      CResolver.resolve(tree!, "test.h", symbolTable).symbols,
+    );
     expect(symbolTable.isOpaqueType("point_t")).toBe(false);
   });
 
@@ -829,7 +866,9 @@ describe("CResolver - Opaque Type Detection (Issue #948)", () => {
       typedef struct _display_t display_t;
     `);
     const symbolTable = new SymbolTable();
-    CResolver.resolve(tree!, "test.h", symbolTable);
+    symbolTable.addCSymbols(
+      CResolver.resolve(tree!, "test.h", symbolTable).symbols,
+    );
 
     expect(symbolTable.isOpaqueType("widget_t")).toBe(true);
     expect(symbolTable.isOpaqueType("display_t")).toBe(true);
@@ -838,7 +877,9 @@ describe("CResolver - Opaque Type Detection (Issue #948)", () => {
   it("registers struct tag to typedef alias relationship", () => {
     const tree = TestHelpers.parseC(`typedef struct _widget_t widget_t;`);
     const symbolTable = new SymbolTable();
-    CResolver.resolve(tree!, "test.h", symbolTable);
+    symbolTable.addCSymbols(
+      CResolver.resolve(tree!, "test.h", symbolTable).symbols,
+    );
 
     expect(symbolTable.getStructTagForTypedef("widget_t")).toBe("_widget_t");
   });

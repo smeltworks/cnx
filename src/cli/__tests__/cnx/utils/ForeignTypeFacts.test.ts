@@ -44,9 +44,30 @@ describe("ForeignTypeFacts", () => {
       name: "scale_t",
       type: "float32_t",
     });
-    symbolTable.addStructField("ApiSample", "v", "float");
-    symbolTable.addStructField("ApiSample", "count", "uint32_t");
-    symbolTable.addStructField("ApiSample", "samples", "float", [4]);
+    symbolTable.addStructField(
+      "ApiSample",
+      "v",
+      "float",
+      undefined,
+      undefined,
+      "test.h",
+    );
+    symbolTable.addStructField(
+      "ApiSample",
+      "count",
+      "uint32_t",
+      undefined,
+      undefined,
+      "test.h",
+    );
+    symbolTable.addStructField(
+      "ApiSample",
+      "samples",
+      "float",
+      [4],
+      undefined,
+      "test.h",
+    );
   });
 
   // #1760 review: the spelling a write casts back to, where the typer has no
@@ -153,20 +174,104 @@ describe("ForeignTypeFacts", () => {
 
   describe("structBits (#1975)", () => {
     beforeEach(() => {
-      symbolTable.addStructField("Cfg", "a", "uint32_t");
-      symbolTable.addStructField("Cfg", "b", "uint8_t");
-      symbolTable.addStructField("Outer", "inner", "Cfg");
-      symbolTable.addStructField("Outer", "arr", "uint16_t", [3]);
-      symbolTable.addStructField("Odd", "i", "int32_t");
-      symbolTable.addStructField("Odd", "p", "char*");
-      symbolTable.addStructField("Holder", "odd", "Odd");
-      symbolTable.addStructField("Un", "a", "uint32_t");
-      symbolTable.addStructField("Un", "b", "uint8_t", [2]);
+      symbolTable.addStructField(
+        "Cfg",
+        "a",
+        "uint32_t",
+        undefined,
+        undefined,
+        "test.h",
+      );
+      symbolTable.addStructField(
+        "Cfg",
+        "b",
+        "uint8_t",
+        undefined,
+        undefined,
+        "test.h",
+      );
+      symbolTable.addStructField(
+        "Outer",
+        "inner",
+        "Cfg",
+        undefined,
+        undefined,
+        "test.h",
+      );
+      symbolTable.addStructField(
+        "Outer",
+        "arr",
+        "uint16_t",
+        [3],
+        undefined,
+        "test.h",
+      );
+      symbolTable.addStructField(
+        "Odd",
+        "i",
+        "int32_t",
+        undefined,
+        undefined,
+        "test.h",
+      );
+      symbolTable.addStructField(
+        "Odd",
+        "p",
+        "char*",
+        undefined,
+        undefined,
+        "test.h",
+      );
+      symbolTable.addStructField(
+        "Holder",
+        "odd",
+        "Odd",
+        undefined,
+        undefined,
+        "test.h",
+      );
+      symbolTable.addStructField(
+        "Un",
+        "a",
+        "uint32_t",
+        undefined,
+        undefined,
+        "test.h",
+      );
+      symbolTable.addStructField(
+        "Un",
+        "b",
+        "uint8_t",
+        [2],
+        undefined,
+        "test.h",
+      );
       symbolTable.setStructLayout("Un", "union");
-      symbolTable.addStructField("BF", "a", "uint32_t");
+      symbolTable.addStructField(
+        "BF",
+        "a",
+        "uint32_t",
+        undefined,
+        undefined,
+        "test.h",
+      );
       symbolTable.setStructLayout("BF", "bit-packed");
-      symbolTable.addStructField("Loop", "inner", "Loop");
-      symbolTable.addStructField("Loop", "z", "uint8_t");
+      symbolTable.addStructField(
+        "Loop",
+        "inner",
+        "Loop",
+        undefined,
+        undefined,
+        "test.h",
+      );
+      symbolTable.addStructField(
+        "Loop",
+        "z",
+        "uint8_t",
+        undefined,
+        undefined,
+        "test.h",
+      );
     });
 
     it("counts a header struct's fields as element_count (#1975 review)", () => {
@@ -201,8 +306,22 @@ describe("ForeignTypeFacts", () => {
     // #1975 review (owner ruling): a bit-field is its declared width, as a
     // cnx bitmap field is -- it was its storage type's 32
     it("types a bit-field by its declared width", () => {
-      symbolTable.addStructField("Bits", "a", "uint32_t", undefined, 3);
-      symbolTable.addStructField("Bits", "m", "uint32_t", undefined, "W");
+      symbolTable.addStructField(
+        "Bits",
+        "a",
+        "uint32_t",
+        undefined,
+        3,
+        "test.h",
+      );
+      symbolTable.addStructField(
+        "Bits",
+        "m",
+        "uint32_t",
+        undefined,
+        "W",
+        "test.h",
+      );
       expect(
         ForeignTypeFacts.fieldOperand("Bits", "a", symbolTable, null)?.bitWidth,
       ).toBe(3);

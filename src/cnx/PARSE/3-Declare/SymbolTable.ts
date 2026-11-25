@@ -375,34 +375,46 @@ class SymbolTable implements IResolvedSymbols {
   }
 
   /**
-   * The declaration of a name this table's reader reads (#2474), by
-   * `ForeignRedeclaration`'s rule: its own headers' first, an array's bound
-   * composed from their redeclarations
+   * The declaration of a name this table's reader reads (#2474): the first
+   * its own headers make (`ForeignRedeclaration.pool`), as written. A bound a
+   * redeclaration gives an unsized array is only `indexBoundsOf`'s, since the
+   * translation unit may see a different redeclaration than cnx read.
    */
   private chosen<T extends TCSymbol | TCppSymbol>(
     symbols: readonly T[],
   ): T | undefined {
+    return this.poolOf(symbols)[0];
+  }
+
+  /** A name's declarations its reader's headers make, else every one */
+  private poolOf<T extends TCSymbol | TCppSymbol>(symbols: readonly T[]): T[] {
     const headers = this.visibleHeaders;
-    const pool = ForeignRedeclaration.pool(
+    return ForeignRedeclaration.pool(
       symbols,
       (symbol) => headers?.has(symbol.sourceFile) ?? true,
     );
+  }
+
+  /**
+   * #2474: the dimensions an index into header array `name` is checked
+   * against: an unsized `[]` takes the bound a redeclaration gives it, as C
+   * composes them. Only an index check reads it, where a bound can only
+   * reject an index; a value sized from it reads `getCSymbol`'s.
+   */
+  indexBoundsOf(name: string): (number | string)[] | undefined {
+    const c = this.cSymbols.get(name) ?? [];
+    const pool: (TCSymbol | TCppSymbol)[] =
+      c.length > 0
+        ? this.poolOf(c)
+        : this.poolOf(this.cppSymbols.get(name) ?? []);
     const first = pool[0];
-    if (first?.kind !== "variable" || !first.arrayDimensions?.includes("")) {
-      return first;
-    }
+    if (first?.kind !== "variable" || !first.arrayDimensions) return undefined;
     const redeclared = pool.flatMap((symbol) =>
       symbol.kind === "variable" && symbol.arrayDimensions
         ? [symbol.arrayDimensions]
         : [],
     );
-    return {
-      ...first,
-      arrayDimensions: ForeignRedeclaration.dimensions(
-        first.arrayDimensions,
-        redeclared,
-      ),
-    };
+    return ForeignRedeclaration.dimensions(first.arrayDimensions, redeclared);
   }
 
   /** `symbols` with the reading file's headers' declarations first (#2474) */
@@ -830,9 +842,9 @@ class SymbolTable implements IResolvedSymbols {
     structName: string,
     fieldName: string,
     fieldType: string,
-    arrayDimensions?: readonly (number | string)[],
-    bitWidth?: number | string,
-    sourceFile?: string,
+    arrayDimensions: readonly (number | string)[] | undefined,
+    bitWidth: number | string | undefined,
+    sourceFile: string,
   ): void {
     let fields = this.structFields.get(structName);
     if (!fields) {
@@ -847,9 +859,7 @@ class SymbolTable implements IResolvedSymbols {
       ...(bitWidth !== undefined && { bitWidth }),
     };
     fields.set(fieldName, info);
-    if (sourceFile !== undefined) {
-      this.fieldsDeclaredIn(structName, sourceFile).set(fieldName, info);
-    }
+    this.fieldsDeclaredIn(structName, sourceFile).set(fieldName, info);
   }
 
   /** The fields `sourceFile` declares for `structName`, created empty (#2474) */
@@ -908,9 +918,18 @@ class SymbolTable implements IResolvedSymbols {
     // `getCOverloads` puts that header's declaration first
     const headers = this.visibleHeaders;
     const byFile = this.structFieldsByFile.get(structName);
-    if (headers !== null && byFile !== undefined) {
-      for (const [file, fields] of byFile) {
+    if (headers !== null) {
+      for (const [file, fields] of byFile ?? []) {
         if (headers.has(file)) return fields;
+      }
+      // A header it reads that names it otherwise (`typedef uint32_t Pair;`)
+      // says it is no struct here
+      const declared = [
+        ...(this.cSymbols.get(structName) ?? []),
+        ...(this.cppSymbols.get(structName) ?? []),
+      ];
+      if (declared.some((symbol) => headers.has(symbol.sourceFile))) {
+        return undefined;
       }
     }
     return this.structFields.get(structName);

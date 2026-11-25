@@ -30,6 +30,8 @@ interface IResolvedSymbols {
   getTSymbolsByFile(file: string): TSymbol[];
   getAllTSymbols(): TSymbol[];
   getCSymbol(name: string): TCSymbol | undefined;
+  /** #2474: `SymbolTable.indexBoundsOf` */
+  indexBoundsOf(name: string): (number | string)[] | undefined;
   getCOverloads(name: string): TCSymbol[];
   getCSymbolsByFile(file: string): TCSymbol[];
   getAllCSymbols(): TCSymbol[];

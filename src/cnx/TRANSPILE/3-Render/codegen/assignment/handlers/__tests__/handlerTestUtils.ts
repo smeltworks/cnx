@@ -41,7 +41,14 @@ function setupMockSymbols(
     const table = TestSymbolTable.of(state);
     for (const [structName, fields] of overrides.structFields) {
       for (const [fieldName, fieldType] of fields) {
-        table.addStructField(structName, fieldName, fieldType);
+        table.addStructField(
+          structName,
+          fieldName,
+          fieldType,
+          undefined,
+          undefined,
+          "test.h",
+        );
       }
     }
   }
