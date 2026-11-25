@@ -54,10 +54,25 @@ class HeaderDeclarationRecord {
         table.addCppSymbol(symbol);
       }
     }
-    // A record is one header's, so its symbols name the file it declares
+    // A record is one header's, so its symbols name the file it declares.
+    // addCSymbol registered a C struct's fields; a C++ class's come from here
     const path = record.symbols[0]?.sourceFile;
+    const cStructs = new Set(
+      record.symbols.flatMap((symbol) =>
+        symbol.sourceLanguage === ESourceLanguage.C &&
+        symbol.kind === "struct" &&
+        symbol.fields
+          ? [symbol.name]
+          : [],
+      ),
+    );
     if (path !== undefined)
-      table.restoreStructFields(record.structFields, path);
+      table.restoreStructFields(
+        new Map(
+          [...record.structFields].filter(([name]) => !cStructs.has(name)),
+        ),
+        path,
+      );
     table.restoreNeedsStructKeyword(record.needsStructKeyword);
     table.restoreEnumBitWidths(record.enumBitWidth);
     // Issue #1225: the whole struct state at once. It used to be four separate
