@@ -1148,9 +1148,30 @@ describe("CacheManager", () => {
       });
 
       // Add struct fields
-      symbolTable.addStructField("Point", "x", "int32_t");
-      symbolTable.addStructField("Point", "y", "int32_t");
-      symbolTable.addStructField("Point", "data", "uint8_t", [10]);
+      symbolTable.addStructField(
+        "Point",
+        "x",
+        "int32_t",
+        undefined,
+        undefined,
+        testFile,
+      );
+      symbolTable.addStructField(
+        "Point",
+        "y",
+        "int32_t",
+        undefined,
+        undefined,
+        testFile,
+      );
+      symbolTable.addStructField(
+        "Point",
+        "data",
+        "uint8_t",
+        [10],
+        undefined,
+        testFile,
+      );
 
       // Cache via setHeaderDeclarations
       cacheManager.setHeaderDeclarations(
@@ -1189,7 +1210,14 @@ describe("CacheManager", () => {
         visibility: "public",
         isUnion: false,
       });
-      symbolTable.addStructField("PointA", "x", "int32_t");
+      symbolTable.addStructField(
+        "PointA",
+        "x",
+        "int32_t",
+        undefined,
+        undefined,
+        file1,
+      );
 
       // Add struct in file2
       symbolTable.addCSymbol({
@@ -1201,7 +1229,14 @@ describe("CacheManager", () => {
         visibility: "public",
         isUnion: false,
       });
-      symbolTable.addStructField("PointB", "y", "int32_t");
+      symbolTable.addStructField(
+        "PointB",
+        "y",
+        "int32_t",
+        undefined,
+        undefined,
+        file2,
+      );
 
       // Cache file1 only
       cacheManager.setHeaderDeclarations(
@@ -1242,8 +1277,22 @@ describe("CacheManager", () => {
       });
 
       // Add struct fields (required for getStructNamesByFile)
-      symbolTable.addStructField("TypedefStruct", "a", "int32_t");
-      symbolTable.addStructField("NamedStruct", "b", "int32_t");
+      symbolTable.addStructField(
+        "TypedefStruct",
+        "a",
+        "int32_t",
+        undefined,
+        undefined,
+        testFile,
+      );
+      symbolTable.addStructField(
+        "NamedStruct",
+        "b",
+        "int32_t",
+        undefined,
+        undefined,
+        testFile,
+      );
 
       // Mark one struct as needing 'struct' keyword
       symbolTable.markNeedsStructKeyword("NamedStruct");
@@ -1288,8 +1337,22 @@ describe("CacheManager", () => {
       });
 
       // Add struct fields
-      symbolTable.addStructField("StructA", "a", "int32_t");
-      symbolTable.addStructField("StructB", "b", "int32_t");
+      symbolTable.addStructField(
+        "StructA",
+        "a",
+        "int32_t",
+        undefined,
+        undefined,
+        file1,
+      );
+      symbolTable.addStructField(
+        "StructB",
+        "b",
+        "int32_t",
+        undefined,
+        undefined,
+        file2,
+      );
 
       // Mark both as needing struct keyword
       symbolTable.markNeedsStructKeyword("StructA");
@@ -1420,8 +1483,22 @@ describe("CacheManager", () => {
         visibility: "public",
         isUnion: false,
       });
-      symbolTable.addStructField("DataPacket", "id", "uint32_t");
-      symbolTable.addStructField("DataPacket", "buffer", "uint8_t", [256]);
+      symbolTable.addStructField(
+        "DataPacket",
+        "id",
+        "uint32_t",
+        undefined,
+        undefined,
+        testFile,
+      );
+      symbolTable.addStructField(
+        "DataPacket",
+        "buffer",
+        "uint8_t",
+        [256],
+        undefined,
+        testFile,
+      );
       symbolTable.markNeedsStructKeyword("DataPacket");
 
       // Add enum symbol and bit width
@@ -1485,7 +1562,14 @@ describe("CacheManager", () => {
         visibility: "public",
         isUnion: false,
       });
-      symbolTable.addStructField("MyStruct", "value", "int32_t");
+      symbolTable.addStructField(
+        "MyStruct",
+        "value",
+        "int32_t",
+        undefined,
+        undefined,
+        testFile,
+      );
       symbolTable.markNeedsStructKeyword("MyStruct");
 
       symbolTable.addCSymbol({
