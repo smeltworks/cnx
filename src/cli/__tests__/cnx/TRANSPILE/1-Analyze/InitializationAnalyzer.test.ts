@@ -43,6 +43,7 @@ describe("InitializationAnalyzer", () => {
   // Reset TranspileState before each test
   beforeEach(() => {
     state = new TranspileState();
+    state.sourcePath = "test.cnx";
     TestSymbolTable.install(state);
   });
 

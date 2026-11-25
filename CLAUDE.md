@@ -634,7 +634,7 @@ E0424 is a 2.1 Analyze diagnostic since #1322, and render asserts it never sees 
 
 ### Key Patterns
 
-- **SymbolTable ownership**: the table is 1.3 Declare's artifact, reached through 1.4's `program.symbolTable()`; `TranspileState.symbolTable` is a getter over it, not a second owner
+- **SymbolTable ownership**: the table is 1.3 Declare's artifact, reached through 1.4's `program.symbolTableFor(sourceFile)`, the file's view (#2474); `TranspileState.symbolTable` is a getter over the file being generated's view, not a second owner
 - **TSymbols use bare names**: `name: "init"` with `scopePath: string` -- the dotted path of the enclosing scope (`""` at file scope), never the scope object. #1298: holding the object gave every symbol a chain to walk and a cycle to represent, which made the graph unserializable and left `getScopePath`'s identity-based guard unable to fire on a proxy chain. The scope object is one `SymbolRegistry.getScope(path)` away where a mutable member list is genuinely needed
 - **Lookup key by layer**: `getOverloads(bareName)` answers "what does `init` mean _here_?" and needs ADR-057 scope context; `getOverloadsByCName("Motor__init")` answers "which symbol _is_ this?" and is an exact canonical identity. Codegen and anything downstream of it holds the latter — asking the bare-name index with a transpiled C name returns empty for every scoped symbol, which reads as "no such symbol" rather than "wrong question" (#1139). Build the key with `ScopeUtils.getTranspiledCName()`, the single encoder; never re-derive a qualified name by hand
 - **Per-file vs run-wide symbol views**: `ICodeGenSymbols.known*` is built by 1.4 Resolve

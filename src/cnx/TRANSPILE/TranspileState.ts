@@ -518,20 +518,14 @@ class TranspileState {
   program: IProgram | null = null;
 
   /**
-   * The symbol table as the file being generated reads it, read off 1.4's
-   * `Program` -- the only place a pass after 1.4 may take it from (#1991). A
-   * header name two headers declare is the declaration this file's own
-   * includes bring in (#2474).
+   * The symbol table as the file being generated reads it, 1.4's
+   * `Program.symbolTableFor(sourcePath)` -- the only place a pass after 1.4
+   * may take it from (#1991). A header name two headers declare is the
+   * declaration this file's own includes bring in (#2474).
    */
   get symbolTable(): IResolvedSymbols {
-    invariant(
-      this.program !== null,
-      "1.4 Resolve built Program before a pass read its symbol table",
-    );
-    // No file is set only in unit tests that build a state by hand
-    return this.sourcePath === null
-      ? this.program.symbolTable()
-      : this.program.symbolTableFor(this.sourcePath);
+    const bound = this.boundProgram();
+    return bound.program.symbolTableFor(bound.sourcePath);
   }
 
   // ===========================================================================

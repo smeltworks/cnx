@@ -39,6 +39,7 @@ let state = new TranspileState();
 describe("TranspileState", () => {
   beforeEach(() => {
     state = new TranspileState();
+    state.sourcePath = "test.cnx";
     TestSymbolTable.install(state);
   });
 
@@ -118,6 +119,7 @@ describe("TranspileState", () => {
   describe("C++ Mode Helpers", () => {
     it("getNextTempVarName returns incrementing names", () => {
       state = new TranspileState(); // Reset counter
+      state.sourcePath = "test.cnx";
       expect(state.getNextTempVarName()).toBe("cnx_tmp0");
       expect(state.getNextTempVarName()).toBe("cnx_tmp1");
       expect(state.getNextTempVarName()).toBe("cnx_tmp2");

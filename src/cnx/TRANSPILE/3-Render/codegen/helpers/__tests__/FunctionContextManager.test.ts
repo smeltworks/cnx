@@ -166,13 +166,14 @@ function generatingFunction(stamps: Record<string, boolean> = {}): void {
     callbackCompatibleFunctions: () => new Map<string, ICTypedefSymbol>(),
     passByValueParams: () => new Map<string, ReadonlySet<string>>(),
     knownEnums: () => new Set<string>(),
-    symbolTable: () => ({ getStructFields: () => undefined }),
+    symbolTableFor: () => ({ getStructFields: () => undefined }),
   } as unknown as IProgram;
 }
 
 describe("FunctionContextManager", () => {
   beforeEach(() => {
     state = new TranspileState();
+    state.sourcePath = "test.cnx";
     setupSymbols();
   });
 

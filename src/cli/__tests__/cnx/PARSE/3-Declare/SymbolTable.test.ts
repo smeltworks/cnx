@@ -235,6 +235,14 @@ describe("SymbolTable", () => {
       symbolTable.addCSymbol(stateIn("/c.h", "uint8_t"));
       expect(fromC.getCSymbol("state")?.sourceFile).toBe("/c.h");
     });
+
+    it("reads the table's struct state live, so a later mark is seen too", () => {
+      const fromB = symbolTable.seenFrom(new Set(["/b.h"]));
+      symbolTable.markOpaqueType("Handle");
+      symbolTable.markPointerTypedef("HandleRef");
+      expect(fromB.isOpaqueType("Handle")).toBe(true);
+      expect(fromB.isPointerTypedef("HandleRef")).toBe(true);
+    });
   });
 
   // ========================================================================
