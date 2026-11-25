@@ -328,7 +328,8 @@ has been committed yet:
 
   4. UNASSIGN YOURSELF. That IS the pause: `project-sync.yml` moves the card
      `WIP` -> `Backlog` when the last assignee leaves (#1572), so the column stops
-     claiming active work. Do not write `Status` by hand -- `docs/WORKFLOW.md` gives
+     claiming active work. An open pull request that closes the issue keeps it in
+     `WIP` (#1578); a paused card has none, because nothing was committed. Do not write `Status` by hand -- `docs/WORKFLOW.md` gives
      project-sync.yml sole ownership of that field. RE-QUERY the board and report the
      status you read, exactly as Phase 2 does for the assign.
 

@@ -101,10 +101,13 @@ on changes nothing, and only from `WIP`, so unassigning a card already in `Groom
 `Backlog` or `Done` changes nothing either. Until #1572 there was no such transition and
 #1448 read as active work for 9h52m after its work stopped.
 
-Be clear about what `only from WIP` does **not** protect. An issue whose pull request is in
-review is sitting in `WIP` — the pull request gets its own card, and the built-in that would
-move the issue is deliberately disabled — so unassigning yourself mid-review **does** return
-the issue to `Backlog`. Whether it should is open; today it does.
+**Unassigning while your pull request is open leaves the card in `WIP` (#1578).** An issue
+whose pull request is in review is sitting in `WIP` — the pull request gets its own card, and
+the built-in that would move the issue is deliberately disabled — so its status cannot say
+whether the work is paused or in review. `project-sync.yml` therefore asks GitHub for the
+open pull requests that close the issue, and moves the card only when there are none. That is
+why the [closing keyword](#closing-keywords-are-load-bearing) matters here too: a pull request that does not
+name the issue with one is not linked, and unassigning returns the issue to `Backlog`.
 
 **Assigning yourself is the only thing that fills `WIP`,** and for the life of the board
 nothing did it: until #1423 there were zero assigned open issues and zero cards in that
@@ -120,7 +123,7 @@ Automation writes a status only when the current one is unset, or is one the
 transition names as safe to overwrite — so a card you have moved by hand survives a
 ready-for-review. That is usually the status it advances _from_. `WIP` → `Backlog`
 (#1572) is the one transition that moves a card back, and it overwrites `WIP` and
-nothing else.
+nothing else, and only when no open pull request closes the issue (#1578).
 
 ## Closed is closed
 

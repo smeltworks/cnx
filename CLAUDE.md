@@ -100,9 +100,8 @@ the causal claim, the artifact, the number — not merely the state of the issue
 **Pausing a card is unassigning it.** Unassign yourself and `project-sync.yml` moves it
 `WIP` → `Backlog` (#1572) — only when the **last** assignee leaves, and only from `WIP`, so
 stepping off a shared card changes nothing, and neither does unassigning one already in
-`Grooming`, `Backlog` or `Done`. Note what that does _not_ cover: an issue whose pull request
-is in review is still in `WIP`, because the pull request has its own card — so unassigning
-yourself then does return the issue to `Backlog`. The added "Blocked by" link and the comment
+`Grooming`, `Backlog` or `Done`, and neither does unassigning one an open pull request closes:
+that is a review handed off, not work paused, so the card stays in `WIP` (#1578). The added "Blocked by" link and the comment
 carry _why_ it paused; the column carries _that_ it did, which is the part the next person
 reads. Do not write `Status` by hand — `docs/WORKFLOW.md` gives `project-sync.yml` sole
 ownership of that field, and a second writer both duplicates the transition and hides it

@@ -9,7 +9,9 @@
 # nothing committed. `WIP` means "this is actively being worked on" -- the
 # option's own description -- so a paused card must not sit there. Until #1572
 # no transition moved one back, and #1448 read as active work for 9h52m after
-# its work stopped. Unassigning is now the whole gesture; the board follows.
+# its work stopped. Unassigning is now the whole gesture; the board follows --
+# except while an open pull request closes the issue: that is a review handed
+# off, not work paused, and the card stays in WIP (#1578).
 #
 # PR reopening is handled here rather than by the built-in "Item reopened", which
 # fires on issues and pull requests alike: it would send a reopened PR to Backlog
@@ -86,6 +88,10 @@ jobs:
       # wrong answer, and the concurrency group serializes per item, not per event.
       ALL_ASSIGNEES: ${{ join(github.event.issue.assignees.*.login, ',') }}
       REMOVED_ASSIGNEE: ${{ github.event.assignee.login }}
+      # The caller's repository under workflow_call, so the open-pull-request
+      # read below asks about the issue that fired, in either repository.
+      REPO: ${{ github.repository }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
     steps:
       - name: Mint the board token
         id: board-token
@@ -119,6 +125,30 @@ jobs:
                 | { grep -vxF "$REMOVED_ASSIGNEE" || true; } | paste -sd, -)
               if [ -n "$REMAINING" ]; then
                 echo "Still assigned to ${REMAINING}; leaving status alone."
+                exit 0
+              fi
+              # An issue whose pull request is in review is still in WIP: the
+              # pull request has its OWN card, and nothing moves the issue's.
+              # Unassigning then hands the pull request off, not the work, so
+              # the card stays (#1578). The card's status cannot tell the two
+              # apart -- it is WIP either way -- so this asks GitHub for the
+              # open pull requests that close the issue when they merge, which
+              # is every linked one: docs/WORKFLOW.md requires the closing
+              # keyword. A failed read fails the run rather than move the card.
+              OPEN_PRS=$(gh api graphql -f owner="${REPO%%/*}" -f name="${REPO#*/}" \
+                -F number="$ISSUE_NUMBER" -f query='
+                query($owner: String!, $name: String!, $number: Int!) {
+                  repository(owner: $owner, name: $name) {
+                    issue(number: $number) {
+                      closedByPullRequestsReferences(first: 10, includeClosedPrs: false) {
+                        nodes { number }
+                      }
+                    }
+                  }
+                }' | jq -r '[.data.repository.issue.closedByPullRequestsReferences.nodes[].number
+                           | "#\(.)"] | join(", ")')
+              if [ -n "$OPEN_PRS" ]; then
+                echo "Open pull request ${OPEN_PRS} closes this issue; leaving it in WIP."
                 exit 0
               fi
               # OVERWRITE="WIP" and nothing else: a card in Grooming, Backlog or
