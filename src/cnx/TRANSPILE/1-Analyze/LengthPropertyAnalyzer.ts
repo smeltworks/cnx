@@ -205,7 +205,7 @@ class LengthPropertyCheck {
     // #2474: a header array declared `[]` has the count a redeclaration
     // gives it, and which one the translation unit sees cnx may not have
     // read; render had nothing to write (`n = ;`, `()`)
-    if (typed.dimensions[0] === "") {
+    if (name.unit !== "char_count" && typed.dimensions[0] === "") {
       this.report(declaredAt, {
         code: "E0867",
         span: at.span,

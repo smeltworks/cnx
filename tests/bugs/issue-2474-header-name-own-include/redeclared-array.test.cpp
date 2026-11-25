@@ -8,7 +8,7 @@
 // Issue #2474 review: a header declares readings sized, then unsized. The
 // first declaration its own headers make answers a value, so its element
 // count is 4. samples, declared unsized first, is
-// redeclared-array-value-error's.
+// redeclared-array-value-error's; its type's spelling needs no size.
 #include "lib/redeclared-array.h"
 
 #include <stdint.h>
@@ -18,6 +18,12 @@ uint32_t readingCount(void) {
     return n;
 }
 
+uint32_t sampleChars(void) {
+    const uint32_t c = 4;
+    return c;
+}
+
 int main(void) {
     static_cast<void>(readingCount());
+    static_cast<void>(sampleChars());
 }

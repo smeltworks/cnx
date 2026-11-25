@@ -14,6 +14,7 @@ extern "C" {
 
 /* Function prototypes */
 uint32_t readingCount(void);
+uint32_t sampleChars(void);
 
 #ifdef __cplusplus
 }
