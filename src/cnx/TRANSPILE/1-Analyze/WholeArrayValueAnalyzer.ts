@@ -192,6 +192,7 @@ class WholeArrayValueAnalyzer {
         dimensions,
         element,
         this.context,
+        false,
       );
     }
     if (ExpressionShape.isStringLiteral(value)) {
@@ -272,7 +273,14 @@ class WholeArrayValueAnalyzer {
     const element =
       at.typeText === null ? null : TypeText.withoutDimensions(at.typeText);
     if (value.kind === "arrayInitializer") {
-      return ArrayListCount.mismatches(value, at.dimensions, element, context);
+      // A header's array field is C's, which zero-fills past a short list
+      return ArrayListCount.mismatches(
+        value,
+        at.dimensions,
+        element,
+        context,
+        at.headerField !== null,
+      );
     }
     if (ExpressionShape.givesWholeArray(value, element)) return [];
     return [ArrayListCount.notAList(value)];

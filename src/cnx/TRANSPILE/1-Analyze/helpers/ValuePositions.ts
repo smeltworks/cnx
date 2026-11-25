@@ -325,9 +325,7 @@ class ValuePositionWalk {
   /**
    * A header struct's field: the cnx integer a bit-field is judged as, with
    * its width, as `<-` judges it (ADR-072 ruling 19), or the C type a nested
-   * initializer builds. An array field is untyped, as on main: C fills the
-   * rest of `int data[8]` from `{ data: [1, 2, 3] }`, which ADR-035's
-   * element count for a cnx array would reject.
+   * initializer builds, an array field's shape too
    */
   private headerFieldPosition(
     structName: string,
@@ -340,10 +338,14 @@ class ValuePositionWalk {
       OperandTyper.target(this.context),
     );
     const typeText = BitFieldIntegerType.of(field);
-    if (field === null || typeText === "" || field.dimensions.length > 0) {
-      return NO_TYPE;
-    }
-    return { ...NO_TYPE, typeText, headerField: field };
+    if (field === null || typeText === "") return NO_TYPE;
+    return {
+      ...NO_TYPE,
+      typeText,
+      isArray: field.dimensions.length > 0,
+      dimensions: field.dimensions,
+      headerField: field,
+    };
   }
 }
 

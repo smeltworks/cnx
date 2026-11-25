@@ -18,4 +18,9 @@ typedef struct {
     uint32_t tag;
 } COuter;
 
+typedef struct {
+    uint8_t data[4];
+    CReg regs[2];
+} CBank;
+
 #endif
