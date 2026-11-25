@@ -77,8 +77,9 @@ class CPointerArgumentCheck {
   private checkCall(callee: ICCallee): void {
     this.rejectsFormatNotLiteral(callee);
     const lost = this.rejectsLostWrites(callee);
-    const only =
-      callee.signatures.length === 1 ? callee.signatures[0] : undefined;
+    // The one overload this call can reach, by the rule E0708 and E0899 read
+    const reached = CCallee.reachable(callee);
+    const only = reached.length === 1 ? reached[0] : undefined;
     callee.arguments.forEach((arg, index) => {
       if (lost.has(index)) return;
       const parameter = only?.parameters[index];
