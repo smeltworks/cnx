@@ -97,6 +97,9 @@ class MemberAccessAnalyzer {
     if (symbol?.kind === "struct" || RegisterInstance.isType(symbol)) {
       return true;
     }
+    // A C++ class or struct has members though it declares only methods
+    const cpp = this.context.symbolTable.getCppSymbol(t.typeName);
+    if (cpp?.kind === "class" || cpp?.kind === "struct") return true;
     return ForeignTypeFacts.isStructType(
       t.typeName,
       this.context.symbolTable,
