@@ -87,17 +87,20 @@ function closing(...prs: [number, TPrState][]): string {
   });
 }
 
-/** A `closingIssuesReferences` answer: [number, state, assignees]. */
-function closes(...issues: [number, "OPEN" | "CLOSED", string[]][]): string {
+/** A `closingIssuesReferences` answer: [number, state, assignees, repo?]. */
+function closes(
+  ...issues: [number, "OPEN" | "CLOSED", string[], string?][]
+): string {
   return JSON.stringify({
     data: {
       repository: {
         pullRequest: {
           closingIssuesReferences: {
-            nodes: issues.map(([number, state, logins]) => ({
+            nodes: issues.map(([number, state, logins, repo]) => ({
               number,
               id: `I_${number}`,
               state,
+              repository: { nameWithOwner: repo ?? "smeltworks/cnx" },
               assignees: { nodes: logins.map((login) => ({ login })) },
             })),
             pageInfo: { hasNextPage: false, endCursor: null },
@@ -316,6 +319,16 @@ describe("project-sync.yml — a pull request closed without a merge", () => {
     expect(run.stdout).not.toContain("I_13");
     expect(run.calls).toContain("number=2505");
     expect(run.calls.match(/projectV2\(number/g)).toHaveLength(1);
+  });
+
+  it("asks about an issue in another repository in that repository", () => {
+    const run = closePr(false, {
+      GH_STUB_ISSUES: closes([14, "OPEN", [], "smeltworks/vscode-cnx"]),
+      GH_STUB_PRS: closing(),
+    });
+    expect(run.status).toBe(0);
+    expect(run.calls).toMatch(/name=vscode-cnx -F number=14/);
+    expect(run.stdout).toContain("Set I_14: 'WIP' -> 'Backlog'.");
   });
 
   it("does nothing when it closes no open issue", () => {
