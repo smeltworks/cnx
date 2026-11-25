@@ -113,7 +113,8 @@ pull request stacked on another; unassigning returns either issue to `Backlog`. 
 request then closes **without** merging, `project-sync.yml` asks each open issue it names the
 same question: one with nobody assigned and no other open closing pull request returns to
 `Backlog`. A fork's pull request gets no secrets, so its close moves nothing; move its issue
-to `Backlog` by hand.
+to `Backlog` by hand. Reopening the pull request does not return its issue to `WIP`; assigning
+yourself does.
 
 **Assigning yourself is the only thing that fills `WIP`,** and for the life of the board
 nothing did it: until #1423 there were zero assigned open issues and zero cards in that
