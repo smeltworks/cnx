@@ -9,7 +9,8 @@
 // test-adr: 071
 // Tests: a call that leaves a C++ writer's defaulted argument out still
 // reaches the writer, though the class also declares a `()` overload (#2473
-// review). `o.put(got)` writes `got`, so it is no "never written" E0899.
+// review), and a by-value overload whose second argument has no default.
+// `o.put(got)` reaches only the writer, so `got` is no "never written" E0899.
 #include "lib/cpp-ops.hpp"
 
 #include <stdint.h>

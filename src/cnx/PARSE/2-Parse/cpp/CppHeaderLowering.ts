@@ -416,7 +416,13 @@ class CppHeaderLowering {
       (candidate: DeclaratorContext) =>
         CppHeaderLowering.declaratorName(candidate),
     );
-    return isReference ? { ...parameter, isReference } : parameter;
+    return {
+      ...parameter,
+      ...(isReference && { isReference }),
+      ...(parameterDeclaration.initializerClause() !== null && {
+        hasDefault: true,
+      }),
+    };
   }
 
   private static abstractHasPointer(

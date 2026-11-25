@@ -60,7 +60,9 @@ import Write from "../../cnx/WRITE/1-Write/Write";
 // types under an unchanged shape, and E0895 rejects one passed for the other.
 // 21: #2116 -- a C++ symbol records its unqualified name, which the
 // (owner, member) index reads; an entry written before has none.
-const CACHE_VERSION = 21;
+// 22: #2473 review -- a C++ parameter records its default argument, which
+// decides the overloads a call reaches; an entry written before has none.
+const CACHE_VERSION = 22;
 
 const TRANSPILER_VERSION = packageJson.version;
 
