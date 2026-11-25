@@ -230,13 +230,17 @@ class ReturnValueUseAnalyzer {
     }
     const cCallee = CCallee.ofCallAt(chain, callAt, context);
     if (cCallee === null) return null;
-    // Every overload that can take this many arguments: one with more
-    // parameters may default the rest, one with fewer cannot take the call
+    // A lone signature is the callee, `()` taking any arguments included.
+    // Of an overload set, every one that can take this many arguments: one
+    // with more parameters may default the rest, one with fewer cannot.
     const count = cCallee.arguments.length;
-    const callable = cCallee.signatures.filter(
-      (signature) =>
-        signature.parameters.length >= count || signature.isVariadic,
-    );
+    const callable =
+      cCallee.signatures.length === 1
+        ? cCallee.signatures
+        : cCallee.signatures.filter(
+            (signature) =>
+              signature.parameters.length >= count || signature.isVariadic,
+          );
     const returnsAValue = callable.every(
       (signature) =>
         signature.returnType !== null &&

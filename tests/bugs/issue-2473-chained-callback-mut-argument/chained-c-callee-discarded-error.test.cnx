@@ -1,5 +1,6 @@
 // test-error
-// Tests: a bare chained call through a C function-pointer typedef discards what it returns (#2473)
+// Tests: a bare chained call through a C function-pointer typedef discards what it returns (#2473),
+// one declared with () included, which takes any arguments
 #pragma target cortex-m7
 #include "lib/c-ops.h"
 
@@ -9,4 +10,6 @@ void main() {
     make_ops(seed).r(1);
     (void)make_ops(seed).r(2);
     make_ops(seed).w(out);
+    make_ops(seed).u(3);
+    (void)make_ops(seed).u(4);
 }

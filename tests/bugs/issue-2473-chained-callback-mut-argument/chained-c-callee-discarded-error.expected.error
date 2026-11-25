@@ -1,2 +1,4 @@
-9:4 error[E0708]: Return value of non-void function 'make_ops(seed).r' is discarded
+10:4 error[E0708]: Return value of non-void function 'make_ops(seed).r' is discarded
        help: Use the value, or discard it explicitly: (void) make_ops(seed).r(...);
+13:4 error[E0708]: Return value of non-void function 'make_ops(seed).u' is discarded
+       help: Use the value, or discard it explicitly: (void) make_ops(seed).u(...);
