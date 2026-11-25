@@ -231,10 +231,7 @@ class ConstAssignmentCheck {
       scopePath,
       this.context,
     )) {
-      const cCallee =
-        chainCall.callee?.sourceLanguage === ESourceLanguage.Cnx
-          ? null
-          : CCallee.ofCallAt(expr, chainCall.callAt, this.context);
+      const cCallee = chainCall.cCallee;
       if (cCallee !== null) {
         // Its read-only arguments are E0900's too, which CPointerArgumentAnalyzer reports
         this.noteCPointerWrites(cCallee);

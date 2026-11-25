@@ -31,6 +31,7 @@ import OperandTyper from "../../../utils/OperandTyper";
 import ExpressionShape from "../../../utils/ExpressionShape";
 import TypeText from "../../../utils/TypeText";
 import CalleeNameResolver from "./CalleeNameResolver";
+import CCallee from "./CCallee";
 import ScopeCandidates from "./ScopeCandidates";
 import type IAnalysisContext from "../types/IAnalysisContext";
 import type IChainCall from "../types/IChainCall";
@@ -161,6 +162,7 @@ class FunctionReference {
             resolved?.named === true
               ? resolved.callee.name
               : ExpressionShape.writtenThrough(chain, callAt),
+          cCallee: CCallee.ofCallAt(chain, callAt, context),
         },
       ];
     });

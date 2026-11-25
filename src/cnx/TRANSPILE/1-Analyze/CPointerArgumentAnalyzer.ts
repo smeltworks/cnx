@@ -28,7 +28,6 @@
 import OperandTyper from "../../utils/OperandTyper";
 import CCallee from "./helpers/CCallee";
 import FunctionReference from "./helpers/FunctionReference";
-import ESourceLanguage from "../../utils/types/ESourceLanguage";
 import CArgumentWrite from "./helpers/CArgumentWrite";
 import WrittenBinding from "./helpers/WrittenBinding";
 import BoundDeclaration from "./helpers/BoundDeclaration";
@@ -60,17 +59,14 @@ class CPointerArgumentCheck {
   /** A call to a C (or C++) function, and nothing after it (`CCallee`) */
   public checkExpression(expr: TExpression): void {
     if (expr.kind !== "postfix") return;
-    // Each call in a chain reaches its own callee (`get_pair(p).a`, #2473);
-    // one a cnx function answers is not C's, even when they share a name
+    // Each call in a chain reaches its own callee (`get_pair(p).a`, #2473)
     const scopePath = OperandTyper.scopePathAt(expr.span, this.context);
     for (const chainCall of FunctionReference.callsIn(
       expr,
       scopePath,
       this.context,
     )) {
-      if (chainCall.callee?.sourceLanguage === ESourceLanguage.Cnx) continue;
-      const callee = CCallee.ofCallAt(expr, chainCall.callAt, this.context);
-      if (callee !== null) this.checkCall(callee);
+      if (chainCall.cCallee !== null) this.checkCall(chainCall.cCallee);
     }
   }
 

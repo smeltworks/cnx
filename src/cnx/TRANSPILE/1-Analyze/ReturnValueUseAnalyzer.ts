@@ -187,7 +187,6 @@ class ReturnValueUseAnalyzer {
     // call through a value (`o.op()`, `cb()`) what its callback type returns
     return ReturnValueUseAnalyzer.discardedThroughValue(
       call,
-      lastCall,
       scopePath,
       context,
     );
@@ -229,31 +228,29 @@ class ReturnValueUseAnalyzer {
    */
   private static discardedThroughValue(
     chain: TExpressionOf<"postfix">,
-    callAt: number,
     scopePath: string,
     context: IAnalysisContext,
   ): { name: string; declaredAt: ISourceSite | undefined } | null {
     const last = FunctionReference.callsIn(chain, scopePath, context).at(-1);
     if (last === undefined) return null;
-    if (last.callee !== null) {
-      return TypeResolver.getTypeName(last.callee.returnType) === "void"
-        ? null
-        : {
-            name: last.calledAs,
-            declaredAt: BindingSite.ofSymbol(last.callee),
-          };
+    if (last.cCallee !== null) {
+      const callable = CCallee.reachable(last.cCallee);
+      const returnsAValue = callable.every(
+        (signature) =>
+          signature.returnType !== null &&
+          !ReturnValueUseAnalyzer.namesVoid(signature.returnType, context),
+      );
+      return callable.length > 0 && returnsAValue
+        ? { name: last.calledAs, declaredAt: undefined }
+        : null;
     }
-    const cCallee = CCallee.ofCallAt(chain, callAt, context);
-    if (cCallee === null) return null;
-    const callable = CCallee.reachable(cCallee);
-    const returnsAValue = callable.every(
-      (signature) =>
-        signature.returnType !== null &&
-        !ReturnValueUseAnalyzer.namesVoid(signature.returnType, context),
-    );
-    return callable.length > 0 && returnsAValue
-      ? { name: last.calledAs, declaredAt: undefined }
-      : null;
+    if (last.callee === null) return null;
+    return TypeResolver.getTypeName(last.callee.returnType) === "void"
+      ? null
+      : {
+          name: last.calledAs,
+          declaredAt: BindingSite.ofSymbol(last.callee),
+        };
   }
 
   /**
