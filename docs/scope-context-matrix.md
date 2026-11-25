@@ -1034,8 +1034,9 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | ok     | warn       | warn        | warn       |
 | for header         | -         | -      | -          | -           | -          |
 
-4 linked fixtures with no derivable context:
+5 linked fixtures with no derivable context:
 
+- `adr-034/width-by-including-file/width-by-including-file.test.cnx`
 - `bitmap/bitmap-error-bits.test.cnx`
 - `bugs/issue-1514-cross-file-bitmap-register/cross-file-bitmap-register.test.cnx`
 - `bugs/issue-1531-declaration-rejections/cross-file-bitmap.test.cnx`
@@ -1120,6 +1121,16 @@ cell is declared by the ADR that owns it.
 | scope member       | warn      | warn   | warn       | warn        | warn       |
 | scope method       | warn      | warn   | warn       | warn        | warn       |
 | for header         | warn      | warn   | warn       | warn        | warn       |
+
+## ADR-034 E0945
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | ok        | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
 
 ## ADR-034 E0946
 

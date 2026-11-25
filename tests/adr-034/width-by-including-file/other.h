@@ -1,0 +1,4 @@
+#ifndef WIDTH_BY_INCLUDING_FILE_OTHER_H
+#define WIDTH_BY_INCLUDING_FILE_OTHER_H
+#define W 5
+#endif

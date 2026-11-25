@@ -1,3 +1,4 @@
+import type IUnreadBitWidth from "./IUnreadBitWidth";
 import type TEssentialCategory from "./TEssentialCategory";
 import type TOverflowBehavior from "./TOverflowBehavior";
 import type TValueBinding from "./TValueBinding";
@@ -115,6 +116,8 @@ interface IOperandType {
    * has no range a value could be judged by (#2494)
    */
   readonly bitWidthUnread: boolean;
+  /** Why, when `bitWidthUnread` (#2484 review) */
+  readonly bitWidthUnreadWhy?: IUnreadBitWidth;
   readonly form: TOperandForm;
   /** For a name-rooted operand, what the root name binds to */
   readonly binding: TValueBinding | null;

@@ -10,6 +10,9 @@
  * headers and the compiler's builtins: one definition per name, the one C
  * sees.
  */
+import UnreadBitWidth from "../../utils/UnreadBitWidth";
+import type IUnreadBitWidth from "../../types/IUnreadBitWidth";
+import type IMacroReader from "./types/IMacroReader";
 import LiteralUtils from "../../utils/LiteralUtils";
 import TARGET_DESCRIPTION_FIELDS from "../2-Parse/TARGET_DESCRIPTION_FIELDS";
 import type THeaderMacro from "../../types/THeaderMacro";
@@ -140,32 +143,68 @@ class HeaderMacros {
     bodiesByFile: Iterable<ReadonlyMap<string, string>>,
     undefinedNames: ReadonlySet<string>,
   ): number | null {
+    const width = HeaderMacros.width(
+      text,
+      [...bodiesByFile].map((bodies) => ({ file: "", bodies })),
+      undefinedNames,
+    );
+    return typeof width === "number" ? width : null;
+  }
+
+  /**
+   * #2484 review: `integerValue`, read through the macros of each file that
+   * defines every macro the text names, and where it cannot be read, why
+   */
+  static width(
+    text: string,
+    readers: readonly IMacroReader[],
+    undefinedNames: ReadonlySet<string>,
+  ): number | IUnreadBitWidth {
     const tokens = HeaderMacros.tokens(text);
     const names = tokens.flatMap((token) =>
       token.kind === "name" ? [token.name] : [],
     );
     // A file whose includes define none of its macros does not read it
-    const files = [...bodiesByFile].filter((bodies) =>
-      names.every((name) => bodies.has(name)),
+    const files =
+      names.length === 0
+        ? [{ file: "", bodies: new Map<string, string>() }]
+        : readers.filter((reader) =>
+            names.every((name) => reader.bodies.has(name)),
+          );
+    const readings: { file: string; value: number }[] = [];
+    for (const reader of files) {
+      const failure = { undefinedName: null as string | null };
+      const expanded = HeaderMacros.expanded(
+        tokens,
+        reader.bodies,
+        new Set(),
+        undefinedNames,
+        failure,
+      );
+      if (failure.undefinedName !== null) {
+        return UnreadBitWidth.undefinedMacro(failure.undefinedName);
+      }
+      const values = INT_BITS.map((bits) =>
+        expanded === null
+          ? null
+          : HeaderMacros.valueOf(expanded, 2 ** (bits - 1) - 1, () => null),
+      );
+      const value = values[0];
+      if (values.every((each) => each === null)) {
+        return UnreadBitWidth.unreadable();
+      }
+      if (value === null || values.some((each) => each !== value)) {
+        return UnreadBitWidth.intWidth();
+      }
+      readings.push({ file: reader.file, value });
+    }
+    if (readings.length === 0) return UnreadBitWidth.unreadable();
+    const other = readings.find(
+      (reading) => reading.value !== readings[0].value,
     );
-    const values = (names.length === 0 ? [new Map()] : files).flatMap(
-      (bodies) => {
-        const expanded = HeaderMacros.expanded(
-          tokens,
-          bodies,
-          new Set(),
-          undefinedNames,
-        );
-        return INT_BITS.map((bits) =>
-          expanded === null
-            ? null
-            : HeaderMacros.valueOf(expanded, 2 ** (bits - 1) - 1, () => null),
-        );
-      },
-    );
-    return values.length > 0 && values.every((value) => value === values[0])
-      ? values[0]
-      : null;
+    return other === undefined
+      ? readings[0].value
+      : UnreadBitWidth.files(names, readings[0], other);
   }
 
   /**
@@ -180,10 +219,14 @@ class HeaderMacros {
     bodies: ReadonlyMap<string, string>,
     expanding: ReadonlySet<string>,
     undefinedNames: ReadonlySet<string> = new Set(),
+    failure: { undefinedName: string | null } = { undefinedName: null },
   ): TMacroToken[] | null {
     const out: TMacroToken[] = [];
     for (const token of tokens) {
-      if (token.kind === "name" && undefinedNames.has(token.name)) return null;
+      if (token.kind === "name" && undefinedNames.has(token.name)) {
+        failure.undefinedName = token.name;
+        return null;
+      }
       const body = token.kind === "name" ? bodies.get(token.name) : undefined;
       if (token.kind !== "name" || body === undefined) {
         out.push(token);
@@ -195,6 +238,7 @@ class HeaderMacros {
         bodies,
         new Set([...expanding, token.name]),
         undefinedNames,
+        failure,
       );
       if (inner === null) return null;
       out.push(...inner);

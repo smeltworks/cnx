@@ -20,6 +20,7 @@ import ForeignTypeFacts from "../../utils/ForeignTypeFacts";
 import OperandTyper from "../../utils/OperandTyper";
 import StructInitializerType from "./helpers/StructInitializerType";
 import ValuePositions from "./helpers/ValuePositions";
+import UnreadBitWidth from "../../utils/UnreadBitWidth";
 import type IOperandType from "../../types/IOperandType";
 import type ISourceSite from "../../types/ISourceSite";
 import type ISourceSpan from "../../types/ISourceSpan";
@@ -31,8 +32,6 @@ import type IBitFieldRangeError from "./types/IBitFieldRangeError";
 
 const SIGN_HELP =
   "A bit-field typed int, short, long, char or int32_t is signed or unsigned as the compiler and its flags choose (-funsigned-bitfields). Declare it signed int or unsigned int in its header (ADR-034).";
-const WIDTH_HELP =
-  "cnx judges what fits a bit-field by its width, and reads a width written as integer literals, arithmetic and bitwise operators, parentheses and macros of them. Write the width as one in its header (ADR-034).";
 
 class BitFieldRangeAnalyzer {
   constructor(
@@ -117,13 +116,14 @@ class BitFieldRangeAnalyzer {
     declaredAt: ISourceSite | undefined,
   ): IBitFieldRangeError {
     const sign = operand?.signChosenByCompiler === true;
+    const unread = operand?.bitWidthUnreadWhy ?? UnreadBitWidth.unreadable();
     return {
       code: sign ? "E0944" : "E0946",
       span,
       message: sign
         ? `The C compiler chooses whether bit-field '${member}' is signed`
-        : `cnx cannot read the width of bit-field '${member}'`,
-      helpText: sign ? SIGN_HELP : WIDTH_HELP,
+        : `cnx cannot read the width of bit-field '${member}': ${unread.why}`,
+      helpText: sign ? SIGN_HELP : unread.help,
       declaredAt,
     };
   }

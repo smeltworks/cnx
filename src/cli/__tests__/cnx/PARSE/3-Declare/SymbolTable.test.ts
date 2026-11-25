@@ -3,6 +3,7 @@
  * Issue #221: Function parameters should not cause conflicts
  * ADR-055 Phase 7: Fully typed symbol storage using TSymbol, TCSymbol, TCppSymbol
  */
+import UnreadBitWidth from "../../../../../cnx/utils/UnreadBitWidth";
 import { describe, it, expect, beforeEach } from "vitest";
 import SymbolTable from "../../../../../cnx/PARSE/3-Declare/SymbolTable";
 import ESourceLanguage from "../../../../../cnx/utils/types/ESourceLanguage";
@@ -355,11 +356,14 @@ describe("SymbolTable", () => {
       const seen: string[] = [];
       symbolTable.settleBitFieldWidths((text) => {
         seen.push(text);
-        return text === "1+2" ? 3 : null;
+        return text === "1+2" ? 3 : UnreadBitWidth.unreadable();
       });
       const fields = symbolTable.getStructFields("Reg");
       expect(fields?.get("sum")?.bitWidth).toBe(3);
       expect(fields?.get("odd")?.bitWidth).toBe("W");
+      expect(fields?.get("odd")?.bitWidthUnread).toEqual(
+        UnreadBitWidth.unreadable(),
+      );
       expect(fields?.get("lit")?.bitWidth).toBe(4);
       expect(fields?.get("whole")?.bitWidth).toBeUndefined();
       expect(seen).toEqual(["1+2", "W"]);

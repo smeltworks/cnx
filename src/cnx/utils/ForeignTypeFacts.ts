@@ -1,4 +1,5 @@
 import type IResolvedSymbols from "../types/IResolvedSymbols";
+import UnreadBitWidth from "./UnreadBitWidth";
 import ESourceLanguage from "./types/ESourceLanguage";
 import type TTypeInfo from "../types/TTypeInfo";
 import TYPE_WIDTH from "../types/TYPE_WIDTH";
@@ -353,6 +354,9 @@ class ForeignTypeFacts {
       bitWidth: width,
       signChosenByCompiler,
       bitWidthUnread: width === null,
+      ...(width === null && {
+        bitWidthUnreadWhy: info.bitWidthUnread ?? UnreadBitWidth.unreadable(),
+      }),
     };
   }
 

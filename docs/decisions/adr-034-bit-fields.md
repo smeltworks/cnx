@@ -451,7 +451,9 @@ that reads a macro some header `#undef`s is not read, because cnx sees only
 the final definition and C may have used an earlier one. A width cnx cannot read, such as
 `sizeof(uint8_t)`, gives the field no range a value could be judged by, so it
 is neither read nor written, by a chain or by `{ field: value }`. A width whose value would differ between the
-target's `int` widths, or between two files' macros, is one cnx cannot read:
+target's `int` widths, or between the macros of two files that include the
+header, is one cnx cannot read; a file that never includes the header does not
+read its width, so its macros do not count. E0946 names which cause applies:
 
 ```c
 #define MODE_BITS 3

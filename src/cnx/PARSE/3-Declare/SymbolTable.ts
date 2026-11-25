@@ -8,6 +8,7 @@
  * - TCppSymbol: C++ header symbols (string types)
  */
 
+import type IUnreadBitWidth from "../../types/IUnreadBitWidth";
 import DeclarationSite from "../../utils/DeclarationSite";
 import OpaqueTypeResolution from "../../utils/OpaqueTypeResolution";
 import { produce, enableMapSet } from "immer";
@@ -778,12 +779,19 @@ class SymbolTable implements IResolvedSymbols {
    * #2494: each bit-field width written as an expression, `1 + 2` or
    * `MODE_BITS`, settled to the number C reads, where cnx can read it
    */
-  settleBitFieldWidths(widthOf: (text: string) => number | null): void {
-    for (const fields of this.structFields.values()) {
+  settleBitFieldWidths(
+    widthOf: (text: string, structName: string) => number | IUnreadBitWidth,
+  ): void {
+    for (const [structName, fields] of this.structFields) {
       for (const [name, info] of fields) {
         if (typeof info.bitWidth !== "string") continue;
-        const width = widthOf(info.bitWidth);
-        if (width !== null) fields.set(name, { ...info, bitWidth: width });
+        const width = widthOf(info.bitWidth, structName);
+        fields.set(
+          name,
+          typeof width === "number"
+            ? { ...info, bitWidth: width }
+            : { ...info, bitWidthUnread: width },
+        );
       }
     }
   }

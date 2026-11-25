@@ -298,7 +298,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-034/header-bit-field-overflow-error.test.cnx                                                    | E0881                             |
 | tests/adr-034/header-bit-field-sign-error.test.cnx                                                        | E0944                             |
 | tests/adr-034/header-bit-field-width-error.test.cnx                                                       | E0881                             |
-| tests/adr-034/header-bit-field-width-narrowing-error.test.cnx                                             | E0869                             |
+| tests/adr-034/header-bit-field-width-narrowing-error.test.cnx                                             | E0869, E0945                      |
 | tests/adr-034/header-bit-field-width-unread-error.test.cnx                                                | E0946                             |
 | tests/adr-035/array-count-included-error.test.cnx                                                         | E0866                             |
 | tests/adr-035/array-count-transitive-error.test.cnx                                                       | E0866                             |
