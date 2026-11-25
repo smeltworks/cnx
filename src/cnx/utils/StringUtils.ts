@@ -124,15 +124,9 @@ class StringUtils {
    * an escape sequence counted as one; past its end, the terminator
    */
   static characterAt(literal: string, k: number): string {
-    const content = literal.slice(literal.indexOf('"') + 1, -1);
-    const characters: string[] = [];
-    let i = 0;
-    while (i < content.length) {
-      const width = content[i] === "\\" && i + 1 < content.length ? 2 : 1;
-      characters.push(content.slice(i, i + width));
-      i += width;
-    }
-    const character = characters[k];
+    const character = StringUtils.characters(
+      literal.slice(literal.indexOf('"') + 1, -1),
+    )[k];
     if (character === undefined) return C_NULL_CHAR;
     return character === "'" ? String.raw`'\''` : `'${character}'`;
   }
@@ -145,20 +139,25 @@ class StringUtils {
    * @returns The character count (each escape sequence counts as 1)
    */
   static literalLength(literal: string): number {
-    // Remove surrounding quotes
-    const content = literal.slice(1, -1);
+    return StringUtils.characters(literal.slice(1, -1)).length;
+  }
 
-    // #2484 review: an octal escape takes up to three digits and a hex one
-    // every hex digit after it, as C reads them: "\012" and "\x41" are one
+  /**
+   * A literal's content as the characters C reads, each escape one (#2484
+   * review): an octal escape takes up to three digits and a hex one every
+   * hex digit after it, so "\101" and "\x41" are each one `A`
+   */
+  private static characters(content: string): string[] {
     const escape = /^\\(?:[0-7]{1,3}|x[\da-fA-F]+|[\s\S])/;
-    let length = 0;
+    const characters: string[] = [];
     let i = 0;
     while (i < content.length) {
       const match = escape.exec(content.slice(i));
-      i += match === null ? 1 : match[0].length;
-      length += 1;
+      const width = match === null ? 1 : match[0].length;
+      characters.push(content.slice(i, i + width));
+      i += width;
     }
-    return length;
+    return characters;
   }
 
   /**

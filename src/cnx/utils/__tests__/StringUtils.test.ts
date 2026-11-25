@@ -166,6 +166,13 @@ describe("StringUtils.characterAt", () => {
   it("is the terminator past the literal's end", () => {
     expect(StringUtils.characterAt('"A"', 1)).toBe("'\\0'");
   });
+
+  // #2484 review: an octal or hex escape is one character, all its digits
+  it("keeps every digit of an octal or hex escape", () => {
+    expect(StringUtils.characterAt('"\\101"', 0)).toBe("'\\101'");
+    expect(StringUtils.characterAt('"\\x41B"', 0)).toBe("'\\x41B'");
+    expect(StringUtils.characterAt('"\\0129"', 1)).toBe("'9'");
+  });
 });
 
 // ========================================================================
