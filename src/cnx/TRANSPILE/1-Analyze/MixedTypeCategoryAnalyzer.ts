@@ -432,16 +432,11 @@ class MixedTypeCategoryAnalyzer {
       this.addUnreadableMacroError(span, declaredAt, what, operator);
       return;
     }
-    const integer = (c: string) => c === "signed" || c === "unsigned";
     const floating =
-      (left === "floating" && integer(right)) ||
-      (right === "floating" && integer(left));
-    const signedness = integer(left) && integer(right);
-    // A character literal is essentially character, not a u8 (ADR-024), so
-    // `c = ':'` with a u8 c is the mix, and the cast goes on the character
-    const character =
-      (left === "character" && integer(right)) ||
-      (right === "character" && integer(left));
+      (left === "floating" && EssentialCategory.isInteger(right)) ||
+      (right === "floating" && EssentialCategory.isInteger(left));
+    const signedness =
+      EssentialCategory.isInteger(left) && EssentialCategory.isInteger(right);
     let pair = `${MixedTypeCategoryAnalyzer.label(left)} and ${MixedTypeCategoryAnalyzer.label(right)}`;
     if (floating) pair = "integer and floating";
     if (signedness) pair = "signed and unsigned";
@@ -452,11 +447,13 @@ class MixedTypeCategoryAnalyzer {
       // A compound assignment's target is its left operand, and a target
       // cannot be cast (#1760 review)
       helpText =
-        what === "compound" && integer(left)
+        what === "compound" && EssentialCategory.isInteger(left)
           ? `${rule}The target cannot be converted: write the assignment out with explicit conversions, e.g. x <- (u32)((f32)x * k) (ADR-024).`
           : `${rule}Convert the integer operand with an explicit cast, e.g. (f32)value (ADR-024).`;
     }
-    if (character) {
+    // A character literal is essentially character, not a u8 (ADR-024), so
+    // `c = ':'` with a u8 c is the mix, and the cast goes on the character...
+    if (EssentialCategory.isCharacterIntegerPair(left, right)) {
       // ...unless it is a compound's target, which cannot be cast
       helpText =
         what === "compound" && left === "character"

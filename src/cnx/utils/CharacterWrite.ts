@@ -26,7 +26,7 @@ class CharacterWrite {
     const category = EssentialCategory.of(value, ctx);
     if (category === "character") return "character";
     if (OperandTyper.isStringValue(value, ctx) === true) return "string";
-    if (category === "signed" || category === "unsigned") return "integer";
+    if (EssentialCategory.isInteger(category)) return "integer";
     // ADR-052: a bare integer literal, which has no category of its own, is
     // typed to the bytes it is split into
     const typed = OperandTyper.typeOf(value, ctx);
