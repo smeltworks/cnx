@@ -439,7 +439,8 @@ initializer and either arm of a ternary -- and a cast are all conversions, all
 checked the same way. A field of a C or C++ header struct written by
 `{ field: value }` is a struct field initializer like a cnx struct's, typed by
 its C type: with `uint8_t small;`, `{ small: big }` (a `u32`) is E0869, which C
-would store as `big & 0xFF`. A bit-field is typed at its width (ADR-034), and
+would store as `big & 0xFF` _(owner ruling 2026-11-25, #2484: a plain
+field is checked, not only a bit-field)_. A bit-field is typed at its width (ADR-034), and
 an array field keeps its C size and element type. A header `char` array is a C
 string, so a string literal written to it must leave room for its terminator:
 with `char tag[4];`, `{ tag: "ABCD" }` is E0864, though C takes it unterminated.
