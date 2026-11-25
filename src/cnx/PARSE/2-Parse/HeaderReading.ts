@@ -172,7 +172,7 @@ class HeaderReading {
       headerFiles.map((file) => {
         const source = settled.sources.get(file.path);
         invariant(source !== undefined, "1.2 reads only settled headers");
-        return [file.path, HeaderCompiler.readerOf(reader, source.text)];
+        return [file.path, HeaderCompiler.readerOf(reader, source)];
       }),
     );
     return reading._result(
