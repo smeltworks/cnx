@@ -118,7 +118,7 @@ class ReturnValueUseAnalyzer {
       context.symbolTable,
     );
     if (external !== null) {
-      return external !== "void";
+      return !ReturnValueUseAnalyzer.namesVoid(external, context);
     }
 
     if (StdlibFunctions.isKnown(name)) {

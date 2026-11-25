@@ -10,4 +10,11 @@ typedef struct {
     loose_t u;
 } COps;
 COps make_ops(uint32_t* seed);
+typedef void VOID_T;
+VOID_T vf(uint32_t v);
+typedef VOID_T (*vcb_t)(uint32_t v);
+typedef struct {
+    vcb_t cb;
+} VOps;
+VOps make_vops(void);
 #endif
