@@ -53,7 +53,7 @@ describe("BitmapAccessAnalyzer (E0881)", () => {
 
   // ADR-072 ruling 17: only an untyped value is judged by its value. A typed
   // one, a const included, is judged by its type, which E0869 owns.
-  it("folds an untyped constant expression, and leaves a typed const to E0869 unless the field is one bit", () => {
+  it("folds an untyped constant expression, and leaves a typed const to E0869", () => {
     const found = errors(
       [
         FLAGS,
@@ -65,13 +65,11 @@ describe("BitmapAccessAnalyzer (E0881)", () => {
         "    f.Mode <- FITS + 1;",
         "    f.Mode <- 7 + 1;",
         "    f.Mode <- 3 + 4;",
-        "    f.Enable <- BIG;",
         "}",
       ].join("\n"),
     );
     expect(found.map((e) => [e.code, e.span.line, e.message])).toEqual([
       ["E0881", 8, "Value 8 exceeds 3-bit field 'Mode' maximum of 7"],
-      ["E0881", 10, "Value 20 exceeds 1-bit field 'Enable' maximum of 1"],
     ]);
   });
 
@@ -87,7 +85,6 @@ describe("BitmapAccessAnalyzer (E0881)", () => {
         "void t(u8 m, bool c) {",
         "    f.Mode <- (c = true) ? 9 : 1;",
         "    f.Mode <- (c = true) ? m[0, 3] : 12;",
-        "    f.Enable <- (c = true) ? 2 : 0;",
         "    f.Mode <- (c = true) ? 7 : 0;",
         "    f.Enable <- (c = true) ? true : false;",
         "    f.Mode <- (OFF = true) ? 9 : 1;",
@@ -97,7 +94,6 @@ describe("BitmapAccessAnalyzer (E0881)", () => {
     expect(found.map((e) => [e.code, e.span.line, e.message])).toEqual([
       ["E0881", 5, "Value 9 exceeds 3-bit field 'Mode' maximum of 7"],
       ["E0881", 6, "Value 12 exceeds 3-bit field 'Mode' maximum of 7"],
-      ["E0881", 7, "Value 2 exceeds 1-bit field 'Enable' maximum of 1"],
     ]);
   });
 
@@ -109,7 +105,7 @@ describe("BitmapAccessAnalyzer (E0881)", () => {
           "Flags f;",
           "void t(u8 v) {",
           "    f.Mode <- 7;",
-          "    f.Enable <- 1;",
+          "    f.Enable <- true;",
           "    f.Mode <- v;",
           "}",
         ].join("\n"),

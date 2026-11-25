@@ -50,8 +50,6 @@ type TFieldBits = {
   readonly width: number;
   readonly name: string;
   readonly signed: boolean;
-  /** Whether E0869 judges a typed value written to it (ADR-072 ruling 17) */
-  readonly judgedByType: boolean;
   /** How the help says to make the field wider */
   readonly widen: string;
   /** The integer a constant written to it folds at; null for a cnx field */
@@ -94,6 +92,8 @@ class BitmapAccessCheck {
   public checkSite(site: IAssignmentSyntax): void {
     if (site.target.kind !== "postfix") return;
     const field = this.checkChain(site.target);
+    // A one-bit bitmap field is a bool, so E0945 judges what it takes
+    if (field !== null && field.layout.width === 1) return;
     const bits =
       field === null
         ? this.headerBitField(site.target)
@@ -111,7 +111,6 @@ class BitmapAccessCheck {
       width: field.layout.width,
       name: field.fieldName,
       signed: false,
-      judgedByType: field.layout.width > 1,
       widen: "widen the field in the bitmap declaration",
       foldAs: null,
     };
@@ -140,7 +139,6 @@ class BitmapAccessCheck {
       width: t.bitWidth,
       name,
       signed: t.category === "signed",
-      judgedByType: true,
       widen: "widen the bit-field in its header",
       foldAs: BitFieldIntegerType.of(t),
     };
@@ -148,9 +146,8 @@ class BitmapAccessCheck {
 
   /**
    * E0881: a known value must fit the field it is written to. A typed
-   * value written to a multi-bit field is judged by its type, which E0869
-   * owns (ADR-072 ruling 17); a one-bit bitmap field is a bool, which E0869
-   * does not judge, so every known value written to one is judged here. A
+   * value is judged by its type, which E0869 owns (ADR-072 ruling 17), and a
+   * one-bit bitmap field is a bool, whose values E0945 judges (#2372). A
    * ternary that does not fold is judged arm by arm, since each arm lands in
    * the field (ADR-022); one that folds is judged by the arm it picks.
    */
@@ -171,7 +168,7 @@ class BitmapAccessCheck {
       return;
     }
     if (result.kind !== "value") return;
-    if (result.typeName !== null && field.judgedByType) return;
+    if (result.typeName !== null) return;
     const value = ConstantEvaluator.toNumber(result.value);
     if (value === undefined) return;
     const width = field.width;
