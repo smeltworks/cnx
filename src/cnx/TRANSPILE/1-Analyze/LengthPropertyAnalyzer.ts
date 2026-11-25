@@ -143,7 +143,13 @@ class LengthPropertyCheck {
     // subject, and no property rule applies.
     if (step?.before == null) return; // unresolved -- another diagnostic's to report
 
-    this.check(last, property, step, inFunction, declaredAt);
+    // #2474: `samples` is first declared `[]` and a later declaration sizes it
+    const sizedLater =
+      chain.primary.kind === "identifier" &&
+      ops.length === 1 &&
+      (this.context.symbolTable.indexBoundsOf(chain.primary.name)?.[0] ??
+        "") !== "";
+    this.check(last, property, step, inFunction, declaredAt, sizedLater);
   }
 
   private check(
@@ -152,6 +158,7 @@ class LengthPropertyCheck {
     step: IChainStep,
     inFunction: boolean,
     declaredAt: ISourceSite | undefined,
+    sizedLater = false,
   ): void {
     const typed = step.before!;
     const subject = LengthSubject.spelling(typed);
@@ -209,9 +216,12 @@ class LengthPropertyCheck {
       this.report(declaredAt, {
         code: "E0867",
         span: at.span,
-        message: `.${property} is not known for '${subject}', which is declared without a size`,
-        helpText:
-          "Declare the array with its size, so its length is the one the compiler reads (ADR-058).",
+        message: sizedLater
+          ? `.${property} is not known for '${subject}': it is first declared without a size, and cnx cannot yet tell which later size the compiler reads (#2504)`
+          : `.${property} is not known for '${subject}', which is declared without a size`,
+        helpText: sizedLater
+          ? "Give the array its size in its first declaration, so its length is the one the compiler reads (ADR-058)."
+          : "Declare the array with its size, so its length is the one the compiler reads (ADR-058).",
       });
       return;
     }
