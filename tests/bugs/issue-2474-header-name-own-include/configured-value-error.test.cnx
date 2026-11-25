@@ -1,0 +1,12 @@
+// test-error
+// Issue #2474 review: configured.h picks samples[8] for the translation unit,
+// but cnx reads configured-samples.h alone, where samples is 4. A value reads
+// the first declaration, the unsized one, so its element count is not known,
+// not the 4 of a branch the compile does not take.
+#include "lib/configured.h"
+#include "lib/configured-samples.h"
+
+u32 main() {
+    u32 n <- samples.type_element_count;
+    return n;
+}

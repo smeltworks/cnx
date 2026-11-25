@@ -1,0 +1,2 @@
+10:20 error[E0867]: .type_element_count is not known for 'u8[]', which is declared without a size
+       help: Declare the array with its size, so its element count is the one the compiler reads (ADR-058).

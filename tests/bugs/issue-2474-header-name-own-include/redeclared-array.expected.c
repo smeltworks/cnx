@@ -5,14 +5,19 @@
 
 #include "redeclared-array.test.h"
 
-// Issue #2474 review: a header declares samples unsized, then sized. The
-// last declaration gives the bound, so a cnx array can be sized from it.
+// Issue #2474 review: a header declares readings sized, then unsized. The
+// first declaration its own headers make answers a value, so its element
+// count is 4. samples, declared unsized first, is
+// redeclared-array-value-error's.
 #include "lib/redeclared-array.h"
 
 #include <stdint.h>
 
-uint8_t copy[4] = {0};
+uint32_t readingCount(void) {
+    const uint32_t n = 4;
+    return n;
+}
 
 int main(void) {
-    copy[3] = 1U;
+    (void)readingCount();
 }

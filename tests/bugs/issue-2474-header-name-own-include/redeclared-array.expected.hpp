@@ -12,8 +12,8 @@
 extern "C" {
 #endif
 
-/* External variables */
-extern uint8_t copy[4];
+/* Function prototypes */
+uint32_t readingCount(void);
 
 #ifdef __cplusplus
 }

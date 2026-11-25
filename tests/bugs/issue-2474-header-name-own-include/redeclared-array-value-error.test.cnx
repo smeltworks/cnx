@@ -1,0 +1,14 @@
+// test-error
+// Issue #2474 review: a header declares samples unsized, then sized. A value
+// reads the first declaration, which has no size, so its element count is
+// not known. It used to render nothing, and gcc rejected the C.
+#include "lib/redeclared-array.h"
+
+u32 sampleCount() {
+    u32 n <- samples.type_element_count;
+    return n;
+}
+
+void main() {
+    (void)sampleCount();
+}
