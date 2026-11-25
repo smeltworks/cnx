@@ -39,6 +39,7 @@ import FunctionReference from "./helpers/FunctionReference";
 import CCallee from "./helpers/CCallee";
 import CArgumentWrite from "./helpers/CArgumentWrite";
 import type ICCallee from "./types/ICCallee";
+import type IChainCall from "./types/IChainCall";
 import BoundDeclaration from "./helpers/BoundDeclaration";
 import WrittenBinding from "./helpers/WrittenBinding";
 import MutArgument from "./helpers/MutArgument";
@@ -57,7 +58,6 @@ import type IAnalysisContext from "./types/IAnalysisContext";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TExpression from "../../types/syntax/TExpression";
-import type TExpressionOf from "../../types/syntax/TExpressionOf";
 import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
 
 /** What kind of const binding a name is, or null when it is not const. */
@@ -226,32 +226,24 @@ class ConstAssignmentCheck {
     this.checkMethodReceiver(expr);
     const scopePath = OperandTyper.scopePathAt(expr.span, this.context);
     // Each call in a chain has its own callee (`make().op(x)`, #2473)
-    expr.ops.forEach((op, callAt) => {
-      if (op.kind !== "call") return;
-      if (callAt === firstCall) {
-        const cCallee = CCallee.of(expr, this.context);
-        if (cCallee !== null) {
-          // Its read-only arguments are E0900's too, which CPointerArgumentAnalyzer reports
-          this.noteCPointerWrites(cCallee);
-          return;
-        }
-      }
-      this.checkCallArguments(expr, callAt, op.arguments, scopePath);
-    });
-  }
-
-  private checkCallArguments(
-    expr: TExpressionOf<"postfix">,
-    callAt: number,
-    args: readonly TExpression[],
-    scopePath: string,
-  ): void {
-    const callee = FunctionReference.ofCall(
+    for (const chainCall of FunctionReference.callsIn(
       expr,
       scopePath,
       this.context,
-      callAt,
-    );
+    )) {
+      const cCallee = CCallee.ofCallAt(expr, chainCall.callAt, this.context);
+      if (cCallee !== null) {
+        // Its read-only arguments are E0900's too, which CPointerArgumentAnalyzer reports
+        this.noteCPointerWrites(cCallee);
+        continue;
+      }
+      this.checkCallArguments(chainCall);
+    }
+  }
+
+  private checkCallArguments(chainCall: IChainCall): void {
+    const args = chainCall.call.arguments;
+    const callee = chainCall.callee;
     if (callee === null) {
       // A function no header the transpiler read declares may write any
       // argument, so none of
@@ -264,13 +256,7 @@ class ConstAssignmentCheck {
       return;
     }
     if (callee.sourceLanguage !== ESourceLanguage.Cnx) return;
-    const calledAs = FunctionReference.calledAs(
-      expr,
-      callAt,
-      callee,
-      scopePath,
-      this.context,
-    );
+    const calledAs = chainCall.calledAs;
     args.forEach((arg, index) => {
       const param = callee.parameters[index];
       if (param === undefined || param.isConst) return;

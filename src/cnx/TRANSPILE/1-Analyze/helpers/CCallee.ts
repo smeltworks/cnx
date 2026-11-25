@@ -40,6 +40,21 @@ class CCallee {
   }
 
   /**
+   * The C callee of the call at `callAt` in a chain: `of` reads the call a
+   * chain ends with, so it is asked about the chain through that call (#2473)
+   */
+  static ofCallAt(
+    chain: TPostfix,
+    callAt: number,
+    context: IAnalysisContext,
+  ): ICCallee | null {
+    return CCallee.of(
+      { ...chain, ops: chain.ops.slice(0, callAt + 1) },
+      context,
+    );
+  }
+
+  /**
    * The signatures a call with this many arguments can reach. A C++ compiler
    * picks among an overload set; each of them is one it may pick.
    */
@@ -116,6 +131,7 @@ class CCallee {
           {
             parameters: symbol.parameters,
             isVariadic: symbol.isVariadic === true,
+            returnType: symbol.type ?? null,
           },
         ];
       }
@@ -126,6 +142,7 @@ class CCallee {
             {
               parameters: symbol.parameters,
               isVariadic: symbol.isVariadic === true,
+              returnType: symbol.type ?? null,
             },
           ]
         : [],
@@ -197,6 +214,7 @@ class CCallee {
     return {
       name: typeName,
       signature: {
+        returnType: parsed.returnType,
         parameters: declared.map((param, index) => ({
           name: `${index + 1}`,
           // The text up to the last `*` (`uint8_t*buf` is how the grammar

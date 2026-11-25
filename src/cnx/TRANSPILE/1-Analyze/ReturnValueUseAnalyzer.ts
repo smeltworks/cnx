@@ -30,6 +30,7 @@ import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import type TExpressionOf from "../../types/syntax/TExpressionOf";
 import FunctionReference from "./helpers/FunctionReference";
+import CCallee from "./helpers/CCallee";
 import TypeResolver from "../../utils/TypeResolver";
 import StatementNodes from "../../utils/StatementNodes";
 import StdlibFunctions from "./StdlibFunctions";
@@ -164,57 +165,68 @@ class ReturnValueUseAnalyzer {
     const call = ReturnValueUseAnalyzer.asBareCall(expr);
     if (call?.kind !== "postfix") return null;
     const lastCall = call.ops.length - 1;
-    if (lastCall !== call.ops.findIndex((op) => op.kind === "call")) {
-      // `make().op()` discards what `op` returns, not `make` (#2473)
-      return ReturnValueUseAnalyzer.discardedChainCall(
+    if (lastCall === call.ops.findIndex((op) => op.kind === "call")) {
+      const resolved = CalleeNameResolver.resolveDetailed(
         call,
-        lastCall,
         scopePath,
-        context,
+        (name) => DeclaredTypeFacts.isScope(context.symbols, name),
+        context.program,
       );
+      const name =
+        resolved === null
+          ? null
+          : ReturnValueUseAnalyzer.nonVoidCallee(resolved, scopePath, context);
+      if (name !== null) {
+        return {
+          name,
+          declaredAt: ReturnValueUseAnalyzer.declarationOf(name, context),
+        };
+      }
     }
-    const resolved = CalleeNameResolver.resolveDetailed(
+    // `make().op()` discards what `op` returns, not `make` (#2473), and a
+    // call through a value (`o.op()`, `cb()`) what its callback type returns
+    return ReturnValueUseAnalyzer.discardedThroughValue(
       call,
-      scopePath,
-      (name) => DeclaredTypeFacts.isScope(context.symbols, name),
-      context.program,
-    );
-    if (!resolved) return null;
-    const name = ReturnValueUseAnalyzer.nonVoidCallee(
-      resolved,
+      lastCall,
       scopePath,
       context,
     );
-    if (name === null) return null;
-    return {
-      name,
-      declaredAt: ReturnValueUseAnalyzer.declarationOf(name, context),
-    };
   }
 
-  /** A later call in a chain: the callback it calls through, when visible */
-  private static discardedChainCall(
+  /**
+   * The call that ends a chain, judged by what it calls through: a cnx
+   * callback type, or a C function-pointer typedef or C++ method, whose
+   * header says what it returns (ADR-070)
+   */
+  private static discardedThroughValue(
     chain: TExpressionOf<"postfix">,
     callAt: number,
     scopePath: string,
     context: IAnalysisContext,
   ): { name: string; declaredAt: ISourceSite | undefined } | null {
-    const callee = FunctionReference.ofCall(chain, scopePath, context, callAt);
-    if (
-      callee === null ||
-      TypeResolver.getTypeName(callee.returnType) === "void"
-    )
-      return null;
-    return {
-      name: FunctionReference.calledAs(
-        chain,
-        callAt,
-        callee,
-        scopePath,
-        context,
-      ),
-      declaredAt: BindingSite.ofSymbol(callee),
-    };
+    const last = FunctionReference.callsIn(chain, scopePath, context).at(-1);
+    if (last === undefined) return null;
+    if (last.callee !== null) {
+      return TypeResolver.getTypeName(last.callee.returnType) === "void"
+        ? null
+        : {
+            name: last.calledAs,
+            declaredAt: BindingSite.ofSymbol(last.callee),
+          };
+    }
+    const cCallee = CCallee.ofCallAt(chain, callAt, context);
+    if (cCallee === null) return null;
+    const signatures = CCallee.reachable(cCallee);
+    const returnsAValue =
+      signatures.length > 0 &&
+      signatures.every(
+        (signature) =>
+          signature.returnType !== null &&
+          signature.returnType.trim() !== "void",
+      );
+    return returnsAValue
+      ? { name: last.calledAs, declaredAt: undefined }
+      : null;
   }
 
   /**

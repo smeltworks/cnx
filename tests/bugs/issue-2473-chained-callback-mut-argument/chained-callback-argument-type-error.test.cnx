@@ -21,4 +21,11 @@ Ops make() {
 
 void main() {
     make().t(wrong);
+    Ops o <- make();
+    o.t(wrong);
+    takes cb <- takes;
+    cb(wrong);
+    make().t(handler);
+    o.t(handler);
+    cb(handler);
 }

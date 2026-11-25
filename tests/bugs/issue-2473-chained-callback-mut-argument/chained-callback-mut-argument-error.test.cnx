@@ -23,4 +23,6 @@ void main() {
     u32 a <- make().op(flag);
     u32 b <- make().op(rdonly);
     u32 c <- make().op(5);
+    mut u32 ok <- 0;
+    u32 d <- make().op(ok);
 }

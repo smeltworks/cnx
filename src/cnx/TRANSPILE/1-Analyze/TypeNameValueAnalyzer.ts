@@ -11,7 +11,7 @@
  * - E0942: a register instance or register parameter, whole, where a value
  *   is read or written (ADR-072); a register parameter's argument is E0940's
  */
-import FunctionReference from "./helpers/FunctionReference";
+import RegisterArguments from "./helpers/RegisterArguments";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionShape from "../../utils/ExpressionShape";
 import ExpressionNodes from "../../utils/ExpressionNodes";
@@ -67,25 +67,9 @@ class TypeNameValueAnalyzer {
   /** The arguments a chain's calls place in register parameters: E0940 decides them */
   private registerArgumentsOf(node: TExpression): TExpression[] {
     if (node.kind !== "postfix") return [];
-    const scopePath = OperandTyper.scopePathAt(node.span, this.context);
-    return node.ops.flatMap((op, callAt) => {
-      if (op.kind !== "call") return [];
-      const callee = FunctionReference.ofCall(
-        node,
-        scopePath,
-        this.context,
-        callAt,
-      );
-      if (callee === null) return [];
-      return op.arguments.flatMap((arg, index) => {
-        const param = callee.parameters[index];
-        return param !== undefined &&
-          RegisterInstance.typeNamedBy(this.context.program, param.type) !==
-            null
-          ? [ExpressionShape.unparenthesized(arg)]
-          : [];
-      });
-    });
+    return RegisterArguments.of(node, this.context).map((register) =>
+      ExpressionShape.unparenthesized(register.arg),
+    );
   }
 
   /** E0942: a register, whole, where a value is read or written */

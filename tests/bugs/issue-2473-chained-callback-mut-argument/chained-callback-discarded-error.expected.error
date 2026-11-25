@@ -1,2 +1,6 @@
 19:4 error[E0708]: Return value of non-void function 'make().op' is discarded
        help: Use the value, or discard it explicitly: (void) make().op(...);
+21:4 error[E0708]: Return value of non-void function 'cb' is discarded
+       help: Use the value, or discard it explicitly: (void) cb(...);
+23:4 error[E0708]: Return value of non-void function 'o.op' is discarded
+       help: Use the value, or discard it explicitly: (void) o.op(...);

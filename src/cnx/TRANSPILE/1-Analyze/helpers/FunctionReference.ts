@@ -28,10 +28,12 @@ import IFunctionSymbol from "../../../types/symbols/IFunctionSymbol";
 import type TExpression from "../../../types/syntax/TExpression";
 import type TExpressionOf from "../../../types/syntax/TExpressionOf";
 import OperandTyper from "../../../utils/OperandTyper";
+import ExpressionShape from "../../../utils/ExpressionShape";
 import TypeText from "../../../utils/TypeText";
 import CalleeNameResolver from "./CalleeNameResolver";
 import ScopeCandidates from "./ScopeCandidates";
 import type IAnalysisContext from "../types/IAnalysisContext";
+import type IChainCall from "../types/IChainCall";
 
 class FunctionReference {
   /**
@@ -125,12 +127,58 @@ class FunctionReference {
     context: IAnalysisContext,
     callAt: number = chain.ops.findIndex((op) => op.kind === "call"),
   ): IFunctionSymbol | null {
+    return (
+      FunctionReference.resolveAt(chain, scopePath, context, callAt)?.callee ??
+      null
+    );
+  }
+
+  /**
+   * Each call in `chain`, the function it reaches, and how a diagnostic names
+   * that function: its own name when the chain names it (`S.f(...)`), else
+   * the chain as written before the call (`h.cb`, `make().op`), not the
+   * callback's type (#2473)
+   */
+  static callsIn(
+    chain: TExpressionOf<"postfix">,
+    scopePath: string,
+    context: IAnalysisContext,
+  ): IChainCall[] {
+    return chain.ops.flatMap((op, callAt) => {
+      if (op.kind !== "call") return [];
+      const resolved = FunctionReference.resolveAt(
+        chain,
+        scopePath,
+        context,
+        callAt,
+      );
+      return [
+        {
+          callAt,
+          call: op,
+          callee: resolved?.callee ?? null,
+          calledAs:
+            resolved?.named === true
+              ? resolved.callee.name
+              : ExpressionShape.writtenThrough(chain, callAt),
+        },
+      ];
+    });
+  }
+
+  /** The function the call at `callAt` reaches, and whether the chain names it */
+  private static resolveAt(
+    chain: TExpressionOf<"postfix">,
+    scopePath: string,
+    context: IAnalysisContext,
+    callAt: number,
+  ): { callee: IFunctionSymbol; named: boolean } | null {
     if (callAt < 0) return null;
     // Only the chain's first call is named; a later one calls what the chain
     // before it gives (`make().op(...)`)
     if (callAt === chain.ops.findIndex((op) => op.kind === "call")) {
       const named = FunctionReference.ofCallChain(chain, scopePath, context);
-      if (named !== null) return named;
+      if (named !== null) return { callee: named, named: true };
     }
     const target: TExpression =
       callAt === 0
@@ -138,28 +186,8 @@ class FunctionReference {
         : { ...chain, ops: chain.ops.slice(0, callAt) };
     const typeName = OperandTyper.typeOf(target, context)?.typeName;
     if (typeName === undefined || typeName === null) return null;
-    return FunctionReference.ofTypeText(typeName, scopePath, context);
-  }
-
-  /**
-   * How a diagnostic names the function a call reaches: its own name when the
-   * chain names it (`S.f(...)`), else the chain as written before the call
-   * (`h.cb`, `make().op`), not the callback's type (#2473)
-   */
-  static calledAs(
-    chain: TExpressionOf<"postfix">,
-    callAt: number,
-    callee: IFunctionSymbol,
-    scopePath: string,
-    context: IAnalysisContext,
-  ): string {
-    const isNamed =
-      callAt === chain.ops.findIndex((op) => op.kind === "call") &&
-      FunctionReference.ofCallChain(chain, scopePath, context) !== null;
-    if (isNamed) return callee.name;
-    return [chain.primary, ...chain.ops.slice(0, callAt)]
-      .map((node) => node.written)
-      .join("");
+    const callee = FunctionReference.ofTypeText(typeName, scopePath, context);
+    return callee === null ? null : { callee, named: false };
   }
 
   /**

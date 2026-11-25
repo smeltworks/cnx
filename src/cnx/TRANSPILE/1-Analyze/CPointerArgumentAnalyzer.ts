@@ -57,8 +57,16 @@ class CPointerArgumentCheck {
 
   /** A call to a C (or C++) function, and nothing after it (`CCallee`) */
   public checkExpression(expr: TExpression): void {
-    const callee = CCallee.of(expr, this.context);
-    if (callee === null) return;
+    if (expr.kind !== "postfix") return;
+    // Each call in a chain reaches its own callee (`get_pair(p).a`, #2473)
+    expr.ops.forEach((op, callAt) => {
+      if (op.kind !== "call") return;
+      const callee = CCallee.ofCallAt(expr, callAt, this.context);
+      if (callee !== null) this.checkCall(callee);
+    });
+  }
+
+  private checkCall(callee: ICCallee): void {
     this.rejectsFormatNotLiteral(callee);
     const lost = this.rejectsLostWrites(callee);
     const only =

@@ -1,2 +1,6 @@
 23:13 error[E0879]: Function 'wrong' signature does not match callback type 'handler'
        help: A callback must match its type's signature exactly: return type, parameter count, and each parameter's type, const-ness and array-ness (ADR-029).
+25:8 error[E0879]: Function 'wrong' signature does not match callback type 'handler'
+       help: A callback must match its type's signature exactly: return type, parameter count, and each parameter's type, const-ness and array-ness (ADR-029).
+27:7 error[E0879]: Function 'wrong' signature does not match callback type 'handler'
+       help: A callback must match its type's signature exactly: return type, parameter count, and each parameter's type, const-ness and array-ness (ADR-029).
