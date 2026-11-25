@@ -6,7 +6,11 @@
 
 void test() {
     // Local variable with struct initializer
-    SeaDash.Parse.ParseResult result <- { data: [0*], count: 0, success: false };
+    SeaDash.Parse.ParseResult result <- {
+        data: [0*],
+        count: 0,
+        success: false
+    };
 
     // Assignment after declaration
     mut SeaDash.Parse.ParseResult result2;
