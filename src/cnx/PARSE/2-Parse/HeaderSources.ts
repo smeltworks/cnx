@@ -243,20 +243,13 @@ class HeaderSources {
           ? []
           : [{ i, reading: { text: slice, directives: null } }];
       }
-      const own = LineMarkers.ownText(header.preprocessed, file.path) ?? "";
-      const cText = cTextOf(file);
-      // A C reading that differs judges the header's language, even where
-      // the C++ text it is read from is its own
-      const judgedApart =
-        file.type !== EFileType.CppHeader &&
-        cText !== undefined &&
-        !HeaderSources._sameText(cText, own);
-      if (met !== undefined && !HeaderSources._sameText(met.text, own)) {
-        return [{ i, reading: met }];
-      }
-      return judgedApart
-        ? [{ i, reading: met ?? { text: own, directives: null } }]
-        : [];
+      return met === undefined ||
+        HeaderSources._sameText(
+          met.text,
+          LineMarkers.ownText(header.preprocessed, file.path) ?? "",
+        )
+        ? []
+        : [{ i, reading: met }];
     });
     // #2096: the directives-only slice is parsed only when it says what the
     // unit's expanded one does. A macro an earlier include defines writes what
@@ -299,7 +292,11 @@ class HeaderSources {
         else sources.set(file.path, header.source);
         return;
       }
-      const judged = cTextOf(file) ?? reading.text;
+      // #1542 ruling 4 judges the run's mode on the text C meets (above);
+      // a header read from the C++ unit is parsed as the C++ text it is
+      const judged = cppOf(file)
+        ? reading.text
+        : (cTextOf(file) ?? reading.text);
       sources.set(
         file.path,
         HeaderSources._sourceOf(file, {
