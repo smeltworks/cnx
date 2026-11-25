@@ -37,21 +37,23 @@ const OBJECT_LIKE_DEFINE =
 
 const FLOATING_LITERAL = String.raw`0[xX][0-9a-fA-F]*\.?[0-9a-fA-F]*[pP][+-]?\d+[fFlL]?|(?:\d+\.\d*|\.\d+)(?:[eE][+-]?\d+)?[fFlL]?|\d+[eE][+-]?\d+[fFlL]?`;
 const INTEGER_LITERAL = String.raw`0[xX][0-9a-fA-F]+[uUlL]*|0[bB][01]+[uUlL]*|\d+[uUlL]*`;
-/** The operators an integer expansion may hold: arithmetic and bitwise */
-const INTEGER_OPERATOR = "<<|>>|[-+*/%&|^~]";
-/** `&&` and `||` are no integer operator: a macro of them is a Boolean, not read */
-const LOGICAL_OPERATOR = String.raw`&&|\|\|`;
+/** The operators an integer expansion may hold: logical, arithmetic and bitwise */
+const INTEGER_OPERATOR = String.raw`&&|\|\||<<|>>|[-+*/%&|^~]`;
+/** `&&` and `||`: an expansion whose outermost operator is one is a Boolean */
+const LOGICAL_OPERATORS: readonly string[] = ["&&", "||"];
 /** A character constant, `'A'` or `'\\n'`; a prefixed one (`L'A'`) is not read */
 const CHARACTER_LITERAL = String.raw`'(?:\\.|[^'\\])+'`;
 
 /** One token per match; `other` takes any character no other group does */
 const MACRO_TOKEN = new RegExp(
-  String.raw`\s+|(${FLOATING_LITERAL})|(${INTEGER_LITERAL})|([A-Za-z_]\w*)|(${LOGICAL_OPERATOR})|(${INTEGER_OPERATOR})|([()])|(${CHARACTER_LITERAL})|(.)`,
+  String.raw`\s+|(${FLOATING_LITERAL})|(${INTEGER_LITERAL})|([A-Za-z_]\w*)|(${INTEGER_OPERATOR})|([()])|(${CHARACTER_LITERAL})|(.)`,
   "g",
 );
 
 /** C's binary operators an integer expansion may hold, loosest first */
 const BINARY_PRECEDENCE: readonly (readonly string[])[] = [
+  ["||"],
+  ["&&"],
   ["|"],
   ["^"],
   ["&"],
@@ -315,10 +317,12 @@ class HeaderMacros {
     if (kinds.some((kind) => kind.kind === "character")) {
       return kinds.length === 1 ? CHARACTER : UNREADABLE;
     }
+    // #2484 review: `(A && B)` is a Boolean; `(2 + (A && B))` is not
+    const isBoolean = HeaderMacros.outermostIsLogical(tokens);
     const floating = kinds.flatMap((kind) =>
       kind.kind === "floating" ? [kind.typeName] : [],
     );
-    if (floating.length > 0) {
+    if (floating.length > 0 && !isBoolean) {
       return {
         kind: "floating",
         typeName: HeaderMacros.usualFloating(floating),
@@ -336,6 +340,7 @@ class HeaderMacros {
     );
     return {
       kind: "integer",
+      ...(isBoolean && { isBoolean }),
       valueByIntBits: new Map(
         INT_BITS.map((bits) => [
           bits,
@@ -345,6 +350,31 @@ class HeaderMacros {
         ]),
       ),
     };
+  }
+
+  /**
+   * Whether a `&&` or `||` sits outside every parenthesis the whole
+   * expansion is not wrapped in: the operator C applies last, as both bind
+   * looser than every operator an integer expansion holds.
+   */
+  private static outermostIsLogical(tokens: readonly TMacroToken[]): boolean {
+    let depth = 0;
+    const depths: { readonly token: TMacroToken; readonly depth: number }[] =
+      [];
+    for (const token of tokens) {
+      if (token.kind === "paren") {
+        depth += token.text === "(" ? 1 : -1;
+        continue;
+      }
+      depths.push({ token, depth });
+    }
+    const outermost = Math.min(...depths.map((each) => each.depth));
+    return depths.some(
+      (each) =>
+        each.depth === outermost &&
+        each.token.kind === "operator" &&
+        LOGICAL_OPERATORS.includes(each.token.text),
+    );
   }
 
   /**
@@ -422,6 +452,10 @@ class HeaderMacros {
 
   private static apply(operator: string, left: number, right: number): number {
     switch (operator) {
+      case "||":
+        return left !== 0 || right !== 0 ? 1 : 0;
+      case "&&":
+        return left !== 0 && right !== 0 ? 1 : 0;
       case "|":
         return left | right;
       case "^":
@@ -468,13 +502,13 @@ class HeaderMacros {
         tokens.push({ kind: "integer", text: match[2] });
       } else if (match[3] !== undefined) {
         tokens.push({ kind: "name", name: match[3] });
+      } else if (match[4] !== undefined) {
+        tokens.push({ kind: "operator", text: match[4] });
       } else if (match[5] !== undefined) {
-        tokens.push({ kind: "operator", text: match[5] });
+        tokens.push({ kind: "paren", text: match[5] });
       } else if (match[6] !== undefined) {
-        tokens.push({ kind: "paren", text: match[6] });
-      } else if (match[7] !== undefined) {
         tokens.push({ kind: "character" });
-      } else if (match[4] !== undefined || match[8] !== undefined) {
+      } else if (match[7] !== undefined) {
         tokens.push({ kind: "other" });
       }
     }

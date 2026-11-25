@@ -763,11 +763,12 @@ class IntegerConversionCheck {
   /** An integer literal, or a minus over one, as one token: `-1`, `0xFF` */
   /** A bare name the file's headers define as an integer macro */
   private isIntegerMacro(leaf: TExpression): boolean {
-    return (
-      leaf.kind === "identifier" &&
-      this.context.program.headerMacro(this.context.sourceFile, leaf.name)
-        ?.kind === "integer"
+    if (leaf.kind !== "identifier") return false;
+    const macro = this.context.program.headerMacro(
+      this.context.sourceFile,
+      leaf.name,
     );
+    return macro?.kind === "integer" && macro.isBoolean !== true;
   }
 
   private static integerLiteralText(value: TExpression): string | null {

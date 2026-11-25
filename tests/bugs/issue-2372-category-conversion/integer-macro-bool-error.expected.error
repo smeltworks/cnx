@@ -1,6 +1,8 @@
-26:16 error[E0945]: Cannot assign an integer macro value to bool (MISRA C:2012 Rule 10.3): 'MODE'
+27:16 error[E0945]: Cannot assign an integer macro value to bool (MISRA C:2012 Rule 10.3): 'MODE'
        help: A number is not a bool (ADR-024); say what makes it true: value != 0
-27:9 error[E0945]: Cannot assign an integer macro value to bool (MISRA C:2012 Rule 10.3): 'MODE'
+28:9 error[E0945]: Cannot assign an integer macro value to bool (MISRA C:2012 Rule 10.3): 'MODE'
        help: A number is not a bool (ADR-024); say what makes it true: value != 0
-28:9 error[E0945]: Cannot assign an integer macro value to bool (MISRA C:2012 Rule 10.3): 'ON_FLAG + 1'
+29:9 error[E0945]: Cannot assign an integer macro value to bool (MISRA C:2012 Rule 10.3): 'ON_FLAG + 1'
+       help: A number is not a bool (ADR-024); say what makes it true: value != 0
+30:9 error[E0945]: Cannot assign an integer macro value to bool (MISRA C:2012 Rule 10.3): 'COUNT'
        help: A number is not a bool (ADR-024); say what makes it true: value != 0

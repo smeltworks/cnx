@@ -247,13 +247,26 @@ describe("HeaderMacros.collect", () => {
     }
   });
 
-  it("leaves a macro of && or || unreadable, not an integer of two & or | (#2484 review)", () => {
+  it("reads && and || as C does: a Boolean when outermost, a number inside arithmetic (#2484 review)", () => {
     const macros = HeaderMacros.collect(
-      ["#define READY (1 && 1)", "#define EITHER (2 || 0)"].join("\n"),
+      [
+        "#define READY (1 && 1)",
+        "#define EITHER (2 || 0) && 3",
+        "#define COUNT ((1 && 1) + 1)",
+        "#define SCALED (2.5 + (1 && 1))",
+      ].join("\n"),
     );
-    for (const name of ["READY", "EITHER"]) {
-      expect(macros.get(name), name).toEqual({ kind: "unreadable" });
-    }
+    const value = (name: string) => {
+      const macro = macros.get(name);
+      return macro?.kind === "integer" ? macro.valueByIntBits.get(32) : null;
+    };
+    expect(macros.get("READY")).toMatchObject({ isBoolean: true });
+    expect(value("READY")).toBe(1);
+    expect(macros.get("EITHER")).toMatchObject({ isBoolean: true });
+    expect(value("EITHER")).toBe(1);
+    expect(macros.get("COUNT")).not.toHaveProperty("isBoolean");
+    expect(value("COUNT")).toBe(2);
+    expect(macros.get("SCALED")).toEqual({ kind: "floating", typeName: "f64" });
   });
 
   it("types a character constant alone as character, and mixed as unreadable", () => {
