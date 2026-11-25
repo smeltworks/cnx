@@ -6,6 +6,7 @@
 #include "char-literal-cast-control.test.h"
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 
 // ADR-044: Overflow helper functions
@@ -28,38 +29,52 @@ static inline uint8_t cnx_clamp_sub_u8(uint8_t a, uint32_t b) {
 
 // test-execution
 // test-adr: 024
-// Control for #2499: the spelling E0810's help names compiles and compares
-// byte values -- a hex digit parsed from a string<N> through a u8, with each
-// character literal cast to u8 (ADR-024).
-uint8_t hexValue(const uint8_t c) {
-    if ((c >= (uint8_t)'0') && (c <= (uint8_t)'9')) {
-        return cnx_clamp_sub_u8(c, (uint8_t)(uint8_t)'0');
+// Control for #2499: what docs/cnx-ai-reference.md teaches about a char
+// literal beside a u8 compiles and gives the values it says. The block in its
+// Char literals section, copied as it stands there, runs with c = '7' and
+// s = ":7"; then its s[i] paragraph's `u8 b <- (u8)s[0]` and
+// `take((u8)s[0])` (ADR-024).
+uint8_t take(const uint8_t v) {
+    return v;
+}
+
+uint32_t check(const uint8_t c, const char* s) {
+    const uint8_t ch = (uint8_t)(uint8_t)'A';
+    const bool colon = c == (uint8_t)':';
+    const bool digit = (c >= (uint8_t)'0') && (c <= (uint8_t)'9');
+    const uint8_t value = cnx_clamp_sub_u8(c, (uint8_t)(uint8_t)'0');
+    const bool first = s[0U] == ':';
+    const uint8_t lower = cnx_clamp_add_u8(c, 32U);
+    const uint8_t b = (uint8_t)s[0U];
+    const uint8_t taken = take((uint8_t)s[1U]);
+    if (ch != 65) {
+        return 1U;
     }
-    if ((c >= (uint8_t)'a') && (c <= (uint8_t)'f')) {
-        return cnx_clamp_add_u8((cnx_clamp_sub_u8(c, (uint8_t)(uint8_t)'a')), 10U);
+    if (colon != false) {
+        return 2U;
     }
-    return 255U;
+    if (digit != true) {
+        return 3U;
+    }
+    if (value != 7) {
+        return 4U;
+    }
+    if (first != true) {
+        return 5U;
+    }
+    if (lower != 87) {
+        return 6U;
+    }
+    if (b != 58) {
+        return 7U;
+    }
+    if (taken != 55) {
+        return 8U;
+    }
+    return 0U;
 }
 
 int main(void) {
-    const char s[9] = "7c:";
-    const uint8_t hi = (uint8_t)s[0U];
-    const uint8_t lo = (uint8_t)s[1U];
-    const uint8_t sep = (uint8_t)s[2U];
-    const uint8_t hiValue = hexValue(hi);
-    const uint8_t loValue = hexValue(lo);
-    const uint8_t badValue = hexValue((uint8_t)(uint8_t)'g');
-    if (hiValue != 7) {
-        return 1U;
-    }
-    if (loValue != 12) {
-        return 2U;
-    }
-    if (sep != (uint8_t)':') {
-        return 3U;
-    }
-    if (badValue != 255) {
-        return 4U;
-    }
-    return 0U;
+    const uint32_t result = check(55U, ":7");
+    return result;
 }

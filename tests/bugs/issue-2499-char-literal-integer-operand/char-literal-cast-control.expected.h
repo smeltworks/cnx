@@ -13,7 +13,8 @@ extern "C" {
 #endif
 
 /* Function prototypes */
-uint8_t hexValue(const uint8_t c);
+uint8_t take(const uint8_t v);
+uint32_t check(const uint8_t c, const char* s);
 
 #ifdef __cplusplus
 }

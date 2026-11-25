@@ -92,7 +92,7 @@ bool digit <- (c >= (u8)'0') && (c <= (u8)'9');
 u8 value <- c - (u8)'0';
 bool first <- s[0] = ':';                     // character beside character: no cast
 u8 lower <- c + 32;
-// bool bad <- c = ':';                       // E0810: unsigned and character
+// E0810, unsigned and character: bool bad <- c = ':';
 ```
 
 Standard char escape sequences work in `'...'` literals: newline (10), tab (9), carriage return (13), null (0), backslash (92), single-quote (39), double-quote (34).
