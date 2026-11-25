@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1050 fixture(s) assert a diagnostic; 1036 carry a code.
+1051 fixture(s) assert a diagnostic; 1037 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -974,6 +974,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-2354-bool-bit-index/bool-bit-index-error.test.cnx                                        | E0856                             |
 | tests/bugs/issue-2366-void-param-diagnostic/void-param.test.cnx                                           | E0926                             |
 | tests/bugs/issue-2372-category-conversion/category-error.test.cnx                                         | E0945                             |
+| tests/bugs/issue-2372-category-conversion/integer-macro-bool-arithmetic-error.test.cnx                    | E0807                             |
 | tests/bugs/issue-2372-category-conversion/integer-macro-bool-error.test.cnx                               | E0945                             |
 | tests/bugs/issue-2373-string-range-write/string-range-write-capacity-error.test.cnx                       | E0864                             |
 | tests/bugs/issue-2380-same-level-names/enum-beside-scope-error.test.cnx                                   | E0425                             |
