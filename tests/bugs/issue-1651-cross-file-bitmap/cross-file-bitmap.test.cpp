@@ -42,6 +42,7 @@
 #include "lib/flags.hpp"
 
 #include <stdint.h>
+#include <stdbool.h>
 
 LocalFlags local = 0;
 

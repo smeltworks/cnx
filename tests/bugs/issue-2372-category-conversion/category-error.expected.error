@@ -1,0 +1,38 @@
+31:11 error[E0945]: Cannot assign a character value to u8 (MISRA C:2012 Rule 10.3): ''r''
+       help: Cast the character to say it is a number: (u8)value (ADR-024)
+49:9 error[E0945]: Cannot assign a bool value to u8 (MISRA C:2012 Rule 10.3): 'true'
+       help: A bool is not a number (ADR-024); write the number it stands for: (value = true) ? 1 : 0
+50:9 error[E0945]: Cannot assign an unsigned integer value to bool (MISRA C:2012 Rule 10.3): 'n'
+       help: A number is not a bool (ADR-024); say what makes it true: value != 0
+51:10 error[E0945]: Cannot assign an integer literal value to bool (MISRA C:2012 Rule 10.3): '1'
+       help: A number is not a bool (ADR-024); say what makes it true: value != 0
+52:9 error[E0945]: Cannot assign an integer literal value to bool (MISRA C:2012 Rule 10.3): '1 + 1'
+       help: A number is not a bool (ADR-024); say what makes it true: value != 0
+53:9 error[E0945]: Cannot assign an enum value to u8 (MISRA C:2012 Rule 10.3): 'c'
+       help: Cast the enum value to say it is a number: (u8)value (ADR-024)
+54:12 error[E0945]: Cannot assign a character value to u8 (MISRA C:2012 Rule 10.3): ''a''
+       help: Cast the character to say it is a number: (u8)value (ADR-024)
+55:14 error[E0945]: Cannot assign a character value to u8 (MISRA C:2012 Rule 10.3): ''a''
+       help: Cast the character to say it is a number: (u8)value (ADR-024)
+56:14 error[E0945]: Cannot assign a bool value to u8 (MISRA C:2012 Rule 10.3): 'ON'
+       help: A bool is not a number (ADR-024); write the number it stands for: (value = true) ? 1 : 0
+57:14 error[E0945]: Cannot assign a bool value to u8 (MISRA C:2012 Rule 10.3): 'b'
+       help: A bool is not a number (ADR-024); write the number it stands for: (value = true) ? 1 : 0
+58:16 error[E0945]: Cannot assign an integer literal value to bool (MISRA C:2012 Rule 10.3): '1'
+       help: A number is not a bool (ADR-024); say what makes it true: value != 0
+59:16 error[E0945]: Cannot assign an unsigned integer value to bool (MISRA C:2012 Rule 10.3): 'n'
+       help: A number is not a bool (ADR-024); say what makes it true: value != 0
+60:9 error[E0945]: Cannot assign a character value to u8 (MISRA C:2012 Rule 10.3): ''t''
+       help: Cast the character to say it is a number: (u8)value (ADR-024)
+61:20 error[E0945]: Cannot assign a character value to u8 (MISRA C:2012 Rule 10.3): ''o''
+       help: Cast the character to say it is a number: (u8)value (ADR-024)
+61:25 error[E0945]: Cannot assign a character value to u8 (MISRA C:2012 Rule 10.3): ''k''
+       help: Cast the character to say it is a number: (u8)value (ADR-024)
+62:23 error[E0945]: Cannot assign a character value to u8 (MISRA C:2012 Rule 10.3): ''p''
+       help: Cast the character to say it is a number: (u8)value (ADR-024)
+62:32 error[E0945]: Cannot assign an integer literal value to bool (MISRA C:2012 Rule 10.3): '1'
+       help: A number is not a bool (ADR-024); say what makes it true: value != 0
+63:22 error[E0945]: Cannot assign a character value to u8 (MISRA C:2012 Rule 10.3): ''y''
+       help: Cast the character to say it is a number: (u8)value (ADR-024)
+63:28 error[E0945]: Cannot assign a character value to u8 (MISRA C:2012 Rule 10.3): ''n''
+       help: Cast the character to say it is a number: (u8)value (ADR-024)

@@ -1,0 +1,64 @@
+// test-error
+// test-adr: 024
+// #2372, #2492: MISRA C:2012 Rule 10.3 -- a value is not assigned to an
+// object of another essential type category (ADR-024). An integer takes no
+// bool, character or enum value, and a bool takes no number, at every
+// position a conversion is checked.
+enum Color {
+    RED,
+    GREEN
+}
+bitmap8 Flags {
+    Mode[3],
+    Enable,
+    Reserved[4]
+}
+struct Pair {
+    u8 lo;
+    bool on;
+}
+
+mut u8 a;
+mut bool b;
+mut Color c;
+mut Flags f <- 0;
+bool ON <- true;
+u8 n <- 3;
+
+void take(u8 v) {}
+
+u8 give() {
+    return 'r';
+}
+
+void main() {
+    // NEGATIVE CONTROLS -- each category said explicitly
+    f.Mode <- 7;
+    f.Enable <- true;
+    a <- (u8)'a';
+    a <- (u8)c;
+    a <- (b = true) ? 1 : 0;
+    b <- n != 0;
+    take((u8)'t');
+    u8[2] okBytes <- [(u8)'o', (u8)'k'];
+    Pair okPair <- { lo: (u8)'p', on: true };
+    // MISRA's exception, kept by ADR-024: `+<-` adds a character to an integer
+    a +<- 'x';
+
+    // ASSERTIONS
+    a <- true;
+    b <- n;
+    b <- (1);
+    b <- 1 + 1;
+    a <- c;
+    u8 d <- 'a';
+    f.Mode <- 'a';
+    f.Mode <- ON;
+    f.Mode <- b;
+    f.Enable <- 1;
+    f.Enable <- n;
+    take('t');
+    u8[2] bytes <- ['o', 'k'];
+    Pair pair <- { lo: 'p', on: 1 };
+    a <- (b = true) ? 'y' : 'n';
+}

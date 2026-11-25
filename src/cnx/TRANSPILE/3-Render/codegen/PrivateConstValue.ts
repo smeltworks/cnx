@@ -1,3 +1,4 @@
+import CppModeHelper from "../../2-Plan/CppModeHelper";
 import PrivateConstSpelling from "../../2-Plan/PrivateConstSpelling";
 import type TranspileState from "../../TranspileState";
 import type IConstSpelling from "../../2-Plan/types/IConstSpelling";
@@ -64,7 +65,14 @@ class PrivateConstValue {
       transpileState,
       narrowing,
     );
-    return negative ? { ...output, code: `(-${output.code})` } : output;
+    if (negative) return { ...output, code: `(-${output.code})` };
+    return {
+      ...output,
+      code: spelling.casts.reduceRight(
+        (code, cType) => CppModeHelper.cast(cType, code, transpileState),
+        output.code,
+      ),
+    };
   }
 }
 

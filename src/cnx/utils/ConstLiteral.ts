@@ -3,6 +3,8 @@ import type IVariableSymbol from "../types/symbols/IVariableSymbol";
 import type TConstLiteral from "../types/TConstLiteral";
 import type TSettledConst from "../types/TSettledConst";
 import ConstantFold from "./ConstantFold";
+import CNX_TO_C_TYPE_MAP from "./constants/TypeMappings";
+import type TConstExpr from "../types/TConstExpr";
 
 /**
  * The C constant a const is written as where its value is used, or null when
@@ -40,8 +42,8 @@ class ConstLiteral {
     );
   }
 
-  /** How C writes the answer */
-  private static spell(literal: TConstLiteral): string {
+  /** How C writes the answer, a char's casts aside (`casts`) */
+  static spell(literal: TConstLiteral): string {
     switch (literal.kind) {
       case "member":
         return literal.cName;
@@ -129,13 +131,9 @@ class ConstLiteral {
     settled: TSettledConst | null,
   ): TConstLiteral | null {
     const expr = symbol.initialValueExpr!;
-    if (
-      settled?.kind === "notConstant" &&
-      settled.reason === "character" &&
-      expr.kind === "other" &&
-      expr.what === "character"
-    ) {
-      return { kind: "char", text: symbol.initialValue! };
+    if (settled?.kind === "notConstant" && settled.reason === "character") {
+      const character = ConstLiteral.character(expr);
+      if (character !== null) return { kind: "char", ...character };
     }
     if (
       settled?.kind === "foreign" &&
@@ -146,6 +144,28 @@ class ConstLiteral {
       return { kind: "macro", name: expr.path[0] };
     }
     return null;
+  }
+
+  /**
+   * A char literal and the casts written on it: `(u8)'A'` is `'A'` cast to
+   * `uint8_t`, a constant expression of the value the author chose (ADR-024,
+   * #2372). cnx does not fold the character, whose value is the execution
+   * character set's.
+   */
+  private static character(
+    expr: TConstExpr,
+  ): { text: string; casts: readonly string[] } | null {
+    if (expr.kind === "other") {
+      return expr.what === "character"
+        ? { text: expr.spelling, casts: [] }
+        : null;
+    }
+    if (expr.kind !== "cast") return null;
+    const cType = CNX_TO_C_TYPE_MAP[expr.typeName];
+    const operand = ConstLiteral.character(expr.operand);
+    return cType === undefined || operand === null
+      ? null
+      : { text: operand.text, casts: [cType, ...operand.casts] };
   }
 
   /** A literal initializer keeps its notation (`0xAB`); the rest are digits */

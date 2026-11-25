@@ -1275,6 +1275,7 @@ class FilePlanner {
           text: StaticInitializers.cText(value, program, sourceFile),
           typeName: value.typeName,
           verbatim: true,
+          casts: [],
         },
         narrowing: null,
       };
@@ -1339,6 +1340,9 @@ class FilePlanner {
       inlined.add(declaration);
       const narrowing = PrivateConstSpelling.narrowingOf(constants, cName);
       if (narrowing?.kind === "cast") cTypes.add(narrowing.cType);
+      PrivateConstSpelling.spelling(constants, cName)?.casts.forEach((cType) =>
+        cTypes.add(cType),
+      );
     }
   }
 
@@ -1447,12 +1451,13 @@ class FilePlanner {
       valuePositions,
       types,
     );
+    invariant(valuePositions !== null, "2.1 hands 2.2 where each value stands");
     const narrowings = this.planNarrowings(
       expectedTypes,
+      valuePositions.positions,
       decidedCTypes,
       FilePlanner.writtenExpressions(program, unwritten),
     );
-    invariant(valuePositions !== null, "2.1 hands 2.2 where each value stands");
     const wholeArrayWrites = this.planWholeArrayWrites(
       valuePositions,
       decidedCTypes,
@@ -3001,6 +3006,7 @@ class FilePlanner {
    */
   private planNarrowings(
     expectedTypes: ReadonlyMap<TExpression, IPlannedExpectedType>,
+    positions: ReadonlyMap<TExpression, IValuePosition>,
     cTypes: Set<string>,
     written: Iterable<TExpression>,
   ): ReadonlyMap<TExpression, ReadonlyMap<number, TPlannedNarrowing>> {
@@ -3031,12 +3037,29 @@ class FilePlanner {
           : [];
       });
     };
+    // A cast is its operand's conversion, written, so `(u8)'A'` is cast once:
+    // nothing standing in the cast's own position is narrowed to the type the
+    // cast stands in. A value with a position of its own -- a call's argument
+    // -- lands in that position, and is narrowed there
+    const underCast = new Set<TExpression>();
+    const markUnder = (
+      node: TExpression,
+      at: IValuePosition | undefined,
+    ): void => {
+      if (positions.get(node) !== at) return;
+      underCast.add(node);
+      ExpressionChildren.of(node).forEach((child) => markUnder(child, at));
+    };
+    for (const value of expectedTypes.keys()) {
+      if (value.kind === "cast") markUnder(value.operand, positions.get(value));
+    }
     const narrowings = new Map<TExpression, Map<number, TPlannedNarrowing>>();
     for (const [value, planned] of expectedTypes) {
       const target = planned.type;
-      if (target === null) continue;
+      if (target === null || underCast.has(value)) continue;
       const visit = (node: TExpression): void => {
         if (node !== value && expectedTypes.has(node)) return;
+        if (node.kind === "cast") return;
         for (const [index, source] of promotedSources(node)) {
           const narrowing = NarrowingCastHelper.narrowingOf(source, target);
           if (narrowing === null) continue;

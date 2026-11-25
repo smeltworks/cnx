@@ -21,5 +21,5 @@ uint32_t Logger__count(void) {
 }
 
 uint32_t Logger__reportedUnit(void) {
-    return Sensor__EUnit__CELSIUS;
+    return (uint32_t)Sensor__EUnit__CELSIUS;
 }

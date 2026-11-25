@@ -11,7 +11,7 @@ u32 main() {
     mut string<16> b <- a;
     b <- "hi";
     u8[] bytes <- "abc";
-    u8 c <- 'A';
+    u8 c <- (u8)'A';
     u32 n <- lengthOf("four");
     if (b.value_char_count != 2) {
         return 1;

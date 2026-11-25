@@ -438,6 +438,22 @@ return value, a call argument, an array element initializer, a struct field
 initializer and either arm of a ternary -- and a cast are all conversions, all
 checked the same way.
 
+**A conversion keeps the value's essential type category** (MISRA C:2012 Rule
+10.3, #2372, #2492). At every position above, an integer target takes no bool,
+character or enum value, and a bool takes no number, a literal included. A
+bitmap field wider than one bit is an unsigned integer and a one-bit field is a
+bool (see the register-member rule above), so `f.Mode <- 'a'`, `f.Mode <- b`
+and `f.Enable <- 1` are rejected like `u8 d <- 'a'` and `b <- n`. Each is E0945.
+The conversion is written instead: `(u8)'a'` or `(u8)color` for a character or
+an enum, `(flag = true) ? 1 : 0` for a bool, and `n != 0` for a number into a
+bool. A bit extraction (`w[0, 3]`) carries no category, so it is judged by its
+width alone, and MISRA's exception for `+` holds for `+<-`: `a +<- 'x'` adds a
+character to an integer. A cast of a character literal is a C constant
+expression, so `u8 CH <- (u8)'A';` stays a const C can fold into a static
+initializer as `(uint8_t)'A'`; cnx does not fold the character itself, whose
+value is the execution character set's. E0428 still reports a bare enum member
+where it applies.
+
 **Every program names a target (ADR-049)**, and every platform-dependent width in this ADR is read from it. A suffixed literal is typed by its suffix, so `u8 x <- 300u16` is a narrowing. A header integer of unknown width never selects saturating arithmetic (ADR-044).
 
 **A composite source (`a + b`) is typed** — category from the first integer
@@ -513,14 +529,15 @@ Casts are primarily removed from the language. Bit indexing (ADR-007) handles na
 
 ### Error Messages
 
-| Code  | Meaning                                                                                        | Fixtures                                                                                                                                                                                              |
-| ----- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| E0810 | Operands of different essential type categories, under one operator or in a conditional's arms | `tests/adr-024/category-*-error`, `tests/bugs/issue-1668-int-float-clamp/`                                                                                                                            |
-| E0811 | An integer combined by `+`, `-` or `*` with a header macro whose type cnx cannot read          | `tests/adr-024/category-*-error`, `tests/bugs/issue-1688-float-macro/unreadable-macro-error`                                                                                                          |
-| E0812 | An integer combined with such a macro by any other operator E0810 covers, or in a conditional  | `tests/adr-024/category-*-error`, `tests/bugs/issue-1688-float-macro/unreadable-macro-error`                                                                                                          |
-| E0868 | An integer literal does not fit its target's range                                             | `tests/adr-024/literal-*-error`                                                                                                                                                                       |
-| E0869 | An implicit narrowing or sign-changing integer conversion, a cast included                     | `tests/adr-024/conversion-*-error`, `narrowing-*-error`, `sign-*-error`, `composite-narrowing-error`, `tests/adr-034/bitmap-field-narrowing-error`, `tests/adr-072/register-bitmap-field-width-error` |
-| E0891 | An implicit conversion from a floating value to an integer                                     | `tests/adr-024/float-*-error`                                                                                                                                                                         |
+| Code  | Meaning                                                                                                           | Fixtures                                                                                                                                                                                              |
+| ----- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| E0810 | Operands of different essential type categories, under one operator or in a conditional's arms                    | `tests/adr-024/category-*-error`, `tests/bugs/issue-1668-int-float-clamp/`                                                                                                                            |
+| E0811 | An integer combined by `+`, `-` or `*` with a header macro whose type cnx cannot read                             | `tests/adr-024/category-*-error`, `tests/bugs/issue-1688-float-macro/unreadable-macro-error`                                                                                                          |
+| E0812 | An integer combined with such a macro by any other operator E0810 covers, or in a conditional                     | `tests/adr-024/category-*-error`, `tests/bugs/issue-1688-float-macro/unreadable-macro-error`                                                                                                          |
+| E0868 | An integer literal does not fit its target's range                                                                | `tests/adr-024/literal-*-error`                                                                                                                                                                       |
+| E0869 | An implicit narrowing or sign-changing integer conversion, a cast included                                        | `tests/adr-024/conversion-*-error`, `narrowing-*-error`, `sign-*-error`, `composite-narrowing-error`, `tests/adr-034/bitmap-field-narrowing-error`, `tests/adr-072/register-bitmap-field-width-error` |
+| E0891 | An implicit conversion from a floating value to an integer                                                        | `tests/adr-024/float-*-error`                                                                                                                                                                         |
+| E0945 | A value assigned across essential type categories: a bool, character or enum to an integer, or a number to a bool | `tests/bugs/issue-2372-category-conversion/`                                                                                                                                                          |
 
 ```
 ERROR: Cannot narrow u32 to u8 (potential data loss)
@@ -760,6 +777,38 @@ target through a declaration, an assignment, or a cast.
 | scope member       | exercised through chain | warn     |
 | scope method       | exercised through chain | warn     |
 | for header         | exercised through chain | warn     |
+
+<!-- MATRIX-SEVERITY code: E0945 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | error    |
+| scope method       | same file               | warn     |
+| global variable    | same file               | warn     |
+| scope member       | same file               | warn     |
+| top-level function | imported direct         | warn     |
+| scope method       | imported direct         | warn     |
+| global variable    | imported direct         | warn     |
+| scope member       | imported direct         | warn     |
+| top-level function | imported transitive     | warn     |
+| scope method       | imported transitive     | warn     |
+| global variable    | imported transitive     | warn     |
+| scope member       | imported transitive     | warn     |
+| for header         | same file               | warn     |
+| for header         | imported direct         | warn     |
+| for header         | imported transitive     | warn     |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | warn     |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | warn     |
+
+warn: the fixture assigns across categories in a same-file top-level function; every other context reaches the same category check at the same conversion positions, so it is the same decision.
 
 A conversion happens wherever a value meets a typed target, so it reaches an
 initializer as well as a function body -- all four same-file contexts. The two
