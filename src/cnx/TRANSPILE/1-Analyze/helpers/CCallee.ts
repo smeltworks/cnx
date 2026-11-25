@@ -1,4 +1,5 @@
 import OperandTyper from "../../../utils/OperandTyper";
+import CallReach from "../../../utils/CallReach";
 import ForeignTypeFacts from "../../../utils/ForeignTypeFacts";
 import TypedefParamParser from "../../../utils/TypedefParamParser";
 import type TExpression from "../../../types/syntax/TExpression";
@@ -62,16 +63,13 @@ class CCallee {
    * is not known (an unrecorded template), and nothing is judged.
    */
   static reachable(callee: ICCallee): readonly ICCalleeSignature[] {
-    const count = callee.arguments.length;
-    return callee.signatures.filter((signature) => {
-      const required = signature.parameters.filter(
-        (parameter) => !("hasDefault" in parameter && parameter.hasDefault),
-      ).length;
-      return (
-        count >= required &&
-        (count <= signature.parameters.length || signature.isVariadic)
-      );
-    });
+    return callee.signatures.filter((signature) =>
+      CallReach.takes(
+        signature.parameters,
+        signature.isVariadic,
+        callee.arguments.length,
+      ),
+    );
   }
 
   /**
