@@ -689,6 +689,7 @@ class IntegerConversionCheck {
       this.checkBoolean(value.expression, declaredAt);
       return;
     }
+    if (this.checkBooleanExtraction(value)) return;
     // An untyped value of integer literals alone (`1`, `-1`, `1 + 1`) is a
     // number, and so is a header's integer macro (`#define MODE 2`)
     const leaves = OperandTyper.valueLeafExpressions(value);
@@ -720,6 +721,27 @@ class IntegerConversionCheck {
       "A number is not a bool (ADR-024); say what makes it true: value != 0",
       declaredAt,
     );
+  }
+
+  /**
+   * E0869: a Boolean holds one bit, so an extraction is judged by the bits it
+   * takes there as everywhere (ADR-072 rulings 17 and 18, #2484 review):
+   * `f.Enable <- m[0, 3]` would keep 5 as true. True when reported.
+   */
+  private checkBooleanExtraction(value: TExpression): boolean {
+    const t = OperandTyper.typeOf(value, this.context);
+    if (t?.form.kind !== "bitRange") return false;
+    const width = t.form.width;
+    if (width === null || width <= 1) return false;
+    this.found.push({
+      code: "E0869",
+      span: value.span,
+      declaredAt: BindingSite.ofOperands([value], this.context),
+      message: `Cannot assign ${BitFieldText.named(width, "extraction")} to bool (narrowing)`,
+      helpText:
+        "Extract one bit, [start, 1], or say what makes it true: value != 0",
+    });
+    return true;
   }
 
   /**

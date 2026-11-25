@@ -43,6 +43,7 @@ void main() {
 
     // NEGATIVE CONTROLS -- each stays silent.
     f.Mode <- m[0, 3];
+    f.Enable <- m[3, 1];
     f.Mode <- 7;
     c.Wide <- m;
     c.Mode <- w[0, 3];
@@ -66,6 +67,7 @@ void main() {
     c.Wide <- w;
     f.Mode <- c.Rest;
     f.Mode <- m[0, 4];
+    f.Enable <- m[0, 3];
     u8 readNarrow <- wb.Field12;
     i8 readSigned <- f.Mode;
     i16 readSigned16 <- f.Mode;
