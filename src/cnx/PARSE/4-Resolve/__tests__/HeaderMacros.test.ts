@@ -350,7 +350,21 @@ describe("HeaderMacros.integerTypes (#1619)", () => {
   });
 });
 
-describe("HeaderMacros.integerValue (#2494)", () => {
+/** A width's value through these bodies, or null where it is unread */
+function widthOf(
+  text: string,
+  bodiesByFile: readonly ReadonlyMap<string, string>[],
+  undefinedNames: ReadonlySet<string>,
+): number | null {
+  const width = HeaderMacros.width(
+    text,
+    bodiesByFile.map((bodies) => ({ file: "", bodies })),
+    undefinedNames,
+  );
+  return typeof width === "number" ? width : null;
+}
+
+describe("HeaderMacros.width (#2494)", () => {
   const macros = HeaderMacros.bodies(
     [
       "#define MODE_BITS 3",
@@ -370,7 +384,7 @@ describe("HeaderMacros.integerValue (#2494)", () => {
     // #2494 review: C substitutes text, so this is 1 + 2 * 2
     ["a macro by its text, not its value", "LOOSE * 2", 5],
   ])("reads %s", (_name, text, value) => {
-    expect(HeaderMacros.integerValue(text, [macros], new Set())).toBe(value);
+    expect(widthOf(text, [macros], new Set())).toBe(value);
   });
 
   it.each([
@@ -380,25 +394,19 @@ describe("HeaderMacros.integerValue (#2494)", () => {
     ["a value that differs by int width", "WRAPS"],
     ["a macro that expands to itself", "LOOP"],
   ])("does not read %s", (_name, text) => {
-    expect(HeaderMacros.integerValue(text, [macros], new Set())).toBeNull();
+    expect(widthOf(text, [macros], new Set())).toBeNull();
   });
 
   it("reads a macro two files agree on, not one they disagree on", () => {
     const other = HeaderMacros.bodies("#define MODE_BITS 4");
     const same = HeaderMacros.bodies("#define MODE_BITS 3");
-    expect(
-      HeaderMacros.integerValue("MODE_BITS", [macros, same], new Set()),
-    ).toBe(3);
-    expect(
-      HeaderMacros.integerValue("MODE_BITS", [macros, other], new Set()),
-    ).toBeNull();
-    expect(
-      HeaderMacros.integerValue("MODE_BITS", [new Map(), macros], new Set()),
-    ).toBe(3);
+    expect(widthOf("MODE_BITS", [macros, same], new Set())).toBe(3);
+    expect(widthOf("MODE_BITS", [macros, other], new Set())).toBeNull();
+    expect(widthOf("MODE_BITS", [new Map(), macros], new Set())).toBe(3);
   });
 });
 
-describe("HeaderMacros.integerValue and #undef (#2494 review)", () => {
+describe("HeaderMacros.width and #undef (#2494 review)", () => {
   const bodies = HeaderMacros.bodies(
     ["#define LATE 8", "#define VIA (LATE + 1)", "#define KEPT 3"].join("\n"),
   );
@@ -406,14 +414,10 @@ describe("HeaderMacros.integerValue and #undef (#2494 review)", () => {
     ["a macro a header removes with #undef", "LATE"],
     ["a macro whose body reads one", "VIA"],
   ])("does not read %s", (_label, text) => {
-    expect(
-      HeaderMacros.integerValue(text, [bodies], new Set(["LATE"])),
-    ).toBeNull();
+    expect(widthOf(text, [bodies], new Set(["LATE"]))).toBeNull();
   });
   it("still reads a macro no header removes with #undef", () => {
-    expect(HeaderMacros.integerValue("KEPT", [bodies], new Set(["LATE"]))).toBe(
-      3,
-    );
+    expect(widthOf("KEPT", [bodies], new Set(["LATE"]))).toBe(3);
   });
 });
 

@@ -20,11 +20,6 @@ import type TConstExpr from "../types/TConstExpr";
  * macro. A string, an array or an initializer 1.4 could not settle is null.
  */
 class ConstLiteral {
-  static textOf(program: IProgram, symbol: IVariableSymbol): string | null {
-    const literal = ConstLiteral.of(program, symbol);
-    return literal === null ? null : ConstLiteral.spell(literal);
-  }
-
   /** The const's answer before C spells it, or null when it has none */
   static of(program: IProgram, symbol: IVariableSymbol): TConstLiteral | null {
     if (

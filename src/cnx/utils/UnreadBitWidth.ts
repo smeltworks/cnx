@@ -16,8 +16,8 @@ class UnreadBitWidth {
   /** A macro some header `#undef`s: cnx sees only its last definition */
   static undefinedMacro(name: string): IUnreadBitWidth {
     return {
-      why: `it reads ${name}, which a header undefines, and cnx sees only the macro's last definition, not the one C read here`,
-      help: `Give the width a macro no header undefines, or write it as an integer constant (ADR-034).`,
+      why: `it reads ${name}, which a header removes with #undef, and cnx sees only the macro's last definition, not the one C read here`,
+      help: `Give the width a macro no header removes with #undef, or write it as an integer constant (ADR-034).`,
     };
   }
 

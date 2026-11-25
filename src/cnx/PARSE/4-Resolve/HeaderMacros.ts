@@ -137,27 +137,10 @@ class HeaderMacros {
   /**
    * #2494: a C integer constant expression's value -- a bit-field's width,
    * `1 + 2` or `MODE_BITS` -- read as C reads it, its macros expanded as
-   * text through the bodies each file's C includes define. Null where cnx
-   * cannot read it, where two files' macros give it two values, or where its
-   * value depends on the target's `int` width -- or where it reads a macro a
-   * header `#undef`s, whose final body may not be the one C read here.
-   */
-  static integerValue(
-    text: string,
-    bodiesByFile: Iterable<ReadonlyMap<string, string>>,
-    undefinedNames: ReadonlySet<string>,
-  ): number | null {
-    const width = HeaderMacros.width(
-      text,
-      [...bodiesByFile].map((bodies) => ({ file: "", bodies })),
-      undefinedNames,
-    );
-    return typeof width === "number" ? width : null;
-  }
-
-  /**
-   * #2484 review: `integerValue`, read through the macros of each file that
-   * defines every macro the text names, and where it cannot be read, why
+   * text through the bodies of each file that defines every macro the text
+   * names. Where cnx cannot read it, two files' macros give it two values,
+   * its value depends on the target's `int` width, or it reads a macro a
+   * header `#undef`s, why it cannot
    */
   static width(
     text: string,
