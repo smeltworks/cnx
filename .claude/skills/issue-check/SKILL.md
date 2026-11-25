@@ -54,7 +54,7 @@ Identify everything currently being worked on so we don't recommend conflicting 
 # issue it is fixing then reads as free work (#1416).
 gh pr list --state open --limit 1000 \
   --json number,title,headRefName,body,author,updatedAt,labels,closingIssuesReferences \
-  --jq '.[] | {number, title, branch: .headRefName, author: .author.login, updated: .updatedAt, labels: [.labels[].name], closes: [.closingIssuesReferences[] | select(.repository.name == "cnx") | .number], refs: ([(.body // "") | scan("(?<![\\w/.-])#[0-9]+")] | unique)}'
+  --jq '.[] | {number, title, branch: .headRefName, author: .author.login, updated: .updatedAt, labels: [.labels[].name], closes: [.closingIssuesReferences[] | select(.repository.name == "cnx") | .number], refs: ([(.body // "") | scan("(?:^|[^\\w/.-])(#[0-9]+)") | .[0]] | unique)}'
 ```
 
 ```
