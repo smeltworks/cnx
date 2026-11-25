@@ -1154,9 +1154,10 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-19 linked fixtures with no derivable context:
+20 linked fixtures with no derivable context:
 
 - `adr-034/header-array-field-fill.test.cnx`
+- `adr-034/header-char-array-string-error.test.cnx`
 - `adr-034/header-char-array-string.test.cnx`
 - `adr-035/array-count-included-error.test.cnx`
 - `adr-035/array-count-transitive-error.test.cnx`
@@ -1182,6 +1183,16 @@ cell is declared by the ADR that owns it.
 | ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
 | global variable    | -         | -      | -          | -           | -          |
 | top-level function | ok        | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
+
+## ADR-035 E0864
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | -         | -      | -          | -           | -          |
 | scope member       | -         | -      | -          | -           | -          |
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
