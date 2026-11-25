@@ -1,0 +1,34 @@
+// test-execution
+// test-no-warnings
+// #1791 review: a const read only by the initializer of another const that is
+// not declared is read by nothing either. A and C are read only by B and D;
+// B is a width, D a dimension. W, in a for header, is read only as a width.
+
+u32 main() {
+    u8 A <- 4;
+    u8 B <- A * 2;
+    u32 x <- 0xFFFF;
+    if (x[0, B] != 0xFF) {
+        return 1;
+    }
+
+    u32 C <- 2;
+    u32 D <- C + 1;
+    mut u8[D] arr <- [0*];
+    arr[2] <- 9;
+    if (arr[2] != 9) {
+        return 2;
+    }
+
+    mut u32 total <- 0;
+    for (u8 W <- 4; total < 3; total +<- 1) {
+        u32 r <- x[0, W];
+        if (r != 0xF) {
+            return 3;
+        }
+    }
+    if (total != 3) {
+        return 4;
+    }
+    return 0;
+}
