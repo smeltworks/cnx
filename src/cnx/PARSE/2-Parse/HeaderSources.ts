@@ -201,19 +201,13 @@ class HeaderSources {
       recovery?.perFileContent ?? null,
     );
     HeaderSources._count(slices.keys(), index, alone, counted);
-    const realOf = new Map(
-      headers.map((file) => [
-        resolve(file.path),
-        file.realPath ?? resolve(file.path),
-      ]),
-    );
-    const read = { settings, limit, realOf, index, alone, counted };
+    const read = { settings, limit, index, alone, counted };
     const cReadings = counts(false)
       ? await HeaderSources._readings(unit.files, false, read)
       : NO_READINGS;
     // #1542 ruling 4: a header's language is judged on the text C meets
     const cTextOf = (file: IDiscoveredFile): string | undefined =>
-      cReadings.get(realOf.get(resolve(file.path)) ?? resolve(file.path))?.text;
+      cReadings.get(resolve(file.path))?.text;
     // One judgement, before any reading is chosen: every file the C compile
     // opens -- a header the walk reached, one only its preprocessing opened
     // (`#include IMPL_HEADER`), and one only the unit's toolchain found
@@ -248,8 +242,7 @@ class HeaderSources {
       counts(true) || (cppBuild && counts(false))
         ? await HeaderSources._readings(unit.cppFiles, true, read)
         : NO_READINGS;
-    const keyOf = (file: IDiscoveredFile): string =>
-      realOf.get(resolve(file.path)) ?? resolve(file.path);
+    const keyOf = (file: IDiscoveredFile): string => resolve(file.path);
     const cppOf = (file: IDiscoveredFile): boolean =>
       file.type === EFileType.CppHeader || cppBuild;
     const readingsOf = (file: IDiscoveredFile): TReadings =>
@@ -361,7 +354,7 @@ class HeaderSources {
 
   /**
    * Each header's reading by the compile of every `.cnx` file that opens it,
-   * by real path; null when two files' compiles read it differently, because
+   * by resolved path; null when two files' compiles read it differently, because
    * one includes a configuration the other does not. Every header a file's
    * compile opens is counted.
    */
@@ -371,7 +364,6 @@ class HeaderSources {
     read: {
       readonly settings: IHeaderSourceSettings;
       readonly limit: TPreprocessLimit;
-      readonly realOf: ReadonlyMap<string, string>;
       readonly index: ReadonlyMap<string, number>;
       readonly alone: readonly TAlone[];
       readonly counted: Set<number>;
@@ -385,7 +377,7 @@ class HeaderSources {
       directivesOnly: boolean,
     ): Promise<ReadonlyMap<string, string>> =>
       read.limit(async () =>
-        HeaderSources._byRealPath(
+        HeaderSources._resolvedKeys(
           await ExternalDeclarationOracle.slices(
             file.directives,
             read.settings.preprocessor,
@@ -396,7 +388,6 @@ class HeaderSources {
             },
             cpp,
           ),
-          read.realOf,
         ),
       );
     const perFile = await Promise.all(
@@ -445,23 +436,6 @@ class HeaderSources {
       });
     }
     return readings;
-  }
-
-  /**
-   * A compile's slices by real path: two spellings of one file (`"dev.h"`,
-   * `"../lib/dev.h"`, a symlink) are one file's lines, joined
-   */
-  private static _byRealPath(
-    slices: ReadonlyMap<string, string> | null,
-    realOf: ReadonlyMap<string, string>,
-  ): ReadonlyMap<string, string> {
-    const own = new Map<string, string>();
-    for (const [path, text] of HeaderSources._resolvedKeys(slices)) {
-      const key = realOf.get(path) ?? path;
-      const earlier = own.get(key);
-      own.set(key, earlier === undefined ? text : `${earlier}\n${text}`);
-    }
-    return own;
   }
 
   /** Whether two preprocessed texts hold the same tokens */
