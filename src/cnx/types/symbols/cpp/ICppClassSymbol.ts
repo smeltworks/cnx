@@ -10,6 +10,9 @@ interface ICppClassSymbol extends ICppBaseSymbol {
 
   /** Map of field name to field metadata (only populated if SymbolTable was provided) */
   readonly fields?: ReadonlyMap<string, ICppFieldInfo>;
+
+  /** #2473 review: the methods it also declares a member template of, whose overloads 1.3 does not all record */
+  readonly templateMethods?: readonly string[];
 }
 
 export default ICppClassSymbol;

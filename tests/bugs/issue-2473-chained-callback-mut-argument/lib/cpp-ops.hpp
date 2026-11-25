@@ -13,6 +13,7 @@ public:
     Status stop(void);
     Done finish();
     void put(int32_t v, int32_t n);
-    template <typename T> void op(T a, T b, T c) {}
+    void pick(int32_t* p);
+    int pick(int32_t v);
 };
 #endif

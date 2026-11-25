@@ -201,7 +201,23 @@ class CppHeaderLowering {
             (spec) => spec.typeSpecifier()?.classSpecifier() != null,
           ),
       ),
+      templateMembers: decls.flatMap(CppHeaderLowering.templateMemberNames),
     };
+  }
+
+  /** #2473 review: the names a member template declares, `template <typename T> void op(T)` */
+  private static templateMemberNames(decl: MemberdeclarationContext): string[] {
+    const inner = decl.templateDeclaration()?.declaration();
+    const lowered = inner ? CppHeaderLowering.declaration(inner) : null;
+    if (lowered?.kind === "functionDefinition") {
+      return lowered.declarator.name === null ? [] : [lowered.declarator.name];
+    }
+    if (lowered?.kind === "simple") {
+      return (lowered.declarators ?? []).flatMap((declarator) =>
+        declarator.name === null ? [] : [declarator.name],
+      );
+    }
+    return [];
   }
 
   /** #1975 review: `uint32_t a : 3;`, whose name and width the class records */

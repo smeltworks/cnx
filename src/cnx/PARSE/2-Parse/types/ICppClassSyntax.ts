@@ -14,6 +14,8 @@ interface ICppClassSyntax {
   readonly hasBitField: boolean;
   /** `union { ... };`, a member whose fields `members` does not list */
   readonly hasUnnamedMember: boolean;
+  /** #2473 review: the names of its member templates, which 1.3 does not declare */
+  readonly templateMembers: readonly string[];
 }
 
 export default ICppClassSyntax;

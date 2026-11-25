@@ -21,6 +21,7 @@ class CCallee {
     if (expr.kind !== "postfix") return null;
     const call = expr.ops.at(-1);
     if (call?.kind !== "call") return null;
+    if (CCallee.callsMemberTemplate(expr, context)) return null;
     for (const name of CCallee.namesOf(expr, context)) {
       if (context.program.symbolByCName(name)?.kind === "function") {
         return null;
@@ -59,8 +60,8 @@ class CCallee {
    * The recorded signatures a call with this many arguments can reach. A C++
    * compiler picks among an overload set; each of them is one it may pick.
    * It takes every parameter without a default argument, and no more than
-   * it declares unless it is variadic -- `()` in C included. None: the callee
-   * is not known (an unrecorded template), and nothing is judged.
+   * it declares unless it is variadic -- `()` in C included. None: no
+   * recorded overload takes the call, and nothing is judged.
    */
   static reachable(callee: ICCallee): readonly ICCalleeSignature[] {
     return callee.signatures.filter((signature) =>
@@ -90,6 +91,28 @@ class CCallee {
     // it from the class and the method alone, so the first one's is all of
     // theirs; only the parameters differ.
     return context.symbolTable.getCppMembers(typeName, method)[0]?.name ?? null;
+  }
+
+  /**
+   * #2473 review: a method its class also declares a member template of. 1.3
+   * does not record the template, so the overloads a call may reach are not
+   * all known, and nothing about the call is judged.
+   */
+  private static callsMemberTemplate(
+    expr: TPostfix,
+    context: IAnalysisContext,
+  ): boolean {
+    const method = expr.ops.at(-2);
+    if (method?.kind !== "member") return false;
+    const typeName = OperandTyper.directTypeName(
+      OperandTyper.typeOf({ ...expr, ops: expr.ops.slice(0, -2) }, context),
+    );
+    if (typeName === null) return false;
+    const owner = context.symbolTable.getCppSymbol(typeName);
+    return (
+      owner?.kind === "class" &&
+      owner.templateMethods?.includes(method.name) === true
+    );
   }
 
   private static namesOf(expr: TPostfix, context: IAnalysisContext): string[] {
