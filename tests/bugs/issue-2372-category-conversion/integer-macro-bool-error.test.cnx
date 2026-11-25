@@ -5,6 +5,8 @@
 // outermost operator is `&&` or `||` is a Boolean, so it stays accepted, and
 // so does a macro that expands to one; one that adds to such a result is a
 // number again. A Boolean macro is no number: `n <- READY` is rejected.
+// `&&` of a floating operand is still C's int 0 or 1, so FLT_LOGIC is a
+// Boolean, not a float.
 #include "integer-macro.h"
 
 bitmap8 Flags {
@@ -24,6 +26,7 @@ void main() {
     b <- READY;
     f.Enable <- EITHER;
     b <- READY_ALIAS;
+    b <- FLT_LOGIC;
 
     // ASSERTIONS
     f.Enable <- MODE;
@@ -31,4 +34,5 @@ void main() {
     b <- ON_FLAG + 1;
     b <- COUNT;
     n <- READY;
+    n <- FLT_LOGIC;
 }

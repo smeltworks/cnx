@@ -1,10 +1,12 @@
-29:16 error[E0945]: Cannot assign an integer macro value to bool (MISRA C:2012 Rule 10.3): 'MODE'
+32:16 error[E0945]: Cannot assign an integer macro value to bool (MISRA C:2012 Rule 10.3): 'MODE'
        help: A number is not a bool (ADR-024); say what makes it true: value != 0
-30:9 error[E0945]: Cannot assign an integer macro value to bool (MISRA C:2012 Rule 10.3): 'MODE'
+33:9 error[E0945]: Cannot assign an integer macro value to bool (MISRA C:2012 Rule 10.3): 'MODE'
        help: A number is not a bool (ADR-024); say what makes it true: value != 0
-31:9 error[E0945]: Cannot assign an integer macro value to bool (MISRA C:2012 Rule 10.3): 'ON_FLAG + 1'
+34:9 error[E0945]: Cannot assign an integer macro value to bool (MISRA C:2012 Rule 10.3): 'ON_FLAG + 1'
        help: A number is not a bool (ADR-024); say what makes it true: value != 0
-32:9 error[E0945]: Cannot assign an integer macro value to bool (MISRA C:2012 Rule 10.3): 'COUNT'
+35:9 error[E0945]: Cannot assign an integer macro value to bool (MISRA C:2012 Rule 10.3): 'COUNT'
        help: A number is not a bool (ADR-024); say what makes it true: value != 0
-33:9 error[E0945]: Cannot assign a bool value to u8 (MISRA C:2012 Rule 10.3): 'READY'
+36:9 error[E0945]: Cannot assign a bool value to u8 (MISRA C:2012 Rule 10.3): 'READY'
+       help: A bool is not a number (ADR-024); write the number it stands for: (value = true) ? 1 : 0
+37:9 error[E0945]: Cannot assign a bool value to u8 (MISRA C:2012 Rule 10.3): 'FLT_LOGIC'
        help: A bool is not a number (ADR-024); write the number it stands for: (value = true) ? 1 : 0
