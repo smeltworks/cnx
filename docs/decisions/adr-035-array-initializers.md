@@ -246,7 +246,7 @@ value for a size it is not told, so `u8[SIZE] a <- [5*]` with `SIZE` a C macro
 had set only `a[0]`. It is E0866 at a declaration, a scope member, an assignment
 target, a field and an argument (#2196). C zero-fills what an initializer leaves
 out, so a zero fill (`[0*]`, `[0x0*]`, `[false*]`, a const that folds to zero,
-or `[""*]` for a string array) is right for any size. A C header struct's array field is counted the same in `{ field: value }` (#2484): `{ data: [1, 2] }` for `uint8_t data[4]` is E0866, because the two slots C zero-fills are not written (MISRA 9.3). Every element is
+or `[""*]` for a string array) is right for any size. A C header struct's array field is counted the same in `{ field: value }` (#2484): `{ data: [1, 2] }` for `uint8_t data[4]` is E0866, because the two slots C zero-fills are not written (MISRA 9.3) _(owner ruling 2026-11-25, #2484: a header field's list is counted as a cnx array's is)_. Every element is
 read before any is written, so `pair <- [pair[1], pair[0]]` swaps. A target
 whose subscripts call a function is reached through a pointer, so the call is
 made once, and a `volatile` (or `atomic`) target keeps its qualifier on that
