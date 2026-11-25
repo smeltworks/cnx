@@ -293,7 +293,10 @@ class CPointerArgumentAnalyzer {
     if (typed?.form.kind !== "declared" || typed.typeName === null) {
       return null;
     }
-    if (typed.stringCapacity !== null) return "char";
+    // A sized string, or main's unsized `string args[]` element, is char's
+    if (typed.stringCapacity !== null || typed.typeName === "string") {
+      return "char";
+    }
     return CNX_TO_C_TYPE_MAP[typed.typeName] ?? typed.typeName;
   }
 }
