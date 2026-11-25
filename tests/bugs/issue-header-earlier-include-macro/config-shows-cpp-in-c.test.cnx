@@ -1,0 +1,17 @@
+// test-cpp-only
+// test-execution
+// cpp-only-hide-config.h hides ShownInC from C++ alone. The text C meets holds
+// a class, so the run is C++ (#1542 ruling 4) and emits C++, though the C++
+// unit reads nothing of shown-in-c.h. A C run is E0507, as a C compile meets
+// the class.
+#include "lib/cpp-only-hide-config.h"
+#include "lib/shown-in-c.h"
+
+mut u8 seen <- 1;
+
+u32 main() {
+    if (seen != 1) {
+        return 1;
+    }
+    return 0;
+}
