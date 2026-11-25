@@ -387,11 +387,19 @@ class CppHeaderLowering {
    */
   private static parameter(
     parameterDeclaration: ParameterDeclarationContext,
-  ): IExtractedParameter {
+  ): IExtractedParameter | null {
     const declarationSpecifiers = parameterDeclaration.declSpecifierSeq();
     const baseType = CppHeaderLowering.baseType(declarationSpecifiers);
     const declarator = parameterDeclaration.declarator();
     const abstractDeclarator = parameterDeclaration.abstractDeclarator();
+    // #2473 review: `(void)` is no parameter, as in C
+    if (
+      declarator === null &&
+      abstractDeclarator === null &&
+      baseType === "void"
+    ) {
+      return null;
+    }
     const operators =
       declarator?.pointerDeclarator()?.pointerOperator() ??
       abstractDeclarator?.pointerAbstractDeclarator()?.pointerOperator() ??

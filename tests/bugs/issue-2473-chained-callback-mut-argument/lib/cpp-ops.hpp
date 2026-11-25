@@ -7,6 +7,7 @@ public:
     void op();
     void put(int32_t& out, int32_t n = 0);
     void put();
+    int read(void) const;
     void put(int32_t v, int32_t n);
     template <typename T> void op(T a, T b, T c) {}
 };
