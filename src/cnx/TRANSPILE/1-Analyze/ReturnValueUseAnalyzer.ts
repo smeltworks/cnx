@@ -230,14 +230,7 @@ class ReturnValueUseAnalyzer {
     }
     const cCallee = CCallee.ofCallAt(chain, callAt, context);
     if (cCallee === null) return null;
-    // Every signature that can take this many arguments: one with more
-    // parameters may default the rest, one with fewer cannot take the call,
-    // and `()` in C takes any. None recorded can: the callee is not known.
-    const count = cCallee.arguments.length;
-    const callable = cCallee.signatures.filter(
-      (signature) =>
-        signature.parameters.length >= count || signature.isVariadic,
-    );
+    const callable = CCallee.reachable(cCallee);
     const returnsAValue = callable.every(
       (signature) =>
         signature.returnType !== null &&

@@ -55,16 +55,17 @@ class CCallee {
   }
 
   /**
-   * The signatures a call with this many arguments can reach. A C++ compiler
-   * picks among an overload set; each of them is one it may pick.
+   * The recorded signatures a call with this many arguments can reach. A C++
+   * compiler picks among an overload set; each of them is one it may pick.
+   * One with more parameters may default the rest, one with fewer cannot take
+   * the call, and a variadic one -- `()` in C included -- takes any. None: the
+   * callee is not known (an unrecorded template), and nothing is judged.
    */
   static reachable(callee: ICCallee): readonly ICCalleeSignature[] {
-    if (callee.signatures.length === 1) return callee.signatures;
     const count = callee.arguments.length;
     return callee.signatures.filter(
       (signature) =>
-        signature.parameters.length === count ||
-        (signature.isVariadic && count >= signature.parameters.length),
+        signature.parameters.length >= count || signature.isVariadic,
     );
   }
 
