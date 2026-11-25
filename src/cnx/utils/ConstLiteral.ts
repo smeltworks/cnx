@@ -95,7 +95,7 @@ class ConstLiteral {
   }
 
   /** The literal a value is, or null when it has none */
-  private static valueLiteral(
+  static valueLiteral(
     program: IProgram,
     settled: TSettledConst | null,
   ): TConstLiteral | null {

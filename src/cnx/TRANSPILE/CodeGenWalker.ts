@@ -772,7 +772,10 @@ class CodeGenWalker {
           kind: "subscript",
           renderIndexes: () =>
             indexes.map((index) => this.renderExpression(index)),
-          foldWidth: () => this.planner.constantOf(op.length),
+          foldWidth: () =>
+            op.length === null
+              ? undefined
+              : this.filePlan.foldedWidths.get(op.length),
           typedAs,
           step,
           floatBits: this.filePlan.floatBitReads.get(op) ?? null,
@@ -1116,6 +1119,13 @@ class CodeGenWalker {
     switch (statement.kind) {
       case "variableDeclaration":
       case "constructorDeclaration":
+        // #1791: 2.2 found no C expression that reads it
+        if (
+          statement.kind === "variableDeclaration" &&
+          this.filePlan.unreadLocals.has(statement)
+        ) {
+          return "";
+        }
         return (
           this.nameMoveComments(statement) +
           this.nullPointerNote(statement) +
@@ -3694,8 +3704,8 @@ class CodeGenWalker {
       kind: "subscript",
       renderIndexes: () => indexes.map((index) => this.renderExpression(index)),
       foldWidth: () =>
-        op.kind === "subscript"
-          ? this.planner.constantOf(op.length)
+        op.kind === "subscript" && op.length !== null
+          ? this.filePlan.foldedWidths.get(op.length)
           : undefined,
     };
   }
@@ -3791,6 +3801,7 @@ class CodeGenWalker {
         this.analyzeMemberChainForBitAccess(target, lastStep),
       generateExpression: (expr) => this.renderExpression(expr),
       tryEvaluateConstant: (expr) => this.planner.tryEvaluateConstant(expr),
+      foldedWidth: (expr) => this.filePlan.foldedWidths.get(expr),
       foldWrittenValue: (expr) => this.planner.foldWrittenValue(expr),
       expressionType: (expr) => this.planner.directTypeOf(expr),
       integerExpressionType: (expr) => this.planner.integerTypeOf(expr),
@@ -4130,6 +4141,8 @@ class CodeGenWalker {
     init: Extract<TStatement, { kind: "for" }>["init"],
   ): IPlannedFor["init"] {
     if (init?.kind === "variableDeclaration") {
+      // #1791: 2.2 found no C expression that reads it
+      if (this.filePlan.unreadLocals.has(init)) return null;
       return { kind: "varDecl", plan: this.planForVarDecl(init) };
     }
     if (init?.kind === "assignment") {
@@ -4221,6 +4234,7 @@ class CodeGenWalker {
           label.root,
           label.name,
           label.span,
+          label,
         );
         if (label.root === null) {
           return { kind: "identifier", name: label.name, resolved };
@@ -4260,17 +4274,20 @@ class CodeGenWalker {
     root: TChainRoot,
     name: string,
     at: ISourcePosition,
+    label: TCaseLabelSyntax,
   ): string | null {
     const binding = this.host.state.bindingAt(root, name, at);
     const declared = CodeGenWalker.boundCName(binding);
     const constant =
-      declared === null
-        ? null
-        : PrivateConstValue.constant(
-            this.host.getState(),
-            this.planner.transpileState,
-            declared,
-          );
+      binding?.kind === "local"
+        ? this.localCaseConst(label)
+        : declared === null
+          ? null
+          : PrivateConstValue.constant(
+              this.host.getState(),
+              this.planner.transpileState,
+              declared,
+            );
     if (constant !== null) {
       // ADR-025's const label, recorded where it is written as its value so
       // a codegen-only fixture occupies its matrix cell (#1241)
@@ -4294,6 +4311,19 @@ class CodeGenWalker {
       (typeName: string) => this.host.isKnownStruct(typeName),
       this.host.state,
     );
+  }
+
+  /** #2493: a local const label, written as the value 2.2 spelled for it */
+  private localCaseConst(label: TCaseLabelSyntax): IGeneratorOutput | null {
+    const spelling = this.filePlan.localLabels.get(label) ?? null;
+    return spelling === null
+      ? null
+      : PrivateConstValue.written(
+          this.host.getState(),
+          this.planner.transpileState,
+          spelling,
+          null,
+        );
   }
 
   /** The C name of the declaration a binding names, when it has one */

@@ -1,0 +1,41 @@
+// test-execution
+// test-no-warnings
+// #2493: C switches only on an integer constant expression, which a const
+// object is not, so a local const named as a case label is written as its
+// value. REAL is named only there, so nothing in the C reads it and it is
+// not declared (#1791). KEEP is also read at runtime: its declaration stays.
+
+u8 main() {
+    u8 REAL <- 1;
+    u8 s <- 1;
+    mut u8 r <- 0;
+    switch (s) {
+        case REAL {
+            r <- 1;
+        }
+        default {
+            r <- 2;
+        }
+    }
+    if (r != 1) {
+        return 1;
+    }
+
+    i16 KEEP <- -3;
+    i16 t <- -3;
+    switch (t) {
+        case KEEP {
+            r <- 3;
+        }
+        default {
+            r <- 4;
+        }
+    }
+    if (r != 3) {
+        return 2;
+    }
+    if (KEEP != -3) {
+        return 3;
+    }
+    return 0;
+}

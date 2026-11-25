@@ -88,6 +88,9 @@ interface IContextBuilderDeps extends Pick<
   /** Fold an expression to a compile-time constant */
   tryEvaluateConstant(expr: TExpression): number | undefined;
 
+  /** A bit-range width's folded value, as 2.2 planned it (#1094) */
+  foldedWidth(expr: TExpression): number | undefined;
+
   /** The written value's compile-time value, for a bit write to fold */
   foldWrittenValue(expr: TExpression): number | undefined;
 
@@ -222,7 +225,7 @@ function processPostfixOps(
         renderIndexes: () => exprs.map((expr) => deps.generateExpression(expr)),
         foldWidth: () =>
           op.kind === "subscript" && isRange
-            ? deps.tryEvaluateConstant(op.length)
+            ? deps.foldedWidth(op.length)
             : undefined,
       });
     }

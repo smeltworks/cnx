@@ -11,8 +11,6 @@
 // ((1U << W) - 1). The runtime form is UB at full width (1U << 32 / 1U << 64)
 // and wrong for >32-bit widths, so a full-width extraction returns 0 here.
 int main(void) {
-    const uint8_t FULL32 = 32U;
-    const uint8_t PART12 = 12U;
     const uint32_t b = 0x12345678U;
     const uint32_t full = ((b) & 0xFFFFFFFFU);
     if (full != 0x12345678) {
@@ -22,13 +20,11 @@ int main(void) {
     if (part != 0x678) {
         return 2U;
     }
-    const uint8_t FULL64 = 64U;
     const uint64_t big = 0x123456789ABCDEF0ULL;
     const uint64_t full64 = ((big) & 0xFFFFFFFFFFFFFFFFU);
     if (full64 != 0x123456789ABCDEF0) {
         return 3U;
     }
-    const uint8_t W40 = 40U;
     const uint64_t w40 = ((big) & 0xFFFFFFFFFFU);
     if (w40 != 0x789ABCDEF0) {
         return 4U;

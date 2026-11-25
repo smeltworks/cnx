@@ -1,0 +1,8 @@
+17:13 error[E0717]: Case label 'F' is a float const, not an integer
+       help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
+20:13 error[E0717]: Case label 'B' is a bool const, not an integer
+       help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
+23:13 error[E0717]: Case label 'FILE_F' is a float const, not an integer
+       help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
+26:13 error[E0717]: Case label 'FILE_B' is a bool const, not an integer
+       help: A case label must be a literal, an enum member or a const with a value (ADR-025); compare a variable with if/else.
