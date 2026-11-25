@@ -220,8 +220,8 @@ class HeaderMacros {
     tokens: readonly TMacroToken[],
     bodies: ReadonlyMap<string, string>,
     expanding: ReadonlySet<string>,
-    undefinedNames: ReadonlySet<string> = new Set(),
-    failure: { undefinedName: string | null } = { undefinedName: null },
+    undefinedNames: ReadonlySet<string>,
+    failure: { undefinedName: string | null },
   ): TMacroToken[] | null {
     const out: TMacroToken[] = [];
     for (const token of tokens) {
@@ -325,7 +325,15 @@ class HeaderMacros {
       };
     }
     // #2494 review: its macros as text, so precedence is the expansion's
-    const expanded = HeaderMacros.expanded(tokens, bodies, new Set());
+    const expanded = HeaderMacros.expanded(
+      tokens,
+      bodies,
+      new Set(),
+      new Set(),
+      {
+        undefinedName: null,
+      },
+    );
     return {
       kind: "integer",
       valueByIntBits: new Map(
