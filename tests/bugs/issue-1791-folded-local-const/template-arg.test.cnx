@@ -1,0 +1,16 @@
+// test-execution
+// test-cpp-only
+// #1791 review: a C++ template argument is written by name, so a const it
+// names keeps its declaration even when its other use is a dimension.
+#include "Pool.hpp"
+
+u32 main() {
+    u32 N <- 4;
+    mut u8[N] mirror <- [0*];
+    mirror[0] <- 1;
+    Pool<N> pool;
+    if (mirror[0] != 1) {
+        return 1;
+    }
+    return 0;
+}
