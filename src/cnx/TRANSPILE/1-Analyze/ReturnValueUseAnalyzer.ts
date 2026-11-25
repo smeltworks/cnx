@@ -200,11 +200,26 @@ class ReturnValueUseAnalyzer {
     while (!seen.has(spelled)) {
       if (spelled === "void") return true;
       seen.add(spelled);
-      const typedef = context.symbolTable.getCSymbol(spelled);
-      if (typedef?.kind !== "type") return false;
-      spelled = typedef.type.trim();
+      const aliased = ReturnValueUseAnalyzer.aliasedType(spelled, context);
+      if (aliased === null) return false;
+      spelled = aliased.trim();
     }
     return false;
+  }
+
+  /** The type a C typedef or C++ alias of `name` names, or null */
+  private static aliasedType(
+    name: string,
+    context: IAnalysisContext,
+  ): string | null {
+    const typedef = context.symbolTable.getCSymbol(name);
+    if (typedef?.kind === "type") return typedef.type;
+    const alias = context.symbolTable.getCppSymbol(name);
+    if (alias?.kind === "type") return alias.type ?? null;
+    // #1213: a C++ non-pointer typedef is recorded as a variable; a return
+    // type cannot name a variable, so this one is the typedef
+    if (alias?.kind === "variable") return alias.type;
+    return null;
   }
 
   /**

@@ -62,7 +62,9 @@ import Write from "../../cnx/WRITE/1-Write/Write";
 // (owner, member) index reads; an entry written before has none.
 // 22: #2473 review -- a C++ parameter records its default argument, which
 // decides the overloads a call reaches; an entry written before has none.
-const CACHE_VERSION = 22;
+// 23: #2473 review -- a C++ `using` alias records the type it names, which
+// decides whether a method returning it returns void.
+const CACHE_VERSION = 23;
 
 const TRANSPILER_VERSION = packageJson.version;
 

@@ -1,6 +1,6 @@
-21:4 error[E0708]: Return value of non-void function 'o.op' is discarded
+24:4 error[E0708]: Return value of non-void function 'o.op' is discarded
        help: Use the value, or discard it explicitly: (void) o.op(...);
-22:4 error[E0708]: Return value of non-void function 'o.op' is discarded
+25:4 error[E0708]: Return value of non-void function 'o.op' is discarded
        help: Use the value, or discard it explicitly: (void) o.op(...);
-23:4 error[E0708]: Return value of non-void function 'o.read' is discarded
+26:4 error[E0708]: Return value of non-void function 'o.read' is discarded
        help: Use the value, or discard it explicitly: (void) o.read(...);

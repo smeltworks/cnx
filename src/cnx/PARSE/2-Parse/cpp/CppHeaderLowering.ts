@@ -72,7 +72,20 @@ class CppHeaderLowering {
     const block = decl.blockDeclaration();
     const alias = block?.aliasDeclaration();
     if (alias) {
-      return { kind: "alias", span, name: alias.Identifier().getText() };
+      const typeId = alias.theTypeId();
+      return {
+        kind: "alias",
+        span,
+        name: alias.Identifier().getText(),
+        type:
+          typeId.abstractDeclarator() === null
+            ? typeId
+                .typeSpecifierSeq()
+                .typeSpecifier()
+                .map((spec) => spec.getText())
+                .join(" ")
+            : null,
+      };
     }
     const simple = block?.simpleDeclaration();
     return simple ? CppHeaderLowering.simpleDeclaration(simple, span) : null;
