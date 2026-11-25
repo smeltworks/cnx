@@ -54,7 +54,7 @@ Identify everything currently being worked on so we don't recommend conflicting 
 # issue it is fixing then reads as free work (#1416).
 gh pr list --state open --limit 1000 \
   --json number,title,headRefName,body,author,updatedAt,labels \
-  --jq '.[] | {number, title, branch: .headRefName, author: .author.login, updated: .updatedAt, labels: [.labels[].name], refs: ([(.body // "") | scan("(?i)\\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?|part of):?\\s+(#[0-9]+)") | .[0]] | unique)}'
+  --jq '.[] | {number, title, branch: .headRefName, author: .author.login, updated: .updatedAt, labels: [.labels[].name], refs: ([(.body // "") | scan("(?i)\\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?|part of):?\\s+(?:smeltworks/cnx)?(#[0-9]+)") | .[0]] | unique)}'
 ```
 
 ```
@@ -69,7 +69,7 @@ FOR each open PR:
     - PR title (e.g., "Fix #123", "#123")
     - `refs`: the issues the WHOLE body names after a closing keyword or "Part of" ("Closes #123",
       "Fixes #123", "Resolves #123", "Part of #123"), a stacked PR's included. A bare mention ("see #123")
-      is not in-flight work, and `smeltworks/vscode-cnx#11` is another repository's issue, so neither is kept.
+      is not in-flight work, `Closes smeltworks/cnx#123` is kept as #123, and `smeltworks/vscode-cnx#11` is another repository's issue, so neither is kept.
       `gh pr list` has no `closingIssuesReferences` field on gh 2.45.0, so the keywords are read here
     - Branch name (e.g., "fix/123-description", "feature/123-thing", "issue-123")
 
