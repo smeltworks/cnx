@@ -262,4 +262,36 @@ describe("cache parity after an earlier header changes a header's branch", () =>
     writeFileSync(join(dir, "cfg.h"), "#define SMALL 1\n");
     expect(await emitted()).toContain("uint8_t a[4]");
   });
+
+  it("reads a header again when the header it includes changes its branch (#1916)", async () => {
+    const nested = mkdtempSync(join(tmpdir(), "cnx-cache-1916-"));
+    try {
+      writeFileSync(join(nested, "cnx.config.json"), "{}\n");
+      writeFileSync(
+        join(nested, "outer.h"),
+        '#pragma once\n#include "inner.h"\n#if FLAG > 0\nvoid a_func(void);\n#else\nvoid b_func(void);\n#endif\n',
+      );
+      const run = async (flag: number, call: string): Promise<boolean> => {
+        writeFileSync(join(nested, "inner.h"), `#define FLAG ${flag}\n`);
+        writeFileSync(
+          join(nested, "main.cnx"),
+          `#include "outer.h"\n\nvoid main() {\n    ${call}();\n}\n`,
+        );
+        const result = await new Transpiler(
+          {
+            input: join(nested, "main.cnx"),
+            includeDirs: [nested],
+            outDir: join(nested, "out"),
+            target: "host",
+          },
+          NodeFileSystem.instance,
+        ).transpile({ kind: "files" });
+        return result.success;
+      };
+      expect(await run(0, "b_func")).toBe(true);
+      expect(await run(1, "a_func")).toBe(true);
+    } finally {
+      rmSync(nested, { recursive: true, force: true });
+    }
+  });
 });
