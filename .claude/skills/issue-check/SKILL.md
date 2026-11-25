@@ -54,7 +54,7 @@ Identify everything currently being worked on so we don't recommend conflicting 
 # issue it is fixing then reads as free work (#1416).
 gh pr list --state open --limit 1000 \
   --json number,title,headRefName,body,author,updatedAt,labels,closingIssuesReferences \
-  --jq '.[] | {number, title, branch: .headRefName, author: .author.login, updated: .updatedAt, labels: [.labels[].name], closes: [.closingIssuesReferences[].number], refs: ([(.body // "") | scan("#[0-9]+")] | unique)}'
+  --jq '.[] | {number, title, branch: .headRefName, author: .author.login, updated: .updatedAt, labels: [.labels[].name], closes: [.closingIssuesReferences[] | select(.repository.name == "cnx") | .number], refs: ([(.body // "") | scan("(?<![\\w/.-])#[0-9]+")] | unique)}'
 ```
 
 ```
@@ -68,7 +68,7 @@ FOR each open PR:
   EXTRACT linked issue numbers from:
     - PR title (e.g., "Fix #123", "#123")
     - `closes`: GitHub's closing references (a pull request whose base is `main` and whose body says "Closes #123")
-    - `refs`: every `#N` in the WHOLE body ("Part of #123", a stacked PR's "Closes #123"). Not a prefix of it: the
+    - `refs`: every bare `#N` in the WHOLE body (`smeltworks/vscode-cnx#11` is another repository's issue and is not kept) ("Part of #123", a stacked PR's "Closes #123"). Not a prefix of it: the
       template puts Related Issues last, past character 2000
     - Branch name (e.g., "fix/123-description", "feature/123-thing", "issue-123")
 
