@@ -1,4 +1,5 @@
 // test-error
+// test-adr: 071
 // Issue #2474 review: lib/struct-a-bump.cnx's Counter is a-struct.h's, whose
 // count is volatile, so passing it to a mut parameter is an error there,
 // though lib/struct-b.cnx's plain Counter is read after it.

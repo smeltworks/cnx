@@ -1,4 +1,5 @@
 // test-error
+// test-adr: 071
 // Issue #2474: main includes plain-state.h, so the build reads its plain
 // state first. lib/volatile-bump.cnx includes volatile-state.h itself, so
 // its state is volatile, and passing it to a mut parameter is an error there.

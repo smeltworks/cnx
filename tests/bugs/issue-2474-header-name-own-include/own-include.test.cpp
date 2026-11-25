@@ -6,10 +6,11 @@
 #include "own-include.test.hpp"
 
 // test-execution
-// Issue #2474: volatile-user.cnx is discovered first, and its header
-// declares a volatile state and a 4-byte table. main includes plain-state.h
-// itself, so its state is the plain one, which a mut parameter may take, and
-// its table holds 8. The build's first declaration used to answer instead.
+// test-adr: 071
+// Issue #2474: main includes plain-state.h itself, so its state is the plain
+// one, which a mut parameter may take, and its table holds 8.
+// volatile-user.cnx includes volatile-state.h, so its table holds 4; the
+// build's last declaration of table, 8, used to answer for it too.
 #include "lib/volatile-user.hpp"
 #include "lib/plain-state.h"
 

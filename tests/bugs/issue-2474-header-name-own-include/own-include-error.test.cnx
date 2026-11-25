@@ -1,4 +1,5 @@
 // test-error
+// test-adr: 071
 // Issue #2474 control: lib/plain-user.cnx's header declares a plain state,
 // and main includes volatile-state.h itself, so main's state is volatile,
 // and a mut parameter may not take it.

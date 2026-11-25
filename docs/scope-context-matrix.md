@@ -1952,7 +1952,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-13 linked fixtures with no derivable context:
+16 linked fixtures with no derivable context:
 
 - `adr-071/c-callback-mut-match.test.cnx`
 - `adr-071/callback-initializer-wiring.test.cnx`
@@ -1967,6 +1967,9 @@ cell is declared by the ADR that owns it.
 - `adr-071/read-only-by-default.test.cnx`
 - `bugs/issue-2117-address-of/scanf-out-parameter.test.cnx`
 - `bugs/issue-2238-qualified-mut-argument/header-volatile-error.test.cnx`
+- `bugs/issue-2474-header-name-own-include/helper-order.test.cnx`
+- `bugs/issue-2474-header-name-own-include/own-include-error.test.cnx`
+- `bugs/issue-2474-header-name-own-include/own-include.test.cnx`
 
 ## ADR-071 E0879
 
@@ -2023,7 +2026,7 @@ cell is declared by the ADR that owns it.
 | Context            | same file | direct | transitive | from 1 away | thru chain |
 | ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
 | global variable    | -         | -      | -          | -           | -          |
-| top-level function | ok        | -      | -          | -           | -          |
+| top-level function | ok        | -      | -          | ok          | -          |
 | scope member       | -         | -      | -          | -           | -          |
 | scope method       | ok        | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
