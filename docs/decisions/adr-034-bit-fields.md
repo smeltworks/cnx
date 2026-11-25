@@ -402,8 +402,10 @@ A compound operator on a bitmap field (`flags.Mode +<- 1`) is an error
 A bit-field of a struct declared in a C header takes a bitmap field's rules
 (ADR-072 ruling 19 on #2449). The number after `:` is the bits it holds; its C
 type gives only its signedness and the storage it is packed in, so
-`unsigned int mode : 3` holds 0 through 7 on every target. C keeps only the low
-bits of a value that does not fit, so `r.mode = 13` would read back 5:
+`unsigned int mode : 3` holds 0 through 7 on every target. The same holds in a
+struct initializer, `CReg r <- { mode: 13 }`, and in one nested inside it. C
+keeps only the low bits of a value that does not fit, so `r.mode = 13` would
+read back 5:
 
 ```c
 typedef struct {

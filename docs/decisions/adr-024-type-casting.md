@@ -436,7 +436,11 @@ in E0868's and E0869's position tables below -- a declaration's initializer, an
 assignment (to a variable, an element or a field), a compound assignment, a
 return value, a call argument, an array element initializer, a struct field
 initializer and either arm of a ternary -- and a cast are all conversions, all
-checked the same way.
+checked the same way. A field of a C or C++ header struct written by
+`{ field: value }` is a struct field initializer like a cnx struct's, typed by
+its C type: with `uint8_t small;`, `{ small: big }` (a `u32`) is E0869, which C
+would store as `big & 0xFF`. A bit-field is typed at its width (ADR-034), and
+an array field keeps its C size and element type.
 
 **A conversion keeps the value's essential type category** (MISRA C:2012 Rule
 10.3, #2372, #2492). At every position above, an integer target takes no bool,
