@@ -182,8 +182,11 @@ class HeaderSources {
     headers.forEach((file, i) => {
       if (!counted.has(i)) return;
       const header = alone[i];
-      const met = (file.type === EFileType.CppHeader ? cppSlices : slices).get(
-        resolve(file.path),
+      const met = HeaderSources._reading(
+        file.type === EFileType.CppHeader ? cppSlices : slices,
+        i,
+        headers,
+        alone,
       );
       if (header.source !== null) {
         sources.set(
@@ -237,9 +240,7 @@ class HeaderSources {
   /**
    * The preprocessor names a header by the path it found it along; the walk,
    * by the one it resolved. Both name the same file, and two spellings of it
-   * (`"dev.h"`, `"../lib/dev.h"`) are one file's lines. A slice with no token
-   * is left out: a guard emptied it, as the file was read under another
-   * spelling (a symlink's, #1881), and its declarations are there.
+   * (`"dev.h"`, `"../lib/dev.h"`) are one file's lines.
    */
   private static _resolvedKeys(
     slices: ReadonlyMap<string, string> | null,
@@ -250,10 +251,30 @@ class HeaderSources {
       const earlier = resolved.get(key);
       resolved.set(key, earlier === undefined ? text : `${earlier}\n${text}`);
     }
-    for (const [key, text] of resolved) {
-      if (text.trim() === "") resolved.delete(key);
-    }
     return resolved;
+  }
+
+  /**
+   * `headers[i]`'s slice, unless it has no token while another spelling of
+   * the same text (a symlink's, #1881) has some: a guard emptied it, as the
+   * file was read there. An earlier include's macro can empty a header too
+   * (`#ifndef NO_CPP_API`), and then that empty slice is what C reads.
+   */
+  private static _reading(
+    slices: ReadonlyMap<string, string>,
+    i: number,
+    headers: readonly IDiscoveredFile[],
+    alone: readonly TAlone[],
+  ): string | undefined {
+    const slice = slices.get(resolve(headers[i].path));
+    if (slice === undefined || slice.trim() !== "") return slice;
+    const readElsewhere = headers.some(
+      (other, j) =>
+        j !== i &&
+        alone[j].raw === alone[i].raw &&
+        (slices.get(resolve(other.path))?.trim() ?? "") !== "",
+    );
+    return readElsewhere ? undefined : slice;
   }
 
   /** Whether two preprocessed texts hold the same tokens */
