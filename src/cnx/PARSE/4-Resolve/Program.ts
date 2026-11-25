@@ -68,6 +68,7 @@ import ConflictDetector from "./ConflictDetector";
 import type IForeignSymbols from "./types/IForeignSymbols";
 import type IForeignValue from "./types/IForeignValue";
 import type IDeclaredForeignValue from "./types/IDeclaredForeignValue";
+import ForeignRedeclaration from "../../utils/ForeignRedeclaration";
 import type IConflict from "../../types/IConflict";
 import CallbackCompatibility from "./CallbackCompatibility";
 import SymbolTable from "../3-Declare/SymbolTable";
@@ -566,7 +567,8 @@ class Program {
       seesHeaderMacro,
       seesForeignSymbol,
       hidesHeaderName,
-      headerStructFields: (structName) => headers?.getStructFields(structName),
+      headerStructFields: (sourceFile, structName) =>
+        headersFor?.(sourceFile).getStructFields(structName),
       headerTypeBits: (sourceFile, cType) =>
         headersFor === null
           ? null
@@ -575,10 +577,10 @@ class Program {
               headersFor(sourceFile),
               ResolvedTarget.of(target),
             ),
-      headerFieldCount: (structName) =>
-        headers === null
+      headerFieldCount: (sourceFile, structName) =>
+        headersFor === null
           ? null
-          : ForeignTypeFacts.fieldCount(structName, headers),
+          : ForeignTypeFacts.fieldCount(structName, headersFor(sourceFile)),
       headerNeedsStructKeyword: (structName) =>
         headers?.checkNeedsStructKeyword(structName) ?? false,
       headerTypeHead: (sourceFile, name) =>
@@ -1281,13 +1283,13 @@ class Program {
           options.files.seesForeignSymbol(file(), origin),
         ),
       headerStructFields: (structName) =>
-        options.files.headerStructFields(structName),
+        options.files.headerStructFields(file(), structName),
       headerTypeBits: (cType) => options.files.headerTypeBits(file(), cType),
       qualifiedTypeName: (written) =>
         options.files.qualifiedTypeName(file(), written),
       headerTypeHead: (name) => options.files.headerTypeHead(file(), name),
       headerFieldCount: (structName) =>
-        options.files.headerFieldCount(structName),
+        options.files.headerFieldCount(file(), structName),
       headerNeedsStructKeyword: (structName) =>
         options.files.headerNeedsStructKeyword(structName),
       constValue: (symbol) => {
@@ -1946,16 +1948,29 @@ class Program {
   }
 
   /**
-   * #2474: the value `name` names in a file -- the last declaration its own
-   * headers make, as `extern uint8_t t[];` then `uint8_t t[4];` gives 4
+   * #2474: the value `name` names in a file, by the rule the file's symbol
+   * table view reads it (`ForeignRedeclaration`): its own headers' first
+   * declaration, an array's bound composed from their redeclarations, so
+   * `extern uint8_t t[];` and `uint8_t t[4];` give 4 in either order
    */
   private static foreignValueIn(
     declared: ReadonlyArray<IDeclaredForeignValue> | undefined,
     sees: (origin: IForeignOrigin) => boolean,
   ): IForeignValue | null {
-    if (declared === undefined) return null;
-    const own = declared.filter((entry) => sees(entry.origin));
-    return (own.at(-1) ?? declared.at(-1))?.value ?? null;
+    const pool = ForeignRedeclaration.pool(declared ?? [], (entry) =>
+      sees(entry.origin),
+    );
+    const first = pool[0]?.value ?? null;
+    if (first?.kind !== "variable" || !first.dimensions.includes("")) {
+      return first;
+    }
+    const redeclared = pool.flatMap((entry) =>
+      entry.value.kind === "variable" ? [entry.value.dimensions] : [],
+    );
+    return {
+      ...first,
+      dimensions: ForeignRedeclaration.dimensions(first.dimensions, redeclared),
+    };
   }
 
   /**

@@ -5,14 +5,18 @@
 
 #include "redeclared-array.test.h"
 
-// Issue #2474 review: a header declares samples unsized, then sized. The
-// last declaration gives the bound, so a cnx array can be sized from it.
+// Issue #2474 review: a header declares samples unsized then sized, and
+// readings sized then unsized. C composes each array's type, so both have 4
+// elements in either order, and a cnx array can be sized from either.
 #include "lib/redeclared-array.h"
 
 #include <stdint.h>
 
 uint8_t copy[4] = {0};
 
+uint8_t last[4] = {0};
+
 int main(void) {
-    copy[0] = 1U;
+    copy[3] = 1U;
+    last[3] = 2U;
 }

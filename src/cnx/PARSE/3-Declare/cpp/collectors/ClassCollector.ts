@@ -316,6 +316,7 @@ class ClassCollector {
         declaredType,
         arrayDimensions.length > 0 ? arrayDimensions : undefined,
         declarator.bitWidth,
+        ctx.sourceFile,
       );
     }
 

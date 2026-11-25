@@ -19,7 +19,9 @@ class HeaderDeclarationRecord {
     const allFields = table.getAllStructFields();
     const structFields = new Map<string, Map<string, IStructFieldInfo>>();
     for (const name of structNames) {
-      const fields = allFields.get(name);
+      // #2474: this header's own fields, not the last header's of that name
+      const fields =
+        table.getStructFieldsDeclaredIn(name, path) ?? allFields.get(name);
       if (fields) structFields.set(name, fields);
     }
     const needsKeyword = table.getAllNeedsStructKeyword();
@@ -53,7 +55,10 @@ class HeaderDeclarationRecord {
         table.addCppSymbol(symbol);
       }
     }
-    table.restoreStructFields(record.structFields);
+    // A record is one header's, so its symbols name the file it declares
+    const path = record.symbols[0]?.sourceFile;
+    if (path !== undefined)
+      table.restoreStructFields(record.structFields, path);
     table.restoreNeedsStructKeyword(record.needsStructKeyword);
     table.restoreEnumBitWidths(record.enumBitWidth);
     // Issue #1225: the whole struct state at once. It used to be four separate

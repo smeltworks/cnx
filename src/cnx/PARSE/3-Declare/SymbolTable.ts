@@ -20,6 +20,7 @@ import TJsonSafe from "../../utils/types/TJsonSafe";
 import TSymbol from "../../types/symbols/TSymbol";
 import TCSymbol from "../../types/symbols/c/TCSymbol";
 import TCppSymbol from "../../types/symbols/cpp/TCppSymbol";
+import ForeignRedeclaration from "../../utils/ForeignRedeclaration";
 import TAnySymbol from "../../types/symbols/TAnySymbol";
 import IStructSymbol from "../../types/symbols/IStructSymbol";
 import TypeResolver from "../../utils/TypeResolver";
@@ -114,6 +115,16 @@ class SymbolTable implements IResolvedSymbols {
   /** Struct field information: struct name -> (field name -> field info) */
   private readonly structFields: Map<string, Map<string, IStructFieldInfo>> =
     new Map();
+
+  /**
+   * #2474: each struct's fields by the file that declared them, struct name ->
+   * (declaring file -> fields), so a view answers with the struct its file
+   * reads rather than the last header's
+   */
+  private readonly structFieldsByFile: Map<
+    string,
+    Map<string, Map<string, IStructFieldInfo>>
+  > = new Map();
 
   /**
    * Issue #196 Bug 3: Track C struct names that need the 'struct' keyword
@@ -219,6 +230,8 @@ class SymbolTable implements IResolvedSymbols {
         fieldInfo.dimensions && fieldInfo.dimensions.length > 0
           ? fieldInfo.dimensions
           : undefined,
+        undefined,
+        struct.sourceFile,
       );
     }
   }
@@ -290,7 +303,7 @@ class SymbolTable implements IResolvedSymbols {
 
     // Issue #981: Register struct fields for the operand typer's field lookups
     if (symbol.kind === "struct" && symbol.fields) {
-      this.registerCStructFields(symbol.name, symbol.fields);
+      this.registerCStructFields(symbol.name, symbol.fields, symbol.sourceFile);
     }
   }
 
@@ -304,6 +317,7 @@ class SymbolTable implements IResolvedSymbols {
       string,
       import("../../types/symbols/c/ICFieldInfo").default
     >,
+    sourceFile: string,
   ): void {
     for (const [fieldName, fieldInfo] of fields) {
       this.addStructField(
@@ -312,6 +326,7 @@ class SymbolTable implements IResolvedSymbols {
         fieldInfo.type,
         fieldInfo.arrayDimensions,
         fieldInfo.bitWidth,
+        sourceFile,
       );
     }
   }
@@ -344,7 +359,7 @@ class SymbolTable implements IResolvedSymbols {
    * Get a C symbol by name (returns first match, or undefined)
    */
   getCSymbol(name: string): TCSymbol | undefined {
-    return this.getCOverloads(name)[0];
+    return this.chosen(this.cSymbols.get(name) ?? []);
   }
 
   /**
@@ -357,6 +372,37 @@ class SymbolTable implements IResolvedSymbols {
     const view: SymbolTable = Object.create(this);
     view.visibleHeaders = headers;
     return view;
+  }
+
+  /**
+   * The declaration of a name this table's reader reads (#2474), by
+   * `ForeignRedeclaration`'s rule: its own headers' first, an array's bound
+   * composed from their redeclarations
+   */
+  private chosen<T extends TCSymbol | TCppSymbol>(
+    symbols: readonly T[],
+  ): T | undefined {
+    const headers = this.visibleHeaders;
+    const pool = ForeignRedeclaration.pool(
+      symbols,
+      (symbol) => headers?.has(symbol.sourceFile) ?? true,
+    );
+    const first = pool[0];
+    if (first?.kind !== "variable" || !first.arrayDimensions?.includes("")) {
+      return first;
+    }
+    const redeclared = pool.flatMap((symbol) =>
+      symbol.kind === "variable" && symbol.arrayDimensions
+        ? [symbol.arrayDimensions]
+        : [],
+    );
+    return {
+      ...first,
+      arrayDimensions: ForeignRedeclaration.dimensions(
+        first.arrayDimensions,
+        redeclared,
+      ),
+    };
   }
 
   /** `symbols` with the reading file's headers' declarations first (#2474) */
@@ -468,7 +514,7 @@ class SymbolTable implements IResolvedSymbols {
    * Get a C++ symbol by name (returns first match, or undefined)
    */
   getCppSymbol(name: string): TCppSymbol | undefined {
-    return this.getCppOverloads(name)[0];
+    return this.chosen(this.cppSymbols.get(name) ?? []);
   }
 
   /**
@@ -778,6 +824,7 @@ class SymbolTable implements IResolvedSymbols {
    * @param fieldType Type of the field (e.g., "uint32_t")
    * @param arrayDimensions Optional array dimensions - numbers for resolved, strings for macros
    * @param bitWidth A bit-field's declared width (#1975 review)
+   * @param sourceFile The file that declares the struct (#2474)
    */
   addStructField(
     structName: string,
@@ -785,6 +832,7 @@ class SymbolTable implements IResolvedSymbols {
     fieldType: string,
     arrayDimensions?: readonly (number | string)[],
     bitWidth?: number | string,
+    sourceFile?: string,
   ): void {
     let fields = this.structFields.get(structName);
     if (!fields) {
@@ -793,11 +841,44 @@ class SymbolTable implements IResolvedSymbols {
     }
 
     // Copy to mutable array for storage
-    fields.set(fieldName, {
+    const info: IStructFieldInfo = {
       type: fieldType,
       arrayDimensions: arrayDimensions ? [...arrayDimensions] : undefined,
       ...(bitWidth !== undefined && { bitWidth }),
-    });
+    };
+    fields.set(fieldName, info);
+    if (sourceFile !== undefined) {
+      this.fieldsDeclaredIn(structName, sourceFile).set(fieldName, info);
+    }
+  }
+
+  /** The fields `sourceFile` declares for `structName`, created empty (#2474) */
+  private fieldsDeclaredIn(
+    structName: string,
+    sourceFile: string,
+  ): Map<string, IStructFieldInfo> {
+    let byFile = this.structFieldsByFile.get(structName);
+    if (!byFile) {
+      byFile = new Map();
+      this.structFieldsByFile.set(structName, byFile);
+    }
+    let fields = byFile.get(sourceFile);
+    if (!fields) {
+      fields = new Map();
+      byFile.set(sourceFile, fields);
+    }
+    return fields;
+  }
+
+  /**
+   * The fields `sourceFile` itself declares for `structName` (#2474);
+   * undefined when it declares no such struct
+   */
+  getStructFieldsDeclaredIn(
+    structName: string,
+    sourceFile: string,
+  ): Map<string, IStructFieldInfo> | undefined {
+    return this.structFieldsByFile.get(structName)?.get(sourceFile);
   }
 
   /**
@@ -811,8 +892,7 @@ class SymbolTable implements IResolvedSymbols {
     structName: string,
     fieldName: string,
   ): IStructFieldInfo | undefined {
-    const fields = this.structFields.get(structName);
-    return fields?.get(fieldName);
+    return this.getStructFields(structName)?.get(fieldName);
   }
 
   /**
@@ -824,6 +904,15 @@ class SymbolTable implements IResolvedSymbols {
   getStructFields(
     structName: string,
   ): Map<string, IStructFieldInfo> | undefined {
+    // #2474: a view reads the struct a header it reads declares, as
+    // `getCOverloads` puts that header's declaration first
+    const headers = this.visibleHeaders;
+    const byFile = this.structFieldsByFile.get(structName);
+    if (headers !== null && byFile !== undefined) {
+      for (const [file, fields] of byFile) {
+        if (headers.has(file)) return fields;
+      }
+    }
     return this.structFields.get(structName);
   }
 
@@ -834,7 +923,7 @@ class SymbolTable implements IResolvedSymbols {
    * @returns Map of field names to type strings, or undefined if struct not found
    */
   getStructFieldTypes(structName: string): Map<string, string> | undefined {
-    const fields = this.structFields.get(structName);
+    const fields = this.getStructFields(structName);
     if (!fields) return undefined;
 
     const result = new Map<string, string>();
@@ -856,9 +945,11 @@ class SymbolTable implements IResolvedSymbols {
    * Restore struct fields from cache
    * Merges cached fields into the existing structFields map
    * @param fields Map of struct name -> (field name -> field info)
+   * @param sourceFile The header that declared them (#2474)
    */
   restoreStructFields(
     fields: Map<string, Map<string, IStructFieldInfo>>,
+    sourceFile: string,
   ): void {
     for (const [structName, fieldMap] of fields) {
       let existingFields = this.structFields.get(structName);
@@ -866,9 +957,10 @@ class SymbolTable implements IResolvedSymbols {
         existingFields = new Map();
         this.structFields.set(structName, existingFields);
       }
-
+      const declared = this.fieldsDeclaredIn(structName, sourceFile);
       for (const [fieldName, fieldInfo] of fieldMap) {
         existingFields.set(fieldName, fieldInfo);
+        declared.set(fieldName, fieldInfo);
       }
     }
   }

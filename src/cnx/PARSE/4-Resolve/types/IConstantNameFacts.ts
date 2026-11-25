@@ -7,6 +7,7 @@ import type IVariableSymbol from "../../../types/symbols/IVariableSymbol";
 import type ISourcePosition from "../../../utils/types/ISourcePosition";
 import type IForeignValue from "./IForeignValue";
 import type TSettledConst from "../../../types/TSettledConst";
+import type IStructFieldInfo from "../../../types/symbols/IStructFieldInfo";
 import type IFileConstantFacts from "./IFileConstantFacts";
 import type TType from "../../../types/TType";
 
@@ -49,16 +50,18 @@ interface IConstantNameFacts {
   mayBeHeaderName(root: TChainRoot, name: string, at: ISourcePosition): boolean;
   /** A header's variable or function the binder bound `name` to; null otherwise */
   foreignValue(name: string): IForeignValue | null;
-  /** #2076: `IFileConstantFacts.headerStructFields` */
-  headerStructFields: IFileConstantFacts["headerStructFields"];
+  /** #2076: `IFileConstantFacts.headerStructFields`, for this file */
+  headerStructFields(
+    structName: string,
+  ): ReadonlyMap<string, IStructFieldInfo> | undefined;
   /** #2076: `IFileConstantFacts.headerTypeBits`, for this file */
   headerTypeBits(cType: string): number | null;
   /** #2116: `IFileConstantFacts.qualifiedTypeName`, for this file */
   qualifiedTypeName(written: string): string;
   /** #1975 review: `IFileConstantFacts.headerTypeHead`, for this file */
   headerTypeHead(name: string): TType | null;
-  /** #1975 review: `IFileConstantFacts.headerFieldCount` */
-  headerFieldCount: IFileConstantFacts["headerFieldCount"];
+  /** #1975 review: `IFileConstantFacts.headerFieldCount`, for this file */
+  headerFieldCount(structName: string): number | null;
   /** `IFileConstantFacts.headerNeedsStructKeyword` */
   headerNeedsStructKeyword: IFileConstantFacts["headerNeedsStructKeyword"];
   /** A member of the enum with C name `enumCName` */

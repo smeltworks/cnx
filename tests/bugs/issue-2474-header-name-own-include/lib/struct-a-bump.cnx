@@ -1,0 +1,11 @@
+// Issue #2474 review helper: this file's Counter is a-struct.h's, whose
+// count is volatile, so a mut parameter may not take it.
+#include "a-struct.h"
+
+void bumpA(mut u32 n) {
+    n <- n + 1;
+}
+
+void bumpCounterA() {
+    bumpA(counter.count);
+}

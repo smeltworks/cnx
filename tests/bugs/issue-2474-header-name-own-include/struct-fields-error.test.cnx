@@ -1,0 +1,12 @@
+// test-error
+// Issue #2474 review: lib/struct-a-bump.cnx's Counter is a-struct.h's, whose
+// count is volatile, so passing it to a mut parameter is an error there,
+// though lib/struct-b.cnx's plain Counter is read after it.
+#include "lib/struct-a-bump.cnx"
+#include "lib/struct-b.cnx"
+
+u32 main() {
+    bumpCounterA();
+    bumpCounterB();
+    return counterB();
+}
