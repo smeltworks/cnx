@@ -53,8 +53,8 @@ Identify everything currently being worked on so we don't recommend conflicting 
 # descending. An open PR older than the 30 newest reads as absent, and the
 # issue it is fixing then reads as free work (#1416).
 gh pr list --state open --limit 1000 \
-  --json number,title,headRefName,body,author,updatedAt,labels \
-  --jq '.[] | {number, title, branch: .headRefName, author: .author.login, updated: .updatedAt, labels: [.labels[].name], body: .body[:200]}'
+  --json number,title,headRefName,body,author,updatedAt,labels,closingIssuesReferences \
+  --jq '.[] | {number, title, branch: .headRefName, author: .author.login, updated: .updatedAt, labels: [.labels[].name], closes: [.closingIssuesReferences[].number], refs: ([(.body // "") | scan("#[0-9]+")] | unique)}'
 ```
 
 ```
@@ -67,7 +67,9 @@ ASSERT the returned PR count is strictly less than the --limit above. If it
 FOR each open PR:
   EXTRACT linked issue numbers from:
     - PR title (e.g., "Fix #123", "#123")
-    - PR body (e.g., "Closes #123", "Fixes #123", "Resolves #123", "Part of #123")
+    - `closes`: GitHub's closing references (a pull request whose base is `main` and whose body says "Closes #123")
+    - `refs`: every `#N` in the WHOLE body ("Part of #123", a stacked PR's "Closes #123"). Not a prefix of it: the
+      template puts Related Issues last, past character 2000
     - Branch name (e.g., "fix/123-description", "feature/123-thing", "issue-123")
 
   STORE as IN_FLIGHT_ISSUES: [{issue_number, pr_number, pr_title, author, domain_labels}]

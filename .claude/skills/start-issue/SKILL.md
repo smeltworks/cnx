@@ -386,8 +386,9 @@ THROUGHOUT the work:
 - **DO NOT** implement the achievable subset of a card whose definition of done cannot be
   satisfied as written, and **DO NOT** reword the box. Pause per Phase 7c: append the
   blocker, record the measurements, delete the branch, unassign yourself, take other work
-- **DO NOT** leave a paused card assigned. `WIP` means someone is on it, and unassigning
-  is what returns it to `Backlog` for whoever picks it up next (#1572)
+- **DO NOT** leave a paused card assigned. `WIP` means someone is on it or its closing
+  pull request is open, and unassigning a card with no open closing pull request is what
+  returns it to `Backlog` for whoever picks it up next (#1572, #1578)
 - **DO NOT** work around a cnx bug downstream — fix it upstream in the transpiler
 - **DO NOT** change cnx syntax/behavior or an ADR's Status without explicit approval
 - **DO NOT** copy these phases back into `issue-check`. It delegates here on purpose
