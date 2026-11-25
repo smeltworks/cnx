@@ -856,7 +856,8 @@ describe("runTest on an error fixture that stopped erroring (#1316)", () => {
     expect(second.passed).toBe(false);
     expect(second.message).toBe(first.message);
     expect(second.message).not.toContain("stale generated artifacts");
-  });
+    // Two runs of about 3s each on a 2-CPU machine, past vitest's 5s default
+  }, 30_000);
 
   it("still updates the snapshot of a fixture that keeps erroring", async () => {
     // Negative control: --update must stay useful for a fixture whose diagnostic
@@ -1002,9 +1003,6 @@ describe("no-warnings check honours the harness mode (#1557)", () => {
     // C++ file -- so a bare `valid === false` passed while nothing was being
     // warning-checked, which is the #1143 shape this issue is one more case of.
     //
-    // `-Wunused-parameter` (from -Wextra) is used rather than an unused local:
-    // `fixtureCompileFlags` passes `-Wno-unused-variable`, so the local form is
-    // suppressed and compiles clean, and the control would assert nothing.
     const tuFile = join(tempDir, "warns.test.cpp");
     writeFileSync(
       tuFile,
@@ -1028,5 +1026,44 @@ describe("no-warnings check honours the harness mode (#1557)", () => {
     // -- so asserting only the warning passed while the language was still being
     // re-derived from the file's contents.
     expect(result.message).not.toContain("-std=c99");
+  });
+});
+
+describe("no-warnings check reports an unused local (#1791)", () => {
+  let tempDir: string;
+
+  beforeEach(() => {
+    tempDir = mkdtempSync(join(tmpdir(), "cnx-1791-nw-"));
+  });
+
+  afterEach(() => {
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  const compile = (strict: boolean): IValidationResult => {
+    const tuFile = join(tempDir, "unused.test.c");
+    writeFileSync(
+      tuFile,
+      "int main(void) {\n    const int width = 32;\n    return 0;\n}\n",
+    );
+    return TestUtils.compileTranslationUnit(
+      tuFile,
+      dirname(tuFile),
+      tempDir,
+      "c",
+      TargetMatrix.hostToolchain(),
+      strict,
+    );
+  };
+
+  it("fails a test-no-warnings fixture that declares a local it never reads", () => {
+    const result = compile(true);
+
+    expect(result.valid).toBe(false);
+    expect(result.message).toContain("unused variable");
+  });
+
+  it("leaves the same unit valid when the fixture is not test-no-warnings", () => {
+    expect(compile(false).valid).toBe(true);
   });
 });
