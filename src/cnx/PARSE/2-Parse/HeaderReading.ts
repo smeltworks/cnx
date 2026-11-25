@@ -333,7 +333,12 @@ class HeaderReading {
       }
       return false;
     }
-    return cppRequired ?? (judgedCpp || met.size > 0);
+    // 1.1 judged the mode once, on everything this run's compile meets
+    invariant(
+      cppRequired !== undefined || judgedCpp || met.size === 0,
+      "1.1's C++ judgement covers every C++ file the compile meets",
+    );
+    return cppRequired ?? judgedCpp;
   }
 
   /** Each `.cnx` include through which the run meets C++, and the C++ it meets */

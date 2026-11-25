@@ -13,6 +13,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   mkdirSync,
+  readFileSync,
   mkdtempSync,
   writeFileSync,
   rmSync,
@@ -176,6 +177,54 @@ describe("a header's language is decided once, in 1.1 (#1844)", () => {
       for (const result of runs) {
         expect(errorsOf(result)).toBe("");
         expect(emitted(result, ".cpp")).toBe(true);
+      }
+    });
+
+    // #2504 review: a file only preprocessing opens decides the mode before
+    // any reading is chosen, so a .h is read as the C++ compile reads it
+    const AUTO_CPP = (impl: string): Record<string, string> => ({
+      "impl.hpp": impl,
+      "cfg.h": '#define IMPL_HEADER "impl.hpp"\n#include IMPL_HEADER\n',
+      "api.h":
+        "#include <stdint.h>\n#ifdef __cplusplus\n" +
+        "extern uint8_t buffer[4];\n#else\nextern uint8_t buffer[2];\n#endif\n",
+    });
+    const AUTO_MAIN =
+      '#include "cfg.h"\n#include "api.h"\n\n' +
+      "u32 count() {\n    return buffer.type_element_count;\n}\n\n" +
+      "void main() {\n    (void)count();\n}\n";
+
+    it("reads a .h as C++ when only a macro-named .hpp include makes the run C++, cold and warm", async (ctx) => {
+      if (!preprocessorAvailable) ctx.skip();
+
+      const runs = await coldThenWarmMain(
+        AUTO_CPP("namespace Impl { int impl_v; }\n"),
+        AUTO_MAIN,
+      );
+
+      for (const result of runs) {
+        expect(errorsOf(result)).toBe("");
+        expect(emitted(result, ".cpp")).toBe(true);
+        expect(readFileSync(join(dir, "main.cpp"), "utf8")).toContain(
+          "return 4;",
+        );
+      }
+    });
+
+    it("control: without the .hpp include the run is C, and reads the C branch", async (ctx) => {
+      if (!preprocessorAvailable) ctx.skip();
+
+      const runs = await coldThenWarmMain(
+        { ...AUTO_CPP(""), "cfg.h": "#define IMPL_IS_C 1\n" },
+        AUTO_MAIN,
+      );
+
+      for (const result of runs) {
+        expect(errorsOf(result)).toBe("");
+        expect(emitted(result, ".c")).toBe(true);
+        expect(readFileSync(join(dir, "main.c"), "utf8")).toContain(
+          "return 2;",
+        );
       }
     });
 

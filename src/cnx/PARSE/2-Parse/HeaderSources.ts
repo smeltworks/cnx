@@ -80,7 +80,7 @@ type TReadings = ReadonlyMap<string, IReading | null>;
 const NO_READINGS: TReadings = new Map();
 
 /** `#define NAME(`: a function-like macro, whose `(` follows its name */
-const FUNCTION_LIKE_DEFINE = /^[ \t]*#[ \t]*define[ \t]+\w+\(/m;
+const FUNCTION_LIKE_DEFINE = /^[ \t]*#[ \t]*define[ \t]+(\w+)\(/gm;
 
 /** One `.cnx` file's C includes and the path its compile searches */
 interface IFileUnit {
@@ -214,16 +214,34 @@ class HeaderSources {
     // #1542 ruling 4: a header's language is judged on the text C meets
     const cTextOf = (file: IDiscoveredFile): string | undefined =>
       cReadings.get(realOf.get(resolve(file.path)) ?? resolve(file.path))?.text;
+    // One judgement, before any reading is chosen: every file the C compile
+    // opens -- a header the walk reached, one only its preprocessing opened
+    // (`#include IMPL_HEADER`), and one only the unit's toolchain found
+    const isCpp = (type: EFileType, text: string): boolean =>
+      HeaderSources._languageOf(type, text) === EHeaderLanguage.Cpp;
     const cppBuild =
       unit.cppRequired ??
-      [...counted].some((i) => {
+      ([...counted].some((i) => {
         if (headers[i].type === EFileType.CppHeader) return true;
-        const cText = cTextOf(headers[i]);
+        const cText =
+          cTextOf(headers[i]) ?? slices.get(resolve(headers[i].path));
         return cText === undefined
           ? alone[i].source?.language === EHeaderLanguage.Cpp
-          : HeaderSources._languageOf(headers[i].type, cText) ===
-              EHeaderLanguage.Cpp;
-      });
+          : isCpp(headers[i].type, cText);
+      }) ||
+        [...counted].some((i) => {
+          const header = alone[i];
+          if (header.source === null) return false;
+          const own = LineMarkers.byFile(header.preprocessed);
+          return [...header.entered].some(
+            (path) =>
+              !index.has(path) &&
+              isCpp(FileKinds.of(path), own.get(path) ?? ""),
+          );
+        }) ||
+        [...slices].some(
+          ([path, text]) => !index.has(path) && isCpp(FileKinds.of(path), text),
+        ));
     // A C++ header is read as C++ (#211), and so is every header a C++
     // build's compile meets: which declarations it gets is the text g++ reads
     const cppReadings =
@@ -264,13 +282,6 @@ class HeaderSources {
       fromUnit.map(async (entry) => {
         const directives = entry.reading.directives;
         if (directives === null) return entry;
-        // The parser reads a function-like macro's use as a call
-        if (FUNCTION_LIKE_DEFINE.test(directives)) {
-          return {
-            i: entry.i,
-            reading: { ...entry.reading, directives: null },
-          };
-        }
         const alike = await limit(() =>
           ExternalDeclarationOracle.expandsAlone(
             directives,
@@ -677,11 +688,28 @@ class HeaderSources {
     },
   ): IHeaderSource {
     return Object.freeze({
-      text: HeaderSources._needsConditionalPreprocessing(text.raw)
-        ? text.preprocessed
-        : (text.unexpanded ?? text.preprocessed),
+      text:
+        HeaderSources._needsConditionalPreprocessing(text.raw) ||
+        HeaderSources._usesOwnFunctionLikeMacro(text.raw)
+          ? text.preprocessed
+          : (text.unexpanded ?? text.preprocessed),
       language: HeaderSources._languageOf(file.type, text.own),
     });
+  }
+
+  /**
+   * Whether a header uses a function-like macro it defines outside a
+   * directive: the parser reads `DECLARE_BUFFER(generated)` as a call, not
+   * the declaration it writes. One that is only defined
+   * (`#define SENSOR_SCALE(x) ((x) * 2)`) writes nothing the header declares.
+   */
+  private static _usesOwnFunctionLikeMacro(content: string): boolean {
+    const names = [...content.matchAll(FUNCTION_LIKE_DEFINE)].map(
+      (match) => match[1],
+    );
+    if (names.length === 0) return false;
+    const code = content.replace(/^[ \t]*#(?:.*\\\r?\n)*.*$/gm, "");
+    return names.some((name) => new RegExp(`\\b${name}[ \\t]*\\(`).test(code));
   }
 
   /**

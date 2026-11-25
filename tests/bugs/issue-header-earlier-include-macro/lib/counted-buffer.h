@@ -2,6 +2,7 @@
 #define COUNTED_BUFFER_H
 #include <stdint.h>
 #define SENSOR_COUNT 3
+#define SENSOR_SCALE(x) ((x) * 2)
 extern uint8_t table[SENSOR_COUNT];
 #ifdef SENSOR_WIDE
 extern uint8_t wide_samples[8];
