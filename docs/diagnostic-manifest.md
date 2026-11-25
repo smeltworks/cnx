@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1045 fixture(s) assert a diagnostic; 1031 carry a code.
+1049 fixture(s) assert a diagnostic; 1035 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -976,7 +976,11 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-2473-chained-callback-mut-argument/chained-callback-argument-type-error.test.cnx         | E0879                             |
 | tests/bugs/issue-2473-chained-callback-mut-argument/chained-callback-discarded-error.test.cnx             | E0708                             |
 | tests/bugs/issue-2473-chained-callback-mut-argument/chained-callback-mut-argument-error.test.cnx          | E0900, E0915                      |
+| tests/bugs/issue-2473-chained-callback-mut-argument/chained-cnx-then-c-callee-error.test.cnx              | E0899, E0900                      |
+| tests/bugs/issue-2473-chained-callback-mut-argument/cpp-by-value-unwritten-error.test.cnx                 | E0899                             |
+| tests/bugs/issue-2473-chained-callback-mut-argument/cpp-defaulted-writer-error.test.cnx                   | E0900                             |
 | tests/bugs/issue-2473-chained-callback-mut-argument/cpp-overload-discarded-error.test.cnx                 | E0708                             |
+| tests/bugs/issue-2473-chained-callback-mut-argument/cpp-overload-pointer-type-error.test.cnx              | E0895, E0896                      |
 | tests/bugs/issue-2493-local-const-case-label/non-integer-label.test.cnx                                   | E0717                             |
 | tests/bugs/issue-847-misra-17-7-lowering/bare-intra-scope-discard.test.cnx                                | E0708                             |
 | tests/bugs/issue-847-misra-17-7-lowering/cross-file-scope-discard.test.cnx                                | E0708                             |
