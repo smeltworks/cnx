@@ -300,17 +300,6 @@ class HeaderMacros {
     if (kinds.some((kind) => kind.kind === "character")) {
       return kinds.length === 1 ? CHARACTER : UNREADABLE;
     }
-    // #2484 review: `(A && B)` is a Boolean; `(2 + (A && B))` is not
-    const isBoolean = HeaderMacros.outermostIsLogical(tokens);
-    const floating = kinds.flatMap((kind) =>
-      kind.kind === "floating" ? [kind.typeName] : [],
-    );
-    if (floating.length > 0 && !isBoolean) {
-      return {
-        kind: "floating",
-        typeName: HeaderMacros.usualFloating(floating),
-      };
-    }
     // #2494 review: its macros as text, so precedence is the expansion's
     const expanded = HeaderMacros.expanded(
       tokens,
@@ -321,6 +310,18 @@ class HeaderMacros {
         undefinedName: null,
       },
     );
+    // #2484 review: `(A && B)` is a Boolean, and so is a macro that expands
+    // to one (`#define ALIAS READY`); `(2 + (A && B))` is not
+    const isBoolean = HeaderMacros.outermostIsLogical(expanded ?? tokens);
+    const floating = kinds.flatMap((kind) =>
+      kind.kind === "floating" ? [kind.typeName] : [],
+    );
+    if (floating.length > 0 && !isBoolean) {
+      return {
+        kind: "floating",
+        typeName: HeaderMacros.usualFloating(floating),
+      };
+    }
     return {
       kind: "integer",
       ...(isBoolean && { isBoolean }),

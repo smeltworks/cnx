@@ -254,6 +254,8 @@ describe("HeaderMacros.collect", () => {
         "#define EITHER (2 || 0) && 3",
         "#define COUNT ((1 && 1) + 1)",
         "#define SCALED (2.5 + (1 && 1))",
+        "#define READY_ALIAS READY",
+        "#define READY_PLUS (READY + 1)",
       ].join("\n"),
     );
     const value = (name: string) => {
@@ -267,6 +269,8 @@ describe("HeaderMacros.collect", () => {
     expect(macros.get("COUNT")).not.toHaveProperty("isBoolean");
     expect(value("COUNT")).toBe(2);
     expect(macros.get("SCALED")).toEqual({ kind: "floating", typeName: "f64" });
+    expect(macros.get("READY_ALIAS")).toMatchObject({ isBoolean: true });
+    expect(macros.get("READY_PLUS")).not.toHaveProperty("isBoolean");
   });
 
   it("types a character constant alone as character, and mixed as unreadable", () => {
