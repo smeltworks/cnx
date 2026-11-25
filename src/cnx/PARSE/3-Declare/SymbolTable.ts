@@ -111,10 +111,10 @@ class SymbolTable implements IResolvedSymbols {
   // Auxiliary Data (shared across languages)
   // ========================================================================
 
-  /** Struct field information: struct name -> (field name -> field info) */
   /** #2494 review: header path -> the macros it `#undef`s */
   private readonly undefinedMacrosByFile = new Map<string, readonly string[]>();
 
+  /** Struct field information: struct name -> (field name -> field info) */
   private readonly structFields: Map<string, Map<string, IStructFieldInfo>> =
     new Map();
 
@@ -1031,9 +1031,6 @@ class SymbolTable implements IResolvedSymbols {
   }
 
   /**
-   * Issue #957/#1164: record a typedef of a pointer to a struct.
-   */
-  /**
    * #2494 review: the macros the header at `path` `#undef`s. Kept by header,
    * not in the struct state, so a header's cache record holds its own.
    * Additive: a recovered slice of the header, already preprocessed, has no
@@ -1054,6 +1051,9 @@ class SymbolTable implements IResolvedSymbols {
     return new Set([...this.undefinedMacrosByFile.values()].flat());
   }
 
+  /**
+   * Issue #957/#1164: record a typedef of a pointer to a struct.
+   */
   markPointerTypedef(typeName: string): void {
     this.structState = produce(this.structState, (draft) => {
       draft.pointerTypedefs.add(typeName);

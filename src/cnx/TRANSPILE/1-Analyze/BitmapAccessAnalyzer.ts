@@ -22,6 +22,7 @@
  * only in the register map. ADR-034 says a bitmap is addressed by named field.
  */
 
+import BitFieldText from "../../utils/BitFieldText";
 import BindingSite from "../../utils/BindingSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import ProgramAccesses from "../../utils/ProgramAccesses";
@@ -184,7 +185,7 @@ class BitmapAccessCheck {
       span: expr.span,
       declaredAt,
       message: `Value ${value} ${bound} ${width}-bit field '${field.name}' ${limit}`,
-      helpText: `A ${width}-bit field holds ${minimum} through ${maximum}; ${field.widen}, or write a value that fits (ADR-034).`,
+      helpText: `${BitFieldText.opening(width)} holds ${minimum} through ${maximum}; ${field.widen}, or write a value that fits (ADR-034).`,
     });
   }
 

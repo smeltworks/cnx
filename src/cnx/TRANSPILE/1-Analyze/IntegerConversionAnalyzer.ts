@@ -22,16 +22,16 @@
  * element, a field initializer, a ternary's arm -- and a compound assignment
  * lands its target and value combined, so each is checked as a declaration is.
  *
- * ## What is deliberately NOT typed
+ * ## A bit extraction is typed by its width
  *
  * A lone bit extraction, `large[0, 8]`, is ADR-024's explicit reinterpret --
- * the escape hatch the rule tells the author to use. Typing it would make the
- * sanctioned form fail the very check it exists to satisfy; codegen's
- * declaration path declined for that reason, and this pass declines for all
- * three. A composite's integer type is the typer's, which settles it by
- * `CompositeType.integerOf` over its value leaves -- category from the first
- * integer operand, width from the widest -- the one rule 2.2 sizes its clamp
- * helper by (#1668).
+ * the escape hatch the rule tells the author to use. It carries no sign and
+ * no essential type category, so neither E0868 nor E0945 judges it, but it
+ * is judged by the bits it takes (ADR-072 ruling 18): `large[0, 8]` lands in
+ * a `u8` and is E0869 at a 3-bit field. A composite's integer type is the
+ * typer's, which settles it by `CompositeType.integerOf` over its value
+ * leaves -- category from the first integer operand, width from the widest
+ * -- the one rule 2.2 sizes its clamp helper by (#1668).
  *
  * ## Two holes codegen had, both closed
  *
@@ -62,6 +62,7 @@
  * headers included (#1726).
  */
 
+import BitFieldText from "../../utils/BitFieldText";
 import type TEssentialCategory from "../../types/TEssentialCategory";
 import type ISourceSite from "../../types/ISourceSite";
 import BindingSite from "../../utils/BindingSite";
@@ -806,7 +807,7 @@ class IntegerConversionCheck {
     const into =
       targetWidth === TYPE_WIDTH[target]
         ? target
-        : `a ${targetWidth}-bit field`;
+        : BitFieldText.named(targetWidth);
 
     if (source.width > targetWidth) {
       this.found.push({
@@ -871,7 +872,11 @@ class IntegerConversionCheck {
       const width = t.form.width;
       return width === null
         ? null
-        : { width, signed: null, name: `a ${width}-bit extraction` };
+        : {
+            width,
+            signed: null,
+            name: BitFieldText.named(width, "extraction"),
+          };
     }
     return IntegerConversionCheck.integerSource(t);
   }
@@ -892,7 +897,7 @@ class IntegerConversionCheck {
     const name = `${signed ? "i" : "u"}${t.bitWidth}`;
     if (TypeCheckUtils.isInteger(name))
       return { width: t.bitWidth, signed, name };
-    return { width: t.bitWidth, signed, name: `a ${t.bitWidth}-bit field` };
+    return { width: t.bitWidth, signed, name: BitFieldText.named(t.bitWidth) };
   }
 }
 
