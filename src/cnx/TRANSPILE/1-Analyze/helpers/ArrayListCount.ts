@@ -13,8 +13,6 @@ interface IListPosition {
   readonly sizes: readonly TSize[];
   readonly elementType: string | null;
   readonly context: IAnalysisContext;
-  /** #2484 review: a C header's array field, which C zero-fills past a short list */
-  readonly zeroFillsShort: boolean;
 }
 
 /**
@@ -37,12 +35,11 @@ class ArrayListCount {
     sizes: readonly TSize[],
     elementType: string | null,
     context: IAnalysisContext,
-    zeroFillsShort: boolean,
   ): IArrayDeclarationError[] {
     const found: IArrayDeclarationError[] = [];
     ArrayListCount.checkLevel(
       initializer,
-      { sizes, elementType, context, zeroFillsShort },
+      { sizes, elementType, context },
       0,
       found,
     );
@@ -123,8 +120,7 @@ class ArrayListCount {
     if (
       fill === null &&
       typeof declared === "number" &&
-      elements.length !== declared &&
-      !(at.zeroFillsShort && elements.length < declared)
+      elements.length !== declared
     ) {
       const where = level > 0 ? ` at nesting level ${level + 1}` : "";
       found.push({

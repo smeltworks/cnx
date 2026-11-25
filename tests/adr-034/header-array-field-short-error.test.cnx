@@ -1,0 +1,14 @@
+// test-error
+// test-adr: 035
+// #2484 review: a header struct's array field is counted like a cnx array's.
+// A short list leaves slots C zero-fills without saying so (MISRA 9.3), so it
+// is E0866, and the fill-all form says it.
+#include "header-bit-field.h"
+
+u32 main() {
+    CBank partial <- { data: [1, 2] };
+    if (partial.data[1] != 2) {
+        return 1;
+    }
+    return 0;
+}

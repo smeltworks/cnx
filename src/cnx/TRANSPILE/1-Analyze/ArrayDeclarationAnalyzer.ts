@@ -76,7 +76,6 @@ class ArrayDeclarationCheck {
         sizes,
         type.element.text,
         this.context,
-        false,
       ),
     );
   }

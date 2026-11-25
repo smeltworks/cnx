@@ -1035,8 +1035,9 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | ok     | warn       | warn        | warn       |
 | for header         | -         | -      | -          | -           | -          |
 
-6 linked fixtures with no derivable context:
+7 linked fixtures with no derivable context:
 
+- `adr-034/header-bit-field-overflow-error.test.cnx`
 - `adr-034/width-by-including-file-cpp/width-by-including-file-cpp.test.cnx`
 - `adr-034/width-by-including-file/width-by-including-file.test.cnx`
 - `bitmap/bitmap-error-bits.test.cnx`
@@ -1154,9 +1155,10 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-20 linked fixtures with no derivable context:
+21 linked fixtures with no derivable context:
 
 - `adr-034/header-array-field-fill.test.cnx`
+- `adr-034/header-array-field-short-error.test.cnx`
 - `adr-034/header-char-array-string-error.test.cnx`
 - `adr-034/header-char-array-string.test.cnx`
 - `adr-035/array-count-included-error.test.cnx`
