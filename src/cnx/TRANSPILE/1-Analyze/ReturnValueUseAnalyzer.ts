@@ -193,6 +193,20 @@ class ReturnValueUseAnalyzer {
     );
   }
 
+  /** Whether a header's return type is `void`, through any typedef of it */
+  private static namesVoid(text: string, context: IAnalysisContext): boolean {
+    const seen = new Set<string>();
+    let spelled = text.trim();
+    while (!seen.has(spelled)) {
+      if (spelled === "void") return true;
+      seen.add(spelled);
+      const typedef = context.symbolTable.getCSymbol(spelled);
+      if (typedef?.kind !== "type") return false;
+      spelled = typedef.type.trim();
+    }
+    return false;
+  }
+
   /**
    * The call that ends a chain, judged by what it calls through: a cnx
    * callback type, or a C function-pointer typedef or C++ method, whose
@@ -216,14 +230,13 @@ class ReturnValueUseAnalyzer {
     }
     const cCallee = CCallee.ofCallAt(chain, callAt, context);
     if (cCallee === null) return null;
-    const signatures = CCallee.reachable(cCallee);
-    const returnsAValue =
-      signatures.length > 0 &&
-      signatures.every(
-        (signature) =>
-          signature.returnType !== null &&
-          signature.returnType.trim() !== "void",
-      );
+    // Every overload, as an omitted default argument can reach one whose
+    // parameter count differs from the call's
+    const returnsAValue = cCallee.signatures.every(
+      (signature) =>
+        signature.returnType !== null &&
+        !ReturnValueUseAnalyzer.namesVoid(signature.returnType, context),
+    );
     return returnsAValue
       ? { name: last.calledAs, declaredAt: undefined }
       : null;
