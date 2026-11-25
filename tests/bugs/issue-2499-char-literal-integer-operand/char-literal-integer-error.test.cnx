@@ -19,7 +19,7 @@ void main() {
     u8 c <- 58;
     u16 w <- 58;
     i32 n <- 58;
-    u8 b <- s[0];
+    u8 b <- (u8)s[0];
     mut string<4> t <- "ab";
 
     // NEGATIVE CONTROLS
