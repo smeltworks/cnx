@@ -135,18 +135,19 @@ jobs:
               # open pull requests that close the issue when they merge, which
               # is every linked one: docs/WORKFLOW.md requires the closing
               # keyword. A failed read fails the run rather than move the card.
-              OPEN_PRS=$(gh api graphql -f owner="${REPO%%/*}" -f name="${REPO#*/}" \
+              OPEN_PRS=$(gh api graphql --paginate -f owner="${REPO%%/*}" -f name="${REPO#*/}" \
                 -F number="$ISSUE_NUMBER" -f query='
-                query($owner: String!, $name: String!, $number: Int!) {
+                query($owner: String!, $name: String!, $number: Int!, $endCursor: String) {
                   repository(owner: $owner, name: $name) {
                     issue(number: $number) {
-                      closedByPullRequestsReferences(first: 10, includeClosedPrs: false) {
+                      closedByPullRequestsReferences(first: 100, after: $endCursor, includeClosedPrs: false) {
                         nodes { number }
+                        pageInfo { hasNextPage endCursor }
                       }
                     }
                   }
-                }' | jq -r '[.data.repository.issue.closedByPullRequestsReferences.nodes[].number
-                           | "#\(.)"] | join(", ")')
+                }' | jq -rs '[.[].data.repository.issue.closedByPullRequestsReferences.nodes[].number
+                            | "#\(.)"] | join(", ")')
               if [ -n "$OPEN_PRS" ]; then
                 echo "Open pull request ${OPEN_PRS} closes this issue; leaving it in WIP."
                 exit 0
