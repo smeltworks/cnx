@@ -16,12 +16,11 @@ class HeaderDeclarationRecord {
   static of(path: string, table: SymbolTable): IHeaderDeclarationRecord {
     const fileSymbols = table.getSymbolsByFile(path);
     const structNames = table.getStructNamesByFile(path);
-    const allFields = table.getAllStructFields();
     const structFields = new Map<string, Map<string, IStructFieldInfo>>();
     for (const name of structNames) {
-      // #2474: this header's own fields, not the last header's of that name
-      const fields =
-        table.getStructFieldsDeclaredIn(name, path) ?? allFields.get(name);
+      // #2474: this header's own fields, not another header's of that name;
+      // a forward declaration here has none
+      const fields = table.getStructFieldsDeclaredIn(name, path);
       if (fields) structFields.set(name, fields);
     }
     const needsKeyword = table.getAllNeedsStructKeyword();
