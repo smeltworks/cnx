@@ -9,7 +9,6 @@ import type IForeignValue from "./IForeignValue";
 import type TSettledConst from "../../../types/TSettledConst";
 import type IStructFieldInfo from "../../../types/symbols/IStructFieldInfo";
 import type IFileConstantFacts from "./IFileConstantFacts";
-import type TType from "../../../types/TType";
 
 /**
  * What `ConstantNames` asks while it walks a name's chain (#1175, #1669), as
