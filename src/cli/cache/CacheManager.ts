@@ -66,7 +66,9 @@ import Write from "../../cnx/WRITE/1-Write/Write";
 // decides whether a method returning it returns void.
 // 24: #2473 review -- a C++ class records its member templates' names, whose
 // calls are not judged; an entry written before has none.
-const CACHE_VERSION = 24;
+// 25: #2473 review -- a member template records the arguments it takes, so
+// a call it cannot take is judged; an entry written before has names alone.
+const CACHE_VERSION = 25;
 
 const TRANSPILER_VERSION = packageJson.version;
 

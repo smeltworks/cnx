@@ -26,6 +26,7 @@ import type {
 } from "./grammar/CPP14Parser";
 import type ICppHeaderSyntax from "../types/ICppHeaderSyntax";
 import type ICppClassSyntax from "../types/ICppClassSyntax";
+import type ICppMemberTemplate from "../../../types/symbols/cpp/ICppMemberTemplate";
 import type ICppEnumSyntax from "../types/ICppEnumSyntax";
 import type ICppFunctionDefinitionSyntax from "../types/ICppFunctionDefinitionSyntax";
 import type IHeaderDeclaratorSyntax from "../types/IHeaderDeclaratorSyntax";
@@ -201,23 +202,46 @@ class CppHeaderLowering {
             (spec) => spec.typeSpecifier()?.classSpecifier() != null,
           ),
       ),
-      templateMembers: decls.flatMap(CppHeaderLowering.templateMemberNames),
+      templateMembers: decls.flatMap(CppHeaderLowering.memberTemplates),
     };
   }
 
-  /** #2473 review: the names a member template declares, `template <typename T> void op(T)` */
-  private static templateMemberNames(decl: MemberdeclarationContext): string[] {
+  /**
+   * #2473 review: the functions a member template declares, `template
+   * <typename T> void op(T)`, by the arguments they take. A `...` anywhere in
+   * it may be a pack, which is last and takes any number, so it is read as
+   * one: the last parameter is dropped and the rest is variadic. That only
+   * lets the template take more calls, which leaves more of them unjudged.
+   */
+  private static memberTemplates(
+    decl: MemberdeclarationContext,
+  ): ICppMemberTemplate[] {
     const inner = decl.templateDeclaration()?.declaration();
-    const lowered = inner ? CppHeaderLowering.declaration(inner) : null;
+    if (!inner) return [];
+    const lowered = CppHeaderLowering.declaration(inner);
+    let declarators: readonly IHeaderDeclaratorSyntax[] = [];
     if (lowered?.kind === "functionDefinition") {
-      return lowered.declarator.name === null ? [] : [lowered.declarator.name];
+      declarators = [lowered.declarator];
+    } else if (lowered?.kind === "simple") {
+      declarators = lowered.declarators ?? [];
     }
-    if (lowered?.kind === "simple") {
-      return (lowered.declarators ?? []).flatMap((declarator) =>
-        declarator.name === null ? [] : [declarator.name],
-      );
-    }
-    return [];
+    const pack = decl.getText().includes("...");
+    return declarators.flatMap((declarator) =>
+      declarator.name === null || !declarator.isFunction
+        ? []
+        : [
+            {
+              name: declarator.name,
+              parameters: (pack
+                ? declarator.parameters.slice(0, -1)
+                : declarator.parameters
+              ).map((parameter) =>
+                parameter.hasDefault === true ? { hasDefault: true } : {},
+              ),
+              isVariadic: pack || declarator.isVariadic,
+            },
+          ],
+    );
   }
 
   /** #1975 review: `uint32_t a : 3;`, whose name and width the class records */

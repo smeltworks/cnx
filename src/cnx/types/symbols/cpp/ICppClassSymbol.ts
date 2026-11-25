@@ -1,5 +1,6 @@
 import type ICppBaseSymbol from "./ICppBaseSymbol";
 import type ICppFieldInfo from "./ICppFieldInfo";
+import type ICppMemberTemplate from "./ICppMemberTemplate";
 
 /**
  * Symbol representing a C++ class or struct type definition.
@@ -11,8 +12,8 @@ interface ICppClassSymbol extends ICppBaseSymbol {
   /** Map of field name to field metadata (only populated if SymbolTable was provided) */
   readonly fields?: ReadonlyMap<string, ICppFieldInfo>;
 
-  /** #2473 review: the methods it also declares a member template of, whose overloads 1.3 does not all record */
-  readonly templateMethods?: readonly string[];
+  /** #2473 review: its member templates, which a call to a method of the same name may reach */
+  readonly templateMethods?: readonly ICppMemberTemplate[];
 }
 
 export default ICppClassSymbol;

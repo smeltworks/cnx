@@ -1,0 +1,21 @@
+// test-error
+// test-cpp-only
+// Tests: a member template leaves a call unjudged only when it can take the
+// call's arguments (#2473 review). `Tw::set` has a template of two
+// arguments, so `tw.set(p)` reaches the method alone: a read-only argument
+// is E0900 and a u16 at uint32_t* is E0895.
+#include "lib/cpp-tpl.hpp"
+
+mut Tw tw;
+
+void main() {
+    // NEGATIVE CONTROLS -- each stays silent.
+    mut u32 good <- 0;
+    tw.set(good);
+
+    // ASSERTIONS
+    u32 rdonly <- 3;
+    tw.set(rdonly);
+    mut u16 w <- 300;
+    tw.set(w);
+}

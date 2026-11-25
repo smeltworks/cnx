@@ -1,4 +1,5 @@
 import type TCppMemberSyntax from "./TCppMemberSyntax";
+import type ICppMemberTemplate from "../../../types/symbols/cpp/ICppMemberTemplate";
 
 /** A C++ class or struct specifier as 1.2 lowers it (#1991) */
 interface ICppClassSyntax {
@@ -14,8 +15,8 @@ interface ICppClassSyntax {
   readonly hasBitField: boolean;
   /** `union { ... };`, a member whose fields `members` does not list */
   readonly hasUnnamedMember: boolean;
-  /** #2473 review: the names of its member templates, which 1.3 does not declare */
-  readonly templateMembers: readonly string[];
+  /** #2473 review: its member templates, which 1.3 does not declare */
+  readonly templateMembers: readonly ICppMemberTemplate[];
 }
 
 export default ICppClassSyntax;

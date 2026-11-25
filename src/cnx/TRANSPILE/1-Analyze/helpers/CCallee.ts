@@ -21,7 +21,9 @@ class CCallee {
     if (expr.kind !== "postfix") return null;
     const call = expr.ops.at(-1);
     if (call?.kind !== "call") return null;
-    if (CCallee.callsMemberTemplate(expr, context)) return null;
+    if (CCallee.callsMemberTemplate(expr, call.arguments.length, context)) {
+      return null;
+    }
     for (const name of CCallee.namesOf(expr, context)) {
       if (context.program.symbolByCName(name)?.kind === "function") {
         return null;
@@ -94,12 +96,14 @@ class CCallee {
   }
 
   /**
-   * #2473 review: a method its class also declares a member template of. 1.3
-   * does not record the template, so the overloads a call may reach are not
-   * all known, and nothing about the call is judged.
+   * #2473 review: a method call a member template of its class can take.
+   * 1.3 declares no overload for the template, so what the call reaches is
+   * not known, and nothing about it is judged. A template that cannot take
+   * the call's arguments leaves it to the method's declared overloads.
    */
   private static callsMemberTemplate(
     expr: TPostfix,
+    count: number,
     context: IAnalysisContext,
   ): boolean {
     const method = expr.ops.at(-2);
@@ -109,9 +113,11 @@ class CCallee {
     );
     if (typeName === null) return false;
     const owner = context.symbolTable.getCppSymbol(typeName);
-    return (
-      owner?.kind === "class" &&
-      owner.templateMethods?.includes(method.name) === true
+    if (owner?.kind !== "class") return false;
+    return (owner.templateMethods ?? []).some(
+      (template) =>
+        template.name === method.name &&
+        CallReach.takes(template.parameters, template.isVariadic, count),
     );
   }
 
