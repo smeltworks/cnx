@@ -204,14 +204,14 @@ class LengthPropertyCheck {
     }
     // #2474: a header array declared `[]` has the count a redeclaration
     // gives it, and which one the translation unit sees cnx may not have
-    // read; render had nothing to write (`n = ;`)
-    if (name.unit === "element_count" && typed.dimensions[0] === "") {
+    // read; render had nothing to write (`n = ;`, `()`)
+    if (typed.dimensions[0] === "") {
       this.report(declaredAt, {
         code: "E0867",
         span: at.span,
         message: `.${property} is not known for '${subject}', which is declared without a size`,
         helpText:
-          "Declare the array with its size, so its element count is the one the compiler reads (ADR-058).",
+          "Declare the array with its size, so its length is the one the compiler reads (ADR-058).",
       });
       return;
     }

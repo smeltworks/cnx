@@ -12,5 +12,5 @@
 #include <stdint.h>
 
 uint32_t pairBytesB(void) {
-    return 2;
+    return 4;
 }
