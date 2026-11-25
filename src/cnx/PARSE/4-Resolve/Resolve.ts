@@ -59,11 +59,7 @@ class Resolve {
       const including = macroReaders.filter(
         (reader) => header !== undefined && reader.headerFiles.has(header),
       );
-      return HeaderMacros.width(
-        text,
-        including.length > 0 ? including : macroReaders,
-        table.undefinedMacros(),
-      );
+      return HeaderMacros.width(text, including, table.undefinedMacros());
     });
     const program = Program.build(
       declared.map((entry) => entry.fileSymbols),

@@ -4,6 +4,7 @@
 
 import { describe, it, expect } from "vitest";
 import HeaderMacros from "../HeaderMacros";
+import UnreadBitWidth from "../../../utils/UnreadBitWidth";
 
 describe("HeaderMacros.collect", () => {
   const typeOf = (text: string, name: string) =>
@@ -407,6 +408,17 @@ describe("HeaderMacros.width (#2494)", () => {
     expect(widthOf("MODE_BITS", [macros, same], new Set())).toBe(3);
     expect(widthOf("MODE_BITS", [macros, other], new Set())).toBeNull();
     expect(widthOf("MODE_BITS", [new Map(), macros], new Set())).toBe(3);
+  });
+});
+
+describe("HeaderMacros.width with no includer's macros (#2484 review)", () => {
+  it("names the macros it reads, not a form cnx cannot read", () => {
+    const width = HeaderMacros.width("MODE_BITS", [], new Set());
+    expect(width).toEqual(UnreadBitWidth.unreadMacros(["MODE_BITS"]));
+  });
+
+  it("still reads a width of literals", () => {
+    expect(HeaderMacros.width("1 + 2", [], new Set())).toBe(3);
   });
 });
 

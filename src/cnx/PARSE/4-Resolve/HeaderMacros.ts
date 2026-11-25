@@ -185,13 +185,17 @@ class HeaderMacros {
       }
       readings.push({ file: reader.file, value });
     }
-    if (readings.length === 0) return UnreadBitWidth.unreadable();
-    const other = readings.find(
-      (reading) => reading.value !== readings[0].value,
-    );
-    return other === undefined
-      ? readings[0].value
-      : UnreadBitWidth.files(names, readings[0], other);
+    if (readings.length > 0) {
+      const other = readings.find(
+        (reading) => reading.value !== readings[0].value,
+      );
+      return other === undefined
+        ? readings[0].value
+        : UnreadBitWidth.files(names, readings[0], other);
+    }
+    return readers.length === 0
+      ? UnreadBitWidth.unreadMacros(names)
+      : UnreadBitWidth.unreadable();
   }
 
   /**

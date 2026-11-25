@@ -8,8 +8,16 @@ class UnreadBitWidth {
   /** `f : sizeof(uint8_t)`: no form cnx evaluates */
   static unreadable(): IUnreadBitWidth {
     return {
-      why: "it is not written as integer literals, arithmetic and bitwise operators, parentheses and macros of them, which cnx reads",
+      why: "it is not written as integer literals, arithmetic, bitwise and logical operators, parentheses and macros of them, which cnx reads",
       help: "Write the width in its header as an integer constant cnx reads (ADR-034).",
+    };
+  }
+
+  /** #2484 review: no file that includes its header had its macros read */
+  static unreadMacros(names: readonly string[]): IUnreadBitWidth {
+    return {
+      why: `it reads ${names.join(", ")}, and cnx read no macros of the files that include its header`,
+      help: "Include the header from a file cnx transpiles, or write the width as an integer constant (ADR-034).",
     };
   }
 

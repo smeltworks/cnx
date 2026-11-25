@@ -444,7 +444,7 @@ r.si <- -4;          // OK
 ```
 
 A width written as an expression or a macro is read as C reads it (#2494):
-integer literals, arithmetic and bitwise operators, parentheses, and the
+integer literals, arithmetic, bitwise and logical operators, parentheses, and the
 header's object-like macros of them, each substituted as its text, as the
 preprocessor does, so `W * 2` with `#define W 1 + 2` is 5 bits. A width
 that reads a macro some header `#undef`s is not read, because cnx sees only
