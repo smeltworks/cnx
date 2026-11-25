@@ -649,7 +649,9 @@ E0424 is a 2.1 Analyze diagnostic since #1322, and render asserts it never sees 
   generated declares or includes — the same predicate 1.4 settled that file's types with
   (#1724). It reads the run-wide table no longer, and answers "missing" for every C/C++
   header type, since a scope type is a cnx one. Ask the per-file sets about a cnx name
-  and the run-wide table about a foreign one
+  and `IProgram.symbolTableFor(sourceFile)` about a foreign one: its lookups put the
+  declarations of the file's own headers first (#2474), where the run-wide
+  `symbolTable()` answers with whichever header was read first
 - **Test isolation**: build a fresh `new SymbolRegistry()` per test and pass it to `CnxResolver.resolve(program, file, registry)` — there is no global registry to reset (#1452 box 3 deleted the static and its `reset()`)
 - **Array dimensions**: `IVariableSymbol.arrayDimensions` is `(number | string)[]` — numbers for resolved constants, strings for C macros
 - **What an analyzer may read is `IAnalysisContext`, plus the 1.2 syntax it walks.** #1456

@@ -353,8 +353,10 @@ class SymbolTable implements IResolvedSymbols {
    * makes. The view shares this table's indexes and never writes them.
    */
   seenFrom(headers: ReadonlySet<string>): IResolvedSymbols {
-    const view: SymbolTable = Object.create(SymbolTable.prototype);
-    return Object.assign(view, this, { visibleHeaders: headers });
+    // A live view: it reads this table's fields through the prototype chain
+    const view: SymbolTable = Object.create(this);
+    view.visibleHeaders = headers;
+    return view;
   }
 
   /** `symbols` with the reading file's headers' declarations first (#2474) */

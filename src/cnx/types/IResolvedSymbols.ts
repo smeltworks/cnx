@@ -9,7 +9,9 @@ import type TCppSymbol from "./symbols/cpp/TCppSymbol";
 
 /**
  * The run's symbol table as every pass after 1.4 sees it: read-only, reached
- * through `IProgram.symbolTable()` and nowhere else (#1991).
+ * through `IProgram` and nowhere else (#1991). `symbolTableFor(sourceFile)`
+ * is a file's view, whose lookups put its own headers' declarations first
+ * (#2474); `symbolTable()` is the run-wide one.
  *
  * 1.3 declares the header symbols into a `SymbolTable` and 1.4 adds the cnx
  * ones while it builds `Program`; nothing after that writes. Only queries are
