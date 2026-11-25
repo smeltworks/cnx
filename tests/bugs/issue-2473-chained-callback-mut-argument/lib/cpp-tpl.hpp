@@ -27,5 +27,7 @@ public:
     template <typename... A, typename... B> void two(A... a, B... b) { v = 0U; }
     uint32_t late(uint32_t a) { v = a; return v; }
     template <typename T> auto late(T a, int b = 0) -> void { v = (uint32_t)a; }
+    uint32_t cv() { return v; }
+    template <typename T> void cv(T a, ...) { v = (uint32_t)a; }
 };
 #endif

@@ -224,8 +224,14 @@ class CppHeaderLowering {
     } else if (lowered?.kind === "simple") {
       declarators = lowered.declarators ?? [];
     }
-    // A `...` may be a pack, and the arguments packs take are not counted
-    const anyCount = decl.getText().includes("...");
+    // A pack takes any number of arguments; a C `...` only past its
+    // parameters, which the declarator's `isVariadic` already counts
+    const anyCount =
+      decl
+        .templateDeclaration()
+        ?.templateparameterList()
+        .getText()
+        .includes("...") ?? false;
     return declarators.flatMap((declarator) => {
       if (declarator.name === null) return [];
       // `auto op(T a) -> void` keeps its parameters beside its name, where
