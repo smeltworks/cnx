@@ -142,21 +142,20 @@ class StringUtils {
    * accounting for escape sequences like \n, \t, \\, etc.
    *
    * @param literal - The string literal including quotes (e.g., "hello\n")
-   * @returns The character count (escape sequences count as 1)
+   * @returns The character count (each escape sequence counts as 1)
    */
   static literalLength(literal: string): number {
     // Remove surrounding quotes
     const content = literal.slice(1, -1);
 
+    // #2484 review: an octal escape takes up to three digits and a hex one
+    // every hex digit after it, as C reads them: "\012" and "\x41" are one
+    const escape = /^\\(?:[0-7]{1,3}|x[\da-fA-F]+|[\s\S])/;
     let length = 0;
     let i = 0;
     while (i < content.length) {
-      if (content[i] === "\\" && i + 1 < content.length) {
-        // Escape sequence counts as 1 character
-        i += 2;
-      } else {
-        i += 1;
-      }
+      const match = escape.exec(content.slice(i));
+      i += match === null ? 1 : match[0].length;
       length += 1;
     }
     return length;

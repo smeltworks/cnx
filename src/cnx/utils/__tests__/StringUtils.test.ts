@@ -122,6 +122,17 @@ describe("StringUtils.literalLength", () => {
     expect(StringUtils.literalLength('"say \\"hi\\""')).toBe(8);
   });
 
+  // #2484 review: C reads up to three octal digits and every hex digit
+  it.each([
+    ['"\\012"', 1],
+    ['"\\0a"', 2],
+    ['"\\1234"', 2],
+    ['"\\x41"', 1],
+    ['"\\x41g"', 2],
+  ])("counts %s as C does", (literal, length) => {
+    expect(StringUtils.literalLength(literal as string)).toBe(length);
+  });
+
   it("counts multiple escapes correctly", () => {
     expect(StringUtils.literalLength('"\\n\\t\\r"')).toBe(3);
   });

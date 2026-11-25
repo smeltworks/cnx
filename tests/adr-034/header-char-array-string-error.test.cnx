@@ -9,6 +9,7 @@ void main() {
     // NEGATIVE CONTROLS -- each stays silent.
     CNamed fits <- { tag: "cf" };
     CNamed escaped <- { tag: "\n" };
+    CNamed octal <- { tag: "\012\x41" };
     CNamed empty <- { name: "" };
 
     // ASSERTIONS
