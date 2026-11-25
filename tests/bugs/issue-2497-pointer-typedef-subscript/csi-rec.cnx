@@ -1,0 +1,8 @@
+// Helper for pointer-typedef-subscript.test.cnx (#2497): a cnx struct whose
+// fields are C pointer typedefs, subscripted in the file that includes it
+#include "csi-bytes.h"
+
+struct Rec {
+    CsiBytes data;
+    CsiMutBytes out;
+}

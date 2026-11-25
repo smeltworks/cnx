@@ -105,6 +105,13 @@ interface IOperandType {
    * index's or a call's side effect does not set it
    */
   readonly volatileAccess: boolean;
+  /**
+   * A cnx declaration names a header's type the typer cannot read (#2497): a
+   * C pointer or function-pointer typedef, or a C++ template's instance
+   * (`Vector<uint32_t>`). Set once, where the declaration is typed, and kept
+   * through a field, a scope member and a call's result
+   */
+  readonly unreadHeaderType: boolean;
   readonly form: TOperandForm;
   /** For a name-rooted operand, what the root name binds to */
   readonly binding: TValueBinding | null;

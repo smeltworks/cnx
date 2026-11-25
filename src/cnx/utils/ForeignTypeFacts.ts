@@ -225,6 +225,7 @@ class ForeignTypeFacts {
       // saturating cast of it reads it once, through its helper
       hasSideEffect: walked?.volatile ?? false,
       volatileAccess: walked?.volatile ?? false,
+      unreadHeaderType: false,
       form: { kind: "foreign", indeterminate: false },
       binding: null,
     };
@@ -539,6 +540,7 @@ class ForeignTypeFacts {
     overflow: null,
     hasSideEffect: false,
     volatileAccess: false,
+    unreadHeaderType: false,
     form: { kind: "foreign", indeterminate: false },
     binding: null,
   };

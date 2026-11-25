@@ -12,12 +12,26 @@
 // typedef is an element access. A cnx struct field, a parameter, a global and
 // a local of `CsiBytes` were bit-indexed, `((r->data >> i) & 0x1U)`, which C
 // rejects; a header struct's `CsiBytes` field was already an element.
+// `Rec` is declared in an included file, so its fields reach the typer
+// across the include.
 #include "csi-bytes.h"
+#include "csi-rec.hpp"
 
 #include <stdint.h>
 #include <stdbool.h>
 
 CsiBytes gBytes = nullptr;
+
+/* Scope: Buf */
+CsiBytes Buf__data = nullptr;
+
+void Buf__init(void) {
+    Buf__data = csi_frame();
+}
+
+uint8_t Buf__at(const uint32_t i) {
+    return Buf__data[i];
+}
 
 uint8_t fromField(const Rec& r, const uint32_t i) {
     return r.data[i];
@@ -37,6 +51,10 @@ uint8_t fromGlobal(const uint32_t i) {
 
 uint8_t fromHeaderStruct(const CsiRecord& h, const uint32_t i) {
     return h.data[i] + h.raw[i];
+}
+
+CsiBytes giveBytes(void) {
+    return csi_frame();
 }
 
 void writeField(Rec& r, const uint32_t i, const uint8_t v) {
@@ -77,6 +95,24 @@ int main(void) {
     const CsiMutBytes scratch = csi_scratch();
     if (scratch[2U] != 0x56) {
         return 7U;
+    }
+    const uint8_t viaCall = giveBytes()[2U];
+    if (viaCall != 0x32) {
+        return 10U;
+    }
+    Buf__init();
+    const uint8_t fromScope = Buf__at(1U);
+    if (fromScope != 0x21) {
+        return 11U;
+    }
+    const CsiPtPtr pts = csi_points();
+    if (pts[1U].y != 4) {
+        return 12U;
+    }
+    CsiPtPtr wpts = csi_points();
+    wpts[0].x = 9;
+    if (pts[0U].x != 9) {
+        return 13U;
     }
     const csi_reg_t reg = 0x4U;
     if (((reg >> 2U) & 0x1U) != true) {

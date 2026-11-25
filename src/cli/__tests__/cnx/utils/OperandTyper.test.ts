@@ -1042,15 +1042,18 @@ void main() {
       body: string,
       table: SymbolTable,
     ): TSubscriptKind | null {
-      const { node, ctx } = initializerOf(inMain(body), "r", table);
+      return lastStepOf(inMain(body), "r", table)?.subscript ?? null;
+    }
+
+    /** The last step of the postfix chain that initializes `name` */
+    function lastStepOf(source: string, name: string, table: SymbolTable) {
+      const { node, ctx } = initializerOf(source, name, table);
       const postfix = ExpressionUnwrapper.getPostfixExpression(node);
       expect(postfix).not.toBeNull();
-      return (
-        OperandTyper.chainOf(
-          SyntaxLowering.expressionNode(postfix!),
-          ctx,
-        ).steps.at(-1)?.subscript ?? null
-      );
+      return OperandTyper.chainOf(
+        SyntaxLowering.expressionNode(postfix!),
+        ctx,
+      ).steps.at(-1);
     }
 
     const c = header(`#include <stdint.h>
@@ -1078,10 +1081,16 @@ extern pod_t pod;`);
       const cpp = header(
         `#include <stdint.h>
 struct Frame { uint8_t data[4]; uint8_t operator[](int i) const; };
-extern Frame frame;`,
+extern Frame frame;
+template <typename T> class Vector { public: T operator[](uint32_t i) const; };`,
         true,
       );
       expect(subscriptOf("u8 r <- frame[2];", cpp)).toBe("array_element");
+      // A cnx declaration of a template's instance, which the typer cannot
+      // read (#2497 review: `mine[2]` was `((mine >> 2U) & 0x1U)`)
+      expect(subscriptOf("Vector<uint32_t> v;\nu32 r <- v[2];", cpp)).toBe(
+        "array_element",
+      );
     });
 
     // #1760 review: the rows above assert the subscript's KIND only, which is
@@ -1089,15 +1098,7 @@ extern Frame frame;`,
     it("types no dimensionless header element as a character", () => {
       /** The typer's answer for `r`'s initializer, after its last subscript */
       function elementOf(body: string, table: SymbolTable) {
-        const { node, ctx } = initializerOf(inMain(body), "r", table);
-        const postfix = ExpressionUnwrapper.getPostfixExpression(node);
-        expect(postfix).not.toBeNull();
-        return (
-          OperandTyper.chainOf(
-            SyntaxLowering.expressionNode(postfix!),
-            ctx,
-          ).steps.at(-1)?.after ?? null
-        );
+        return lastStepOf(inMain(body), "r", table)?.after ?? null;
       }
       expect(elementOf("u8 r <- pod[1];", c)).toBeNull();
       const cpp = header(
@@ -1120,9 +1121,9 @@ extern Frame frame;`,
       ).toBe("bit_range");
     });
 
-    // #2497: a cnx declaration of a header type is subscripted as the
-    // header's own value of that type is. A pointer typedef is one the typer
-    // cannot read, so its subscript is an element, as `ptr[1]` above is.
+    // #2497: a cnx declaration of a header type the typer cannot read, such
+    // as a pointer typedef, is subscripted as the header's own value of that
+    // type is: an element, as `ptr[1]` above is.
     describe("on a cnx declaration of a header type (#2497)", () => {
       const typedefs = header(`#include <stdint.h>
 typedef const uint8_t *bytes_t;
@@ -1155,25 +1156,23 @@ typedef enum { MODE_A, MODE_B } mode_t;`);
         expect(subscriptOf(body, typedefs)).toBe(expected);
       });
 
-      it("is elements on a cnx struct's field and a parameter", () => {
+      it("is elements on a cnx struct's field, a parameter and a function's result", () => {
         const source = `struct Rec {
     bytes_t data;
+}
+bytes_t give(bytes_t p) {
+    return p;
 }
 void f(Rec rec, bytes_t p) {
     u8 r <- rec.data[1];
     u8 q <- p[2];
+    u8 s <- give(p)[3];
 }`;
-        for (const name of ["r", "q"]) {
-          const { node, ctx } = initializerOf(source, name, typedefs);
-          const postfix = ExpressionUnwrapper.getPostfixExpression(node);
-          expect(postfix).not.toBeNull();
-          const chain = OperandTyper.chainOf(
-            SyntaxLowering.expressionNode(postfix!),
-            ctx,
-          );
-          expect(chain.steps.at(-1)?.subscript).toBe("array_element");
+        for (const name of ["r", "q", "s"]) {
+          const step = lastStepOf(source, name, typedefs);
+          expect(step?.subscript).toBe("array_element");
           // The typer cannot see into the pointee, as for a header `T*`
-          expect(chain.steps.at(-1)?.after).toBeNull();
+          expect(step?.after).toBeNull();
         }
       });
     });

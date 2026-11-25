@@ -7,27 +7,26 @@
  */
 
 #include <stdint.h>
+#include "csi-rec.h"
 #include "csi-bytes.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Struct definitions */
-typedef struct Rec {
-    CsiBytes data;
-    CsiMutBytes out;
-} Rec;
-
 /* External variables */
 extern CsiBytes gBytes;
+extern CsiBytes Buf__data;
 
 /* Function prototypes */
+void Buf__init(void);
+uint8_t Buf__at(const uint32_t i);
 uint8_t fromField(const Rec* r, const uint32_t i);
 uint8_t fromParam(const CsiBytes p, const uint32_t i);
 uint8_t fromAlias(const CsiBytesAlias p, const uint32_t i);
 uint8_t fromGlobal(const uint32_t i);
 uint8_t fromHeaderStruct(const CsiRecord* h, const uint32_t i);
+CsiBytes giveBytes(void);
 void writeField(Rec* r, const uint32_t i, const uint8_t v);
 
 #ifdef __cplusplus
