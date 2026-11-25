@@ -245,6 +245,71 @@ describe("SymbolTable", () => {
     });
   });
 
+  describe("indexBoundsOf (#2474)", () => {
+    const arrayIn = (
+      sourceFile: string,
+      arrayDimensions: ReadonlyArray<number | string>,
+    ): TCSymbol => ({
+      kind: "variable",
+      name: "samples",
+      sourceFile,
+      span: TestSourceSpan.at(1),
+      sourceLanguage: ESourceLanguage.C,
+      visibility: "public",
+      type: "uint8_t",
+      isConst: false,
+      isArray: true,
+      arrayDimensions,
+    });
+
+    it("gives an unsized first declaration a redeclaration's bound", () => {
+      symbolTable.addCSymbol(arrayIn("/a.h", [""]));
+      symbolTable.addCSymbol(arrayIn("/a.h", [4]));
+      expect(symbolTable.indexBoundsOf("samples")).toEqual([4]);
+      expect(symbolTable.getCSymbol("samples")?.arrayDimensions).toEqual([""]);
+    });
+
+    it("composes only the reading file's own headers' declarations", () => {
+      symbolTable.addCSymbol(arrayIn("/a.h", [""]));
+      symbolTable.addCSymbol(arrayIn("/b.h", [""]));
+      symbolTable.addCSymbol(arrayIn("/b.h", [8]));
+      symbolTable.addCSymbol(arrayIn("/a.h", [4]));
+      expect(
+        symbolTable.seenFrom(new Set(["/b.h"])).indexBoundsOf("samples"),
+      ).toEqual([8]);
+      expect(
+        symbolTable.seenFrom(new Set(["/a.h"])).indexBoundsOf("samples"),
+      ).toEqual([4]);
+    });
+
+    it("reads a C++ header's array when no C header declares the name", () => {
+      symbolTable.addCppSymbol({
+        kind: "variable",
+        name: "frames",
+        sourceFile: "/a.hpp",
+        span: TestSourceSpan.at(1),
+        sourceLanguage: ESourceLanguage.Cpp,
+        visibility: "public",
+        type: "uint8_t",
+        isConst: false,
+        isArray: true,
+        arrayDimensions: [3, 2],
+      });
+      expect(symbolTable.indexBoundsOf("frames")).toEqual([3, 2]);
+    });
+
+    it("has no bounds for a name that is not a header array", () => {
+      symbolTable.addCSymbol({
+        ...arrayIn("/a.h", [4]),
+        name: "count",
+        isArray: false,
+        arrayDimensions: undefined,
+      });
+      expect(symbolTable.indexBoundsOf("count")).toBeUndefined();
+      expect(symbolTable.indexBoundsOf("missing")).toBeUndefined();
+    });
+  });
+
   // ========================================================================
   // TCppSymbol (C++) Operations
   // ========================================================================
