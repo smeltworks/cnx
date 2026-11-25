@@ -1006,7 +1006,28 @@ class Discover {
       fs: this.fs,
     });
     this.warnings.push(...resolved.warnings);
-    return resolved;
+    const realpath = this.fs.realpath?.bind(this.fs);
+    return {
+      ...resolved,
+      headers: resolved.headers.map((header) =>
+        Object.freeze({
+          ...header,
+          realPath: Discover._realPathOf(header.path, realpath),
+        }),
+      ),
+    };
+  }
+
+  /** The path itself when the file system cannot follow it */
+  private static _realPathOf(
+    path: string,
+    realpath: ((path: string) => string) | undefined,
+  ): string {
+    try {
+      return realpath === undefined ? path : realpath(path);
+    } catch {
+      return path;
+    }
   }
 }
 

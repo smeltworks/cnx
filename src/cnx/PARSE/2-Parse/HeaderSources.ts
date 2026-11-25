@@ -56,6 +56,18 @@ interface ITranslationUnit {
    * compiler's own search path finds, so the unit is read whole
    */
   readonly searchesSystemPath: boolean;
+  /** Each `.cnx` file's own C includes, as its own compile reads them */
+  readonly files: readonly IFileUnit[];
+  /** The same, spelled for a C++ build */
+  readonly cppFiles: readonly IFileUnit[];
+  /** Whether the run is a C++ build, when the run says so */
+  readonly cppRequired: boolean | undefined;
+}
+
+/** One `.cnx` file's C includes and the path its compile searches */
+interface IFileUnit {
+  readonly directives: readonly string[];
+  readonly includePaths: readonly string[];
 }
 
 /**
@@ -154,40 +166,51 @@ class HeaderSources {
       [...counted].some(
         (i) => (headers[i].type === EFileType.CppHeader) === cpp,
       );
-    const recovery =
-      recovers || counts(false)
-        ? await ExternalDeclarationOracle.recover(
-            unit.directives,
-            settings.preprocessor,
-            unitOptions,
-          )
-        : null;
+    // #985: the whole unit only recovers what no header alone settles
+    const recovery = recovers
+      ? await ExternalDeclarationOracle.recover(
+          unit.directives,
+          settings.preprocessor,
+          unitOptions,
+        )
+      : null;
     const slices = HeaderSources._resolvedKeys(
       recovery?.perFileContent ?? null,
     );
     HeaderSources._count(slices.keys(), index, alone, counted);
-    // A C++ header is read as C++ (#211), so its slice is a C++ unit's
-    const cppSlices = HeaderSources._resolvedKeys(
-      counts(true)
-        ? await ExternalDeclarationOracle.cppSlices(
-            unit.directives,
-            settings.preprocessor,
-            unitOptions,
-          )
-        : null,
+    const realOf = new Map(
+      headers.map((file) => [
+        resolve(file.path),
+        file.realPath ?? resolve(file.path),
+      ]),
     );
-    HeaderSources._count(cppSlices.keys(), index, alone, counted);
+    const read = { settings, limit, realOf, index, alone, counted };
+    const cReadings = counts(false)
+      ? await HeaderSources._readings(unit.files, false, read)
+      : new Map<string, string | null>();
+    const cppBuild =
+      unit.cppRequired ??
+      [...counted].some(
+        (i) =>
+          headers[i].type === EFileType.CppHeader ||
+          alone[i].source?.language === EHeaderLanguage.Cpp,
+      );
+    // A C++ header is read as C++ (#211), and so is every header a C++
+    // build's compile meets: which declarations it gets is the text g++ reads
+    const cppReadings =
+      counts(true) || (cppBuild && counts(false))
+        ? await HeaderSources._readings(unit.cppFiles, true, read)
+        : new Map<string, string | null>();
     const sources = new Map<string, IHeaderSource>();
     const unsettled = new Map<string, string>();
     headers.forEach((file, i) => {
       if (!counted.has(i)) return;
       const header = alone[i];
-      const met = HeaderSources._reading(
-        file.type === EFileType.CppHeader ? cppSlices : slices,
-        i,
-        headers,
-        alone,
-      );
+      const key = realOf.get(resolve(file.path)) ?? resolve(file.path);
+      const asCpp = file.type === EFileType.CppHeader || cppBuild;
+      const met = (asCpp ? cppReadings : cReadings).get(key) ?? undefined;
+      // #1542 ruling 4: a header's language is judged on the text C meets
+      const judged = cReadings.get(key) ?? met;
       if (header.source !== null) {
         sources.set(
           file.path,
@@ -199,7 +222,7 @@ class HeaderSources {
             ? header.source
             : Object.freeze({
                 text: met,
-                language: HeaderSources._languageOf(file.type, met),
+                language: HeaderSources._languageOf(file.type, judged ?? met),
               }),
         );
         return;
@@ -255,26 +278,65 @@ class HeaderSources {
   }
 
   /**
-   * `headers[i]`'s slice, unless it has no token while another spelling of
-   * the same text (a symlink's, #1881) has some: a guard emptied it, as the
-   * file was read there. An earlier include's macro can empty a header too
-   * (`#ifndef NO_CPP_API`), and then that empty slice is what C reads.
+   * Each header's reading by the compile of every `.cnx` file that opens it,
+   * by real path; null when two files' compiles read it differently, because
+   * one includes a configuration the other does not. Every header a file's
+   * compile opens is counted.
    */
-  private static _reading(
-    slices: ReadonlyMap<string, string>,
-    i: number,
-    headers: readonly IDiscoveredFile[],
-    alone: readonly TAlone[],
-  ): string | undefined {
-    const slice = slices.get(resolve(headers[i].path));
-    if (slice === undefined || slice.trim() !== "") return slice;
-    const readElsewhere = headers.some(
-      (other, j) =>
-        j !== i &&
-        alone[j].raw === alone[i].raw &&
-        (slices.get(resolve(other.path))?.trim() ?? "") !== "",
+  private static async _readings(
+    files: readonly IFileUnit[],
+    cpp: boolean,
+    read: {
+      readonly settings: IHeaderSourceSettings;
+      readonly limit: TPreprocessLimit;
+      readonly realOf: ReadonlyMap<string, string>;
+      readonly index: ReadonlyMap<string, number>;
+      readonly alone: readonly TAlone[];
+      readonly counted: Set<number>;
+    },
+  ): Promise<ReadonlyMap<string, string | null>> {
+    const distinct = new Map(
+      files.map((file) => [JSON.stringify(file), file] as const),
     );
-    return readElsewhere ? undefined : slice;
+    const perFile = await Promise.all(
+      [...distinct.values()].map((file) =>
+        read.limit(() =>
+          ExternalDeclarationOracle.slices(
+            file.directives,
+            read.settings.preprocessor,
+            {
+              includePaths: [...file.includePaths],
+              defines: { ...read.settings.defines },
+            },
+            cpp,
+          ),
+        ),
+      ),
+    );
+    const readings = new Map<string, string | null>();
+    for (const slices of perFile) {
+      const resolved = HeaderSources._resolvedKeys(slices);
+      HeaderSources._count(
+        resolved.keys(),
+        read.index,
+        read.alone,
+        read.counted,
+      );
+      const own = new Map<string, string>();
+      for (const [path, text] of resolved) {
+        const key = read.realOf.get(path) ?? path;
+        const earlier = own.get(key);
+        own.set(key, earlier === undefined ? text : `${earlier}\n${text}`);
+      }
+      for (const [key, text] of own) {
+        const earlier = readings.get(key);
+        if (earlier === undefined) readings.set(key, text);
+        else if (earlier !== null && !HeaderSources._sameText(earlier, text)) {
+          readings.set(key, null);
+        }
+      }
+    }
+    return readings;
   }
 
   /** Whether two preprocessed texts hold the same tokens */

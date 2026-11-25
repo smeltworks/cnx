@@ -69,28 +69,21 @@ interface IExternalRecovery {
 class ExternalDeclarationOracle {
   /**
    * Each header's own preprocessed slice of `includeDirectives` read as one
-   * C++ unit: the text a C++ compile meets in a C++ header (#211)
+   * unit: the text a C compile meets, or a C++ one's (#211) when `cpp`
    */
-  static async cppSlices(
+  static async slices(
     includeDirectives: readonly string[],
     preprocessor: IHeaderPreprocessor,
     options: IPreprocessOptions,
+    cpp: boolean,
   ): Promise<Map<string, string> | null> {
-    if (includeDirectives.length === 0 || !preprocessor.isAvailable()) {
-      return null;
-    }
-    const working = await ExternalDeclarationOracle.preprocessLargestWorkingTu(
-      [...includeDirectives],
+    const split = await ExternalDeclarationOracle.split(
+      includeDirectives,
       preprocessor,
-      { ...options, keepLineDirectives: true },
-      CPP_TU_NAME,
+      options,
+      cpp ? CPP_TU_NAME : TU_NAME,
     );
-    return working === null
-      ? null
-      : ExternalDeclarationOracle.splitByFile(
-          working.content,
-          working.directives,
-        ).perFileContent;
+    return split?.perFileContent ?? null;
   }
 
   /**
@@ -111,23 +104,15 @@ class ExternalDeclarationOracle {
       return null;
     }
 
-    // KEEP line directives so the output can be split back into per-file slices.
-    const base: IPreprocessOptions = { ...options, keepLineDirectives: true };
-
-    // Build the largest subset that preprocesses cleanly (drop a header that
-    // can't preprocess — e.g. a fragile lvgl.h — instead of losing everything).
-    const working = await ExternalDeclarationOracle.preprocessLargestWorkingTu(
-      [...includeDirectives],
+    const working = await ExternalDeclarationOracle.split(
+      includeDirectives,
       preprocessor,
-      base,
+      options,
+      TU_NAME,
     );
     if (!working) return null;
-
-    const { perFileContent, directiveOf } =
-      ExternalDeclarationOracle.splitByFile(
-        working.content,
-        working.directives,
-      );
+    const perFileContent = working.perFileContent;
+    const directiveOf = working.directiveOf;
 
     // Function-like macros the plain preprocess would have consumed at use.
     const macroNames = new Set<string>();
@@ -206,6 +191,41 @@ class ExternalDeclarationOracle {
       if (directive[1] === "define") defines.set(name, line);
     }
     return { dump: [...defines.values()].join("\n"), headerFiles };
+  }
+
+  /**
+   * `includeDirectives` preprocessed as one unit with its line markers kept,
+   * split back into each header's own slice. The largest subset that
+   * preprocesses cleanly is kept (a fragile lvgl.h is dropped instead of
+   * losing everything); null when none does.
+   */
+  private static async split(
+    includeDirectives: readonly string[],
+    preprocessor: IHeaderPreprocessor,
+    options: IPreprocessOptions,
+    tuName: string,
+  ): Promise<{
+    perFileContent: Map<string, string>;
+    directiveOf: Map<string, string>;
+    directives: string[];
+  } | null> {
+    if (includeDirectives.length === 0 || !preprocessor.isAvailable()) {
+      return null;
+    }
+    const working = await ExternalDeclarationOracle.preprocessLargestWorkingTu(
+      [...includeDirectives],
+      preprocessor,
+      { ...options, keepLineDirectives: true },
+      tuName,
+    );
+    if (working === null) return null;
+    return {
+      ...ExternalDeclarationOracle.splitByFile(
+        working.content,
+        working.directives,
+      ),
+      directives: working.directives,
+    };
   }
 
   /**

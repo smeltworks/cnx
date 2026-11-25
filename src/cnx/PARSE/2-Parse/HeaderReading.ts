@@ -11,6 +11,7 @@ import EFileType from "../1-Discover/types/EFileType";
 import CROSS_COMPILER_VARIABLE from "../../types/CROSS_COMPILER_VARIABLE";
 import EHeaderLanguage from "../1-Discover/types/EHeaderLanguage";
 import type IDiscoveredFile from "../1-Discover/types/IDiscoveredFile";
+import type IFileIncludes from "../1-Discover/types/IFileIncludes";
 import type IHeaderInclude from "../1-Discover/types/IHeaderInclude";
 import type IHeaderSource from "../1-Discover/types/IHeaderSource";
 import type ISourceGraph from "../1-Discover/types/ISourceGraph";
@@ -139,6 +140,9 @@ class HeaderReading {
                 graph.headerIncludes.map((include) => include.header),
               ),
               searchesSystemPath: unit.unresolvedSystem.length > 0,
+              files: HeaderReading._fileUnits(graph, graph.includes.c),
+              cppFiles: HeaderReading._fileUnits(graph, graph.includes.cpp),
+              cppRequired: graph.run.cppRequired,
             },
           )
         : NOTHING_SETTLED;
@@ -186,6 +190,30 @@ class HeaderReading {
         },
       ),
     );
+  }
+
+  /**
+   * Each `.cnx` file's own C includes, searched from its own directory
+   * first, as C searches a quoted include (#1688)
+   */
+  private static _fileUnits(
+    graph: THeaderGraph,
+    includes: ReadonlyMap<string, IFileIncludes>,
+  ): { directives: readonly string[]; includePaths: readonly string[] }[] {
+    return graph.cnxFiles.flatMap((file) => {
+      const own = includes.get(file.path);
+      return own === undefined || own.cHeaderSpecs.length === 0
+        ? []
+        : [
+            {
+              directives: own.cHeaderSpecs,
+              includePaths: [
+                own.quotedIncludeDirectory,
+                ...graph.includeSearchPaths,
+              ],
+            },
+          ];
+    });
   }
 
   private _result(
