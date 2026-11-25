@@ -1,0 +1,20 @@
+// test-execution
+// test-cpp-only
+// test-no-warnings
+// #1791 review: a constructor argument is written by name, so a const it
+// names keeps its declaration even when its other use is a folded width.
+#include "Tally.hpp"
+
+u32 main() {
+    u8 W <- 3;
+    u32 b <- 0xFF;
+    u32 r <- b[0, W];
+    if (r != 7) {
+        return 1;
+    }
+    Tally t(W);
+    if (t.start != 3) {
+        return 2;
+    }
+    return 0;
+}

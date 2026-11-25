@@ -9,13 +9,19 @@
 #include <string.h>
 
 // ADR-045: String as function parameter
+// test-execution
 // test-no-warnings
 // Tests: passing bounded string to function
-void printMessage(const char* msg) {
+uint32_t measure(const char* msg) {
     const uint32_t len = (uint32_t) strlen(msg);
+    return len;
 }
 
 int main(void) {
     const char greeting[65] = "Hello, World!";
-    printMessage(greeting);
+    const uint32_t measured = measure(greeting);
+    if (measured != 13) {
+        return 1U;
+    }
+    return 0U;
 }
