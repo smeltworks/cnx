@@ -4,8 +4,9 @@
 // Tests: a member template leaves a call unjudged only when it can take the
 // call's arguments (#2473 review). `Tg::get` has a template of two
 // arguments, so `tg.get(1)` reaches the u32 method alone and discards its
-// result. `tg.get(1, 2)` and `tg.any(1)` can reach a template (a pack takes
-// any number), so they are not judged.
+// result. `tg.get(1, 2)`, `tg.any(1)`, `tg.two(1)` and `tg.late(1)` can reach
+// a template -- packs take any number, and a trailing return type hides its
+// count -- so they are not judged.
 #include "lib/cpp-tpl.hpp"
 
 mut Tg tg;
@@ -15,6 +16,8 @@ void main() {
     (void)tg.get(1);
     tg.get(1, 2);
     tg.any(1);
+    tg.two(1);
+    tg.late(1);
 
     // ASSERTIONS
     tg.get(1);

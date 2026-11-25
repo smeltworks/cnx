@@ -1,2 +1,2 @@
-20:4 error[E0708]: Return value of non-void function 'tg.get' is discarded
+23:4 error[E0708]: Return value of non-void function 'tg.get' is discarded
        help: Use the value, or discard it explicitly: (void) tg.get(...);

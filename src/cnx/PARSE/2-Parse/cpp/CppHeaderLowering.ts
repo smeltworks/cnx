@@ -208,10 +208,9 @@ class CppHeaderLowering {
 
   /**
    * #2473 review: the functions a member template declares, `template
-   * <typename T> void op(T)`, by the arguments they take. A `...` anywhere in
-   * it may be a pack, which is last and takes any number, so it is read as
-   * one: the last parameter is dropped and the rest is variadic. That only
-   * lets the template take more calls, which leaves more of them unjudged.
+   * <typename T> void op(T)`, by the arguments they take. One whose count
+   * cnx cannot read -- a pack, or a trailing return type -- takes any call,
+   * which only leaves more calls unjudged.
    */
   private static memberTemplates(
     decl: MemberdeclarationContext,
@@ -225,23 +224,25 @@ class CppHeaderLowering {
     } else if (lowered?.kind === "simple") {
       declarators = lowered.declarators ?? [];
     }
-    const pack = decl.getText().includes("...");
-    return declarators.flatMap((declarator) =>
-      declarator.name === null || !declarator.isFunction
-        ? []
-        : [
-            {
-              name: declarator.name,
-              parameters: (pack
-                ? declarator.parameters.slice(0, -1)
-                : declarator.parameters
-              ).map((parameter) =>
-                parameter.hasDefault === true ? { hasDefault: true } : {},
-              ),
-              isVariadic: pack || declarator.isVariadic,
-            },
-          ],
-    );
+    // A `...` may be a pack, and the arguments packs take are not counted
+    const anyCount = decl.getText().includes("...");
+    return declarators.flatMap((declarator) => {
+      if (declarator.name === null) return [];
+      // `auto op(T a) -> void` keeps its parameters beside its name, where
+      // the declarator does not read them: it is read as taking any call
+      if (anyCount || !declarator.isFunction) {
+        return [{ name: declarator.name, parameters: [], isVariadic: true }];
+      }
+      return [
+        {
+          name: declarator.name,
+          parameters: declarator.parameters.map((parameter) =>
+            parameter.hasDefault === true ? { hasDefault: true } : {},
+          ),
+          isVariadic: declarator.isVariadic,
+        },
+      ];
+    });
   }
 
   /** #1975 review: `uint32_t a : 3;`, whose name and width the class records */
