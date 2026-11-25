@@ -451,14 +451,13 @@ class MixedTypeCategoryAnalyzer {
           ? `${rule}The target cannot be converted: write the assignment out with explicit conversions, e.g. x <- (u32)((f32)x * k) (ADR-024).`
           : `${rule}Convert the integer operand with an explicit cast, e.g. (f32)value (ADR-024).`;
     }
-    // A character literal is essentially character, not a u8 (ADR-024), so
-    // `c = ':'` with a u8 c is the mix, and the cast goes on the character...
     if (EssentialCategory.isCharacterIntegerPair(left, right)) {
-      // ...unless it is a compound's target, which cannot be cast
-      helpText =
-        what === "compound" && left === "character"
-          ? `${rule}The target cannot be converted: write the assignment out with the character cast, e.g. s[0] <- (u8)s[0] - n (ADR-024).`
-          : `${rule}Cast the character to the integer operand's type, e.g. (u8)'A' (ADR-024).`;
+      helpText = MixedTypeCategoryAnalyzer.characterHelp(
+        rule,
+        what,
+        left,
+        right,
+      );
     }
     if (signedness && !castOnly) {
       helpText = `${rule}Reinterpret one operand's bits to match the other with bit indexing, e.g. value[0, 32] (ADR-007/ADR-024).`;
@@ -470,6 +469,27 @@ class MixedTypeCategoryAnalyzer {
       helpText,
       declaredAt,
     });
+  }
+
+  /**
+   * E0810's help for a character beside an integer. A character literal is
+   * essentially character, not a u8 (ADR-024), so the cast goes on the
+   * character, in the integer's own category: (i32)'A' beside a signed
+   * operand, where (u8)'A' would be the signed and unsigned mix. A compound's
+   * target cannot be cast, so a character target writes the assignment out.
+   */
+  private static characterHelp(
+    rule: string,
+    what: TOperatorSite,
+    left: string,
+    right: string,
+  ): string {
+    const integer = left === "character" ? right : left;
+    const cast = integer === "signed" ? "(i32)" : "(u8)";
+    if (what === "compound" && left === "character") {
+      return `${rule}The target cannot be converted: write the assignment out with the character cast, e.g. s[0] <- ${cast}s[0] - n (ADR-024).`;
+    }
+    return `${rule}Cast the character to the integer operand's type, e.g. ${cast}'A' (ADR-024).`;
   }
 
   public addChainError(

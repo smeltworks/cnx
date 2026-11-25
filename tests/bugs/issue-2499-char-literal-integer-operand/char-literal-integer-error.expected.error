@@ -19,7 +19,7 @@
 46:19 error[E0810]: Binary operator combines operands of different essential type categories (unsigned and character)
        help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Cast the character to the integer operand's type, e.g. (u8)'A' (ADR-024).
 47:20 error[E0810]: Binary operator combines operands of different essential type categories (signed and character)
-       help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Cast the character to the integer operand's type, e.g. (u8)'A' (ADR-024).
+       help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Cast the character to the integer operand's type, e.g. (i32)'A' (ADR-024).
 48:18 error[E0810]: Binary operator combines operands of different essential type categories (unsigned and character)
        help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Cast the character to the integer operand's type, e.g. (u8)'A' (ADR-024).
 49:23 error[E0810]: Binary operator combines operands of different essential type categories (character and unsigned)

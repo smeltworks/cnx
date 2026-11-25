@@ -638,35 +638,63 @@ describe("MixedTypeCategoryAnalyzer", () => {
     });
 
     // #2499: a character literal is not a u8, so the help names the cast
-    // that makes it one, wherever the character and the integer meet
+    // that makes it one, wherever the character and the integer meet. The
+    // cast is in the integer's category: (u8)'A' beside a signed operand
+    // would be the signed and unsigned mix (#2501 review)
     it.each([
-      ["an unsigned compared with a character literal", "bool r <- ch = 'A';"],
+      [
+        "an unsigned compared with a character literal",
+        "bool r <- ch = 'A';",
+        "(u8)",
+      ],
       [
         "a character literal compared with a signed",
         "i32 s <- 1; bool r <- 'A' < s;",
+        "(i32)",
       ],
       [
         "a string<N> byte compared with an unsigned",
         'string<4> t <- "ab"; bool r <- t[0] = ch;',
+        "(u8)",
       ],
-      ["a character subtracted in a compound", "a -<- 'A';"],
-      ["a conditional's character arm", "u32 r <- (b = true) ? a : 'A';"],
-      ["an exempt pair beside an integer", "u32 r <- (a + 'A') * a;"],
-    ])("helps %s with a cast of the character", (_label, body) => {
+      ["a character subtracted in a compound", "a -<- 'A';", "(u8)"],
+      [
+        "a character subtracted from a signed compound target",
+        "mut i32 n <- 1; n -<- 'A';",
+        "(i32)",
+      ],
+      [
+        "a conditional's character arm",
+        "u32 r <- (b = true) ? a : 'A';",
+        "(u8)",
+      ],
+      [
+        "a conditional's character arm beside a signed arm",
+        "i32 s <- 1; i32 r <- (b = true) ? s : 'A';",
+        "(i32)",
+      ],
+      ["an exempt pair beside an integer", "u32 r <- (a + 'A') * a;", "(u8)"],
+    ])("helps %s with a cast of the character", (_label, body, cast) => {
       const errors = analyze(`${ENUMS} void main() { ${LOCALS} ${body} }`);
       expect(errors.map((e) => e.helpText)).toEqual([
-        "MISRA C:2012 Rule 10.4: both operands must share an essential type category. Cast the character to the integer operand's type, e.g. (u8)'A' (ADR-024).",
+        `MISRA C:2012 Rule 10.4: both operands must share an essential type category. Cast the character to the integer operand's type, e.g. ${cast}'A' (ADR-024).`,
       ]);
     });
 
-    it("helps a character compound target, which cannot be cast, by writing it out", () => {
-      const errors = analyze(
-        `${ENUMS} void main() { ${LOCALS} mut string<4> t <- "ab"; t[0] -<- ch; }`,
-      );
-      expect(errors.map((e) => e.helpText)).toEqual([
-        "MISRA C:2012 Rule 10.4: both operands must share an essential type category. The target cannot be converted: write the assignment out with the character cast, e.g. s[0] <- (u8)s[0] - n (ADR-024).",
-      ]);
-    });
+    it.each([
+      ["an unsigned value", "", "ch", "(u8)"],
+      ["a signed value", "i32 n <- 1;", "n", "(i32)"],
+    ])(
+      "helps a character compound target, which cannot be cast, beside %s by writing it out",
+      (_label, decl, value, cast) => {
+        const errors = analyze(
+          `${ENUMS} void main() { ${LOCALS} ${decl} mut string<4> t <- "ab"; t[0] -<- ${value}; }`,
+        );
+        expect(errors.map((e) => e.helpText)).toEqual([
+          `MISRA C:2012 Rule 10.4: both operands must share an essential type category. The target cannot be converted: write the assignment out with the character cast, e.g. s[0] <- ${cast}s[0] - n (ADR-024).`,
+        ]);
+      },
+    );
 
     it("keeps the general help for a character beside a Boolean", () => {
       const errors = analyze(
