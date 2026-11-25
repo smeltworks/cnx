@@ -440,7 +440,12 @@ checked the same way. A field of a C or C++ header struct written by
 `{ field: value }` is a struct field initializer like a cnx struct's, typed by
 its C type: with `uint8_t small;`, `{ small: big }` (a `u32`) is E0869, which C
 would store as `big & 0xFF`. A bit-field is typed at its width (ADR-034), and
-an array field keeps its C size and element type.
+an array field keeps its C size and element type. A header `char` array is a C
+string, so a string literal written to it must leave room for its terminator:
+with `char tag[4];`, `{ tag: "ABCD" }` is E0864, though C takes it unterminated.
+cnx compares such a field with `strcmp` (`r.tag = "AB"`), which would read past
+the end of an unterminated one; a `u8` array is not a string and takes
+`"ABCD"` into `u8[4]`.
 
 **A conversion keeps the value's essential type category** (MISRA C:2012 Rule
 10.3, #2372, #2492). At every position above, an integer target takes no bool,
