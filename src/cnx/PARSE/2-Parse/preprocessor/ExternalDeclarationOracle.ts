@@ -163,6 +163,9 @@ class ExternalDeclarationOracle {
    * file that includes `<stdio.h>` sees what the headers `stdio.h` includes
    * declare. So the dump is taken with `-dD` and its line markers, which name
    * each header the preprocessor entered.
+   *
+   * #1916: and each header's expanded slice, split from the same run without
+   * its `#define`s, so a file's includes are expanded once for both uses.
    */
   static async macroDump(
     includeDirectives: readonly string[],
@@ -172,6 +175,7 @@ class ExternalDeclarationOracle {
     dump: string;
     headerFiles: ReadonlySet<string>;
     complete: boolean;
+    slices: ReadonlyMap<string, string>;
   } | null> {
     const working = await ExternalDeclarationOracle.preprocessLargestWorkingTu(
       [...includeDirectives],
@@ -182,6 +186,13 @@ class ExternalDeclarationOracle {
     return {
       ...ExternalDeclarationOracle.definesAndHeaders(working.content),
       complete: working.directives.length === includeDirectives.length,
+      slices: ExternalDeclarationOracle.splitByFile(
+        working.content
+          .split("\n")
+          .filter((line) => !DEFINE_OR_UNDEF.test(line))
+          .join("\n"),
+        working.directives,
+      ).perFileContent,
     };
   }
 

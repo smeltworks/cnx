@@ -124,6 +124,15 @@ class HeaderReading {
         );
       }
     }
+    const macros = await HeaderMacroDumps.read(
+      graph.cnxFiles,
+      graph.includes.c,
+      preprocessor,
+      {
+        includeSearchPaths: graph.includeSearchPaths,
+        defines: graph.anchor.defines,
+      },
+    );
     const settled =
       needed && preprocessor !== null
         ? await HeaderSources.settle(
@@ -141,7 +150,11 @@ class HeaderReading {
                 graph.headerIncludes.map((include) => include.header),
               ),
               searchesSystemPath: unit.unresolvedSystem.length > 0,
-              files: HeaderReading._fileUnits(graph, graph.includes.c),
+              files: HeaderReading._fileUnits(
+                graph,
+                graph.includes.c,
+                macros.slices,
+              ),
               cppFiles: HeaderReading._fileUnits(graph, graph.includes.cpp),
               cppRequired: graph.run.cppRequired,
             },
@@ -182,26 +195,24 @@ class HeaderReading {
       settled,
       { cppMode, readers },
       HeaderReading._cachedHeaders(headerFiles, services.headerCache, readers),
-      await HeaderMacroDumps.read(
-        graph.cnxFiles,
-        graph.includes.c,
-        preprocessor,
-        {
-          includeSearchPaths: graph.includeSearchPaths,
-          defines: graph.anchor.defines,
-        },
-      ),
+      macros.dumps,
     );
   }
 
   /**
    * Each `.cnx` file's own C includes, searched from its own directory
-   * first, as C searches a quoted include (#1688)
+   * first, as C searches a quoted include (#1688), with (#1916) the expanded
+   * slices the macro dump's run of those same includes gave, when it ran
    */
   private static _fileUnits(
     graph: THeaderGraph,
     includes: ReadonlyMap<string, IFileIncludes>,
-  ): { directives: readonly string[]; includePaths: readonly string[] }[] {
+    expanded?: ReadonlyMap<string, ReadonlyMap<string, string> | null>,
+  ): {
+    directives: readonly string[];
+    includePaths: readonly string[];
+    expanded?: ReadonlyMap<string, string> | null;
+  }[] {
     return graph.cnxFiles.flatMap((file) => {
       const own = includes.get(file.path);
       return own === undefined || own.cHeaderSpecs.length === 0
@@ -213,6 +224,9 @@ class HeaderReading {
                 own.quotedIncludeDirectory,
                 ...graph.includeSearchPaths,
               ],
+              ...(expanded?.has(file.path) === true
+                ? { expanded: expanded.get(file.path) }
+                : {}),
             },
           ];
     });

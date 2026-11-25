@@ -86,6 +86,11 @@ const FUNCTION_LIKE_DEFINE = /^[ \t]*#[ \t]*define[ \t]+(\w+)\(/gm;
 interface IFileUnit {
   readonly directives: readonly string[];
   readonly includePaths: readonly string[];
+  /**
+   * #1916: its headers' expanded slices, when the #1688 macro dump's run
+   * already expanded these includes; null when that run preprocessed none
+   */
+  readonly expanded?: ReadonlyMap<string, string> | null;
 }
 
 /**
@@ -370,7 +375,10 @@ class HeaderSources {
     },
   ): Promise<TReadings> {
     const distinct = new Map(
-      files.map((file) => [JSON.stringify(file), file] as const),
+      files.map(
+        (file) =>
+          [JSON.stringify([file.directives, file.includePaths]), file] as const,
+      ),
     );
     const sliceOf = (
       file: IFileUnit,
@@ -392,7 +400,10 @@ class HeaderSources {
       );
     const perFile = await Promise.all(
       [...distinct.values()].map(async (file) => ({
-        expanded: await sliceOf(file, false),
+        expanded:
+          file.expanded === undefined
+            ? await sliceOf(file, false)
+            : HeaderSources._resolvedKeys(file.expanded),
         directives: await sliceOf(file, true),
       })),
     );
