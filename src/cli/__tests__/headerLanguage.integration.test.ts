@@ -228,6 +228,51 @@ describe("a header's language is decided once, in 1.1 (#1844)", () => {
       }
     });
 
+    // #2504 review: a header the walk reached is judged on the text C meets,
+    // and that one judgement is the run's mode
+    const LIB = join(
+      __dirname,
+      "../../../tests/bugs/issue-header-earlier-include-macro/lib",
+    );
+    const fromLib = (...names: string[]): Record<string, string> =>
+      Object.fromEntries(
+        names.map((name) => [name, readFileSync(join(LIB, name), "utf8")]),
+      );
+    const including = (...names: string[]): string =>
+      `${names.map((name) => `#include "${name}"`).join("\n")}\n\nvoid main() { }\n`;
+
+    it("is C when an earlier include hides a header's class from C alone", async (ctx) => {
+      if (!preprocessorAvailable) ctx.skip();
+      const names = ["c-only-api-config.h", "cpp-api-in-cpp.h"];
+
+      const runs = await coldThenWarmMain(
+        fromLib(...names),
+        including(...names),
+      );
+
+      for (const result of runs) {
+        expect(errorsOf(result)).toBe("");
+        expect(emitted(result, ".c")).toBe(true);
+        expect(emitted(result, ".cpp")).toBe(false);
+      }
+    });
+
+    it("is C++ when an earlier include hides a header's class from C++ alone", async (ctx) => {
+      if (!preprocessorAvailable) ctx.skip();
+      const names = ["cpp-only-hide-config.h", "shown-in-c.h"];
+
+      const runs = await coldThenWarmMain(
+        fromLib(...names),
+        including(...names),
+      );
+
+      for (const result of runs) {
+        expect(errorsOf(result)).toBe("");
+        expect(emitted(result, ".cpp")).toBe(true);
+        expect(emitted(result, ".c")).toBe(false);
+      }
+    });
+
     it("is C when every header is C (negative control)", async () => {
       const runs = await coldThenWarm(
         { "plain.h": "typedef int MyInt;" },
