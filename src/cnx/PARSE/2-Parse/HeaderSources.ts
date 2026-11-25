@@ -1,4 +1,5 @@
 import { availableParallelism } from "node:os";
+import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
 
 import detectAssemblySyntax from "./detectAssemblySyntax";
@@ -79,8 +80,8 @@ type TReadings = ReadonlyMap<string, IReading | null>;
 
 const NO_READINGS: TReadings = new Map();
 
-/** `#define NAME(`: a function-like macro, whose `(` follows its name */
-const FUNCTION_LIKE_DEFINE = /^[ \t]*#[ \t]*define[ \t]+(\w+)\(/gm;
+/** `#define NAME`: each macro a header defines */
+const DEFINED_NAME = /^[ \t]*#[ \t]*define[ \t]+(\w+)/gm;
 
 /** One `.cnx` file's C includes and the path its compile searches */
 interface IFileUnit {
@@ -178,7 +179,12 @@ class HeaderSources {
       );
     }
     const alone = await Promise.all(settled);
-    const index = new Map(headers.map((file, i) => [resolve(file.path), i]));
+    // Each file by its key, with every spelling the walk found it under
+    const index = new Map<string, number[]>();
+    headers.forEach((file, i) => {
+      const key = HeaderSources._keyOf(file.path);
+      index.set(key, [...(index.get(key) ?? []), i]);
+    });
     const counted = new Set<number>();
     HeaderSources._count([...unit.headers], index, alone, counted);
     const recovers =
@@ -212,7 +218,7 @@ class HeaderSources {
       : NO_READINGS;
     // #1542 ruling 4: a header's language is judged on the text C meets
     const cTextOf = (file: IDiscoveredFile): string | undefined =>
-      cReadings.get(resolve(file.path))?.text;
+      cReadings.get(HeaderSources._keyOf(file.path))?.text;
     // One judgement, before any reading is chosen: every file the C compile
     // opens -- a header the walk reached, one only its preprocessing opened
     // (`#include IMPL_HEADER`), and one only the unit's toolchain found
@@ -223,7 +229,8 @@ class HeaderSources {
       ([...counted].some((i) => {
         if (headers[i].type === EFileType.CppHeader) return true;
         const cText =
-          cTextOf(headers[i]) ?? slices.get(resolve(headers[i].path));
+          cTextOf(headers[i]) ??
+          slices.get(HeaderSources._keyOf(headers[i].path));
         return cText === undefined
           ? alone[i].source?.language === EHeaderLanguage.Cpp
           : isCpp(headers[i].type, cText);
@@ -234,7 +241,7 @@ class HeaderSources {
           const own = LineMarkers.byFile(header.preprocessed);
           return [...header.entered].some(
             (path) =>
-              !index.has(path) &&
+              !index.has(HeaderSources._keyOf(path)) &&
               isCpp(FileKinds.of(path), own.get(path) ?? ""),
           );
         }) ||
@@ -247,7 +254,8 @@ class HeaderSources {
       counts(true) || (cppBuild && counts(false))
         ? await HeaderSources._readings(unit.cppFiles, true, read)
         : NO_READINGS;
-    const keyOf = (file: IDiscoveredFile): string => resolve(file.path);
+    const keyOf = (file: IDiscoveredFile): string =>
+      HeaderSources._keyOf(file.path);
     const cppOf = (file: IDiscoveredFile): boolean =>
       file.type === EFileType.CppHeader || cppBuild;
     const readingsOf = (file: IDiscoveredFile): TReadings =>
@@ -259,7 +267,7 @@ class HeaderSources {
       const met = readingsOf(file).get(keyOf(file)) ?? undefined;
       if (header.source === null) {
         if (met !== undefined) return [{ i, reading: met }];
-        const slice = slices.get(resolve(file.path));
+        const slice = slices.get(HeaderSources._keyOf(file.path));
         return slice === undefined
           ? []
           : [{ i, reading: { text: slice, directives: null } }];
@@ -341,6 +349,19 @@ class HeaderSources {
   }
 
   /**
+   * One key per header file, however it is spelled: a symlinked directory
+   * names one file twice, and under `#pragma once` the compile opens it under
+   * only the first spelling
+   */
+  private static _keyOf(path: string): string {
+    try {
+      return realpathSync(path);
+    } catch {
+      return resolve(path);
+    }
+  }
+
+  /**
    * The preprocessor names a header by the path it found it along; the walk,
    * by the one it resolved. Both name the same file, and two spellings of it
    * (`"dev.h"`, `"../lib/dev.h"`) are one file's lines.
@@ -350,7 +371,7 @@ class HeaderSources {
   ): ReadonlyMap<string, string> {
     const resolved = new Map<string, string>();
     for (const [path, text] of slices ?? []) {
-      const key = resolve(path);
+      const key = HeaderSources._keyOf(path);
       const earlier = resolved.get(key);
       resolved.set(key, earlier === undefined ? text : `${earlier}\n${text}`);
     }
@@ -359,7 +380,7 @@ class HeaderSources {
 
   /**
    * Each header's reading by the compile of every `.cnx` file that opens it,
-   * by resolved path; null when two files' compiles read it differently, because
+   * by real path; null when two files' compiles read it differently, because
    * one includes a configuration the other does not. Every header a file's
    * compile opens is counted.
    */
@@ -369,7 +390,7 @@ class HeaderSources {
     read: {
       readonly settings: IHeaderSourceSettings;
       readonly limit: TPreprocessLimit;
-      readonly index: ReadonlyMap<string, number>;
+      readonly index: ReadonlyMap<string, readonly number[]>;
       readonly alone: readonly TAlone[];
       readonly counted: Set<number>;
     },
@@ -463,11 +484,11 @@ class HeaderSources {
       readonly entered: ReadonlySet<string>;
       readonly preprocessed: string;
     },
-    index: ReadonlyMap<string, number>,
+    index: ReadonlyMap<string, readonly number[]>,
     sources: Map<string, IHeaderSource>,
   ): void {
     const openedOnly = [...header.entered].filter(
-      (path) => !index.has(path) && !sources.has(path),
+      (path) => !index.has(HeaderSources._keyOf(path)) && !sources.has(path),
     );
     if (openedOnly.length === 0) return;
     const own = LineMarkers.byFile(header.preprocessed);
@@ -489,17 +510,18 @@ class HeaderSources {
    */
   private static _count(
     paths: Iterable<string>,
-    index: ReadonlyMap<string, number>,
+    index: ReadonlyMap<string, readonly number[]>,
     alone: readonly TAlone[],
     counted: Set<number>,
   ): void {
     const pending = [...paths];
     for (let path = pending.pop(); path !== undefined; path = pending.pop()) {
-      const i = index.get(resolve(path));
-      if (i === undefined || counted.has(i)) continue;
-      counted.add(i);
-      const header = alone[i];
-      if (header.source !== null) pending.push(...header.entered);
+      for (const i of index.get(HeaderSources._keyOf(path)) ?? []) {
+        if (counted.has(i)) continue;
+        counted.add(i);
+        const header = alone[i];
+        if (header.source !== null) pending.push(...header.entered);
+      }
     }
   }
 
@@ -518,12 +540,15 @@ class HeaderSources {
     },
   ): IRecoveredDeclarations {
     const reached = new Map(
-      headers.map((file) => [resolve(file.path), sources.get(file.path)]),
+      headers.map((file) => [
+        HeaderSources._keyOf(file.path),
+        sources.get(file.path),
+      ]),
     );
     const slices = new Map<string, IRecoveredSlice>();
     for (const [path, text] of recovery.perFileContent) {
       const language =
-        reached.get(resolve(path))?.language ??
+        reached.get(HeaderSources._keyOf(path))?.language ??
         HeaderSources._languageOf(FileKinds.of(path), text);
       slices.set(
         path,
@@ -675,7 +700,7 @@ class HeaderSources {
     return Object.freeze({
       text:
         HeaderSources._needsConditionalPreprocessing(text.raw) ||
-        HeaderSources._usesOwnFunctionLikeMacro(text.raw)
+        HeaderSources._callsOwnMacro(text.raw)
           ? text.preprocessed
           : (text.unexpanded ?? text.preprocessed),
       language: HeaderSources._languageOf(file.type, text.own),
@@ -683,15 +708,14 @@ class HeaderSources {
   }
 
   /**
-   * Whether a header uses a function-like macro it defines outside a
-   * directive: the parser reads `DECLARE_BUFFER(generated)` as a call, not
-   * the declaration it writes. One that is only defined
-   * (`#define SENSOR_SCALE(x) ((x) * 2)`) writes nothing the header declares.
+   * Whether a header calls a macro it defines outside a directive: the parser
+   * reads `DECLARE_BUFFER(generated)` as a call, not the declaration it
+   * writes, and so `DECL(generated)` through `#define DECL DECLARE_BUFFER`.
+   * One that is only defined (`#define SENSOR_SCALE(x) ((x) * 2)`) writes
+   * nothing the header declares.
    */
-  private static _usesOwnFunctionLikeMacro(content: string): boolean {
-    const names = [...content.matchAll(FUNCTION_LIKE_DEFINE)].map(
-      (match) => match[1],
-    );
+  private static _callsOwnMacro(content: string): boolean {
+    const names = [...content.matchAll(DEFINED_NAME)].map((match) => match[1]);
     if (names.length === 0) return false;
     const code = content.replace(/^[ \t]*#(?:.*\\\r?\n)*.*$/gm, "");
     return names.some((name) => new RegExp(`\\b${name}[ \\t]*\\(`).test(code));
