@@ -236,14 +236,22 @@ class HeaderSources {
 
   /**
    * The preprocessor names a header by the path it found it along; the walk,
-   * by the one it resolved. Both name the same file.
+   * by the one it resolved. Both name the same file, and two spellings of it
+   * (`"dev.h"`, `"../lib/dev.h"`) are one file's lines. A slice with no token
+   * is left out: a guard emptied it, as the file was read under another
+   * spelling (a symlink's, #1881), and its declarations are there.
    */
   private static _resolvedKeys(
     slices: ReadonlyMap<string, string> | null,
   ): ReadonlyMap<string, string> {
     const resolved = new Map<string, string>();
     for (const [path, text] of slices ?? []) {
-      resolved.set(resolve(path), text);
+      const key = resolve(path);
+      const earlier = resolved.get(key);
+      resolved.set(key, earlier === undefined ? text : `${earlier}\n${text}`);
+    }
+    for (const [key, text] of resolved) {
+      if (text.trim() === "") resolved.delete(key);
     }
     return resolved;
   }
