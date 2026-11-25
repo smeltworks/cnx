@@ -1,0 +1,9 @@
+// Issue #2474 review helper: this file's Frame is a-struct.h's, so copy is
+// sized from its data, 4 bytes.
+#include "a-struct.h"
+
+mut u8[frame.data.type_element_count] aCopy;
+
+u32 aCopyCount() {
+    return aCopy.type_element_count;
+}
