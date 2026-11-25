@@ -36,11 +36,7 @@ function hasAccessSpecifierLabel(content: string): boolean {
   return false;
 }
 
-/**
- * Only whitespace before it on its line, or since a `{`, `;` or `}` that
- * opens a member (`class C { public: int x; };`), and a colon after any
- * whitespace.
- */
+/** Only whitespace before it on its line, and a colon after any whitespace. */
 function isAccessSpecifierAt(
   content: string,
   start: number,
@@ -48,7 +44,6 @@ function isAccessSpecifierAt(
 ): boolean {
   let before = start - 1;
   while (before >= 0 && content[before] !== "\n") {
-    if ("{;}".includes(content[before])) break;
     if (!/\s/.test(content[before])) {
       return false;
     }
@@ -73,6 +68,12 @@ function detectCppSyntax(content: string): boolean {
 
   // Class/struct with inheritance: class Foo : public/private/protected Bar
   if (/\b(class|struct)\s+\w+\s*:\s*(public|private|protected)/.test(content))
+    return true;
+
+  // A class body, or a struct body that opens with an access label: neither
+  // is C, wherever the label sits (`class C { public: int x; };`)
+  if (/\bclass\s+\w+\s*(?:final\s*)?\{/.test(content)) return true;
+  if (/\bstruct\s+\w+\s*\{\s*(?:public|private|protected)\s*:/.test(content))
     return true;
 
   // namespace keyword: namespace Foo {

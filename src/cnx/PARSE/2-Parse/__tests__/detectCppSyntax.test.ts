@@ -149,6 +149,26 @@ describe("detectCppSyntax", () => {
     });
   });
 
+  describe("one-line class bodies (#2504 review)", () => {
+    it.each([
+      ["a class body", "class Counter { public: uint8_t data[4]; };"],
+      ["a final class body", "class Leaf final { int x; };"],
+      [
+        "a struct body that opens with a label",
+        "struct S { private: int y; };",
+      ],
+    ])("detects %s", (_label, source) => {
+      expect(detectCppSyntax(source)).toBe(true);
+    });
+
+    it.each([
+      ["a C struct body", "struct S { int public_x; };"],
+      ["class as a C identifier", "int class; struct K { int class; };"],
+    ])("does not detect %s", (_label, source) => {
+      expect(detectCppSyntax(source)).toBe(false);
+    });
+  });
+
   describe("access specifier labels (S8786 scan)", () => {
     // These rows are the corpus the scan was checked against when it replaced
     // /^\s*(public|private|protected)\s*:/m. Kept as tests so the equivalence
@@ -159,10 +179,6 @@ describe("detectCppSyntax", () => {
       ["a tab-indented label", "\n\tprotected:\n", true],
       ["a colon on the following line", "public\n:", true],
       ["a blank line before the colon", "private\n\n  :", true],
-      // #2504 review: a label that opens a one-line class body, or follows a
-      // member on its line, is one too
-      ["a label after a one-line class's brace", "class A { public: };", true],
-      ["a label after a member", "struct B { int x; private: int y; };", true],
     ])("detects %s", (_label, source, expected) => {
       expect(detectCppSyntax(source)).toBe(expected);
     });
@@ -174,6 +190,13 @@ describe("detectCppSyntax", () => {
       ["a label with code before it on the line", "x = public:"],
       ["a keyword with no colon", "public"],
       ["a bare colon", ":"],
+      // A label needs its own line: only whitespace may precede it, so a C
+      // goto label after a statement is not one.
+      [
+        "a C label after a statement",
+        "void f(void) { goto public; ; public: return; }",
+      ],
+      ["a label inside a string literal", 'const char *s = "{ public: }";'],
       ["empty input", ""],
     ])("does not treat %s as an access specifier", (_label, source) => {
       expect(detectCppSyntax(source)).toBe(false);
