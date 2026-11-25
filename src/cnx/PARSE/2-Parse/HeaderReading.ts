@@ -47,6 +47,7 @@ const NOTHING_SETTLED: TSettled = {
   recovered: null,
   unsettled: new Map(),
   opened: new Map(),
+  cppBuild: false,
 };
 
 /**
@@ -154,6 +155,7 @@ class HeaderReading {
       settled.recovered,
       unit.sites,
       graph.run.cppRequired,
+      settled.cppBuild,
     );
     // Only the headers a C compile opens are read (#1844)
     const headerFiles = graph.headerFiles.filter((file) =>
@@ -316,6 +318,7 @@ class HeaderReading {
     recovered: IRecoveredDeclarations | null,
     unitSites: ReadonlyMap<string, readonly ISourceSite[]>,
     cppRequired: boolean | undefined,
+    judgedCpp: boolean,
   ): boolean {
     const met = HeaderReading._cppMet(
       includes,
@@ -330,7 +333,7 @@ class HeaderReading {
       }
       return false;
     }
-    return cppRequired ?? met.size > 0;
+    return cppRequired ?? (judgedCpp || met.size > 0);
   }
 
   /** Each `.cnx` include through which the run meets C++, and the C++ it meets */

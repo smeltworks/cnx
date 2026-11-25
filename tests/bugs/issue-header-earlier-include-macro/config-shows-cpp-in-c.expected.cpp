@@ -9,18 +9,29 @@
 // test-execution
 // cpp-only-hide-config.h hides ShownInC from C++ alone. The text C meets holds
 // a class, so the run is C++ (#1542 ruling 4) and emits C++, though the C++
-// unit reads nothing of shown-in-c.h. A C run is E0507, as a C compile meets
-// the class.
+// unit reads nothing of shown-in-c.h but C. Its count_fn is a C callback
+// type, so a local holds onCount as one and calling it is a callback call.
+// A C run is E0507, as a C compile meets the class.
 #include "lib/cpp-only-hide-config.h"
 #include "lib/shown-in-c.h"
 
 #include <stdint.h>
 
-uint8_t seen = 1U;
+uint32_t counted = 0U;
+
+void onCount(const uint32_t value) {
+    counted = value;
+}
 
 int main(void) {
-    if (seen != 1) {
+    const count_fn f = onCount;
+    f(3);
+    if (counted != 3) {
         return 1U;
+    }
+    apply_count(f);
+    if (counted != 7) {
+        return 2U;
     }
     return 0U;
 }

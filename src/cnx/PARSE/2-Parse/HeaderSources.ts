@@ -144,6 +144,11 @@ class HeaderSources {
     readonly recovered: IRecoveredDeclarations | null;
     readonly unsettled: ReadonlyMap<string, string>;
     readonly opened: ReadonlyMap<string, ReadonlySet<string>>;
+    /**
+     * #1542 ruling 4: a header whose text C meets is C++ makes the run C++,
+     * though the C++ unit it is parsed from may hold none of that C++
+     */
+    readonly cppBuild: boolean;
   }> {
     invariant(
       headers.length === 0 || settings.preprocessor.isAvailable(),
@@ -280,19 +285,6 @@ class HeaderSources {
           : { i: entry.i, reading: { ...entry.reading, directives: null } };
       }),
     );
-    // The run's mode reads each header's language: one the text C meets
-    // makes C++ stays C++ (it made `cppBuild` so), whatever text it is parsed from
-    const cJudged = (
-      file: IDiscoveredFile,
-      source: IHeaderSource,
-    ): IHeaderSource => {
-      const cText = cTextOf(file);
-      return source.language === EHeaderLanguage.C &&
-        cText !== undefined &&
-        HeaderSources._languageOf(file.type, cText) === EHeaderLanguage.Cpp
-        ? Object.freeze({ ...source, language: EHeaderLanguage.Cpp })
-        : source;
-    };
     const sources = new Map<string, IHeaderSource>();
     const unsettled = new Map<string, string>();
     const sliced = new Map(faithful.map((entry) => [entry.i, entry.reading]));
@@ -302,7 +294,7 @@ class HeaderSources {
       const reading = sliced.get(i);
       if (reading === undefined) {
         if (header.source === null) unsettled.set(file.path, header.error);
-        else sources.set(file.path, cJudged(file, header.source));
+        else sources.set(file.path, header.source);
         return;
       }
       // #1542 ruling 4 judges the run's mode on the text C meets (above);
@@ -312,15 +304,12 @@ class HeaderSources {
         : (cTextOf(file) ?? reading.text);
       sources.set(
         file.path,
-        cJudged(
-          file,
-          HeaderSources._sourceOf(file, {
-            raw: header.raw,
-            unexpanded: reading.directives,
-            preprocessed: reading.text,
-            own: judged,
-          }),
-        ),
+        HeaderSources._sourceOf(file, {
+          raw: header.raw,
+          unexpanded: reading.directives,
+          preprocessed: reading.text,
+          own: judged,
+        }),
       );
     });
     const opened = new Map<string, ReadonlySet<string>>();
@@ -338,6 +327,7 @@ class HeaderSources {
           : HeaderSources._recovered(headers, sources, recovery),
       unsettled,
       opened,
+      cppBuild,
     };
   }
 

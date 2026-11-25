@@ -13,7 +13,10 @@ extern "C" {
 #endif
 
 /* External variables */
-extern uint8_t seen;
+extern uint32_t counted;
+
+/* Function prototypes */
+void onCount(const uint32_t value);
 
 #ifdef __cplusplus
 }
