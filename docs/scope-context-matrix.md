@@ -1154,9 +1154,10 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-18 linked fixtures with no derivable context:
+19 linked fixtures with no derivable context:
 
 - `adr-034/header-array-field-fill.test.cnx`
+- `adr-034/header-char-array-string.test.cnx`
 - `adr-035/array-count-included-error.test.cnx`
 - `adr-035/array-count-transitive-error.test.cnx`
 - `adr-035/inferred-size-render.test.cnx`
