@@ -185,8 +185,9 @@ class HeaderSources {
       const key = HeaderSources._keyOf(file.path);
       index.set(key, [...(index.get(key) ?? []), i]);
     });
+    const spelled = headers.map((file) => resolve(file.path));
     const counted = new Set<number>();
-    HeaderSources._count([...unit.headers], index, alone, counted);
+    HeaderSources._count([...unit.headers], { index, spelled, alone }, counted);
     const recovers =
       unit.searchesSystemPath ||
       [...counted].some((i) => alone[i].source === null);
@@ -211,8 +212,8 @@ class HeaderSources {
     const slices = HeaderSources._resolvedKeys(
       recovery?.perFileContent ?? null,
     );
-    HeaderSources._count(slices.keys(), index, alone, counted);
-    const read = { settings, limit, index, alone, counted };
+    HeaderSources._count(slices.keys(), { index, spelled, alone }, counted);
+    const read = { settings, limit, index, spelled, alone, counted };
     const cReadings = counts(false)
       ? await HeaderSources._readings(unit.files, false, read)
       : NO_READINGS;
@@ -240,8 +241,10 @@ class HeaderSources {
           if (header.source === null) return false;
           const own = LineMarkers.byFile(header.preprocessed);
           return [...header.entered].some(
+            // a .hpp spelling is C++ even when the file is a walked .h (#211)
             (path) =>
-              !index.has(HeaderSources._keyOf(path)) &&
+              (!index.has(HeaderSources._keyOf(path)) ||
+                FileKinds.of(path) === EFileType.CppHeader) &&
               isCpp(FileKinds.of(path), own.get(path) ?? ""),
           );
         }) ||
@@ -391,6 +394,7 @@ class HeaderSources {
       readonly settings: IHeaderSourceSettings;
       readonly limit: TPreprocessLimit;
       readonly index: ReadonlyMap<string, readonly number[]>;
+      readonly spelled: readonly string[];
       readonly alone: readonly TAlone[];
       readonly counted: Set<number>;
     },
@@ -431,12 +435,7 @@ class HeaderSources {
     const readings = new Map<string, IReading | null>();
     const directivesAgree = new Map<string, string | null>();
     for (const slices of perFile) {
-      HeaderSources._count(
-        slices.expanded.keys(),
-        read.index,
-        read.alone,
-        read.counted,
-      );
+      HeaderSources._count(slices.expanded.keys(), read, read.counted);
       for (const [key, text] of slices.expanded) {
         const earlier = readings.get(key);
         if (earlier === undefined)
@@ -505,23 +504,32 @@ class HeaderSources {
   }
 
   /**
-   * Adds to `counted` each header in `paths`, and each one a counted header's
-   * preprocessing opened, by its index in `headers`.
+   * Adds to `counted` each header in `paths`, every spelling of it, and each
+   * one a counted header's preprocessing opened, by its index in `headers`.
+   * Only the spelling the compile opened is followed: another one's own
+   * includes resolve beside it, where this compile never looked.
    */
   private static _count(
     paths: Iterable<string>,
-    index: ReadonlyMap<string, readonly number[]>,
-    alone: readonly TAlone[],
+    headers: {
+      readonly index: ReadonlyMap<string, readonly number[]>;
+      readonly spelled: readonly string[];
+      readonly alone: readonly TAlone[];
+    },
     counted: Set<number>,
   ): void {
     const pending = [...paths];
+    const followed = new Set<number>();
     for (let path = pending.pop(); path !== undefined; path = pending.pop()) {
-      for (const i of index.get(HeaderSources._keyOf(path)) ?? []) {
-        if (counted.has(i)) continue;
-        counted.add(i);
-        const header = alone[i];
+      const all = headers.index.get(HeaderSources._keyOf(path)) ?? [];
+      const opened = all.filter((i) => headers.spelled[i] === resolve(path));
+      for (const i of opened.length > 0 ? opened : all.slice(0, 1)) {
+        if (followed.has(i) || counted.has(i)) continue;
+        followed.add(i);
+        const header = headers.alone[i];
         if (header.source !== null) pending.push(...header.entered);
       }
+      for (const i of all) counted.add(i);
     }
   }
 

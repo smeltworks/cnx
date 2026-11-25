@@ -17,6 +17,7 @@ import {
   mkdtempSync,
   writeFileSync,
   rmSync,
+  symlinkSync,
   utimesSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -270,6 +271,50 @@ describe("a header's language is decided once, in 1.1 (#1844)", () => {
         expect(errorsOf(result)).toBe("");
         expect(emitted(result, ".cpp")).toBe(true);
         expect(emitted(result, ".c")).toBe(false);
+      }
+    });
+
+    // #2504 review: one file under two spellings is one header, but each
+    // spelling keeps what its own spelling means
+    it("is C++ when a macro-named include opens a walked .h through a .hpp symlink", async (ctx) => {
+      if (!preprocessorAvailable) ctx.skip();
+      writeFileSync(join(dir, "api.h"), "int api_v;\n");
+      symlinkSync("api.h", join(dir, "api-link.hpp"));
+
+      const runs = await coldThenWarmMain(
+        { "cfg.h": '#define API_HEADER "api-link.hpp"\n#include API_HEADER\n' },
+        '#include "api.h"\n#include "cfg.h"\n\nvoid main() { }\n',
+      );
+
+      for (const result of runs) {
+        expect(errorsOf(result)).toBe("");
+        expect(emitted(result, ".cpp")).toBe(true);
+      }
+    });
+
+    it("is C when only an unopened symlink spelling's sibling include is C++", async (ctx) => {
+      if (!preprocessorAvailable) ctx.skip();
+      mkdirSync(join(dir, "real"));
+      mkdirSync(join(dir, "link"));
+      writeFileSync(join(dir, "real", "dep.h"), "int dep_v;\n");
+      writeFileSync(
+        join(dir, "link", "dep.h"),
+        "class Dep { public: int x; };\n",
+      );
+      writeFileSync(join(dir, "real", "a.h"), '#include "dep.h"\n');
+      symlinkSync(join("..", "real", "a.h"), join(dir, "link", "a.h"));
+
+      const runs = await coldThenWarmMain(
+        {
+          "wrap.h": '#ifdef NEVER\n#include "link/a.h"\n#endif\nint wrap_v;\n',
+        },
+        '#include "real/a.h"\n#include "wrap.h"\n\nvoid main() { }\n',
+      );
+
+      for (const result of runs) {
+        expect(errorsOf(result)).toBe("");
+        expect(emitted(result, ".c")).toBe(true);
+        expect(emitted(result, ".cpp")).toBe(false);
       }
     });
 
