@@ -8,7 +8,8 @@
 // test-execution
 // test-adr: 035
 // #2484 review: a header struct's array field takes a fill-all for its whole
-// size, and a short list C zero-fills.
+// size, and a short list C zero-fills. A dimension is read as C reads it, so
+// octal 010 is 8 slots.
 #include "header-bit-field.h"
 
 #include <stdint.h>
@@ -27,6 +28,10 @@ int main(void) {
     }
     if (partial.data[3U] != 0) {
         return 4U;
+    }
+    const CNamed named = { .octal = {5U, 5U, 5U, 5U, 5U, 5U, 5U, 5U} };
+    if (named.octal[7U] != 5) {
+        return 5U;
     }
     return 0U;
 }

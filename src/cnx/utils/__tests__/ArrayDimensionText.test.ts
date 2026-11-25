@@ -38,6 +38,11 @@ describe("ArrayDimensionText", () => {
       },
     );
 
+    it("reads a header's octal dimension as C does (#2484 review)", () => {
+      expect(ArrayDimensionText.parseC("t[010][0x10][4u]")).toEqual([8, 16, 4]);
+      expect(ArrayDimensionText.parseC("t[N + 1]")).toEqual(["N + 1"]);
+    });
+
     it("keeps the position of an unsized dimension", () => {
       // The empty string holds the slot so dimension i still matches subscript
       // i; dropping it would shift every dimension that follows.

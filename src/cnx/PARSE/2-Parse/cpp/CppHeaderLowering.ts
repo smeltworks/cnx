@@ -303,7 +303,7 @@ class CppHeaderLowering {
       isConstMember:
         paramsAndQuals?.cvqualifierseq()?.getText().includes("const") ?? false,
       arrayDimensions: noPointer
-        ? ArrayDimensionText.parse(noPointer.getText())
+        ? ArrayDimensionText.parseC(noPointer.getText())
         : [],
     };
   }

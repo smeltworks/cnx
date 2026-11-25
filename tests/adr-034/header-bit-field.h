@@ -23,4 +23,9 @@ typedef struct {
     CReg regs[2];
 } CBank;
 
+typedef struct {
+    uint8_t octal[010];
+    char name[8];
+} CNamed;
+
 #endif

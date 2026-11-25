@@ -194,7 +194,7 @@ class CHeaderLowering {
           isUnprototyped: true,
         }),
       isConstMember: false,
-      arrayDimensions: ArrayDimensionText.parse(directDeclarator.getText()),
+      arrayDimensions: ArrayDimensionText.parseC(directDeclarator.getText()),
     };
   }
 
