@@ -9,7 +9,8 @@
 // A header array sized by a header macro has the count C reads: table is
 // SENSOR_COUNT (3), pairs (SENSOR_COUNT * 2) (6), and frame.data
 // SENSOR_COUNT + 1 (4). Each sizes a cnx array, and table's last element is
-// written through a constant index.
+// written through a constant index. duo and duo_bits_t.two read PAIR_COUNT,
+// a macro named like a struct tag, which sizes nothing: 2.
 #include "lib/counted.h"
 
 #include <stdint.h>
@@ -19,6 +20,10 @@ uint8_t tableCopy[3] = {0};
 uint8_t pairsCopy[6] = {0};
 
 uint8_t dataCopy[4] = {0};
+
+uint8_t duoCopy[2] = {0};
+
+duo_bits_t bits = {0};
 
 int main(void) {
     if (3 != 3) {
@@ -33,6 +38,13 @@ int main(void) {
     table[2] = 7U;
     if (table[2U] != 7) {
         return 4U;
+    }
+    if (2 != 2) {
+        return 5U;
+    }
+    bits.two = 3U;
+    if (bits.two != 3) {
+        return 6U;
     }
     return 0U;
 }

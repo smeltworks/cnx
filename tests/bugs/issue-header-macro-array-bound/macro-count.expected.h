@@ -7,6 +7,7 @@
  */
 
 #include <stdint.h>
+#include "lib/counted.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -16,6 +17,8 @@ extern "C" {
 extern uint8_t tableCopy[3];
 extern uint8_t pairsCopy[6];
 extern uint8_t dataCopy[4];
+extern uint8_t duoCopy[2];
+extern duo_bits_t bits;
 
 #ifdef __cplusplus
 }
