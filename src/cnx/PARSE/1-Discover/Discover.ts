@@ -7,6 +7,7 @@ import DependencyGraph from "./DependencyGraph";
 import FileDiscovery from "./FileDiscovery";
 import IncludeDiscovery from "./IncludeDiscovery";
 import IncludeResolver from "./IncludeResolver";
+import MacroIncludes from "./MacroIncludes";
 import InputExpansion from "./InputExpansion";
 import PlatformIOIni from "./PlatformIOIni";
 import EFileType from "./types/EFileType";
@@ -993,18 +994,38 @@ class Discover {
    * discovery, and every run cleared it before discovery began, so the walk
    * always started from an empty one. The walk's own `visited` set is the cycle
    * guard, and it is unchanged.
+   *
+   * #2504: an include a macro names is followed too, along every file the
+   * macro can name. A file the walk finds may define more such macros, so it
+   * walks again until it learns none.
    */
   private _resolveHeadersTransitively(roots: ReadonlyArray<IHeaderRoot>): {
     headers: IDiscoveredFile[];
     searchPaths: ReadonlyMap<string, readonly string[]>;
     edges: ReadonlyMap<string, readonly string[]>;
   } {
-    const resolved = IncludeResolver.resolveHeadersTransitively(roots, {
-      onDebug: this.settings.debugMode
-        ? (msg) => console.log(`[DEBUG] ${msg}`)
-        : undefined,
-      fs: this.fs,
-    });
+    const walk = (
+      macroIncludes: ReturnType<typeof MacroIncludes.spellings>,
+    ): ReturnType<typeof IncludeResolver.resolveHeadersTransitively> =>
+      IncludeResolver.resolveHeadersTransitively(roots, {
+        onDebug: this.settings.debugMode
+          ? (msg) => console.log(`[DEBUG] ${msg}`)
+          : undefined,
+        fs: this.fs,
+        macroIncludes,
+      });
+    let spellings = MacroIncludes.spellings([], this.anchor.defines);
+    let resolved = walk(spellings);
+    for (;;) {
+      const learned = MacroIncludes.spellings(
+        resolved.headers.map((header) => this.fs.readFile(header.path)),
+        this.anchor.defines,
+      );
+      if (MacroIncludes.count(learned) === MacroIncludes.count(spellings))
+        break;
+      spellings = learned;
+      resolved = walk(spellings);
+    }
     this.warnings.push(...resolved.warnings);
     const realpath = this.fs.realpath?.bind(this.fs);
     return {

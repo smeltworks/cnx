@@ -249,13 +249,18 @@ class HeaderSources {
           const header = alone[i];
           if (header.source === null) return false;
           const own = LineMarkers.byFile(header.preprocessed);
-          return [...header.entered].some(
-            // a .hpp spelling is C++ even when the file is a walked .h (#211)
-            (path) =>
-              (!index.has(HeaderSources._keyOf(path, real)) ||
-                FileKinds.of(path) === EFileType.CppHeader) &&
-              isCpp(FileKinds.of(path), own.get(path) ?? ""),
-          );
+          return [...header.entered].some((path) => {
+            const key = HeaderSources._keyOf(path, real);
+            // a .hpp spelling is C++ even when the file is a walked .h (#211);
+            // a file only preprocessing opened is judged on the text C meets
+            return (
+              (!index.has(key) || FileKinds.of(path) === EFileType.CppHeader) &&
+              isCpp(
+                FileKinds.of(path),
+                cReadings.get(key)?.text ?? own.get(path) ?? "",
+              )
+            );
+          });
         }) ||
         [...slices].some(
           ([path, text]) => !index.has(path) && isCpp(FileKinds.of(path), text),
@@ -346,14 +351,18 @@ class HeaderSources {
       const header = alone[i];
       if (!counted.has(i) || header.source === null) return;
       opened.set(resolve(file.path), header.entered);
-      HeaderSources._judgeOpenedOnly(header, index, sources, real);
+      HeaderSources._judgeOpenedOnly(header, index, sources, {
+        real,
+        cReadings,
+        readings: cppBuild ? cppReadings : cReadings,
+      });
     });
     return {
       sources,
       recovered:
         recovery === null || !recovers
           ? null
-          : HeaderSources._recovered(headers, sources, recovery),
+          : HeaderSources._recovered(headers, sources, recovery, real),
       unsettled,
       opened,
       cppBuild,
@@ -499,7 +508,10 @@ class HeaderSources {
 
   /**
    * Each file `header`'s preprocessing opened that the walk did not find, and
-   * nothing has judged yet, judged on its own lines there.
+   * nothing has judged yet: one a macro the walk cannot read names, such as
+   * `#include STR(impl.h)`. Read as the build's unit reads it, and judged on
+   * the text C meets there; on its own lines in `header` when the unit has no
+   * single reading of it.
    */
   private static _judgeOpenedOnly(
     header: {
@@ -508,21 +520,32 @@ class HeaderSources {
     },
     index: ReadonlyMap<string, readonly number[]>,
     sources: Map<string, IHeaderSource>,
-    real: ReadonlyMap<string, string>,
+    units: {
+      readonly real: ReadonlyMap<string, string>;
+      readonly cReadings: TReadings;
+      readonly readings: TReadings;
+    },
   ): void {
     const openedOnly = [...header.entered].filter(
       (path) =>
-        !index.has(HeaderSources._keyOf(path, real)) && !sources.has(path),
+        !index.has(HeaderSources._keyOf(path, units.real)) &&
+        !sources.has(path),
     );
     if (openedOnly.length === 0) return;
     const own = LineMarkers.byFile(header.preprocessed);
     for (const path of openedOnly) {
-      const text = own.get(path) ?? "";
+      const key = HeaderSources._keyOf(path, units.real);
+      // #2504: read as the build's compile meets it, after the includes
+      // before it; judged C or C++ on the text C meets (#1542 ruling 4)
+      const ownText = own.get(path) ?? "";
       sources.set(
         path,
         Object.freeze({
-          text,
-          language: HeaderSources._languageOf(FileKinds.of(path), text),
+          text: units.readings.get(key)?.text ?? ownText,
+          language: HeaderSources._languageOf(
+            FileKinds.of(path),
+            units.cReadings.get(key)?.text ?? ownText,
+          ),
         }),
       );
     }
@@ -573,8 +596,8 @@ class HeaderSources {
       macroNames: ReadonlySet<string>;
       directiveOf: ReadonlyMap<string, string>;
     },
+    real: ReadonlyMap<string, string>,
   ): IRecoveredDeclarations {
-    const real = HeaderSources._realPaths(headers);
     const reached = new Map(
       headers.map((file) => [
         HeaderSources._keyOf(file.path, real),
