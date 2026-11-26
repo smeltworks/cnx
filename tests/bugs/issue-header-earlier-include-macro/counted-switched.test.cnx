@@ -1,7 +1,6 @@
-// test-error
+// test-execution
 // sensor-config.h switches counted-buffer.h's wide_samples branch, so the header is read from the unit.
-// It is parsed from the unit's directives-only slice, as it is read alone when nothing switches it,
-// so table's bound reads the same either way. That text does not fold SENSOR_COUNT yet (E0909).
+// table's bound SENSOR_COUNT folds through the header's own macro to 3, as C reads it (#2510).
 #include "lib/sensor-config.h"
 #include "lib/counted-buffer.h"
 
