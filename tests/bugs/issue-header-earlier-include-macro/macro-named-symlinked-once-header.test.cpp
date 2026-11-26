@@ -17,10 +17,10 @@
 
 #include <stdint.h>
 
-uint8_t copy[4] = {};
+uint8_t copy[8] = {};
 
 int main(void) {
-    if (4 != 8) {
+    if (8 != 8) {
         return 1U;
     }
     return 0U;

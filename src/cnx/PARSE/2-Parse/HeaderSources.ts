@@ -234,9 +234,27 @@ class HeaderSources {
     // (`#include IMPL_HEADER`), and one only the unit's toolchain found
     const isCpp = (type: EFileType, text: string): boolean =>
       HeaderSources._languageOf(type, text) === EHeaderLanguage.Cpp;
+    // #2504 review: a header only a header's own preprocessing opened -- the
+    // branch an earlier include's macro turns off -- is not met by a compile
+    // whose unit never opened it
+    const direct = new Set(
+      [...unit.headers].flatMap(
+        (path) => index.get(HeaderSources._keyOf(path, real)) ?? [],
+      ),
+    );
+    const openedBy = (readings: readonly TReadings[], i: number): boolean => {
+      const key = HeaderSources._keyOf(headers[i].path, real);
+      return (
+        direct.has(i) ||
+        slices.has(key) ||
+        readings.some((readingsOfUnit) => readingsOfUnit.has(key))
+      );
+    };
+    const cRead = cReadings.size > 0;
     const cppBuild =
       unit.cppRequired ??
       ([...counted].some((i) => {
+        if (cRead && !openedBy([cReadings], i)) return false;
         if (headers[i].type === EFileType.CppHeader) return true;
         const cText =
           cTextOf(headers[i]) ??
@@ -254,6 +272,7 @@ class HeaderSources {
             // a .hpp spelling is C++ even when the file is a walked .h (#211);
             // a file only preprocessing opened is judged on the text C meets
             return (
+              (!cRead || cReadings.has(key)) &&
               (!index.has(key) || FileKinds.of(path) === EFileType.CppHeader) &&
               isCpp(
                 FileKinds.of(path),
@@ -271,6 +290,14 @@ class HeaderSources {
       counts(true) || (cppBuild && counts(false))
         ? await HeaderSources._readings(unit.cppFiles, true, read)
         : NO_READINGS;
+    const unitReadings = [cReadings, cppReadings].filter(
+      (readings) => readings.size > 0,
+    );
+    if (unitReadings.length > 0) {
+      for (const i of [...counted]) {
+        if (!openedBy(unitReadings, i)) counted.delete(i);
+      }
+    }
     const keyOf = (file: IDiscoveredFile): string =>
       HeaderSources._keyOf(file.path, real);
     const cppOf = (file: IDiscoveredFile): boolean =>

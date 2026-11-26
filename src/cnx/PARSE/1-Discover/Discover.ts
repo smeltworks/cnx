@@ -997,7 +997,9 @@ class Discover {
    *
    * #2504: an include a macro names is followed too, along every file the
    * macro can name. A file the walk finds may define more such macros, so it
-   * walks again until it learns none.
+   * walks again until it learns none. What it learned is kept: a later walk
+   * that reaches a header along another path does not forget its macros, so
+   * the spellings only grow and the walks end.
    */
   private _resolveHeadersTransitively(roots: ReadonlyArray<IHeaderRoot>): {
     headers: IDiscoveredFile[];
@@ -1014,11 +1016,15 @@ class Discover {
         fs: this.fs,
         macroIncludes,
       });
+    const texts = new Map<string, string>();
     let spellings = MacroIncludes.spellings([], this.anchor.defines);
     let resolved = walk(spellings);
     for (;;) {
+      for (const header of resolved.headers) {
+        texts.set(resolve(header.path), this.fs.readFile(header.path));
+      }
       const learned = MacroIncludes.spellings(
-        resolved.headers.map((header) => this.fs.readFile(header.path)),
+        texts.values(),
         this.anchor.defines,
       );
       if (MacroIncludes.count(learned) === MacroIncludes.count(spellings))

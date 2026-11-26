@@ -13,7 +13,7 @@
 #include <stdint.h>
 
 int main(void) {
-    const uint32_t count = pins.type_element_count;
+    const uint32_t count = 2;
     if (count != 2) {
         return 1U;
     }

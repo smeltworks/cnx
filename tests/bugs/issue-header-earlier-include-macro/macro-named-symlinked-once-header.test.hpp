@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 /* External variables */
-extern uint8_t copy[4];
+extern uint8_t copy[8];
 
 #ifdef __cplusplus
 }
