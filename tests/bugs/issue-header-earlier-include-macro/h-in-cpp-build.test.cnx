@@ -1,0 +1,15 @@
+// test-execution
+// test-cpp-only
+// c-only-config.h sets NO_MODE_BUFFER only in C, so a C++ build's g++ reads
+// mode-buffer.h's mode_buffer[8]. A .h in a C++ build reads the C++ unit.
+#include "lib/c-only-config.h"
+#include "lib/mode-buffer.h"
+
+mut u8[mode_buffer.type_element_count] copy;
+
+u32 main() {
+    if (copy.type_element_count != 8) {
+        return 1;
+    }
+    return 0;
+}

@@ -1,0 +1,10 @@
+// test-execution
+// test-c-only
+// off-wrap-config.h turns off-wrap.h off, so its C++ header is never
+// opened: the run stays C.
+#include "lib/off-wrap-config.h"
+#include "lib/off-wrap-outer.h"
+
+u32 main() {
+    return 0;
+}

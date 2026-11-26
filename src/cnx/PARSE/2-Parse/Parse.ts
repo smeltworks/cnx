@@ -64,7 +64,7 @@ class Parse {
     const mode = headers.cppMode ? "cpp" : "c";
     return {
       headers: Parse._headers(headers),
-      headerReader: headers.reader,
+      headerReaders: headers.readers,
       recovered: Parse._recovered(headers.recovered),
       sources,
       errors: [...errors, ...headers.errors],
