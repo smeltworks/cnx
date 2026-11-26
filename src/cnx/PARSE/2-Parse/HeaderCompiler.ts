@@ -1,7 +1,10 @@
+import { createHash } from "node:crypto";
+
 import TargetToolchain from "../../utils/TargetToolchain";
 import type ITargetDescription from "../../types/ITargetDescription";
 import type IHeaderCompiler from "./preprocessor/types/IHeaderCompiler";
 import type IHeaderPreprocessor from "./preprocessor/types/IHeaderPreprocessor";
+import type IHeaderSource from "../1-Discover/types/IHeaderSource";
 
 class HeaderCompiler {
   /**
@@ -111,6 +114,19 @@ class HeaderCompiler {
       headerPaths: [...reading.headerSearchPaths].sort(([a], [b]) =>
         a.localeCompare(b),
       ),
+    });
+  }
+
+  /**
+   * What one header's cache record is good for: `reader`, and the text the
+   * header was read as, in the language it was parsed as. The headers before it can change that text while its
+   * file does not: `#ifdef BIG` after an earlier include's `#define BIG`.
+   */
+  static readerOf(reader: string, source: IHeaderSource): string {
+    return JSON.stringify({
+      reader,
+      text: createHash("sha256").update(source.text).digest("hex"),
+      language: source.language,
     });
   }
 

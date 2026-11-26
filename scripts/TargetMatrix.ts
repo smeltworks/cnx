@@ -143,7 +143,12 @@ class TargetMatrix {
       const root = mkdtempSync(join(tmpdir(), "cnx-matrix-"));
       writeFileSync(join(root, "package.json"), "{}\n");
       const tests = join(root, "tests");
-      cpSync(join(rootDir, "tests"), tests, { recursive: true });
+      // A fixture's relative symlink names a file in the mirror, as it does
+      // in tests/; resolved, it would name the original (#2504)
+      cpSync(join(rootDir, "tests"), tests, {
+        recursive: true,
+        verbatimSymlinks: true,
+      });
       mirrors[target] = tests;
     }
     return mirrors;

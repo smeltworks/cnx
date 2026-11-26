@@ -1,0 +1,8 @@
+// no-log-config.h sets NO_LOG before log-sink.h, so this file's own compile
+// reads no log_sink. Only this file includes no-log-config.h.
+#include "lib/no-log-config.h"
+#include "lib/log-sink.h"
+
+u8 quiet_level() {
+    return 0;
+}

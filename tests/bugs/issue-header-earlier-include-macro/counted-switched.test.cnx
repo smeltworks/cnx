@@ -1,0 +1,16 @@
+// test-error
+// sensor-config.h switches counted-buffer.h's wide_samples branch, so the header is read from the unit.
+// It is parsed from the unit's directives-only slice, as it is read alone when nothing switches it,
+// so table's bound reads the same either way. That text does not fold SENSOR_COUNT yet (E0909).
+#include "lib/sensor-config.h"
+#include "lib/counted-buffer.h"
+
+mut u8[table.type_element_count] copy;
+
+i32 main() {
+    copy[0] <- 1;
+    if (copy.type_element_count != 3) {
+        return 1;
+    }
+    return 0;
+}

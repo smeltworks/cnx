@@ -56,6 +56,41 @@ interface ITranslationUnit {
    * compiler's own search path finds, so the unit is read whole
    */
   readonly searchesSystemPath: boolean;
+  /** Each `.cnx` file's own C includes, as its own compile reads them */
+  readonly files: readonly IFileUnit[];
+  /** The same, spelled for a C++ build */
+  readonly cppFiles: readonly IFileUnit[];
+  /** Whether the run is a C++ build, when the run says so */
+  readonly cppRequired: boolean | undefined;
+}
+
+/**
+ * A header's slice of a compile: as C reads it, and with its conditionals
+ * evaluated and nothing expanded (#2096) -- null when that run failed or two
+ * files' compiles read it differently
+ */
+interface IReading {
+  readonly text: string;
+  readonly directives: string | null;
+}
+
+/** By real path; null when two files' compiles read the header differently */
+type TReadings = ReadonlyMap<string, IReading | null>;
+
+const NO_READINGS: TReadings = new Map();
+
+/** `#define NAME`: each macro a header defines */
+const DEFINED_NAME = /^[ \t]*#[ \t]*define[ \t]+(\w+)/gm;
+
+/** One `.cnx` file's C includes and the path its compile searches */
+interface IFileUnit {
+  readonly directives: readonly string[];
+  readonly includePaths: readonly string[];
+  /**
+   * #1916: its headers' expanded slices, when the #1688 macro dump's run
+   * already expanded these includes; null when that run preprocessed none
+   */
+  readonly expanded?: ReadonlyMap<string, string> | null;
 }
 
 /**
@@ -80,8 +115,12 @@ class HeaderSources {
    *
    * A header that cannot be preprocessed even so is settled from its slice
    * of `unit` preprocessed whole (#985): that slice is the text a C compile
-   * meets. One the unit does not reach either is `unsettled`: nothing judges
-   * a header on the text as written (owner ruling 6 of 2026-10-03, #1542).
+   * meets. So is one whose slice differs from its text alone: an earlier
+   * include's `#define BIG` picked its `#ifdef BIG` branch, or its macro
+   * wrote a declaration. Any header can read an earlier one's macros, so the
+   * unit runs whenever a C header counts, and again as C++ (#211) whenever a
+   * C++ header does. One the unit does not reach either is `unsettled`:
+   * nothing judges a header on the text as written (owner ruling 6 of 2026-10-03, #1542).
    *
    * Only a header a C compile opens counts (owner ruling of 2026-10-07 on
    * #1914): one a `.cnx` file includes, or one a counted header's
@@ -110,6 +149,11 @@ class HeaderSources {
     readonly recovered: IRecoveredDeclarations | null;
     readonly unsettled: ReadonlyMap<string, string>;
     readonly opened: ReadonlyMap<string, ReadonlySet<string>>;
+    /**
+     * #1542 ruling 4: a header whose text C meets is C++ makes the run C++,
+     * though the C++ unit it is parsed from may hold none of that C++
+     */
+    readonly cppBuild: boolean;
   }> {
     invariant(
       headers.length === 0 || settings.preprocessor.isAvailable(),
@@ -134,51 +178,217 @@ class HeaderSources {
       );
     }
     const alone = await Promise.all(settled);
-    const index = new Map(headers.map((file, i) => [resolve(file.path), i]));
+    const real = HeaderSources._realPaths(headers);
+    // Each file by its key, with every spelling the walk found it under
+    const index = new Map<string, number[]>();
+    headers.forEach((file, i) => {
+      const key = HeaderSources._keyOf(file.path, real);
+      index.set(key, [...(index.get(key) ?? []), i]);
+    });
+    const spelled = headers.map((file) => resolve(file.path));
     const counted = new Set<number>();
-    HeaderSources._count([...unit.headers], index, alone, counted);
-    const recovery =
+    HeaderSources._count(
+      [...unit.headers],
+      { index, spelled, real, alone },
+      counted,
+    );
+    const recovers =
       unit.searchesSystemPath ||
-      [...counted].some((i) => alone[i].source === null)
-        ? await ExternalDeclarationOracle.recover(
-            unit.directives,
-            settings.preprocessor,
-            {
-              // #1723: the unit holds every file's C includes, so it is searched
-              // along every file's search path, not --include alone.
-              includePaths: [...unit.includePaths],
-              defines: { ...settings.defines },
-            },
-          )
-        : null;
-    // The preprocessor names a header by the path it found it along; the
-    // walk, by the one it resolved. Both name the same file.
-    const slices = new Map<string, string>();
-    for (const [path, text] of recovery?.perFileContent ?? []) {
-      slices.set(resolve(path), text);
+      [...counted].some((i) => alone[i].source === null);
+    // #1723: the unit holds every file's C includes, so it is searched
+    // along every file's search path, not --include alone.
+    const unitOptions = {
+      includePaths: [...unit.includePaths],
+      defines: { ...settings.defines },
+    };
+    const counts = (cpp: boolean): boolean =>
+      [...counted].some(
+        (i) => (headers[i].type === EFileType.CppHeader) === cpp,
+      );
+    // #985: the whole unit only recovers what no header alone settles
+    const recovery = recovers
+      ? await ExternalDeclarationOracle.recover(
+          unit.directives,
+          settings.preprocessor,
+          unitOptions,
+        )
+      : null;
+    const slices = HeaderSources._resolvedKeys(
+      recovery?.perFileContent ?? null,
+      real,
+    );
+    HeaderSources._count(
+      slices.keys(),
+      { index, spelled, real, alone },
+      counted,
+    );
+    const read = { settings, limit, index, spelled, real, alone, counted };
+    const cReadings = counts(false)
+      ? await HeaderSources._readings(unit.files, false, read)
+      : NO_READINGS;
+    // #1542 ruling 4: a header's language is judged on the text C meets
+    const cTextOf = (file: IDiscoveredFile): string | undefined =>
+      cReadings.get(HeaderSources._keyOf(file.path, real))?.text;
+    // One judgement, before any reading is chosen: every file the C compile
+    // opens -- a header the walk reached, one only its preprocessing opened
+    // (`#include IMPL_HEADER`), and one only the unit's toolchain found
+    const isCpp = (type: EFileType, text: string): boolean =>
+      HeaderSources._languageOf(type, text) === EHeaderLanguage.Cpp;
+    // #2504 review: a header only a header's own preprocessing opened -- the
+    // branch an earlier include's macro turns off -- is not met by a compile
+    // whose unit never opened it
+    const direct = new Set(
+      [...unit.headers].flatMap(
+        (path) => index.get(HeaderSources._keyOf(path, real)) ?? [],
+      ),
+    );
+    const keyAt = (i: number): string =>
+      HeaderSources._keyOf(headers[i].path, real);
+    const parents = new Map<string, number[]>();
+    for (const j of counted) {
+      for (const path of alone[j].source === null ? [] : alone[j].entered) {
+        const key = HeaderSources._keyOf(path, real);
+        parents.set(key, [...(parents.get(key) ?? []), j]);
+      }
     }
-    HeaderSources._count(slices.keys(), index, alone, counted);
+    // A unit that failed on an include drops it (#985), so a header its unit
+    // never read still opens what its own preprocessing opened
+    const openedBy = (
+      readings: readonly TReadings[],
+      i: number,
+      seen: Set<number> = new Set(),
+    ): boolean => {
+      const inUnit = (j: number): boolean =>
+        readings.some((readingsOfUnit) => readingsOfUnit.has(keyAt(j)));
+      if (direct.has(i) || slices.has(keyAt(i)) || inUnit(i)) return true;
+      seen.add(i);
+      return (parents.get(keyAt(i)) ?? []).some(
+        (j) => !seen.has(j) && !inUnit(j) && openedBy(readings, j, seen),
+      );
+    };
+    const cRead = cReadings.size > 0;
+    const cppBuild =
+      unit.cppRequired ??
+      ([...counted].some((i) => {
+        if (cRead && !openedBy([cReadings], i)) return false;
+        if (headers[i].type === EFileType.CppHeader) return true;
+        const cText =
+          cTextOf(headers[i]) ??
+          slices.get(HeaderSources._keyOf(headers[i].path, real));
+        return cText === undefined
+          ? alone[i].source?.language === EHeaderLanguage.Cpp
+          : isCpp(headers[i].type, cText);
+      }) ||
+        [...counted].some((i) => {
+          const header = alone[i];
+          if (header.source === null) return false;
+          if (cRead && !openedBy([cReadings], i)) return false;
+          // what a header the unit read opened is in the unit's reading
+          const unitRead = cRead && cReadings.has(keyAt(i));
+          const own = LineMarkers.byFile(header.preprocessed);
+          return [...header.entered].some((path) => {
+            const key = HeaderSources._keyOf(path, real);
+            // a .hpp spelling is C++ even when the file is a walked .h (#211);
+            // a file only preprocessing opened is judged on the text C meets
+            return (
+              (!unitRead || cReadings.has(key)) &&
+              (!index.has(key) || FileKinds.of(path) === EFileType.CppHeader) &&
+              isCpp(
+                FileKinds.of(path),
+                cReadings.get(key)?.text ?? own.get(path) ?? "",
+              )
+            );
+          });
+        }) ||
+        [...slices].some(
+          ([path, text]) => !index.has(path) && isCpp(FileKinds.of(path), text),
+        ));
+    // A C++ header is read as C++ (#211), and so is every header a C++
+    // build's compile meets: which declarations it gets is the text g++ reads
+    const cppReadings =
+      counts(true) || (cppBuild && counts(false))
+        ? await HeaderSources._readings(unit.cppFiles, true, read)
+        : NO_READINGS;
+    const unitReadings = [cReadings, cppReadings].filter(
+      (readings) => readings.size > 0,
+    );
+    if (unitReadings.length > 0) {
+      for (const i of [...counted]) {
+        if (!openedBy(unitReadings, i)) counted.delete(i);
+      }
+    }
+    const keyOf = (file: IDiscoveredFile): string =>
+      HeaderSources._keyOf(file.path, real);
+    const cppOf = (file: IDiscoveredFile): boolean =>
+      file.type === EFileType.CppHeader || cppBuild;
+    const readingsOf = (file: IDiscoveredFile): TReadings =>
+      cppOf(file) ? cppReadings : cReadings;
+    // A header whose unit reading differs from its own, or that has none
+    const fromUnit = headers.flatMap((file, i) => {
+      if (!counted.has(i)) return [];
+      const header = alone[i];
+      const met = readingsOf(file).get(keyOf(file)) ?? undefined;
+      if (header.source === null) {
+        if (met !== undefined) return [{ i, reading: met }];
+        const slice = slices.get(HeaderSources._keyOf(file.path, real));
+        return slice === undefined
+          ? []
+          : [{ i, reading: { text: slice, directives: null } }];
+      }
+      return met === undefined ||
+        HeaderSources._sameText(
+          met.text,
+          LineMarkers.ownText(header.preprocessed, file.path) ?? "",
+        )
+        ? []
+        : [{ i, reading: met }];
+    });
+    // #2096: the directives-only slice is parsed only when it says what the
+    // unit's expanded one does. A macro an earlier include defines writes what
+    // the parser cannot expand (`DECLARE_SIZED(declared, 5)`), and so does
+    // one the header defines with parameters (`DECLARE_BUFFER(generated)`)
+    const faithful = await Promise.all(
+      fromUnit.map(async (entry) => {
+        const directives = entry.reading.directives;
+        if (directives === null) return entry;
+        const alike = await limit(() =>
+          ExternalDeclarationOracle.expandsAlone(
+            directives,
+            entry.reading.text,
+            settings.preprocessor,
+            { defines: { ...settings.defines } },
+            cppOf(headers[entry.i]),
+          ),
+        );
+        return alike
+          ? entry
+          : { i: entry.i, reading: { ...entry.reading, directives: null } };
+      }),
+    );
     const sources = new Map<string, IHeaderSource>();
     const unsettled = new Map<string, string>();
+    const sliced = new Map(faithful.map((entry) => [entry.i, entry.reading]));
     headers.forEach((file, i) => {
       if (!counted.has(i)) return;
       const header = alone[i];
-      if (header.source !== null) {
-        sources.set(file.path, header.source);
+      const reading = sliced.get(i);
+      if (reading === undefined) {
+        if (header.source === null) unsettled.set(file.path, header.error);
+        else sources.set(file.path, header.source);
         return;
       }
-      const slice = slices.get(resolve(file.path));
-      if (slice === undefined) {
-        unsettled.set(file.path, header.error);
-        return;
-      }
+      // #1542 ruling 4 judges the run's mode on the text C meets (above);
+      // a header read from the C++ unit is parsed as the C++ text it is
+      const judged = cppOf(file)
+        ? reading.text
+        : (cTextOf(file) ?? reading.text);
       sources.set(
         file.path,
         HeaderSources._sourceOf(file, {
           raw: header.raw,
-          unexpanded: header.raw,
-          preprocessed: slice,
-          own: slice,
+          unexpanded: reading.directives,
+          preprocessed: reading.text,
+          own: judged,
         }),
       );
     });
@@ -187,65 +397,235 @@ class HeaderSources {
       const header = alone[i];
       if (!counted.has(i) || header.source === null) return;
       opened.set(resolve(file.path), header.entered);
-      HeaderSources._judgeOpenedOnly(header, index, sources);
+      HeaderSources._judgeOpenedOnly(header, index, sources, {
+        real,
+        cReadings,
+        readings: cppBuild ? cppReadings : cReadings,
+      });
     });
     return {
       sources,
       recovered:
-        recovery === null
+        recovery === null || !recovers
           ? null
-          : HeaderSources._recovered(headers, sources, recovery),
+          : HeaderSources._recovered(headers, sources, recovery, real),
       unsettled,
       opened,
+      cppBuild,
     };
   }
 
   /**
+   * One key per header file, however it is spelled: a symlinked directory
+   * names one file twice, and under `#pragma once` the compile opens it under
+   * only the first spelling
+   */
+  private static _keyOf(
+    path: string,
+    real: ReadonlyMap<string, string>,
+  ): string {
+    return real.get(resolve(path)) ?? resolve(path);
+  }
+
+  /** Each walked header's resolved path, and the real path 1.1 found it at */
+  private static _realPaths(
+    headers: readonly IDiscoveredFile[],
+  ): ReadonlyMap<string, string> {
+    return new Map(
+      headers.map((file) => [
+        resolve(file.path),
+        file.realPath ?? resolve(file.path),
+      ]),
+    );
+  }
+
+  /**
+   * The preprocessor names a header by the path it found it along; the walk,
+   * by the one it resolved. Both name the same file, and two spellings of it
+   * (`"dev.h"`, `"../lib/dev.h"`) are one file's lines.
+   */
+  private static _resolvedKeys(
+    slices: ReadonlyMap<string, string> | null,
+    real: ReadonlyMap<string, string>,
+  ): ReadonlyMap<string, string> {
+    const resolved = new Map<string, string>();
+    for (const [path, text] of slices ?? []) {
+      const key = HeaderSources._keyOf(path, real);
+      const earlier = resolved.get(key);
+      resolved.set(key, earlier === undefined ? text : `${earlier}\n${text}`);
+    }
+    return resolved;
+  }
+
+  /**
+   * Each header's reading by the compile of every `.cnx` file that opens it,
+   * by real path; null when two files' compiles read it differently, because
+   * one includes a configuration the other does not. Every header a file's
+   * compile opens is counted.
+   */
+  private static async _readings(
+    files: readonly IFileUnit[],
+    cpp: boolean,
+    read: {
+      readonly settings: IHeaderSourceSettings;
+      readonly limit: TPreprocessLimit;
+      readonly index: ReadonlyMap<string, readonly number[]>;
+      readonly spelled: readonly string[];
+      readonly real: ReadonlyMap<string, string>;
+      readonly alone: readonly TAlone[];
+      readonly counted: Set<number>;
+    },
+  ): Promise<TReadings> {
+    const distinct = new Map(
+      files.map(
+        (file) =>
+          [JSON.stringify([file.directives, file.includePaths]), file] as const,
+      ),
+    );
+    const sliceOf = (
+      file: IFileUnit,
+      directivesOnly: boolean,
+    ): Promise<ReadonlyMap<string, string>> =>
+      read.limit(async () =>
+        HeaderSources._resolvedKeys(
+          await ExternalDeclarationOracle.slices(
+            file.directives,
+            read.settings.preprocessor,
+            {
+              includePaths: [...file.includePaths],
+              defines: { ...read.settings.defines },
+              directivesOnly,
+            },
+            cpp,
+          ),
+          read.real,
+        ),
+      );
+    const perFile = await Promise.all(
+      [...distinct.values()].map(async (file) => ({
+        expanded:
+          file.expanded === undefined
+            ? await sliceOf(file, false)
+            : HeaderSources._resolvedKeys(file.expanded, read.real),
+        directives: await sliceOf(file, true),
+      })),
+    );
+    const readings = new Map<string, IReading | null>();
+    const directivesAgree = new Map<string, string | null>();
+    for (const slices of perFile) {
+      HeaderSources._count(slices.expanded.keys(), read, read.counted);
+      for (const [key, text] of slices.expanded) {
+        const earlier = readings.get(key);
+        if (earlier === undefined)
+          readings.set(key, { text, directives: null });
+        else if (
+          earlier !== null &&
+          !HeaderSources._sameText(earlier.text, text)
+        ) {
+          readings.set(key, null);
+        }
+        const directives = slices.directives.get(key) ?? null;
+        const seen = directivesAgree.get(key);
+        directivesAgree.set(
+          key,
+          seen === undefined ||
+            (seen !== null &&
+              directives !== null &&
+              HeaderSources._sameText(seen, directives))
+            ? directives
+            : null,
+        );
+      }
+    }
+    for (const [key, reading] of readings) {
+      if (reading === null) continue;
+      readings.set(key, {
+        text: reading.text,
+        directives: directivesAgree.get(key) ?? null,
+      });
+    }
+    return readings;
+  }
+
+  /** Whether two preprocessed texts hold the same tokens */
+  private static _sameText(a: string, b: string): boolean {
+    return a.replace(/\s+/g, "") === b.replace(/\s+/g, "");
+  }
+
+  /**
    * Each file `header`'s preprocessing opened that the walk did not find, and
-   * nothing has judged yet, judged on its own lines there.
+   * nothing has judged yet: one a macro the walk cannot read names, such as
+   * `#include STR(impl.h)`. Read as the build's unit reads it, and judged on
+   * the text C meets there; on its own lines in `header` when the unit has no
+   * single reading of it.
    */
   private static _judgeOpenedOnly(
     header: {
       readonly entered: ReadonlySet<string>;
       readonly preprocessed: string;
     },
-    index: ReadonlyMap<string, number>,
+    index: ReadonlyMap<string, readonly number[]>,
     sources: Map<string, IHeaderSource>,
+    units: {
+      readonly real: ReadonlyMap<string, string>;
+      readonly cReadings: TReadings;
+      readonly readings: TReadings;
+    },
   ): void {
     const openedOnly = [...header.entered].filter(
-      (path) => !index.has(path) && !sources.has(path),
+      (path) =>
+        !index.has(HeaderSources._keyOf(path, units.real)) &&
+        !sources.has(path),
     );
     if (openedOnly.length === 0) return;
     const own = LineMarkers.byFile(header.preprocessed);
     for (const path of openedOnly) {
-      const text = own.get(path) ?? "";
+      const key = HeaderSources._keyOf(path, units.real);
+      // #2504: read as the build's compile meets it, after the includes
+      // before it; judged C or C++ on the text C meets (#1542 ruling 4)
+      const ownText = own.get(path) ?? "";
       sources.set(
         path,
         Object.freeze({
-          text,
-          language: HeaderSources._languageOf(FileKinds.of(path), text),
+          text: units.readings.get(key)?.text ?? ownText,
+          language: HeaderSources._languageOf(
+            FileKinds.of(path),
+            units.cReadings.get(key)?.text ?? ownText,
+          ),
         }),
       );
     }
   }
 
   /**
-   * Adds to `counted` each header in `paths`, and each one a counted header's
-   * preprocessing opened, by its index in `headers`.
+   * Adds to `counted` each header in `paths`, every spelling of it, and each
+   * one a counted header's preprocessing opened, by its index in `headers`.
+   * Only the spelling the compile opened is followed: another one's own
+   * includes resolve beside it, where this compile never looked.
    */
   private static _count(
     paths: Iterable<string>,
-    index: ReadonlyMap<string, number>,
-    alone: readonly TAlone[],
+    headers: {
+      readonly index: ReadonlyMap<string, readonly number[]>;
+      readonly spelled: readonly string[];
+      readonly real: ReadonlyMap<string, string>;
+      readonly alone: readonly TAlone[];
+    },
     counted: Set<number>,
   ): void {
     const pending = [...paths];
+    const followed = new Set<number>();
     for (let path = pending.pop(); path !== undefined; path = pending.pop()) {
-      const i = index.get(resolve(path));
-      if (i === undefined || counted.has(i)) continue;
-      counted.add(i);
-      const header = alone[i];
-      if (header.source !== null) pending.push(...header.entered);
+      const all =
+        headers.index.get(HeaderSources._keyOf(path, headers.real)) ?? [];
+      const opened = all.filter((i) => headers.spelled[i] === resolve(path));
+      for (const i of opened.length > 0 ? opened : all.slice(0, 1)) {
+        if (followed.has(i) || counted.has(i)) continue;
+        followed.add(i);
+        const header = headers.alone[i];
+        if (header.source !== null) pending.push(...header.entered);
+      }
+      for (const i of all) counted.add(i);
     }
   }
 
@@ -262,14 +642,18 @@ class HeaderSources {
       macroNames: ReadonlySet<string>;
       directiveOf: ReadonlyMap<string, string>;
     },
+    real: ReadonlyMap<string, string>,
   ): IRecoveredDeclarations {
     const reached = new Map(
-      headers.map((file) => [resolve(file.path), sources.get(file.path)]),
+      headers.map((file) => [
+        HeaderSources._keyOf(file.path, real),
+        sources.get(file.path),
+      ]),
     );
     const slices = new Map<string, IRecoveredSlice>();
     for (const [path, text] of recovery.perFileContent) {
       const language =
-        reached.get(resolve(path))?.language ??
+        reached.get(HeaderSources._keyOf(path, real))?.language ??
         HeaderSources._languageOf(FileKinds.of(path), text);
       slices.set(
         path,
@@ -419,11 +803,27 @@ class HeaderSources {
     },
   ): IHeaderSource {
     return Object.freeze({
-      text: HeaderSources._needsConditionalPreprocessing(text.raw)
-        ? text.preprocessed
-        : (text.unexpanded ?? text.preprocessed),
+      text:
+        HeaderSources._needsConditionalPreprocessing(text.raw) ||
+        HeaderSources._callsOwnMacro(text.raw)
+          ? text.preprocessed
+          : (text.unexpanded ?? text.preprocessed),
       language: HeaderSources._languageOf(file.type, text.own),
     });
+  }
+
+  /**
+   * Whether a header calls a macro it defines outside a directive: the parser
+   * reads `DECLARE_BUFFER(generated)` as a call, not the declaration it
+   * writes, and so `DECL(generated)` through `#define DECL DECLARE_BUFFER`.
+   * One that is only defined (`#define SENSOR_SCALE(x) ((x) * 2)`) writes
+   * nothing the header declares.
+   */
+  private static _callsOwnMacro(content: string): boolean {
+    const names = [...content.matchAll(DEFINED_NAME)].map((match) => match[1]);
+    if (names.length === 0) return false;
+    const code = content.replace(/^[ \t]*#(?:.*\\\r?\n)*.*$/gm, "");
+    return names.some((name) => new RegExp(`\\b${name}[ \\t]*\\(`).test(code));
   }
 
   /**

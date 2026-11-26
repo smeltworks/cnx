@@ -1,0 +1,16 @@
+// test-execution
+// alias-buffer.h writes `aliased` through DECLARE, an alias of its own
+// function-like macro, in a branch sensor-config.h picks. The parser cannot
+// read DECLARE(aliased) as the declaration it writes, so the header is read
+// expanded: 6 elements.
+#include "lib/sensor-config.h"
+#include "lib/alias-buffer.h"
+
+mut u8[aliased.type_element_count] copy;
+
+u32 main() {
+    if (copy.type_element_count != 6) {
+        return 1;
+    }
+    return 0;
+}
