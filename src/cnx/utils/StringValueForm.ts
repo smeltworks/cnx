@@ -9,6 +9,7 @@
  */
 import ExpressionShape from "./ExpressionShape";
 import OperandTyper from "./OperandTyper";
+import StringUtils from "./StringUtils";
 import type ITypingContext from "../types/ITypingContext";
 import type TExpression from "../types/syntax/TExpression";
 import type TStringPart from "../types/TStringPart";
@@ -31,6 +32,55 @@ class StringValueForm {
     return part.kind === "substring"
       ? { kind: "substring", part }
       : { kind: "copy", value: part.value };
+  }
+
+  /**
+   * The most characters one part holds: a literal's length, a `string<N>`'s
+   * `N`, or a substring's length, which `lengthOf` folds (E0922 made it
+   * constant). Null for a part whose length cnx cannot see: a C string or an
+   * unsized `string`.
+   */
+  static partCapacity(
+    part: TStringPart,
+    ctx: ITypingContext,
+    lengthOf: (length: TExpression) => number | null,
+  ): number | null {
+    if (part.kind === "substring") {
+      return part.length === null ? 1 : lengthOf(part.length);
+    }
+    if (ExpressionShape.isStringLiteral(part.value)) {
+      return StringUtils.literalLength(part.value.written);
+    }
+    return OperandTyper.scalarStringCapacity(
+      OperandTyper.typeOf(part.value, ctx),
+    );
+  }
+
+  /**
+   * #2348 review: the capacity a concatenation or a substring is built at
+   * when nothing it lands in has one -- a C `char*` parameter: the sum of its
+   * parts' (`partCapacity`). Null when a part's is unknown, or the form is
+   * neither.
+   */
+  static builtCapacity(
+    form: TStringValueForm,
+    ctx: ITypingContext,
+    lengthOf: (length: TExpression) => number | null,
+  ): number | null {
+    const parts =
+      form.kind === "concat"
+        ? form.parts
+        : form.kind === "substring"
+          ? [form.part]
+          : null;
+    if (parts === null) return null;
+    let sum = 0;
+    for (const part of parts) {
+      const capacity = StringValueForm.partCapacity(part, ctx, lengthOf);
+      if (capacity === null) return null;
+      sum += capacity;
+    }
+    return sum;
   }
 
   private static partOf(value: TExpression, ctx: ITypingContext): TStringPart {

@@ -346,12 +346,8 @@ class StringDeclarationCheck {
    * string's among them.
    */
   private capacityOf(part: TStringPart): number | null {
-    if (part.kind === "substring") return this.lengthOf(part);
-    if (ExpressionShape.isStringLiteral(part.value)) {
-      return StringUtils.literalLength(part.value.written);
-    }
-    return OperandTyper.scalarStringCapacity(
-      OperandTyper.typeOf(part.value, this.context),
+    return StringValueForm.partCapacity(part, this.context, (length) =>
+      this.constantOf(length),
     );
   }
 

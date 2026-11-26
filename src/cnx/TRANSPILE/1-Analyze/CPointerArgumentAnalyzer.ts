@@ -35,11 +35,13 @@ import BindingSite from "../../utils/BindingSite";
 import MutArgument from "./helpers/MutArgument";
 import ArgumentQualifier from "./helpers/ArgumentQualifier";
 import CPointerParameter from "../../utils/CPointerParameter";
+import StringValueForm from "../../utils/StringValueForm";
 import ScanfFormat from "../../utils/ScanfFormat";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import CNX_TO_C_TYPE_MAP from "../../utils/constants/TypeMappings";
 import type IOperandType from "../../types/IOperandType";
+import type TStringPart from "../../types/TStringPart";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import type IBaseAnalysisError from "./types/IBaseAnalysisError";
@@ -95,6 +97,9 @@ class CPointerArgumentCheck {
         return;
       }
       if (pointee === null) return;
+      if (pointee === "char" && this.rejectsUnknownLength(arg, callee, index)) {
+        return;
+      }
       this.found.push({
         code: "E0896",
         span: arg.span,
@@ -237,6 +242,38 @@ class CPointerArgumentCheck {
     return CPointerArgumentAnalyzer.cTypeOf(
       OperandTyper.typeOf(arg, this.context),
     );
+  }
+
+  /**
+   * E0947 (#2348 review): a concatenation or a substring passed to a C
+   * `char*` is built into a temporary at the sum of its parts' capacities
+   * (ADR-045), so each whole part needs one. A substring's length is E0922's.
+   */
+  private rejectsUnknownLength(
+    arg: TExpression,
+    callee: ICCallee,
+    index: number,
+  ): boolean {
+    const form = StringValueForm.of(arg, this.context);
+    const parts =
+      form.kind === "concat"
+        ? form.parts
+        : form.kind === "substring"
+          ? [form.part]
+          : [];
+    const unknown = parts.find(
+      (part): part is Extract<TStringPart, { kind: "whole" }> =>
+        part.kind === "whole" &&
+        StringValueForm.partCapacity(part, this.context, () => null) === null,
+    );
+    if (unknown === undefined) return false;
+    this.found.push({
+      code: "E0947",
+      span: arg.span,
+      message: `The length of '${unknown.value.written}' is not known, so '${arg.written}' cannot be built for parameter ${index + 1} of '${callee.name}'`,
+      helpText: `ADR-045: copy '${unknown.value.written}' into a string<N> first, and pass the concatenation of that.`,
+    });
+    return true;
   }
 
   /** E0895, when the argument is not what the pointer points to */

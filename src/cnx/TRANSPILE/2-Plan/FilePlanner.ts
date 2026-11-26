@@ -44,6 +44,7 @@ import type ILengthName from "../../utils/types/ILengthName";
 import type TLengthRule from "../../utils/types/TLengthRule";
 import LengthSubject from "../../utils/LengthSubject";
 import OperandTyper from "../../utils/OperandTyper";
+import CPointerParameter from "../../utils/CPointerParameter";
 import ScanfFormat from "../../utils/ScanfFormat";
 import CharacterWrite from "../../utils/CharacterWrite";
 import StringValueForm from "../../utils/StringValueForm";
@@ -2051,9 +2052,11 @@ class FilePlanner {
               this.queries,
             );
       const cForm =
-        passing.mode === "c"
-          ? this.cArgumentForm(expression, passing.param, site)
-          : null;
+        passing.mode !== "c"
+          ? null
+          : built === undefined
+            ? this.cArgumentForm(expression, passing.param, site)
+            : "as-written";
       planned.set(expression, { passing, form, cForm, enumCast });
       const cType = form === null ? enumCast : ArgumentForm.cTypeOf(form);
       if (cType !== null) cTypes.add(cType);
@@ -2830,7 +2833,7 @@ class FilePlanner {
       typing,
       forms,
     );
-    const builtArguments = FilePlanner.planStringArguments(
+    const builtArguments = this.planStringArguments(
       valuePositions,
       typing,
       forms,
@@ -2914,9 +2917,11 @@ class FilePlanner {
   /**
    * #2239: a concatenation or a substring passed to a `string<N>` parameter,
    * by the parameter's capacity -- built apart like an assignment's, by the
-   * same value form. Any other argument is passed as it is written.
+   * same value form. One passed to a C `char*` parameter is built the same
+   * way, at the sum of its parts' capacities, which 2.1's E0862 saw are
+   * known (#2348 review). Any other argument is passed as it is written.
    */
-  private static planStringArguments(
+  private planStringArguments(
     valuePositions: IValuePositions | null,
     typing: ITypingContext,
     forms: Map<TExpression, TStringValueForm>,
@@ -2931,6 +2936,27 @@ class FilePlanner {
       if (form.kind !== "concat" && form.kind !== "substring") continue;
       forms.set(value, form);
       built.set(value, capacity);
+    }
+    for (const [expression, site] of FilePlanner.argumentSites(
+      valuePositions,
+    )) {
+      if (built.has(expression)) continue;
+      const passing = this.argumentPassing(site);
+      if (
+        passing.mode !== "c" ||
+        CPointerParameter.pointee(passing.param?.baseType) !== "char"
+      ) {
+        continue;
+      }
+      const form = StringValueForm.of(expression, typing);
+      const capacity = StringValueForm.builtCapacity(
+        form,
+        typing,
+        (length) => this.constantOf(length) ?? null,
+      );
+      if (capacity === null) continue;
+      forms.set(expression, form);
+      built.set(expression, capacity);
     }
     return built;
   }

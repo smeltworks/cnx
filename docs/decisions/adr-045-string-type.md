@@ -430,6 +430,7 @@ the field like any string. At file scope only a literal can initialize one
 | E0862 | A string's capacity cannot be determined: none written, and none inferable        | `tests/adr-045/string-error-const-no-init.test.cnx`, `tests/adr-045/string-error-uncovered-forms.test.cnx`, `tests/adr-045/string-syntax-rules-*.test.cnx`                                                   |
 | E0863 | A string, or a string field, at file scope is initialized by other than a literal | `tests/adr-045/string-error-init-global.test.cnx`, `tests/adr-045/string-imported-global-error.test.cnx`, `tests/adr-045/string-syntax-rules-*.test.cnx`                                                     |
 | E0864 | A value written into a `string<N>` may not fit its capacity                       | `tests/adr-045/string-error-overflow.test.cnx`, `tests/adr-045/string-error-in-scope.test.cnx`, `tests/adr-045/string-fit-rules-imported-*.test.cnx`, `tests/adr-045/string-fit-rules-for-header-*.test.cnx` |
+| E0947 | A string built for a C `char*` parameter has a part of unknown length             | `tests/bugs/issue-2348-cstring-operand/c-pointer-unknown-length.test.cnx`                                                                                                                                    |
 | E0865 | A substring's bounds exceed its source's capacity                                 | `tests/adr-045/string-error-substring-bounds.test.cnx`, `tests/adr-045/string-fit-rules-*.test.cnx`                                                                                                          |
 
 ### No Silent Truncation
@@ -555,6 +556,21 @@ Strings can be passed to C functions expecting `char*` or `const char*`:
 ```cnx
 string<64> message <- "Hello";
 printf("%s\n", message);        // Works: string<N> is a char[]
+```
+
+A concatenation or a substring passed to a C `char*` or `const char*`
+parameter is built into a temporary string before the call, as one passed to
+a `string<N>` parameter is (#2239), at the sum of its parts' capacities: a
+literal's length, a `string<N>`'s `N`, a substring's length (#2348 review).
+Until then `strcmp(s + "!", "hello!")` reached C as pointer addition, and
+`strlen(s + s[0])` compiled as pointer arithmetic. A part whose length cnx
+cannot see, such as main's unsized `string args[]` element, is E0947; copy it
+into a `string<N>` first.
+
+```cnx
+string<8> s <- "hello";
+i32 same <- strcmp(s + "!", "hello!");  // built into a char[10] first
+u64 n <- strlen(args[0] + "!");         // ERROR E0947: length of args[0] not known
 ```
 
 ### Read-only by Default (ADR-071, which supersedes ADR-013)

@@ -1,0 +1,32 @@
+// test-execution
+// #2348 review: a concatenation or a substring passed to a C char pointer
+// parameter is built into a temporary string first (ADR-045), as one passed
+// to a string<N> parameter is. Before, s + "!" reached C as pointer addition.
+#include <string.h>
+
+string<8> s <- "hello";
+
+u32 main() {
+    i32 joined <- strcmp(s + "!", "hello!");
+    if (joined != 0) {
+        return 1;
+    }
+    i32 part <- strcmp(s[1, 2], "el");
+    if (part != 0) {
+        return 2;
+    }
+    u64 length <- strlen(s + s[0]);
+    if (length != 6) {
+        return 3;
+    }
+    i32 wrapped <- strcmp("<" + s + ">", "<hello>");
+    if (wrapped != 0) {
+        return 4;
+    }
+    // Control: a whole string is passed as it is
+    i32 whole <- strcmp(s, "hello");
+    if (whole != 0) {
+        return 5;
+    }
+    return 0;
+}

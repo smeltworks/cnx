@@ -1518,6 +1518,16 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | -      | -          | -           | -          |
 | for header         | ok        | -      | -          | -           | -          |
 
+## ADR-045 E0947
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | -         | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
+
 ## ADR-045 string-copy
 
 | Context            | same file | direct | transitive | from 1 away | thru chain |
