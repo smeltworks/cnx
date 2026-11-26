@@ -2397,7 +2397,6 @@ class OperandTyper {
       overflow: null,
       hasSideEffect: false,
       volatileAccess: false,
-      unreadHeaderType: false,
       form: DECLARED,
       binding: null,
     };

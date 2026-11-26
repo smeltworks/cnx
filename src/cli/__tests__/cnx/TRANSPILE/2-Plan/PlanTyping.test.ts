@@ -137,7 +137,6 @@ describe("OverflowBehaviorUtils.ofLeaves (ADR-044)", () => {
       overflow: null,
       hasSideEffect: true,
       volatileAccess: false,
-      unreadHeaderType: false,
       form: { kind: "foreign", indeterminate: false },
       binding: null,
     } as const;
