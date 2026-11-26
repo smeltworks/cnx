@@ -515,13 +515,15 @@ class CodeGenWalker {
         planned.type.kind === "string" &&
         (form?.kind === "concat" || form?.kind === "substring")
       ) {
-        // #2263: a concatenation or a substring arm is built in the buffer
+        // #2263: a concatenation or a substring arm is built in the buffer,
+        // the calls of its parts run in its branch
         const capacity = planned.type.capacity;
-        return StringUtils.build(
-          temp,
-          capacity,
-          this.renderStringParts(form),
-        ).map((line) => indent + line);
+        const rendered = this.renderQueuing(() =>
+          StringUtils.build(temp, capacity, this.renderStringParts(form)),
+        );
+        return [...rendered.queued, ...rendered.code].map(
+          (line) => indent + line,
+        );
       }
       const call = ExpressionShape.postfixView(arm)?.ops.at(-1);
       const inPlace =
@@ -579,8 +581,10 @@ class CodeGenWalker {
    * #2332: render an operand that runs only sometimes, and hand back the
    * statements it queued to run before its statement instead of queuing them.
    */
-  private renderQueuing(render: () => string): {
-    code: string;
+  private renderQueuing<T = string>(
+    render: () => T,
+  ): {
+    code: T;
     queued: string[];
   } {
     const outer = this.host.state.pendingTempDeclarations;
