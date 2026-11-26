@@ -44,16 +44,16 @@ mut LocalFlags local <- 0;
 
 u32 main() {
     // Cross-file bitmap: the case that emitted a struct member write.
-    shared.Active <- 1;
+    shared.Active <- true;
     shared.Level <- 5;
 
     // Cross-file bitmap through a chain (#1749).
     sharedHolder.fl.Level <- 6;
-    sharedHolder.fls[1].Ready <- 1;
-    sharedHolders[1].fl.Active <- 1;
+    sharedHolder.fls[1].Ready <- true;
+    sharedHolders[1].fl.Active <- true;
 
     // Same-file bitmap: the control.
-    local.On <- 1;
+    local.On <- true;
     local.Mode <- 3;
 
     if (shared.Active != 1) {

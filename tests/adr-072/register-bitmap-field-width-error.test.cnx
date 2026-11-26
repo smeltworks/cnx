@@ -1,0 +1,42 @@
+// test-error
+// test-adr: 072
+#pragma target cortex-m7
+// ADR-072 Part 2, ruling 17: a runtime value written to a register's bitmap
+// field must fit the field by its type, whatever the access mode, through a
+// fixed instance or a register parameter. A wider type is E0869.
+
+bitmap32 DmaErrors {
+    Chan0Err[4],
+    Chan1Err[4],
+    Reserved[24]
+}
+
+register Dma {
+    0x00 w1c DmaErrors ERR,
+    0x04 rw DmaErrors CFG,
+}
+
+Dma DMA(0x40000000);
+
+void clear(Dma d, u8 error) {
+    // NEGATIVE CONTROL
+    d.ERR.Chan1Err <- error[0, 4];
+    // ASSERTION: through a register parameter
+    d.ERR.Chan1Err <- error;
+}
+
+void main() {
+    u8 error <- 0x1F;
+    u32 wide <- 0xFF;
+
+    // NEGATIVE CONTROLS -- each stays silent.
+    DMA.ERR.Chan0Err <- error[0, 4];
+    DMA.ERR.Chan0Err <- 0xF;
+    DMA.CFG.Chan1Err <- wide[4, 4];
+    clear(DMA, error);
+
+    // ASSERTIONS
+    DMA.ERR.Chan0Err <- error;
+    DMA.CFG.Chan0Err <- error;
+    DMA.CFG.Chan1Err <- wide;
+}

@@ -1,0 +1,17 @@
+// test-error
+// test-adr: 034
+// ADR-072 ruling 19: a C header struct's bit-field takes no compound operator,
+// as a bitmap field takes none. A clamp at its C type's maximum would still be
+// cut to the 3 bits it declares, so 7 plus 1 would read back 0.
+
+#include "header-bit-field.h"
+
+mut CReg r;
+
+void main() {
+    // NEGATIVE CONTROL -- a plain field is one storage location.
+    r.count +<- 1;
+
+    // ASSERTIONS
+    r.mode +<- 1;
+}

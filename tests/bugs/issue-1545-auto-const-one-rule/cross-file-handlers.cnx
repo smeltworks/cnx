@@ -7,10 +7,10 @@ mut u8 xwitness <- 0;
 
 // Callback-compatible via the OTHER file. Must NOT get auto-const.
 void xOnLog(mut string<32> msg) {
-    xwitness <- msg[0];
+    xwitness <- (u8)msg[0];
 }
 
 // Never wired anywhere. Must get auto-const -- the control for this file.
 void xPlainRead(string<32> text) {
-    xwitness <- text[0];
+    xwitness <- (u8)text[0];
 }

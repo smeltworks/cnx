@@ -43,7 +43,7 @@ uint8_t A__readVariable(void) {
 
 uint8_t A__firstOrdinal(void) {
     const A__B current = A__B__c;
-    return current;
+    return (uint8_t)current;
 }
 
 int main(void) {

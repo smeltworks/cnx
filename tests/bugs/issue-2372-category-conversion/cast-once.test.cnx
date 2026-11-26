@@ -1,0 +1,26 @@
+// test-execution
+// #2372: a written cast is the operand's one conversion. `(u8)'A'` is cast
+// once, a cast character const folds into a static initializer, and an
+// argument under a cast is still narrowed to its own parameter.
+u8 CH <- (u8)'A';
+u8 first <- CH;
+
+u8 take(u8 v) {
+    return v;
+}
+
+u32 main() {
+    u32 w <- 0x1234;
+    u32 r <- (u32)take(w[0, 8]);
+    if (r != 0x34) {
+        return 1;
+    }
+    u8 g <- (u8)'B';
+    if (g != (u8)'B') {
+        return 2;
+    }
+    if (first != (u8)'A') {
+        return 3;
+    }
+    return 0;
+}

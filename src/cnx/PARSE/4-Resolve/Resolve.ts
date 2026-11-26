@@ -6,6 +6,7 @@
  * its cnx includes, its target directives -- is taken here, from 1.3's
  * artifact, not handed in by the host.
  */
+import type IMacroReader from "./types/IMacroReader";
 import type IDeclaredSources from "../3-Declare/types/IDeclaredSources";
 import HeaderMacros from "./HeaderMacros";
 import Program from "./Program";
@@ -27,10 +28,20 @@ class Resolve {
     // #1619: one compiler reads every file's headers, so its predefined
     // `<stdint.h>` types are the same in each dump
     const integerTypes = new Map<string, string>();
+    const macroBodies: ReadonlyMap<string, string>[] = [];
+    const macroReaders: (IMacroReader & {
+      readonly headerFiles: ReadonlySet<string>;
+    })[] = [];
     for (const [path, read] of input.discovery.headerMacroDumps) {
       if (!read.complete) macrosUnread.add(path);
       if (read.dump === null) continue;
       macros.set(path, HeaderMacros.collect(read.dump));
+      macroBodies.push(HeaderMacros.bodies(read.dump));
+      macroReaders.push({
+        file: path,
+        bodies: macroBodies.at(-1)!,
+        headerFiles: new Set(read.headerFiles),
+      });
       const names = HeaderMacros.names(read.dump);
       visibleMacros.set(path, new Set(names));
       for (const name of names) macroNames.add(name);
@@ -38,6 +49,18 @@ class Resolve {
         integerTypes.set(name, type);
       }
     }
+    // #2494: a bit-field's width is read once, as C reads it, before any
+    // field is typed from the table -- through the macros of the files that
+    // include the struct's header, which are the files whose C reads it
+    table.settleBitFieldWidths((text, structName) => {
+      const header =
+        table.getCSymbol(structName)?.sourceFile ??
+        table.getCppSymbol(structName)?.sourceFile;
+      const including = macroReaders.filter(
+        (reader) => header !== undefined && reader.headerFiles.has(header),
+      );
+      return HeaderMacros.width(text, including, table.undefinedMacros());
+    });
     const program = Program.build(
       declared.map((entry) => entry.fileSymbols),
       {

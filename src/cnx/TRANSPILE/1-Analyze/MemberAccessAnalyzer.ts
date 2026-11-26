@@ -18,7 +18,6 @@
  * - E0927: a member of a value whose type has none
  */
 import BindingSite from "../../utils/BindingSite";
-import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import ExpressionShape from "../../utils/ExpressionShape";
 import ForeignTypeFacts from "../../utils/ForeignTypeFacts";
@@ -40,10 +39,8 @@ class MemberAccessAnalyzer {
 
   /** Every chain, read or written */
   public analyze(program: IProgramSyntax): IMemberAccessError[] {
-    return program.members.flatMap((member) =>
-      DeclarationParts.of(member.declaration).flatMap((part) =>
-        ExpressionNodes.of(part).flatMap((expr) => this.check(expr)),
-      ),
+    return ExpressionNodes.ofProgram(program).flatMap((expr) =>
+      this.check(expr),
     );
   }
 

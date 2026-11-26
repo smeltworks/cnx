@@ -45,7 +45,7 @@ uint8_t staleByte(void) {
     cnx_string_copy(s, "hello", 8U);
     cnx_string_copy(t, "hi", 8U);
     cnx_string_copy(s, t, 8U);
-    return s[3U];
+    return static_cast<uint8_t>(s[3U]);
 }
 
 void copyName(const uint32_t i, const uint32_t j) {

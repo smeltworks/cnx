@@ -754,7 +754,7 @@ enum EMode { IDLE, BUSY }
 
 u8 fromA() {
     EColor c <- EColor.GREEN;
-    return c;
+    return (u8)c;
 }
 `;
 
@@ -785,7 +785,7 @@ enum EColor { RED, GREEN }
 
 u8 fromB() {
     EMode m <- EMode.BUSY;
-    return m;
+    return (u8)m;
 }
 `);
 

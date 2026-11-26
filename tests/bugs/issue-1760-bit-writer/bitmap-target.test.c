@@ -20,7 +20,7 @@ void wf(Sm* s) {
 }
 
 void wp(Holder* p) {
-    p->s = (uint8_t)((p->s & ~(0xFU << 4)) | ((0xFU & 0xFU) << 4));
+    p->s = (uint8_t)((p->s & ~(0xFU << 4)) | (0xFU << 4));
 }
 
 /* Scope: Sc */
@@ -28,14 +28,14 @@ void wp(Holder* p) {
 uint8_t Sc__method(void) {
     /* C11 6.2.1p4, C++ [basic.scope.hiding]: `fl` emitted as `Sc__method__fl` (a plain `fl` would hide the file-scope `fl` for the rest of its scope, so `global.fl` would reach the local). */
     Sm Sc__method__fl = 0;
-    Sc__method__fl = (uint8_t)((Sc__method__fl & ~(0xFU << 4)) | ((5U & 0xFU) << 4));
+    Sc__method__fl = (uint8_t)((Sc__method__fl & ~(0xFU << 4)) | (5U << 4));
     return (uint8_t)((Sc__method__fl >> 4) & 0xF);
 }
 
 int main(void) {
     /* C11 6.2.1p4, C++ [basic.scope.hiding]: `fl` emitted as `main__fl` (a plain `fl` would hide the file-scope `fl` for the rest of its scope, so `global.fl` would reach the local). */
     Sm main__fl = 0;
-    main__fl = (uint8_t)((main__fl & ~(0xFU << 4)) | ((5U & 0xFU) << 4));
+    main__fl = (uint8_t)((main__fl & ~(0xFU << 4)) | (5U << 4));
     const uint8_t local = (uint8_t)((main__fl >> 4) & 0xF);
     if (local != 5) {
         return 1U;

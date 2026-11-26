@@ -24,11 +24,11 @@
 /* Scope: App */
 
 void App__configure(void) {
-    Hw__GPIO__Mode = (Hw__GPIO__Mode & ~((uint32_t)0x3U << 10)) | ((3U & (uint32_t)0x3U) << 10);
+    Hw__GPIO__Mode = (Hw__GPIO__Mode & ~((uint32_t)0x3U << 10)) | ((uint32_t)3U << 10);
     Hw__GPIO__Mode = (Hw__GPIO__Mode & ~((uint32_t)1U << 5)) | ((uint32_t)1U << 5);
 }
 
 void App__configureBareScope(void) {
-    Hw__GPIO__Mode = (Hw__GPIO__Mode & ~((uint32_t)0x3U << 10)) | ((3U & (uint32_t)0x3U) << 10);
+    Hw__GPIO__Mode = (Hw__GPIO__Mode & ~((uint32_t)0x3U << 10)) | ((uint32_t)3U << 10);
     Hw__GPIO__Mode = (Hw__GPIO__Mode & ~((uint32_t)1U << 5)) | ((uint32_t)1U << 5);
 }

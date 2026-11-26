@@ -10,7 +10,7 @@ i32 w(CppTestClass x) {
     return x.value;
 }
 
-i32 bump() {
+i16 bump() {
     calls <- calls + 1;
     return 1;
 }

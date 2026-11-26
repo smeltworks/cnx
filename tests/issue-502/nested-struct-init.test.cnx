@@ -9,4 +9,4 @@ struct Wrapper {
 }
 
 // This should trigger nested struct field lookup
-Wrapper w <- { result: { data: [0], count: 0, success: false } };
+Wrapper w <- { result: { data: [0*], count: 0, success: false } };

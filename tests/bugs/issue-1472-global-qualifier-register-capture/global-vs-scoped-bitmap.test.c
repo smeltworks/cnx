@@ -8,6 +8,7 @@
 // test-adr: 057
 
 #include <stdint.h>
+#include <stdbool.h>
 
 // Found while doing #1472 (deferred type resolution); fixed in the same PR.
 //
