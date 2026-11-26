@@ -251,6 +251,15 @@ class OperatorOperandCheck {
     const leftIsString = this.isStringExpression(left);
     if (leftIsString === this.isStringExpression(right)) return;
     const [text, other] = leftIsString ? [left, right] : [right, left];
+    // `s[i]` beside a string is a one-character substring (ADR-045)
+    if (
+      OperandTyper.isSubstring(
+        ExpressionShape.unparenthesized(other),
+        this.context,
+      )
+    ) {
+      return;
+    }
     if (
       OperatorOperandCheck.isNumber(OperandTyper.typeOf(other, this.context))
     ) {
@@ -259,14 +268,22 @@ class OperatorOperandCheck {
   }
 
   private isStringExpression(expr: TExpression): boolean {
-    if (ExpressionShape.isStringLiteral(expr)) return true;
+    if (
+      ExpressionShape.isStringLiteral(ExpressionShape.unparenthesized(expr))
+    ) {
+      return true;
+    }
     const typed = OperandTyper.typeOf(expr, this.context);
     return typed !== null && OperatorOperandAnalyzer.isString(typed);
   }
 
-  /** A number `+` admits: an integer, float or char, or a number literal */
+  /**
+   * A number `+` admits: an integer, float or char, a number literal, or a
+   * whole bitmap, which is its backing integer (ADR-034)
+   */
   private static isNumber(typed: IOperandType | null): boolean {
     if (typed === null) return false;
+    if (typed.bitmapTypeName !== null) return true;
     if (typed.form.kind === "literal") return typed.form.literal !== "bool";
     return ADDITIVE.has(typed.category);
   }

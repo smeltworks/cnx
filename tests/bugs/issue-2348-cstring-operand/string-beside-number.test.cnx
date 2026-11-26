@@ -3,13 +3,28 @@
 // concatenation; on a char array it was pointer arithmetic, exit 0.
 #include <string.h>
 
+bitmap8 TFlags {
+    a,
+    b,
+    c,
+    d,
+    e,
+    f,
+    g,
+    h
+}
+
 string<32> haystack <- "hello hello";
+TFlags flags;
 
 void main() {
     u32 address <- (u32)(haystack + 1);
     i32 after <- strcmp(haystack + 1, "lo");
     i32 before <- strcmp(2 + haystack, "lo");
     i32 literal <- strcmp("hello" + 1, "lo");
-    // Negative control: two strings join
+    i32 wrapped <- strcmp(("hello") + 1, "lo");
+    i32 masked <- strcmp(haystack + flags, "lo");
+    // Negative control: two strings join, and an element is a substring
     string<40> joined <- haystack + "!";
+    string<40> first <- haystack[0] + "!";
 }

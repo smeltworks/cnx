@@ -1,8 +1,12 @@
-9:25 error[E0925]: Operator '+' is not valid on a string
+12:25 error[E0925]: Operator '+' is not valid on a string
        help: ADR-045: a string is not a number. Join strings with '+' and compare them with '=', '!=', '<', '>', '<=' or '>='.
-10:24 error[E0925]: Operator '+' is not valid on a string
+13:24 error[E0925]: Operator '+' is not valid on a string
        help: ADR-045: a string is not a number. Join strings with '+' and compare them with '=', '!=', '<', '>', '<=' or '>='.
-11:29 error[E0925]: Operator '+' is not valid on a string
+14:29 error[E0925]: Operator '+' is not valid on a string
        help: ADR-045: a string is not a number. Join strings with '+' and compare them with '=', '!=', '<', '>', '<=' or '>='.
-12:26 error[E0925]: Operator '+' is not valid on a string
+15:26 error[E0925]: Operator '+' is not valid on a string
+       help: ADR-045: a string is not a number. Join strings with '+' and compare them with '=', '!=', '<', '>', '<=' or '>='.
+16:26 error[E0925]: Operator '+' is not valid on a string
+       help: ADR-045: a string is not a number. Join strings with '+' and compare them with '=', '!=', '<', '>', '<=' or '>='.
+17:25 error[E0925]: Operator '+' is not valid on a string
        help: ADR-045: a string is not a number. Join strings with '+' and compare them with '=', '!=', '<', '>', '<=' or '>='.
