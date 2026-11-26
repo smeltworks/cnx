@@ -6,11 +6,13 @@
 #include "c-pointer-ternary-width.test.h"
 
 #include <string.h>
+#include "lib/text-measure.h"
 
 // test-execution
 // #2348 review: a ternary built in branches, because one arm passes a built
 // string to a C call, holds the wider of its arms as C's ?: would. Held in
-// strcmp's int32_t, big's 5000000000 lost its high bits before the compare.
+// strcmp's int32_t, big's 5000000000 lost its high bits before the compare;
+// held in a bit range's uint64_t, half_length's 2.5 lost its fraction.
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -72,6 +74,25 @@ int main(void) {
     const bool built = (cnx_tmp3) == 0;
     if (built != true) {
         return 2U;
+    }
+    const uint64_t count = 2ULL;
+    /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
+    float cnx_tmp5;
+    if (pick == 1) {
+        cnx_tmp5 = ((count) & 0xFFFFFFFFFFFFFFFFU);
+    } else {
+        /* ADR-045 / Issue #2239: a concatenation or a substring argument is built into a string<N> before the call. */
+        char cnx_tmp4[11] = "";
+        cnx_string_copy(cnx_tmp4, s, 10U);
+        {
+            const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp4);
+            cnx_string_copy(&cnx_tmp4[cnx_used], "!!", 10U - cnx_used);
+        }
+        cnx_tmp5 = half_length(cnx_tmp4);
+    }
+    const bool fraction = (cnx_tmp5) > 2.25;
+    if (fraction != true) {
+        return 3U;
     }
     return 0U;
 }

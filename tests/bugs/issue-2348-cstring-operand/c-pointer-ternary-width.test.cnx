@@ -1,9 +1,11 @@
 // test-execution
 // #2348 review: a ternary built in branches, because one arm passes a built
 // string to a C call, holds the wider of its arms as C's ?: would. Held in
-// strcmp's int32_t, big's 5000000000 lost its high bits before the compare.
+// strcmp's int32_t, big's 5000000000 lost its high bits before the compare;
+// held in a bit range's uint64_t, half_length's 2.5 lost its fraction.
 #pragma target host
 #include <string.h>
+#include "lib/text-measure.h"
 
 string<8> s <- "abc";
 i64 big <- 5000000000;
@@ -17,6 +19,11 @@ u32 main() {
     bool built <- ((pick = 0) ? strcmp(s + "!", "abc!") : big) = 0;
     if (built != true) {
         return 2;
+    }
+    u64 count <- 2;
+    bool fraction <- ((pick = 1) ? count[0, 64] : half_length(s + "!!")) > 2.25;
+    if (fraction != true) {
+        return 3;
     }
     return 0;
 }

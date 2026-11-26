@@ -809,9 +809,18 @@ class FilePlanner {
   }
 
   /**
+   * The order C's usual arithmetic conversions take an arm to: any floating
+   * type over any integer (a bit range beside an `f32`), then the wider
+   */
+  private static conversionRank(typeName: string): number {
+    const floating = typeName === "f32" || typeName === "f64" ? 128 : 0;
+    return floating + (TYPE_WIDTH[typeName] ?? 0);
+  }
+
+  /**
    * #2332: the type a lowered ternary's variable holds -- its position's, and
-   * where none gives one (a comparison's operand) its typed arms' wider, as
-   * C's conversion of the arms would make it (#2348 review); an unsuffixed
+   * where none gives one (a comparison's operand) the typed arm C's
+   * conversion of the arms would take both to (#2348 review); an unsuffixed
    * literal arm (the typer's `int`) takes on the other's
    */
   private lazyTernaryType(
@@ -826,7 +835,8 @@ class FilePlanner {
       expectedTypes.get(expr)?.type ??
       typed.reduce<string | null>(
         (wider, name) =>
-          wider !== null && (TYPE_WIDTH[name] ?? 0) <= (TYPE_WIDTH[wider] ?? 0)
+          wider !== null &&
+          FilePlanner.conversionRank(name) <= FilePlanner.conversionRank(wider)
             ? wider
             : name,
         null,
