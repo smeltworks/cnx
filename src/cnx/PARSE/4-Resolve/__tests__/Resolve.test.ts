@@ -91,7 +91,7 @@ describe("Resolve.program", () => {
     expect(program.hidesHeaderName("/p/a.cnx", "OTHER")).toBe(true);
     expect(program.hidesHeaderName("/p/b.cnx", "OTHER")).toBe(false);
   });
-  it("reads a header's macro width and dimension through its includers' macros (#2510)", async () => {
+  it("reads a header's macro width and dimension through its including files' macros (#2510)", async () => {
     const headerMacroDumps = new Map([
       [
         "/p/a.cnx",
