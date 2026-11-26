@@ -70,6 +70,12 @@ function detectCppSyntax(content: string): boolean {
   if (/\b(class|struct)\s+\w+\s*:\s*(public|private|protected)/.test(content))
     return true;
 
+  // A class body, or a struct body that opens with an access label: neither
+  // is C, wherever the label sits (`class C { public: int x; };`)
+  if (/\bclass\s+\w+\s*(?:final\s*)?\{/.test(content)) return true;
+  if (/\bstruct\s+\w+\s*\{\s*(?:public|private|protected)\s*:/.test(content))
+    return true;
+
   // namespace keyword: namespace Foo {
   if (/\bnamespace\s+\w+/.test(content)) return true;
 

@@ -13,8 +13,8 @@ interface IDeclaredHeaders {
   readonly warnings: readonly string[];
   /** The headers declared or restored */
   readonly processed: number;
-  /** `IParsedSources.headerReader`: what read the headers `declared` came from */
-  readonly reader: string;
+  /** `IParsedSources.headerReaders`: what read each header `declared` came from */
+  readonly readers: ReadonlyMap<string, string>;
 }
 
 export default IDeclaredHeaders;

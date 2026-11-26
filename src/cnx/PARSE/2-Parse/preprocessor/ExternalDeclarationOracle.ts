@@ -45,6 +45,8 @@ const LINE_MARKER = /^#\s+(\d+)\s+"([^"]+)"(.*)$/;
 // Synthetic TU filename (appears in preprocessor errors, keyed on to locate a
 // failing include by its line number).
 const TU_NAME = "cnx-external-decl-oracle.c";
+/** The same unit, read as a C++ compile reads it */
+const CPP_TU_NAME = "cnx-external-decl-oracle.cpp";
 /** #1881: a `-dD` dump's `#define NAME ...` or `#undef NAME` */
 const DEFINE_OR_UNDEF = /^#(define|undef)\s+([A-Za-z_]\w*)/;
 
@@ -66,6 +68,48 @@ interface IExternalRecovery {
 
 class ExternalDeclarationOracle {
   /**
+   * Each header's own preprocessed slice of `includeDirectives` read as one
+   * unit: the text a C compile meets, or a C++ one's (#211) when `cpp`
+   */
+  static async slices(
+    includeDirectives: readonly string[],
+    preprocessor: IHeaderPreprocessor,
+    options: IPreprocessOptions,
+    cpp: boolean,
+  ): Promise<Map<string, string> | null> {
+    const split = await ExternalDeclarationOracle.split(
+      includeDirectives,
+      preprocessor,
+      options,
+      cpp ? CPP_TU_NAME : TU_NAME,
+    );
+    return split?.perFileContent ?? null;
+  }
+
+  /**
+   * Whether `directives`, a header's slice with its conditionals evaluated and
+   * nothing expanded, expands on its own to `expanded`, its slice as the unit
+   * expanded it: true when no macro from outside the header writes any of it
+   */
+  static async expandsAlone(
+    directives: string,
+    expanded: string,
+    preprocessor: IHeaderPreprocessor,
+    options: IPreprocessOptions,
+    cpp: boolean,
+  ): Promise<boolean> {
+    const alone = await preprocessor.preprocessString(
+      directives,
+      cpp ? CPP_TU_NAME : TU_NAME,
+      { ...options, keepLineDirectives: false },
+    );
+    return (
+      alone.success &&
+      alone.content.replace(/\s+/g, "") === expanded.replace(/\s+/g, "")
+    );
+  }
+
+  /**
    * Preprocess `includeDirectives` (e.g. `"<freertos/task.h>"`) as one TU and
    * return each header's own preprocessed slice plus function-like-macro names.
    *
@@ -83,23 +127,15 @@ class ExternalDeclarationOracle {
       return null;
     }
 
-    // KEEP line directives so the output can be split back into per-file slices.
-    const base: IPreprocessOptions = { ...options, keepLineDirectives: true };
-
-    // Build the largest subset that preprocesses cleanly (drop a header that
-    // can't preprocess — e.g. a fragile lvgl.h — instead of losing everything).
-    const working = await ExternalDeclarationOracle.preprocessLargestWorkingTu(
-      [...includeDirectives],
+    const working = await ExternalDeclarationOracle.split(
+      includeDirectives,
       preprocessor,
-      base,
+      options,
+      TU_NAME,
     );
     if (!working) return null;
-
-    const { perFileContent, directiveOf } =
-      ExternalDeclarationOracle.splitByFile(
-        working.content,
-        working.directives,
-      );
+    const perFileContent = working.perFileContent;
+    const directiveOf = working.directiveOf;
 
     // Function-like macros the plain preprocess would have consumed at use.
     const macroNames = new Set<string>();
@@ -127,6 +163,9 @@ class ExternalDeclarationOracle {
    * file that includes `<stdio.h>` sees what the headers `stdio.h` includes
    * declare. So the dump is taken with `-dD` and its line markers, which name
    * each header the preprocessor entered.
+   *
+   * #1916: and each header's expanded slice, split from the same run without
+   * its `#define`s, so a file's includes are expanded once for both uses.
    */
   static async macroDump(
     includeDirectives: readonly string[],
@@ -136,6 +175,7 @@ class ExternalDeclarationOracle {
     dump: string;
     headerFiles: ReadonlySet<string>;
     complete: boolean;
+    slices: ReadonlyMap<string, string>;
   } | null> {
     const working = await ExternalDeclarationOracle.preprocessLargestWorkingTu(
       [...includeDirectives],
@@ -146,6 +186,13 @@ class ExternalDeclarationOracle {
     return {
       ...ExternalDeclarationOracle.definesAndHeaders(working.content),
       complete: working.directives.length === includeDirectives.length,
+      slices: ExternalDeclarationOracle.splitByFile(
+        working.content
+          .split("\n")
+          .filter((line) => !DEFINE_OR_UNDEF.test(line))
+          .join("\n"),
+        working.directives,
+      ).perFileContent,
     };
   }
 
@@ -178,6 +225,41 @@ class ExternalDeclarationOracle {
       if (directive[1] === "define") defines.set(name, line);
     }
     return { dump: [...defines.values()].join("\n"), headerFiles };
+  }
+
+  /**
+   * `includeDirectives` preprocessed as one unit with its line markers kept,
+   * split back into each header's own slice. The largest subset that
+   * preprocesses cleanly is kept (a fragile lvgl.h is dropped instead of
+   * losing everything); null when none does.
+   */
+  private static async split(
+    includeDirectives: readonly string[],
+    preprocessor: IHeaderPreprocessor,
+    options: IPreprocessOptions,
+    tuName: string,
+  ): Promise<{
+    perFileContent: Map<string, string>;
+    directiveOf: Map<string, string>;
+    directives: string[];
+  } | null> {
+    if (includeDirectives.length === 0 || !preprocessor.isAvailable()) {
+      return null;
+    }
+    const working = await ExternalDeclarationOracle.preprocessLargestWorkingTu(
+      [...includeDirectives],
+      preprocessor,
+      { ...options, keepLineDirectives: true },
+      tuName,
+    );
+    if (working === null) return null;
+    return {
+      ...ExternalDeclarationOracle.splitByFile(
+        working.content,
+        working.directives,
+      ),
+      directives: working.directives,
+    };
   }
 
   /**
@@ -269,6 +351,7 @@ class ExternalDeclarationOracle {
     directives: string[],
     preprocessor: IHeaderPreprocessor,
     base: IPreprocessOptions,
+    tuName: string = TU_NAME,
   ): Promise<{ content: string; directives: string[] } | null> {
     const remaining = directives;
     // At most one drop per iteration; bound iterations by the ORIGINAL directive
@@ -283,7 +366,7 @@ class ExternalDeclarationOracle {
     ) {
       const result = await preprocessor.preprocessString(
         ExternalDeclarationOracle.buildTu(remaining),
-        TU_NAME,
+        tuName,
         base,
       );
       if (result.success) {

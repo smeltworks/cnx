@@ -1,0 +1,12 @@
+// test-error
+// test-c-only
+// c-only-config.h sets NO_MODE_BUFFER in C, so a C build reads nothing of
+// mode-buffer.h, and mode_buffer is not declared.
+#include "lib/c-only-config.h"
+#include "lib/mode-buffer.h"
+
+mut u8[mode_buffer.type_element_count] copy;
+
+u32 main() {
+    return 0;
+}

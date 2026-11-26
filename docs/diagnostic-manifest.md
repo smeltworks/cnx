@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1075 fixture(s) assert a diagnostic; 1061 carry a code.
+1077 fixture(s) assert a diagnostic; 1063 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -1015,6 +1015,8 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-847-misra-17-7-lowering/scope-method-imported-discard.test.cnx                           | E0708                             |
 | tests/bugs/issue-847-misra-17-7-lowering/transitive-function-discard.test.cnx                             | E0708                             |
 | tests/bugs/issue-847-misra-17-7-lowering/transitive-scope-method-discard.test.cnx                         | E0708                             |
+| tests/bugs/issue-header-earlier-include-macro/counted-switched.test.cnx                                   | E0909                             |
+| tests/bugs/issue-header-earlier-include-macro/h-in-c-build.test.cnx                                       | E0909                             |
 | tests/c-interop/cpp14-header/crc32.test.cnx                                                               | E0859                             |
 | tests/c-interop/use-c-union-basic.test.cnx                                                                | (uncoded)                         |
 | tests/c-interop/use-c-union-typedef.test.cnx                                                              | (uncoded)                         |
