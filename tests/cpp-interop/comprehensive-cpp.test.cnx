@@ -164,16 +164,16 @@ void testTypeConversions() {
     mut u32 crc <- 0;
 
     // bool → u8 conversion (implicit in C++)
-    crc <- processByte(crc, cfg.enabled);
+    crc <- processByte(crc, (cfg.enabled = true) ? 1 : 0);
 
     // enum class → u8 requires static_cast (Issue #252)
-    crc <- processByte(crc, cfg.mode);
+    crc <- processByte(crc, (u8)cfg.mode);
 
     // u8 direct (no conversion needed)
     crc <- processByte(crc, cfg.flags);
 
     // typed enum → u8
-    crc <- processByte(crc, cfg.permissions);
+    crc <- processByte(crc, (u8)cfg.permissions);
 }
 
 // ============================================================================
@@ -199,9 +199,9 @@ void testArrayMembers() {
 
     // Passing array element member to function
     mut u32 crc <- 0;
-    crc <- processByte(crc, device.sensors[0].enabled);
+    crc <- processByte(crc, (device.sensors[0].enabled = true) ? 1 : 0);
     // enum class → u8 requires static_cast (Issue #252)
-    crc <- processByte(crc, device.sensors[0].mode);
+    crc <- processByte(crc, (u8)device.sensors[0].mode);
     crc <- processByte(crc, device.sensors[0].flags);
 }
 

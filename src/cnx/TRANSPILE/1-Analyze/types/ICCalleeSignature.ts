@@ -6,6 +6,8 @@ interface ICCalleeSignature {
   readonly parameters: ReadonlyArray<ICParameterInfo | ICppParameterInfo>;
   /** Arguments past `parameters` fill the callee's `...` */
   readonly isVariadic: boolean;
+  /** What it returns, as the header writes it; null when the header does not say */
+  readonly returnType: string | null;
 }
 
 export default ICCalleeSignature;

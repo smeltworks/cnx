@@ -130,7 +130,7 @@ void testTypeConversions(void) {
     cfg.flags = 0x0FU;
     cfg.permissions = FLAG_READ;
     uint32_t crc = 0U;
-    crc = processByte(crc, cfg.enabled);
+    crc = processByte(crc, (cfg.enabled == true) ? 1U : 0U);
     crc = processByte(crc, static_cast<uint8_t>(cfg.mode));
     crc = processByte(crc, cfg.flags);
     crc = processByte(crc, static_cast<uint8_t>(cfg.permissions));
@@ -152,7 +152,7 @@ void testArrayMembers(void) {
     const EMode mode = device.sensors[1U].mode;
     const uint8_t flags = device.sensors[2U].flags;
     uint32_t crc = 0U;
-    crc = processByte(crc, device.sensors[0U].enabled);
+    crc = processByte(crc, (device.sensors[0U].enabled == true) ? 1U : 0U);
     crc = processByte(crc, static_cast<uint8_t>(device.sensors[0U].mode));
     crc = processByte(crc, device.sensors[0U].flags);
 }

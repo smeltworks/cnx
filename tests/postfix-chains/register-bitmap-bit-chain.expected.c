@@ -28,13 +28,13 @@ static inline uint8_t cnx_clamp_mul_u8(uint8_t a, uint32_t b) {
 int main(void) {
     MOTOR__STATUS = (uint8_t)((MOTOR__STATUS & ~(1U << 0)) | (1U << 0));
     MOTOR__STATUS = (uint8_t)((MOTOR__STATUS & ~(1U << 1)) | (0U << 1));
-    MOTOR__STATUS = (uint8_t)((MOTOR__STATUS & ~(0x7U << 2)) | ((5U & 0x7U) << 2));
+    MOTOR__STATUS = (uint8_t)((MOTOR__STATUS & ~(0x7U << 2)) | (5U << 2));
     const bool isReady = ((((MOTOR__STATUS >> 0) & 1)) != 0U);
     const bool hasError = ((((MOTOR__STATUS >> 1) & 1)) != 0U);
     const uint8_t mode = (uint8_t)((MOTOR__STATUS >> 2) & 0x7);
     MOTOR__CONTROL = (uint16_t)((MOTOR__CONTROL & ~(1U << 0)) | (1U << 0));
     MOTOR__CONTROL = (uint16_t)((MOTOR__CONTROL & ~(1U << 1)) | (0U << 1));
-    MOTOR__CONTROL = (uint16_t)((MOTOR__CONTROL & ~(0xFFU << 2)) | ((127U & 0xFFU) << 2));
+    MOTOR__CONTROL = (uint16_t)((MOTOR__CONTROL & ~(0xFFU << 2)) | (127U << 2));
     const uint8_t speed = (uint8_t)((MOTOR__CONTROL >> 2) & 0xFF);
     const bool enabled = ((((MOTOR__CONTROL >> 0) & 1)) != 0U);
     MOTOR__DATA = (MOTOR__DATA & ~((uint32_t)1U << 0)) | ((uint32_t)1U << 0);

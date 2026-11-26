@@ -19,7 +19,7 @@
 
 void Sc__set(void) {
     shared = (uint8_t)((shared & ~(1U << 0)) | (1U << 0));
-    shared = (uint8_t)((shared & ~(0x7FU << 1)) | ((5U & 0x7FU) << 1));
+    shared = (uint8_t)((shared & ~(0x7FU << 1)) | (5U << 1));
 }
 
 int main(void) {

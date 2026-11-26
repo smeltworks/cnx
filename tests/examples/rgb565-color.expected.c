@@ -68,7 +68,7 @@ int main(void) {
         return 12U;
     }
     uint16_t modified = 0x7BEFU;
-    modified = (uint16_t)((modified & ~(0x3FU << 5)) | ((63U & 0x3FU) << 5));
+    modified = (uint16_t)((modified & ~(0x3FU << 5)) | (63U << 5));
     if (((modified >> 11U) & 0x1FU) != 15) {
         return 13U;
     }
@@ -79,9 +79,9 @@ int main(void) {
         return 15U;
     }
     uint16_t custom = 0U;
-    custom = (uint16_t)((custom & ~(0x1FU << 11)) | ((31U & 0x1FU) << 11));
-    custom = (uint16_t)((custom & ~(0x3FU << 5)) | ((32U & 0x3FU) << 5));
-    custom = (uint16_t)((custom & ~(0x1FU << 0)) | ((16U & 0x1FU) << 0));
+    custom = (uint16_t)((custom & ~(0x1FU << 11)) | (31U << 11));
+    custom = (uint16_t)((custom & ~(0x3FU << 5)) | (32U << 5));
+    custom = (uint16_t)((custom & ~(0x1FU << 0)) | (16U << 0));
     if (((custom >> 11U) & 0x1FU) != 31) {
         return 16U;
     }

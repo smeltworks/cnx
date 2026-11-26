@@ -39,7 +39,9 @@ interface IQualifiedSpecifiers {
 }
 
 class CHeaderLowering {
-  static header(tree: CompilationUnitContext): ICHeaderSyntax {
+  static header(
+    tree: CompilationUnitContext,
+  ): Omit<ICHeaderSyntax, "undefinedMacros"> {
     const declarations: TCExternalDeclarationSyntax[] = [];
     for (const externalDeclaration of tree
       .translationUnit()
@@ -192,7 +194,7 @@ class CHeaderLowering {
           isUnprototyped: true,
         }),
       isConstMember: false,
-      arrayDimensions: ArrayDimensionText.parse(directDeclarator.getText()),
+      arrayDimensions: ArrayDimensionText.parseC(directDeclarator.getText()),
     };
   }
 
@@ -387,7 +389,7 @@ class CHeaderLowering {
       if (lowered && width !== undefined) {
         lowered = {
           ...lowered,
-          bitWidth: LiteralUtils.exactIntegerLiteral(width) ?? width,
+          bitWidth: LiteralUtils.cIntegerLiteral(width) ?? width,
         };
       }
       return lowered ? [{ type, declarator: lowered }] : [];

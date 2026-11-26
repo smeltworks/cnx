@@ -33,7 +33,7 @@ void logs(char* msg) {
 }
 
 void readsLog(const char* msg) {
-    seenChar = msg[0U];
+    seenChar = static_cast<uint8_t>(msg[0U]);
 }
 
 void wire(void) {

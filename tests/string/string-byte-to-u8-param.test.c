@@ -22,10 +22,10 @@ uint32_t ByteProcessor__processByte(const uint32_t crc, const uint8_t byte) {
 uint32_t ByteProcessor__processBuffer(void) {
     const char buf[5] = "ABCD";
     uint32_t crc = 0U;
-    crc = ByteProcessor__processByte(crc, buf[0U]);
-    crc = ByteProcessor__processByte(crc, buf[1U]);
-    crc = ByteProcessor__processByte(crc, buf[2U]);
-    crc = ByteProcessor__processByte(crc, buf[3U]);
+    crc = ByteProcessor__processByte(crc, (uint8_t)buf[0U]);
+    crc = ByteProcessor__processByte(crc, (uint8_t)buf[1U]);
+    crc = ByteProcessor__processByte(crc, (uint8_t)buf[2U]);
+    crc = ByteProcessor__processByte(crc, (uint8_t)buf[3U]);
     return crc;
 }
 

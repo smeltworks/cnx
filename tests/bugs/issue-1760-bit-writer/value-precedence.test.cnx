@@ -34,13 +34,14 @@ u32 main() {
     }
 
     // A bitmap field goes through the same writer
-    // Assigned after its declaration, so `low8 | one` is a runtime value the
-    // writer masks, not a constant E0881 range-checks (ADR-071)
+    // Assigned after its declaration, so `low8 | one` is a runtime value, not
+    // a constant E0881 range-checks (ADR-071). A u8 is wider than the 3-bit
+    // field, so its bits are named explicitly (ADR-072 ruling 17)
     mut u8 low8 <- 0;
     low8 <- 0x10;
     u8 one <- 0x1;
     mut Flags f <- 0;
-    f.B <- low8 | one;
+    f.B <- (low8 | one)[0, 3];
     if (f.B != 1) {
         return 4;
     }

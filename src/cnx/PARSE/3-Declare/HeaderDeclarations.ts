@@ -31,6 +31,10 @@ class HeaderDeclarations {
       case EHeaderLanguage.Cpp:
         // C++14 parser for typed enums, classes, namespaces, templates
         if (parsed.syntax) {
+          symbolTable.markUndefinedMacros(
+            filePath,
+            parsed.syntax.undefinedMacros,
+          );
           // ADR-055 Phase 7: Store TCppSymbol directly
           symbolTable.addCppSymbols(
             CppResolver.resolve(parsed.syntax, filePath, symbolTable).symbols,
@@ -39,6 +43,10 @@ class HeaderDeclarations {
         return;
       case EHeaderLanguage.C:
         if (parsed.syntax) {
+          symbolTable.markUndefinedMacros(
+            filePath,
+            parsed.syntax.undefinedMacros,
+          );
           // ADR-055 Phase 7: Store TCSymbol directly
           symbolTable.addCSymbols(
             CResolver.resolve(parsed.syntax, filePath, symbolTable).symbols,

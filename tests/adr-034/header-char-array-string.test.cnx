@@ -1,0 +1,21 @@
+// test-execution
+// test-c-only
+// test-adr: 035
+// #2484 review: a header struct's char array field takes a string literal, as
+// a u8 array does. C only: g++ before 11 rejects a designated string for a
+// char array field.
+#include "header-bit-field.h"
+
+u32 main() {
+    CNamed named <- { name: "cfg" };
+    if (named.name[0] != 'c') {
+        return 1;
+    }
+    if (named.name[2] != 'g') {
+        return 2;
+    }
+    if (named.name[3] != 0) {
+        return 3;
+    }
+    return 0;
+}

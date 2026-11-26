@@ -21,7 +21,7 @@ u8 main() {
     // NEGATIVE CONTROLS -- every declared field, read and written, plus the
     // ADR-058 shape properties, which describe the type rather than name a
     // field and must not be reported as unknown.
-    f.Active <- 1;
+    f.Active <- true;
     f.Level <- 5;
     u8 lvl <- f.Level;
     u8 bits <- f.type_bit_length;

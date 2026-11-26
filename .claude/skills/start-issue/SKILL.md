@@ -328,7 +328,8 @@ has been committed yet:
 
   4. UNASSIGN YOURSELF. That IS the pause: `project-sync.yml` moves the card
      `WIP` -> `Backlog` when the last assignee leaves (#1572), so the column stops
-     claiming active work. Do not write `Status` by hand -- `docs/WORKFLOW.md` gives
+     claiming active work. An open pull request that closes the issue keeps it in
+     `WIP` (#1578); a paused card has none, because nothing was committed. Do not write `Status` by hand -- `docs/WORKFLOW.md` gives
      project-sync.yml sole ownership of that field. RE-QUERY the board and report the
      status you read, exactly as Phase 2 does for the assign.
 
@@ -385,8 +386,9 @@ THROUGHOUT the work:
 - **DO NOT** implement the achievable subset of a card whose definition of done cannot be
   satisfied as written, and **DO NOT** reword the box. Pause per Phase 7c: append the
   blocker, record the measurements, delete the branch, unassign yourself, take other work
-- **DO NOT** leave a paused card assigned. `WIP` means someone is on it, and unassigning
-  is what returns it to `Backlog` for whoever picks it up next (#1572)
+- **DO NOT** leave a paused card assigned. `WIP` means someone is on it or its closing
+  pull request is open, and unassigning a card with no open closing pull request is what
+  returns it to `Backlog` for whoever picks it up next (#1572, #1578)
 - **DO NOT** work around a cnx bug downstream — fix it upstream in the transpiler
 - **DO NOT** change cnx syntax/behavior or an ADR's Status without explicit approval
 - **DO NOT** copy these phases back into `issue-check`. It delegates here on purpose

@@ -1,0 +1,20 @@
+// test-execution
+// #2484 review: a private cast character const keeps its declared type where
+// it is inlined. `C` is a u32, so `C << 25` is 0x82000000 -- not a shift of
+// the int a bare `(u8)'A'` promotes to, which sets the sign bit.
+scope Wide {
+    u32 C <- (u8)'A';
+
+    public u64 shifted() {
+        u64 r <- C << 25;
+        return r;
+    }
+}
+
+u32 main() {
+    u64 got <- Wide.shifted();
+    if (got != 0x82000000) {
+        return 1;
+    }
+    return 0;
+}

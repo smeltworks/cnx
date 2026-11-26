@@ -33,6 +33,8 @@ interface ICachedFileEntry {
   needsStructKeyword?: string[];
   /** Issue #208: Enum bit widths from typed enums (enum name -> bit width) */
   enumBitWidth?: Record<string, number>;
+  /** #2494 review: the macros a header `#undef`s; a header entry without it is a miss */
+  undefinedMacros?: string[];
   /**
    * Issue #1225: the whole struct symbol state, captured as one value.
    *

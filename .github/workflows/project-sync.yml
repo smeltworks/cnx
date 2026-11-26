@@ -1,7 +1,8 @@
 # Keeps the cnx project board in step with issue and PR events (Issue #1247).
 #
-# GitHub has no built-in workflow for "pull request opened", and none for
-# "issue assigned" or "issue unassigned", so those three transitions live here.
+# GitHub has no built-in workflow for "pull request opened", none for "issue
+# assigned" or "issue unassigned", and none that moves the issues a pull request
+# names when it closes unmerged, so those transitions live here.
 # What the built-ins do well -- item closed, pull request merged -- is left to
 # them and is absent from this file.
 #
@@ -9,7 +10,11 @@
 # nothing committed. `WIP` means "this is actively being worked on" -- the
 # option's own description -- so a paused card must not sit there. Until #1572
 # no transition moved one back, and #1448 read as active work for 9h52m after
-# its work stopped. Unassigning is now the whole gesture; the board follows.
+# its work stopped. Unassigning is now the whole gesture; the board follows --
+# except while an open pull request closes the issue: that is a review handed
+# off, not work paused, and the card stays in WIP (#1578). A pull request
+# closed WITHOUT a merge asks the same question of each issue it names, so a
+# card kept in WIP for it does not stay there with nobody on it.
 #
 # PR reopening is handled here rather than by the built-in "Item reopened", which
 # fires on issues and pull requests alike: it would send a reopened PR to Backlog
@@ -47,7 +52,7 @@ on:
   issues:
     types: [opened, assigned, unassigned]
   pull_request:
-    types: [opened, reopened, ready_for_review]
+    types: [opened, reopened, ready_for_review, closed]
   workflow_call:
     secrets:
       BOARD_APP_PRIVATE_KEY:
@@ -86,6 +91,12 @@ jobs:
       # wrong answer, and the concurrency group serializes per item, not per event.
       ALL_ASSIGNEES: ${{ join(github.event.issue.assignees.*.login, ',') }}
       REMOVED_ASSIGNEE: ${{ github.event.assignee.login }}
+      # The caller's repository under workflow_call, so the open-pull-request
+      # read below asks about the issue that fired, in either repository.
+      REPO: ${{ github.repository }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_MERGED: ${{ github.event.pull_request.merged }}
     steps:
       - name: Mint the board token
         id: board-token
@@ -105,134 +116,229 @@ jobs:
         run: |
           set -euo pipefail
 
+          # open_closing_prs N OWNER/NAME: the OPEN pull requests that close issue N when
+          # they merge, as "#a, #b". The connection is "pull requests referenced
+          # from this issue", and includeClosedPrs: false drops one closed
+          # unmerged but keeps one MERGED, so the state is selected too. Only a
+          # pull request whose base is the default branch is linked: one that
+          # does not name the issue with a closing keyword, or one stacked on
+          # another branch, is not here (docs/WORKFLOW.md). A failed read fails
+          # the run rather than move a card.
+          open_closing_prs() {
+            gh api graphql --paginate -f owner="${2%%/*}" -f name="${2#*/}" \
+              -F number="$1" -f query='
+              query($owner: String!, $name: String!, $number: Int!, $endCursor: String) {
+                repository(owner: $owner, name: $name) {
+                  issue(number: $number) {
+                    closedByPullRequestsReferences(first: 100, after: $endCursor, includeClosedPrs: false) {
+                      nodes { number state }
+                      pageInfo { hasNextPage endCursor }
+                    }
+                  }
+                }
+              }' | jq -rs '[.[].data.repository.issue.closedByPullRequestsReferences.nodes[]
+                          | select(.state == "OPEN") | "#\(.number)"] | join(", ")'
+          }
+
+          # The board, its Status field and every option id, read once per run
+          # and only by a run that writes. The board is read by its number, so
+          # there is no list of boards to page through or truncate (#1416). Its
+          # fields are a connection under two singular selections, which
+          # --paginate advances like any other (measured,
+          # scripts/gh-pagination/GhPagination.ts). Each page arrives as its own
+          # JSON document, so the reads below slurp them (jq -s) rather than cut
+          # the stream with head, which pipefail would turn into a failure
+          # whenever jq is still writing.
+          PROJECT_ID=""
+          read_board() {
+            if ! PROJECT_JSON=$(gh api graphql --paginate -f owner="$PROJECT_OWNER" -F number="$PROJECT_NUMBER" -f query='
+              query($owner: String!, $number: Int!, $endCursor: String) {
+                organization(login: $owner) {
+                  projectV2(number: $number) {
+                    id
+                    fields(first: 100, after: $endCursor) {
+                      pageInfo { hasNextPage endCursor }
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options { id name }
+                        }
+                      }
+                    }
+                  }
+                }
+              }' 2>&1); then
+              # GitHub answers a board that does not exist with an error too, so
+              # this names every cause rather than guessing one; the response
+              # below says which it was.
+              echo "::error::Could not read board ${PROJECT_OWNER}/${PROJECT_NUMBER}. Either the board does"
+              echo "::error::not exist (npm run project:setup), or the smeltworks board app is not"
+              echo "::error::installed, or BOARD_APP_ID / BOARD_APP_PRIVATE_KEY is unset. GitHub said:"
+              echo "$PROJECT_JSON"
+              exit 1
+            fi
+
+            PROJECT_ID=$(jq -rs '[.[].data.organization.projectV2.id // empty][0] // empty' <<<"$PROJECT_JSON")
+            if [ -z "$PROJECT_ID" ]; then
+              echo "::error::${PROJECT_OWNER} has no project ${PROJECT_NUMBER}. Run: npm run project:setup"
+              exit 1
+            fi
+
+            STATUS=$(jq -s \
+              '[.[].data.organization.projectV2.fields.nodes[] | select(.name == "Status")][0] // empty' \
+              <<<"$PROJECT_JSON")
+            FIELD_ID=$(jq -r '.id' <<<"$STATUS")
+          }
+
+          # set_status CONTENT_ID TARGET OVERWRITE: the one Status write.
+          set_status() {
+            local content_id="$1" target="$2" overwrite="$3"
+            if [ -z "$PROJECT_ID" ]; then read_board; fi
+            local option_id
+            option_id=$(jq -r --arg n "$target" \
+              '.options[] | select(.name == $n) | .id' <<<"$STATUS")
+            if [ -z "$option_id" ] || [ "$option_id" = "null" ]; then
+              echo "::error::Status has no '$target' option. See docs/WORKFLOW.md."
+              exit 1
+            fi
+
+            # Adding an item that is already on the board returns the existing one.
+            local item_id current
+            item_id=$(gh api graphql -f projectId="$PROJECT_ID" -f contentId="$content_id" -f query='
+              mutation($projectId: ID!, $contentId: ID!) {
+                addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {
+                  item { id }
+                }
+              }' --jq '.data.addProjectV2ItemById.item.id')
+
+            current=$(gh api graphql -f itemId="$item_id" -f query='
+              query($itemId: ID!) {
+                node(id: $itemId) {
+                  ... on ProjectV2Item {
+                    fieldValueByName(name: "Status") {
+                      ... on ProjectV2ItemFieldSingleSelectValue { name }
+                    }
+                  }
+                }
+              }' --jq '.data.node.fieldValueByName.name // "unset"')
+
+            # OVERWRITE is a membership test and is indifferent to DIRECTION: it
+            # names the statuses a transition may write over, whichever way along
+            # the column that lands. Every transition advances a card except
+            # release_paused's, which is the file's one retreat (WIP -> Backlog,
+            # #1572). What the test protects either way is a status someone set
+            # by hand -- "Changes Needed" and "Ready to Merge" must survive a
+            # reopen or a ready-for-review.
+            if [ "$overwrite" != "any" ] && [[ ! "$current" =~ ^(${overwrite})$ ]]; then
+              echo "Leaving ${content_id} at '${current}' (would have set '${target}')."
+              return 0
+            fi
+            if [ "$current" = "$target" ]; then
+              echo "Already '${target}'."
+              return 0
+            fi
+
+            gh api graphql -f projectId="$PROJECT_ID" -f itemId="$item_id" \
+              -f fieldId="$FIELD_ID" -f optionId="$option_id" -f query='
+              mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                updateProjectV2ItemFieldValue(
+                  input: {
+                    projectId: $projectId
+                    itemId: $itemId
+                    fieldId: $fieldId
+                    value: { singleSelectOptionId: $optionId }
+                  }
+                ) { projectV2Item { id } }
+              }' --jq '.data.updateProjectV2ItemFieldValue.projectV2Item.id' >/dev/null
+
+            echo "Set ${content_id}: '${current}' -> '${target}'."
+          }
+
+          # release_paused N CONTENT_ID REMAINING OWNER/NAME: the one decision that returns
+          # an issue's card to Backlog, for both events that can leave it with
+          # nobody on it. A card someone is still on is still being worked on.
+          # A card with an open closing pull request is in review, and the pull
+          # request has its OWN card, so the issue's stays in WIP: unassigning
+          # then hands the review off, not the work (#1578). Otherwise the work
+          # is paused and the card returns to Backlog (#1572). OVERWRITE="WIP"
+          # and nothing else: a card in Grooming, Backlog or Done is not paused
+          # work. Those are an ISSUE card's only other statuses -- PR Review and
+          # Changes Needed are a pull request's, and are not what this guards.
+          release_paused() {
+            local number="$1" content_id="$2" remaining="$3" repo="$4" open
+            if [ -n "$remaining" ]; then
+              echo "#${number} is still assigned to ${remaining}; leaving its status alone."
+              return 0
+            fi
+            open=$(open_closing_prs "$number" "$repo")
+            if [ -n "$open" ]; then
+              echo "Open pull request ${open} closes #${number}; leaving it in WIP."
+              return 0
+            fi
+            set_status "$content_id" "Backlog" "WIP"
+          }
+
           case "${{ github.event_name }}.${{ github.event.action }}" in
             issues.opened)                  TARGET="Grooming";   OVERWRITE="unset" ;;
             issues.assigned)                TARGET="WIP";        OVERWRITE="unset|Grooming|Backlog" ;;
             issues.unassigned)
-              # One event per assignee removed: a card someone else is still on is
-              # still being worked on, not paused. Dropping the removed name makes
+              # One event per assignee removed. Dropping the removed name makes
               # this independent of whether the payload list is pre- or
               # post-removal (see ALL_ASSIGNEES above). `|| true` is inside the
               # group so `pipefail` does not see grep's "no lines left" as failure
               # -- that case is exactly the one that must proceed.
               REMAINING=$(printf '%s' "$ALL_ASSIGNEES" | tr ',' '\n' \
                 | { grep -vxF "$REMOVED_ASSIGNEE" || true; } | paste -sd, -)
-              if [ -n "$REMAINING" ]; then
-                echo "Still assigned to ${REMAINING}; leaving status alone."
+              release_paused "$ISSUE_NUMBER" "${{ github.event.issue.node_id }}" "$REMAINING" "$REPO"
+              exit 0 ;;
+            pull_request.closed)
+              # A merge closes the issues it names, and the built-in "Item
+              # closed" moves them to Done. A close WITHOUT a merge closes
+              # nothing, so an issue this file kept in WIP for that pull request
+              # (#1578) would stay there with nobody on it. Its closing
+              # references survive the close, so each open one is asked the
+              # same question an unassign asks. A fork's pull request gets no
+              # secrets, so this step does not run for one (docs/WORKFLOW.md).
+              if [ "$PR_MERGED" = "true" ]; then
+                echo "Merged; the issues it closes move with Item closed."
                 exit 0
               fi
-              # OVERWRITE="WIP" and nothing else: a card in Grooming, Backlog or
-              # Done is not paused work. Those are an ISSUE card's only other
-              # statuses -- a pull request gets its OWN card, so PR Review and
-              # Changes Needed are unreachable here and are not what this guards.
-              TARGET="Backlog";    OVERWRITE="WIP" ;;
+              ISSUES=$(gh api graphql --paginate -f owner="${REPO%%/*}" -f name="${REPO#*/}" \
+                -F number="$PR_NUMBER" -f query='
+                query($owner: String!, $name: String!, $number: Int!, $endCursor: String) {
+                  repository(owner: $owner, name: $name) {
+                    pullRequest(number: $number) {
+                      closingIssuesReferences(first: 100, after: $endCursor) {
+                        nodes {
+                          number id state repository { nameWithOwner }
+                          assignees(first: 100) { nodes { login } }
+                        }
+                        pageInfo { hasNextPage endCursor }
+                      }
+                    }
+                  }
+                }' | jq -rs '.[].data.repository.pullRequest.closingIssuesReferences.nodes[]
+                            | select(.state == "OPEN")
+                            | [.number, .id, .repository.nameWithOwner,
+                               ([.assignees.nodes[].login] | join(","))] | @tsv')
+              if [ -z "$ISSUES" ]; then
+                echo "Closes no open issue; nothing to return."
+                exit 0
+              fi
+              # An issue it names may live in another repository (a cnx pull
+              # request closing a vscode-cnx issue), so each is asked about in
+              # its own.
+              # Assignees last: tab is whitespace to `read`, so an empty field
+              # anywhere but the end would shift the ones after it.
+              while IFS=$'\t' read -r NUMBER NODE_ID ISSUE_REPO ASSIGNEES; do
+                release_paused "$NUMBER" "$NODE_ID" "$ASSIGNEES" "$ISSUE_REPO"
+              done <<<"$ISSUES"
+              exit 0 ;;
             pull_request.opened)            TARGET="PR Review";  OVERWRITE="unset" ;;
             pull_request.reopened)          TARGET="PR Review";  OVERWRITE="any" ;;
             pull_request.ready_for_review)  TARGET="PR Review";  OVERWRITE="unset|Backlog" ;;
             *) echo "No mapping for ${{ github.event_name }}.${{ github.event.action }}"; exit 0 ;;
           esac
 
-          CONTENT_ID="${{ github.event.issue.node_id || github.event.pull_request.node_id }}"
-
-          # One query for the board, its Status field, and every option id. The
-          # board is read by its number, so there is no list of boards to page
-          # through or truncate (#1416). Its fields are a connection under two
-          # singular selections, which --paginate advances like any other
-          # (measured, scripts/gh-pagination/GhPagination.ts). Each page arrives
-          # as its own JSON document, so the reads below slurp them (jq -s)
-          # rather than cut the stream with head, which pipefail would turn
-          # into a failure whenever jq is still writing.
-          if ! PROJECT_JSON=$(gh api graphql --paginate -f owner="$PROJECT_OWNER" -F number="$PROJECT_NUMBER" -f query='
-            query($owner: String!, $number: Int!, $endCursor: String) {
-              organization(login: $owner) {
-                projectV2(number: $number) {
-                  id
-                  fields(first: 100, after: $endCursor) {
-                    pageInfo { hasNextPage endCursor }
-                    nodes {
-                      ... on ProjectV2SingleSelectField {
-                        id
-                        name
-                        options { id name }
-                      }
-                    }
-                  }
-                }
-              }
-            }' 2>&1); then
-            # GitHub answers a board that does not exist with an error too, so
-            # this names every cause rather than guessing one; the response
-            # below says which it was.
-            echo "::error::Could not read board ${PROJECT_OWNER}/${PROJECT_NUMBER}. Either the board does"
-            echo "::error::not exist (npm run project:setup), or the smeltworks board app is not"
-            echo "::error::installed, or BOARD_APP_ID / BOARD_APP_PRIVATE_KEY is unset. GitHub said:"
-            echo "$PROJECT_JSON"
-            exit 1
-          fi
-
-          PROJECT_ID=$(jq -rs '[.[].data.organization.projectV2.id // empty][0] // empty' <<<"$PROJECT_JSON")
-          if [ -z "$PROJECT_ID" ]; then
-            echo "::error::${PROJECT_OWNER} has no project ${PROJECT_NUMBER}. Run: npm run project:setup"
-            exit 1
-          fi
-
-          STATUS=$(jq -s \
-            '[.[].data.organization.projectV2.fields.nodes[] | select(.name == "Status")][0] // empty' \
-            <<<"$PROJECT_JSON")
-          FIELD_ID=$(jq -r '.id' <<<"$STATUS")
-          OPTION_ID=$(jq -r --arg n "$TARGET" \
-            '.options[] | select(.name == $n) | .id' <<<"$STATUS")
-          if [ -z "$OPTION_ID" ] || [ "$OPTION_ID" = "null" ]; then
-            echo "::error::Status has no '$TARGET' option. See docs/WORKFLOW.md."
-            exit 1
-          fi
-
-          # Adding an item that is already on the board returns the existing one.
-          ITEM_ID=$(gh api graphql -f projectId="$PROJECT_ID" -f contentId="$CONTENT_ID" -f query='
-            mutation($projectId: ID!, $contentId: ID!) {
-              addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {
-                item { id }
-              }
-            }' --jq '.data.addProjectV2ItemById.item.id')
-
-          CURRENT=$(gh api graphql -f itemId="$ITEM_ID" -f query='
-            query($itemId: ID!) {
-              node(id: $itemId) {
-                ... on ProjectV2Item {
-                  fieldValueByName(name: "Status") {
-                    ... on ProjectV2ItemFieldSingleSelectValue { name }
-                  }
-                }
-              }
-            }' --jq '.data.node.fieldValueByName.name // "unset"')
-
-          # OVERWRITE is a membership test and is indifferent to DIRECTION: it
-          # names the statuses a transition may write over, whichever way along
-          # the column that lands. Every arm advances a card except
-          # issues.unassigned, which is the file's one retreat (WIP -> Backlog,
-          # #1572). What the test protects either way is a status someone set by
-          # hand -- "Changes Needed" and "Ready to Merge" must survive a reopen
-          # or a ready-for-review.
-          if [ "$OVERWRITE" != "any" ] && [[ ! "$CURRENT" =~ ^(${OVERWRITE})$ ]]; then
-            echo "Leaving ${CONTENT_ID} at '${CURRENT}' (would have set '${TARGET}')."
-            exit 0
-          fi
-          if [ "$CURRENT" = "$TARGET" ]; then
-            echo "Already '${TARGET}'."
-            exit 0
-          fi
-
-          gh api graphql -f projectId="$PROJECT_ID" -f itemId="$ITEM_ID" \
-            -f fieldId="$FIELD_ID" -f optionId="$OPTION_ID" -f query='
-            mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
-              updateProjectV2ItemFieldValue(
-                input: {
-                  projectId: $projectId
-                  itemId: $itemId
-                  fieldId: $fieldId
-                  value: { singleSelectOptionId: $optionId }
-                }
-              ) { projectV2Item { id } }
-            }' --jq '.data.updateProjectV2ItemFieldValue.projectV2Item.id' >/dev/null
-
-          echo "Set ${CONTENT_ID}: '${CURRENT}' -> '${TARGET}'."
+          set_status "${{ github.event.issue.node_id || github.event.pull_request.node_id }}" "$TARGET" "$OVERWRITE"

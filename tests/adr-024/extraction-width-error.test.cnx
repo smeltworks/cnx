@@ -1,0 +1,34 @@
+// test-error
+// test-adr: 024
+// An extraction is judged by the bits it takes, at every integer position
+// (ADR-072 ruling 18): w[0, 16] carries 16 bits and a u8 holds 8.
+struct Pair {
+    u8 lo;
+}
+
+u8 narrow(u32 w) {
+    return w[0, 16];
+}
+
+void take(u8 v) {
+    u8 local <- v;
+}
+
+void main() {
+    u32 w <- 0x12345;
+
+    // NEGATIVE CONTROLS -- each stays silent.
+    u8 fits <- w[0, 8];
+    u16 fits16 <- w[8, 16];
+    u32 whole <- w[0, 32];
+    take(w[0, 8]);
+    Pair ok <- { lo: w[0, 8] };
+
+    // ASSERTIONS
+    u8 x <- w[0, 16];
+    i8 y <- w[0, 16];
+    u16 z <- w[0, 32];
+    take(w[0, 16]);
+    u8 c <- (u8)w[0, 16];
+    Pair p <- { lo: w[0, 16] };
+}

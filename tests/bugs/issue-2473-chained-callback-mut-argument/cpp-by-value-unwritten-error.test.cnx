@@ -1,0 +1,18 @@
+// test-error
+// test-cpp-only
+// Tests: when the by-value overload is the first a call reaches, the
+// argument is written for it (#2473 review): `r.put(rp, 2)` passes `rp` by
+// value, so `rp` is never written. `r.put(one)` reaches only the writer.
+#include "lib/cpp-pw.hpp"
+
+mut Rv r;
+
+void main() {
+    // NEGATIVE CONTROLS -- each stays silent.
+    mut i32 one <- 0;
+    r.put(one);
+
+    // ASSERTIONS
+    mut i32 rp <- 0;
+    r.put(rp, 2);
+}

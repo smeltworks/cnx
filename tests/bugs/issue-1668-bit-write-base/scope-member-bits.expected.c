@@ -19,7 +19,7 @@ static P Sc__pv = {0};
 
 void Sc__viaThis(void) {
     Sc__pv.ws[1] = (uint16_t)((Sc__pv.ws[1] & ~(1U << 2)) | (1U << 2));
-    Sc__pv.ws[0] = (uint16_t)((Sc__pv.ws[0] & ~(0xFU << 0)) | ((9U & 0xFU) << 0));
+    Sc__pv.ws[0] = (uint16_t)((Sc__pv.ws[0] & ~(0xFU << 0)) | (9U << 0));
 }
 
 void Sc__viaBareMember(void) {

@@ -1,0 +1,19 @@
+// test-error
+// test-cpp-only
+// Tests: a `()` overload beside a pointer method leaves the call one overload
+// it can reach, so the pointer argument's type is still checked: `b.fill(w)`
+// with a `u16 w` and `fill(uint8_t*)` is E0895 (#2473 review).
+#include "lib/buf.hpp"
+
+mut Buf b;
+
+void main() {
+    // NEGATIVE CONTROLS -- each stays silent.
+    mut u8 v <- 3;
+    b.fill(v);
+    b.fill();
+
+    // ASSERTIONS
+    mut u16 w <- 300;
+    b.fill(w);
+}

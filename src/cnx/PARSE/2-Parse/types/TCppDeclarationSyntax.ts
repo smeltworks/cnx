@@ -16,6 +16,8 @@ type TCppDeclarationSyntax =
       readonly kind: "alias";
       readonly span: ISourceSpan;
       readonly name: string;
+      /** #2473 review: the aliased type, `using R = void;`; null behind a declarator */
+      readonly type: string | null;
     }
   | {
       readonly kind: "simple";
