@@ -6,8 +6,9 @@ mut string<64> buffer;
 
 u32 main() {
     mut cstring c_line <- fgets(buffer, buffer.size, stdin);
-    for (mut u32 i <- 0; c_line != NULL; c_line <- fgets(buffer, buffer.size, stdin)) {
-        i +<- 1;
+    mut u32 lines <- 0;
+    for (; c_line != NULL; c_line <- fgets(buffer, buffer.size, stdin)) {
+        lines +<- 1;
     }
     return 0;
 }

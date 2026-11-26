@@ -30,8 +30,9 @@ char buffer[65] = "";
 
 int main(void) {
     char* c_line = fgets(buffer, 65, stdin);
-    for (uint32_t i = 0U; c_line != nullptr; c_line = fgets(buffer, 65, stdin)) {
-        i = cnx_clamp_add_u32(i, 1U);
+    uint32_t lines = 0U;
+    for (; c_line != nullptr; c_line = fgets(buffer, 65, stdin)) {
+        lines = cnx_clamp_add_u32(lines, 1U);
     }
     return 0U;
 }
