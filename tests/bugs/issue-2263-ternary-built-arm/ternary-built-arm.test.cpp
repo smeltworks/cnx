@@ -259,39 +259,44 @@ int main(void) {
     if (strcmp(v2, "kcd") != 0 || calls != 1) {
         return 12U;
     }
-    /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
-    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-    char cnx_tmp13[17] = {};
-    if (yes == 1) {
-        cnx_string_copy(cnx_tmp13, a + bump(), 2U);
-    } else {
-        cnx_string_copy(cnx_tmp13, "x", 16U);
+    /* C11 6.5.13p4, C++ [expr.log.and]: right operand of `&&` built under a test of the left one (building its temporary before the statement would evaluate the operand's calls even when the left side is false). */
+    bool cnx_tmp14 = (no == 1);
+    if (cnx_tmp14) {
+        /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
+        /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
+        char cnx_tmp13[17] = {};
+        if (yes == 1) {
+            cnx_string_copy(cnx_tmp13, a + bump(), 2U);
+        } else {
+            cnx_string_copy(cnx_tmp13, "x", 16U);
+        }
+        cnx_tmp14 = isAbcd(cnx_tmp13);
     }
-    const bool skipped = (no == 1) && isAbcd(cnx_tmp13);
+    const bool skipped = cnx_tmp14;
     if (skipped == true || calls != 1) {
         return 13U;
     }
     /* C11 6.5.13p4, C++ [expr.log.and]: right operand of `&&` built under a test of the left one (building its temporary before the statement would evaluate the operand's calls even when the left side is false). */
-    bool cnx_tmp16 = (yes == 1);
-    if (cnx_tmp16) {
+    bool cnx_tmp17 = (yes == 1);
+    if (cnx_tmp17) {
         /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
         /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-        char cnx_tmp14[17] = {};
+        char cnx_tmp15[17] = {};
         if (yes == 1) {
-            cnx_string_copy(cnx_tmp14, a, 16U);
+            cnx_string_copy(cnx_tmp15, a, 16U);
             {
-                const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp14);
-                cnx_string_copy(&cnx_tmp14[cnx_used], b, 16U - cnx_used);
+                const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp15);
+                cnx_string_copy(&cnx_tmp15[cnx_used], b, 16U - cnx_used);
             }
         } else {
             /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
-            char cnx_tmp15[5] = {};
-            counted(cnx_tmp15);
-            cnx_string_copy(cnx_tmp14, cnx_tmp15, 16U);
+            char cnx_tmp16[5] = {};
+            counted(cnx_tmp16);
+            cnx_string_copy(cnx_tmp15, cnx_tmp16, 16U);
         }
-        cnx_tmp16 = isAbcd(cnx_tmp14);
+        cnx_tmp17 = isAbcd(cnx_tmp15);
     }
-    const bool taken = cnx_tmp16;
+    const bool taken = cnx_tmp17;
     if (taken == false || calls != 1) {
         return 14U;
     }
