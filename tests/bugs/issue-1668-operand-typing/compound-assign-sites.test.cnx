@@ -4,7 +4,7 @@
 // never checked (#1726), so `flags[0] +<- 1` -- a bit index -- compiled there.
 void main() {
     u8 flags <- 0;
-    u8[4] bytes;
+    u8[4] bytes <- [0, 0, 0, 0];
 
     // NEGATIVE CONTROL -- an array element is one storage location
     for (u32 i <- 0; i < 3; bytes[0] +<- 1) {
