@@ -907,21 +907,9 @@ class FilePlanner {
     const typing = this.state.typingContext();
     const calls = new Map<TPostfixOpSyntax, TType>();
     for (const expr of FilePlanner.writtenExpressions(program, unwritten)) {
-      if (ExpressionShape.postfixView(expr) === null) continue;
-      const head = ExpressionShape.headOf(expr);
-      const steps = OperandTyper.chainOf(expr, typing).steps;
-      head.ops.forEach((op, i) => {
-        const step = steps[i - head.opsConsumed];
-        if (op.kind !== "call" || step === undefined) return;
-        // A function, or an ADR-029 callback: 1.4 settled its type as the
-        // function (#1984)
-        const callee = step.callee ?? step.before?.callbackTypeName ?? null;
-        if (callee === null) return;
-        const symbol = typing.program.symbolByCName(callee);
-        if (symbol?.kind !== "function") return;
-        if (ReturnBuffer.dimensionsOf(symbol.returnType) === null) return;
-        calls.set(op, symbol.returnType);
-      });
+      for (const [op, type] of ReturnBuffer.callsOf(expr, typing)) {
+        calls.set(op, type);
+      }
     }
     return calls;
   }

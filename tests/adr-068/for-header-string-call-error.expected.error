@@ -1,0 +1,4 @@
+13:26 error[E0715]: a for-loop header cannot hold this assignment: a string returned by a call is more than one statement
+       help: assign at the end of the loop body and write it as a while loop
+16:9 error[E0715]: a for-loop header cannot hold this assignment: a string returned by a call is more than one statement
+       help: assign before the loop and leave the init clause empty

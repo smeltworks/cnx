@@ -392,7 +392,9 @@ so nothing can skip it.
   #2207, so a header holds it, at any target (`s`, `p.name`, `names[i]`). A
   string built from its parts is still E0715: a concatenation, a substring, or
   a ternary with either as an arm (#2263 builds that arm into a buffer before
-  the `if`). Fixture: `tests/adr-068/for-header-string-copy.test.cnx`.
+  the `if`), and so is a string a call returns, since the call fills a
+  temporary before the statement (#1209): `s <- next()` is
+  `a string returned by a call is more than one statement`. Fixture: `tests/adr-068/for-header-string-copy.test.cnx`.
 - **Initialization (#2034, #1726):** a header assignment is the assignment a
   statement is for E0381 and E0901 too. The init runs once before the
   condition, so its target is initialized in the loop and after it; the update

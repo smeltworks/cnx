@@ -1,0 +1,17 @@
+// test-error
+// test-adr: 068
+// #2234 review: a string a call returns fills a temporary before its
+// statement (#1209), so a for header cannot hold it: an update's call would
+// run once, before the loop, not after each pass.
+string<8> next() {
+    return "nx";
+}
+
+void run() {
+    mut string<8> s <- "";
+    mut u8 n <- 0;
+    for (s <- "a"; n < 2; s <- next()) {
+        n +<- 1;
+    }
+    for (s <- next(); n < 4; n +<- 1) {}
+}

@@ -1,4 +1,9 @@
+import type ITypingContext from "../types/ITypingContext";
 import type TType from "../types/TType";
+import type TExpression from "../types/syntax/TExpression";
+import type TPostfixOpSyntax from "../types/syntax/TPostfixOpSyntax";
+import ExpressionShape from "./ExpressionShape";
+import OperandTyper from "./OperandTyper";
 import CArrayDimensions from "./CArrayDimensions";
 import cTypeName from "./cTypeName";
 import TypeResolver from "./TypeResolver";
@@ -12,6 +17,32 @@ import type IStructKeywordFacts from "./types/IStructKeywordFacts";
  * memory safe. This is the one place that says which return types do.
  */
 class ReturnBuffer {
+  /**
+   * #1209: each call in `expr`'s own chain to a function returning a buffer
+   * (a `string<N>` or an array), and its return type. A function, or an
+   * ADR-029 callback: 1.4 settled its type as the function (#1984)
+   */
+  static callsOf(
+    expr: TExpression,
+    typing: ITypingContext,
+  ): ReadonlyMap<TPostfixOpSyntax, TType> {
+    const calls = new Map<TPostfixOpSyntax, TType>();
+    if (ExpressionShape.postfixView(expr) === null) return calls;
+    const head = ExpressionShape.headOf(expr);
+    const steps = OperandTyper.chainOf(expr, typing).steps;
+    head.ops.forEach((op, i) => {
+      const step = steps[i - head.opsConsumed];
+      if (op.kind !== "call" || step === undefined) return;
+      const callee = step.callee ?? step.before?.callbackTypeName ?? null;
+      if (callee === null) return;
+      const symbol = typing.program.symbolByCName(callee);
+      if (symbol?.kind !== "function") return;
+      if (ReturnBuffer.dimensionsOf(symbol.returnType) === null) return;
+      calls.set(op, symbol.returnType);
+    });
+    return calls;
+  }
+
   /** The parameter the buffer is passed as, ahead of the declared ones */
   static readonly NAME = "cnx_return";
 

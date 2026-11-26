@@ -5,7 +5,7 @@
  * LDREX/STREX loop or a PRIMASK section, ADR-049 Q4/Q7), a bit write on a
  * float (through a union), and a string built from its parts (ADR-045). A
  * string copied whole is one `cnx_string_copy` call (#2207), so a header
- * holds it (#2234).
+ * holds it (#2234) -- unless a call returns it, filling a temporary first.
  *
  * One decision, read off the operand typer: 2.1 reports it as E0715, and the
  * header renderer asserts it, so neither derives it again. Which writes are
@@ -16,7 +16,9 @@
 
 import AtomicOwner from "./AtomicOwner";
 import BitmapFieldStep from "./BitmapFieldStep";
+import ExpressionNodes from "./ExpressionNodes";
 import OperandTyper from "./OperandTyper";
+import ReturnBuffer from "./ReturnBuffer";
 import StringValueForm from "./StringValueForm";
 import type ITypingContext from "../types/ITypingContext";
 import type IAssignmentSyntax from "../types/syntax/IAssignmentSyntax";
@@ -46,8 +48,15 @@ class ForHeaderAssignment {
       return "a slice write is more than one statement";
     }
     if (OperandTyper.stringCopyCapacity(target, ctx) === null) return null;
-    return StringValueForm.isBuilt(site.value, ctx)
-      ? "a string built from its parts is more than one statement"
+    if (StringValueForm.isBuilt(site.value, ctx)) {
+      return "a string built from its parts is more than one statement";
+    }
+    // #1209: the call fills a temporary declared before the statement
+    const fillsBuffer = ExpressionNodes.direct(site.value).some(
+      (node) => ReturnBuffer.callsOf(node, ctx).size > 0,
+    );
+    return fillsBuffer
+      ? "a string returned by a call is more than one statement"
       : null;
   }
 }
