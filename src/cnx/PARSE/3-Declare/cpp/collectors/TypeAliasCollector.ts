@@ -11,6 +11,7 @@ class TypeAliasCollector {
     name: string,
     sourceFile: string,
     span: ISourceSpan,
+    type: string | null,
     currentNamespace?: string,
   ): ICppTypeAliasSymbol {
     return {
@@ -22,6 +23,7 @@ class TypeAliasCollector {
       sourceLanguage: ESourceLanguage.Cpp,
       visibility: "public",
       parent: currentNamespace,
+      ...(type !== null && { type }),
     };
   }
 }

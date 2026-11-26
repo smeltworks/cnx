@@ -1,0 +1,18 @@
+// test-error
+// Tests: a bare chained call through a C function-pointer typedef discards what it returns (#2473),
+// one declared with () included, which takes any arguments. A function
+// returning a typedef of void returns nothing, named or through a value.
+#pragma target cortex-m7
+#include "lib/c-ops.h"
+
+void main() {
+    mut u32 seed <- 0;
+    mut u32 out <- 0;
+    make_ops(seed).r(1);
+    (void)make_ops(seed).r(2);
+    make_ops(seed).w(out);
+    make_ops(seed).u(3);
+    (void)make_ops(seed).u(4);
+    vf(1);
+    make_vops().cb(2);
+}

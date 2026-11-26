@@ -1,0 +1,26 @@
+# The cross toolchains the target matrix compiles every fixture with (#1668):
+# a Cortex-M and an AVR, against newlib and avr-libc. Every job that
+# transpiles or compiles for a cross target installs them through this one
+# step, so the commands are written once. The package list is
+# scripts/cross-toolchain-packages.txt, the one CONTRIBUTING.md and the test
+# runner's preflight name.
+#
+# apt resolves that list against the runner's own Ubuntu release, so the
+# release decides the compiler versions, and the catalog in
+# targets/targets.cnx records one of them. Ubuntu 24.04's gcc-avr is 7.3.0,
+# whose atmega328p `long double` is the 4 bytes the catalog's
+# `long_double_bits: 32` says. Ubuntu 26.04's is 14.3.0, whose `long double`
+# is 8 bytes, so the preflight's data-model probe fails there. That is why a
+# GitHub-hosted job runs on `ubuntu-24.04` and not on `ubuntu-latest`, which
+# became 26.04. The self-hosted runners pass the same probe, so their gcc-avr
+# gives the 4 bytes too.
+name: Install the target matrix's cross toolchains
+description: apt-get install the packages in scripts/cross-toolchain-packages.txt
+runs:
+  using: composite
+  steps:
+    - name: Install the target matrix's cross toolchains
+      shell: bash
+      run: |
+        sudo apt-get update -qq
+        xargs sudo apt-get install -y -qq < scripts/cross-toolchain-packages.txt

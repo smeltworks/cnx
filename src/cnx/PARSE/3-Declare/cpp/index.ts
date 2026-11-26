@@ -114,6 +114,7 @@ class CppResolver {
             decl.name,
             ctx.sourceFile,
             decl.span,
+            decl.type,
             ctx.currentNamespace,
           ),
         );

@@ -1,0 +1,19 @@
+// test-error
+// test-cpp-only
+// Tests: the write checks judge the C++ overload an argument is written for
+// (#2473 review). `p.put(rdonly, 2)` is written `p.put(&rdonly, 2)` for the
+// writer, though a by-value overload also takes two arguments, so a
+// read-only `rdonly` is E0900.
+#include "lib/cpp-pw.hpp"
+
+mut Pw p;
+
+void main() {
+    // NEGATIVE CONTROLS -- each stays silent.
+    mut i32 w <- 0;
+    p.put(w, 2);
+
+    // ASSERTIONS
+    i32 rdonly <- 0;
+    p.put(rdonly, 2);
+}

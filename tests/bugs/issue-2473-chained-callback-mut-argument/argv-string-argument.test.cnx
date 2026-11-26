@@ -1,0 +1,20 @@
+// test-execution
+// Issue #2473 review: an element of main's string args[] is a char string,
+// so it is passed to a C char pointer, alone or with a bit range after it.
+#include <stdlib.h>
+
+u32 main(string args[]) {
+    mut i32 n <- 0;
+    mut u8 low <- 0;
+    if (args.type_element_count > 1) {
+        n <- atoi(args[1]);
+        low <- atoi(args[1])[0, 8];
+    }
+    if (n != 0) {
+        return 1;
+    }
+    if (low != 0) {
+        return 2;
+    }
+    return 0;
+}
