@@ -544,7 +544,8 @@ describe("SymbolTable", () => {
         symbolTable.getStructFieldsDeclaredIn("Reg", "reg.h")?.get("sum")
           ?.bitWidth,
       ).toBe(3);
-      expect(seen).toEqual(["1+2", "W"]);
+      // each width once for the run-wide record, once for its own header
+      expect(seen).toEqual(["1+2", "W", "1+2", "W"]);
     });
 
     it("should get all fields for a struct", () => {
