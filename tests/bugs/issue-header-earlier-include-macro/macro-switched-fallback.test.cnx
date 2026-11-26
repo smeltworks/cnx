@@ -1,0 +1,12 @@
+// test-execution
+// A header an earlier include's macro turns off is not met by the C compile:
+// its C++ class does not make this C build an E0507.
+#include "lib/fallback-cfg.h"
+#include "lib/fallback-wrap.h"
+
+u32 main() {
+    if (main_pins.type_element_count != 2) {
+        return 1;
+    }
+    return 0;
+}

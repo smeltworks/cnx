@@ -219,3 +219,79 @@ describe("cache parity (integration, #1225)", () => {
     expect(await transpileOnce()).toEqual(expected);
   });
 });
+
+// A header's record is good only for the text it was read as: arr.h's file
+// does not change when cfg.h stops defining BIG, but the text C reads does.
+describe("cache parity after an earlier header changes a header's branch", () => {
+  let dir: string;
+
+  beforeAll(() => {
+    dir = mkdtempSync(join(tmpdir(), "cnx-cache-context-"));
+    writeFileSync(join(dir, "cnx.config.json"), "{}\n");
+    writeFileSync(join(dir, "cfg.h"), "#define BIG 1\n");
+    writeFileSync(
+      join(dir, "arr.h"),
+      "#include <stdint.h>\n#ifdef BIG\nextern uint8_t one[8];\n#else\nextern uint8_t one[4];\n#endif\n",
+    );
+    writeFileSync(
+      join(dir, "main.cnx"),
+      '#include "cfg.h"\n#include "arr.h"\n\nmut u8[one.type_element_count] a;\n\nvoid main() {\n    a[0] <- 1;\n}\n',
+    );
+  });
+
+  afterAll(() => {
+    if (dir) rmSync(dir, { recursive: true, force: true });
+  });
+
+  async function emitted(): Promise<string> {
+    const result = await new Transpiler(
+      {
+        input: join(dir, "main.cnx"),
+        includeDirs: [dir],
+        outDir: join(dir, "out"),
+        target: "host",
+      },
+      NodeFileSystem.instance,
+    ).transpile({ kind: "files" });
+    expect(result.success).toBe(true);
+    return readFileSync(join(dir, "out", "main.c"), "utf8");
+  }
+
+  it("reads the header again rather than restore the other branch", async () => {
+    expect(await emitted()).toContain("uint8_t a[8]");
+    writeFileSync(join(dir, "cfg.h"), "#define SMALL 1\n");
+    expect(await emitted()).toContain("uint8_t a[4]");
+  });
+
+  it("reads a header again when the header it includes changes its branch (#1916)", async () => {
+    const nested = mkdtempSync(join(tmpdir(), "cnx-cache-1916-"));
+    try {
+      writeFileSync(join(nested, "cnx.config.json"), "{}\n");
+      writeFileSync(
+        join(nested, "outer.h"),
+        '#pragma once\n#include "inner.h"\n#if FLAG > 0\nvoid a_func(void);\n#else\nvoid b_func(void);\n#endif\n',
+      );
+      const run = async (flag: number, call: string): Promise<boolean> => {
+        writeFileSync(join(nested, "inner.h"), `#define FLAG ${flag}\n`);
+        writeFileSync(
+          join(nested, "main.cnx"),
+          `#include "outer.h"\n\nvoid main() {\n    ${call}();\n}\n`,
+        );
+        const result = await new Transpiler(
+          {
+            input: join(nested, "main.cnx"),
+            includeDirs: [nested],
+            outDir: join(nested, "out"),
+            target: "host",
+          },
+          NodeFileSystem.instance,
+        ).transpile({ kind: "files" });
+        return result.success;
+      };
+      expect(await run(0, "b_func")).toBe(true);
+      expect(await run(1, "a_func")).toBe(true);
+    } finally {
+      rmSync(nested, { recursive: true, force: true });
+    }
+  });
+});

@@ -1,0 +1,14 @@
+// test-execution
+// lib/pins-by-macro.h opens lib/hidden-pins.h only through a macro,
+// PINS_HEADER. Discovery follows it, so its declaration is read: pins has 2
+// elements. hide-class-config.h hides its class from C, so the run is C.
+#include "lib/hide-class-config.h"
+#include "lib/pins-by-macro.h"
+
+u32 main() {
+    u32 count <- pins.type_element_count;
+    if (count != 2) {
+        return 1;
+    }
+    return 0;
+}

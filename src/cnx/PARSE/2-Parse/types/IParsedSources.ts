@@ -9,8 +9,8 @@ import type TRunTarget from "../../../types/TRunTarget";
 interface IParsedSources {
   /** #1991: the C/C++ headers 1.1 settled, in its order */
   readonly headers: readonly TParsedHeaderEntry[];
-  /** `IReadHeaders.reader`: what read `headers`, for the host's cache */
-  readonly headerReader: string;
+  /** `IReadHeaders.readers`: what read each of `headers`, for the host's cache */
+  readonly headerReaders: ReadonlyMap<string, string>;
   /** #1991: issue #985's recovery slices, parsed; null when 1.1 had none */
   readonly recovered: IParsedRecovery | null;
   readonly sources: readonly IParsedSource[];

@@ -58,6 +58,7 @@ describe("header macros a file's preprocessing could not read (#1688)", () => {
       dump: "",
       headerFiles: new Set<string>(),
       complete: false,
+      slices: new Map<string, string>(),
     });
     expect(await codesOf("SCALE_F")).toEqual(["E0811"]);
   });
@@ -72,6 +73,7 @@ describe("header macros a file's preprocessing could not read (#1688)", () => {
       dump: "",
       headerFiles: new Set<string>(),
       complete: false,
+      slices: new Map<string, string>(),
     });
     expect(await codesOf("gain")).toEqual(["E0810"]);
   });
