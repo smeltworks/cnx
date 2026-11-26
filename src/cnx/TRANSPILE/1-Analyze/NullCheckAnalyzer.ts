@@ -484,8 +484,6 @@ class NullCheckWalk {
   private checkFunctionArgumentsForUncheckedVariables(
     ops: Extract<TExpression, { kind: "postfix" }>["ops"],
   ): void {
-    // Skip if we're in a NULL comparison context (the check itself)
-    if (this.inEqualityComparison) return;
     for (const op of ops) {
       if (op.kind !== "call") continue;
       for (const arg of op.arguments) {
