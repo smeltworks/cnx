@@ -232,8 +232,8 @@ describe("a header's language is decided once, in 1.1 (#1844)", () => {
     // #2504 review: a header the walk reached is judged on the text C meets,
     // and that one judgement is the run's mode
     const LIB = join(
-      __dirname,
-      "../../../tests/bugs/issue-header-earlier-include-macro/lib",
+      process.cwd(),
+      "tests/bugs/issue-header-earlier-include-macro/lib",
     );
     const fromLib = (...names: string[]): Record<string, string> =>
       Object.fromEntries(

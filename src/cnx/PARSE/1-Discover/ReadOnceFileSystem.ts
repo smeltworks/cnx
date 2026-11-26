@@ -53,6 +53,11 @@ class ReadOnceFileSystem implements IFileSystem {
     return this.host.stat(path);
   }
 
+  /** #2504: the file a symlinked spelling names, as the host follows it */
+  realpath(path: string): string {
+    return this.host.realpath ? this.host.realpath(path) : path;
+  }
+
   writeFile(path: string): void {
     ReadOnceFileSystem.refuse("write", path);
   }

@@ -1,5 +1,4 @@
 import { availableParallelism } from "node:os";
-import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
 
 import detectAssemblySyntax from "./detectAssemblySyntax";
@@ -179,15 +178,20 @@ class HeaderSources {
       );
     }
     const alone = await Promise.all(settled);
+    const real = HeaderSources._realPaths(headers);
     // Each file by its key, with every spelling the walk found it under
     const index = new Map<string, number[]>();
     headers.forEach((file, i) => {
-      const key = HeaderSources._keyOf(file.path);
+      const key = HeaderSources._keyOf(file.path, real);
       index.set(key, [...(index.get(key) ?? []), i]);
     });
     const spelled = headers.map((file) => resolve(file.path));
     const counted = new Set<number>();
-    HeaderSources._count([...unit.headers], { index, spelled, alone }, counted);
+    HeaderSources._count(
+      [...unit.headers],
+      { index, spelled, real, alone },
+      counted,
+    );
     const recovers =
       unit.searchesSystemPath ||
       [...counted].some((i) => alone[i].source === null);
@@ -211,15 +215,20 @@ class HeaderSources {
       : null;
     const slices = HeaderSources._resolvedKeys(
       recovery?.perFileContent ?? null,
+      real,
     );
-    HeaderSources._count(slices.keys(), { index, spelled, alone }, counted);
-    const read = { settings, limit, index, spelled, alone, counted };
+    HeaderSources._count(
+      slices.keys(),
+      { index, spelled, real, alone },
+      counted,
+    );
+    const read = { settings, limit, index, spelled, real, alone, counted };
     const cReadings = counts(false)
       ? await HeaderSources._readings(unit.files, false, read)
       : NO_READINGS;
     // #1542 ruling 4: a header's language is judged on the text C meets
     const cTextOf = (file: IDiscoveredFile): string | undefined =>
-      cReadings.get(HeaderSources._keyOf(file.path))?.text;
+      cReadings.get(HeaderSources._keyOf(file.path, real))?.text;
     // One judgement, before any reading is chosen: every file the C compile
     // opens -- a header the walk reached, one only its preprocessing opened
     // (`#include IMPL_HEADER`), and one only the unit's toolchain found
@@ -231,7 +240,7 @@ class HeaderSources {
         if (headers[i].type === EFileType.CppHeader) return true;
         const cText =
           cTextOf(headers[i]) ??
-          slices.get(HeaderSources._keyOf(headers[i].path));
+          slices.get(HeaderSources._keyOf(headers[i].path, real));
         return cText === undefined
           ? alone[i].source?.language === EHeaderLanguage.Cpp
           : isCpp(headers[i].type, cText);
@@ -243,7 +252,7 @@ class HeaderSources {
           return [...header.entered].some(
             // a .hpp spelling is C++ even when the file is a walked .h (#211)
             (path) =>
-              (!index.has(HeaderSources._keyOf(path)) ||
+              (!index.has(HeaderSources._keyOf(path, real)) ||
                 FileKinds.of(path) === EFileType.CppHeader) &&
               isCpp(FileKinds.of(path), own.get(path) ?? ""),
           );
@@ -258,7 +267,7 @@ class HeaderSources {
         ? await HeaderSources._readings(unit.cppFiles, true, read)
         : NO_READINGS;
     const keyOf = (file: IDiscoveredFile): string =>
-      HeaderSources._keyOf(file.path);
+      HeaderSources._keyOf(file.path, real);
     const cppOf = (file: IDiscoveredFile): boolean =>
       file.type === EFileType.CppHeader || cppBuild;
     const readingsOf = (file: IDiscoveredFile): TReadings =>
@@ -270,7 +279,7 @@ class HeaderSources {
       const met = readingsOf(file).get(keyOf(file)) ?? undefined;
       if (header.source === null) {
         if (met !== undefined) return [{ i, reading: met }];
-        const slice = slices.get(HeaderSources._keyOf(file.path));
+        const slice = slices.get(HeaderSources._keyOf(file.path, real));
         return slice === undefined
           ? []
           : [{ i, reading: { text: slice, directives: null } }];
@@ -337,7 +346,7 @@ class HeaderSources {
       const header = alone[i];
       if (!counted.has(i) || header.source === null) return;
       opened.set(resolve(file.path), header.entered);
-      HeaderSources._judgeOpenedOnly(header, index, sources);
+      HeaderSources._judgeOpenedOnly(header, index, sources, real);
     });
     return {
       sources,
@@ -356,12 +365,23 @@ class HeaderSources {
    * names one file twice, and under `#pragma once` the compile opens it under
    * only the first spelling
    */
-  private static _keyOf(path: string): string {
-    try {
-      return realpathSync(path);
-    } catch {
-      return resolve(path);
-    }
+  private static _keyOf(
+    path: string,
+    real: ReadonlyMap<string, string>,
+  ): string {
+    return real.get(resolve(path)) ?? resolve(path);
+  }
+
+  /** Each walked header's resolved path, and the real path 1.1 found it at */
+  private static _realPaths(
+    headers: readonly IDiscoveredFile[],
+  ): ReadonlyMap<string, string> {
+    return new Map(
+      headers.map((file) => [
+        resolve(file.path),
+        file.realPath ?? resolve(file.path),
+      ]),
+    );
   }
 
   /**
@@ -371,10 +391,11 @@ class HeaderSources {
    */
   private static _resolvedKeys(
     slices: ReadonlyMap<string, string> | null,
+    real: ReadonlyMap<string, string>,
   ): ReadonlyMap<string, string> {
     const resolved = new Map<string, string>();
     for (const [path, text] of slices ?? []) {
-      const key = HeaderSources._keyOf(path);
+      const key = HeaderSources._keyOf(path, real);
       const earlier = resolved.get(key);
       resolved.set(key, earlier === undefined ? text : `${earlier}\n${text}`);
     }
@@ -395,6 +416,7 @@ class HeaderSources {
       readonly limit: TPreprocessLimit;
       readonly index: ReadonlyMap<string, readonly number[]>;
       readonly spelled: readonly string[];
+      readonly real: ReadonlyMap<string, string>;
       readonly alone: readonly TAlone[];
       readonly counted: Set<number>;
     },
@@ -421,6 +443,7 @@ class HeaderSources {
             },
             cpp,
           ),
+          read.real,
         ),
       );
     const perFile = await Promise.all(
@@ -428,7 +451,7 @@ class HeaderSources {
         expanded:
           file.expanded === undefined
             ? await sliceOf(file, false)
-            : HeaderSources._resolvedKeys(file.expanded),
+            : HeaderSources._resolvedKeys(file.expanded, read.real),
         directives: await sliceOf(file, true),
       })),
     );
@@ -485,9 +508,11 @@ class HeaderSources {
     },
     index: ReadonlyMap<string, readonly number[]>,
     sources: Map<string, IHeaderSource>,
+    real: ReadonlyMap<string, string>,
   ): void {
     const openedOnly = [...header.entered].filter(
-      (path) => !index.has(HeaderSources._keyOf(path)) && !sources.has(path),
+      (path) =>
+        !index.has(HeaderSources._keyOf(path, real)) && !sources.has(path),
     );
     if (openedOnly.length === 0) return;
     const own = LineMarkers.byFile(header.preprocessed);
@@ -514,6 +539,7 @@ class HeaderSources {
     headers: {
       readonly index: ReadonlyMap<string, readonly number[]>;
       readonly spelled: readonly string[];
+      readonly real: ReadonlyMap<string, string>;
       readonly alone: readonly TAlone[];
     },
     counted: Set<number>,
@@ -521,7 +547,8 @@ class HeaderSources {
     const pending = [...paths];
     const followed = new Set<number>();
     for (let path = pending.pop(); path !== undefined; path = pending.pop()) {
-      const all = headers.index.get(HeaderSources._keyOf(path)) ?? [];
+      const all =
+        headers.index.get(HeaderSources._keyOf(path, headers.real)) ?? [];
       const opened = all.filter((i) => headers.spelled[i] === resolve(path));
       for (const i of opened.length > 0 ? opened : all.slice(0, 1)) {
         if (followed.has(i) || counted.has(i)) continue;
@@ -547,16 +574,17 @@ class HeaderSources {
       directiveOf: ReadonlyMap<string, string>;
     },
   ): IRecoveredDeclarations {
+    const real = HeaderSources._realPaths(headers);
     const reached = new Map(
       headers.map((file) => [
-        HeaderSources._keyOf(file.path),
+        HeaderSources._keyOf(file.path, real),
         sources.get(file.path),
       ]),
     );
     const slices = new Map<string, IRecoveredSlice>();
     for (const [path, text] of recovery.perFileContent) {
       const language =
-        reached.get(HeaderSources._keyOf(path))?.language ??
+        reached.get(HeaderSources._keyOf(path, real))?.language ??
         HeaderSources._languageOf(FileKinds.of(path), text);
       slices.set(
         path,
