@@ -1,0 +1,18 @@
+14:40 warning[E0896]: cnx cannot see how 'strstr' uses parameter 2, so passing '"a"' to it is not memory safe
+       help: Consider converting 'strstr' to cnx.
+19:37 warning[E0896]: cnx cannot see how 'strstr' uses parameter 2, so passing '"cd"' to it is not memory safe
+       help: Consider converting 'strstr' to cnx.
+22:20 warning[E0896]: cnx cannot see how 'strcmp' uses parameter 1, so passing 's + "d"' to it is not memory safe
+       help: Consider converting 'strcmp' to cnx.
+22:29 warning[E0896]: cnx cannot see how 'strcmp' uses parameter 2, so passing '"abcd"' to it is not memory safe
+       help: Consider converting 'strcmp' to cnx.
+23:30 warning[E0896]: cnx cannot see how 'strstr' uses parameter 1, so passing 's' to it is not memory safe
+       help: Consider converting 'strstr' to cnx.
+23:33 warning[E0896]: cnx cannot see how 'strstr' uses parameter 2, so passing '"b"' to it is not memory safe
+       help: Consider converting 'strstr' to cnx.
+14:31 error[E0948]: 'strstr' returns a pointer, which may point into the string built for 's + "x"', parameter 1; that string does not outlive its block
+       help: ADR-045: copy 's + "x"' into a string<N> first, and pass that.
+19:27 error[E0948]: 'strstr' returns a pointer, which may point into the string built for 's + "de"', parameter 1; that string does not outlive its block
+       help: ADR-045: copy 's + "de"' into a string<N> first, and pass that.
+20:27 error[E0948]: 'strchr' returns a pointer, which may point into the string built for 's[0, 2]', parameter 1; that string does not outlive its block
+       help: ADR-045: copy 's[0, 2]' into a string<N> first, and pass that.

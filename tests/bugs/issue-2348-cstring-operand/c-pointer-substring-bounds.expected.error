@@ -1,0 +1,4 @@
+12:20 error[E0865]: Substring bounds [2, 6] exceed the source string<4>
+       help: The bounds are counted in characters from zero; keep start + length within the source's capacity.
+13:12 error[E0865]: Substring bounds [3, 4] exceed the source string<4>
+       help: The bounds are counted in characters from zero; keep start + length within the source's capacity.

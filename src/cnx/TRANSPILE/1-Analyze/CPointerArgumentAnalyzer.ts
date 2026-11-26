@@ -97,7 +97,11 @@ class CPointerArgumentCheck {
         return;
       }
       if (pointee === null) return;
-      if (pointee === "char" && this.rejectsUnknownLength(arg, callee, index)) {
+      if (
+        pointee === "char" &&
+        (this.rejectsUnknownLength(arg, callee, index) ||
+          this.rejectsPointerResult(arg, callee, index))
+      ) {
         return;
       }
       this.found.push({
@@ -249,6 +253,35 @@ class CPointerArgumentCheck {
    * `char*` is built into a temporary at the sum of its parts' capacities
    * (ADR-045), so each whole part needs one. A substring's length is E0922's.
    */
+  /**
+   * E0948 (#2348 review): a string built for a C function that returns a
+   * pointer. The temporary lives only as long as the statement's block, and
+   * the pointer -- what `strstr` or `strchr` return -- may point into it.
+   */
+  private rejectsPointerResult(
+    arg: TExpression,
+    callee: ICCallee,
+    index: number,
+  ): boolean {
+    const form = StringValueForm.of(arg, this.context);
+    if (form.kind !== "concat" && form.kind !== "substring") return false;
+    if (
+      !callee.signatures.some(
+        (signature) => signature.returnType?.includes("*") === true,
+      )
+    ) {
+      return false;
+    }
+    this.found.push({
+      code: "E0948",
+      span: arg.span,
+      aboutItsPosition: true,
+      message: `'${callee.name}' returns a pointer, which may point into the string built for '${arg.written}', parameter ${index + 1}; that string does not outlive its block`,
+      helpText: `ADR-045: copy '${arg.written}' into a string<N> first, and pass that.`,
+    });
+    return true;
+  }
+
   private rejectsUnknownLength(
     arg: TExpression,
     callee: ICCallee,
@@ -270,6 +303,7 @@ class CPointerArgumentCheck {
     this.found.push({
       code: "E0947",
       span: arg.span,
+      aboutItsPosition: true,
       message: `The length of '${unknown.value.written}' is not known, so '${arg.written}' cannot be built for parameter ${index + 1} of '${callee.name}'`,
       helpText: `ADR-045: copy '${unknown.value.written}' into a string<N> first, and pass the concatenation of that.`,
     });

@@ -225,9 +225,6 @@ class NullCheckWalk {
   /** Current scope for tracking nullable variable states (E0908) */
   private currentScope: INullCheckScope | null = null;
 
-  /** The enclosing `if` statements, innermost last: whether each one returns */
-  private readonly ifStack: Array<{ hasReturn: boolean }> = [];
-
   constructor(analyzer: NullCheckAnalyzer) {
     this.analyzer = analyzer;
   }
@@ -331,12 +328,18 @@ class NullCheckWalk {
       case "while":
         this.whileStatement(statement);
         return;
-      case "return":
-        // An `if` that returns is a guard clause when it checks `= NULL`
-        if (this.ifStack.length > 0) {
-          this.ifStack.at(-1)!.hasReturn = true;
-        }
+      case "for":
+      case "doWhile":
+      case "forever":
+      case "switch":
+        // A loop may stop, and a switch take another case, before a guard
+        // inside it runs, so what one proves stays inside (#2348 review)
         this.ownParts(statement);
+        this.withNarrowed([], () => {
+          for (const child of StatementChildren.of(statement)) {
+            this.statement(child);
+          }
+        });
         return;
       default:
         this.ownParts(statement);
@@ -409,30 +412,65 @@ class NullCheckWalk {
     return [];
   }
 
+  /** Every nullable variable visible here, innermost scope first */
+  private visibleVariables(): INullableVariableState[] {
+    const visible: INullableVariableState[] = [];
+    for (let scope = this.currentScope; scope; scope = scope.parent) {
+      visible.push(...scope.variables.values());
+    }
+    return visible;
+  }
+
   /**
-   * Walk `walk` with `names` checked, then unchecked again: a NULL check
-   * holds only where its condition decided control reached (#2348 review).
-   * One reassigned inside keeps the state its assignment gave it.
+   * Walk `walk` with `names` checked, then as before: a NULL check holds only
+   * where its condition decided control reached, and so does a guard clause
+   * nested inside (#2348 review). One reassigned inside keeps the state its
+   * assignment gave it.
    */
   private withNarrowed(names: readonly string[], walk: () => void): void {
-    const narrowed = names.flatMap((name) => {
+    const before = new Map(
+      this.visibleVariables()
+        .filter((state) => state.state !== NullCheckState.CheckedNotNull)
+        .map((state) => [state, state.state]),
+    );
+    for (const name of names) {
       const state = this.lookupVariable(name);
-      if (state?.state !== NullCheckState.Unchecked) return [];
-      state.state = NullCheckState.CheckedNotNull;
-      return [state];
-    });
-    walk();
-    for (const state of narrowed) {
-      if (state.state === NullCheckState.CheckedNotNull) {
-        state.state = NullCheckState.Unchecked;
+      if (state?.state === NullCheckState.Unchecked) {
+        state.state = NullCheckState.CheckedNotNull;
       }
+    }
+    walk();
+    for (const [state, was] of before) {
+      if (state.state === NullCheckState.CheckedNotNull) state.state = was;
+    }
+  }
+
+  /**
+   * A statement no path runs past: a return, a block holding one, or an `if`
+   * whose two branches each are one. A return inside a loop or a switch may
+   * never run, so it is not one (#2348 review).
+   */
+  private static alwaysReturns(statement: TStatement): boolean {
+    switch (statement.kind) {
+      case "return":
+        return true;
+      case "block":
+        return statement.statements.some((child) =>
+          NullCheckWalk.alwaysReturns(child),
+        );
+      case "if":
+        return (
+          statement.whenFalse !== null &&
+          NullCheckWalk.alwaysReturns(statement.whenTrue) &&
+          NullCheckWalk.alwaysReturns(statement.whenFalse)
+        );
+      default:
+        return false;
     }
   }
 
   private ifStatement(statement: Extract<TStatement, { kind: "if" }>): void {
     const condition = statement.condition;
-    const ifInfo = { hasReturn: false };
-    this.ifStack.push(ifInfo);
     this.expression(condition);
     this.withNarrowed(NullCheckWalk.narrowedBy(condition, true), () =>
       this.statement(statement.whenTrue),
@@ -443,10 +481,9 @@ class NullCheckWalk {
         this.statement(whenFalse),
       );
     }
-    this.ifStack.pop();
     // Guard clause: after `if (c_var = NULL) { return; }`, with no else, what
     // a false condition proves holds for the rest of the block
-    if (ifInfo.hasReturn && whenFalse === null) {
+    if (whenFalse === null && NullCheckWalk.alwaysReturns(statement.whenTrue)) {
       for (const name of NullCheckWalk.narrowedBy(condition, false)) {
         this.updateVariableState(name, NullCheckState.CheckedNotNull);
       }

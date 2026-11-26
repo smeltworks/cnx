@@ -1508,6 +1508,16 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
+## ADR-045 E0896
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | -         | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
+
 ## ADR-045 E0929
 
 | Context            | same file | direct | transitive | from 1 away | thru chain |
@@ -1522,11 +1532,21 @@ cell is declared by the ADR that owns it.
 
 | Context            | same file | direct | transitive | from 1 away | thru chain |
 | ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
-| global variable    | -         | -      | -          | -           | -          |
-| top-level function | -         | -      | -          | -           | -          |
-| scope member       | -         | -      | -          | -           | -          |
-| scope method       | -         | -      | -          | -           | -          |
-| for header         | -         | -      | -          | -           | -          |
+| global variable    | -         | -      | -          | warn        | warn       |
+| top-level function | ok        | -      | -          | warn        | warn       |
+| scope member       | -         | -      | -          | warn        | warn       |
+| scope method       | ok        | -      | -          | warn        | warn       |
+| for header         | -         | -      | -          | warn        | warn       |
+
+## ADR-045 E0948
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | warn        | warn       |
+| top-level function | ok        | -      | -          | warn        | warn       |
+| scope member       | -         | -      | -          | warn        | warn       |
+| scope method       | ok        | -      | -          | warn        | warn       |
+| for header         | -         | -      | -          | warn        | warn       |
 
 ## ADR-045 string-copy
 

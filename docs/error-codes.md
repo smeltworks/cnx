@@ -20,8 +20,8 @@ codes that already have a fixture.
 | E06xx     | Sizeof Expressions                                                                                                                                                                                                                                       | 3       |
 | E07xx     | Control Flow                                                                                                                                                                                                                                             | 15      |
 | E08xx     | Arithmetic/Array Safety                                                                                                                                                                                                                                  | 61      |
-| E09xx     | NULL Safety, Compile-Time Values, Literal Form, String Conversions, Interrupt Masking, `mut` Arguments, `for` Arrays, Config File Names, Environment Variables, Operator Operands, Parameter Lists, Member Access, Bit-Field Signedness, Type Categories | 47      |
-| **Total** |                                                                                                                                                                                                                                                          | **173** |
+| E09xx     | NULL Safety, Compile-Time Values, Literal Form, String Conversions, Interrupt Masking, `mut` Arguments, `for` Arrays, Config File Names, Environment Variables, Operator Operands, Parameter Lists, Member Access, Bit-Field Signedness, Type Categories | 49      |
+| **Total** |                                                                                                                                                                                                                                                          | **175** |
 
 ---
 
@@ -562,6 +562,12 @@ base: bare, `this.` and `global.`.
 | Code  | Message                                                                                                                                                                                                                                                                                                 | Help                                                                       | Source                                            |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------- |
 | E0947 | A concatenation or a substring is passed to a C `char*` or `const char*` parameter, and one of its whole parts has no length cnx can see, such as main's unsized `string args[]` element. Such an argument is built into a temporary at the sum of its parts' capacities before the call (#2348 review) | Copy the part into a `string<N>` first, and pass the concatenation of that | `TRANSPILE/1-Analyze/CPointerArgumentAnalyzer.ts` |
+
+## E0948 — A String Built for a C Function That Returns a Pointer (ADR-045)
+
+| Code  | Message                                                                                                                                                                                                                                                                                  | Help                                                      | Source                                            |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------- |
+| E0948 | A concatenation or a substring is passed to a C `char*` or `const char*` parameter of a function that returns a pointer, such as `strstr` or `strchr`. The argument is built into a temporary that does not outlive its block, and the returned pointer may point into it (#2348 review) | Copy the argument into a `string<N>` first, and pass that | `TRANSPILE/1-Analyze/CPointerArgumentAnalyzer.ts` |
 
 ## Adding New Error Codes
 

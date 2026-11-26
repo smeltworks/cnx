@@ -1,0 +1,33 @@
+// test-execution
+// #2348 review: a string built for a C char pointer parameter in the right
+// operand of && or ||, or in one arm of ?:, is built only when that operand
+// or arm runs. Built before the statement, s[4, 3] would copy past "abc".
+#pragma target host
+#include <string.h>
+
+string<8> s <- "abc";
+
+u32 main() {
+    u32 n <- 0;
+    bool skipped <- s.value_char_count > 6 && strcmp(s[4, 3], "x") = 0;
+    if (skipped != false) {
+        return 1;
+    }
+    bool ran <- s.value_char_count = 3 && strcmp(s + "d", "abcd") = 0;
+    if (ran != true) {
+        return 2;
+    }
+    bool either <- n = 0 || strcmp(s[4, 3], "x") = 0;
+    if (either != true) {
+        return 3;
+    }
+    i32 arm <- (n > 0) ? strcmp(s[0, 1], "a") : 5;
+    if (arm != 5) {
+        return 4;
+    }
+    i32 other <- (n = 0) ? strcmp(s[1, 2], "bc") : 7;
+    if (other != 0) {
+        return 5;
+    }
+    return 0;
+}

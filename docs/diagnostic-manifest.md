@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1073 fixture(s) assert a diagnostic; 1059 carry a code.
+1076 fixture(s) assert a diagnostic; 1062 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -973,8 +973,11 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-2254-volatile-not-inlined/volatile-dimension-error.test.cnx                              | E0909                             |
 | tests/bugs/issue-2332-short-circuit-built-initializer/loop-condition-nested-call-error.test.cnx           | E0702                             |
 | tests/bugs/issue-2341-included-scope-type-bare-use/no-scope-type.test.cnx                                 | E0426                             |
+| tests/bugs/issue-2348-cstring-operand/c-pointer-result.test.cnx                                           | E0896, E0948                      |
+| tests/bugs/issue-2348-cstring-operand/c-pointer-substring-bounds.test.cnx                                 | E0865                             |
 | tests/bugs/issue-2348-cstring-operand/c-pointer-unknown-length.test.cnx                                   | E0896, E0947                      |
 | tests/bugs/issue-2348-cstring-operand/cstring-arithmetic.test.cnx                                         | E0925                             |
+| tests/bugs/issue-2348-cstring-operand/cstring-guard-scope.test.cnx                                        | E0908                             |
 | tests/bugs/issue-2348-cstring-operand/cstring-narrowing-scope.test.cnx                                    | E0908                             |
 | tests/bugs/issue-2348-cstring-operand/cstring-unchecked-comparison.test.cnx                               | E0908                             |
 | tests/bugs/issue-2348-cstring-operand/string-beside-number.test.cnx                                       | E0925                             |

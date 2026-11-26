@@ -700,6 +700,7 @@ class FilePlanner {
       TStructInitializerForm
     >,
     stringFields: ReadonlyMap<TExpression, number>,
+    stringArguments: ReadonlyMap<TExpression, number>,
     bufferCalls: ReadonlyMap<TPostfixOpSyntax, TType>,
     expectedTypes: ReadonlyMap<TExpression, IPlannedExpectedType>,
     cTypes: Set<string>,
@@ -718,6 +719,7 @@ class FilePlanner {
           (node.kind === "structInitializer" &&
             (structInitializers.get(node) === "cppClass" ||
               node.fields.some((field) => stringFields.has(field.value)))) ||
+          stringArguments.has(node) ||
           ExpressionShape.headOf(node).ops.some((op) => bufferCalls.has(op)),
       );
     const retested = new Set(
@@ -1714,6 +1716,7 @@ class FilePlanner {
       unwritten,
       structInitializers,
       stringCopies.fields,
+      stringCopies.arguments,
       bufferCalls,
       expectedTypes,
       decidedCTypes,

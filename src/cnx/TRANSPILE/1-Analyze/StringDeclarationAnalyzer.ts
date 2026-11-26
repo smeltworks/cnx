@@ -66,6 +66,8 @@ type TWrite =
 /** The declarations and assignments 1.2 returned, each whole-string value checked against its capacity */
 class StringDeclarationCheck {
   private readonly found: IStringDeclarationError[] = [];
+  /** The substrings a write's fit already bounded (E0865) */
+  private readonly bounded = new Set<TExpression>();
 
   public constructor(private readonly context: IAnalysisContext) {}
 
@@ -184,6 +186,27 @@ class StringDeclarationCheck {
     });
   }
 
+  /**
+   * #2348 review: E0865 for a substring no write's fit bounded -- one passed
+   * to a C function, compared, or concatenated there -- since its copy reads
+   * the source as surely as a declaration's does (ADR-045)
+   */
+  public substringBounds(node: TExpression): void {
+    if (node.kind !== "postfix" || this.bounded.has(node)) return;
+    const form = StringValueForm.of(node, this.context);
+    const parts =
+      form.kind === "concat"
+        ? form.parts
+        : form.kind === "substring"
+          ? [form.part]
+          : [];
+    for (const part of parts) {
+      if (part.kind === "substring" && part.chain === node) {
+        this.checkBounds(node, part);
+      }
+    }
+  }
+
   /** E0864/E0865 for the form `StringValueForm` gives the value */
   private checkFit(
     value: TExpression,
@@ -199,7 +222,9 @@ class StringDeclarationCheck {
           ? [form.part]
           : [];
     for (const part of parts) {
-      if (part.kind === "substring" && this.checkBounds(value, part)) return;
+      if (part.kind !== "substring") continue;
+      this.bounded.add(part.chain);
+      if (this.checkBounds(value, part)) return;
     }
     switch (form.kind) {
       case "literal":
@@ -462,7 +487,9 @@ class StringDeclarationAnalyzer {
     for (const node of ProgramExpressions.of(program).flatMap((expression) =>
       ExpressionNodes.direct(expression),
     )) {
-      if (!targets.has(node)) check.substringLength(node);
+      if (targets.has(node)) continue;
+      check.substringLength(node);
+      check.substringBounds(node);
     }
     return check.errors();
   }

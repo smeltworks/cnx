@@ -85,7 +85,10 @@ else (#2348 review). `c_x != NULL` holds in the body of an `if` or `while` it
 is the condition of, on the right of an `&&` it is the left of, and in the
 first branch of a ternary. `c_x = NULL` holds the other way round: on the
 right of an `||`, in an `else`, in a ternary's second branch, and, as a guard
-clause, after an `if` with no `else` whose body returns. A true `&&` holds
+clause, after an `if` with no `else` whose body returns on every path: a
+`return` inside a loop may never run, so it makes no guard clause. A guard
+clause inside a branch, a loop or a switch holds only inside it, since a path
+may skip it. A true `&&` holds
 each of its operands' checks and a false `||` each of its operands', so one
 condition checks several variables; a `!` turns its operand's around.
 
