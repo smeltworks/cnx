@@ -36,8 +36,20 @@ uint32_t lengthOf(const char* s) {
 
 /* ADR-045 / Issue #1209: C returns no array, so the result is written into a buffer the caller supplies. */
 void pick(char cnx_return[17], const uint8_t flag, const char* a, const char* b) {
+    /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
+    char cnx_tmp0[17] = {0};
+    if (flag == 1) {
+        cnx_string_copy(cnx_tmp0, a, 16U);
+        {
+            const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp0);
+            cnx_string_copy(&cnx_tmp0[cnx_used], b, 16U - cnx_used);
+        }
+    } else {
+        cnx_string_copy(cnx_tmp0, "r", 16U);
+    }
     /* ADR-045 / Issue #1209: the result is copied into the caller's buffer, which outlives the call. */
-    cnx_string_copy(cnx_return, (flag == 1) ? a + b : "r", 16U);
+    cnx_string_copy(cnx_return, cnx_tmp0, 16U);
     return;
 }
 
@@ -52,37 +64,113 @@ int main(void) {
     if (strcmp(w, "ef") != 0) {
         return 1U;
     }
+    /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
+    char cnx_tmp1[17] = {0};
+    if (yes == 1) {
+        cnx_string_copy(cnx_tmp1, a, 16U);
+        {
+            const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp1);
+            cnx_string_copy(&cnx_tmp1[cnx_used], b, 16U - cnx_used);
+        }
+    } else {
+        cnx_string_copy(cnx_tmp1, c, 16U);
+    }
     char t[17] = "";
-    cnx_string_copy(t, (yes == 1) ? a + b : c, 16U);
+    cnx_string_copy(t, cnx_tmp1, 16U);
     if (strcmp(t, "abcd") != 0) {
         return 2U;
     }
+    /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
+    char cnx_tmp2[17] = {0};
+    if (no == 1) {
+        cnx_string_copy(cnx_tmp2, a, 16U);
+        {
+            const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp2);
+            cnx_string_copy(&cnx_tmp2[cnx_used], b, 16U - cnx_used);
+        }
+    } else {
+        cnx_string_copy(cnx_tmp2, c, 16U);
+    }
     char t2[17] = "";
-    cnx_string_copy(t2, (no == 1) ? a + b : c, 16U);
+    cnx_string_copy(t2, cnx_tmp2, 16U);
     if (strcmp(t2, "ef") != 0) {
         return 3U;
     }
     char u[17] = "";
-    cnx_string_copy(u, (yes == 1) ? a[0U] : c, 16U);
+    /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
+    char cnx_tmp3[17] = {0};
+    if (yes == 1) {
+        cnx_string_copy(cnx_tmp3, a + 0U, 1U);
+    } else {
+        cnx_string_copy(cnx_tmp3, c, 16U);
+    }
+    cnx_string_copy(u, cnx_tmp3, 16U);
     if (strcmp(u, "a") != 0) {
         return 4U;
     }
-    cnx_string_copy(u, (no == 1) ? a[0U] : c, 16U);
+    /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
+    char cnx_tmp4[17] = {0};
+    if (no == 1) {
+        cnx_string_copy(cnx_tmp4, a + 0U, 1U);
+    } else {
+        cnx_string_copy(cnx_tmp4, c, 16U);
+    }
+    cnx_string_copy(u, cnx_tmp4, 16U);
     if (strcmp(u, "ef") != 0) {
         return 5U;
     }
-    cnx_string_copy(u, (yes == 1) ? ((u) & 0x3U) + a : c, 16U);
+    /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
+    char cnx_tmp5[17] = {0};
+    if (yes == 1) {
+        cnx_string_copy(cnx_tmp5, u + 0U, 2U);
+        {
+            const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp5);
+            cnx_string_copy(&cnx_tmp5[cnx_used], a, 16U - cnx_used);
+        }
+    } else {
+        cnx_string_copy(cnx_tmp5, c, 16U);
+    }
+    cnx_string_copy(u, cnx_tmp5, 16U);
     if (strcmp(u, "efab") != 0) {
         return 6U;
     }
-    const uint32_t n = lengthOf((yes == 1) ? a + b + c : "x");
+    /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
+    char cnx_tmp6[17] = {0};
+    if (yes == 1) {
+        cnx_string_copy(cnx_tmp6, a, 16U);
+        {
+            const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp6);
+            cnx_string_copy(&cnx_tmp6[cnx_used], b, 16U - cnx_used);
+        }
+        {
+            const uint32_t cnx_used = (uint32_t) strlen(cnx_tmp6);
+            cnx_string_copy(&cnx_tmp6[cnx_used], c, 16U - cnx_used);
+        }
+    } else {
+        cnx_string_copy(cnx_tmp6, "x", 16U);
+    }
+    const uint32_t n = lengthOf(cnx_tmp6);
     if (n != 6) {
         return 7U;
     }
+    /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
+    /* ADR-045 / Issue #1209: C returns no array, so the call fills a temporary its caller supplies. */
+    char cnx_tmp8[17] = {0};
+    if (yes == 1) {
+        cnx_string_copy(cnx_tmp8, b + 1U, 1U);
+    } else {
+        cnx_string_copy(cnx_tmp8, c, 16U);
+    }
     /* ADR-045 / Issue #2236: a string<N> field is copied in like any string; C initializes a char[] only from a literal. */
-    Packet cnx_tmp0 = { .name = { 0 } };
-    cnx_string_copy(cnx_tmp0.name, (yes == 1) ? b[1U] : c, 16U);
-    const Packet p = cnx_tmp0;
+    Packet cnx_tmp7 = { .name = { 0 } };
+    cnx_string_copy(cnx_tmp7.name, cnx_tmp8, 16U);
+    const Packet p = cnx_tmp7;
     if (strcmp(p.name, "d") != 0) {
         return 8U;
     }

@@ -63,7 +63,7 @@ u32 main() {
     }
 
     // Struct field
-    Packet p <- {name: (yes = 1) ? b[1, 1] : c};
+    Packet p <- { name: (yes = 1) ? b[1, 1] : c };
     if (p.name != "d") {
         return 8;
     }

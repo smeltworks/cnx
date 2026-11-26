@@ -39,7 +39,7 @@ u32 main() {
     }
 
     // a struct field target
-    mut Packet p <- {name: ""};
+    mut Packet p <- { name: "" };
     n <- 0;
     for (p.name <- "fld"; n < 2; p.name <- "end") {
         n +<- 1;

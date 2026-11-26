@@ -1898,8 +1898,9 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-1 linked fixture with no derivable context:
+2 linked fixtures with no derivable context:
 
+- `adr-068/for-header-string-copy.test.cnx`
 - `adr-068/forever-basic.test.cnx`
 
 ## ADR-068 E0705
