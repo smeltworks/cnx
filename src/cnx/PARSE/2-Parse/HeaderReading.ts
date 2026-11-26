@@ -11,6 +11,7 @@ import EFileType from "../1-Discover/types/EFileType";
 import CROSS_COMPILER_VARIABLE from "../../types/CROSS_COMPILER_VARIABLE";
 import EHeaderLanguage from "../1-Discover/types/EHeaderLanguage";
 import type IDiscoveredFile from "../1-Discover/types/IDiscoveredFile";
+import type IFileIncludes from "../1-Discover/types/IFileIncludes";
 import type IHeaderInclude from "../1-Discover/types/IHeaderInclude";
 import type IHeaderSource from "../1-Discover/types/IHeaderSource";
 import type ISourceGraph from "../1-Discover/types/ISourceGraph";
@@ -24,14 +25,6 @@ import invariant from "../../utils/invariant";
 import SourceOrder from "../../utils/SourceOrder";
 
 /** What 1.2 reads a run's headers from: 1.1's walk of them */
-/** What a run with no compiler read its headers with: nothing */
-const NO_READING = {
-  compilerPath: null,
-  defines: {},
-  includeSearchPaths: [],
-  headerSearchPaths: new Map<string, readonly string[]>(),
-} as const;
-
 type THeaderGraph = Pick<
   ISourceGraph,
   | "cnxFiles"
@@ -54,6 +47,7 @@ const NOTHING_SETTLED: TSettled = {
   recovered: null,
   unsettled: new Map(),
   opened: new Map(),
+  cppBuild: false,
 };
 
 /**
@@ -102,7 +96,7 @@ class HeaderReading {
       return reading._result(
         [],
         NOTHING_SETTLED,
-        { cppMode: false, reader: HeaderCompiler.identity(null, NO_READING) },
+        { cppMode: false, readers: new Map() },
         new Map(),
         new Map(),
       );
@@ -124,12 +118,21 @@ class HeaderReading {
         return reading._result(
           [],
           NOTHING_SETTLED,
-          { cppMode: false, reader: HeaderCompiler.identity(null, NO_READING) },
+          { cppMode: false, readers: new Map() },
           new Map(),
           new Map(),
         );
       }
     }
+    const macros = await HeaderMacroDumps.read(
+      graph.cnxFiles,
+      graph.includes.c,
+      preprocessor,
+      {
+        includeSearchPaths: graph.includeSearchPaths,
+        defines: graph.anchor.defines,
+      },
+    );
     const settled =
       needed && preprocessor !== null
         ? await HeaderSources.settle(
@@ -147,6 +150,13 @@ class HeaderReading {
                 graph.headerIncludes.map((include) => include.header),
               ),
               searchesSystemPath: unit.unresolvedSystem.length > 0,
+              files: HeaderReading._fileUnits(
+                graph,
+                graph.includes.c,
+                macros.slices,
+              ),
+              cppFiles: HeaderReading._fileUnits(graph, graph.includes.cpp),
+              cppRequired: graph.run.cppRequired,
             },
           )
         : NOTHING_SETTLED;
@@ -158,6 +168,7 @@ class HeaderReading {
       settled.recovered,
       unit.sites,
       graph.run.cppRequired,
+      settled.cppBuild,
     );
     // Only the headers a C compile opens are read (#1844)
     const headerFiles = graph.headerFiles.filter((file) =>
@@ -172,27 +183,59 @@ class HeaderReading {
         headerSearchPaths: graph.headerSearchPaths,
       },
     );
+    const readers = new Map(
+      headerFiles.map((file) => {
+        const source = settled.sources.get(file.path);
+        invariant(source !== undefined, "1.2 reads only settled headers");
+        return [file.path, HeaderCompiler.readerOf(reader, source)];
+      }),
+    );
     return reading._result(
       headerFiles,
       settled,
-      { cppMode, reader },
-      HeaderReading._cachedHeaders(headerFiles, services.headerCache, reader),
-      await HeaderMacroDumps.read(
-        graph.cnxFiles,
-        graph.includes.c,
-        preprocessor,
-        {
-          includeSearchPaths: graph.includeSearchPaths,
-          defines: graph.anchor.defines,
-        },
-      ),
+      { cppMode, readers },
+      HeaderReading._cachedHeaders(headerFiles, services.headerCache, readers),
+      macros.dumps,
     );
+  }
+
+  /**
+   * Each `.cnx` file's own C includes, searched from its own directory
+   * first, as C searches a quoted include (#1688), with (#1916) the expanded
+   * slices the macro dump's run of those same includes gave, when it ran
+   */
+  private static _fileUnits(
+    graph: THeaderGraph,
+    includes: ReadonlyMap<string, IFileIncludes>,
+    expanded?: ReadonlyMap<string, ReadonlyMap<string, string> | null>,
+  ): {
+    directives: readonly string[];
+    includePaths: readonly string[];
+    expanded?: ReadonlyMap<string, string> | null;
+  }[] {
+    return graph.cnxFiles.flatMap((file) => {
+      const own = includes.get(file.path);
+      return own === undefined || own.cHeaderSpecs.length === 0
+        ? []
+        : [
+            {
+              directives: own.cHeaderSpecs,
+              includePaths: [
+                own.quotedIncludeDirectory,
+                ...graph.includeSearchPaths,
+              ],
+              ...(expanded?.has(file.path) === true
+                ? { expanded: expanded.get(file.path) }
+                : {}),
+            },
+          ];
+    });
   }
 
   private _result(
     headerFiles: readonly IDiscoveredFile[],
     settled: TSettled,
-    read: Pick<IReadHeaders, "cppMode" | "reader">,
+    read: Pick<IReadHeaders, "cppMode" | "readers">,
     cached: ReadonlyMap<string, TCachedHeaderRead>,
     macroDumps: IReadHeaders["macroDumps"],
   ): IReadHeaders {
@@ -202,7 +245,7 @@ class HeaderReading {
       cached,
       recovered: settled.recovered,
       cppMode: read.cppMode,
-      reader: read.reader,
+      readers: read.readers,
       macroDumps,
       errors: this.errors,
     };
@@ -289,6 +332,7 @@ class HeaderReading {
     recovered: IRecoveredDeclarations | null,
     unitSites: ReadonlyMap<string, readonly ISourceSite[]>,
     cppRequired: boolean | undefined,
+    judgedCpp: boolean,
   ): boolean {
     const met = HeaderReading._cppMet(
       includes,
@@ -303,7 +347,12 @@ class HeaderReading {
       }
       return false;
     }
-    return cppRequired ?? met.size > 0;
+    // 1.1 judged the mode once, on everything this run's compile meets
+    invariant(
+      cppRequired !== undefined || judgedCpp || met.size === 0,
+      "1.1's C++ judgement covers every C++ file the compile meets",
+    );
+    return cppRequired ?? judgedCpp;
   }
 
   /** Each `.cnx` include through which the run meets C++, and the C++ it meets */
@@ -433,11 +482,13 @@ class HeaderReading {
   private static _cachedHeaders(
     headers: readonly IDiscoveredFile[],
     cache: THeaderDeclarationCache | null,
-    reader: string,
+    readers: ReadonlyMap<string, string>,
   ): ReadonlyMap<string, TCachedHeaderRead> {
     const reads = new Map<string, TCachedHeaderRead>();
     if (cache === null) return reads;
     for (const file of headers) {
+      const reader = readers.get(file.path);
+      invariant(reader !== undefined, "1.2 names what read each header");
       try {
         const record = cache(file.path, reader);
         if (record !== null) reads.set(file.path, { kind: "cached", record });

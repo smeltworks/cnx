@@ -1,0 +1,6 @@
+// Reaches board.h through lib/include-link, a symlink to lib/vendor/sdk.
+#include "lib/include-link/board.h"
+
+u8 linked_pins() {
+    return board_pins.type_element_count;
+}

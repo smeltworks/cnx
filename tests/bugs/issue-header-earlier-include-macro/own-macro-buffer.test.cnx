@@ -1,0 +1,18 @@
+// test-execution
+// #2504 review: a header that uses a function-like macro it defines is read
+// with the macro expanded, as C reads it, though no earlier include changes
+// it: own_buffer has 6 elements.
+#include "lib/own-macro-buffer.h"
+
+mut u8[own_buffer.type_element_count] copy;
+
+u32 main() {
+    if (copy.type_element_count != 6) {
+        return 1;
+    }
+    copy[5] <- 9;
+    if (copy[5] != 9) {
+        return 2;
+    }
+    return 0;
+}

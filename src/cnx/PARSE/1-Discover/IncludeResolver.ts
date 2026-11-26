@@ -3,6 +3,7 @@ import { dirname, resolve } from "node:path";
 import CnxMarkerDetector from "./CnxMarkerDetector";
 import IncludeDirectiveText from "../../utils/IncludeDirectiveText";
 import IncludeDiscovery from "./IncludeDiscovery";
+import MacroIncludes from "./MacroIncludes";
 import IncludeRewriter from "../../utils/IncludeRewriter";
 import CnxSourcePath from "../../utils/CnxSourcePath";
 import IncludePath from "../../utils/IncludePath";
@@ -623,6 +624,11 @@ class IncludeResolver {
       onDebug?: (message: string) => void;
       /** File system abstraction: the port the host injected */
       fs: IFileSystem;
+      /** #2504: each macro that names a file, for `#include NAME` */
+      macroIncludes?: ReadonlyMap<
+        string,
+        readonly { path: string; isLocal: boolean }[]
+      >;
     },
   ): {
     headers: IDiscoveredFile[];
@@ -660,7 +666,13 @@ class IncludeResolver {
       const included: string[] = [];
       edges.set(file.path, included);
 
-      const includes = IncludeDiscovery.directivesOf(file.path, content);
+      const includes = [
+        ...IncludeDiscovery.directivesOf(file.path, content),
+        ...MacroIncludes.directivesOf(
+          content,
+          options.macroIncludes ?? new Map(),
+        ),
+      ];
       const searchPaths = [dirname(absolutePath), ...rootSearchPaths];
 
       options.onDebug?.(`Processing includes in ${file.path}:`);
