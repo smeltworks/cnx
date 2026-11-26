@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
             userName[cnx_clamp_sub_u32((uint32_t) strlen(userName), 1)] = '\0';
         }
     }
-    const uint8_t whoAmIByte = argv[0U][0U];
+    const uint8_t whoAmIByte = (uint8_t)argv[0U][0U];
     (void)printf("Hello from %s %s! Your special character is %c\n", argv[0U], userName, whoAmIByte);
     return 0U;
 }

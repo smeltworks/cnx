@@ -113,6 +113,7 @@ function writeRegisterBitRange(
       width,
       ctx.generatedValue,
       storage,
+      ctx.plannedBitValue,
     );
   }
 
@@ -122,6 +123,7 @@ function writeRegisterBitRange(
     width,
     ctx.generatedValue,
     storage,
+    ctx.plannedBitValue,
   );
 }
 

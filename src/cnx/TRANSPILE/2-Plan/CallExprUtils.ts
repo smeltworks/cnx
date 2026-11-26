@@ -8,6 +8,8 @@ import type IPlannedOverflowHelper from "../../types/IPlannedOverflowHelper";
 import IFunctionSignature from "../../types/IFunctionSignature";
 import type IResolvedSymbols from "../../types/IResolvedSymbols";
 import TypeResolver from "../../utils/TypeResolver";
+import CallReach from "../../utils/CallReach";
+import ESourceLanguage from "../../utils/types/ESourceLanguage";
 
 class CallExprUtils {
   /**
@@ -40,12 +42,17 @@ class CallExprUtils {
    * index returned nothing for every scoped function, leaving `param`
    * undefined — which the caller could not distinguish from a function that
    * genuinely takes no such parameter, so a struct argument lost its `&`.
+   *
+   * #2473 review: of a C or C++ overload set, only the overloads a call of
+   * `argumentCount` arguments reaches (`CallReach`), the parameter the first
+   * of them declares -- the one 2.1 judges the argument written for.
    */
   static resolveTargetParam(
     sig: IFunctionSignature | undefined,
     paramIndex: number,
     funcName: string,
     symbolTable: IResolvedSymbols | null,
+    argumentCount: number,
   ): {
     param: IFunctionSignature["parameters"][0] | undefined;
   } {
@@ -55,25 +62,39 @@ class CallExprUtils {
     }
 
     if (symbolTable) {
-      const symbols = symbolTable.getOverloadsByCName(funcName);
-      for (const sym of symbols) {
-        if (sym.kind === "function" && sym.parameters?.[paramIndex]) {
-          const p = sym.parameters[paramIndex];
-          // Convert TType to string for cnx symbols, use string directly for C/C++
-          const paramType = p.type;
-          const baseType =
-            typeof paramType === "string"
-              ? paramType
-              : TypeResolver.getTypeName(paramType);
-          return {
-            param: {
-              name: p.name,
-              baseType,
-              isConst: p.isConst,
-              isArray: p.isArray,
-            },
-          };
-        }
+      const reached = symbolTable
+        .getOverloadsByCName(funcName)
+        .flatMap((sym) => {
+          if (sym.kind !== "function") return [];
+          const parameters = sym.parameters ?? [];
+          return sym.sourceLanguage === ESourceLanguage.Cnx ||
+            CallReach.takes(
+              parameters,
+              "isVariadic" in sym && sym.isVariadic === true,
+              argumentCount,
+            )
+            ? [parameters]
+            : [];
+        });
+      const p = CallReach.shapedFor<(typeof reached)[number][number]>(
+        reached,
+        paramIndex,
+      );
+      if (p !== undefined) {
+        // Convert TType to string for cnx symbols, use string directly for C/C++
+        const paramType = p.type;
+        const baseType =
+          typeof paramType === "string"
+            ? paramType
+            : TypeResolver.getTypeName(paramType);
+        return {
+          param: {
+            name: p.name,
+            baseType,
+            isConst: p.isConst,
+            isArray: p.isArray,
+          },
+        };
       }
     }
 

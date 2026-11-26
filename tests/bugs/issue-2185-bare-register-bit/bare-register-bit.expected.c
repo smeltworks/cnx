@@ -34,8 +34,8 @@ void Drive__viaBare(void) {
     Drive__PWM__SET = (uint8_t)(1U << 2);
     Drive__PWM__CONFIG = (uint8_t)((Drive__PWM__CONFIG & ~(1U << 3)) | (1U << 3));
     *((volatile uint8_t*)(0x40001000U)) = (0x55U);
-    Drive__PWM__FLAGS = (uint8_t)((5U & 0x7U) << 1);
-    Drive__PWM__CONFIG = (uint8_t)((Drive__PWM__CONFIG & ~(0x7U << 1)) | ((5U & 0x7U) << 1));
+    Drive__PWM__FLAGS = (uint8_t)(5U << 1);
+    Drive__PWM__CONFIG = (uint8_t)((Drive__PWM__CONFIG & ~(0x7U << 1)) | (5U << 1));
 }
 
 void Drive__viaThis(void) {
@@ -44,8 +44,8 @@ void Drive__viaThis(void) {
     Drive__PWM__SET = (uint8_t)(1U << 2);
     Drive__PWM__CONFIG = (uint8_t)((Drive__PWM__CONFIG & ~(1U << 3)) | (1U << 3));
     *((volatile uint8_t*)(0x40001000U)) = (0x55U);
-    Drive__PWM__FLAGS = (uint8_t)((5U & 0x7U) << 1);
-    Drive__PWM__CONFIG = (uint8_t)((Drive__PWM__CONFIG & ~(0x7U << 1)) | ((5U & 0x7U) << 1));
+    Drive__PWM__FLAGS = (uint8_t)(5U << 1);
+    Drive__PWM__CONFIG = (uint8_t)((Drive__PWM__CONFIG & ~(0x7U << 1)) | (5U << 1));
 }
 
 int main(void) {

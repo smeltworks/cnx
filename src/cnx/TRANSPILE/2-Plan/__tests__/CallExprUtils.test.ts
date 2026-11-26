@@ -92,7 +92,13 @@ describe("CallExprUtils", () => {
         ],
       };
 
-      const result = CallExprUtils.resolveTargetParam(sig, 0, "myFunc", null);
+      const result = CallExprUtils.resolveTargetParam(
+        sig,
+        0,
+        "myFunc",
+        null,
+        1,
+      );
 
       expect(result.param).toEqual(sig.parameters[0]);
     });
@@ -105,7 +111,13 @@ describe("CallExprUtils", () => {
         ],
       };
 
-      const result = CallExprUtils.resolveTargetParam(sig, 1, "myFunc", null);
+      const result = CallExprUtils.resolveTargetParam(
+        sig,
+        1,
+        "myFunc",
+        null,
+        2,
+      );
 
       expect(result.param).toBeUndefined();
     });
@@ -116,6 +128,7 @@ describe("CallExprUtils", () => {
         0,
         "myFunc",
         null,
+        1,
       );
 
       expect(result.param).toBeUndefined();
@@ -138,6 +151,7 @@ describe("CallExprUtils", () => {
         0,
         "crossFunc",
         symbolTable as any,
+        1,
       );
 
       expect(result.param).toEqual({
@@ -164,6 +178,7 @@ describe("CallExprUtils", () => {
         0,
         "crossFunc",
         symbolTable as any,
+        1,
       );
 
       expect(result.param).toBeUndefined();
@@ -186,9 +201,55 @@ describe("CallExprUtils", () => {
         1,
         "crossFunc",
         symbolTable as any,
+        2,
       );
 
       expect(result.param).toBeUndefined();
+    });
+
+    it("reads a C++ overload set's parameter from the overloads the call reaches (#2473 review)", () => {
+      const symbolTable = {
+        getOverloadsByCName: vi.fn(() => [
+          {
+            kind: "function",
+            parameters: [
+              { name: "v", type: "int32_t", isConst: false, isArray: false },
+              { name: "n", type: "int32_t", isConst: false, isArray: false },
+            ],
+          },
+          {
+            kind: "function",
+            parameters: [
+              { name: "out", type: "int32_t*", isConst: false, isArray: false },
+              {
+                name: "n",
+                type: "int32_t",
+                isConst: false,
+                isArray: false,
+                hasDefault: true,
+              },
+            ],
+          },
+        ]),
+      };
+
+      const one = CallExprUtils.resolveTargetParam(
+        undefined,
+        0,
+        "Rv::put",
+        symbolTable as any,
+        1,
+      );
+      const two = CallExprUtils.resolveTargetParam(
+        undefined,
+        0,
+        "Rv::put",
+        symbolTable as any,
+        2,
+      );
+
+      expect(one.param?.baseType).toBe("int32_t*");
+      expect(two.param?.baseType).toBe("int32_t");
     });
 
     it("prefers local signature over SymbolTable", () => {
@@ -214,6 +275,7 @@ describe("CallExprUtils", () => {
         0,
         "myFunc",
         symbolTable as any,
+        1,
       );
 
       expect(result.param).toEqual(sig.parameters[0]);

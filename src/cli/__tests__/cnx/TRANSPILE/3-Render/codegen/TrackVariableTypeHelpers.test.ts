@@ -236,7 +236,7 @@ describe("trackVariableTypeWithName helpers", () => {
         mut Flags settings;
 
         void main() {
-          settings.enabled <- 1;
+          settings.enabled <- true;
         }
       `;
       const code = await transpileSource(source);

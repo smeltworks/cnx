@@ -60,7 +60,15 @@ import Write from "../../cnx/WRITE/1-Write/Write";
 // types under an unchanged shape, and E0895 rejects one passed for the other.
 // 21: #2116 -- a C++ symbol records its unqualified name, which the
 // (owner, member) index reads; an entry written before has none.
-const CACHE_VERSION = 21;
+// 22: #2473 review -- a C++ parameter records its default argument, which
+// decides the overloads a call reaches; an entry written before has none.
+// 23: #2473 review -- a C++ `using` alias records the type it names, which
+// decides whether a method returning it returns void.
+// 24: #2473 review -- a C++ class records its member templates' names, whose
+// calls are not judged; an entry written before has none.
+// 25: #2473 review -- a member template records the arguments it takes, so
+// a call it cannot take is judged; an entry written before has names alone.
+const CACHE_VERSION = 25;
 
 const TRANSPILER_VERSION = packageJson.version;
 
@@ -171,6 +179,7 @@ class CacheManager {
     structFields: Map<string, Map<string, IStructFieldInfo>>;
     needsStructKeyword: string[];
     enumBitWidth: Map<string, number>;
+    undefinedMacros: string[] | undefined;
     structState: TJsonSafe<Required<IStructSymbolState>>;
   } | null {
     if (!this.cache) return null;
@@ -222,6 +231,7 @@ class CacheManager {
       structFields,
       needsStructKeyword: cachedEntry.needsStructKeyword ?? [],
       enumBitWidth,
+      undefinedMacros: cachedEntry.undefinedMacros,
       structState,
     };
   }
@@ -241,6 +251,7 @@ class CacheManager {
       structState: TJsonSafe<Required<IStructSymbolState>>;
       needsStructKeyword?: string[];
       enumBitWidth?: Map<string, number>;
+      undefinedMacros?: readonly string[];
       reader?: string;
     },
   ): void {
@@ -283,6 +294,7 @@ class CacheManager {
       structFields: serializedFields,
       needsStructKeyword: options.needsStructKeyword,
       enumBitWidth: serializedEnumBitWidth,
+      undefinedMacros: options.undefinedMacros && [...options.undefinedMacros],
       structState: options.structState,
       reader: options.reader,
     };
@@ -305,6 +317,7 @@ class CacheManager {
         structState: record.structState,
         needsStructKeyword: record.needsStructKeyword,
         enumBitWidth: record.enumBitWidth,
+        undefinedMacros: record.undefinedMacros,
         reader,
       },
     );
@@ -327,11 +340,15 @@ class CacheManager {
       return null;
     }
     const entry = this.getSymbols(filePath);
-    if (!entry) {
+    // #2494 review: an entry written before headers recorded their `#undef`s
+    // would restore none, so it is a miss
+    if (!entry || !Array.isArray(entry.undefinedMacros)) {
       return null;
     }
     const symbols = CachedSymbolReader.read(entry.symbols);
-    return symbols === null ? null : { ...entry, symbols };
+    return symbols === null
+      ? null
+      : { ...entry, undefinedMacros: entry.undefinedMacros, symbols };
   }
 
   /**

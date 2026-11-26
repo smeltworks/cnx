@@ -16,10 +16,10 @@ scope ByteProcessor {
         mut u32 crc <- 0;
 
         // Pass string bytes directly to u8 parameter
-        crc <- this.processByte(crc, buf[0]); // 'A' = 0x41
-        crc <- this.processByte(crc, buf[1]); // 'B' = 0x42
-        crc <- this.processByte(crc, buf[2]); // 'C' = 0x43
-        crc <- this.processByte(crc, buf[3]); // 'D' = 0x44
+        crc <- this.processByte(crc, (u8)buf[0]); // 'A' = 0x41
+        crc <- this.processByte(crc, (u8)buf[1]); // 'B' = 0x42
+        crc <- this.processByte(crc, (u8)buf[2]); // 'C' = 0x43
+        crc <- this.processByte(crc, (u8)buf[3]); // 'D' = 0x44
 
         return crc;
     }

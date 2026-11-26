@@ -273,9 +273,9 @@ u32 w <- (s > 0) ? i : j;   // OK: both arms unsigned; s appears only in the con
 - a function result, including a member of that result (`get().v`) and the result of an ADR-029 callback (`s.fn()`);
 - a cast, whose category is the type it names;
 - the value arms of a ternary, but never its condition;
-- a variable, struct field or function declared in a C or C++ header. Its category comes from its C type, following typedefs such as `float32_t`: signed and unsigned integers, `float` and `double`, `_Bool`, plain `char`, and a named C enum. Its width comes from a fixed-width name (`uint16_t`, `int32_t`, …), or, for `short`, `int`, `long`, `long long`, `size_t`, `ptrdiff_t` and `intptr_t`, from the program's target description (ADR-049). `int_fastN_t` and `intmax_t` are integers of unknown width. A pointer is not an integer operand. Three such operands are not typed yet; see below. _(Widened 2026-09-26, #1668, by owner ruling, from "when its type is floating".)_
+- a variable, struct field or function declared in a C or C++ header. Its category comes from its C type, following typedefs such as `float32_t`: signed and unsigned integers, `float` and `double`, `_Bool`, plain `char`, and a named C enum. Its width comes from a fixed-width name (`uint16_t`, `int32_t`, …), or, for `short`, `int`, `long`, `long long`, `size_t`, `ptrdiff_t` and `intptr_t`, from the program's target description (ADR-049). A bit-field's width is the number after its `:`, the bits it holds, as a bitmap field's is: `unsigned int mode : 3` is 3 bits on every target, and its C type gives only its signedness (ADR-072 ruling 19 on #2449; ADR-034). A bit-field whose C type, typedefs followed, says neither `signed` nor `unsigned` has no signedness cnx can know, since the compiler and `-funsigned-bitfields` choose it, so reading or writing it is E0944 (ADR-072 ruling 20). A width written as an expression or a header macro, `1 + 2` or `MODE_BITS`, is read as C reads it; one cnx cannot read, such as `sizeof(uint8_t)`, gives the field no range, so reading or writing it is E0946 (#2494). `int_fastN_t` and `intmax_t` are integers of unknown width. A pointer is not an integer operand. Three such operands are not typed yet; see below. _(Widened 2026-09-26, #1668, by owner ruling, from "when its type is floating".)_
 
-A subscript into a scalar is a bit index and has no declared type, so the bit-indexed reinterpretation `b[0, 32]` stays exempt. That includes a subscript of a C header scalar integer. An array or pointer keeps element access. Each of these used to contribute no category, so `u32 + p.offset` (a signed field) compiled, and `u8 x <- arr[0] * 2.5` was rejected only by accident, as a `u32` narrowing.
+A subscript into a scalar is a bit index and has no declared type, so the bit-indexed reinterpretation `b[0, 32]` stays exempt from this rule. Its width is still the bits it takes, so `u8 x <- b[0, 16]` is E0869 (ADR-072 ruling 18 on #2449). A Boolean holds one bit, so `bool on <- b[0, 3]` and a one-bit field's `f.Enable <- b[0, 3]` are E0869 too, while `b[3, 1]` compiles. That includes a subscript of a C header scalar integer. An array or pointer keeps element access. Each of these used to contribute no category, so `u32 + p.offset` (a signed field) compiled, and `u8 x <- arr[0] * 2.5` was rejected only by accident, as a `u32` narrowing.
 
 **What is an operand of the operator, for this rule** (consequences of the rulings above, #1668; none is a new decision):
 
@@ -436,7 +436,33 @@ in E0868's and E0869's position tables below -- a declaration's initializer, an
 assignment (to a variable, an element or a field), a compound assignment, a
 return value, a call argument, an array element initializer, a struct field
 initializer and either arm of a ternary -- and a cast are all conversions, all
-checked the same way.
+checked the same way. A field of a C or C++ header struct written by
+`{ field: value }` is a struct field initializer like a cnx struct's, typed by
+its C type: with `uint8_t small;`, `{ small: big }` (a `u32`) is E0869, which C
+would store as `big & 0xFF` _(owner ruling 2026-11-25, #2484: a plain
+field is checked, not only a bit-field)_. A bit-field is typed at its width (ADR-034), and
+an array field keeps its C size and element type. A header `char` array is a C
+string, so a string literal written to it must leave room for its terminator:
+with `char tag[4];`, `{ tag: "ABCD" }` is E0864, though C takes it unterminated.
+cnx compares such a field with `strcmp` (`r.tag = "AB"`), which would read past
+the end of an unterminated one; a `u8` array is not a string and takes
+`"ABCD"` into `u8[4]`.
+
+**A conversion keeps the value's essential type category** (MISRA C:2012 Rule
+10.3, #2372, #2492). At every position above, an integer target takes no bool,
+character or enum value, and a bool takes no number, a literal included. A
+bitmap field wider than one bit is an unsigned integer and a one-bit field is a
+bool (see the register-member rule above), so `f.Mode <- 'a'`, `f.Mode <- b`
+and `f.Enable <- 1` are rejected like `u8 d <- 'a'` and `b <- n`. Each is E0945.
+The conversion is written instead: `(u8)'a'` or `(u8)color` for a character or
+an enum, `(flag = true) ? 1 : 0` for a bool, and `n != 0` for a number into a
+bool. A bit extraction (`w[0, 3]`) carries no category, so it is judged by its
+width alone, and MISRA's exception for `+` holds for `+<-`: `a +<- 'x'` adds a
+character to an integer. A cast of a character literal is a C constant
+expression, so `u8 CH <- (u8)'A';` stays a const C can fold into a static
+initializer as `(uint8_t)'A'`; cnx does not fold the character itself, whose
+value is the execution character set's. E0428 still reports a bare enum member
+where it applies.
 
 **Every program names a target (ADR-049)**, and every platform-dependent width in this ADR is read from it. A suffixed literal is typed by its suffix, so `u8 x <- 300u16` is a narrowing. A header integer of unknown width never selects saturating arithmetic (ADR-044).
 
@@ -485,7 +511,12 @@ A C function's result (`global.cWide()`) leaked at the return and the
 argument the same way. Each position is now asked the type its position gives
 the value, the one question E0891 already asked, so the three rules are
 checked at the same places. The bit extraction (`wide[0, 32]`) stays silent at
-every one.
+every one, because it takes no more bits than a `u32` holds. An extraction is
+judged by the bits it takes at each of these positions, the same as a variable
+is judged by its type (ADR-072 ruling 18 on #2449): with a `u32 w`, `u8 x <- w[0, 16]`,
+`u16 z <- w[0, 32]`, `take(w[0, 16])` into a `u8` parameter, `return w[0, 16];`
+in a `u8` function and `(u8)w[0, 16]` are each E0869 (narrowing), and the help
+reads `Extract no more bits than the target holds: [start, 8]`.
 
 ---
 
@@ -508,14 +539,15 @@ Casts are primarily removed from the language. Bit indexing (ADR-007) handles na
 
 ### Error Messages
 
-| Code  | Meaning                                                                                        | Fixtures                                                                                             |
-| ----- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| E0810 | Operands of different essential type categories, under one operator or in a conditional's arms | `tests/adr-024/category-*-error`, `tests/bugs/issue-1668-int-float-clamp/`                           |
-| E0811 | An integer combined by `+`, `-` or `*` with a header macro whose type cnx cannot read          | `tests/adr-024/category-*-error`, `tests/bugs/issue-1688-float-macro/unreadable-macro-error`         |
-| E0812 | An integer combined with such a macro by any other operator E0810 covers, or in a conditional  | `tests/adr-024/category-*-error`, `tests/bugs/issue-1688-float-macro/unreadable-macro-error`         |
-| E0868 | An integer literal does not fit its target's range                                             | `tests/adr-024/literal-*-error`                                                                      |
-| E0869 | An implicit narrowing or sign-changing integer conversion, a cast included                     | `tests/adr-024/conversion-*-error`, `narrowing-*-error`, `sign-*-error`, `composite-narrowing-error` |
-| E0891 | An implicit conversion from a floating value to an integer                                     | `tests/adr-024/float-*-error`                                                                        |
+| Code  | Meaning                                                                                                           | Fixtures                                                                                                                                                                                              |
+| ----- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| E0810 | Operands of different essential type categories, under one operator or in a conditional's arms                    | `tests/adr-024/category-*-error`, `tests/bugs/issue-1668-int-float-clamp/`                                                                                                                            |
+| E0811 | An integer combined by `+`, `-` or `*` with a header macro whose type cnx cannot read                             | `tests/adr-024/category-*-error`, `tests/bugs/issue-1688-float-macro/unreadable-macro-error`                                                                                                          |
+| E0812 | An integer combined with such a macro by any other operator E0810 covers, or in a conditional                     | `tests/adr-024/category-*-error`, `tests/bugs/issue-1688-float-macro/unreadable-macro-error`                                                                                                          |
+| E0868 | An integer literal does not fit its target's range                                                                | `tests/adr-024/literal-*-error`                                                                                                                                                                       |
+| E0869 | An implicit narrowing or sign-changing integer conversion, a cast included                                        | `tests/adr-024/conversion-*-error`, `narrowing-*-error`, `sign-*-error`, `composite-narrowing-error`, `tests/adr-034/bitmap-field-narrowing-error`, `tests/adr-072/register-bitmap-field-width-error` |
+| E0891 | An implicit conversion from a floating value to an integer                                                        | `tests/adr-024/float-*-error`                                                                                                                                                                         |
+| E0945 | A value assigned across essential type categories: a bool, character or enum to an integer, or a number to a bool | `tests/bugs/issue-2372-category-conversion/`                                                                                                                                                          |
 
 ```
 ERROR: Cannot narrow u32 to u8 (potential data loss)
@@ -756,6 +788,38 @@ target through a declaration, an assignment, or a cast.
 | scope method       | exercised through chain | warn     |
 | for header         | exercised through chain | warn     |
 
+<!-- MATRIX-SEVERITY code: E0945 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | error    |
+| scope method       | same file               | warn     |
+| global variable    | same file               | warn     |
+| scope member       | same file               | warn     |
+| top-level function | imported direct         | warn     |
+| scope method       | imported direct         | warn     |
+| global variable    | imported direct         | warn     |
+| scope member       | imported direct         | warn     |
+| top-level function | imported transitive     | warn     |
+| scope method       | imported transitive     | warn     |
+| global variable    | imported transitive     | warn     |
+| scope member       | imported transitive     | warn     |
+| for header         | same file               | warn     |
+| for header         | imported direct         | warn     |
+| for header         | imported transitive     | warn     |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | warn     |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | warn     |
+
+warn: the fixture assigns across categories in a same-file top-level function; every other context reaches the same category check at the same conversion positions, so it is the same decision.
+
 A conversion happens wherever a value meets a typed target, so it reaches an
 initializer as well as a function body -- all four same-file contexts. The two
 scope contexts are where the rule had been SILENT: `u8 narrow <- this.wide;`
@@ -786,7 +850,13 @@ quiet across an include rather than fail.
 is checked on an assignment statement as it is on a declaration's initializer,
 and an assignment is checked against the declared type of the variable or
 field it writes, not its root's: with `u32 a, b`, `u8 g` and a `u8` field `f`,
-both `g <- a + b` and `p.f <- a` are E0869 (narrowing).
+both `g <- a + b` and `p.f <- a` are E0869 (narrowing). A bitmap field's width is its
+own, not the `u8` holding it: `flags.Mode <- a` with a `u8 a` and a 3-bit `Mode` is E0869,
+and its help names the field's width, `value[0, 3]` (ADR-072 ruling 17 on #2449).
+The value is judged by the bits it carries the same way: a 4-bit field copied into
+`Mode`, or `a[0, 4]`, is E0869 too. A field read into a variable is an unsigned value of the
+field's own width: with a 12-bit `Field12`, `u8 y <- b.Field12` is E0869 (narrowing), and
+`i8 x <- f.Mode` is E0869 (sign change).
 
 ### Positions (#1618)
 

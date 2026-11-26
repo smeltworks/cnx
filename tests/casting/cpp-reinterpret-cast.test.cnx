@@ -16,8 +16,8 @@ scope ByteProcessor {
         mut u32 crc <- 0;
 
         // These should generate reinterpret_cast in C++ mode
-        crc <- this.processByte(crc, buf[0]);
-        crc <- this.processByte(crc, buf[1]);
+        crc <- this.processByte(crc, (u8)buf[0]);
+        crc <- this.processByte(crc, (u8)buf[1]);
 
         return crc;
     }

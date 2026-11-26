@@ -26,9 +26,9 @@ u32 testArrayStructMembers() {
     // Each of these should generate temp with static_cast:
     // uint8_t _cnx_tmp_N = static_cast<uint8_t>(sensors[0].active);
     // NOT: &sensors[0].active which gives bool* instead of uint8_t*
-    crc <- process(crc, sensors[0].active); // bool -> u8
-    crc <- process(crc, sensors[0].sensorType); // ESensorType -> u8
-    crc <- process(crc, sensors[0].status); // EStatus -> u8
+    crc <- process(crc, (sensors[0].active = true) ? 1 : 0); // bool -> u8
+    crc <- process(crc, (u8)sensors[0].sensorType); // ESensorType -> u8
+    crc <- process(crc, (u8)sensors[0].status); // EStatus -> u8
     crc <- process(crc, sensors[0].value); // u8 -> u8
 
     return crc;
@@ -43,9 +43,9 @@ u32 testMultipleIndices() {
     sensors[2].status <- STATUS_ERROR;
     sensors[3].value <- 100;
 
-    crc <- process(crc, sensors[1].active); // index 1
-    crc <- process(crc, sensors[1].sensorType); // index 1
-    crc <- process(crc, sensors[2].status); // index 2
+    crc <- process(crc, (sensors[1].active = true) ? 1 : 0); // index 1
+    crc <- process(crc, (u8)sensors[1].sensorType); // index 1
+    crc <- process(crc, (u8)sensors[2].status); // index 2
     crc <- process(crc, sensors[3].value); // index 3
 
     return crc;

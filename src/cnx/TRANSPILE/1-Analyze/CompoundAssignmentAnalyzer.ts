@@ -43,6 +43,7 @@ type TRejection =
   | "bit index"
   | "bit range or slice"
   | "bitmap field"
+  | "bit-field"
   | "string"
   | "whole array";
 
@@ -120,6 +121,10 @@ class CompoundAssignmentCheck {
     ) {
       return "bitmap field";
     }
+    // A C header struct's bit-field takes a bitmap field's rules (ADR-072
+    // ruling 19): a clamp at its C type's maximum would still be cut to its
+    // declared width
+    if (typing.endsOnBitField) return "bit-field";
     // The chain may END on a string -- `config.name +<- " suffix"` where
     // `name` is a `string<32>` field. A string is a buffer copied by
     // `cnx_string_copy`, not a value `+` can be applied to, wherever it is reached

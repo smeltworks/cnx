@@ -18,18 +18,18 @@ uint8_t matrix[3][3] = {};
 
 int main(void) {
     row[2] = 0xF0U;
-    row[2] = (uint8_t)((row[2] & ~(0xFU << 0)) | ((6U & 0xFU) << 0));
+    row[2] = (uint8_t)((row[2] & ~(0xFU << 0)) | (6U << 0));
     const uint8_t r = row[2U];
     if (r != 0xF6) {
         return 1U;
     }
-    matrix[1][2] = (uint8_t)((matrix[1][2] & ~(0xFU << 4)) | ((5U & 0xFU) << 4));
+    matrix[1][2] = (uint8_t)((matrix[1][2] & ~(0xFU << 4)) | (5U << 4));
     const uint8_t m = matrix[1U][2U];
     if (m != 0x50) {
         return 2U;
     }
     uint8_t v = 0U;
-    v = (uint8_t)((v & ~(0xFU << 0)) | ((9U & 0xFU) << 0));
+    v = (uint8_t)((v & ~(0xFU << 0)) | (9U << 0));
     if (v != 9) {
         return 3U;
     }

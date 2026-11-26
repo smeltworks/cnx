@@ -6,43 +6,43 @@ u32 main() {
     // ===== Standard escape sequences =====
 
     // Test newline escape
-    u8 newline <- '\n';
+    u8 newline <- (u8)'\n';
     if (newline != 10) {
         return 1;
     }
 
     // Test tab escape
-    u8 tab <- '\t';
+    u8 tab <- (u8)'\t';
     if (tab != 9) {
         return 2;
     }
 
     // Test carriage return escape
-    u8 cr <- '\r';
+    u8 cr <- (u8)'\r';
     if (cr != 13) {
         return 3;
     }
 
     // Test null terminator escape
-    u8 nul <- '\0';
+    u8 nul <- (u8)'\0';
     if (nul != 0) {
         return 4;
     }
 
     // Test backslash escape
-    u8 backslash <- '\\';
+    u8 backslash <- (u8)'\\';
     if (backslash != 92) {
         return 5;
     }
 
     // Test single quote escape
-    u8 quote <- '\'';
+    u8 quote <- (u8)'\'';
     if (quote != 39) {
         return 6;
     }
 
     // Test double quote escape (valid in char literal)
-    u8 dquote <- '\"';
+    u8 dquote <- (u8)'\"';
     if (dquote != 34) {
         return 7;
     }
@@ -50,7 +50,15 @@ u32 main() {
     // ===== Escape sequences in arrays =====
 
     // Test escape sequences as array elements
-    u8[7] escapes <- ['\n', '\t', '\r', '\0', '\\', '\'', '\"'];
+    u8[7] escapes <- [
+        (u8)'\n',
+        (u8)'\t',
+        (u8)'\r',
+        (u8)'\0',
+        (u8)'\\',
+        (u8)'\'',
+        (u8)'\"'
+    ];
     if (escapes[0] != 10) {
         return 8; // newline
     }
@@ -76,25 +84,25 @@ u32 main() {
     // ===== Escape sequences in comparisons =====
 
     // Test newline comparison
-    mut u8 c <- '\n';
+    mut u8 c <- (u8)'\n';
     if (c != (u8)'\n') {
         return 15;
     }
 
     // Test tab comparison
-    c <- '\t';
+    c <- (u8)'\t';
     if (c != (u8)'\t') {
         return 16;
     }
 
     // Test null comparison
-    c <- '\0';
+    c <- (u8)'\0';
     if (c != (u8)'\0') {
         return 17;
     }
 
     // ===== Escape sequences in switch =====
-    mut u8 whitespace <- '\t';
+    mut u8 whitespace <- (u8)'\t';
     mut u32 wsType <- 0;
 
     switch (whitespace) {
@@ -119,7 +127,7 @@ u32 main() {
     }
 
     // Test newline in switch
-    whitespace <- '\n';
+    whitespace <- (u8)'\n';
     switch (whitespace) {
         case ' ' {
             wsType <- 1;

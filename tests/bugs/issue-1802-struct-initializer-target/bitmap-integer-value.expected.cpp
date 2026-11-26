@@ -33,7 +33,7 @@ int main(void) {
     if (((c.f >> 2) & 0x3F) != 0) {
         return 5U;
     }
-    c.f = (uint8_t)((c.f & ~(0x3FU << 2)) | ((5U & 0x3FU) << 2));
+    c.f = (uint8_t)((c.f & ~(0x3FU << 2)) | (5U << 2));
     if (((c.f >> 2) & 0x3F) != 5) {
         return 6U;
     }

@@ -1,0 +1,18 @@
+// test-error
+// test-adr: 024
+// #2484 review: a header macro whose outermost operator is `&&` or `||` is a
+// Boolean, so arithmetic on it is E0807, as on the same expression inline.
+#include "integer-macro.h"
+
+mut u8 n;
+
+void main() {
+    // NEGATIVE CONTROLS -- each stays silent.
+    n <- MODE + 1;
+    n <- COUNT + 1;
+
+    // ASSERTIONS
+    n <- READY + 1;
+    n <- READY_ALIAS + 1;
+    n <- (MODE != 0) + 1;
+}

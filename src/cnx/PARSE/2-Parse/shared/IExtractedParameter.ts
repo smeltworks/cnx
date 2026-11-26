@@ -17,6 +17,9 @@ interface IExtractedParameter {
   /** #2062: a C++ `T&`, which the callee may write through unless const */
   readonly isReference?: boolean;
 
+  /** #2473 review: a C++ default argument, `int n = 0`, which a call may leave out */
+  readonly hasDefault?: boolean;
+
   /**
    * #1619: every `[...]` of an array parameter, as written: `g[4][8]` is
    * `["4", "8"]`. Only the first decays; the rest are part of the type.

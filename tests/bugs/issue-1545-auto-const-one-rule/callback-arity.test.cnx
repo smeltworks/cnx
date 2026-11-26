@@ -25,7 +25,7 @@
 mut u8 arityWitness <- 0;
 
 void onShort(mut string<32> msg, string<16> extra) {
-    arityWitness <- msg[0];
+    arityWitness <- (u8)msg[0];
     arityWitness <- arityWitness + extra[0];
 }
 

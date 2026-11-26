@@ -1,0 +1,6 @@
+21:14 error[E0869]: Cannot assign u8 to a 3-bit field (narrowing)
+       help: Use bit indexing to say which bits you mean: value[0, 3]
+22:13 error[E0869]: Cannot assign a 7-bit field to a 3-bit field (narrowing)
+       help: Use bit indexing to say which bits you mean: value[0, 3]
+23:14 error[E0945]: Cannot assign a character value to a 3-bit field (MISRA C:2012 Rule 10.3): ''a''
+       help: Cast the character to say it is a number: ((u32)value)[0, 3] (ADR-024)

@@ -671,7 +671,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-17 linked fixtures with no derivable context:
+18 linked fixtures with no derivable context:
 
 - `bugs/issue-1268-qualified-zero-const/float-cast-bit-width.test.cnx`
 - `bugs/issue-1268-qualified-zero-const/float-cast-const-dimension.test.cnx`
@@ -690,6 +690,7 @@ cell is declared by the ADR that owns it.
 - `bugs/issue-1688-float-macro/unreadable-macro-cast.test.cnx`
 - `bugs/issue-1806-memory-length-u32/memory-length-imported-direct-narrowing-error.test.cnx`
 - `bugs/issue-1806-memory-length-u32/memory-length-imported-transitive-narrowing-error.test.cnx`
+- `bugs/issue-2372-category-conversion/integer-macro-bool-arithmetic-error.test.cnx`
 
 ## ADR-024 E0807
 
@@ -790,6 +791,16 @@ cell is declared by the ADR that owns it.
 | scope member       | -         | -      | -          | -           | -          |
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
+
+## ADR-024 E0945
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | warn      | warn   | warn       | warn        | warn       |
+| top-level function | ok        | warn   | warn       | warn        | warn       |
+| scope member       | warn      | warn   | warn       | warn        | warn       |
+| scope method       | warn      | warn   | warn       | warn        | warn       |
+| for header         | warn      | warn   | warn       | warn        | warn       |
 
 ## ADR-025
 
@@ -1024,8 +1035,10 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | ok     | warn       | warn        | warn       |
 | for header         | -         | -      | -          | -           | -          |
 
-4 linked fixtures with no derivable context:
+6 linked fixtures with no derivable context:
 
+- `adr-034/width-by-including-file-cpp/width-by-including-file-cpp.test.cnx`
+- `adr-034/width-by-including-file/width-by-including-file.test.cnx`
 - `bitmap/bitmap-error-bits.test.cnx`
 - `bugs/issue-1514-cross-file-bitmap-register/cross-file-bitmap-register.test.cnx`
 - `bugs/issue-1531-declaration-rejections/cross-file-bitmap.test.cnx`
@@ -1039,6 +1052,16 @@ cell is declared by the ADR that owns it.
 | top-level function | ok        | ok     | ok         | warn        | warn       |
 | scope member       | -         | -      | -          | -           | -          |
 | scope method       | ok        | ok     | ok         | warn        | warn       |
+| for header         | -         | -      | -          | -           | -          |
+
+## ADR-034 E0869
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | ok        | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | ok        | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
 ## ADR-034 E0881
@@ -1091,6 +1114,36 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | ok     | ok         | warn        | warn       |
 | for header         | ok        | ok     | ok         | warn        | warn       |
 
+## ADR-034 E0944
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | warn      | warn   | warn       | warn        | warn       |
+| top-level function | ok        | ok     | warn       | warn        | warn       |
+| scope member       | warn      | warn   | warn       | warn        | warn       |
+| scope method       | warn      | warn   | warn       | warn        | warn       |
+| for header         | warn      | warn   | warn       | warn        | warn       |
+
+## ADR-034 E0945
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | ok        | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
+
+## ADR-034 E0946
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | warn      | warn   | warn       | warn        | warn       |
+| top-level function | ok        | ok     | warn       | warn        | warn       |
+| scope member       | warn      | warn   | warn       | warn        | warn       |
+| scope method       | warn      | warn   | warn       | warn        | warn       |
+| for header         | warn      | warn   | warn       | warn        | warn       |
+
 ## ADR-035
 
 | Context            | same file | direct | transitive | from 1 away | thru chain |
@@ -1101,8 +1154,12 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-17 linked fixtures with no derivable context:
+21 linked fixtures with no derivable context:
 
+- `adr-034/header-array-field-fill.test.cnx`
+- `adr-034/header-array-field-short-error.test.cnx`
+- `adr-034/header-char-array-string-error.test.cnx`
+- `adr-034/header-char-array-string.test.cnx`
 - `adr-035/array-count-included-error.test.cnx`
 - `adr-035/array-count-transitive-error.test.cnx`
 - `adr-035/inferred-size-render.test.cnx`
@@ -1127,6 +1184,16 @@ cell is declared by the ADR that owns it.
 | ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
 | global variable    | -         | -      | -          | -           | -          |
 | top-level function | ok        | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
+
+## ADR-035 E0864
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | -         | -      | -          | -           | -          |
 | scope member       | -         | -      | -          | -           | -          |
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
@@ -1933,6 +2000,21 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | -      | -          | warn        | warn       |
 | for header         | -         | -      | -          | -           | -          |
 
+## ADR-070
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | -         | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
+
+2 linked fixtures with no derivable context:
+
+- `bugs/issue-2473-chained-callback-mut-argument/cpp-member-template-discarded-error.test.cnx`
+- `bugs/issue-2473-chained-callback-mut-argument/cpp-overload-discarded-error.test.cnx`
+
 ## ADR-070 E0708
 
 | Context            | same file | direct | transitive | from 1 away | thru chain |
@@ -1953,7 +2035,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-13 linked fixtures with no derivable context:
+15 linked fixtures with no derivable context:
 
 - `adr-071/c-callback-mut-match.test.cnx`
 - `adr-071/callback-initializer-wiring.test.cnx`
@@ -1968,6 +2050,8 @@ cell is declared by the ADR that owns it.
 - `adr-071/read-only-by-default.test.cnx`
 - `bugs/issue-2117-address-of/scanf-out-parameter.test.cnx`
 - `bugs/issue-2238-qualified-mut-argument/header-volatile-error.test.cnx`
+- `bugs/issue-2473-chained-callback-mut-argument/cpp-defaulted-writer-runs.test.cnx`
+- `bugs/issue-2473-chained-callback-mut-argument/cpp-defaulted-writer.test.cnx`
 
 ## ADR-071 E0879
 
@@ -2074,6 +2158,16 @@ cell is declared by the ADR that owns it.
 | ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
 | global variable    | ok        | -      | -          | -           | -          |
 | top-level function | -         | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
+
+## ADR-072 E0869
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | ok        | -      | -          | -           | -          |
 | scope member       | -         | -      | -          | -           | -          |
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
@@ -2242,13 +2336,13 @@ ADR declares a position table.
 
 | Position                  | Severity | Fixtures |
 | ------------------------- | -------- | -------- |
-| declaration initializer   | error    | ok (21)  |
-| assignment                | error    | ok (2)   |
+| declaration initializer   | error    | ok (22)  |
+| assignment                | error    | ok (3)   |
 | array element assignment  | error    | ok (1)   |
 | struct field assignment   | error    | ok (2)   |
 | compound assignment       | error    | ok (4)   |
-| return statement          | error    | ok (6)   |
-| call argument             | error    | ok (6)   |
+| return statement          | error    | ok (7)   |
+| call argument             | error    | ok (7)   |
 | array element initializer | error    | ok (5)   |
-| struct field initializer  | error    | ok (5)   |
+| struct field initializer  | error    | ok (6)   |
 | ternary branch            | error    | ok (5)   |

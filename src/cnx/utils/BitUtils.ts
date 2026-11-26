@@ -2,6 +2,7 @@ import CompositeType from "./CompositeType";
 import CExpression from "./CExpression";
 import CNX_TO_C_TYPE_MAP from "./constants/TypeMappings";
 import type IBitWidth from "../types/IBitWidth";
+import type TPlannedBitValue from "../types/TPlannedBitValue";
 import type IOperandType from "../types/IOperandType";
 
 /**
@@ -186,8 +187,9 @@ class BitUtils {
     width: number | IBitWidth,
     value: string,
     storage?: string,
+    written: TPlannedBitValue | null = null,
   ): string {
-    return `${target} = ${BitUtils.multiBitValue(target, offset, width, value, storage)};`;
+    return `${target} = ${BitUtils.multiBitValue(target, offset, width, value, storage, written)};`;
   }
 
   /**
@@ -200,10 +202,10 @@ class BitUtils {
     width: number | IBitWidth,
     value: string,
     storage?: string,
+    written: TPlannedBitValue | null = null,
   ): string {
-    const mask = BitUtils.shiftedMask(BitUtils.widthOf(width), storage);
-    const masked = `(${CExpression.operand(value)} & ${mask})`;
-    const rhs = `(${read} & ~(${mask} << ${offset})) | (${masked} << ${offset})`;
+    const field = BitUtils.fieldBits(width, value, storage, written);
+    const rhs = `(${read} & ~(${field.mask} << ${offset})) | (${field.masked} << ${offset})`;
     return BitUtils.narrowed(rhs, storage);
   }
 
@@ -248,10 +250,44 @@ class BitUtils {
     width: number | IBitWidth,
     value: string,
     storage?: string,
+    written: TPlannedBitValue | null = null,
   ): string {
-    const mask = BitUtils.shiftedMask(BitUtils.widthOf(width), storage);
     const cast = BitUtils.narrowCast(storage);
-    return `${target} = ${cast}((${CExpression.operand(value)} & ${mask}) << ${offset});`;
+    const field = BitUtils.fieldBits(width, value, storage, written);
+    return `${target} = ${cast}(${field.masked} << ${offset});`;
+  }
+
+  /** A multi-bit field's mask, and the value it stores masked once (#2483) */
+  private static fieldBits(
+    width: number | IBitWidth,
+    value: string,
+    storage: string | undefined,
+    written: TPlannedBitValue | null,
+  ): { mask: string; masked: string } {
+    const mask = BitUtils.shiftedMask(BitUtils.widthOf(width), storage);
+    return {
+      mask,
+      masked: BitUtils.writtenBits(value, mask, storage, written),
+    };
+  }
+
+  /**
+   * The value a multi-bit write shifts into place, masked once (#2483): a
+   * literal 2.2 found the target holds as it is, a bit range at its own
+   * width, read unmasked; any other value at the target's
+   */
+  private static writtenBits(
+    value: string,
+    mask: string,
+    storage: string | undefined,
+    written: TPlannedBitValue | null,
+  ): string {
+    if (written?.kind === "fits") return BitUtils.widen(value, storage);
+    const own =
+      written?.kind === "range"
+        ? BitUtils.shiftedMask(written.width, storage)
+        : mask;
+    return `(${CExpression.operand(value)} & ${own})`;
   }
 
   /** A writer's width as C: a constant as it is, a written one folded */

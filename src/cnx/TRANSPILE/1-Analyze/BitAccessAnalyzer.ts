@@ -39,6 +39,7 @@
  * evaluated once and is not restricted.
  */
 
+import BitFieldText from "../../utils/BitFieldText";
 import BindingSite from "../../utils/BindingSite";
 import ExpressionShape from "../../utils/ExpressionShape";
 import FloatBits from "../../utils/FloatBits";
@@ -224,7 +225,7 @@ class BitAccessCheck {
   private static shapeOf(run: IOverIndexedRun): string {
     const dimensions = run.indexed.dimensions.length;
     const baseType = run.indexed.typeName ?? "";
-    if (run.fieldWidth !== null) return `a ${run.fieldWidth}-bit field`;
+    if (run.fieldWidth !== null) return BitFieldText.named(run.fieldWidth);
     if (dimensions === 0) return `a scalar '${baseType}'`;
     return `a ${dimensions}-dimensional '${baseType}' array`;
   }

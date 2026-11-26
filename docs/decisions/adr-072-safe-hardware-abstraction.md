@@ -471,6 +471,14 @@ DMA.ERR.Chan0Err <- 0x1F; // ERROR: literal exceeds 4 bits
 
 This follows cnx's philosophy of explicit bit extraction (`value[start, width]`) rather than C's implicit truncating casts.
 
+The rule is ADR-024's narrowing rule, E0869, judged against the field's own bit width
+rather than the `u8` that holds it, and it covers every bitmap field, in a register or not
+(ruling 17 on #2449). A typed value is judged by its type, a constant included, as it is
+for a variable: with `u8 FITS <- 7`, `field3 <- FITS` is E0869, and `7` or `FITS[0, 3]`
+is the fix. Only an untyped value, a literal or a header macro, is judged by its value,
+E0881. ADR-034's earlier "clamp at runtime" is replaced; ADR-044: "What can be caught at
+compile time is an error, never a clamp or a wrap."
+
 #### Generated C
 
 A `w1c` / `wo` / `w1s` bit assignment emits a **direct write**, never the

@@ -61,6 +61,28 @@ class ArrayDimensionText {
    * @example parse("u8[8+1]")     => ["8+1"]
    */
   static parse(text: string): (number | string)[] {
+    return ArrayDimensionText.scan(text, (content) =>
+      LiteralUtils.exactIntegerLiteral(content),
+    );
+  }
+
+  /**
+   * A header declarator's dimensions, each literal read as C reads it: `010`
+   * is 8, not 10 (#2484 review), so a fill-all fills the slots C has.
+   *
+   * @example parseC("t[010]")  => [8]
+   */
+  static parseC(text: string): (number | string)[] {
+    return ArrayDimensionText.scan(
+      text,
+      (content) => LiteralUtils.cIntegerLiteral(content) ?? undefined,
+    );
+  }
+
+  private static scan(
+    text: string,
+    read: (content: string) => number | undefined,
+  ): (number | string)[] {
     // Scanned rather than matched with /\[([^\]]*)\]/g. That pattern is
     // super-linear (SonarCloud S8786): on a '[' with no closing bracket the
     // greedy class runs to the end of the string and then backtracks a
@@ -81,8 +103,7 @@ class ArrayDimensionText {
       }
 
       const content = text.slice(open + 1, close).trim();
-      const literal = LiteralUtils.exactIntegerLiteral(content);
-      dimensions.push(literal ?? content);
+      dimensions.push(read(content) ?? content);
       cursor = close + 1;
     }
 
