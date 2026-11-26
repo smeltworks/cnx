@@ -65,7 +65,10 @@ concurrency:
   queue: max
 
 # Self-hosted runner for trusted code (your branches, pushes to main)
-# GitHub runners for untrusted code (fork PRs)
+# GitHub runners for untrusted code (fork PRs), pinned to `ubuntu-24.04`: apt
+# installs the cross toolchains for the runner's own release, and
+# `ubuntu-latest` became 26.04, whose avr-gcc the target catalog does not
+# describe (see .github/actions/cross-toolchains).
 #
 # Issue #1421: that split decides whether caching ~/.npm is a win or a tax, so
 # every `Cache npm dependencies` step below is gated on `runner.environment`.
@@ -108,7 +111,7 @@ jobs:
   # `${{ }}` expression, so a branch name cannot inject code into it.
   supersede:
     name: Superseded Run Check
-    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-24.04' }}
     permissions:
       actions: write # to cancel this run
 
@@ -162,7 +165,7 @@ jobs:
   # ============================================================================
   lint:
     name: Static Analysis
-    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-24.04' }}
     needs: [supersede]
 
     steps:
@@ -183,6 +186,15 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # The scope-context matrix below transpiles every fixture, and a fixture
+      # pinned to a cross target reads its headers with that target's
+      # preprocessor: without arm-none-eabi-gcc it stops at E0516 and never
+      # reaches the diagnostic its cell expects. The self-hosted runner has
+      # the toolchains already.
+      - name: Install the target matrix's cross toolchains
+        if: runner.environment == 'github-hosted'
+        uses: ./.github/actions/cross-toolchains
 
       # Issue #1364: `.prettierrc` loads the cnx plugin, so Prettier cannot
       # check a .cnx file until the plugin is built. `npm ci` runs `prepare`,
@@ -436,7 +448,7 @@ jobs:
 
   build:
     name: Build
-    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-24.04' }}
     needs: [supersede]
 
     steps:
@@ -500,7 +512,7 @@ jobs:
   # ============================================================================
   integration:
     name: Integration Tests
-    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-24.04' }}
     needs: [build]
 
     steps:
@@ -532,9 +544,7 @@ jobs:
         # AVR, against their real C libraries. The runner's preflight fails the
         # run if one is missing rather than skipping its cells. The list is the
         # one the preflight's error message names.
-        run: |
-          sudo apt-get update -qq
-          xargs sudo apt-get install -y -qq < scripts/cross-toolchain-packages.txt
+        uses: ./.github/actions/cross-toolchains
 
       - name: Run integration tests (transpile + compile + execute)
         # Covers tests/bugs/ regression fixtures — same command a developer runs.
@@ -572,7 +582,7 @@ jobs:
 
   unit-tests:
     name: Unit Tests
-    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-24.04' }}
     needs: [build]
 
     steps:
@@ -601,6 +611,13 @@ jobs:
         with:
           name: build-output
 
+      # Unit tests transpile and compile the cross-target examples
+      # (examples/teensy4, examples/nucleo-f446re) and read headers with a
+      # cross preprocessor. The self-hosted runner has the toolchains already.
+      - name: Install the target matrix's cross toolchains
+        if: runner.environment == 'github-hosted'
+        uses: ./.github/actions/cross-toolchains
+
       - name: Run unit tests with coverage
         run: npm run unit -- --coverage
 
@@ -612,7 +629,7 @@ jobs:
 
   cli-tests:
     name: CLI Tests
-    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-24.04' }}
     needs: [build]
 
     steps:
@@ -639,6 +656,14 @@ jobs:
         with:
           name: build-output
 
+      # "Verify transpiler CLI" transpiles examples/teensy4/blink.cnx, a
+      # Cortex-M7 program whose <Arduino.h> only arm-none-eabi-gcc's
+      # preprocessor reads; without it the run stops at E0516. The
+      # self-hosted runner has the toolchains already.
+      - name: Install the target matrix's cross toolchains
+        if: runner.environment == 'github-hosted'
+        uses: ./.github/actions/cross-toolchains
+
       - name: Run CLI integration tests
         run: npm run test:cli
 
@@ -658,7 +683,7 @@ jobs:
 
   grammar-coverage:
     name: Grammar Coverage
-    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-24.04' }}
     needs: [build]
 
     steps:
@@ -698,7 +723,7 @@ jobs:
   # ============================================================================
   format-fidelity:
     name: Format Fidelity
-    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-24.04' }}
     needs: [build]
 
     steps:
@@ -730,7 +755,7 @@ jobs:
 
   verify-clean:
     name: Verify Clean
-    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-24.04' }}
     needs: [integration]
 
     steps:
@@ -765,7 +790,7 @@ jobs:
   # ============================================================================
   c-validation:
     name: C Static Analysis (${{ matrix.tool }})
-    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-24.04' }}
     needs: [integration]
     # Advisory: pre-existing MISRA violations exist; don't block PR merges
     continue-on-error: true
@@ -842,7 +867,7 @@ jobs:
   # ============================================================================
   all-checks-passed:
     name: All Checks Passed
-    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-24.04' }}
     needs:
       [
         lint,
@@ -881,7 +906,7 @@ jobs:
   # ============================================================================
   deploy-coverage:
     name: Deploy Coverage
-    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name == 'push' || !github.event.pull_request.head.repo.fork) && 'self-hosted' || 'ubuntu-24.04' }}
     needs: [unit-tests]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     # Prevent concurrent Pages deployments

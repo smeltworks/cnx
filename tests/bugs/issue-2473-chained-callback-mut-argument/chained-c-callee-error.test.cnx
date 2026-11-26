@@ -1,0 +1,13 @@
+// test-error
+// Tests: a read-only argument to the first call in a chain through a C function-pointer typedef is E0900 (#2473)
+#pragma target cortex-m7
+#include "lib/c-ops.h"
+
+u32 rdonly <- 3;
+
+void main() {
+    mut u32 seed <- 0;
+    mut u32 out <- 0;
+    make_ops(rdonly).w(out);
+    make_ops(seed).w(out);
+}

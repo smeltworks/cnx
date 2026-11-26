@@ -1,0 +1,4 @@
+24:9 error[E0900]: cannot pass read-only 'rdonly' to `mut` parameter 'm' of function 'make'
+       help: The callee writes through that parameter, so the argument must be declared `mut` (ADR-071).
+25:12 error[E0899]: 'never' is never written; remove `mut`
+       help: A binding is declared `mut` only when something writes it (ADR-071).

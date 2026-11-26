@@ -1,0 +1,27 @@
+// test-error
+// Tests: in a chain whose first call is a cnx function with a `mut`
+// parameter and whose second is a C callback, each call is judged by its own
+// callee (#2473 review): `make` by its `mut m`, `w` and `r` by their C
+// typedefs.
+#pragma target cortex-m7
+#include "lib/c-ops.h"
+
+COps make(mut u32 m) {
+    m <- 2;
+    mut u32 seed <- 0;
+    return make_ops(seed);
+}
+
+u32 rdonly <- 3;
+
+void main() {
+    // NEGATIVE CONTROLS -- each stays silent.
+    mut u32 m <- 0;
+    mut u32 out <- 0;
+    make(m).w(out);
+
+    // ASSERTIONS
+    make(rdonly).w(out);
+    mut u32 never <- 4;
+    u32 got <- make(m).r(never);
+}

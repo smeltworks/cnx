@@ -51,6 +51,7 @@ class CallArgumentPassing {
    * Argument `index` of a call to `signatureName`; null when it names none.
    * `isDirectCall` is false for a call through an ADR-029 callback value,
    * whose `_fp` type is built from the declaration, not from a C typedef.
+   * `argumentCount` picks the C++ overloads the call reaches (#2473 review).
    */
   static of(
     signatureName: string | null,
@@ -58,6 +59,7 @@ class CallArgumentPassing {
     input: ICallArgumentFacts,
     orchestrator: IPlanQueries,
     isDirectCall: boolean,
+    argumentCount: number,
   ): IArgumentPassing {
     if (signatureName === null) return { param: undefined, mode: "c" };
     const resolved = CallExprUtils.resolveTargetParam(
@@ -65,6 +67,7 @@ class CallArgumentPassing {
       index,
       signatureName,
       input.symbolTable,
+      argumentCount,
     );
     if (!orchestrator.isCnxFunction(signatureName)) {
       return { param: resolved.param, mode: "c" };

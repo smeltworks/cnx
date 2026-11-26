@@ -28,6 +28,10 @@
 
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TExpression from "../../types/syntax/TExpression";
+import type TExpressionOf from "../../types/syntax/TExpressionOf";
+import FunctionReference from "./helpers/FunctionReference";
+import CCallee from "./helpers/CCallee";
+import TypeResolver from "../../utils/TypeResolver";
 import StatementNodes from "../../utils/StatementNodes";
 import StdlibFunctions from "./StdlibFunctions";
 import CalleeNameResolver from "./helpers/CalleeNameResolver";
@@ -114,7 +118,7 @@ class ReturnValueUseAnalyzer {
       context.symbolTable,
     );
     if (external !== null) {
-      return external !== "void";
+      return !ReturnValueUseAnalyzer.namesVoid(external, context);
     }
 
     if (StdlibFunctions.isKnown(name)) {
@@ -156,18 +160,97 @@ class ReturnValueUseAnalyzer {
     expr: TExpression,
     scopePath: string,
     context: IAnalysisContext,
-  ): string | null {
+  ): { name: string; declaredAt: ISourceSite | undefined } | null {
     if (ReturnValueUseAnalyzer.isVoidCast(expr)) return null;
     const call = ReturnValueUseAnalyzer.asBareCall(expr);
-    if (call === null) return null;
-    const resolved = CalleeNameResolver.resolveDetailed(
+    if (call?.kind !== "postfix") return null;
+    const lastCall = call.ops.length - 1;
+    if (lastCall === call.ops.findIndex((op) => op.kind === "call")) {
+      const resolved = CalleeNameResolver.resolveDetailed(
+        call,
+        scopePath,
+        (name) => DeclaredTypeFacts.isScope(context.symbols, name),
+        context.program,
+      );
+      const name =
+        resolved === null
+          ? null
+          : ReturnValueUseAnalyzer.nonVoidCallee(resolved, scopePath, context);
+      if (name !== null) {
+        return {
+          name,
+          declaredAt: ReturnValueUseAnalyzer.declarationOf(name, context),
+        };
+      }
+    }
+    // `make().op()` discards what `op` returns, not `make` (#2473), and a
+    // call through a value (`o.op()`, `cb()`) what its callback type returns
+    return ReturnValueUseAnalyzer.discardedThroughValue(
       call,
       scopePath,
-      (name) => DeclaredTypeFacts.isScope(context.symbols, name),
-      context.program,
+      context,
     );
-    if (!resolved) return null;
-    return ReturnValueUseAnalyzer.nonVoidCallee(resolved, scopePath, context);
+  }
+
+  /** Whether a header's return type is `void`, through any typedef of it */
+  private static namesVoid(text: string, context: IAnalysisContext): boolean {
+    const seen = new Set<string>();
+    let spelled = text.trim();
+    while (!seen.has(spelled)) {
+      if (spelled === "void") return true;
+      seen.add(spelled);
+      const aliased = ReturnValueUseAnalyzer.aliasedType(spelled, context);
+      if (aliased === null) return false;
+      spelled = aliased.trim();
+    }
+    return false;
+  }
+
+  /** The type a C typedef or C++ alias of `name` names, or null */
+  private static aliasedType(
+    name: string,
+    context: IAnalysisContext,
+  ): string | null {
+    const typedef = context.symbolTable.getCSymbol(name);
+    if (typedef?.kind === "type") return typedef.type;
+    const alias = context.symbolTable.getCppSymbol(name);
+    if (alias?.kind === "type") return alias.type ?? null;
+    // #1213: a C++ non-pointer typedef is recorded as a variable; a return
+    // type cannot name a variable, so this one is the typedef
+    if (alias?.kind === "variable") return alias.type;
+    return null;
+  }
+
+  /**
+   * The call that ends a chain, judged by what it calls through: a cnx
+   * callback type, or a C function-pointer typedef or C++ method, whose
+   * header says what it returns (ADR-070)
+   */
+  private static discardedThroughValue(
+    chain: TExpressionOf<"postfix">,
+    scopePath: string,
+    context: IAnalysisContext,
+  ): { name: string; declaredAt: ISourceSite | undefined } | null {
+    const last = FunctionReference.callsIn(chain, scopePath, context).at(-1);
+    if (last === undefined) return null;
+    if (last.cCallee !== null) {
+      const callable = CCallee.reachable(last.cCallee);
+      const returnsAValue = callable.every(
+        (signature) =>
+          signature.returnType !== null &&
+          !ReturnValueUseAnalyzer.namesVoid(signature.returnType, context),
+      );
+      return callable.length > 0 && returnsAValue
+        ? { name: last.calledAs, declaredAt: undefined }
+        : null;
+    }
+    if (last.callee === null) return null;
+    return TypeResolver.getTypeName(last.callee.returnType) === "void"
+      ? null
+      : {
+          name: last.calledAs,
+          declaredAt: BindingSite.ofSymbol(last.callee),
+        };
   }
 
   /**
@@ -191,18 +274,18 @@ class ReturnValueUseAnalyzer {
     for (const { declaration, scope } of program.members) {
       for (const statement of StatementNodes.in(declaration)) {
         if (statement.kind !== "expression") continue;
-        const funcName = ReturnValueUseAnalyzer.discardedCallee(
+        const discarded = ReturnValueUseAnalyzer.discardedCallee(
           statement.expression,
           scope ?? "",
           context,
         );
-        if (funcName === null) continue;
+        if (discarded === null) continue;
         errors.push({
           span: statement.span,
           code: "E0708",
-          message: `Return value of non-void function '${funcName}' is discarded`,
-          helpText: `Use the value, or discard it explicitly: (void) ${funcName}(...);`,
-          declaredAt: ReturnValueUseAnalyzer.declarationOf(funcName, context),
+          message: `Return value of non-void function '${discarded.name}' is discarded`,
+          helpText: `Use the value, or discard it explicitly: (void) ${discarded.name}(...);`,
+          declaredAt: discarded.declaredAt,
         });
       }
     }

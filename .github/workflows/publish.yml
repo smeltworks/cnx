@@ -7,8 +7,10 @@ on:
 
 jobs:
   publish:
-    # Must use GitHub-hosted runner for npm provenance
-    runs-on: ubuntu-latest
+    # Must use GitHub-hosted runner for npm provenance. `ubuntu-24.04`, not
+    # `ubuntu-latest`: the cross toolchains below must come from the release
+    # the target catalog describes (see .github/actions/cross-toolchains).
+    runs-on: ubuntu-24.04
 
     permissions:
       contents: write # Required for creating GitHub releases
@@ -46,10 +48,8 @@ jobs:
         # `npm publish` runs `prepublishOnly`, and its `npm test` compiles every
         # fixture for a Cortex-M and an AVR too (#1668). The test runner's
         # preflight fails the run when one is missing, which is how v0.3.1's
-        # first publish failed. Same list as pr-checks.yml's integration job.
-        run: |
-          sudo apt-get update -qq
-          xargs sudo apt-get install -y -qq < scripts/cross-toolchain-packages.txt
+        # first publish failed. The same step pr-checks.yml's jobs use.
+        uses: ./.github/actions/cross-toolchains
 
       - name: Publish to npm
         run: npm publish --provenance --access public

@@ -26,6 +26,7 @@ import type {
 } from "./grammar/CPP14Parser";
 import type ICppHeaderSyntax from "../types/ICppHeaderSyntax";
 import type ICppClassSyntax from "../types/ICppClassSyntax";
+import type ICppMemberTemplate from "../../../types/symbols/cpp/ICppMemberTemplate";
 import type ICppEnumSyntax from "../types/ICppEnumSyntax";
 import type ICppFunctionDefinitionSyntax from "../types/ICppFunctionDefinitionSyntax";
 import type IHeaderDeclaratorSyntax from "../types/IHeaderDeclaratorSyntax";
@@ -74,7 +75,20 @@ class CppHeaderLowering {
     const block = decl.blockDeclaration();
     const alias = block?.aliasDeclaration();
     if (alias) {
-      return { kind: "alias", span, name: alias.Identifier().getText() };
+      const typeId = alias.theTypeId();
+      return {
+        kind: "alias",
+        span,
+        name: alias.Identifier().getText(),
+        type:
+          typeId.abstractDeclarator() === null
+            ? typeId
+                .typeSpecifierSeq()
+                .typeSpecifier()
+                .map((spec) => spec.getText())
+                .join(" ")
+            : null,
+      };
     }
     const simple = block?.simpleDeclaration();
     return simple ? CppHeaderLowering.simpleDeclaration(simple, span) : null;
@@ -190,7 +204,53 @@ class CppHeaderLowering {
             (spec) => spec.typeSpecifier()?.classSpecifier() != null,
           ),
       ),
+      templateMembers: decls.flatMap(CppHeaderLowering.memberTemplates),
     };
+  }
+
+  /**
+   * #2473 review: the functions a member template declares, `template
+   * <typename T> void op(T)`, by the arguments they take. One whose count
+   * cnx cannot read -- a pack, or a trailing return type -- takes any call,
+   * which only leaves more calls unchecked.
+   */
+  private static memberTemplates(
+    decl: MemberdeclarationContext,
+  ): ICppMemberTemplate[] {
+    const inner = decl.templateDeclaration()?.declaration();
+    if (!inner) return [];
+    const lowered = CppHeaderLowering.declaration(inner);
+    let declarators: readonly IHeaderDeclaratorSyntax[] = [];
+    if (lowered?.kind === "functionDefinition") {
+      declarators = [lowered.declarator];
+    } else if (lowered?.kind === "simple") {
+      declarators = lowered.declarators ?? [];
+    }
+    // A pack takes any number of arguments; a C `...` only past its
+    // parameters, which the declarator's `isVariadic` already counts
+    const anyCount =
+      decl
+        .templateDeclaration()
+        ?.templateparameterList()
+        .getText()
+        .includes("...") ?? false;
+    return declarators.flatMap((declarator) => {
+      if (declarator.name === null) return [];
+      // `auto op(T a) -> void` keeps its parameters beside its name, where
+      // the declarator does not read them: it is read as taking any call
+      if (anyCount || !declarator.isFunction) {
+        return [{ name: declarator.name, parameters: [], isVariadic: true }];
+      }
+      return [
+        {
+          name: declarator.name,
+          parameters: declarator.parameters.map((parameter) =>
+            parameter.hasDefault === true ? { hasDefault: true } : {},
+          ),
+          isVariadic: declarator.isVariadic,
+        },
+      ];
+    });
   }
 
   /** #1975 review: `uint32_t a : 3;`, whose name and width the class records */
@@ -389,11 +449,19 @@ class CppHeaderLowering {
    */
   private static parameter(
     parameterDeclaration: ParameterDeclarationContext,
-  ): IExtractedParameter {
+  ): IExtractedParameter | null {
     const declarationSpecifiers = parameterDeclaration.declSpecifierSeq();
     const baseType = CppHeaderLowering.baseType(declarationSpecifiers);
     const declarator = parameterDeclaration.declarator();
     const abstractDeclarator = parameterDeclaration.abstractDeclarator();
+    // #2473 review: `(void)` is no parameter, as in C
+    if (
+      declarator === null &&
+      abstractDeclarator === null &&
+      baseType === "void"
+    ) {
+      return null;
+    }
     const operators =
       declarator?.pointerDeclarator()?.pointerOperator() ??
       abstractDeclarator?.pointerAbstractDeclarator()?.pointerOperator() ??
@@ -418,7 +486,13 @@ class CppHeaderLowering {
       (candidate: DeclaratorContext) =>
         CppHeaderLowering.declaratorName(candidate),
     );
-    return isReference ? { ...parameter, isReference } : parameter;
+    return {
+      ...parameter,
+      ...(isReference && { isReference }),
+      ...(parameterDeclaration.initializerClause() !== null && {
+        hasDefault: true,
+      }),
+    };
   }
 
   private static abstractHasPointer(
