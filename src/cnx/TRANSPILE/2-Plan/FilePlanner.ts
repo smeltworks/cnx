@@ -1884,6 +1884,8 @@ class FilePlanner {
     site: Extract<TValueSite, { kind: "argument" }>,
   ): IArgumentPassing {
     const step = this.callStepAt(site);
+    const call = site.call.ops[site.op];
+    invariant(call?.kind === "call", "an argument site names a call");
     const input = this.state;
     const callbackTypeFunction = CallArgumentPassing.callbackFunction(
       step?.before?.callbackTypeName ?? null,
@@ -1895,6 +1897,7 @@ class FilePlanner {
       input,
       this.queries,
       callbackTypeFunction === undefined,
+      call.arguments.length,
     );
   }
 

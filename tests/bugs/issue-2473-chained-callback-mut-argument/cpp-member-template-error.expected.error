@@ -1,0 +1,6 @@
+14:11 warning[E0896]: cnx cannot see how 'Tw::set' uses parameter 1, so passing 'good' to it is not memory safe
+       help: Consider converting 'Tw::set' to cnx.
+18:11 error[E0900]: 'rdonly' is read-only uint32_t, and parameter 1 of 'Tw::set' is a pointer 'Tw::set' may write through
+       help: Declare 'rdonly' `mut`, or declare the C parameter const uint32_t*.
+20:11 error[E0895]: 'w' is uint16_t, and parameter 1 of 'Tw::set' points to uint32_t
+       help: A C pointer parameter takes an object of the type it points to; pass a uint32_t, or an array of them.

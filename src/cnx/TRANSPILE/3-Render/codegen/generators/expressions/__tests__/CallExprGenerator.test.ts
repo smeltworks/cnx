@@ -64,6 +64,7 @@ function planArguments(
       input,
       orchestrator,
       true,
+      expressions.length,
     );
     const base = passing.param?.baseType;
     return planArgument(

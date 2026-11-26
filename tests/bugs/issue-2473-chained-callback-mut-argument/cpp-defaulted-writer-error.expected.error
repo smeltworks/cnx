@@ -1,0 +1,2 @@
+18:10 error[E0900]: 'rdonly' is read-only, and every overload of 'Pw::put' this call can reach may write through argument 1
+       help: Declare 'rdonly' `mut`, or give 'Pw::put' an overload that takes it const.

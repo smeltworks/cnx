@@ -1,0 +1,33 @@
+// test-error
+// test-cpp-only
+// test-adr: 070
+// Tests: a bare C++ method call is judged by the overloads that can take its
+// arguments (#2473). `o.op(1)` reaches only the int overload, its second
+// argument defaulted, so the result is discarded. `t.op(x)` may reach a
+// member template cnx does not record, so it is not judged. `o.pick(n)`
+// reaches a void and an int overload, so it is not judged. `o.read()` takes
+// no argument: `(void)` is no parameter. `o.stop()` and `o.finish()` return
+// a typedef and an alias of void, so nothing is discarded.
+#include "lib/cpp-ops.hpp"
+#include "lib/cpp-tpl.hpp"
+
+Ops o;
+mut Tpl t;
+
+void main() {
+    // NEGATIVE CONTROLS -- each stays silent.
+    o.op();
+    u32 x <- 5;
+    t.op(x);
+    mut i32 n <- 0;
+    o.pick(n);
+    (void)o.op(1);
+    (void)o.read();
+    o.stop();
+    o.finish();
+
+    // ASSERTIONS
+    o.op(1);
+    o.op(1, 2);
+    o.read();
+}

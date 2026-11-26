@@ -102,6 +102,9 @@ class ClassCollector {
       visibility: "public",
       parent: currentNamespace,
       fields: fields && fields.size > 0 ? fields : undefined,
+      ...(classSyntax.templateMembers.length > 0 && {
+        templateMethods: classSyntax.templateMembers,
+      }),
     };
 
     return { classSymbol, memberFunctions, staticMembers, warnings };
@@ -156,6 +159,9 @@ class ClassCollector {
       visibility: "public",
       parent: currentNamespace,
       fields: fields.size > 0 ? fields : undefined,
+      ...(classSyntax.templateMembers.length > 0 && {
+        templateMethods: classSyntax.templateMembers,
+      }),
     };
 
     return { classSymbol, memberFunctions, staticMembers, warnings };

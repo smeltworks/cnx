@@ -39,6 +39,7 @@ import FunctionReference from "./helpers/FunctionReference";
 import CCallee from "./helpers/CCallee";
 import CArgumentWrite from "./helpers/CArgumentWrite";
 import type ICCallee from "./types/ICCallee";
+import type IChainCall from "./types/IChainCall";
 import BoundDeclaration from "./helpers/BoundDeclaration";
 import WrittenBinding from "./helpers/WrittenBinding";
 import MutArgument from "./helpers/MutArgument";
@@ -57,7 +58,6 @@ import type IAnalysisContext from "./types/IAnalysisContext";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TExpression from "../../types/syntax/TExpression";
-import type TExpressionOf from "../../types/syntax/TExpressionOf";
 import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
 
 /** What kind of const binding a name is, or null when it is not const. */
@@ -220,23 +220,35 @@ class ConstAssignmentCheck {
    */
   public checkExpression(expr: TExpression): void {
     if (expr.kind !== "postfix") return;
-    const call = expr.ops.find((op) => op.kind === "call");
-    if (call?.kind !== "call") return;
+    const firstCall = expr.ops.findIndex((op) => op.kind === "call");
+    if (firstCall < 0) return;
     this.checkSafeDivisionOutput(expr);
     this.checkMethodReceiver(expr);
-    const cCallee = CCallee.of(expr, this.context);
-    if (cCallee !== null) {
-      // Its read-only arguments are E0900's too, which CPointerArgumentAnalyzer reports
-      this.noteCPointerWrites(cCallee);
-      return;
-    }
     const scopePath = OperandTyper.scopePathAt(expr.span, this.context);
-    const callee = FunctionReference.ofCall(expr, scopePath, this.context);
+    // Each call in a chain has its own callee (`make().op(x)`, #2473)
+    for (const chainCall of FunctionReference.callsIn(
+      expr,
+      scopePath,
+      this.context,
+    )) {
+      const cCallee = chainCall.cCallee;
+      if (cCallee !== null) {
+        // Its read-only arguments are E0900's too, which CPointerArgumentAnalyzer reports
+        this.noteCPointerWrites(cCallee);
+        continue;
+      }
+      this.checkCallArguments(chainCall);
+    }
+  }
+
+  private checkCallArguments(chainCall: IChainCall): void {
+    const args = chainCall.call.arguments;
+    const callee = chainCall.callee;
     if (callee === null) {
       // A function no header the transpiler read declares may write any
       // argument, so none of
       // their `mut`s is unused (Decision 6). The C compiler checks the rest.
-      for (const arg of call.arguments) {
+      for (const arg of args) {
         this.noteWrite(
           WrittenBinding.ofExpression(arg, this.context)?.binding ?? null,
         );
@@ -244,11 +256,8 @@ class ConstAssignmentCheck {
       return;
     }
     if (callee.sourceLanguage !== ESourceLanguage.Cnx) return;
-    const calledAs =
-      FunctionReference.ofCallChain(expr, scopePath, this.context) === null
-        ? ConstAssignmentCheck.calleeAsWritten(expr)
-        : callee.name;
-    call.arguments.forEach((arg, index) => {
+    const calledAs = chainCall.calledAs;
+    args.forEach((arg, index) => {
       const param = callee.parameters[index];
       if (param === undefined || param.isConst) return;
       const target = WrittenBinding.ofExpression(arg, this.context);
@@ -356,14 +365,6 @@ class ConstAssignmentCheck {
       return `${recipe}; '${written}' is \`w1c\`, so that write clears every flag still set in the local (ADR-071, #2238).`;
     }
     return `${recipe} (ADR-071, #2238).`;
-  }
-
-  /** A call through a value, as written: `h.cb`, not the callback's type */
-  private static calleeAsWritten(chain: TExpressionOf<"postfix">): string {
-    const callAt = chain.ops.findIndex((op) => op.kind === "call");
-    return [chain.primary, ...chain.ops.slice(0, callAt)]
-      .map((node) => node.written)
-      .join("");
   }
 
   /**

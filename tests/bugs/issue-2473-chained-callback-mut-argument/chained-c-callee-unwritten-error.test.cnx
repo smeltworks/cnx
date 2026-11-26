@@ -1,0 +1,12 @@
+// test-error
+// Tests: a value passed by value to a C callback later in a chain is not written (#2473)
+#pragma target cortex-m7
+#include "lib/c-ops.h"
+
+void main() {
+    mut u32 seed <- 0;
+    mut u32 out <- 0;
+    mut u32 v <- 4;
+    u32 got <- make_ops(seed).r(v);
+    make_ops(seed).w(out);
+}
