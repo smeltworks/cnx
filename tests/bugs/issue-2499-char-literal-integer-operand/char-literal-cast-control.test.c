@@ -39,10 +39,10 @@ uint8_t take(const uint8_t v) {
 }
 
 uint32_t check(const uint8_t c, const char* s) {
-    const uint8_t ch = (uint8_t)(uint8_t)'A';
+    const uint8_t ch = (uint8_t)'A';
     const bool colon = c == (uint8_t)':';
     const bool digit = (c >= (uint8_t)'0') && (c <= (uint8_t)'9');
-    const uint8_t value = cnx_clamp_sub_u8(c, (uint8_t)(uint8_t)'0');
+    const uint8_t value = cnx_clamp_sub_u8(c, (uint8_t)'0');
     const bool first = s[0U] == ':';
     const uint8_t lower = cnx_clamp_add_u8(c, 32U);
     const uint8_t b = (uint8_t)s[0U];
