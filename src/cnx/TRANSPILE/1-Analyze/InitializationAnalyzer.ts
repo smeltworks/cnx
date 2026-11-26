@@ -196,8 +196,16 @@ class InitializationWalk {
     }
     const left = condition.operands[0];
     const bound = condition.operands[1];
+    // The condition tests the variable the init set to zero
+    const counter =
+      init.kind === "variableDeclaration"
+        ? init.name
+        : init.target.kind === "identifier"
+          ? init.target.name
+          : null;
     return (
       left.kind === "identifier" &&
+      left.name === counter &&
       InitializationWalk.isLiteral(bound, /^\d+$/) &&
       Number.parseInt(bound.written, 10) > 0
     );
