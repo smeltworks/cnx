@@ -1,0 +1,2 @@
+9:12 error[E0899]: 'v' is never written; remove `mut`
+       help: A binding is declared `mut` only when something writes it (ADR-071).

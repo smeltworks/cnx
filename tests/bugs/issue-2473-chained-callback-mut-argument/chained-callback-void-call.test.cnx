@@ -1,0 +1,36 @@
+// test-execution
+// Tests: a bare chained call to a void callback, and a callback passed through a chained call (#2473)
+
+mut u32 seen <- 0;
+
+void record(u32 v) {
+    seen <- v;
+}
+
+void handler(u32 v) {}
+
+void takes(handler h) {
+    h(7);
+}
+
+struct Ops {
+    handler op;
+    takes t;
+}
+
+Ops make() {
+    Ops o <- { op: record, t: takes };
+    return o;
+}
+
+u32 main() {
+    make().op(3);
+    if (seen != 3) {
+        return 1;
+    }
+    make().t(record);
+    if (seen != 7) {
+        return 2;
+    }
+    return 0;
+}

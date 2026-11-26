@@ -60,7 +60,15 @@ import Write from "../../cnx/WRITE/1-Write/Write";
 // types under an unchanged shape, and E0895 rejects one passed for the other.
 // 21: #2116 -- a C++ symbol records its unqualified name, which the
 // (owner, member) index reads; an entry written before has none.
-const CACHE_VERSION = 21;
+// 22: #2473 review -- a C++ parameter records its default argument, which
+// decides the overloads a call reaches; an entry written before has none.
+// 23: #2473 review -- a C++ `using` alias records the type it names, which
+// decides whether a method returning it returns void.
+// 24: #2473 review -- a C++ class records its member templates' names, whose
+// calls are not judged; an entry written before has none.
+// 25: #2473 review -- a member template records the arguments it takes, so
+// a call it cannot take is judged; an entry written before has names alone.
+const CACHE_VERSION = 25;
 
 const TRANSPILER_VERSION = packageJson.version;
 

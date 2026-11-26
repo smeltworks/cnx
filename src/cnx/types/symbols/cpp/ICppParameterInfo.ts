@@ -17,6 +17,9 @@ interface ICppParameterInfo {
 
   /** #2062: a `T&`, which the callee may write through unless const */
   readonly isReference?: boolean;
+
+  /** #2473 review: a default argument, `int n = 0`, which a call may leave out */
+  readonly hasDefault?: boolean;
 }
 
 export default ICppParameterInfo;

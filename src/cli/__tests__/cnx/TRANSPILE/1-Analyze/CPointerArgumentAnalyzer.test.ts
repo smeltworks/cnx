@@ -77,8 +77,10 @@ describe("CPointerArgumentAnalyzer on 1.2's syntax (#1991)", () => {
     ]);
   });
 
-  it("checks no call with anything chained after it", () => {
-    expect(at(["u8 b <- 1;", "u8 r <- take(b)[0];"])).toEqual([]);
+  it("checks a call with something chained after it (#2473)", () => {
+    expect(at(["u8 b <- 1;", "u8 r <- take(b)[0];"])).toEqual([
+      "E0900@3:17 'b' is read-only uint8_t, and parameter 1 of 'take' is a pointer 'take' may write through",
+    ]);
   });
 });
 

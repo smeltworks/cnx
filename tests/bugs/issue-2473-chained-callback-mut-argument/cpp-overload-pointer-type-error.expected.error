@@ -1,0 +1,4 @@
+13:11 warning[E0896]: cnx cannot see how 'Buf::fill' uses parameter 1, so passing 'v' to it is not memory safe
+       help: Consider converting 'Buf::fill' to cnx.
+18:11 error[E0895]: 'w' is uint16_t, and parameter 1 of 'Buf::fill' points to uint8_t
+       help: A C pointer parameter takes an object of the type it points to; pass a uint8_t, or an array of them.

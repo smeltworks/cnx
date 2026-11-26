@@ -42,7 +42,6 @@
  * dimension (`u8[4][8]` in a `u8[4][4]` slot) is E0879 for both (#1619).
  */
 
-import type IRegisterSymbol from "../../types/symbols/IRegisterSymbol";
 import RegisterInstance from "../../utils/RegisterInstance";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import ProgramAccesses from "../../utils/ProgramAccesses";
@@ -56,6 +55,8 @@ import IFunctionSymbol from "../../types/symbols/IFunctionSymbol";
 import TypeResolver from "../../utils/TypeResolver";
 import CCallbackSignature from "./helpers/CCallbackSignature";
 import FunctionReference from "./helpers/FunctionReference";
+import RegisterArguments from "./helpers/RegisterArguments";
+import type IRegisterArgument from "./types/IRegisterArgument";
 import ValuePositions from "./helpers/ValuePositions";
 import ICallbackAssignmentError from "./types/ICallbackAssignmentError";
 import type IAnalysisContext from "./types/IAnalysisContext";
@@ -103,7 +104,7 @@ class CallbackAssignmentCheck {
     });
   }
 
-  /** A struct initializer's fields, and the arguments of a chain's first call */
+  /** A struct initializer's fields, and the arguments of each call in a chain */
   public checkExpression(expr: TExpression): void {
     if (expr.kind === "structInitializer") {
       for (const field of expr.fields) {
@@ -116,42 +117,46 @@ class CallbackAssignmentCheck {
       return;
     }
     if (expr.kind !== "postfix") return;
-    const call = expr.ops.find((op) => op.kind === "call");
-    if (call?.kind !== "call") return;
-    const callee = FunctionReference.ofCallChain(
-      expr,
-      OperandTyper.scopePathAt(expr.span, this.context),
-      this.context,
+    const registerArguments = new Map(
+      RegisterArguments.of(expr, this.context).map((register) => [
+        register.arg,
+        register,
+      ]),
     );
-    if (callee === null) return;
-    call.arguments.forEach((arg, index) => {
-      const param = callee.parameters[index];
-      if (param === undefined) return;
-      const layout = RegisterInstance.typeNamedBy(
-        this.context.program,
-        param.type,
-      );
-      if (layout !== null) {
-        this.checkRegisterArgument(arg, param.name, callee, layout);
-        return;
-      }
-      this.check(TypeResolver.getTypeName(param.type), arg, {
-        verb: "pass",
-        description: `parameter '${param.name}' of function '${callee.name}'`,
+    const scopePath = OperandTyper.scopePathAt(expr.span, this.context);
+    for (const chainCall of FunctionReference.callsIn(
+      expr,
+      scopePath,
+      this.context,
+    )) {
+      const callee = chainCall.callee;
+      if (callee === null) continue;
+      chainCall.call.arguments.forEach((arg, index) => {
+        const param = callee.parameters[index];
+        if (param === undefined) return;
+        const register = registerArguments.get(arg);
+        if (register !== undefined) {
+          this.checkRegisterArgument(register);
+          return;
+        }
+        this.check(TypeResolver.getTypeName(param.type), arg, {
+          verb: "pass",
+          description: `parameter '${param.name}' of function '${chainCall.calledAs}'`,
+        });
       });
-    });
+    }
   }
 
   /**
    * E0940 (ADR-072): a register parameter's slot takes an instance of its
    * register type, or a register parameter of that type passed on
    */
-  private checkRegisterArgument(
-    arg: TExpression,
-    paramName: string,
-    callee: IFunctionSymbol,
-    layout: IRegisterSymbol,
-  ): void {
+  private checkRegisterArgument(register: IRegisterArgument): void {
+    const arg = register.arg;
+    const paramName = register.paramName;
+    const callee = register.callee;
+    const calledAs = register.calledAs;
+    const layout = register.layout;
     const passed = OperandTyper.wholeRegisterTypeOf(arg, this.context);
     if (passed === layout.fullyQualifiedCName) return;
     const what =
@@ -162,7 +167,7 @@ class CallbackAssignmentCheck {
     this.found.push({
       code: "E0940",
       span: arg.span,
-      message: `'${arg.written}' ${what}; parameter '${paramName}' of function '${callee.name}' takes a '${wanted}'`,
+      message: `'${arg.written}' ${what}; parameter '${paramName}' of function '${calledAs}' takes a '${wanted}'`,
       helpText: `Pass an instance of '${wanted}' declared at file or scope level (\`${layout.name} NAME(address);\`), or a '${wanted}' parameter (ADR-072).`,
       declaredAt: BindingSite.ofSymbol(callee),
     });
