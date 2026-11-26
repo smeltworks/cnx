@@ -100,7 +100,7 @@ class CPointerArgumentCheck {
       if (
         pointee === "char" &&
         (this.rejectsUnknownLength(arg, callee, index) ||
-          this.rejectsPointerResult(arg, callee, index))
+          this.rejectsPointerResult(arg, callee, reached, index))
       ) {
         return;
       }
@@ -261,14 +261,13 @@ class CPointerArgumentCheck {
   private rejectsPointerResult(
     arg: TExpression,
     callee: ICCallee,
+    reached: readonly ICCalleeSignature[],
     index: number,
   ): boolean {
     const form = StringValueForm.of(arg, this.context);
     if (form.kind !== "concat" && form.kind !== "substring") return false;
     if (
-      !callee.signatures.some(
-        (signature) => signature.returnType?.includes("*") === true,
-      )
+      !reached.some((signature) => signature.returnType?.includes("*") === true)
     ) {
       return false;
     }
