@@ -1,0 +1,21 @@
+// #2348 control: a cstring is checked against NULL, compared and ordered by
+// content (ADR-045), passed whole and reassigned from a call (ADR-046)
+#include <string.h>
+
+mut string<32> haystack <- "hello world";
+mut bool same;
+mut bool earlier;
+mut i32 order;
+
+void main() {
+    mut cstring c_first <- strstr(haystack, "o");
+    cstring c_last <- strrchr(haystack, 'o');
+    if (c_first != NULL) {
+        if (c_last != NULL) {
+            same <- c_first = c_last;
+            earlier <- c_first < c_last;
+            order <- strcmp(c_first, "o");
+        }
+    }
+    c_first <- strstr(haystack, "world");
+}

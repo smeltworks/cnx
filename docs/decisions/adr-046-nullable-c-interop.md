@@ -78,14 +78,37 @@ if (c_customer != NULL) {
 }
 ```
 
+### Operators on a C String
+
+A `cstring` is a C `char*`, and cnx has no pointer arithmetic (ADR-006), so
+no arithmetic, bitwise or shift operator takes one, nor a prefix `-` or `~`,
+nor a compound assignment (owner ruling, #2348). Each is E0925. Until then
+`c_pos + 1` was accepted at exit 0 and emitted as C pointer arithmetic.
+
+A C string is compared with `NULL`, compared and ordered by content (ADR-045),
+passed whole to a C function, and reassigned from a call:
+
+```cnx
+mut cstring c_pos <- strstr(haystack, "lo");
+if (c_pos != NULL) {
+    i32 order <- strcmp(c_pos, "lo");   // OK: passed whole
+    u32 next <- (u32)(c_pos + 1);       // ERROR E0925: '+' is not valid on a C string
+    c_pos +<- 1;                        // ERROR E0925
+}
+c_pos <- strstr(haystack, "he");        // OK: reassigned from a call
+```
+
+To reach a part of it, copy it into a `string<N>` and take a substring.
+
 ## Error Codes
 
-| Code  | Message                                  |
-| ----- | ---------------------------------------- |
-| E0905 | Missing `c_` prefix for nullable C type  |
-| E0906 | Invalid `c_` prefix on non-nullable type |
-| E0907 | NULL comparison on non-nullable variable |
-| E0908 | Missing NULL check before use            |
+| Code  | Message                                           |
+| ----- | ------------------------------------------------- |
+| E0925 | An operator other than a comparison on a C string |
+| E0905 | Missing `c_` prefix for nullable C type           |
+| E0906 | Invalid `c_` prefix on non-nullable type          |
+| E0907 | NULL comparison on non-nullable variable          |
+| E0908 | Missing NULL check before use                     |
 
 ### Retired Error Codes
 

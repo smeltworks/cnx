@@ -1,0 +1,15 @@
+// test-error
+// #2348: '+' joins strings (ADR-045), so a string beside a number is no
+// concatenation; on a char array it was pointer arithmetic, exit 0.
+#include <string.h>
+
+string<32> haystack <- "hello hello";
+
+void main() {
+    u32 address <- (u32)(haystack + 1);
+    i32 after <- strcmp(haystack + 1, "lo");
+    i32 before <- strcmp(2 + haystack, "lo");
+    i32 literal <- strcmp("hello" + 1, "lo");
+    // Negative control: two strings join
+    string<40> joined <- haystack + "!";
+}

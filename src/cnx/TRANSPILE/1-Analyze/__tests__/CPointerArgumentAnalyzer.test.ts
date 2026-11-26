@@ -19,6 +19,8 @@ describe("CPointerArgumentAnalyzer (#1977)", () => {
     expect(cTypeOf(declared({ typeName: "string", stringCapacity: 8 }))).toBe(
       "char",
     );
+    // ADR-046: a C string is the pointer to char itself (#2348)
+    expect(cTypeOf(declared({ typeName: "cstring" }))).toBe("char");
   });
 
   it("asks nothing of a literal, an untyped value or no type", () => {

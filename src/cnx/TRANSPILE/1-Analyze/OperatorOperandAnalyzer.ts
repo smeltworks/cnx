@@ -13,6 +13,10 @@
  * `u8[3]` computed on the array's address (#1191), and `k << 1` on an `f32`
  * emitted C that gcc rejects (#1798).
  *
+ * A C string (`cstring`) is a C pointer, and cnx has no pointer arithmetic
+ * (ADR-006), so only the comparisons take one (ADR-046, #2348). `+` joins
+ * strings, so a string beside a number is no concatenation either (ADR-045).
+ *
  * Which code reports a rejection depends only on what the operand is: a bool
  * is E0807 (a bool target of a compound assignment E0806, Issue #1145), a
  * float under `%` is E0804, and everything else is E0925.
@@ -98,6 +102,7 @@ type TRejection =
   | "character"
   | "enum"
   | "string"
+  | "cstring"
   | "struct"
   | "other";
 
@@ -109,6 +114,7 @@ const NOUNS: Readonly<
   character: "a char",
   enum: "an enum",
   string: "a string",
+  cstring: "a C string",
   struct: "a struct",
   other: "this value",
 };
@@ -123,6 +129,8 @@ const HELP: Readonly<
   enum: "an enum is not a number (ADR-017). Cast it to an unsigned type first, e.g. (u8)value.",
   string:
     "a string is not a number. Join strings with '+' and compare them with '=', '!=', '<', '>', '<=' or '>='.",
+  cstring:
+    "a C string is a C pointer, and cnx has no pointer arithmetic (ADR-006). Pass it whole, or copy it into a string<N> and take a substring of that.",
   struct: "a struct is not a number. Use one of its fields.",
   other: "this operator takes numbers only.",
 };
@@ -218,12 +226,49 @@ class OperatorOperandCheck {
       const rejection =
         leftRejection ??
         this.rejection(operator, admits, right, enumBeingDeclared);
-      if (rejection === null) return;
+      if (rejection === null) {
+        this.checkConcatenation(operator, left, right);
+        return;
+      }
       // E0804 has always been reported at the left operand
       const at =
         leftRejection !== null || rejection === "floatModulo" ? left : right;
       this.analyzer.addError(at, operator, rejection);
     });
+  }
+
+  /**
+   * ADR-045: `+` joins two strings, so a string beside a number is not a
+   * concatenation; in C it was arithmetic on the string's address (#2348).
+   * Reported at the string.
+   */
+  private checkConcatenation(
+    operator: string,
+    left: TExpression,
+    right: TExpression,
+  ): void {
+    if (operator !== "+") return;
+    const leftIsString = this.isStringExpression(left);
+    if (leftIsString === this.isStringExpression(right)) return;
+    const [text, other] = leftIsString ? [left, right] : [right, left];
+    if (
+      OperatorOperandCheck.isNumber(OperandTyper.typeOf(other, this.context))
+    ) {
+      this.analyzer.addError(text, operator, "string");
+    }
+  }
+
+  private isStringExpression(expr: TExpression): boolean {
+    if (ExpressionShape.isStringLiteral(expr)) return true;
+    const typed = OperandTyper.typeOf(expr, this.context);
+    return typed !== null && OperatorOperandAnalyzer.isString(typed);
+  }
+
+  /** A number `+` admits: an integer, float or char, or a number literal */
+  private static isNumber(typed: IOperandType | null): boolean {
+    if (typed === null) return false;
+    if (typed.form.kind === "literal") return typed.form.literal !== "bool";
+    return ADDITIVE.has(typed.category);
   }
 
   private checkUnary(
@@ -315,7 +360,9 @@ class OperatorOperandAnalyzer {
    * rejection cites ADR-045, as E0929 does
    */
   private static citation(rejection: TRejection): string {
-    return rejection === "string" ? "ADR-045" : "MISRA C:2012 Rule 10.1";
+    if (rejection === "string") return "ADR-045";
+    if (rejection === "cstring") return "ADR-046";
+    return "MISRA C:2012 Rule 10.1";
   }
 
   /** Why `operand` is outside `admits`, or null when it is in it */
@@ -340,6 +387,10 @@ class OperatorOperandAnalyzer {
         if (rejection !== null) return rejection;
       }
       return null;
+    }
+    // A C string is a C pointer: only the comparisons take one (ADR-046)
+    if (operand.typeName === "cstring") {
+      return admits === RELATIONAL ? null : "cstring";
     }
     // A string -- a C `char[N]` among them -- before its dimensions: under
     // `+` it is concatenation, not an array (ADR-045)
@@ -384,7 +435,7 @@ class OperatorOperandAnalyzer {
    * ADR-045's string: a `string<N>` or `string`, a C `char` array, or a
    * concatenation whose every leaf is one
    */
-  private static isString(operand: IOperandType): boolean {
+  static isString(operand: IOperandType): boolean {
     if (
       OperandTyper.isString(operand) ||
       (operand.typeName === "char" && operand.dimensions.length === 1)
@@ -412,9 +463,6 @@ class OperatorOperandAnalyzer {
     context: IAnalysisContext,
   ): TRejection | null {
     if (operand.form.kind === "literal") return null;
-    // A C char pointer: which operators take one is open (#2348), so this
-    // rule admits it, as before, until ADR-046 decides
-    if (operand.typeName === "cstring") return null;
     // A whole bitmap is its backing integer (ADR-034, owner ruling #2245)
     if (operand.bitmapTypeName !== null) return null;
     const typeName = operand.typeName;
@@ -504,10 +552,12 @@ class OperatorOperandAnalyzer {
       span,
       declaredAt: BindingSite.ofOperands([at], this.context),
       message: `Operator '${operator}' is not valid on ${NOUNS[rejection]}`,
-      // A target cannot be cast, so its help is the written-out form
-      helpText: isTarget
-        ? "MISRA C:2012 Rule 10.1: a compound target cannot be cast. Write the read and the write out separately, casting the read, e.g. x <- (u8)x * 2."
-        : `${OperatorOperandAnalyzer.citation(rejection)}: ${HELP[rejection]}`,
+      // A target cannot be cast, so its help is the written-out form; a C
+      // string's is the same whichever side it is on
+      helpText:
+        isTarget && rejection !== "cstring"
+          ? "MISRA C:2012 Rule 10.1: a compound target cannot be cast. Write the read and the write out separately, casting the read, e.g. x <- (u8)x * 2."
+          : `${OperatorOperandAnalyzer.citation(rejection)}: ${HELP[rejection]}`,
     });
   }
 

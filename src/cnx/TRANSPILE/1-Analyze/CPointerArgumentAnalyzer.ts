@@ -278,6 +278,8 @@ class CPointerArgumentAnalyzer {
       return null;
     }
     if (typed.stringCapacity !== null) return "char";
+    // ADR-046: a C string is the pointer to char itself (#2348)
+    if (typed.typeName === "cstring") return "char";
     return CNX_TO_C_TYPE_MAP[typed.typeName] ?? typed.typeName;
   }
 }

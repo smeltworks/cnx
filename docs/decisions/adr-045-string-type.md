@@ -217,6 +217,11 @@ string<38> message <- greeting + " World";  // OK: 38 >= 32 + 6
 
 This allows efficient concatenation with literals without over-allocating the destination.
 
+`+` joins two strings, so a string beside a number is no concatenation:
+`haystack + 1`, `2 + haystack` and `"hello" + n` are E0925, reported at the
+string (#2348). Until then each was accepted at exit 0, and C read it as
+arithmetic on the string's address.
+
 ### Capacity-Based Safety
 
 The destination must have capacity >= sum of source capacities:

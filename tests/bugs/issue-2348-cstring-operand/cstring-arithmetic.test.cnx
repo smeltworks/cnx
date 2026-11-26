@@ -1,0 +1,23 @@
+// test-error
+// #2348: a cstring is a C char pointer, and cnx has no pointer arithmetic
+// (ADR-006), so no arithmetic, bitwise or shift operator takes one (ADR-046).
+#include <string.h>
+
+string<32> haystack <- "hello hello";
+
+void main() {
+    mut cstring c_pos <- strstr(haystack, "lo");
+    if (c_pos != NULL) {
+        i32 after <- strcmp(c_pos + 1, "lo");
+        i32 before <- strcmp(1 + c_pos, "lo");
+        i32 back <- strcmp(c_pos - 1, "lo");
+        u32 twice <- (u32)(c_pos * 2);
+        u32 low <- (u32)(c_pos & 1);
+        u32 shifted <- (u32)(c_pos << 1);
+        u32 negated <- (u32)(-c_pos);
+        u32 inverted <- (u32)(~c_pos);
+        c_pos +<- 1;
+        // Negative control: passing it whole stands
+        i32 whole <- strcmp(c_pos, "lo");
+    }
+}
