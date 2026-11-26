@@ -44,6 +44,7 @@ import type ILengthName from "../../utils/types/ILengthName";
 import type TLengthRule from "../../utils/types/TLengthRule";
 import LengthSubject from "../../utils/LengthSubject";
 import OperandTyper from "../../utils/OperandTyper";
+import TYPE_WIDTH from "../../types/TYPE_WIDTH";
 import CPointerParameter from "../../utils/CPointerParameter";
 import ScanfFormat from "../../utils/ScanfFormat";
 import CharacterWrite from "../../utils/CharacterWrite";
@@ -809,20 +810,27 @@ class FilePlanner {
 
   /**
    * #2332: the type a lowered ternary's variable holds -- its position's, and
-   * where none gives one (a comparison's operand) its typed arm's, which an
-   * unsuffixed literal arm (the typer's `int`) takes on as C's conversion would
+   * where none gives one (a comparison's operand) its typed arms' wider, as
+   * C's conversion of the arms would make it (#2348 review); an unsuffixed
+   * literal arm (the typer's `int`) takes on the other's
    */
   private lazyTernaryType(
     expr: TExpressionOf<"ternary">,
     expectedTypes: ReadonlyMap<TExpression, IPlannedExpectedType>,
   ): string {
     const typing = this.state.typingContext();
+    const typed = [expr.whenTrue, expr.whenFalse]
+      .map((arm) => OperandTyper.typeOf(arm, typing)?.typeName ?? null)
+      .filter((name): name is string => name !== null && name !== "int");
     const typeName =
       expectedTypes.get(expr)?.type ??
-      [expr.whenTrue, expr.whenFalse]
-        .map((arm) => OperandTyper.typeOf(arm, typing)?.typeName ?? null)
-        .find((name) => name !== null && name !== "int") ??
-      null;
+      typed.reduce<string | null>(
+        (wider, name) =>
+          wider !== null && (TYPE_WIDTH[name] ?? 0) <= (TYPE_WIDTH[wider] ?? 0)
+            ? wider
+            : name,
+        null,
+      );
     invariant(
       typeName !== null,
       `the ternary on line ${expr.span.line} has a typed arm: one holds a call or a struct initializer, which E0357 types from its position`,
