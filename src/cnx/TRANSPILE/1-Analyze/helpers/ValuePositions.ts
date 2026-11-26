@@ -5,6 +5,8 @@ import type TMemberDeclaration from "../../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../../types/syntax/TExpression";
 import type TStatement from "../../../types/syntax/TStatement";
 import OperandTyper from "../../../utils/OperandTyper";
+import ForeignTypeFacts from "../../../utils/ForeignTypeFacts";
+import BitFieldIntegerType from "../../../utils/BitFieldIntegerType";
 import SafeDivision from "../../../utils/SafeDivision";
 import StatementNodes from "../../../utils/StatementNodes";
 import TypeResolver from "../../../utils/TypeResolver";
@@ -25,6 +27,7 @@ const NOWHERE: IValuePosition = {
   isDeclaration: false,
   inList: false,
   supplied: false,
+  headerField: null,
 };
 
 const NO_TYPE: IValuePosition = { ...NOWHERE, supplied: true };
@@ -294,18 +297,55 @@ class ValuePositionWalk {
             this.context,
           );
     const symbols = this.context.symbols;
+    // A struct no cnx file declares is a header's, typed field by field
+    const headerStruct =
+      structName === null && at.typeText !== null
+        ? this.context.program.cTypeNameAt(
+            this.context.sourceFile,
+            StructInitializerType.valueTypeAt(at) ?? at.typeText,
+            init.span,
+          )
+        : null;
     for (const field of init.fields) {
       this.place(
         field.value,
-        structName === null
-          ? NO_TYPE
-          : fieldPosition(symbols, structName, field.name),
+        structName !== null
+          ? fieldPosition(symbols, structName, field.name)
+          : headerStruct === null
+            ? NO_TYPE
+            : this.headerFieldPosition(headerStruct, field.name),
         {
           site: { kind: "field", initializer: init, field: field.name },
           outer: site,
         },
       );
     }
+  }
+
+  /**
+   * A header struct's field: the cnx integer a bit-field is judged as, with
+   * its width, as `<-` judges it (ADR-072 ruling 19), or the C type a nested
+   * initializer builds, an array field's shape too
+   */
+  private headerFieldPosition(
+    structName: string,
+    fieldName: string,
+  ): IValuePosition {
+    const field = ForeignTypeFacts.fieldOperand(
+      structName,
+      fieldName,
+      this.context.symbolTable,
+      OperandTyper.target(this.context),
+    );
+    const typeText = BitFieldIntegerType.of(field);
+    if (field === null || typeText === "") return NO_TYPE;
+    return {
+      ...NO_TYPE,
+      typeText,
+      isArray: field.dimensions.length > 0,
+      dimensions: field.dimensions,
+      headerField: field,
+    };
   }
 }
 

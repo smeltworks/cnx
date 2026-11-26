@@ -42,7 +42,7 @@ uint8_t lowByteOfParam(const uint16_t v) {
 
 // Multi-bit range write on a scalar parameter (also becomes a pointer)
 uint16_t setLowByteOfParam(uint16_t& v) {
-    v = (uint16_t)((v & ~(0xFFU << 0)) | ((0xFFU & 0xFFU) << 0));
+    v = (uint16_t)((v & ~(0xFFU << 0)) | (0xFFU << 0));
     return v;
 }
 

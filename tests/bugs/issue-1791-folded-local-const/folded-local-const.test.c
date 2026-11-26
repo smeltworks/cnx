@@ -13,7 +13,7 @@
 // declaration: KEEP_W and KEEP_N are the controls.
 int main(void) {
     uint32_t b = 0U;
-    b = (b & ~((uint32_t)0xFFFFFFFFU << 0)) | ((5U & (uint32_t)0xFFFFFFFFU) << 0);
+    b = (b & ~((uint32_t)0xFFFFFFFFU << 0)) | ((uint32_t)5U << 0);
     if (((b) & 0xFFFFFFFFU) != 5) {
         return 1U;
     }

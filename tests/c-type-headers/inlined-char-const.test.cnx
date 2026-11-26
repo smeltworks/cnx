@@ -3,7 +3,7 @@
 // 2.2 plans that cast before 2.3 writes it (#1991).
 
 scope Keys {
-    u8 A <- 'a';
+    u8 A <- (u8)'a';
 
     public bool isA() {
         return this.A = 97;

@@ -95,8 +95,8 @@ class ExpressionShape {
   }
 
   /**
-   * ADR-035: what a whole array is given -- a list, or for a `u8` array a
-   * string literal. ADR-014 holds it wherever a whole array is taken: a
+   * ADR-035: what a whole array is given -- a list, or for a `u8` array (or
+   * a header's `char` array, #2484 review) a string literal. ADR-014 holds it wherever a whole array is taken: a
    * declaration (1.2's `ArrayForm`), and a field or an assignment target
    * (2.1's `WholeArrayValueAnalyzer`), so both ask this.
    */
@@ -105,7 +105,10 @@ class ExpressionShape {
     elementType: string | null,
   ): boolean {
     if (value.kind === "arrayInitializer") return true;
-    return ExpressionShape.isStringLiteral(value) && elementType === "u8";
+    return (
+      ExpressionShape.isStringLiteral(value) &&
+      (elementType === "u8" || elementType === "char")
+    );
   }
 
   /**

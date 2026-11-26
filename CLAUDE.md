@@ -100,9 +100,9 @@ the causal claim, the artifact, the number — not merely the state of the issue
 **Pausing a card is unassigning it.** Unassign yourself and `project-sync.yml` moves it
 `WIP` → `Backlog` (#1572) — only when the **last** assignee leaves, and only from `WIP`, so
 stepping off a shared card changes nothing, and neither does unassigning one already in
-`Grooming`, `Backlog` or `Done`. Note what that does _not_ cover: an issue whose pull request
-is in review is still in `WIP`, because the pull request has its own card — so unassigning
-yourself then does return the issue to `Backlog`. The added "Blocked by" link and the comment
+`Grooming`, `Backlog` or `Done`, and neither does unassigning one an open pull request closes:
+that is a review handed off, not work paused, so the card stays in `WIP` (#1578) until the
+pull request merges, or closes unmerged with nobody assigned and returns it. The added "Blocked by" link and the comment
 carry _why_ it paused; the column carries _that_ it did, which is the part the next person
 reads. Do not write `Status` by hand — `docs/WORKFLOW.md` gives `project-sync.yml` sole
 ownership of that field, and a second writer both duplicates the transition and hides it
@@ -112,8 +112,8 @@ failing.
 assignee.** The rule this replaces leaned on the assignee-based in-flight filter, which is
 unconditional: assigned meant never recommended. The "Blocked by" exclusion is unconditional
 too, but only once Phase 7c **step 1** has actually linked the blocker — so step 4 depends
-on step 1 in a way neither step says. A pause for any other reason — context switch, handoff,
-end of day — returns the card to `Backlog` with no new "Blocked by" link and nothing holding it
+on step 1 in a way neither step says. A pause for any other reason — context switch, handoff
+of work not yet in review, end of day — returns the card to `Backlog` with no new "Blocked by" link and nothing holding it
 back. That is right for those pauses and wrong for a blocked card whose step 1 was skipped.
 
 **A rule derived under a constraint that does not exist reads as principled indefinitely.**
@@ -540,7 +540,7 @@ with no production caller carries `@public` and a one-line reason saying which k
 - **A member of a guard or factory set** tests narrow or build with -- `SymbolGuards`,
   `TTypeUtils`.
 
-`yaml` is in `ignoreDependencies` because only `sonar-workflow.test.ts` imports it.
+`yaml` is in `ignoreDependencies` because only tests import it, and `knip.json` leaves tests out of `project`.
 
 Mutation-checked, and the check is the point: add a static method nothing calls, or
 remove the one production call of a member a test still calls, and `npx knip` must exit

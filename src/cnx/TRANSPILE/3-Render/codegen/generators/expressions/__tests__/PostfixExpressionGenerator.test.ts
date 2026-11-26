@@ -242,6 +242,8 @@ function typed(
     overflow: null,
     hasSideEffect: false,
     volatileAccess: false,
+    signChosenByCompiler: false,
+    bitWidthUnread: false,
     form: { kind: "declared" },
     binding: null,
     ...extra,
@@ -312,6 +314,7 @@ function createMockPostfixOp(options?: {
       floatBits: options?.floatBits ?? null,
       step: null,
       narrowing: null,
+      maskedByWriter: false,
     } as TPlannedPostfixOp & { widthText?: string };
   }
 

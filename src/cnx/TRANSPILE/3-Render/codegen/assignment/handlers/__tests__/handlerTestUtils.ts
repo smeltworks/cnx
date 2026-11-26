@@ -240,6 +240,8 @@ function operandOf(
     overflow: null,
     hasSideEffect: false,
     volatileAccess: false,
+    signChosenByCompiler: false,
+    bitWidthUnread: false,
     form: { kind: "declared" },
     binding: null,
   };

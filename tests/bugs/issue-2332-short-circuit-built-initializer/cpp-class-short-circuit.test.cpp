@@ -33,7 +33,7 @@ int32_t w(const CppTestClass& x) {
     return x.value;
 }
 
-int32_t bump(void) {
+int16_t bump(void) {
     calls = cnx_clamp_add_u32(calls, 1U);
     return 1;
 }

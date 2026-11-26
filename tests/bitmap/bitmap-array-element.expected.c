@@ -28,14 +28,14 @@ int main(void) {
     if (arr[0U] != 3) {
         return 4U;
     }
-    arr[1] = (uint8_t)((arr[1] & ~(0x7U << 3)) | ((5U & 0x7U) << 3));
+    arr[1] = (uint8_t)((arr[1] & ~(0x7U << 3)) | (5U << 3));
     if (((arr[1U] >> 3) & 0x7) != 5) {
         return 5U;
     }
     if (arr[1U] != 40) {
         return 6U;
     }
-    arr[2] = (uint8_t)((arr[2] & ~(0x3U << 6)) | ((3U & 0x3U) << 6));
+    arr[2] = (uint8_t)((arr[2] & ~(0x3U << 6)) | (3U << 6));
     if (((arr[2U] >> 6) & 0x3) != 3) {
         return 7U;
     }
@@ -43,8 +43,8 @@ int main(void) {
         return 8U;
     }
     arr[3] = (uint8_t)((arr[3] & ~(1U << 0)) | (1U << 0));
-    arr[3] = (uint8_t)((arr[3] & ~(0x7U << 3)) | ((7U & 0x7U) << 3));
-    arr[3] = (uint8_t)((arr[3] & ~(0x3U << 6)) | ((2U & 0x3U) << 6));
+    arr[3] = (uint8_t)((arr[3] & ~(0x7U << 3)) | (7U << 3));
+    arr[3] = (uint8_t)((arr[3] & ~(0x3U << 6)) | (2U << 6));
     if (((arr[3U] >> 0) & 1) != true) {
         return 9U;
     }

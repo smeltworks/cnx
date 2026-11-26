@@ -38,6 +38,7 @@ class HeaderDeclarationRecord {
         needsKeyword.includes(name),
       ),
       enumBitWidth,
+      undefinedMacros: table.undefinedMacrosOf(path),
       structState: table.serializeStructState(),
     };
   }
@@ -46,7 +47,11 @@ class HeaderDeclarationRecord {
    * Issue #1225: put a record back into `table`. The symbols come back as
    * themselves, so there is nothing to convert and nothing to forget.
    */
-  static restore(record: IHeaderDeclarationRecord, table: SymbolTable): void {
+  static restore(
+    record: IHeaderDeclarationRecord,
+    path: string,
+    table: SymbolTable,
+  ): void {
     for (const symbol of record.symbols) {
       if (symbol.sourceLanguage === ESourceLanguage.C) {
         table.addCSymbol(symbol);
@@ -54,9 +59,7 @@ class HeaderDeclarationRecord {
         table.addCppSymbol(symbol);
       }
     }
-    // A record is one header's, so its symbols name the file it declares.
     // addCSymbol registered a C struct's fields; a C++ class's come from here
-    const path = record.symbols[0]?.sourceFile;
     const cStructs = new Set(
       record.symbols.flatMap((symbol) =>
         symbol.sourceLanguage === ESourceLanguage.C &&
@@ -66,15 +69,13 @@ class HeaderDeclarationRecord {
           : [],
       ),
     );
-    if (path !== undefined)
-      table.restoreStructFields(
-        new Map(
-          [...record.structFields].filter(([name]) => !cStructs.has(name)),
-        ),
-        path,
-      );
+    table.restoreStructFields(
+      new Map([...record.structFields].filter(([name]) => !cStructs.has(name))),
+      path,
+    );
     table.restoreNeedsStructKeyword(record.needsStructKeyword);
     table.restoreEnumBitWidths(record.enumBitWidth);
+    table.markUndefinedMacros(path, record.undefinedMacros);
     // Issue #1225: the whole struct state at once. It used to be four separate
     // restore calls, which is how #1164's pointerTypedefs was missed.
     table.restoreStructState(record.structState);

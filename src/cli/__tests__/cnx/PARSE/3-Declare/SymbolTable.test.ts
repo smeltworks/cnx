@@ -3,6 +3,7 @@
  * Issue #221: Function parameters should not cause conflicts
  * ADR-055 Phase 7: Fully typed symbol storage using TSymbol, TCSymbol, TCppSymbol
  */
+import UnreadBitWidth from "../../../../../cnx/utils/UnreadBitWidth";
 import { describe, it, expect, beforeEach } from "vitest";
 import SymbolTable from "../../../../../cnx/PARSE/3-Declare/SymbolTable";
 import ESourceLanguage from "../../../../../cnx/utils/types/ESourceLanguage";
@@ -489,6 +490,56 @@ describe("SymbolTable", () => {
       expect(
         symbolTable.getStructFields("NonExistent")?.get("x")?.type,
       ).toBeUndefined();
+    });
+
+    // #2494: a width written as an expression is settled once, where read
+    it("settles a bit-field width it can read, and keeps one it cannot", () => {
+      symbolTable.addStructField(
+        "Reg",
+        "sum",
+        "uint32_t",
+        undefined,
+        "1+2",
+        "reg.h",
+      );
+      symbolTable.addStructField(
+        "Reg",
+        "odd",
+        "uint32_t",
+        undefined,
+        "W",
+        "reg.h",
+      );
+      symbolTable.addStructField(
+        "Reg",
+        "lit",
+        "uint32_t",
+        undefined,
+        4,
+        "reg.h",
+      );
+      symbolTable.addStructField(
+        "Reg",
+        "whole",
+        "uint32_t",
+        undefined,
+        undefined,
+        "reg.h",
+      );
+      const seen: string[] = [];
+      symbolTable.settleBitFieldWidths((text) => {
+        seen.push(text);
+        return text === "1+2" ? 3 : UnreadBitWidth.unreadable();
+      });
+      const fields = symbolTable.getStructFields("Reg");
+      expect(fields?.get("sum")?.bitWidth).toBe(3);
+      expect(fields?.get("odd")?.bitWidth).toBe("W");
+      expect(fields?.get("odd")?.bitWidthUnread).toEqual(
+        UnreadBitWidth.unreadable(),
+      );
+      expect(fields?.get("lit")?.bitWidth).toBe(4);
+      expect(fields?.get("whole")?.bitWidth).toBeUndefined();
+      expect(seen).toEqual(["1+2", "W"]);
     });
 
     it("should get all fields for a struct", () => {

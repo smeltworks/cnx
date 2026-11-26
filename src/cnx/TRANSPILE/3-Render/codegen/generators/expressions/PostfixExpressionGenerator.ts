@@ -1249,6 +1249,13 @@ const handleBitRangeSubscript = (
       state,
       orchestrator,
     );
+  } else if (ctx.subscript.maskedByWriter) {
+    // #2483: the bit write this range is the value of masks it, at the
+    // range's width, so masking it here too would mask it twice
+    output.result =
+      start === "0" || start === "0U"
+        ? `(${ctx.result})`
+        : `(${ctx.result} >> ${start})`;
   } else {
     invariant(
       ctx.subscript.step?.before?.category !== "floating",

@@ -32,7 +32,7 @@ void set(const uint8_t m) {
     }
     {
         /* ADR-049 / Issue #1807: atomic read-modify-write as an LDREX/STREX retry loop. The value is evaluated once, before the loop, so a failed store-exclusive does not evaluate it again. */
-        uint8_t __operand = m;
+        uint8_t __operand = (uint8_t)((m) & 0x7U);
         do {
             uint16_t __old = __LDREXH(&fl);
             uint16_t __new = (uint16_t)((__old & ~(0x7U << 1)) | ((__operand & 0x7U) << 1));

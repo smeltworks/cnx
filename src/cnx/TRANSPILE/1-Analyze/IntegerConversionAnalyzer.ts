@@ -1,6 +1,7 @@
 /**
  * ADR-024 integer conversions: E0868, E0869 and E0891, and E0910 where a
- * value known at compile time overflows outside a static initializer.
+ * value known at compile time overflows outside a static initializer; E0945
+ * where a value crosses essential type categories (MISRA C:2012 Rule 10.3).
  *
  * #1322. Six rules across `TypeResolver` and `CodeGenerator`, reached through
  * three entry points -- a declaration's initializer, an assignment, a cast --
@@ -21,16 +22,16 @@
  * element, a field initializer, a ternary's arm -- and a compound assignment
  * lands its target and value combined, so each is checked as a declaration is.
  *
- * ## What is deliberately NOT typed
+ * ## A bit extraction is typed by its width
  *
  * A lone bit extraction, `large[0, 8]`, is ADR-024's explicit reinterpret --
- * the escape hatch the rule tells the author to use. Typing it would make the
- * sanctioned form fail the very check it exists to satisfy; codegen's
- * declaration path declined for that reason, and this pass declines for all
- * three. A composite's integer type is the typer's, which settles it by
- * `CompositeType.integerOf` over its value leaves -- category from the first
- * integer operand, width from the widest -- the one rule 2.2 sizes its clamp
- * helper by (#1668).
+ * the escape hatch the rule tells the author to use. It carries no sign and
+ * no essential type category, so neither E0868 nor E0945 judges it, but it
+ * is judged by the bits it takes (ADR-072 ruling 18): `large[0, 8]` lands in
+ * a `u8` and is E0869 at a 3-bit field. A composite's integer type is the
+ * typer's, which settles it by `CompositeType.integerOf` over its value
+ * leaves -- category from the first integer operand, width from the widest
+ * -- the one rule 2.2 sizes its clamp helper by (#1668).
  *
  * ## Two holes codegen had, both closed
  *
@@ -61,6 +62,8 @@
  * headers included (#1726).
  */
 
+import BitFieldText from "../../utils/BitFieldText";
+import type TEssentialCategory from "../../types/TEssentialCategory";
 import type ISourceSite from "../../types/ISourceSite";
 import BindingSite from "../../utils/BindingSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
@@ -85,8 +88,32 @@ import type IAnalysisContext from "./types/IAnalysisContext";
 import type IValuePosition from "../../types/IValuePosition";
 import type IOperandType from "../../types/IOperandType";
 import SourceOrder from "../../utils/SourceOrder";
+import BitFieldIntegerType from "../../utils/BitFieldIntegerType";
 
 const INTEGER_LITERAL = /^-?(?:\d+|0[xX][0-9a-fA-F]+|0[bB][01]+)$/;
+
+/** How each essential category is named in E0945's message */
+const CATEGORY_NAME: Record<TEssentialCategory, string> = {
+  signed: "a signed integer",
+  unsigned: "an unsigned integer",
+  floating: "a floating",
+  boolean: "a bool",
+  enum: "an enum",
+  character: "a character",
+  none: "an untyped",
+};
+
+/** E0945's help for each category an integer target does not take */
+const INTO_INTEGER: Partial<
+  Record<TEssentialCategory, (asNumber: string) => string>
+> = {
+  boolean: () =>
+    "A bool is not a number (ADR-024); write the number it stands for: (value = true) ? 1 : 0",
+  character: (asNumber) =>
+    `Cast the character to say it is a number: ${asNumber} (ADR-024)`,
+  enum: (asNumber) =>
+    `Cast the enum value to say it is a number: ${asNumber} (ADR-024)`,
+};
 
 /** What a literal operand must fit: the range, the width, or nothing */
 type TLiteralRole = "value" | "bits" | "exempt";
@@ -106,6 +133,17 @@ const CONSTANT_FORMS: ReadonlySet<TExpression["kind"]> = new Set([
 ]);
 
 type TFold = ReturnType<typeof OperandTyper.constantResultOf>;
+
+/**
+ * What a source converts from: the bits it carries, whether they are
+ * signed -- null for a bit extraction, the explicit reinterpret, whose sign
+ * is not judged -- and how a message names it.
+ */
+type TSource = {
+  readonly width: number;
+  readonly signed: boolean | null;
+  readonly name: string;
+};
 
 class IntegerConversionCheck {
   /**
@@ -132,13 +170,13 @@ class IntegerConversionCheck {
     if (!declaration.initializer) return;
     if (this.checkStringsAt(declaration.initializer)) return;
     const target = declaration.type.text;
+    const declaredAt = BindingSite.ofSpan(declaration.span, this.context);
+    if (target === "bool") {
+      this.checkBoolean(declaration.initializer, declaredAt);
+      return;
+    }
     if (!TypeCheckUtils.isInteger(target)) return;
-    this.check(
-      target,
-      declaration.initializer,
-      true,
-      BindingSite.ofSpan(declaration.span, this.context),
-    );
+    this.check(target, declaration.initializer, true, declaredAt);
   }
 
   /** The values typed by their position: arguments, fields, elements (#1618) */
@@ -178,11 +216,13 @@ class IntegerConversionCheck {
    */
   public checkAt(value: TExpression, declaredAt?: ISourceSite): void {
     if (this.checkStringsAt(value)) return;
-    const target = StructInitializerType.valueTypeAt(
-      ValuePositions.at(this.positions, value),
-    );
+    const position = ValuePositions.at(this.positions, value);
+    const target = StructInitializerType.valueTypeAt(position);
+    if (target === "bool") this.checkBoolean(value, declaredAt);
     if (target !== null && TypeCheckUtils.isInteger(target)) {
-      this.check(target, value, true, declaredAt);
+      // A header bit-field holds its own width (ADR-072 ruling 19)
+      const width = position.headerField?.bitWidth ?? TYPE_WIDTH[target];
+      this.check(target, value, true, declaredAt, width);
     }
   }
 
@@ -203,12 +243,19 @@ class IntegerConversionCheck {
     ) {
       return;
     }
-    const targetType =
-      OperandTyper.typeOfTarget(target, this.context)?.typeName ?? "";
+    const targetTyping = OperandTyper.typeOfTarget(target, this.context);
+    const targetType = BitFieldIntegerType.of(targetTyping);
+    if (targetType === "bool" && site.operator === "<-") {
+      this.checkBoolean(site.value, BindingSite.ofChain(target, this.context));
+      return;
+    }
     if (!TypeCheckUtils.isInteger(targetType)) return;
+    // The bits the target holds: its type's, or a bitmap field's own width,
+    // which a `u8` holding it is wider than (ADR-072 Part 2, ruling 17)
+    const targetWidth = targetTyping?.bitWidth ?? TYPE_WIDTH[targetType];
     const declaredAt = BindingSite.ofChain(target, this.context);
     if (site.operator === "<-") {
-      this.check(targetType, site.value, true, declaredAt);
+      this.check(targetType, site.value, true, declaredAt, targetWidth);
       return;
     }
     this.checkCompound(targetType, site, declaredAt);
@@ -226,10 +273,12 @@ class IntegerConversionCheck {
   ): void {
     const binary = CompoundOperator.binaryOf(site.operator);
     const shift = binary === "<<" || binary === ">>";
-    const source = CompositeType.integerOf([
+    const integer = CompositeType.integerOf([
       OperandTyper.typeOfTarget(site.target, this.context),
       ...(shift ? [] : OperandTyper.valueLeaves(site.value, this.context)),
     ]);
+    const source =
+      integer === null ? null : IntegerConversionCheck.named(integer);
     if (!shift) {
       this.checkLiteralLeaves(
         targetType,
@@ -570,6 +619,7 @@ class IntegerConversionCheck {
     value: TExpression,
     typeComposites: boolean,
     declaredAt: ISourceSite | undefined,
+    width: number = TYPE_WIDTH[target],
   ): void {
     const text = IntegerConversionCheck.integerLiteralText(value);
     if (text !== null) {
@@ -579,13 +629,147 @@ class IntegerConversionCheck {
     if (this.checkFloating(target, value)) return;
     const ternary = IntegerConversionCheck.ternaryOf(value);
     if (ternary !== null) {
-      this.check(target, ternary.whenTrue, typeComposites, declaredAt);
-      this.check(target, ternary.whenFalse, typeComposites, declaredAt);
+      this.check(target, ternary.whenTrue, typeComposites, declaredAt, width);
+      this.check(target, ternary.whenFalse, typeComposites, declaredAt, width);
       return;
     }
+    if (this.checkCategory(target, value, declaredAt, width)) return;
     this.checkLiteralLeaves(target, value, "value", declaredAt);
     const source = this.conversionSource(value, typeComposites);
-    if (source !== null) this.checkConversion(target, source, value, "assign");
+    if (source !== null) {
+      this.checkConversion(target, source, value, "assign", width);
+    }
+  }
+
+  /**
+   * E0945: MISRA C:2012 Rule 10.3 -- an integer takes no Boolean, character
+   * or enum value (ADR-024, #2372). True when reported. At a field narrower
+   * than its storage type the help takes the field's bits as well, since the
+   * cast alone is E0869 there.
+   */
+  private checkCategory(
+    target: string,
+    value: TExpression,
+    declaredAt: ISourceSite | undefined,
+    width: number = TYPE_WIDTH[target],
+  ): boolean {
+    const t = IntegerConversionCheck.categorized(value, this.context);
+    const help = t === null ? undefined : INTO_INTEGER[t.category];
+    if (help === undefined) return false;
+    this.reportCategory(
+      value,
+      CATEGORY_NAME[t!.category],
+      width < TYPE_WIDTH[target] ? BitFieldText.named(width) : target,
+      help(
+        width < TYPE_WIDTH[target]
+          ? `((${target})value)[0, ${width}]`
+          : `(${target})value`,
+      ),
+      declaredAt,
+    );
+    return true;
+  }
+
+  /**
+   * E0945: Rule 10.3 -- a Boolean takes only a Boolean (ADR-024, #2372): no
+   * integer, literal or not, no character, enum or float. Each arm of a
+   * ternary lands on its own.
+   */
+  private checkBoolean(
+    value: TExpression,
+    declaredAt: ISourceSite | undefined,
+  ): void {
+    const ternary = IntegerConversionCheck.ternaryOf(value);
+    if (ternary !== null) {
+      this.checkBoolean(ternary.whenTrue, declaredAt);
+      this.checkBoolean(ternary.whenFalse, declaredAt);
+      return;
+    }
+    if (value.kind === "parenthesized") {
+      this.checkBoolean(value.expression, declaredAt);
+      return;
+    }
+    if (this.checkBooleanExtraction(value)) return;
+    // An untyped value of integer literals alone (`1`, `-1`, `1 + 1`) is a
+    // number, and so is a header's integer macro (`#define MODE 2`)
+    const leaves = OperandTyper.valueLeafExpressions(value);
+    const literal = leaves.every(
+      (leaf) => IntegerConversionCheck.integerLiteralText(leaf) !== null,
+    );
+    const integerMacro =
+      !literal &&
+      leaves.every(
+        (leaf) =>
+          IntegerConversionCheck.integerLiteralText(leaf) !== null ||
+          this.isIntegerMacro(leaf),
+      );
+    const from = IntegerConversionCheck.categorized(
+      value,
+      this.context,
+    )?.category;
+    const number = literal || integerMacro;
+    if (from === "boolean" || (from === undefined && !number)) return;
+    if (from === "none" && !number) return;
+    let named = from === undefined ? "" : CATEGORY_NAME[from];
+    if (from === undefined || from === "none") {
+      named = literal ? "an integer literal" : "an integer macro";
+    }
+    this.reportCategory(
+      value,
+      named,
+      "bool",
+      "A number is not a bool (ADR-024); say what makes it true: value != 0",
+      declaredAt,
+    );
+  }
+
+  /**
+   * E0869: a Boolean holds one bit, so an extraction is judged by the bits it
+   * takes there as everywhere (ADR-072 rulings 17 and 18, #2484 review):
+   * `f.Enable <- m[0, 3]` would keep 5 as true. True when reported.
+   */
+  private checkBooleanExtraction(value: TExpression): boolean {
+    const t = OperandTyper.typeOf(value, this.context);
+    if (t?.form.kind !== "bitRange") return false;
+    const width = t.form.width;
+    if (width === null || width <= 1) return false;
+    this.found.push({
+      code: "E0869",
+      span: value.span,
+      declaredAt: BindingSite.ofOperands([value], this.context),
+      message: `Cannot assign ${BitFieldText.named(width, "extraction")} to bool (narrowing)`,
+      helpText:
+        "Extract one bit, [start, 1], or say what makes it true: value != 0",
+    });
+    return true;
+  }
+
+  /**
+   * The value's type, unless it is a bit extraction: a subscript into a
+   * scalar reinterprets bits and carries no category (ADR-024)
+   */
+  private static categorized(
+    value: TExpression,
+    context: IAnalysisContext,
+  ): IOperandType | null {
+    const t = OperandTyper.typeOf(value, context);
+    return t === null || t.form.kind === "bitRange" ? null : t;
+  }
+
+  private reportCategory(
+    value: TExpression,
+    what: string,
+    target: string,
+    helpText: string,
+    declaredAt: ISourceSite | undefined,
+  ): void {
+    this.found.push({
+      code: "E0945",
+      span: value.span,
+      declaredAt: declaredAt ?? BindingSite.ofOperands([value], this.context),
+      message: `Cannot assign ${what} value to ${target} (MISRA C:2012 Rule 10.3): '${value.written}'`,
+      helpText,
+    });
   }
 
   /** The ternary a value is, past its parentheses: each arm lands (ADR-022) */
@@ -599,6 +783,16 @@ class IntegerConversionCheck {
   }
 
   /** An integer literal, or a minus over one, as one token: `-1`, `0xFF` */
+  /** A bare name the file's headers define as an integer macro */
+  private isIntegerMacro(leaf: TExpression): boolean {
+    if (leaf.kind !== "identifier") return false;
+    const macro = this.context.program.headerMacro(
+      this.context.sourceFile,
+      leaf.name,
+    );
+    return macro?.kind === "integer" && macro.isBoolean !== true;
+  }
+
   private static integerLiteralText(value: TExpression): string | null {
     const negated = value.kind === "unary" && value.operator === "-";
     const literal = negated ? value.operand : value;
@@ -656,32 +850,43 @@ class IntegerConversionCheck {
 
   private checkConversion(
     target: string,
-    source: string,
+    source: TSource,
     at: TExpression,
     kind: "assign" | "cast",
+    targetWidth: number = TYPE_WIDTH[target],
   ): void {
-    if (source === target || !TypeCheckUtils.isInteger(source)) return;
     const verb = kind === "cast" ? "cast" : "assign";
     const subject = kind === "cast" ? "expr" : "value";
-    const targetWidth = TYPE_WIDTH[target];
+    const into =
+      targetWidth === TYPE_WIDTH[target]
+        ? target
+        : BitFieldText.named(targetWidth);
 
-    if (TYPE_WIDTH[source] > targetWidth) {
+    if (source.width > targetWidth) {
       this.found.push({
         code: "E0869",
         span: at.span,
         declaredAt: BindingSite.ofOperands([at], this.context),
-        message: `Cannot ${verb} ${source} to ${target} (narrowing)`,
-        helpText: `Use bit indexing to say which bits you mean: ${subject}[0, ${targetWidth}]`,
+        message: `Cannot ${verb} ${source.name} to ${into} (narrowing)`,
+        // An extraction already says which bits; it must take fewer of them
+        helpText:
+          source.signed === null
+            ? `Extract no more bits than the target holds: [start, ${targetWidth}]`
+            : `Use bit indexing to say which bits you mean: ${subject}[0, ${targetWidth}]`,
       });
       return;
     }
-    if (TypeCheckUtils.isSigned(source) !== TypeCheckUtils.isSigned(target)) {
+    if (
+      source.signed !== null &&
+      source.signed !== TypeCheckUtils.isSigned(target)
+    ) {
       this.found.push({
         code: "E0869",
         span: at.span,
         declaredAt: BindingSite.ofOperands([at], this.context),
-        message: `Cannot ${verb} ${source} to ${target} (sign change)`,
-        helpText: `Use bit indexing to reinterpret the bits explicitly: ${subject}[0, ${targetWidth}]`,
+        message: `Cannot ${verb} ${source.name} to ${into} (sign change)`,
+        // No wider than the source, or the extraction is out of bounds
+        helpText: `Use bit indexing to reinterpret the bits explicitly: ${subject}[0, ${Math.min(source.width, targetWidth)}]`,
       });
     }
   }
@@ -689,13 +894,15 @@ class IntegerConversionCheck {
   // --- What type a source is ------------------------------------------------
 
   /**
-   * The integer type a source converts from, as a cnx integer name, or
-   * null when the rule does not judge it (#1668, the design's §5 row):
+   * What a source converts from, or null when the rule does not judge it
+   * (#1668, the design's §5 row):
    *
    * - a top-level ternary, which only a cast brings here: `check` takes
    *   each arm where it stands;
    * - a lone bit extraction, `large[0, 8]`: ADR-024's explicit reinterpret,
-   *   the form this rule tells the author to use;
+   *   the form this rule tells the author to use, judged by the bits it
+   *   takes and never by sign;
+   * - a bitmap field, by its own width, not its `u8`'s (ruling 17);
    * - a composite, `a + b`: its integer type, as the typer settled it -- the
    *   one rule 2.2 sizes its clamp helper by -- unless `composites` is false,
    *   as for a cast;
@@ -705,22 +912,45 @@ class IntegerConversionCheck {
   private conversionSource(
     expr: TExpression,
     composites: boolean,
-  ): string | null {
+  ): TSource | null {
     if (expr.kind === "ternary") return null;
     const t = OperandTyper.typeOf(expr, this.context);
     if (t === null) return null;
     if (t.form.kind === "composite") {
-      return composites && t.bitWidth !== null ? t.typeName : null;
+      return composites && t.bitWidth !== null && t.typeName !== null
+        ? IntegerConversionCheck.named(t.typeName)
+        : null;
     }
-    if (t.form.kind === "bitRange") return null;
-    return IntegerConversionCheck.integerName(t);
+    if (t.form.kind === "bitRange") {
+      const width = t.form.width;
+      return width === null
+        ? null
+        : {
+            width,
+            signed: null,
+            name: BitFieldText.named(width, "extraction"),
+          };
+    }
+    return IntegerConversionCheck.integerSource(t);
   }
 
-  private static integerName(t: IOperandType): string | null {
+  private static named(typeName: string): TSource | null {
+    if (!TypeCheckUtils.isInteger(typeName)) return null;
+    return {
+      width: TYPE_WIDTH[typeName],
+      signed: TypeCheckUtils.isSigned(typeName),
+      name: typeName,
+    };
+  }
+
+  private static integerSource(t: IOperandType): TSource | null {
     if (t.dimensions.length > 0 || t.bitWidth === null) return null;
-    if (t.category === "signed") return `i${t.bitWidth}`;
-    if (t.category === "unsigned") return `u${t.bitWidth}`;
-    return null;
+    if (t.category !== "signed" && t.category !== "unsigned") return null;
+    const signed = t.category === "signed";
+    const name = `${signed ? "i" : "u"}${t.bitWidth}`;
+    if (TypeCheckUtils.isInteger(name))
+      return { width: t.bitWidth, signed, name };
+    return { width: t.bitWidth, signed, name: BitFieldText.named(t.bitWidth) };
   }
 }
 

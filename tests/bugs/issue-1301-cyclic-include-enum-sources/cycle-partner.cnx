@@ -13,6 +13,6 @@ scope Logger {
     }
 
     public u32 reportedUnit() {
-        return unit;
+        return (u32)unit;
     }
 }

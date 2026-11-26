@@ -36,7 +36,7 @@ uint8_t viaLocal(void) {
     Shadow viaLocal__MOTOR = { .FLAGS = 0U, .CONFIG = 0U };
     viaLocal__MOTOR.CONFIG = 7U;
     viaLocal__MOTOR.FLAGS = (uint8_t)((viaLocal__MOTOR.FLAGS & ~(1U << 0)) | (1U << 0));
-    viaLocal__MOTOR.CONFIG = (uint8_t)((viaLocal__MOTOR.CONFIG & ~(0x3U << 4)) | ((3U & 0x3U) << 4));
+    viaLocal__MOTOR.CONFIG = (uint8_t)((viaLocal__MOTOR.CONFIG & ~(0x3U << 4)) | (3U << 4));
     return cnx_clamp_add_u8(viaLocal__MOTOR.CONFIG, viaLocal__MOTOR.FLAGS);
 }
 
@@ -44,7 +44,7 @@ uint8_t viaLocal(void) {
 void viaParam(Shadow* viaParam__MOTOR) {
     viaParam__MOTOR->CONFIG = 7U;
     viaParam__MOTOR->FLAGS = (uint8_t)((viaParam__MOTOR->FLAGS & ~(1U << 0)) | (1U << 0));
-    viaParam__MOTOR->CONFIG = (uint8_t)((viaParam__MOTOR->CONFIG & ~(0x3U << 4)) | ((3U & 0x3U) << 4));
+    viaParam__MOTOR->CONFIG = (uint8_t)((viaParam__MOTOR->CONFIG & ~(0x3U << 4)) | (3U << 4));
 }
 
 void viaRegister(void) {

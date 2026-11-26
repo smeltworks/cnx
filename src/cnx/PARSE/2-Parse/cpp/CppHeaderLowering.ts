@@ -41,7 +41,9 @@ import LiteralUtils from "../../../utils/LiteralUtils";
 import ParserUtils from "../../../utils/ParserUtils";
 
 class CppHeaderLowering {
-  static header(tree: TranslationUnitContext): ICppHeaderSyntax {
+  static header(
+    tree: TranslationUnitContext,
+  ): Omit<ICppHeaderSyntax, "undefinedMacros"> {
     return {
       declarations: CppHeaderLowering.declarations(
         tree.declarationseq()?.declaration() ?? [],
@@ -206,7 +208,7 @@ class CppHeaderLowering {
       functionPointerParams: null,
       parameters: [],
       arrayDimensions: [],
-      bitWidth: LiteralUtils.exactIntegerLiteral(width) ?? width,
+      bitWidth: LiteralUtils.cIntegerLiteral(width) ?? width,
     };
   }
 
@@ -301,7 +303,7 @@ class CppHeaderLowering {
       isConstMember:
         paramsAndQuals?.cvqualifierseq()?.getText().includes("const") ?? false,
       arrayDimensions: noPointer
-        ? ArrayDimensionText.parse(noPointer.getText())
+        ? ArrayDimensionText.parseC(noPointer.getText())
         : [],
     };
   }

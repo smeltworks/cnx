@@ -16,5 +16,5 @@
 
 void test(void) {
     SeaDash::Parse::ParseResult result = {};
-    result = (SeaDash::Parse::ParseResult){ .data = {1, 2, 3}, .count = 3, .success = true };
+    result = (SeaDash::Parse::ParseResult){ .data = {1, 2, 3, 0, 0, 0, 0, 0}, .count = 3, .success = true };
 }

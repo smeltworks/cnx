@@ -49,6 +49,7 @@ interface IContextBuilderDeps extends Pick<
   | "plannedWholeArray"
   | "plannedCompoundCast"
   | "plannedRegisterAccess"
+  | "plannedBitValue"
 > {
   /** #1668: what the target writes, bound where it was typed */
   readonly target: IChainBase;
@@ -355,6 +356,7 @@ function buildAssignmentContext(
     plannedWholeArray: deps.plannedWholeArray,
     plannedCompoundCast: deps.plannedCompoundCast,
     plannedRegisterAccess: deps.plannedRegisterAccess,
+    plannedBitValue: deps.plannedBitValue,
     hasValue: valueExpr.kind !== "missing",
     valueExpressionType: () => deps.expressionType(valueExpr),
     valueIntegerType: () => deps.integerExpressionType(valueExpr),

@@ -325,9 +325,19 @@ describe("ForeignTypeFacts", () => {
       expect(
         ForeignTypeFacts.fieldOperand("Bits", "a", symbolTable, null)?.bitWidth,
       ).toBe(3);
+      // #2494: a width 1.4 could not read leaves the field with no range
+      const unread = ForeignTypeFacts.fieldOperand(
+        "Bits",
+        "m",
+        symbolTable,
+        null,
+      );
+      expect(unread?.bitWidth).toBeNull();
+      expect(unread?.bitWidthUnread).toBe(true);
       expect(
-        ForeignTypeFacts.fieldOperand("Bits", "m", symbolTable, null),
-      ).toBeNull();
+        ForeignTypeFacts.fieldOperand("Bits", "a", symbolTable, null)
+          ?.bitWidthUnread,
+      ).toBe(false);
       // NEGATIVE CONTROL: a field that is no bit-field keeps its type's width
       expect(
         ForeignTypeFacts.fieldOperand("Cfg", "a", symbolTable, null)?.bitWidth,

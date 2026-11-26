@@ -87,7 +87,53 @@ describe("IntegerConversionAnalyzer", () => {
         "sign change",
       );
       expect(errors(inMain("    u32 x <- byte;"))).toEqual([]);
+      // The help never extracts more bits than the source has
+      expect(errors(inMain("    i16 x <- byte;"))[0].helpText).toContain(
+        "value[0, 8]",
+      );
+      expect(errors(inMain("    i16 x <- byte[0, 8];"))).toEqual([]);
       expect(errors(inMain("    u32 x <- (u32)byte;"))).toEqual([]);
+    });
+
+    // ADR-072 ruling 17: a bitmap field holds its own width, not the u8's
+    it("judges a bitmap field write against the field's width", () => {
+      const field = (body: string): string =>
+        `bitmap16 F { Mode[3], Wide[8], Flag, Rest[4] }\nmut F f <- 0;\nu8 FITS <- 7;\n${inMain(body)}`;
+      const found = errors(
+        field(
+          "    f.Mode <- byte;\n    f.Mode <- neg;\n    f.Mode <- FITS;\n    f.Wide <- wide;",
+        ),
+      );
+      expect(found.map((e) => e.message)).toEqual([
+        "Cannot assign u8 to a 3-bit field (narrowing)",
+        "Cannot assign i32 to a 3-bit field (narrowing)",
+        "Cannot assign u8 to a 3-bit field (narrowing)",
+        "Cannot assign u32 to u8 (narrowing)",
+      ]);
+      expect(found[0].helpText).toContain("[0, 3]");
+      expect(
+        errors(
+          field(
+            "    f.Mode <- byte[0, 3];\n    f.Mode <- 7;\n    f.Wide <- byte;\n    f.Rest <- f.Mode;\n    i8 x <- wide[0, 8];",
+          ),
+        ),
+      ).toEqual([]);
+      expect(
+        errors(field("    f.Mode <- f.Rest;\n    f.Mode <- byte[0, 4];")).map(
+          (e) => e.message,
+        ),
+      ).toEqual([
+        "Cannot assign a 4-bit field to a 3-bit field (narrowing)",
+        "Cannot assign a 4-bit extraction to a 3-bit field (narrowing)",
+      ]);
+      expect(errors(field("    i8 x <- f.Mode;"))[0].helpText).toContain(
+        "value[0, 3]",
+      );
+      // An extraction already names its bits: the help narrows it, rather
+      // than subscripting it again (E0856)
+      expect(errors(field("    f.Mode <- byte[0, 4];"))[0].helpText).toBe(
+        "Extract no more bits than the target holds: [start, 3]",
+      );
     });
 
     it("accepts a bit extraction -- the explicit reinterpret the message asks for", () => {
@@ -234,11 +280,11 @@ describe("IntegerConversionAnalyzer", () => {
       ).toEqual(["E0914", "E0914"]);
     });
 
-    it("accepts a string into a string and a char into a u8", () => {
+    it("accepts a string into a string and a cast char into a u8", () => {
       expect(
         codes(
           inMain(
-            '    string<8> s <- (wide = 1) ? "x" : "y";\n    u8 c <- \'A\';',
+            '    string<8> s <- (wide = 1) ? "x" : "y";\n    u8 c <- (u8)\'A\';',
           ),
         ),
       ).toEqual([]);
@@ -459,6 +505,65 @@ describe("IntegerConversionAnalyzer -- on 1.2's syntax", () => {
     it("leaves a compound assignment and a whole-string write to other rules", () => {
       expect(codesOf("    s[0] +<- 1;")).not.toContain("E0928");
       expect(codesOf('    s <- "abc";')).toEqual([]);
+    });
+  });
+
+  describe("E0945 -- a value keeps its essential type category (#2372)", () => {
+    const declarations =
+      "enum Color { RED, GREEN }\nmut Color color;\nmut bool flag;\n";
+    const category = (body: string) =>
+      errors(declarations + inMain(body)).filter((e) => e.code === "E0945");
+
+    it("rejects a bool, character or enum into an integer, with its help", () => {
+      const found = category(
+        "    u8 a <- flag;\n    u8 b <- 'a';\n    u8 c <- color;",
+      );
+      expect(found.map((e) => e.message)).toEqual([
+        "Cannot assign a bool value to u8 (MISRA C:2012 Rule 10.3): 'flag'",
+        "Cannot assign a character value to u8 (MISRA C:2012 Rule 10.3): ''a''",
+        "Cannot assign an enum value to u8 (MISRA C:2012 Rule 10.3): 'color'",
+      ]);
+      expect(found[0].helpText).toContain("(value = true) ? 1 : 0");
+      expect(found[1].helpText).toContain("(u8)value");
+      expect(found[2].helpText).toContain("(u8)value");
+    });
+
+    it("accepts each conversion written, and a bit extraction", () => {
+      expect(
+        category(
+          "    u8 a <- (u8)'a';\n    u8 b <- (u8)color;\n    u8 c <- (flag = true) ? 1 : 0;\n    u8 d <- wide[0, 8];",
+        ),
+      ).toEqual([]);
+    });
+
+    it("rejects a number into a bool, a literal past parentheses or folded", () => {
+      const found = category(
+        "    bool a <- 1;\n    bool b <- (1);\n    bool c <- 1 + 1;\n    bool d <- wide;\n    bool e <- 'y';",
+      );
+      expect(found.map((e) => e.message)).toEqual([
+        "Cannot assign an integer literal value to bool (MISRA C:2012 Rule 10.3): '1'",
+        "Cannot assign an integer literal value to bool (MISRA C:2012 Rule 10.3): '1'",
+        "Cannot assign an integer literal value to bool (MISRA C:2012 Rule 10.3): '1 + 1'",
+        "Cannot assign an unsigned integer value to bool (MISRA C:2012 Rule 10.3): 'wide'",
+        "Cannot assign a character value to bool (MISRA C:2012 Rule 10.3): ''y''",
+      ]);
+      expect(found[0].helpText).toContain("value != 0");
+    });
+
+    it("judges each ternary arm into a bool on its own", () => {
+      expect(
+        category("    bool a <- (wide = 1) ? true : 0;").map((e) => e.message),
+      ).toEqual([
+        "Cannot assign an integer literal value to bool (MISRA C:2012 Rule 10.3): '0'",
+      ]);
+    });
+
+    it("accepts a bool, a comparison and a bit extraction into a bool", () => {
+      expect(
+        category(
+          "    bool a <- ((true));\n    bool b <- wide != 0;\n    bool c <- flag;\n    bool d <- wide[0, 1];",
+        ),
+      ).toEqual([]);
     });
   });
 });

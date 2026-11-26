@@ -18,7 +18,7 @@ u32 main() {
 
     // Test bounded string const
     // Note: Can't directly compare strings, just verify it compiles and links
-    u8 firstChar <- STRING_CONST[0];
+    u8 firstChar <- (u8)STRING_CONST[0];
     if (firstChar != 72) {
         return 4; // 'H' = 72
     }
@@ -32,7 +32,7 @@ u32 main() {
     }
 
     // Test const string array
-    u8 oneFirst <- STRING_ARRAY[0][0];
+    u8 oneFirst <- (u8)STRING_ARRAY[0][0];
     if (oneFirst != 111) {
         return 7; // 'o' = 111
     }

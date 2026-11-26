@@ -23,8 +23,8 @@ scope StringSliceTest {
         this.copyToBuffer(buffer, 0x1234);
 
         // Verify bytes (little-endian) using u8 cast
-        u8 byte0 <- buffer[0];
-        u8 byte1 <- buffer[1];
+        u8 byte0 <- (u8)buffer[0];
+        u8 byte1 <- (u8)buffer[1];
         if (byte0 != 0x34) {
             return 1;
         }
@@ -35,8 +35,8 @@ scope StringSliceTest {
         // Copy 0x5678 into buffer at offset 2
         this.copyToBufferAt2(buffer, 0x5678);
 
-        u8 byte2 <- buffer[2];
-        u8 byte3 <- buffer[3];
+        u8 byte2 <- (u8)buffer[2];
+        u8 byte3 <- (u8)buffer[3];
         if (byte2 != 0x78) {
             return 3;
         }

@@ -27,7 +27,7 @@ different moments, so conflating them into one card loses information.
 | ------------------ | ---------- | ----------------------------------------------------------------------------------------------------------------------- |
 | **Grooming**       | Issues     | Just filed. Not triaged — scope, priority and whether it is even right are still open. **Every new issue starts here.** |
 | **Backlog**        | Issues     | Groomed and agreed. Ready for someone to pick up.                                                                       |
-| **WIP**            | Issues     | Picked up — someone is on it.                                                                                           |
+| **WIP**            | Issues     | Picked up — someone is on it, or its closing pull request is open (#1578).                                              |
 | **PR Review**      | PRs        | A pull request is open and waiting to be looked at.                                                                     |
 | **Changes Needed** | PRs        | Review found something. The PR needs work before it merges.                                                             |
 | **Ready to Merge** | PRs        | Review is satisfied and CI is green.                                                                                    |
@@ -76,18 +76,19 @@ This replaced the old `status: blocked` label.
 
 ## What moves a card
 
-| Transition                            | Trigger                        | Mechanism                      |
-| ------------------------------------- | ------------------------------ | ------------------------------ |
-| _(nothing)_ → **Grooming**            | Issue opened                   | `project-sync.yml`             |
-| **Grooming** → **Backlog**            | Triaged and agreed             | **Manual**                     |
-| **Grooming** or **Backlog** → **WIP** | You assign yourself the issue  | `project-sync.yml`             |
-| **WIP** → **Backlog**                 | You unassign yourself          | `project-sync.yml`             |
-| _(nothing)_ → **PR Review**           | PR opened, reopened, or ready  | `project-sync.yml`             |
-| **PR Review** → **Changes Needed**    | Review found something         | **Manual**                     |
-| **Changes Needed** → **PR Review**    | You pushed the fix             | **Manual**                     |
-| _any PR status_ → **Ready to Merge**  | Review satisfied, checks green | **Manual**                     |
-| _any_ → **Done**                      | Issue or PR closed             | Built-in `Item closed`         |
-| _any_ → **Done**                      | PR merged                      | Built-in `Pull request merged` |
+| Transition                            | Trigger                                         | Mechanism                      |
+| ------------------------------------- | ----------------------------------------------- | ------------------------------ |
+| _(nothing)_ → **Grooming**            | Issue opened                                    | `project-sync.yml`             |
+| **Grooming** → **Backlog**            | Triaged and agreed                              | **Manual**                     |
+| **Grooming** or **Backlog** → **WIP** | You assign yourself the issue                   | `project-sync.yml`             |
+| **WIP** → **Backlog**                 | You unassign yourself, and no open PR closes it | `project-sync.yml`             |
+| **WIP** → **Backlog**                 | Its PR closed unmerged, and nobody is assigned  | `project-sync.yml`             |
+| _(nothing)_ → **PR Review**           | PR opened, reopened, or ready                   | `project-sync.yml`             |
+| **PR Review** → **Changes Needed**    | Review found something                          | **Manual**                     |
+| **Changes Needed** → **PR Review**    | You pushed the fix                              | **Manual**                     |
+| _any PR status_ → **Ready to Merge**  | Review satisfied, checks green                  | **Manual**                     |
+| _any_ → **Done**                      | Issue or PR closed                              | Built-in `Item closed`         |
+| _any_ → **Done**                      | PR merged                                       | Built-in `Pull request merged` |
 
 There is deliberately no row for a reopened issue. See
 [Closed is closed](#closed-is-closed).
@@ -101,10 +102,19 @@ on changes nothing, and only from `WIP`, so unassigning a card already in `Groom
 `Backlog` or `Done` changes nothing either. Until #1572 there was no such transition and
 #1448 read as active work for 9h52m after its work stopped.
 
-Be clear about what `only from WIP` does **not** protect. An issue whose pull request is in
-review is sitting in `WIP` — the pull request gets its own card, and the built-in that would
-move the issue is deliberately disabled — so unassigning yourself mid-review **does** return
-the issue to `Backlog`. Whether it should is open; today it does.
+**Unassigning while your pull request is open leaves the card in `WIP` (#1578).** An issue
+whose pull request is in review is sitting in `WIP` — the pull request gets its own card, and
+the built-in that would move the issue is deliberately disabled — so its status cannot say
+whether the work is paused or in review. `project-sync.yml` therefore asks GitHub for the
+open pull requests that close the issue, and moves the card only when there are none. That is
+why the [closing keyword](#closing-keywords-are-load-bearing) matters here too: a pull request that does not
+name the issue with one is not linked, and neither is one whose base is not `main`, such as a
+pull request stacked on another; unassigning returns either issue to `Backlog`. If the pull
+request then closes **without** merging, `project-sync.yml` asks each open issue it names the
+same question: one with nobody assigned and no other open closing pull request returns to
+`Backlog`. A fork's pull request gets no secrets, so its close moves nothing; move its issue
+to `Backlog` by hand. Reopening the pull request does not return its issue to `WIP`; assigning
+yourself does.
 
 **Assigning yourself is the only thing that fills `WIP`,** and for the life of the board
 nothing did it: until #1423 there were zero assigned open issues and zero cards in that
@@ -120,7 +130,7 @@ Automation writes a status only when the current one is unset, or is one the
 transition names as safe to overwrite — so a card you have moved by hand survives a
 ready-for-review. That is usually the status it advances _from_. `WIP` → `Backlog`
 (#1572) is the one transition that moves a card back, and it overwrites `WIP` and
-nothing else.
+nothing else, and only when no open pull request closes the issue (#1578).
 
 ## Closed is closed
 
@@ -369,7 +379,7 @@ on:
   issues:
     types: [opened, assigned, unassigned]
   pull_request:
-    types: [opened, reopened, ready_for_review]
+    types: [opened, reopened, ready_for_review, closed]
 jobs:
   sync:
     uses: smeltworks/cnx/.github/workflows/project-sync.yml@main
