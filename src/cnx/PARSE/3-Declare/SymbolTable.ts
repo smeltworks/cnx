@@ -902,10 +902,16 @@ class SymbolTable implements IResolvedSymbols {
   settleBitFieldWidths(
     widthOf: (text: string, structName: string) => number | IUnreadBitWidth,
   ): void {
-    for (const [structName, fields] of this.structFields) {
+    const settled = new Map<string, number | IUnreadBitWidth>();
+    const settle = (
+      structName: string,
+      fields: Map<string, IStructFieldInfo>,
+    ): void => {
       for (const [name, info] of fields) {
         if (typeof info.bitWidth !== "string") continue;
-        const width = widthOf(info.bitWidth, structName);
+        const key = `${structName}\0${info.bitWidth}`;
+        const width = settled.get(key) ?? widthOf(info.bitWidth, structName);
+        settled.set(key, width);
         fields.set(
           name,
           typeof width === "number"
@@ -913,6 +919,13 @@ class SymbolTable implements IResolvedSymbols {
             : { ...info, bitWidthUnread: width },
         );
       }
+    };
+    for (const [structName, fields] of this.structFields) {
+      settle(structName, fields);
+    }
+    // #2474: a file's view reads the fields its own header declares
+    for (const [structName, byFile] of this.structFieldsByFile) {
+      for (const fields of byFile.values()) settle(structName, fields);
     }
   }
 

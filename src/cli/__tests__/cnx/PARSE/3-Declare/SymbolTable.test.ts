@@ -539,6 +539,11 @@ describe("SymbolTable", () => {
       );
       expect(fields?.get("lit")?.bitWidth).toBe(4);
       expect(fields?.get("whole")?.bitWidth).toBeUndefined();
+      // #2474: the declaring header's own entry, which a file's view reads
+      expect(
+        symbolTable.getStructFieldsDeclaredIn("Reg", "reg.h")?.get("sum")
+          ?.bitWidth,
+      ).toBe(3);
       expect(seen).toEqual(["1+2", "W"]);
     });
 
