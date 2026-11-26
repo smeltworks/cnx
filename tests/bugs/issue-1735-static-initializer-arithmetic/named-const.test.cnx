@@ -20,13 +20,13 @@ struct P {
     u8 y;
 }
 
-u8 CH <- 'A';
+u8 CH <- (u8)'A';
 u8 first <- CH;
 u32 FROM_MACRO <- STATIC_LIMIT;
 u32 fromMacro <- FROM_MACRO;
 
 scope S {
-    public u8 CH <- 'B';
+    public u8 CH <- (u8)'B';
     public u32 LIMIT <- STATIC_LIMIT;
     public u32 COUNT <- 3;
     public EColor COLOR <- EColor.GREEN;

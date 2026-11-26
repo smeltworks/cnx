@@ -70,7 +70,7 @@ u32 readFlag() { return statusFlag; }
   it("declares a string constant with its C type, not the cnx type", async () => {
     const { code, headerCode } = await transpileSource(`
 string VERSION <- "1.0.0";
-u8 firstChar() { return VERSION[0]; }
+u8 firstChar() { return (u8)VERSION[0]; }
 `);
     expect(code).toContain("char VERSION");
     // ADR-045 infers the capacity from the literal. The .c resolves it to

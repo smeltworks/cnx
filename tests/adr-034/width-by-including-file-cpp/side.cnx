@@ -1,0 +1,5 @@
+#include "other.hpp"
+
+u8 side_cpp_value() {
+    return 1;
+}

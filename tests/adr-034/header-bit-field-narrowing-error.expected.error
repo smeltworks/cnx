@@ -1,0 +1,14 @@
+27:14 error[E0869]: Cannot assign u8 to a 3-bit field (narrowing)
+       help: Use bit indexing to say which bits you mean: value[0, 3]
+28:17 error[E0869]: Cannot assign a 12-bit field to u8 (narrowing)
+       help: Use bit indexing to say which bits you mean: value[0, 8]
+29:17 error[E0869]: Cannot assign a 3-bit field to i8 (sign change)
+       help: Use bit indexing to reinterpret the bits explicitly: value[0, 3]
+30:14 error[E0869]: Cannot assign u8 to a 3-bit field (narrowing)
+       help: Use bit indexing to say which bits you mean: value[0, 3]
+31:25 error[E0869]: Cannot assign u8 to a 3-bit field (narrowing)
+       help: Use bit indexing to say which bits you mean: value[0, 3]
+32:35 error[E0869]: Cannot assign u8 to a 3-bit field (narrowing)
+       help: Use bit indexing to say which bits you mean: value[0, 3]
+34:27 error[E0869]: Cannot assign u64 to u32 (narrowing)
+       help: Use bit indexing to say which bits you mean: value[0, 32]

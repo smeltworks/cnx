@@ -1,3 +1,5 @@
+import type IOperandType from "./IOperandType";
+
 /**
  * What the place a value stands in says about it (#1322, #1991): a
  * declaration's type, the field it initializes, the parameter it is passed to,
@@ -21,6 +23,11 @@ interface IValuePosition {
   readonly inList: boolean;
   /** False where nothing establishes a type, as under a subscript (E0357) */
   readonly supplied: boolean;
+  /**
+   * A header struct's field, as the typer types it: its bit-field width and
+   * sign (ADR-072 ruling 19). Null at every other position.
+   */
+  readonly headerField: IOperandType | null;
 }
 
 export default IValuePosition;

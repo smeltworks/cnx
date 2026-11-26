@@ -39,13 +39,13 @@ int main(void) {
     items[15].byte = 0xAAU;
     const uint8_t lastByte = items[15U].byte;
     uint8_t test8 = 0U;
-    test8 = (uint8_t)((test8 & ~(0xFFU << 0)) | ((0xFFU & 0xFFU) << 0));
+    test8 = (uint8_t)((test8 & ~(0xFFU << 0)) | (0xFFU << 0));
     const uint8_t all8 = static_cast<uint8_t>(((test8) & 0xFFU));
     uint16_t test16 = 0U;
-    test16 = (uint16_t)((test16 & ~(0xFFFFU << 0)) | ((0xFFFFU & 0xFFFFU) << 0));
+    test16 = (uint16_t)((test16 & ~(0xFFFFU << 0)) | (0xFFFFU << 0));
     const uint16_t all16 = static_cast<uint16_t>(((test16) & 0xFFFFU));
     uint32_t test32 = 0U;
-    test32 = (test32 & ~((uint32_t)0xFFFFFFFFU << 0)) | ((0xFFFFFFFFU & (uint32_t)0xFFFFFFFFU) << 0);
+    test32 = (test32 & ~((uint32_t)0xFFFFFFFFU << 0)) | ((uint32_t)0xFFFFFFFFU << 0);
     const uint32_t all32 = ((test32) & 0xFFFFFFFFU);
     uint32_t maxBitTest = 0U;
     maxBitTest = (maxBitTest & ~((uint32_t)1U << 31)) | ((uint32_t)1U << 31);

@@ -9,28 +9,34 @@ bitmap8 Flags {
 }
 
 mut Flags f <- 0;
-// #1760 second review: a const is its value, folded by the one binder. The
-// field write read the literal text, so `f.Mode <- BIG` stored 4 silently.
-u8 FITS <- 7;
-u8 BIG <- 20;
+// A typed constant written to a multi-bit field is judged by its type, E0869
+// (ADR-072 ruling 17): tests/adr-034/bitmap-field-narrowing-error.test.cnx.
+// A one-bit field is a bool and takes no number at all, E0945 (ADR-024):
+// tests/bugs/issue-2372-category-conversion.
+
+// Each arm of a ternary lands in the field (ADR-022), so a literal arm is
+// judged by its value when the condition is a runtime one.
+void pick(bool c) {
+    // NEGATIVE CONTROL
+    f.Mode <- (c = true) ? 7 : 0;
+    // ASSERTIONS
+    f.Mode <- (c = true) ? 9 : 1;
+}
 
 void main() {
     // NEGATIVE CONTROLS -- declared before the assertions. The widest value
-    // each field holds, in each literal base, and a runtime value the rule
-    // cannot and must not judge.
+    // each field holds, in each literal base, and as a folded literal sum.
     f.Mode <- 7;
     f.Mode <- 0x7;
     f.Mode <- 0b111;
-    f.Enable <- 1;
+    f.Enable <- true;
     f.Reserved <- 15;
-    f.Mode <- FITS;
+    f.Mode <- 3 + 4;
 
     // ASSERTIONS -- one over the maximum, in each base.
     f.Mode <- 8;
     f.Mode <- 0x8;
     f.Mode <- 0b1000;
-    f.Enable <- 2;
     f.Reserved <- 16;
-    f.Mode <- BIG;
-    f.Mode <- FITS + 1;
+    f.Mode <- 7 + 1;
 }

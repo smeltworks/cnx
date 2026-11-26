@@ -19,7 +19,7 @@ scope S {
     bool A <- true;
     bool B <- A;
     bool copied <- B;
-    u8 CH <- 'A';
+    u8 CH <- (u8)'A';
     u8 first <- CH;
     u32 FROM_MACRO <- LIMIT;
     u32 fromMacro <- FROM_MACRO;

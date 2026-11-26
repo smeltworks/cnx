@@ -18,7 +18,7 @@ extern uint32_t calls;
 
 /* Function prototypes */
 int32_t w(const CppTestClass& x);
-int32_t bump(void);
+int16_t bump(void);
 
 #ifdef __cplusplus
 }

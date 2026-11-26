@@ -8,6 +8,7 @@
  * - TCppSymbol: C++ header symbols (string types)
  */
 
+import type IUnreadBitWidth from "../../types/IUnreadBitWidth";
 import DeclarationSite from "../../utils/DeclarationSite";
 import OpaqueTypeResolution from "../../utils/OpaqueTypeResolution";
 import { produce, enableMapSet } from "immer";
@@ -110,6 +111,9 @@ class SymbolTable implements IResolvedSymbols {
   // ========================================================================
   // Auxiliary Data (shared across languages)
   // ========================================================================
+
+  /** #2494 review: header path -> the macros it `#undef`s */
+  private readonly undefinedMacrosByFile = new Map<string, readonly string[]>();
 
   /** Struct field information: struct name -> (field name -> field info) */
   private readonly structFields: Map<string, Map<string, IStructFieldInfo>> =
@@ -772,6 +776,27 @@ class SymbolTable implements IResolvedSymbols {
   }
 
   /**
+   * #2494: each bit-field width written as an expression, `1 + 2` or
+   * `MODE_BITS`, settled to the number C reads, where cnx can read it
+   */
+  settleBitFieldWidths(
+    widthOf: (text: string, structName: string) => number | IUnreadBitWidth,
+  ): void {
+    for (const [structName, fields] of this.structFields) {
+      for (const [name, info] of fields) {
+        if (typeof info.bitWidth !== "string") continue;
+        const width = widthOf(info.bitWidth, structName);
+        fields.set(
+          name,
+          typeof width === "number"
+            ? { ...info, bitWidth: width }
+            : { ...info, bitWidthUnread: width },
+        );
+      }
+    }
+  }
+
+  /**
    * Get struct field info (type and array dimensions)
    * @param structName Name of the struct
    * @param fieldName Name of the field
@@ -1011,6 +1036,27 @@ class SymbolTable implements IResolvedSymbols {
     this.structState = produce(this.structState, (draft) => {
       draft.opaqueTypes.add(typeName);
     });
+  }
+
+  /**
+   * #2494 review: the macros the header at `path` `#undef`s. Kept by header,
+   * not in the struct state, so a header's cache record holds its own.
+   * Additive: a recovered slice of the header, already preprocessed, has no
+   * `#undef` left to report, and must not erase the header's.
+   */
+  markUndefinedMacros(path: string, names: readonly string[]): void {
+    const known = this.undefinedMacrosByFile.get(path) ?? [];
+    this.undefinedMacrosByFile.set(path, [...new Set([...known, ...names])]);
+  }
+
+  /** #2494 review: the macros the header at `path` `#undef`s */
+  undefinedMacrosOf(path: string): readonly string[] {
+    return this.undefinedMacrosByFile.get(path) ?? [];
+  }
+
+  /** #2494 review: macros some header `#undef`s */
+  undefinedMacros(): ReadonlySet<string> {
+    return new Set([...this.undefinedMacrosByFile.values()].flat());
   }
 
   /**

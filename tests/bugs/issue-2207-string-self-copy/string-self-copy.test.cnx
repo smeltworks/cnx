@@ -19,7 +19,7 @@ u8 staleByte() {
     s <- "hello";
     t <- "hi";
     s <- t;
-    return s[3];
+    return (u8)s[3];
 }
 
 void copyName(u32 i, u32 j) {

@@ -279,13 +279,13 @@ While Option C works and requires no new syntax, it's convention-based and verbo
 
 ### Why This Is Different From C Bit Fields
 
-| C Bit Fields                   | cnx `bitmap`                                 |
-| ------------------------------ | -------------------------------------------- |
-| Compiler chooses bit ordering  | cnx guarantees LSB-first                     |
-| Implementation-defined padding | Compiler enforces exact bit count            |
-| Silent truncation on overflow  | Compile error for literals, clamp at runtime |
-| Struct-level declaration only  | Standalone reusable type                     |
-| No portability                 | Fully portable (cnx controls layout)         |
+| C Bit Fields                   | cnx `bitmap`                                              |
+| ------------------------------ | --------------------------------------------------------- |
+| Compiler chooses bit ordering  | cnx guarantees LSB-first                                  |
+| Implementation-defined padding | Compiler enforces exact bit count                         |
+| Silent truncation on overflow  | Compile error: a literal by value, a typed value by width |
+| Struct-level declaration only  | Standalone reusable type                                  |
+| No portability                 | Fully portable (cnx controls layout)                      |
 
 ---
 
@@ -379,11 +379,98 @@ A compound operator on a bitmap field (`flags.Mode +<- 1`) is an error
   ```cnx
   status.flags.Mode <- 10;  // ERROR: 10 exceeds 3-bit max (7)
   ```
-- **Runtime values**: Clamp to field maximum per ADR-044
+- **Typed values**: Error if the value's type is wider than the field (E0869), a
+  constant included; name the bits with bit indexing. ADR-072 ruling 17 on #2449
+  replaced the earlier runtime clamp, which was never built (the field writer masked).
   ```cnx
   u8 value <- getUserInput();
-  status.flags.Mode <- value;  // Clamped to 0-7 at runtime
+  status.flags.Mode <- value;        // ERROR E0869: u8 into a 3-bit field
+  status.flags.Mode <- value[0, 3];  // OK: the low 3 bits, explicitly
   ```
+- **One mask per write (#2483)**: the write masks the value it stores once. A bit
+  range no wider than the field is masked by the write at the range's width, and an
+  integer literal the field holds is stored as written:
+  ```c
+  // status.flags.Mode <- value[0, 3];
+  flags = (uint8_t)((flags & ~(0x7U << 1)) | (((value) & 0x7U) << 1));
+  // status.flags.Mode <- 5;
+  flags = (uint8_t)((flags & ~(0x7U << 1)) | (5U << 1));
+  ```
+
+### C Header Bit-Fields
+
+A bit-field of a struct declared in a C header takes a bitmap field's rules
+(ADR-072 ruling 19 on #2449). The number after `:` is the bits it holds; its C
+type gives only its signedness and the storage it is packed in, so
+`unsigned int mode : 3` holds 0 through 7 on every target. The same holds in a
+struct initializer, `CReg r <- { mode: 13 }`, and in one nested inside it. C
+keeps only the low bits of a value that does not fit, so `r.mode = 13` would
+read back 5:
+
+```c
+typedef struct {
+    unsigned int mode : 3;
+    signed int level : 3;
+} CReg;
+```
+
+```cnx
+r.mode <- 13;        // ERROR E0881: 13 exceeds the 3-bit maximum of 7
+r.level <- -5;       // ERROR E0881: below the 3-bit minimum of -4
+r.mode <- m;         // ERROR E0869: u8 into a 3-bit field
+r.mode <- m[0, 3];   // OK
+r.mode +<- 1;        // ERROR E0857: 7 plus 1 would read back 0
+u8 x <- r.wide;      // ERROR E0869 for `unsigned int wide : 12`
+```
+
+A bit-field whose type, typedefs followed, says neither `signed` nor
+`unsigned` is neither read nor written (ADR-072 ruling 20 on #2449). C lets the
+compiler choose whether it is signed (C11 6.7.2p5), and `-funsigned-bitfields`
+changes the choice, so no range cnx could judge it by is right for every build.
+`int32_t` is one: cnx reads it by name, and newlib spells it `long int`, which
+arm-none-eabi-gcc makes unsigned under that flag. An unsigned bit-field always
+says `unsigned`, so `uint32_t` and `unsigned int` fields are unaffected:
+
+```c
+typedef struct {
+    int pi : 3;          // -4..3 by default, 0..7 with -funsigned-bitfields
+    int32_t fixed : 3;   // the same on arm-none-eabi
+    signed int si : 3;   // -4..3 everywhere
+} SReg;
+```
+
+```cnx
+r.pi <- 1;           // ERROR E0944: declare it signed int or unsigned int
+i8 q <- r.fixed;     // ERROR E0944
+r.si <- -4;          // OK
+```
+
+A width written as an expression or a macro is read as C reads it (#2494):
+integer literals, arithmetic, bitwise and logical operators, parentheses, and the
+header's object-like macros of them, each substituted as its text, as the
+preprocessor does, so `W * 2` with `#define W 1 + 2` is 5 bits. A width
+that reads a macro some header `#undef`s is not read, because cnx sees only
+the final definition and C may have used an earlier one. A width cnx cannot read, such as
+`sizeof(uint8_t)`, gives the field no range a value could be judged by, so it
+is neither read nor written, by a chain or by `{ field: value }`. A width whose value would differ between the
+target's `int` widths, or between the macros of two files that include the
+header, is one cnx cannot read; a file that never includes the header does not
+read its width, so its macros do not count. E0946 names which cause applies:
+
+```c
+#define MODE_BITS 3
+typedef struct {
+    uint32_t sum : 1 + 2;              // 3 bits
+    uint32_t mode : MODE_BITS;         // 3 bits
+    uint32_t sized : sizeof(uint8_t);  // a width cnx does not read
+} WReg;
+```
+
+```cnx
+r.sum <- 13;         // ERROR E0881: 13 exceeds the 3-bit maximum of 7
+r.mode <- v;         // ERROR E0869: u8 into a 3-bit field
+r.sized <- 1;        // ERROR E0946: cnx cannot read its width
+```
 
 ### Transpilation
 
@@ -405,14 +492,16 @@ uint8_t mode = ((status.flags >> 3) & 0x7);
 
 ## Diagnostics
 
-| Code  | Reported when                                                                    | Asserted by                                                                                                                                                                                                                                                 |
-| ----- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| E0857 | A compound operator such as `+<-` writes a bitmap field (#2159)                  | `tests/compound-assign/bitmap-field-compound.test.cnx`, `tests/adr-034/bitmap-compound-same-file-error.test.cnx`, `tests/adr-034/bitmap-compound-imported-transitive-error.test.cnx`                                                                        |
-| E0881 | A value written to a bitmap field does not fit the field's declared width        | `tests/adr-034/bitmap-error-overflow.test.cnx`, `tests/adr-034/bitmap-codes-same-file-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-direct-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-transitive-error.test.cnx`                         |
-| E0882 | A member access names something the bitmap does not declare                      | `tests/adr-034/bitmap-unknown-field-error.test.cnx`, `tests/adr-034/bitmap-codes-same-file-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-direct-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-transitive-error.test.cnx`                    |
-| E0883 | A bitmap is addressed by bit index rather than by named field                    | `tests/adr-034/bitmap-bracket-indexing-error.test.cnx`, `tests/adr-034/bitmap-codes-same-file-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-direct-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-transitive-error.test.cnx`                 |
-| E0893 | A bitmap's field widths do not add up to its size, at the bitmap                 | `tests/bitmap/bitmap-error-bits.test.cnx`, `tests/bugs/issue-1531-declaration-rejections/cross-file-bitmap.test.cnx`                                                                                                                                        |
-| E0921 | A field is read or written on a bitmap array that names no whole element (#2186) | `tests/bugs/issue-2186-bitmap-array-field/bitmap-array-field.test.cnx`, `tests/adr-034/bitmap-codes-same-file-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-direct-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-transitive-error.test.cnx` |
+| Code  | Reported when                                                                    | Asserted by                                                                                                                                                                                                                                                                                   |
+| ----- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| E0857 | A compound operator such as `+<-` writes a bitmap field (#2159) or a C bit-field | `tests/compound-assign/bitmap-field-compound.test.cnx`, `tests/adr-034/header-bit-field-compound-error.test.cnx`, `tests/adr-034/bitmap-compound-same-file-error.test.cnx`, `tests/adr-034/bitmap-compound-imported-transitive-error.test.cnx`                                                |
+| E0881 | A value written to a bitmap field does not fit the field's declared width        | `tests/adr-034/bitmap-error-overflow.test.cnx`, `tests/adr-034/header-bit-field-overflow-error.test.cnx`, `tests/adr-034/bitmap-codes-same-file-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-direct-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-transitive-error.test.cnx` |
+| E0882 | A member access names something the bitmap does not declare                      | `tests/adr-034/bitmap-unknown-field-error.test.cnx`, `tests/adr-034/bitmap-codes-same-file-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-direct-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-transitive-error.test.cnx`                                                      |
+| E0883 | A bitmap is addressed by bit index rather than by named field                    | `tests/adr-034/bitmap-bracket-indexing-error.test.cnx`, `tests/adr-034/bitmap-codes-same-file-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-direct-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-transitive-error.test.cnx`                                                   |
+| E0893 | A bitmap's field widths do not add up to its size, at the bitmap                 | `tests/bitmap/bitmap-error-bits.test.cnx`, `tests/bugs/issue-1531-declaration-rejections/cross-file-bitmap.test.cnx`                                                                                                                                                                          |
+| E0921 | A field is read or written on a bitmap array that names no whole element (#2186) | `tests/bugs/issue-2186-bitmap-array-field/bitmap-array-field.test.cnx`, `tests/adr-034/bitmap-codes-same-file-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-direct-error.test.cnx`, `tests/adr-034/bitmap-codes-imported-transitive-error.test.cnx`                                   |
+| E0944 | A C bit-field whose type says neither signed nor unsigned is read or written     | `tests/adr-034/header-bit-field-sign-error.test.cnx`                                                                                                                                                                                                                                          |
+| E0946 | A C bit-field whose width cnx cannot read is read or written (#2494)             | `tests/adr-034/header-bit-field-width-unread-error.test.cnx`                                                                                                                                                                                                                                  |
 
 A bitmap is reached two ways -- through a variable declared with a bitmap type,
 and through a register member typed by one -- and E0881, E0882, E0883 and
@@ -459,6 +548,70 @@ Severity follows the eslint model: `off` records that a cell **cannot exist**,
 | scope method       | exercised through chain | warn     |
 
 off: since #1620 only the bitmap field write lowering occupies this table, and a field write is a statement, which no initializer can hold.
+
+<!-- MATRIX-SEVERITY code: E0944 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | error    |
+| scope method       | same file               | warn     |
+| global variable    | same file               | warn     |
+| scope member       | same file               | warn     |
+| for header         | same file               | warn     |
+| top-level function | imported direct         | warn     |
+| scope method       | imported direct         | warn     |
+| global variable    | imported direct         | warn     |
+| scope member       | imported direct         | warn     |
+| for header         | imported direct         | warn     |
+| top-level function | imported transitive     | warn     |
+| scope method       | imported transitive     | warn     |
+| global variable    | imported transitive     | warn     |
+| scope member       | imported transitive     | warn     |
+| for header         | imported transitive     | warn     |
+| top-level function | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| global variable    | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| for header         | exercised from one away | warn     |
+| top-level function | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| global variable    | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| for header         | exercised through chain | warn     |
+
+warn: the fixture reads and writes the header bit-fields in a same-file top-level function; every other context reaches the same `signChosenByCompiler` fact on the field, so it is the same decision.
+
+<!-- MATRIX-SEVERITY code: E0946 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | error    |
+| scope method       | same file               | warn     |
+| global variable    | same file               | warn     |
+| scope member       | same file               | warn     |
+| for header         | same file               | warn     |
+| top-level function | imported direct         | warn     |
+| scope method       | imported direct         | warn     |
+| global variable    | imported direct         | warn     |
+| scope member       | imported direct         | warn     |
+| for header         | imported direct         | warn     |
+| top-level function | imported transitive     | warn     |
+| scope method       | imported transitive     | warn     |
+| global variable    | imported transitive     | warn     |
+| scope member       | imported transitive     | warn     |
+| for header         | imported transitive     | warn     |
+| top-level function | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| global variable    | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| for header         | exercised from one away | warn     |
+| top-level function | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| global variable    | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| for header         | exercised through chain | warn     |
+
+warn: the fixture reads and writes the header bit-field in a same-file top-level function; every other context reaches the same fact on the field, that cnx could not read its width, so it is the same decision.
 
 <!-- MATRIX-SEVERITY code: E0857 -->
 

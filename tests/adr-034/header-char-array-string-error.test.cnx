@@ -1,0 +1,18 @@
+// test-error
+// test-adr: 035
+// #2484 review: a header's char array is a C string, so a literal must leave
+// room for its terminator; an exact fit is C's unterminated array, and a
+// comparison then reads past the field (E0864).
+#include "header-bit-field.h"
+
+void main() {
+    // NEGATIVE CONTROLS -- each stays silent.
+    CNamed fits <- { tag: "cf" };
+    CNamed escaped <- { tag: "\n" };
+    CNamed octal <- { tag: "\012\x41" };
+    CNamed empty <- { name: "" };
+
+    // ASSERTIONS
+    CNamed exact <- { tag: "cfg" };
+    CNamed over <- { name: "too long!" };
+}

@@ -31,15 +31,15 @@ void Drive__start(void) {
 }
 
 void Drive__viaBare(void) {
-    Drive__PWM__CTRL = (uint8_t)((5U & 0x7U) << 1);
+    Drive__PWM__CTRL = (uint8_t)(5U << 1);
     Drive__PWM__FLAGS = (uint8_t)(1U << 0);
     Drive__PWM__SET = (uint8_t)(1U << 0);
-    Drive__PWM__CONFIG = (uint8_t)((Drive__PWM__CONFIG & ~(0x7U << 1)) | ((5U & 0x7U) << 1));
+    Drive__PWM__CONFIG = (uint8_t)((Drive__PWM__CONFIG & ~(0x7U << 1)) | (5U << 1));
 }
 
 void go(void) {
     MOTOR__CTRL = (uint8_t)(1U << 0);
-    MOTOR__CTRL = (uint8_t)((5U & 0x7U) << 1);
+    MOTOR__CTRL = (uint8_t)(5U << 1);
     MOTOR__FLAGS = (uint8_t)(1U << 0);
-    MOTOR__CONFIG = (uint8_t)((MOTOR__CONFIG & ~(0x7U << 1)) | ((5U & 0x7U) << 1));
+    MOTOR__CONFIG = (uint8_t)((MOTOR__CONFIG & ~(0x7U << 1)) | (5U << 1));
 }

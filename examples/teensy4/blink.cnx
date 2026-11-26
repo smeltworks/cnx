@@ -163,7 +163,7 @@ scope LED {
     }
     /// Configure LED pin for interrupt on rising edge
     public void configureInterrupt() {
-        global.Teensy4.GPIO7.InterruptConfig1.LED_BUILTIN <- (u8)global.Teensy4.InterruptType.RISING_EDGE;
+        global.Teensy4.GPIO7.InterruptConfig1.LED_BUILTIN <- ((u8)global.Teensy4.InterruptType.RISING_EDGE)[0, 2];
         global.Teensy4.GPIO7.InterruptMaskRegister.LED_BUILTIN <- true;
     }
     /// Clear pending interrupt flag

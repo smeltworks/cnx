@@ -80,6 +80,7 @@ function writeBitmapField(
         layout.width,
         value,
         storage,
+        ctx.plannedBitValue,
       )
     : AssignmentHandlerUtils.storeBits(ctx, target, (read, bits) =>
         BitUtils.multiBitValue(
@@ -88,6 +89,7 @@ function writeBitmapField(
           layout.width,
           bits,
           storage,
+          ctx.plannedBitValue,
         ),
       );
 }

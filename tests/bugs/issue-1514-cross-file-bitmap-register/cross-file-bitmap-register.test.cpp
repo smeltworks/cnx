@@ -60,25 +60,25 @@ void Bus__go(void) {
 
 void Chip__set(void) {
     Chip__R__DR = (uint8_t)((Chip__R__DR & ~(1U << 0)) | (1U << 0));
-    Chip__R__DR = (uint8_t)((Chip__R__DR & ~(0x7FU << 1)) | ((5U & 0x7FU) << 1));
+    Chip__R__DR = (uint8_t)((Chip__R__DR & ~(0x7FU << 1)) | (5U << 1));
 }
 
 int main(void) {
     LREG__RW = (uint8_t)((LREG__RW & ~(1U << 0)) | (1U << 0));
-    LREG__RW = (uint8_t)((LREG__RW & ~(0x7U << 1)) | ((5U & 0x7U) << 1));
+    LREG__RW = (uint8_t)((LREG__RW & ~(0x7U << 1)) | (5U << 1));
     const bool en = ((((LREG__RW >> 0) & 1)) != 0U);
     OWNREG__RW = (uint8_t)((OWNREG__RW & ~(1U << 0)) | (1U << 0));
-    OWNREG__RW = (uint8_t)((OWNREG__RW & ~(0x7U << 1)) | ((5U & 0x7U) << 1));
+    OWNREG__RW = (uint8_t)((OWNREG__RW & ~(0x7U << 1)) | (5U << 1));
     const bool sen = ((((OWNREG__RW >> 0) & 1)) != 0U);
     Dev__go();
     const bool b = Dev__busy();
     Chip__set();
     DREG__D = (uint16_t)((DREG__D & ~(1U << 0)) | (1U << 0));
-    DREG__D = (uint16_t)((DREG__D & ~(0x7FFFU << 1)) | ((3U & 0x7FFFU) << 1));
+    DREG__D = (uint16_t)((DREG__D & ~(0x7FFFU << 1)) | (3U << 1));
     Bus__go();
-    Periph__CTRL__CR = (uint8_t)((Periph__CTRL__CR & ~(0x7U << 1)) | ((2U & 0x7U) << 1));
+    Periph__CTRL__CR = (uint8_t)((Periph__CTRL__CR & ~(0x7U << 1)) | (2U << 1));
     DREG__M = EMode__On;
     if ((en == sen) && (b == true)) {
-        LREG__RW = (uint8_t)((LREG__RW & ~(0xFU << 4)) | ((0U & 0xFU) << 4));
+        LREG__RW = (uint8_t)((LREG__RW & ~(0xFU << 4)) | (0U << 4));
     }
 }

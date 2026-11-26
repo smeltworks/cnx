@@ -3,5 +3,5 @@ u32 BASE <- 7;
 u8 SMALL <- 5;
 
 scope Provider {
-    public u8 CH <- 'C';
+    public u8 CH <- (u8)'C';
 }

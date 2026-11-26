@@ -13,7 +13,7 @@ u32 main(string args[]) {
         }
     }
 
-    u8 whoAmIByte <- args[0][0];
+    u8 whoAmIByte <- (u8)args[0][0];
 
     (void)printf("Hello from %s %s! Your special character is %c\n", args[0], userName, whoAmIByte);
 

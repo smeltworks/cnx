@@ -21,7 +21,7 @@ P S__gp = {};
 
 void S__f(void) {
     gp.bits = (uint8_t)((gp.bits & ~(1U << 3)) | (1U << 3));
-    gp.bits = (uint8_t)((gp.bits & ~(0x3U << 4)) | ((3U & 0x3U) << 4));
+    gp.bits = (uint8_t)((gp.bits & ~(0x3U << 4)) | (3U << 4));
     S__gp.bits = (uint8_t)((S__gp.bits & ~(1U << 1)) | (1U << 1));
 }
 

@@ -14,6 +14,8 @@ interface IHeaderDeclarationRecord {
   readonly structFields: Map<string, Map<string, IStructFieldInfo>>;
   readonly needsStructKeyword: string[];
   readonly enumBitWidth: Map<string, number>;
+  /** #2494 review: the macros this header `#undef`s */
+  readonly undefinedMacros: readonly string[];
   /** The whole table's struct state as it stood once the header was declared */
   readonly structState: TJsonSafe<Required<IStructSymbolState>>;
 }

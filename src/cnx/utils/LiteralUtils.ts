@@ -139,6 +139,26 @@ class LiteralUtils {
   }
 
   /**
+   * The value C reads from an integer literal in a header: hex, binary,
+   * octal (a leading 0, so `010` is 8) or decimal, with any `u`/`l` suffix.
+   * Null for anything else, and for a value a double does not hold exactly.
+   * The one reader for a header's literals (#2484 review).
+   */
+  static cIntegerLiteral(text: string): number | null {
+    const match =
+      /^(?:0[xX]([\da-fA-F]+)|0[bB]([01]+)|(0[0-7]*)|([1-9]\d*))[uUlL]*$/.exec(
+        text.trim(),
+      );
+    if (match === null) return null;
+    let value: number;
+    if (match[1] !== undefined) value = Number.parseInt(match[1], 16);
+    else if (match[2] !== undefined) value = Number.parseInt(match[2], 2);
+    else if (match[3] !== undefined) value = Number.parseInt(match[3], 8);
+    else value = Number.parseInt(match[4], 10);
+    return LiteralUtils.isExactInteger(value) ? value : null;
+  }
+
+  /**
    * ADR-044 "Integer Literals" (owner ruling, 2026-10-03, #1728): whether a
    * decimal literal, with or without its type suffix, has a leading zero.
    * cnx has no octal literal, so 1.2 reports one (E0912), and no reading

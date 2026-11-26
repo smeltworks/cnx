@@ -110,7 +110,7 @@ u8 UART_read(mut UART self) {
 void UART_print(mut UART self, string<64> msg) {
     mut u32 i <- 0;
     while (i < msg.value_char_count) {
-        UART_write(self, msg[i]);
+        UART_write(self, (u8)msg[i]);
         i <- i + 1;
     }
 }

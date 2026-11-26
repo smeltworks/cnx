@@ -102,7 +102,7 @@ uint32_t Counter__writeStructField(void) {
 uint32_t Counter__writeBitRange(void) {
     /* C11 6.2.1p4, C++ [basic.scope.hiding]: `wflags` emitted as `Counter__writeBitRange__wflags` (a plain `wflags` would hide the file-scope `wflags` for the rest of its scope, so `global.wflags` would reach the local). */
     uint8_t Counter__writeBitRange__wflags = 0U;
-    Counter__writeBitRange__wflags = (uint8_t)((Counter__writeBitRange__wflags & ~(0xFU << 0)) | ((3U & 0xFU) << 0));
+    Counter__writeBitRange__wflags = (uint8_t)((Counter__writeBitRange__wflags & ~(0xFU << 0)) | (3U << 0));
     return Counter__writeBitRange__wflags;
 }
 

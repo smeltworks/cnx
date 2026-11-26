@@ -43,7 +43,7 @@ bool Sc__getA(void) {
 }
 
 void viaParam(Holder* h) {
-    h->fls[1] = (uint8_t)((h->fls[1] & ~(0x7U << 2)) | ((3U & 0x7U) << 2));
+    h->fls[1] = (uint8_t)((h->fls[1] & ~(0x7U << 2)) | (3U << 2));
 }
 
 void viaParamArray(Holder hs[2]) {
@@ -54,12 +54,12 @@ uint8_t writeShadow(void) {
     /* C11 6.2.1p4, C++ [basic.scope.hiding]: `shadowed` emitted as `writeShadow__shadowed` (a plain `shadowed` would hide the file-scope `shadowed` for the rest of its scope, so `global.shadowed` would reach the local). */
     Flags writeShadow__shadowed = {0};
     writeShadow__shadowed = (uint8_t)((writeShadow__shadowed & ~(1U << 0)) | (1U << 0));
-    writeShadow__shadowed = (uint8_t)((writeShadow__shadowed & ~(0x7U << 2)) | ((6U & 0x7U) << 2));
+    writeShadow__shadowed = (uint8_t)((writeShadow__shadowed & ~(0x7U << 2)) | (6U << 2));
     return (uint8_t)((writeShadow__shadowed >> 2) & 0x7);
 }
 
 int main(void) {
-    gss[1].fl = (uint8_t)((gss[1].fl & ~(0x7U << 2)) | ((5U & 0x7U) << 2));
+    gss[1].fl = (uint8_t)((gss[1].fl & ~(0x7U << 2)) | (5U << 2));
     if (((gss[1U].fl >> 2) & 0x7) != 5) {
         return 1U;
     }
@@ -90,14 +90,14 @@ int main(void) {
     if (((Sc__pfl >> 0) & 1) != false) {
         return 9U;
     }
-    Sc__ps.fl = (uint8_t)((Sc__ps.fl & ~(0x7U << 2)) | ((2U & 0x7U) << 2));
+    Sc__ps.fl = (uint8_t)((Sc__ps.fl & ~(0x7U << 2)) | (2U << 2));
     if (((Sc__ps.fl >> 2) & 0x7) != 2) {
         return 10U;
     }
     if (((Sc__ps.fl >> 5) & 1) != false) {
         return 11U;
     }
-    Sc__ps.fls[1] = (uint8_t)((Sc__ps.fls[1] & ~(0x7U << 2)) | ((7U & 0x7U) << 2));
+    Sc__ps.fls[1] = (uint8_t)((Sc__ps.fls[1] & ~(0x7U << 2)) | (7U << 2));
     if (((Sc__ps.fls[1U] >> 2) & 0x7) != 7) {
         return 12U;
     }

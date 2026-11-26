@@ -35,7 +35,7 @@ scope Palette {
     u32 favourite <- EColor.RED;
 
     // NEGATIVE CONTROL -- `global.` past the shadow.
-    u32 second <- global.EColor.GREEN;
+    u32 second <- (u32)global.EColor.GREEN;
 }
 
 u32 main() {

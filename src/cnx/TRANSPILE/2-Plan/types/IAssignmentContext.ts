@@ -17,6 +17,7 @@ import type IBitAccessAnalysis from "../../../types/IBitAccessAnalysis";
 import type TPlannedTargetOp from "../../../types/TPlannedTargetOp";
 import type IChainBase from "../../../types/IChainBase";
 import type TranspileState from "../../TranspileState";
+import type TPlannedBitValue from "../../../types/TPlannedBitValue";
 import type TExpression from "../../../types/syntax/TExpression";
 
 /**
@@ -101,6 +102,8 @@ interface IAssignmentContext {
   readonly plannedCompoundCast: string | null;
   /** 2.2's decision: the `uintN_t` a write-only register range is written through, or null */
   readonly plannedRegisterAccess: string | null;
+  /** #2483: 2.2's decision: what a bit write knows of its value's bits, or null */
+  readonly plannedBitValue: TPlannedBitValue | null;
 
   /**
    * The value's essential type, its integer type, and its constant fold.
