@@ -439,8 +439,9 @@ class SwitchStatementCheck {
         return `name:${literal.name}`;
       case "float":
       case "bool":
-      case "char":
         return `value:${literal.text}`;
+      case "char":
+        return `value:${literal.casts.map((cType) => `(${cType})`).join("")}${literal.text}`;
       default: {
         const unhandled: never = literal;
         return unhandled;

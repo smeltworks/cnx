@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import BitUtils from "../BitUtils";
 import type IOperandType from "../../types/IOperandType";
+import type TPostfixOpSyntax from "../../types/syntax/TPostfixOpSyntax";
 
 // ========================================================================
 // boolToInt
@@ -246,6 +247,47 @@ describe("BitUtils.multiBitWrite", () => {
 });
 
 // ========================================================================
+// #2483: a value 2.2 found already within the field is masked once
+// ========================================================================
+describe("BitUtils masks a written value once (#2483)", () => {
+  const op = {} as TPostfixOpSyntax;
+
+  it("writes a literal the field holds as it is", () => {
+    expect(
+      BitUtils.multiBitValue("pl", 1, 3, "5U", "uint16_t", { kind: "fits" }),
+    ).toBe("(uint16_t)((pl & ~(0x7U << 1)) | (5U << 1))");
+  });
+
+  it("widens a literal the field holds to 32-bit storage", () => {
+    expect(
+      BitUtils.multiBitValue("w", 29, 3, "7U", "uint32_t", { kind: "fits" }),
+    ).toBe("(w & ~((uint32_t)0x7U << 29)) | ((uint32_t)7U << 29)");
+  });
+
+  it("masks a bit range at its own width, not the field's", () => {
+    expect(
+      BitUtils.multiBitValue("pl", 1, 3, "(m >> 1U)", "uint16_t", {
+        kind: "range",
+        op,
+        width: 2,
+      }),
+    ).toBe("(uint16_t)((pl & ~(0x7U << 1)) | (((m >> 1U) & 0x3U) << 1))");
+  });
+
+  it("writes a write-only field's literal as it is", () => {
+    expect(
+      BitUtils.writeOnlyMultiBit("R", 4, 2, "3U", "uint8_t", { kind: "fits" }),
+    ).toBe("R = (uint8_t)(3U << 4);");
+  });
+
+  it("masks a value 2.2 knows nothing of at the field's width", () => {
+    expect(BitUtils.multiBitValue("pl", 1, 3, "v", "uint16_t", null)).toBe(
+      "(uint16_t)((pl & ~(0x7U << 1)) | ((v & 0x7U) << 1))",
+    );
+  });
+});
+
+// ========================================================================
 // writeOnlySingleBit
 // ========================================================================
 describe("BitUtils.writeOnlySingleBit", () => {
@@ -354,6 +396,8 @@ describe("BitUtils.storageOf and widthText", () => {
     overflow: null,
     hasSideEffect: false,
     volatileAccess: false,
+    signChosenByCompiler: false,
+    bitWidthUnread: false,
     form: { kind: "declared" },
     binding: null,
   });

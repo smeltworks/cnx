@@ -30,7 +30,10 @@ This guide covers the development workflow for contributing to cnx. We use a bra
 - The cross toolchains the tests compile every fixture with (a Cortex-M and an
   AVR, against newlib and avr-libc). `npm test` stops at its preflight without
   them. The package list is `scripts/cross-toolchain-packages.txt`, which CI
-  installs from too.
+  installs from too, on Ubuntu 24.04. The release matters: 24.04's `gcc-avr`
+  (7.3.0) gives the atmega328p the 4-byte `long double` that
+  `targets/targets.cnx` records, while 26.04's (14.3.0) gives it 8 bytes, so
+  the preflight's data-model probe fails there.
 
 ```bash
 # Install Java (Ubuntu/Debian)

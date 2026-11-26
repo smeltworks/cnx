@@ -1,0 +1,9 @@
+// test-execution
+// test-cpp-only
+// A wrapper the C unit drops still opens its C++ header: the run is C++.
+#include "lib/asks-cpp-config.h"
+#include "lib/asks-cpp-wrap.h"
+
+u32 main() {
+    return 0;
+}

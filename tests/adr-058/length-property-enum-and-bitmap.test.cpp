@@ -22,7 +22,7 @@ int main(void) {
         return 2U;
     }
     Flags f = {};
-    f = (uint16_t)((f & ~(0xFU << 0)) | ((1U & 0xFU) << 0));
+    f = (uint16_t)((f & ~(0xFU << 0)) | (1U << 0));
     if (16 != 16) {
         return 3U;
     }

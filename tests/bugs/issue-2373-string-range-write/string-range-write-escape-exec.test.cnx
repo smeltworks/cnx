@@ -1,0 +1,30 @@
+// test-execution
+// Issue #2373, #2484 review: an octal or hex escape in a literal written to a
+// range of a string<N> is one character with all its digits, as C reads it.
+// s[0, 2] <- "\101\x42" writes 'A' and 'B', not '\1' and '\x'.
+// Each result is checked with its own return code.
+
+mut string<8> s;
+
+u32 main() {
+    s <- "hello";
+    s[0, 2] <- "\101\x42";
+    s[2, 1] <- "\103";
+
+    if (s[0] != 'A') {
+        return 1;
+    }
+    if (s[1] != 'B') {
+        return 2;
+    }
+    if (s[2] != 'C') {
+        return 3;
+    }
+    if (s[3] != 'l') {
+        return 4;
+    }
+    if (s.value_char_count != 5) {
+        return 5;
+    }
+    return 0;
+}

@@ -23,7 +23,7 @@ class Declare {
     const symbolTable = new SymbolTable();
     const headers = Declare._headers(
       parsed.headers,
-      parsed.headerReader,
+      parsed.headerReaders,
       symbolTable,
     );
     Declare._recover(parsed.recovered, symbolTable);
@@ -66,7 +66,7 @@ class Declare {
    */
   private static _headers(
     entries: readonly TParsedHeaderEntry[],
-    reader: string,
+    readers: ReadonlyMap<string, string>,
     table: SymbolTable,
   ): IDeclaredHeaders {
     const declared: IDeclaredHeaders["declared"][number][] = [];
@@ -76,7 +76,7 @@ class Declare {
       try {
         if (entry.kind === "failed") throw entry.error;
         if (entry.kind === "cached") {
-          HeaderDeclarationRecord.restore(entry.record, table);
+          HeaderDeclarationRecord.restore(entry.record, entry.file.path, table);
         } else {
           HeaderDeclarations.declare(entry.parsed, entry.file.path, table);
           declared.push({
@@ -93,7 +93,7 @@ class Declare {
         warnings.push(`Failed to process header ${entry.file.path}: ${err}`);
       }
     }
-    return { declared, warnings, processed, reader };
+    return { declared, warnings, processed, readers };
   }
 
   /**

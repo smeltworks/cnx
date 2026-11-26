@@ -1,3 +1,5 @@
+import type IUnreadBitWidth from "../IUnreadBitWidth";
+
 /**
  * Serialized struct field information for caching.
  * Uses string types instead of TType for JSON serialization.
@@ -12,6 +14,8 @@ interface IStructFieldInfo {
    * expression as written when it is no integer literal (#1975 review)
    */
   bitWidth?: number | string;
+  /** Why 1.4 could not settle a `bitWidth` written as text (#2484 review) */
+  bitWidthUnread?: IUnreadBitWidth;
 }
 
 export default IStructFieldInfo;

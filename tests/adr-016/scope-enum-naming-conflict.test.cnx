@@ -13,7 +13,7 @@ enum EColor {
 // `global.` spelling the diagnostic asks for where something does.
 scope Clear {
     public u32 ok() {
-        return EColor.GREEN;
+        return (u32)EColor.GREEN;
     }
 }
 

@@ -17,7 +17,10 @@ import type IHeaderMacroDump from "./types/IHeaderMacroDump";
 import type IPipelineFile from "../1-Discover/types/IPipelineFile";
 
 class HeaderMacroDumps {
-  /** Every cnx file with a C include, to its dump */
+  /**
+   * Every cnx file with a C include, to its dump, and (#1916) to its includes'
+   * expanded slices from the same run; null when none could be preprocessed
+   */
   static async read(
     files: readonly IPipelineFile[],
     includes: ReadonlyMap<string, IFileIncludes>,
@@ -26,7 +29,10 @@ class HeaderMacroDumps {
       readonly includeSearchPaths: readonly string[];
       readonly defines: Readonly<Record<string, string | boolean>>;
     },
-  ): Promise<ReadonlyMap<string, IHeaderMacroDump>> {
+  ): Promise<{
+    readonly dumps: ReadonlyMap<string, IHeaderMacroDump>;
+    readonly slices: ReadonlyMap<string, ReadonlyMap<string, string> | null>;
+  }> {
     const withIncludes = files.flatMap((file) => {
       const own = includes.get(file.path);
       return own === undefined || own.cHeaderSpecs.length === 0
@@ -35,12 +41,15 @@ class HeaderMacroDumps {
     });
     // Without a preprocessor a macro has no type, as before #1688
     if (!preprocessor?.isAvailable()) {
-      return new Map(
-        withIncludes.map(({ file }) => [
-          file.path,
-          { dump: null, headerFiles: new Set<string>(), complete: false },
-        ]),
-      );
+      return {
+        dumps: new Map(
+          withIncludes.map(({ file }) => [
+            file.path,
+            { dump: null, headerFiles: new Set<string>(), complete: false },
+          ]),
+        ),
+        slices: new Map(),
+      };
     }
     const limit = ConcurrencyLimit.create(availableParallelism());
     const dumps = await Promise.all(
@@ -60,10 +69,13 @@ class HeaderMacroDumps {
           headerFiles: read?.headerFiles ?? new Set<string>(),
           complete: read?.complete === true,
         };
-        return [file.path, dump] as const;
+        return { path: file.path, dump, slices: read?.slices ?? null };
       }),
     );
-    return new Map(dumps);
+    return {
+      dumps: new Map(dumps.map((read) => [read.path, read.dump])),
+      slices: new Map(dumps.map((read) => [read.path, read.slices])),
+    };
   }
 }
 

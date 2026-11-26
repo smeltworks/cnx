@@ -1,0 +1,14 @@
+// test-execution
+// declared-use.h has no conditional: an earlier include's macro writes its
+// declaration, so C reads `extern uint8_t declared[5];`, and so must cnx.
+#include "lib/declare-macro.h"
+#include "lib/declared-use.h"
+
+mut u8[declared.type_element_count] copy;
+
+u32 main() {
+    if (copy.type_element_count != 5) {
+        return 1;
+    }
+    return 0;
+}

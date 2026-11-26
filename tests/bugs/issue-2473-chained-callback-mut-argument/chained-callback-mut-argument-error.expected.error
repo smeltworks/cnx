@@ -1,0 +1,6 @@
+23:23 error[E0915]: cannot pass 'flag' to `mut` parameter 'n' of function 'make().op': it is volatile, and 'make().op' would write it through a plain pointer, so the volatile access would be lost
+       help: Copy it into a `mut` local, pass that, then assign the local back to 'flag' (ADR-071, #2238).
+24:23 error[E0900]: cannot pass read-only 'rdonly' to `mut` parameter 'n' of function 'make().op'
+       help: The callee writes through that parameter, so the argument must be declared `mut` (ADR-071).
+25:23 error[E0915]: cannot pass '5' to `mut` parameter 'n' of function 'make().op': it is not a variable, so the write would be lost
+       help: A `mut` parameter writes its argument (ADR-006); assign the value to a `mut` variable and pass that.

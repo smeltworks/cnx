@@ -45,7 +45,7 @@ int main(void) {
     }
     Sm f = 0;
     Sm g = 0;
-    g = (uint8_t)((g & ~(0xFU << 4)) | ((6U & 0xFU) << 4));
+    g = (uint8_t)((g & ~(0xFU << 4)) | (6U << 4));
     copyFlags(f, g);
     if (((f >> 4) & 0xF) != 6) {
         return 3U;

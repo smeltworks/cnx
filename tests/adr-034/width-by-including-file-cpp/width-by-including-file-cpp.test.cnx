@@ -1,0 +1,17 @@
+// test-execution
+// test-cpp-only
+// test-adr: 034
+// #2484 review: a C++ header's bit-field width is read through the macros of
+// the files that include that header, as a C header's is. side.cnx defines
+// WCPP as 5 but never includes hw.hpp, so `a` is 3 bits.
+#include "hw.hpp"
+#include "side.cnx"
+
+u32 main() {
+    mut HwRegCpp r <- { a: 0 };
+    r.a <- 7;
+    if (r.a != 7) {
+        return 1;
+    }
+    return 0;
+}

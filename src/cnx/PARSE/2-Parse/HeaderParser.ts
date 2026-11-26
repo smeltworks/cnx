@@ -21,6 +21,9 @@ import EHeaderLanguage from "../1-Discover/types/EHeaderLanguage";
 import type IHeaderSource from "../1-Discover/types/IHeaderSource";
 import type TParsedHeader from "./types/TParsedHeader";
 
+/** A `#undef NAME` line (#2494 review) */
+const UNDEF_DIRECTIVE = /^[ \t]*#[ \t]*undef[ \t]+([A-Za-z_]\w*)/gm;
+
 /**
  * Result of parsing a C header
  */
@@ -133,7 +136,12 @@ class HeaderParser {
     }
     // Outside the catch: a lowering bug reaches 1.3's header warning, and is
     // not read as a parse that failed
-    return { syntax: CHeaderLowering.header(unit) };
+    return {
+      syntax: {
+        ...CHeaderLowering.header(unit),
+        undefinedMacros: HeaderParser.undefinedMacros(content),
+      },
+    };
   }
 
   /**
@@ -159,11 +167,21 @@ class HeaderParser {
       lexer.removeErrorListeners();
       parser.removeErrorListeners();
 
-      return { syntax: CppHeaderLowering.header(parser.translationUnit()) };
+      return {
+        syntax: {
+          ...CppHeaderLowering.header(parser.translationUnit()),
+          undefinedMacros: HeaderParser.undefinedMacros(content),
+        },
+      };
     } catch {
       // Return null on parse failure
       return { syntax: null };
     }
+  }
+
+  /** #2494 review: each name a `#undef` line of `content` names */
+  private static undefinedMacros(content: string): string[] {
+    return [...content.matchAll(UNDEF_DIRECTIVE)].map((match) => match[1]);
   }
 }
 

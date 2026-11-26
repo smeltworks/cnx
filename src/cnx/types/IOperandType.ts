@@ -1,3 +1,4 @@
+import type IUnreadBitWidth from "./IUnreadBitWidth";
 import type TEssentialCategory from "./TEssentialCategory";
 import type TOverflowBehavior from "./TOverflowBehavior";
 import type TValueBinding from "./TValueBinding";
@@ -112,6 +113,18 @@ interface IOperandType {
    * through a field, a scope member and a call's result. Absent otherwise
    */
   readonly unreadHeaderType?: true;
+  /**
+   * A header bit-field whose type says neither `signed` nor `unsigned`, so
+   * the C compiler chooses whether it is signed (ADR-072 ruling 20)
+   */
+  readonly signChosenByCompiler: boolean;
+  /**
+   * A header bit-field whose width cnx cannot read, `f : sizeof(int)`, so it
+   * has no range a value could be judged by (#2494)
+   */
+  readonly bitWidthUnread: boolean;
+  /** Why, when `bitWidthUnread` (#2484 review) */
+  readonly bitWidthUnreadWhy?: IUnreadBitWidth;
   readonly form: TOperandForm;
   /** For a name-rooted operand, what the root name binds to */
   readonly binding: TValueBinding | null;

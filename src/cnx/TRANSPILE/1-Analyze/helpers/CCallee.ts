@@ -1,4 +1,5 @@
 import OperandTyper from "../../../utils/OperandTyper";
+import CallReach from "../../../utils/CallReach";
 import ForeignTypeFacts from "../../../utils/ForeignTypeFacts";
 import TypedefParamParser from "../../../utils/TypedefParamParser";
 import type TExpression from "../../../types/syntax/TExpression";
@@ -20,6 +21,9 @@ class CCallee {
     if (expr.kind !== "postfix") return null;
     const call = expr.ops.at(-1);
     if (call?.kind !== "call") return null;
+    if (CCallee.callsMemberTemplate(expr, call.arguments.length, context)) {
+      return null;
+    }
     for (const name of CCallee.namesOf(expr, context)) {
       if (context.program.symbolByCName(name)?.kind === "function") {
         return null;
@@ -40,16 +44,34 @@ class CCallee {
   }
 
   /**
-   * The signatures a call with this many arguments can reach. A C++ compiler
-   * picks among an overload set; each of them is one it may pick.
+   * The C callee of the call at `callAt` in a chain: `of` reads the call a
+   * chain ends with, so it is asked about the chain through that call (#2473)
+   */
+  static ofCallAt(
+    chain: TPostfix,
+    callAt: number,
+    context: IAnalysisContext,
+  ): ICCallee | null {
+    return CCallee.of(
+      { ...chain, ops: chain.ops.slice(0, callAt + 1) },
+      context,
+    );
+  }
+
+  /**
+   * The recorded signatures a call with this many arguments can reach. A C++
+   * compiler picks among an overload set; each of them is one it may pick.
+   * It takes every parameter without a default argument, and no more than
+   * it declares unless it is variadic -- `()` in C included. None: no
+   * recorded overload takes the call, and nothing is judged.
    */
   static reachable(callee: ICCallee): readonly ICCalleeSignature[] {
-    if (callee.signatures.length === 1) return callee.signatures;
-    const count = callee.arguments.length;
-    return callee.signatures.filter(
-      (signature) =>
-        signature.parameters.length === count ||
-        (signature.isVariadic && count >= signature.parameters.length),
+    return callee.signatures.filter((signature) =>
+      CallReach.takes(
+        signature.parameters,
+        signature.isVariadic,
+        callee.arguments.length,
+      ),
     );
   }
 
@@ -71,6 +93,32 @@ class CCallee {
     // it from the class and the method alone, so the first one's is all of
     // theirs; only the parameters differ.
     return context.symbolTable.getCppMembers(typeName, method)[0]?.name ?? null;
+  }
+
+  /**
+   * #2473 review: a method call a member template of its class can take.
+   * 1.3 declares no overload for the template, so what the call reaches is
+   * not known, and nothing about it is judged. A template that cannot take
+   * the call's arguments leaves it to the method's declared overloads.
+   */
+  private static callsMemberTemplate(
+    expr: TPostfix,
+    count: number,
+    context: IAnalysisContext,
+  ): boolean {
+    const method = expr.ops.at(-2);
+    if (method?.kind !== "member") return false;
+    const typeName = OperandTyper.directTypeName(
+      OperandTyper.typeOf({ ...expr, ops: expr.ops.slice(0, -2) }, context),
+    );
+    if (typeName === null) return false;
+    const owner = context.symbolTable.getCppSymbol(typeName);
+    if (owner?.kind !== "class") return false;
+    return (owner.templateMethods ?? []).some(
+      (template) =>
+        template.name === method.name &&
+        CallReach.takes(template.parameters, template.isVariadic, count),
+    );
   }
 
   private static namesOf(expr: TPostfix, context: IAnalysisContext): string[] {
@@ -116,16 +164,19 @@ class CCallee {
           {
             parameters: symbol.parameters,
             isVariadic: symbol.isVariadic === true,
+            returnType: symbol.type ?? null,
           },
         ];
       }
     }
+    // A C++ method declared `()` takes no arguments, and records none
     return context.symbolTable.getCppOverloads(name).flatMap((symbol) =>
-      symbol.kind === "function" && symbol.parameters
+      symbol.kind === "function"
         ? [
             {
-              parameters: symbol.parameters,
+              parameters: symbol.parameters ?? [],
               isVariadic: symbol.isVariadic === true,
+              returnType: symbol.type ?? null,
             },
           ]
         : [],
@@ -197,6 +248,7 @@ class CCallee {
     return {
       name: typeName,
       signature: {
+        returnType: parsed.returnType,
         parameters: declared.map((param, index) => ({
           name: `${index + 1}`,
           // The text up to the last `*` (`uint8_t*buf` is how the grammar
@@ -208,8 +260,9 @@ class CCallee {
           isArray: false,
         })),
         isVariadic:
-          declared.length !== parsed.params.length &&
-          parsed.params.some((param) => param.baseType === "..."),
+          parsed.isUnprototyped === true ||
+          (declared.length !== parsed.params.length &&
+            parsed.params.some((param) => param.baseType === "...")),
       },
     };
   }

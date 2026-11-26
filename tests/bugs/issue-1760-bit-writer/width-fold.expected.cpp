@@ -28,7 +28,7 @@ int main(void) {
         return 1U;
     }
     uint32_t y = 0U;
-    y = (y & ~((uint32_t)0xFFFFFFFFU << 0)) | ((7U & (uint32_t)0xFFFFFFFFU) << 0);
+    y = (y & ~((uint32_t)0xFFFFFFFFU << 0)) | ((uint32_t)7U << 0);
     if (y != 7) {
         return 2U;
     }

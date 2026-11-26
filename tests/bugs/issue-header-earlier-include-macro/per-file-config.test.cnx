@@ -1,0 +1,19 @@
+// test-execution
+// This file's compile reads log-sink.h without NO_LOG, so it declares
+// `log_sink[6]`. quiet-log.cnx includes no-log-config.h first and its own
+// compile reads nothing there; that reading must not empty this file's.
+#include "lib/log-sink.h"
+#include "quiet-log.cnx"
+
+mut u8[log_sink.type_element_count] copy;
+
+u32 main() {
+    if (copy.type_element_count != 6) {
+        return 1;
+    }
+    u8 level <- quiet_level();
+    if (level != 0) {
+        return 2;
+    }
+    return 0;
+}

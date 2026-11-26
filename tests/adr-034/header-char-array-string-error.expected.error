@@ -1,0 +1,4 @@
+16:27 error[E0864]: String literal (3 chars) and its terminator exceed char[3]
+       help: Widen the header's array to char[4], or shorten the value.
+17:27 error[E0864]: String literal (9 chars) and its terminator exceed char[8]
+       help: Widen the header's array to char[10], or shorten the value.
