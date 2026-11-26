@@ -8,6 +8,22 @@ struct Packet {
     string<16> name;
 }
 
+mut u32 calls <- 0;
+
+string<4> counted() {
+    calls +<- 1;
+    return "k";
+}
+
+u32 bump() {
+    calls +<- 1;
+    return 0;
+}
+
+bool isAbcd(string<16> s) {
+    return s = "abcd";
+}
+
 u32 lengthOf(string<16> s) {
     return s.value_char_count;
 }
@@ -76,6 +92,26 @@ u32 main() {
     string<16> r2 <- pick(no, a, b);
     if (r2 != "r") {
         return 10;
+    }
+
+    // A built arm's calls run only when it is chosen
+    string<16> v <- (yes = 1) ? a : counted() + b;
+    if (v != "ab" || calls != 0) {
+        return 11;
+    }
+    string<16> v2 <- (no = 1) ? a : counted() + b;
+    if (v2 != "kcd" || calls != 1) {
+        return 12;
+    }
+
+    // A built ternary in a short-circuit operand is built only when it runs
+    bool skipped <- (no = 1) && isAbcd((yes = 1) ? a[bump(), 2] : "x");
+    if (skipped = true || calls != 1) {
+        return 13;
+    }
+    bool taken <- (yes = 1) && isAbcd((yes = 1) ? a + b : counted());
+    if (taken = false || calls != 1) {
+        return 14;
     }
 
     return 0;

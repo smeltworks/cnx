@@ -716,15 +716,17 @@ class FilePlanner {
     readonly copiesString: boolean;
   } {
     const stringFields = stringCopies.fields;
+    const typing = this.state.typingContext();
     const buildsApart = (expr: TExpression): boolean =>
       ExpressionNodes.direct(expr).some(
         (node) =>
           (node.kind === "structInitializer" &&
             (structInitializers.get(node) === "cppClass" ||
               node.fields.some((field) => stringFields.has(field.value)))) ||
-          ExpressionShape.headOf(node).ops.some((op) => bufferCalls.has(op)),
+          ExpressionShape.headOf(node).ops.some((op) => bufferCalls.has(op)) ||
+          (node.kind === "ternary" &&
+            this.builtStringTernary(node, stringWrites, typing) !== null),
       );
-    const typing = this.state.typingContext();
     const retested = new Set(
       FilePlanner.forUpdates(program).flatMap((head) =>
         ExpressionNodes.direct(head),

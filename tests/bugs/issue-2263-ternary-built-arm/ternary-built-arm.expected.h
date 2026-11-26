@@ -7,6 +7,7 @@
  */
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -17,7 +18,13 @@ typedef struct Packet {
     char name[17];
 } Packet;
 
+/* External variables */
+extern uint32_t calls;
+
 /* Function prototypes */
+void counted(char cnx_return[5]);
+uint32_t bump(void);
+bool isAbcd(const char* s);
 uint32_t lengthOf(const char* s);
 void pick(char cnx_return[17], const uint8_t flag, const char* a, const char* b);
 
