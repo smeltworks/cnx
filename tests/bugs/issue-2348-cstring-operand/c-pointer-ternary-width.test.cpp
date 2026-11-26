@@ -77,7 +77,7 @@ int main(void) {
     }
     const uint64_t count = 2ULL;
     /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
-    uint64_t cnx_tmp5;
+    float cnx_tmp5;
     if (pick == 1) {
         cnx_tmp5 = ((count) & 0xFFFFFFFFFFFFFFFFU);
     } else {
