@@ -27,6 +27,7 @@
 
 import OperandTyper from "../../utils/OperandTyper";
 import CCallee from "./helpers/CCallee";
+import FunctionReference from "./helpers/FunctionReference";
 import CArgumentWrite from "./helpers/CArgumentWrite";
 import WrittenBinding from "./helpers/WrittenBinding";
 import BoundDeclaration from "./helpers/BoundDeclaration";
@@ -57,12 +58,24 @@ class CPointerArgumentCheck {
 
   /** A call to a C (or C++) function, and nothing after it (`CCallee`) */
   public checkExpression(expr: TExpression): void {
-    const callee = CCallee.of(expr, this.context);
-    if (callee === null) return;
+    if (expr.kind !== "postfix") return;
+    // Each call in a chain reaches its own callee (`get_pair(p).a`, #2473)
+    const scopePath = OperandTyper.scopePathAt(expr.span, this.context);
+    for (const chainCall of FunctionReference.callsIn(
+      expr,
+      scopePath,
+      this.context,
+    )) {
+      if (chainCall.cCallee !== null) this.checkCall(chainCall.cCallee);
+    }
+  }
+
+  private checkCall(callee: ICCallee): void {
     this.rejectsFormatNotLiteral(callee);
     const lost = this.rejectsLostWrites(callee);
-    const only =
-      callee.signatures.length === 1 ? callee.signatures[0] : undefined;
+    // The one overload this call can reach, by the rule E0708 and E0899 read
+    const reached = CCallee.reachable(callee);
+    const only = reached.length === 1 ? reached[0] : undefined;
     callee.arguments.forEach((arg, index) => {
       if (lost.has(index)) return;
       const parameter = only?.parameters[index];
@@ -277,7 +290,10 @@ class CPointerArgumentAnalyzer {
     if (typed?.form.kind !== "declared" || typed.typeName === null) {
       return null;
     }
-    if (typed.stringCapacity !== null) return "char";
+    // A sized string, or main's unsized `string args[]` element, is char's
+    if (typed.stringCapacity !== null || typed.typeName === "string") {
+      return "char";
+    }
     // ADR-046: a C string is the pointer to char itself (#2348)
     if (typed.typeName === "cstring") return "char";
     return CNX_TO_C_TYPE_MAP[typed.typeName] ?? typed.typeName;

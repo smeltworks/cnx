@@ -1,0 +1,8 @@
+11:23 warning[E0896]: cnx cannot see how 'writer_t' uses parameter 1, so passing 'out' to it is not memory safe
+       help: Consider converting 'writer_t' to cnx.
+12:13 warning[E0896]: cnx cannot see how 'make_ops' uses parameter 1, so passing 'seed' to it is not memory safe
+       help: Consider converting 'make_ops' to cnx.
+12:21 warning[E0896]: cnx cannot see how 'writer_t' uses parameter 1, so passing 'out' to it is not memory safe
+       help: Consider converting 'writer_t' to cnx.
+11:13 error[E0900]: 'rdonly' is read-only uint32_t, and parameter 1 of 'make_ops' is a pointer 'make_ops' may write through
+       help: Declare 'rdonly' `mut`, or declare the C parameter const uint32_t*.

@@ -30,6 +30,8 @@ interface ITypedefParseResult {
   returnType: string;
   /** Parsed parameters */
   params: ITypedefParam[];
+  /** Declared `()`: C takes any arguments, where `(void)` takes none */
+  isUnprototyped?: boolean;
 }
 
 /**
@@ -114,7 +116,7 @@ class TypedefParamParser {
 
     // Handle void or empty params
     if (!paramsStr || paramsStr === "void") {
-      return { returnType, params: [] };
+      return { returnType, params: [], isUnprototyped: !paramsStr };
     }
 
     // Split by comma, handling nested parentheses
