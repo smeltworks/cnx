@@ -74,6 +74,12 @@ const UNREADABLE: THeaderMacro = { kind: "unreadable" };
 const CHARACTER: THeaderMacro = { kind: "character" };
 
 /** A read through one expansion's tokens */
+/** Why an expansion stopped, where a name stopped it */
+interface IExpansionFailure {
+  undefinedName: string | null;
+  declaredName: string | null;
+}
+
 interface IValueReader {
   readonly tokens: readonly TMacroToken[];
   next: number;
@@ -139,13 +145,15 @@ class HeaderMacros {
    * `1 + 2` or `MODE_BITS` -- read as C reads it, its macros expanded as
    * text through the bodies of each file that defines every macro the text
    * names. Where cnx cannot read it, two files' macros give it two values,
-   * its value depends on the target's `int` width, or it reads a macro a
-   * header `#undef`s, why it cannot
+   * its value depends on the target's `int` width, it reads a macro a
+   * header `#undef`s, or a macro named like a header declaration, why it
+   * cannot
    */
   static width(
     text: string,
     readers: readonly IMacroReader[],
     undefinedNames: ReadonlySet<string>,
+    declaredNames: ReadonlySet<string>,
   ): number | IUnreadBitWidth {
     const tokens = HeaderMacros.tokens(text);
     const names = tokens.flatMap((token) =>
@@ -160,16 +168,22 @@ class HeaderMacros {
           );
     const readings: { file: string; value: number }[] = [];
     for (const reader of files) {
-      const failure = { undefinedName: null as string | null };
+      const failure: IExpansionFailure = {
+        undefinedName: null,
+        declaredName: null,
+      };
       const expanded = HeaderMacros.expanded(
         tokens,
         reader.bodies,
         new Set(),
-        undefinedNames,
+        { undefinedNames, declaredNames },
         failure,
       );
       if (failure.undefinedName !== null) {
         return UnreadBitWidth.undefinedMacro(failure.undefinedName);
+      }
+      if (failure.declaredName !== null) {
+        return UnreadBitWidth.declaredMacro(failure.declaredName);
       }
       const values = INT_BITS.map((bits) =>
         expanded === null
@@ -202,19 +216,24 @@ class HeaderMacros {
    * #2494 review: tokens with each macro replaced by its body, as the
    * preprocessor substitutes text -- so `W * 2` with `#define W 1 + 2` is
    * `1 + 2 * 2`, 5, as C reads it, not 6. Null for a cycle, or an expansion
-   * past `MAX_EXPANSION` tokens, or a name in `undefinedNames`; a name no macro
-   * defines stays a name.
+   * past `MAX_EXPANSION` tokens, or a name in `undefinedNames`, or a macro a
+   * header also declares (#2510 review: after `enum { N = 3 }; t[N];`, a
+   * later `#define N 8` is in the dump though C read the enumerator); a name
+   * no macro defines stays a name.
    */
   private static expanded(
     tokens: readonly TMacroToken[],
     bodies: ReadonlyMap<string, string>,
     expanding: ReadonlySet<string>,
-    undefinedNames: ReadonlySet<string>,
-    failure: { undefinedName: string | null },
+    names: {
+      readonly undefinedNames: ReadonlySet<string>;
+      readonly declaredNames: ReadonlySet<string>;
+    },
+    failure: IExpansionFailure,
   ): TMacroToken[] | null {
     const out: TMacroToken[] = [];
     for (const token of tokens) {
-      if (token.kind === "name" && undefinedNames.has(token.name)) {
+      if (token.kind === "name" && names.undefinedNames.has(token.name)) {
         failure.undefinedName = token.name;
         return null;
       }
@@ -223,12 +242,16 @@ class HeaderMacros {
         out.push(token);
         continue;
       }
+      if (names.declaredNames.has(token.name)) {
+        failure.declaredName = token.name;
+        return null;
+      }
       if (expanding.has(token.name)) return null;
       const inner = HeaderMacros.expanded(
         HeaderMacros.tokens(body),
         bodies,
         new Set([...expanding, token.name]),
-        undefinedNames,
+        names,
         failure,
       );
       if (inner === null) return null;
@@ -309,10 +332,8 @@ class HeaderMacros {
       tokens,
       bodies,
       new Set(),
-      new Set(),
-      {
-        undefinedName: null,
-      },
+      { undefinedNames: new Set(), declaredNames: new Set() },
+      { undefinedName: null, declaredName: null },
     );
     // #2484 review: `(A && B)` is a Boolean, and so is a macro that expands
     // to one (`#define ALIAS READY`); `(2 + (A && B))` is not

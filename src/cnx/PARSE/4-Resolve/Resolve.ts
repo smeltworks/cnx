@@ -52,6 +52,12 @@ class Resolve {
     // #2494: a bit-field's width is read once, as C reads it, before any
     // field is typed from the table -- through the macros of the files that
     // include the struct's header, which are the files whose C reads it
+    // #2510 review: every name a header declares, which a macro of the same
+    // name may not stand for
+    const declaredNames = new Set([
+      ...table.getAllCSymbols().map((symbol) => symbol.name),
+      ...table.getAllCppSymbols().map((symbol) => symbol.unqualifiedName),
+    ]);
     table.settleBitFieldWidths((text, structName) => {
       const header =
         table.getCSymbol(structName)?.sourceFile ??
@@ -59,7 +65,12 @@ class Resolve {
       const including = macroReaders.filter(
         (reader) => header !== undefined && reader.headerFiles.has(header),
       );
-      return HeaderMacros.width(text, including, table.undefinedMacros());
+      return HeaderMacros.width(
+        text,
+        including,
+        table.undefinedMacros(),
+        declaredNames,
+      );
     });
     // A header array's macro dimension, `table[SENSOR_COUNT]`, is read the
     // same way, as C reads it: through the macros of the files that include
@@ -72,6 +83,7 @@ class Resolve {
         text,
         including,
         table.undefinedMacros(),
+        declaredNames,
       );
       return typeof count === "number" && count > 0 ? count : null;
     });

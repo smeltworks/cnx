@@ -29,6 +29,17 @@ class UnreadBitWidth {
     };
   }
 
+  /**
+   * #2510 review: a macro named like a header declaration -- C reads the
+   * declaration where the macro is defined later, and the dump holds the macro
+   */
+  static declaredMacro(name: string): IUnreadBitWidth {
+    return {
+      why: `it reads ${name}, which a header both declares and defines as a macro, and cnx cannot tell which one C read here`,
+      help: `Give the macro a name no header declares, or write the width as an integer constant (ADR-034).`,
+    };
+  }
+
   /** A value that depends on the target's `int` width */
   static intWidth(): IUnreadBitWidth {
     return {

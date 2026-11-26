@@ -1,0 +1,11 @@
+// test-error
+// shadowed.h sizes shadowed with an enumerator, SHADOW_COUNT, then defines a
+// macro of the same name. C read the enumerator, 3; cnx's macro dump holds
+// only the macro, 8, so it does not guess: shadowed has no length here.
+#include "lib/shadowed.h"
+
+mut u8[shadowed.type_element_count] copy;
+
+void main() {
+    copy[0] <- 1;
+}
