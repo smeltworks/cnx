@@ -417,13 +417,28 @@ class NullCheckWalk {
   private whileStatement(
     statement: Extract<TStatement, { kind: "while" }>,
   ): void {
-    const check = NullCheckWalk.nullCheckIn(statement.condition);
-    this.expression(statement.condition);
-    // The body of `while (c_var != NULL)` has the variable checked
-    if (check?.isNotNull) {
-      this.updateVariableState(check.varName, NullCheckState.CheckedNotNull);
+    this.loop(statement.condition, () => this.statement(statement.body));
+  }
+
+  /**
+   * The body of `while (c_var != NULL)` has the variable checked, and the
+   * loop leaves when it is null: past the loop it is as it was before
+   */
+  private loop(condition: TExpression | null, body: () => void): void {
+    const check =
+      condition === null ? null : NullCheckWalk.nullCheckIn(condition);
+    if (condition !== null) this.expression(condition);
+    const checked = check?.isNotNull
+      ? this.lookupVariable(check.varName)
+      : null;
+    const before = checked?.state;
+    if (checked) {
+      this.updateVariableState(checked.name, NullCheckState.CheckedNotNull);
     }
-    this.statement(statement.body);
+    body();
+    if (checked && before !== undefined) {
+      this.updateVariableState(checked.name, before);
+    }
   }
 
   /**
@@ -432,16 +447,10 @@ class NullCheckWalk {
    */
   private forStatement(loop: Extract<TStatement, { kind: "for" }>): void {
     if (loop.init !== null) this.statement(loop.init);
-    const check =
-      loop.condition === null
-        ? null
-        : NullCheckWalk.nullCheckIn(loop.condition);
-    if (loop.condition !== null) this.expression(loop.condition);
-    if (check?.isNotNull) {
-      this.updateVariableState(check.varName, NullCheckState.CheckedNotNull);
-    }
-    this.statement(loop.body);
-    if (loop.update !== null) this.assignmentSite(loop.update);
+    this.loop(loop.condition, () => {
+      this.statement(loop.body);
+      if (loop.update !== null) this.assignmentSite(loop.update);
+    });
   }
 
   private assignmentSite(assignment: IAssignmentSyntax): void {
