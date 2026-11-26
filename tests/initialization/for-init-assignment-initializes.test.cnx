@@ -1,0 +1,26 @@
+// test-execution
+// #2034: a for init runs once, before the condition, so the variable it
+// assigns is initialized in the loop and after it -- in a loop whose body
+// never runs too. A string is assigned the same way (#2234).
+u32 main() {
+    mut u32 i;
+    for (i <- 0; i < 3; i +<- 1) {}
+    if (i != 3) {
+        return 1;
+    }
+
+    mut u32 j;
+    for (j <- 7; j < 3; j +<- 1) {}
+    if (j != 7) {
+        return 2;
+    }
+
+    mut string<8> s;
+    mut u8 n <- 0;
+    for (s <- "ab"; n < 2; n +<- 1) {}
+    if (s != "ab") {
+        return 3;
+    }
+
+    return 0;
+}

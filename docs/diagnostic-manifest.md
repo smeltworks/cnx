@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1038 fixture(s) assert a diagnostic; 1024 carry a code.
+1042 fixture(s) assert a diagnostic; 1028 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -959,6 +959,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-2240-substring-constant-length/substring-runtime-length-error.test.cnx                   | E0922                             |
 | tests/bugs/issue-2251-bitmap-field-bit-index/field-bit-index-wo-zero-error.test.cnx                       | E0872                             |
 | tests/bugs/issue-2254-volatile-not-inlined/volatile-dimension-error.test.cnx                              | E0909                             |
+| tests/bugs/issue-2263-ternary-built-arm/ternary-arm-overflow-error.test.cnx                               | E0864                             |
 | tests/bugs/issue-2332-short-circuit-built-initializer/loop-condition-nested-call-error.test.cnx           | E0702                             |
 | tests/bugs/issue-2341-included-scope-type-bare-use/no-scope-type.test.cnx                                 | E0426                             |
 | tests/bugs/issue-2354-bool-bit-index/bool-bit-index-error.test.cnx                                        | E0856                             |
@@ -1022,8 +1023,11 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/initialization/compound-assign-all-ops.test.cnx                                                     | E0381                             |
 | tests/initialization/compound-assign-struct-field.test.cnx                                                | E0381                             |
 | tests/initialization/compound-assign-use-before-init.test.cnx                                             | E0381                             |
+| tests/initialization/for-init-reads-uninit-error.test.cnx                                                 | E0381                             |
+| tests/initialization/for-update-compound-uninit-error.test.cnx                                            | E0381                             |
 | tests/initialization/if-else-branches.test.cnx                                                            | E0381                             |
 | tests/initialization/partial-branch-init-error.test.cnx                                                   | E0381                             |
+| tests/initialization/self-read-assignment-error.test.cnx                                                  | E0381                             |
 | tests/initialization/use-before-init.test.cnx                                                             | E0381                             |
 | tests/null-check/e0908-basic.test.cnx                                                                     | E0908                             |
 | tests/null-check/e0908-reassignment.test.cnx                                                              | E0908                             |

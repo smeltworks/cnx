@@ -1,0 +1,12 @@
+// test-error
+// #2034: a for init's value is read before its target is written, so an
+// uninitialized variable it reads is E0381, declared init or assigned.
+void reads() {
+    u32 n;
+    for (u32 i <- n; i < 3; i +<- 1) {}
+}
+
+void readsItself() {
+    mut u32 k;
+    for (k <- k + 1; k < 3; k +<- 1) {}
+}

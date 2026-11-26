@@ -184,9 +184,11 @@ for (mut u32 i <- 0; i < 10; i +<- 1) {
 }
 // A header clause is one expression, so it cannot hold an assignment that is
 // more than one statement (E0715): a slice write, any write to an atomic,
-// or a bit write on a float. A string copy is E0715 too (#2234). Assign
-// before the loop, or at the end of its body as a while loop.
-// for (name <- "x"; i < 10; i +<- 1) { }   // ERROR E0715: a string copy
+// or a bit write on a float, or a string built from its parts. Assign
+// before the loop, or at the end of its body as a while loop. A string
+// copied whole is one call, so a header holds it (#2234).
+// for (name <- "x"; i < 10; i +<- 1) { }       // OK: a copy
+// for (name <- a + b; i < 10; i +<- 1) { }     // ERROR E0715: a build
 
 // Do-while (condition must be boolean comparison)
 mut u8 byte;

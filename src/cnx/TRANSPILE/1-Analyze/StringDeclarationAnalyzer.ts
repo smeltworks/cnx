@@ -191,6 +191,14 @@ class StringDeclarationCheck {
     write: TWrite,
     declaredAt: ISourceSite | undefined,
   ): void {
+    // #2263: a ternary writes one arm or the other, so each arm must fit
+    const unwrapped = StringValueForm.unwrapped(value);
+    if (unwrapped.kind === "ternary") {
+      for (const arm of [unwrapped.whenTrue, unwrapped.whenFalse]) {
+        this.checkFit(arm, capacity, write, declaredAt);
+      }
+      return;
+    }
     const form = StringValueForm.of(value, this.context);
     const parts =
       form.kind === "concat"

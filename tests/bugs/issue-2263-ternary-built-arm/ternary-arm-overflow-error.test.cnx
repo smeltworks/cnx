@@ -1,0 +1,10 @@
+// test-error
+// #2263: a ternary writes one arm or the other, so each arm is checked
+// against the capacity it is written into -- a concatenation arm that may
+// not fit is E0864, in either arm.
+void fits(u8 flag) {
+    string<4> a <- "ab";
+    string<4> b <- "cd";
+    string<4> t <- (flag = 1) ? a + b : "x";
+    string<4> u <- (flag = 1) ? "x" : a + b;
+}

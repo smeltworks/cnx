@@ -510,6 +510,19 @@ class CodeGenWalker {
     invariant(declaration !== null, "a buffer ternary has a buffer");
     const indent = FormatUtils.indent(1);
     const fill = (arm: TExpression): string[] => {
+      const form = this.filePlan.stringValueForms.get(arm);
+      if (
+        planned.type.kind === "string" &&
+        (form?.kind === "concat" || form?.kind === "substring")
+      ) {
+        // #2263: a concatenation or a substring arm is built in the buffer
+        const capacity = planned.type.capacity;
+        return StringUtils.build(
+          temp,
+          capacity,
+          this.renderStringParts(form),
+        ).map((line) => indent + line);
+      }
       const call = ExpressionShape.postfixView(arm)?.ops.at(-1);
       const inPlace =
         call !== undefined && FilePlanner.fillsInPlace(arm, planned.calls);

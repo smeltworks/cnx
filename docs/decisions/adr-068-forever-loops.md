@@ -361,12 +361,12 @@ statement is (#1647), so the header gets ADR-044's clamp and MISRA C:2012
 Rule 7.2's suffix as a statement does. But a header clause is a C
 **expression**, and four assignment forms lower to more than one statement:
 
-| form in a header                                   | lowers to                                                                  |
-| -------------------------------------------------- | -------------------------------------------------------------------------- |
-| a string target (`s <- "x"`, `p.name <- "x"`)      | a bounded copy, after a build for a concatenation or a substring (ADR-045) |
-| a slice (`buf[offset, length] <- v`)               | per-element writes, and a source temp (ADR-052, #1081)                     |
-| any write to an `atomic` target (`<-` or compound) | an LDREX/STREX loop or a PRIMASK critical section (ADR-049 Q4, Q7)         |
-| a bit index or bit range on a float target         | a write through a `union` of the float and its bits (ADR-007)              |
+| form in a header                                   | lowers to                                                          |
+| -------------------------------------------------- | ------------------------------------------------------------------ |
+| a string built from its parts (`s <- a + b`)       | a bounded copy into a temp, then an append per part (ADR-045)      |
+| a slice (`buf[offset, length] <- v`)               | per-element writes, and a source temp (ADR-052, #1081)             |
+| any write to an `atomic` target (`<-` or compound) | an LDREX/STREX loop or a PRIMASK critical section (ADR-049 Q4, Q7) |
+| a bit index or bit range on a float target         | a write through a `union` of the float and its bits (ADR-007)      |
 
 Before #1647 the header concatenated target, operator and value, so each form
 emitted C that either failed to compile (`s = "abc"`, `f[31] = true`) or
@@ -378,7 +378,7 @@ that holds it. The help says where the assignment goes instead, which differs
 by clause:
 
 ```
-error[E0715]: a for-loop header cannot hold this assignment: a string copy, which ADR-068 keeps out of a header (#2234)
+error[E0715]: a for-loop header cannot hold this assignment: a string built from its parts is more than one statement
   help: assign before the loop and leave the init clause empty
 error[E0715]: a for-loop header cannot hold this assignment: a slice write is more than one statement
   help: assign at the end of the loop body and write it as a while loop
@@ -387,6 +387,16 @@ error[E0715]: a for-loop header cannot hold this assignment: a slice write is mo
 Moving an update to the end of the body is exact: ADR-026 rejects `continue`,
 so nothing can skip it.
 
+- **Strings (#2234, 2026-11-25):** a string copied whole -- a literal, a
+  string, or a ternary between two -- is one `cnx_string_copy` call since
+  #2207, so a header holds it, at any target (`s`, `p.name`, `names[i]`). A
+  string built from its parts is still E0715: a concatenation, a substring, or
+  a ternary with either as an arm (#2263 builds that arm into a buffer before
+  the `if`). Fixture: `tests/adr-068/for-header-string-copy.test.cnx`.
+- **Initialization (#2034, #1726):** a header assignment is the assignment a
+  statement is for E0381 and E0901 too. The init runs once before the
+  condition, so its target is initialized in the loop and after it; the update
+  runs after the body, so the body cannot rely on it.
 - **Scope:** the form is the rule, not how many statements it currently lowers
   to. A one-element slice happens to lower to one write today. It is rejected
   anyway, so the rule never depends on the slice's element arithmetic.

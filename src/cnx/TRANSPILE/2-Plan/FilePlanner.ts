@@ -697,7 +697,11 @@ class FilePlanner {
       TExpressionOf<"structInitializer">,
       TStructInitializerForm
     >,
-    stringFields: ReadonlyMap<TExpression, number>,
+    stringCopies: {
+      readonly fields: ReadonlyMap<TExpression, number>;
+      readonly forms: Map<TExpression, TStringValueForm>;
+    },
+    stringWrites: ReadonlyMap<TExpression, number>,
     bufferCalls: ReadonlyMap<TPostfixOpSyntax, TType>,
     expectedTypes: ReadonlyMap<TExpression, IPlannedExpectedType>,
     cTypes: Set<string>,
@@ -710,6 +714,7 @@ class FilePlanner {
     /** A string ternary's arm other than a call is copied into its buffer */
     readonly copiesString: boolean;
   } {
+    const stringFields = stringCopies.fields;
     const buildsApart = (expr: TExpression): boolean =>
       ExpressionNodes.direct(expr).some(
         (node) =>
@@ -718,6 +723,7 @@ class FilePlanner {
               node.fields.some((field) => stringFields.has(field.value)))) ||
           ExpressionShape.headOf(node).ops.some((op) => bufferCalls.has(op)),
       );
+    const typing = this.state.typingContext();
     const retested = new Set(
       FilePlanner.forUpdates(program).flatMap((head) =>
         ExpressionNodes.direct(head),
@@ -736,10 +742,17 @@ class FilePlanner {
           if (buildsApart(operand)) operands.add(operand);
         }
       }
-      if (
-        expr.kind === "ternary" &&
-        (buildsApart(expr.whenTrue) || buildsApart(expr.whenFalse))
-      ) {
+      if (expr.kind !== "ternary") continue;
+      const built = this.builtStringTernary(expr, stringWrites, typing);
+      if (built !== null) {
+        for (const arm of [expr.whenTrue, expr.whenFalse]) {
+          stringCopies.forms.set(arm, StringValueForm.of(arm, typing));
+        }
+        ternaries.set(expr, built);
+        copiesString = true;
+        continue;
+      }
+      if (buildsApart(expr.whenTrue) || buildsApart(expr.whenFalse)) {
         const buffer = this.bufferTernary(expr, bufferCalls);
         if (buffer !== null) {
           ternaries.set(expr, buffer);
@@ -792,6 +805,61 @@ class FilePlanner {
       type = { ...type, capacity: Math.max(type.capacity, capacity) };
     }
     return { kind: "buffer", type, calls };
+  }
+
+  /**
+   * #2263: a ternary written whole into a `string<N>` with an arm that is a
+   * concatenation or a substring fills one buffer of the write's capacity,
+   * as #1209's call arms do: the built arm is built into it from its parts,
+   * the other copied in. As one C expression, neither arm is a string.
+   */
+  private builtStringTernary(
+    expr: TExpressionOf<"ternary">,
+    stringWrites: ReadonlyMap<TExpression, number>,
+    typing: ITypingContext,
+  ): Extract<TPlannedLazyTernary, { kind: "buffer" }> | null {
+    const capacity = stringWrites.get(expr);
+    if (capacity === undefined || !StringValueForm.isBuilt(expr, typing)) {
+      return null;
+    }
+    return {
+      kind: "buffer",
+      type: { kind: "string", capacity },
+      calls: new Set(),
+    };
+  }
+
+  /**
+   * The capacity of each value written whole into a `string<N>`, unwrapped
+   * of its parentheses: an assignment's, a declaration's initializer, and an
+   * argument, field or return (`StringWriteSites`)
+   */
+  private static stringWriteCapacities(
+    program: IProgramSyntax,
+    valuePositions: IValuePositions | null,
+    stringCopies: {
+      readonly copies: ReadonlyMap<IAssignmentSyntax, number>;
+    },
+  ): ReadonlyMap<TExpression, number> {
+    const capacities = new Map<TExpression, number>();
+    const add = (value: TExpression, capacity: number): void => {
+      capacities.set(StringValueForm.unwrapped(value), capacity);
+    };
+    for (const [site, capacity] of stringCopies.copies)
+      add(site.value, capacity);
+    for (const { declaration } of VariableDeclarations.ruled(program)) {
+      const type = declaration.type;
+      if (declaration.initializer === null || type.kind !== "string") continue;
+      if (type.capacity !== null) {
+        add(declaration.initializer, Number.parseInt(type.capacity, 10));
+      }
+    }
+    if (valuePositions !== null) {
+      for (const { value, capacity } of StringWriteSites.of(valuePositions)) {
+        add(value, capacity);
+      }
+    }
+    return capacities;
   }
 
   /** #1209: the arm is one of a buffer ternary's calls, filling it in place */
@@ -1706,7 +1774,8 @@ class FilePlanner {
       program,
       unwritten,
       structInitializers,
-      stringCopies.fields,
+      stringCopies,
+      FilePlanner.stringWriteCapacities(program, valuePositions, stringCopies),
       bufferCalls,
       expectedTypes,
       decidedCTypes,
@@ -2778,7 +2847,8 @@ class FilePlanner {
     cTypes: Set<string>,
   ): {
     readonly copies: ReadonlyMap<IAssignmentSyntax, number>;
-    readonly forms: ReadonlyMap<TExpression, TStringValueForm>;
+    /** #2263: 2.2's lazy ternaries add the forms of their built arms */
+    readonly forms: Map<TExpression, TStringValueForm>;
     readonly arguments: ReadonlyMap<TExpression, number>;
     readonly fields: ReadonlyMap<TExpression, number>;
     readonly returns: ReadonlyMap<TExpression, number>;

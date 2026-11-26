@@ -63,7 +63,7 @@ class StringValueForm {
     };
   }
 
-  private static unwrapped(value: TExpression): TExpression {
+  static unwrapped(value: TExpression): TExpression {
     return value.kind === "parenthesized"
       ? StringValueForm.unwrapped(value.expression)
       : value;

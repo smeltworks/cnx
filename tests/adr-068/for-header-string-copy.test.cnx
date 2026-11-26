@@ -38,8 +38,7 @@ u32 main() {
         return 4;
     }
 
-    // a struct field target (initialized first: a header write is not yet an
-    // initialization, #2034)
+    // a struct field target
     mut Packet p <- {name: ""};
     n <- 0;
     for (p.name <- "fld"; n < 2; p.name <- "end") {

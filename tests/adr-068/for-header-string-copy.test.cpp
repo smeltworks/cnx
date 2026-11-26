@@ -64,7 +64,7 @@ int main(void) {
         return 3U;
     }
     n = 0U;
-    for (cnx_string_copy(s, other, 8U); n < 2; cnx_string_copy(s, (n > 1) ? other : "q", 8U)) {
+    for (cnx_string_copy(s, other, 8U); n < 2; cnx_string_copy(s, (n < 2) ? other : "q", 8U)) {
         n = cnx_clamp_add_u8(n, 1U);
     }
     if (strcmp(s, "q") != 0) {
