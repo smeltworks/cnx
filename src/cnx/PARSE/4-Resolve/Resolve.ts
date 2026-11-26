@@ -61,6 +61,20 @@ class Resolve {
       );
       return HeaderMacros.width(text, including, table.undefinedMacros());
     });
+    // A header array's macro dimension, `table[SENSOR_COUNT]`, is read the
+    // same way, as C reads it: through the macros of the files that include
+    // the array's header, and not at all from a macro a header `#undef`s
+    table.settleArrayDimensions((text, header) => {
+      const including = macroReaders.filter((reader) =>
+        reader.headerFiles.has(header),
+      );
+      const count = HeaderMacros.width(
+        text,
+        including,
+        table.undefinedMacros(),
+      );
+      return typeof count === "number" && count > 0 ? count : null;
+    });
     const program = Program.build(
       declared.map((entry) => entry.fileSymbols),
       {

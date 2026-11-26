@@ -776,6 +776,70 @@ class SymbolTable implements IResolvedSymbols {
   }
 
   /**
+   * A header array's dimension written with its header's macros,
+   * `table[SENSOR_COUNT]`, settled once to the count C reads, the way
+   * `settleBitFieldWidths` settles a width: `countOf` answers for the
+   * dimension's text and the header that declares it, or null where cnx
+   * cannot read it, and then the text stays for C to fold.
+   */
+  settleArrayDimensions(
+    countOf: (text: string, header: string) => number | null,
+  ): void {
+    const settle = (
+      dimensions: ReadonlyArray<number | string>,
+      header: string,
+    ): ReadonlyArray<number | string> => {
+      if (!dimensions.some((d) => typeof d === "string" && d !== "")) {
+        return dimensions;
+      }
+      return dimensions.map((d) =>
+        typeof d === "string" && d !== "" ? (countOf(d, header) ?? d) : d,
+      );
+    };
+    const replaced = new Map<TCSymbol | TCppSymbol, TCSymbol | TCppSymbol>();
+    const settled = <T extends TCSymbol | TCppSymbol>(symbol: T): T => {
+      const known = replaced.get(symbol);
+      if (known !== undefined) return known as T;
+      let next: T = symbol;
+      if (
+        (symbol.kind === "variable" || symbol.kind === "type") &&
+        "arrayDimensions" in symbol &&
+        symbol.arrayDimensions !== undefined
+      ) {
+        const dimensions = settle(symbol.arrayDimensions, symbol.sourceFile);
+        if (dimensions !== symbol.arrayDimensions) {
+          next = { ...symbol, arrayDimensions: dimensions };
+        }
+      }
+      replaced.set(symbol, next);
+      return next;
+    };
+    for (const index of [this.cSymbols, this.cSymbolsByFile]) {
+      for (const list of index.values()) {
+        list.forEach((symbol, i) => (list[i] = settled(symbol)));
+      }
+    }
+    for (const index of [this.cppSymbols, this.cppSymbolsByFile]) {
+      for (const list of index.values()) {
+        list.forEach((symbol, i) => (list[i] = settled(symbol)));
+      }
+    }
+    for (const [structName, fields] of this.structFields) {
+      const header =
+        this.getCSymbol(structName)?.sourceFile ??
+        this.getCppSymbol(structName)?.sourceFile;
+      if (header === undefined) continue;
+      for (const [name, info] of fields) {
+        if (info.arrayDimensions === undefined) continue;
+        const dimensions = settle(info.arrayDimensions, header);
+        if (dimensions !== info.arrayDimensions) {
+          fields.set(name, { ...info, arrayDimensions: [...dimensions] });
+        }
+      }
+    }
+  }
+
+  /**
    * #2494: each bit-field width written as an expression, `1 + 2` or
    * `MODE_BITS`, settled to the number C reads, where cnx can read it
    */

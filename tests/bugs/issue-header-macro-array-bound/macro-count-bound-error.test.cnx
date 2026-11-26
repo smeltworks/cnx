@@ -1,0 +1,7 @@
+// test-error
+// table is SENSOR_COUNT (3) elements, so a constant index of 3 is past its end.
+#include "lib/counted.h"
+
+void main() {
+    table[3] <- 1;
+}

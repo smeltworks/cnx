@@ -1,0 +1,27 @@
+// test-execution
+// A header array sized by a header macro has the count C reads: table is
+// SENSOR_COUNT (3), pairs (SENSOR_COUNT * 2) (6), and frame.data
+// SENSOR_COUNT + 1 (4). Each sizes a cnx array, and table's last element is
+// written through a constant index.
+#include "lib/counted.h"
+
+mut u8[table.type_element_count] tableCopy;
+mut u8[pairs.type_element_count] pairsCopy;
+mut u8[frame.data.type_element_count] dataCopy;
+
+u32 main() {
+    if (tableCopy.type_element_count != 3) {
+        return 1;
+    }
+    if (pairsCopy.type_element_count != 6) {
+        return 2;
+    }
+    if (dataCopy.type_element_count != 4) {
+        return 3;
+    }
+    table[2] <- 7;
+    if (table[2] != 7) {
+        return 4;
+    }
+    return 0;
+}
