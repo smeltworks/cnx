@@ -242,12 +242,28 @@ class HeaderSources {
         (path) => index.get(HeaderSources._keyOf(path, real)) ?? [],
       ),
     );
-    const openedBy = (readings: readonly TReadings[], i: number): boolean => {
-      const key = HeaderSources._keyOf(headers[i].path, real);
-      return (
-        direct.has(i) ||
-        slices.has(key) ||
-        readings.some((readingsOfUnit) => readingsOfUnit.has(key))
+    const keyAt = (i: number): string =>
+      HeaderSources._keyOf(headers[i].path, real);
+    const parents = new Map<string, number[]>();
+    for (const j of counted) {
+      for (const path of alone[j].source === null ? [] : alone[j].entered) {
+        const key = HeaderSources._keyOf(path, real);
+        parents.set(key, [...(parents.get(key) ?? []), j]);
+      }
+    }
+    // A unit that failed on an include drops it (#985), so a header its unit
+    // never read still opens what its own preprocessing opened
+    const openedBy = (
+      readings: readonly TReadings[],
+      i: number,
+      seen: Set<number> = new Set(),
+    ): boolean => {
+      const inUnit = (j: number): boolean =>
+        readings.some((readingsOfUnit) => readingsOfUnit.has(keyAt(j)));
+      if (direct.has(i) || slices.has(keyAt(i)) || inUnit(i)) return true;
+      seen.add(i);
+      return (parents.get(keyAt(i)) ?? []).some(
+        (j) => !seen.has(j) && !inUnit(j) && openedBy(readings, j, seen),
       );
     };
     const cRead = cReadings.size > 0;
@@ -266,13 +282,15 @@ class HeaderSources {
         [...counted].some((i) => {
           const header = alone[i];
           if (header.source === null) return false;
+          // what a header the unit read opened is in the unit's reading
+          const unitRead = cRead && cReadings.has(keyAt(i));
           const own = LineMarkers.byFile(header.preprocessed);
           return [...header.entered].some((path) => {
             const key = HeaderSources._keyOf(path, real);
             // a .hpp spelling is C++ even when the file is a walked .h (#211);
             // a file only preprocessing opened is judged on the text C meets
             return (
-              (!cRead || cReadings.has(key)) &&
+              (!unitRead || cReadings.has(key)) &&
               (!index.has(key) || FileKinds.of(path) === EFileType.CppHeader) &&
               isCpp(
                 FileKinds.of(path),
