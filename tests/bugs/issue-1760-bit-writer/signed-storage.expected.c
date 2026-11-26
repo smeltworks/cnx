@@ -12,22 +12,22 @@
 // its type at every width. An `i32` or `i64` target took none.
 int main(void) {
     int8_t a = -1;
-    a = (int8_t)((a & ~(0xFU << 0)) | ((0U & 0xFU) << 0));
+    a = (int8_t)((a & ~(0xFU << 0)) | (0U << 0));
     if (a != -16) {
         return 1U;
     }
     int16_t b = -1;
-    b = (int16_t)((b & ~(0xFU << 0)) | ((0U & 0xFU) << 0));
+    b = (int16_t)((b & ~(0xFU << 0)) | (0U << 0));
     if (b != -16) {
         return 2U;
     }
     int32_t c = -1;
-    c = (int32_t)((c & ~((uint32_t)0xFU << 0)) | ((0U & (uint32_t)0xFU) << 0));
+    c = (int32_t)((c & ~((uint32_t)0xFU << 0)) | ((uint32_t)0U << 0));
     if (c != -16) {
         return 3U;
     }
     int64_t d = -1;
-    d = (int64_t)((d & ~((uint64_t)0xFU << 0)) | ((0U & (uint64_t)0xFU) << 0));
+    d = (int64_t)((d & ~((uint64_t)0xFU << 0)) | ((uint64_t)0U << 0));
     if (d != -16) {
         return 4U;
     }

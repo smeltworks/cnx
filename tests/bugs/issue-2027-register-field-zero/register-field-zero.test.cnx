@@ -47,7 +47,7 @@ scope Drive {
 
 void go() {
     GPIO.DR_SET.LED <- false;
-    GPIO.DR_SET.LED <- 0x0;
+    GPIO.DR_SET.LED <- false;
     GPIO.DR_SET.LED <- OFF;
     GPIO.STATUS.LED <- false;
     GPIO.SET.LED <- false;

@@ -11,15 +11,16 @@
 // test-execution
 // test-adr: 034
 // #2249: a ternary written to one bit is one operand of the bit's
-// conversion, so `f.A <- (a > b) ? a : b` sets A and nothing else. It was
-// spliced in unparenthesized, so C read `(a > b) ? a : (b ? 1U : 0U)` and
-// ORed `a` into the bitmap. The integer bit write is the second case.
+// conversion, so `w[0] <- (a > b) ? a : b` sets bit 0 and nothing else. It
+// was spliced in unparenthesized, so C read `(a > b) ? a : (b ? 1U : 0U)` and
+// ORed `a` into the value. A one-bit field takes only a bool (ADR-024), so
+// its case writes Boolean arms.
 F f = {0};
 
 uint8_t w = 0;
 
 void go(const uint8_t a, const uint8_t b) {
-    f = (uint8_t)((f & ~(1U << 0)) | ((((a > b) ? a : b) ? 1U : 0U) << 0));
+    f = (uint8_t)((f & ~(1U << 0)) | ((((a > b) ? (a != 0) : (b != 0)) ? 1U : 0U) << 0));
     w = (uint8_t)((w & ~(1U << 0)) | ((((a > b) ? a : b) ? 1U : 0U) << 0));
 }
 

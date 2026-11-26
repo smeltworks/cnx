@@ -76,7 +76,7 @@ class Declare {
       try {
         if (entry.kind === "failed") throw entry.error;
         if (entry.kind === "cached") {
-          HeaderDeclarationRecord.restore(entry.record, table);
+          HeaderDeclarationRecord.restore(entry.record, entry.file.path, table);
         } else {
           HeaderDeclarations.declare(entry.parsed, entry.file.path, table);
           declared.push({

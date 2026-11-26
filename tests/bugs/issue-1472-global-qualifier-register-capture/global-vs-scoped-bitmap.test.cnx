@@ -48,6 +48,6 @@ scope Chip {
 }
 
 void main() {
-    Chip.CTRL.GLOBAL_STATUS.Ready <- 1;
-    Chip.CTRL.LOCAL_STATUS.Busy <- 1;
+    Chip.CTRL.GLOBAL_STATUS.Ready <- true;
+    Chip.CTRL.LOCAL_STATUS.Busy <- true;
 }

@@ -10,6 +10,10 @@
  * headers and the compiler's builtins: one definition per name, the one C
  * sees.
  */
+import UnreadBitWidth from "../../utils/UnreadBitWidth";
+import type IUnreadBitWidth from "../../types/IUnreadBitWidth";
+import type IMacroReader from "./types/IMacroReader";
+import LiteralUtils from "../../utils/LiteralUtils";
 import TARGET_DESCRIPTION_FIELDS from "../2-Parse/TARGET_DESCRIPTION_FIELDS";
 import type THeaderMacro from "../../types/THeaderMacro";
 
@@ -33,8 +37,10 @@ const OBJECT_LIKE_DEFINE =
 
 const FLOATING_LITERAL = String.raw`0[xX][0-9a-fA-F]*\.?[0-9a-fA-F]*[pP][+-]?\d+[fFlL]?|(?:\d+\.\d*|\.\d+)(?:[eE][+-]?\d+)?[fFlL]?|\d+[eE][+-]?\d+[fFlL]?`;
 const INTEGER_LITERAL = String.raw`0[xX][0-9a-fA-F]+[uUlL]*|0[bB][01]+[uUlL]*|\d+[uUlL]*`;
-/** The operators an integer expansion may hold: arithmetic and bitwise */
-const INTEGER_OPERATOR = "<<|>>|[-+*/%&|^~]";
+/** The operators an integer expansion may hold: logical, arithmetic and bitwise */
+const INTEGER_OPERATOR = String.raw`&&|\|\||<<|>>|[-+*/%&|^~]`;
+/** `&&` and `||`: an expansion whose outermost operator is one is a Boolean */
+const LOGICAL_OPERATORS: readonly string[] = ["&&", "||"];
 /** A character constant, `'A'` or `'\\n'`; a prefixed one (`L'A'`) is not read */
 const CHARACTER_LITERAL = String.raw`'(?:\\.|[^'\\])+'`;
 
@@ -46,6 +52,8 @@ const MACRO_TOKEN = new RegExp(
 
 /** C's binary operators an integer expansion may hold, loosest first */
 const BINARY_PRECEDENCE: readonly (readonly string[])[] = [
+  ["||"],
+  ["&&"],
   ["|"],
   ["^"],
   ["&"],
@@ -58,6 +66,9 @@ const BINARY_PRECEDENCE: readonly (readonly string[])[] = [
  * width, since a step past the target's `INT_MAX` is what its C gets wrong.
  */
 const INT_BITS: readonly number[] = TARGET_DESCRIPTION_FIELDS.int_bits.allowed!;
+
+/** The most tokens a macro's expansion is read to (#2494 review) */
+const MAX_EXPANSION = 4096;
 
 const UNREADABLE: THeaderMacro = { kind: "unreadable" };
 const CHARACTER: THeaderMacro = { kind: "character" };
@@ -123,12 +134,122 @@ class HeaderMacros {
     return [...dump.matchAll(ANY_DEFINE)].map((match) => match[1]);
   }
 
-  /** Every object-like macro a `-dM` dump defines, by name */
-  static collect(dump: string): ReadonlyMap<string, THeaderMacro> {
+  /**
+   * #2494: a C integer constant expression's value -- a bit-field's width,
+   * `1 + 2` or `MODE_BITS` -- read as C reads it, its macros expanded as
+   * text through the bodies of each file that defines every macro the text
+   * names. Where cnx cannot read it, two files' macros give it two values,
+   * its value depends on the target's `int` width, or it reads a macro a
+   * header `#undef`s, why it cannot
+   */
+  static width(
+    text: string,
+    readers: readonly IMacroReader[],
+    undefinedNames: ReadonlySet<string>,
+  ): number | IUnreadBitWidth {
+    const tokens = HeaderMacros.tokens(text);
+    const names = tokens.flatMap((token) =>
+      token.kind === "name" ? [token.name] : [],
+    );
+    // A file whose includes define none of its macros does not read it
+    const files =
+      names.length === 0
+        ? [{ file: "", bodies: new Map<string, string>() }]
+        : readers.filter((reader) =>
+            names.every((name) => reader.bodies.has(name)),
+          );
+    const readings: { file: string; value: number }[] = [];
+    for (const reader of files) {
+      const failure = { undefinedName: null as string | null };
+      const expanded = HeaderMacros.expanded(
+        tokens,
+        reader.bodies,
+        new Set(),
+        undefinedNames,
+        failure,
+      );
+      if (failure.undefinedName !== null) {
+        return UnreadBitWidth.undefinedMacro(failure.undefinedName);
+      }
+      const values = INT_BITS.map((bits) =>
+        expanded === null
+          ? null
+          : HeaderMacros.valueOf(expanded, 2 ** (bits - 1) - 1, () => null),
+      );
+      const value = values[0];
+      if (values.every((each) => each === null)) {
+        return UnreadBitWidth.unreadable();
+      }
+      if (value === null || values.some((each) => each !== value)) {
+        return UnreadBitWidth.intWidth();
+      }
+      readings.push({ file: reader.file, value });
+    }
+    if (readings.length > 0) {
+      const other = readings.find(
+        (reading) => reading.value !== readings[0].value,
+      );
+      return other === undefined
+        ? readings[0].value
+        : UnreadBitWidth.files(names, readings[0], other);
+    }
+    return readers.length === 0
+      ? UnreadBitWidth.unreadMacros(names)
+      : UnreadBitWidth.unreadable();
+  }
+
+  /**
+   * #2494 review: tokens with each macro replaced by its body, as the
+   * preprocessor substitutes text -- so `W * 2` with `#define W 1 + 2` is
+   * `1 + 2 * 2`, 5, as C reads it, not 6. Null for a cycle, or an expansion
+   * past `MAX_EXPANSION` tokens, or a name in `undefinedNames`; a name no macro
+   * defines stays a name.
+   */
+  private static expanded(
+    tokens: readonly TMacroToken[],
+    bodies: ReadonlyMap<string, string>,
+    expanding: ReadonlySet<string>,
+    undefinedNames: ReadonlySet<string>,
+    failure: { undefinedName: string | null },
+  ): TMacroToken[] | null {
+    const out: TMacroToken[] = [];
+    for (const token of tokens) {
+      if (token.kind === "name" && undefinedNames.has(token.name)) {
+        failure.undefinedName = token.name;
+        return null;
+      }
+      const body = token.kind === "name" ? bodies.get(token.name) : undefined;
+      if (token.kind !== "name" || body === undefined) {
+        out.push(token);
+        continue;
+      }
+      if (expanding.has(token.name)) return null;
+      const inner = HeaderMacros.expanded(
+        HeaderMacros.tokens(body),
+        bodies,
+        new Set([...expanding, token.name]),
+        undefinedNames,
+        failure,
+      );
+      if (inner === null) return null;
+      out.push(...inner);
+      if (out.length > MAX_EXPANSION) return null;
+    }
+    return out;
+  }
+
+  /** Every object-like macro a `-dM` dump defines, by name, to its body */
+  static bodies(dump: string): ReadonlyMap<string, string> {
     const bodies = new Map<string, string>();
     for (const match of dump.matchAll(OBJECT_LIKE_DEFINE)) {
       bodies.set(match[1], (match[2] ?? "").trim());
     }
+    return bodies;
+  }
+
+  /** Every object-like macro a `-dM` dump defines, by name */
+  static collect(dump: string): ReadonlyMap<string, THeaderMacro> {
+    const bodies = HeaderMacros.bodies(dump);
     const typed = new Map<string, THeaderMacro>();
     for (const name of bodies.keys()) {
       HeaderMacros.typeOf(name, bodies, typed, new Set());
@@ -183,10 +304,23 @@ class HeaderMacros {
     if (kinds.some((kind) => kind.kind === "character")) {
       return kinds.length === 1 ? CHARACTER : UNREADABLE;
     }
+    // #2494 review: its macros as text, so precedence is the expansion's
+    const expanded = HeaderMacros.expanded(
+      tokens,
+      bodies,
+      new Set(),
+      new Set(),
+      {
+        undefinedName: null,
+      },
+    );
+    // #2484 review: `(A && B)` is a Boolean, and so is a macro that expands
+    // to one (`#define ALIAS READY`); `(2 + (A && B))` is not
+    const isBoolean = HeaderMacros.outermostIsLogical(expanded ?? tokens);
     const floating = kinds.flatMap((kind) =>
       kind.kind === "floating" ? [kind.typeName] : [],
     );
-    if (floating.length > 0) {
+    if (floating.length > 0 && !isBoolean) {
       return {
         kind: "floating",
         typeName: HeaderMacros.usualFloating(floating),
@@ -194,18 +328,41 @@ class HeaderMacros {
     }
     return {
       kind: "integer",
+      ...(isBoolean && { isBoolean }),
       valueByIntBits: new Map(
         INT_BITS.map((bits) => [
           bits,
-          HeaderMacros.valueOf(tokens, 2 ** (bits - 1) - 1, (name) => {
-            const macro = typed.get(name);
-            return macro?.kind === "integer"
-              ? (macro.valueByIntBits.get(bits) ?? null)
-              : null;
-          }),
+          expanded === null
+            ? null
+            : HeaderMacros.valueOf(expanded, 2 ** (bits - 1) - 1, () => null),
         ]),
       ),
     };
+  }
+
+  /**
+   * Whether a `&&` or `||` sits outside every parenthesis the whole
+   * expansion is not wrapped in: the operator C applies last, as both bind
+   * looser than every operator an integer expansion holds.
+   */
+  private static outermostIsLogical(tokens: readonly TMacroToken[]): boolean {
+    let depth = 0;
+    const depths: { readonly token: TMacroToken; readonly depth: number }[] =
+      [];
+    for (const token of tokens) {
+      if (token.kind === "paren") {
+        depth += token.text === "(" ? 1 : -1;
+        continue;
+      }
+      depths.push({ token, depth });
+    }
+    const outermost = Math.min(...depths.map((each) => each.depth));
+    return depths.some(
+      (each) =>
+        each.depth === outermost &&
+        each.token.kind === "operator" &&
+        LOGICAL_OPERATORS.includes(each.token.text),
+    );
   }
 
   /**
@@ -283,6 +440,10 @@ class HeaderMacros {
 
   private static apply(operator: string, left: number, right: number): number {
     switch (operator) {
+      case "||":
+        return left !== 0 || right !== 0 ? 1 : 0;
+      case "&&":
+        return left !== 0 && right !== 0 ? 1 : 0;
       case "|":
         return left | right;
       case "^":
@@ -312,17 +473,9 @@ class HeaderMacros {
       : null;
   }
 
-  /** An integer literal's value: hex, binary, octal (a leading 0) or decimal */
+  /** An integer literal's value as C reads it; NaN for one it cannot read */
   private static literalValue(literal: string): number {
-    let end = literal.length;
-    while ("uUlL".includes(literal[end - 1])) end--;
-    const digits = literal.slice(0, end);
-    if (/^0[xX]/.test(digits)) return Number.parseInt(digits.slice(2), 16);
-    if (/^0[bB]/.test(digits)) return Number.parseInt(digits.slice(2), 2);
-    if (/^0\d/.test(digits)) {
-      return /^0[0-7]+$/.test(digits) ? Number.parseInt(digits, 8) : Number.NaN;
-    }
-    return Number(digits);
+    return LiteralUtils.cIntegerLiteral(literal) ?? Number.NaN;
   }
 
   private static tokens(body: string): TMacroToken[] {

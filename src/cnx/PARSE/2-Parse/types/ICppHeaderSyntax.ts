@@ -6,6 +6,11 @@ import type TCppDeclarationSyntax from "./TCppDeclarationSyntax";
  */
 interface ICppHeaderSyntax {
   readonly declarations: readonly TCppDeclarationSyntax[];
+  /**
+   * #2494 review: every macro the header `#undef`s, so one could mean two
+   * things at two points of the header
+   */
+  readonly undefinedMacros: readonly string[];
 }
 
 export default ICppHeaderSyntax;

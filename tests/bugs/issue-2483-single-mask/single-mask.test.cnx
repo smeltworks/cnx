@@ -1,0 +1,77 @@
+// test-execution
+// test-adr: 034
+// Tests: a bit range or a literal written to a bitmap field or a bit range is masked once (#2483)
+
+bitmap16 F {
+    A,
+    Mode[3],
+    Rest[12]
+}
+bitmap32 W {
+    Low[29],
+    Top[3]
+}
+
+mut F pl;
+mut W wd;
+
+u32 main() {
+    u8 m <- 0xFD;
+    u16 h <- 0xABCD;
+    mut u16 w <- 0xFFFF;
+
+    pl.Rest <- 0xFFF;
+    pl.A <- true;
+    pl.Mode <- m[0, 3];
+    if (pl.Mode != 5) {
+        return 1;
+    }
+    if (pl.Rest != 0xFFF) {
+        return 2;
+    }
+    if (pl.A != true) {
+        return 3;
+    }
+
+    pl.Mode <- h[2, 3];
+    if (pl.Mode != 3) {
+        return 4;
+    }
+
+    pl.Mode <- m[1, 2];
+    if (pl.Mode != 2) {
+        return 5;
+    }
+    if (pl.Rest != 0xFFF) {
+        return 6;
+    }
+
+    pl.Mode <- 6;
+    if (pl.Mode != 6) {
+        return 7;
+    }
+
+    wd.Low <- 0x1FFFFFFF;
+    wd.Top <- m[0, 3];
+    if (wd.Top != 5) {
+        return 8;
+    }
+    if (wd.Low != 0x1FFFFFFF) {
+        return 9;
+    }
+    wd.Top <- 7;
+    if (wd.Top != 7) {
+        return 10;
+    }
+
+    w[4, 3] <- m[0, 3];
+    if (w != 0xFFDF) {
+        return 11;
+    }
+    w[4, 3] <- 0;
+    if (w != 0xFF8F) {
+        return 12;
+    }
+
+    return 0;
+}

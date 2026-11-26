@@ -508,6 +508,8 @@ bitmap8 MotorFlags {
 mut MotorFlags flags <- 0;
 flags.Running <- true;          // Set single bit
 flags.Mode <- 5;                // Set multi-bit field (0-7)
+u8 requested <- 6;
+flags.Mode <- requested[0, 3];  // A u8 is wider than 3 bits: name the bits (E0869 otherwise)
 bool isRunning <- flags.Running;
 u8 mode <- flags.Mode;
 

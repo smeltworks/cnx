@@ -47,6 +47,7 @@ import EnumTypeSafetyAnalyzer from "./EnumTypeSafetyAnalyzer";
 import ScopeAccessAnalyzer from "./ScopeAccessAnalyzer";
 import RegisterInstanceAnalyzer from "./RegisterInstanceAnalyzer";
 import RegisterAccessAnalyzer from "./RegisterAccessAnalyzer";
+import BitFieldRangeAnalyzer from "./BitFieldRangeAnalyzer";
 import BracedBodyAnalyzer from "./BracedBodyAnalyzer";
 import RedeclarationAnalyzer from "./RedeclarationAnalyzer";
 import BareEnumMemberAnalyzer from "./BareEnumMemberAnalyzer";
@@ -288,6 +289,16 @@ function runAnalyzers(
       // type rather than every use of it.
       label: "undefined value references (#1353)",
       run: () => new UndeclaredValueAnalyzer(context).analyze(parsed.program),
+    },
+    {
+      // ADR-072 ruling 20, #2494: before every rule that judges a value by
+      // its range, since such a bit-field has no range to judge it by
+      label:
+        "header bit-fields with no range cnx knows (ADR-034, E0944, E0946)",
+      run: () =>
+        new BitFieldRangeAnalyzer(context, positions().positions).analyze(
+          parsed.program,
+        ),
     },
     {
       label: "call analysis (ADR-030: define-before-use)",

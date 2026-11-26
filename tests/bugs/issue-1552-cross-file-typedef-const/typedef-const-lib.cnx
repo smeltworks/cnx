@@ -35,7 +35,7 @@ void mutate(mut Sample s) {
 // disagreed with its own prototype in a single file, `(char*)` against
 // `(const char*)`, at transpile exit 0.
 void describeLocal(string<8> label) {
-    witness <- label[0];
+    witness <- (u8)label[0];
 }
 
 struct LocalHandlers {

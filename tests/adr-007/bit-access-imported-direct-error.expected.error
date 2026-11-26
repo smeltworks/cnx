@@ -6,7 +6,7 @@
        help: Reading a float's bits copies it through a union (a pointer cast would break MISRA C:2012 Rule 11.3), and a copy is a statement -- there is none at file scope. Read it inside a function.
 17:22 error[E0856]: too many subscripts on 'sharedFlags': it is a scalar 'u8', so it allows at most 1
        help: 0 for the array dimensions plus one optional bit index (ADR-036/ADR-007). Indexing further indexes a value that is not an array. Did you mean the bit range 'sharedFlags[start, width]'?
-18:24 error[E0920]: Bit index out of range in 'sharedFlags[0, 9]': bit range [0, 9] ends at bit 8, but the value has 8 bits (0-7)
+18:23 error[E0920]: Bit index out of range in 'sharedFlags[0, 9]': bit range [0, 9] ends at bit 8, but the value has 8 bits (0-7)
        help: A bit index counts within the indexed value's own bits: its declared type's, or a bitmap field's (ADR-007, ADR-034). Index a wider value, or a bit that exists.
 19:23 error[E0888]: Float bits 'sharedFloat[8, 8]' cannot be read at file scope
        help: Reading a float's bits copies it through a union (a pointer cast would break MISRA C:2012 Rule 11.3), and a copy is a statement -- there is none at file scope. Read it inside a function.

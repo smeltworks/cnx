@@ -17,10 +17,10 @@ uint8_t xwitness = 0U;
 
 // Callback-compatible via the OTHER file. Must NOT get auto-const.
 void xOnLog(char* msg) {
-    xwitness = msg[0U];
+    xwitness = static_cast<uint8_t>(msg[0U]);
 }
 
 // Never wired anywhere. Must get auto-const -- the control for this file.
 void xPlainRead(const char* text) {
-    xwitness = text[0U];
+    xwitness = static_cast<uint8_t>(text[0U]);
 }

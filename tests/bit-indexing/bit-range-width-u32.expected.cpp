@@ -16,157 +16,157 @@ int main(void) {
         return 1U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0x3U << 0)) | ((3U & (uint32_t)0x3U) << 0);
+    value = (value & ~((uint32_t)0x3U << 0)) | ((uint32_t)3U << 0);
     if (value != 0x00000003) {
         return 2U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0x7U << 0)) | ((7U & (uint32_t)0x7U) << 0);
+    value = (value & ~((uint32_t)0x7U << 0)) | ((uint32_t)7U << 0);
     if (value != 0x00000007) {
         return 3U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0xFU << 0)) | ((15U & (uint32_t)0xFU) << 0);
+    value = (value & ~((uint32_t)0xFU << 0)) | ((uint32_t)15U << 0);
     if (value != 0x0000000F) {
         return 4U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0x1FU << 0)) | ((31U & (uint32_t)0x1FU) << 0);
+    value = (value & ~((uint32_t)0x1FU << 0)) | ((uint32_t)31U << 0);
     if (value != 0x0000001F) {
         return 5U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0x3FU << 0)) | ((63U & (uint32_t)0x3FU) << 0);
+    value = (value & ~((uint32_t)0x3FU << 0)) | ((uint32_t)63U << 0);
     if (value != 0x0000003F) {
         return 6U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0x7FU << 0)) | ((127U & (uint32_t)0x7FU) << 0);
+    value = (value & ~((uint32_t)0x7FU << 0)) | ((uint32_t)127U << 0);
     if (value != 0x0000007F) {
         return 7U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0xFFU << 0)) | ((255U & (uint32_t)0xFFU) << 0);
+    value = (value & ~((uint32_t)0xFFU << 0)) | ((uint32_t)255U << 0);
     if (value != 0x000000FF) {
         return 8U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0x1FFU << 0)) | ((511U & (uint32_t)0x1FFU) << 0);
+    value = (value & ~((uint32_t)0x1FFU << 0)) | ((uint32_t)511U << 0);
     if (value != 0x000001FF) {
         return 9U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0x3FFU << 0)) | ((1023U & (uint32_t)0x3FFU) << 0);
+    value = (value & ~((uint32_t)0x3FFU << 0)) | ((uint32_t)1023U << 0);
     if (value != 0x000003FF) {
         return 10U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0x7FFU << 0)) | ((2047U & (uint32_t)0x7FFU) << 0);
+    value = (value & ~((uint32_t)0x7FFU << 0)) | ((uint32_t)2047U << 0);
     if (value != 0x000007FF) {
         return 11U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0xFFFU << 0)) | ((4095U & (uint32_t)0xFFFU) << 0);
+    value = (value & ~((uint32_t)0xFFFU << 0)) | ((uint32_t)4095U << 0);
     if (value != 0x00000FFF) {
         return 12U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0x1FFFU << 0)) | ((8191U & (uint32_t)0x1FFFU) << 0);
+    value = (value & ~((uint32_t)0x1FFFU << 0)) | ((uint32_t)8191U << 0);
     if (value != 0x00001FFF) {
         return 13U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0x3FFFU << 0)) | ((16383U & (uint32_t)0x3FFFU) << 0);
+    value = (value & ~((uint32_t)0x3FFFU << 0)) | ((uint32_t)16383U << 0);
     if (value != 0x00003FFF) {
         return 14U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0x7FFFU << 0)) | ((32767U & (uint32_t)0x7FFFU) << 0);
+    value = (value & ~((uint32_t)0x7FFFU << 0)) | ((uint32_t)32767U << 0);
     if (value != 0x00007FFF) {
         return 15U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0xFFFFU << 0)) | ((65535U & (uint32_t)0xFFFFU) << 0);
+    value = (value & ~((uint32_t)0xFFFFU << 0)) | ((uint32_t)65535U << 0);
     if (value != 0x0000FFFF) {
         return 16U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0x1FFFFU << 0)) | ((131071U & (uint32_t)0x1FFFFU) << 0);
+    value = (value & ~((uint32_t)0x1FFFFU << 0)) | ((uint32_t)131071U << 0);
     if (value != 0x0001FFFF) {
         return 17U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0x3FFFFU << 0)) | ((262143U & (uint32_t)0x3FFFFU) << 0);
+    value = (value & ~((uint32_t)0x3FFFFU << 0)) | ((uint32_t)262143U << 0);
     if (value != 0x0003FFFF) {
         return 18U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0x7FFFFU << 0)) | ((524287U & (uint32_t)0x7FFFFU) << 0);
+    value = (value & ~((uint32_t)0x7FFFFU << 0)) | ((uint32_t)524287U << 0);
     if (value != 0x0007FFFF) {
         return 19U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0xFFFFFU << 0)) | ((1048575U & (uint32_t)0xFFFFFU) << 0);
+    value = (value & ~((uint32_t)0xFFFFFU << 0)) | ((uint32_t)1048575U << 0);
     if (value != 0x000FFFFF) {
         return 20U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0x1FFFFFU << 0)) | ((2097151U & (uint32_t)0x1FFFFFU) << 0);
+    value = (value & ~((uint32_t)0x1FFFFFU << 0)) | ((uint32_t)2097151U << 0);
     if (value != 0x001FFFFF) {
         return 21U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0x3FFFFFU << 0)) | ((4194303U & (uint32_t)0x3FFFFFU) << 0);
+    value = (value & ~((uint32_t)0x3FFFFFU << 0)) | ((uint32_t)4194303U << 0);
     if (value != 0x003FFFFF) {
         return 22U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0x7FFFFFU << 0)) | ((8388607U & (uint32_t)0x7FFFFFU) << 0);
+    value = (value & ~((uint32_t)0x7FFFFFU << 0)) | ((uint32_t)8388607U << 0);
     if (value != 0x007FFFFF) {
         return 23U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0xFFFFFFU << 0)) | ((16777215U & (uint32_t)0xFFFFFFU) << 0);
+    value = (value & ~((uint32_t)0xFFFFFFU << 0)) | ((uint32_t)16777215U << 0);
     if (value != 0x00FFFFFF) {
         return 24U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0x1FFFFFFU << 0)) | ((33554431U & (uint32_t)0x1FFFFFFU) << 0);
+    value = (value & ~((uint32_t)0x1FFFFFFU << 0)) | ((uint32_t)33554431U << 0);
     if (value != 0x01FFFFFF) {
         return 25U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0x3FFFFFFU << 0)) | ((67108863U & (uint32_t)0x3FFFFFFU) << 0);
+    value = (value & ~((uint32_t)0x3FFFFFFU << 0)) | ((uint32_t)67108863U << 0);
     if (value != 0x03FFFFFF) {
         return 26U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0x7FFFFFFU << 0)) | ((134217727U & (uint32_t)0x7FFFFFFU) << 0);
+    value = (value & ~((uint32_t)0x7FFFFFFU << 0)) | ((uint32_t)134217727U << 0);
     if (value != 0x07FFFFFF) {
         return 27U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0xFFFFFFFU << 0)) | ((268435455U & (uint32_t)0xFFFFFFFU) << 0);
+    value = (value & ~((uint32_t)0xFFFFFFFU << 0)) | ((uint32_t)268435455U << 0);
     if (value != 0x0FFFFFFF) {
         return 28U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0x1FFFFFFFU << 0)) | ((536870911U & (uint32_t)0x1FFFFFFFU) << 0);
+    value = (value & ~((uint32_t)0x1FFFFFFFU << 0)) | ((uint32_t)536870911U << 0);
     if (value != 0x1FFFFFFF) {
         return 29U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0x3FFFFFFFU << 0)) | ((1073741823U & (uint32_t)0x3FFFFFFFU) << 0);
+    value = (value & ~((uint32_t)0x3FFFFFFFU << 0)) | ((uint32_t)1073741823U << 0);
     if (value != 0x3FFFFFFF) {
         return 30U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0x7FFFFFFFU << 0)) | ((2147483647U & (uint32_t)0x7FFFFFFFU) << 0);
+    value = (value & ~((uint32_t)0x7FFFFFFFU << 0)) | ((uint32_t)2147483647U << 0);
     if (value != 0x7FFFFFFF) {
         return 31U;
     }
     value = 0U;
-    value = (value & ~((uint32_t)0xFFFFFFFFU << 0)) | ((4294967295U & (uint32_t)0xFFFFFFFFU) << 0);
+    value = (value & ~((uint32_t)0xFFFFFFFFU << 0)) | ((uint32_t)4294967295U << 0);
     if (value != 0xFFFFFFFF) {
         return 32U;
     }

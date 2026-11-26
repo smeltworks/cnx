@@ -6,6 +6,8 @@ interface IConstSpelling {
   readonly text: string;
   readonly typeName: string | null;
   readonly verbatim: boolean;
+  /** The C types of the casts written on it, outermost first (#2372) */
+  readonly casts: readonly string[];
 }
 
 export default IConstSpelling;

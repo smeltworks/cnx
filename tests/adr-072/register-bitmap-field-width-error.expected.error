@@ -1,0 +1,8 @@
+25:22 error[E0869]: Cannot assign u8 to a 4-bit field (narrowing)
+       help: Use bit indexing to say which bits you mean: value[0, 4]
+39:24 error[E0869]: Cannot assign u8 to a 4-bit field (narrowing)
+       help: Use bit indexing to say which bits you mean: value[0, 4]
+40:24 error[E0869]: Cannot assign u8 to a 4-bit field (narrowing)
+       help: Use bit indexing to say which bits you mean: value[0, 4]
+41:24 error[E0869]: Cannot assign u32 to a 4-bit field (narrowing)
+       help: Use bit indexing to say which bits you mean: value[0, 4]

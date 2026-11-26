@@ -6,25 +6,25 @@ u32 main() {
     // ===== Variable initialization =====
 
     // Test basic char literal to u8
-    u8 letter <- 'A';
+    u8 letter <- (u8)'A';
     if (letter != 65) {
         return 1;
     }
 
     // Test lowercase
-    u8 lower <- 'z';
+    u8 lower <- (u8)'z';
     if (lower != 122) {
         return 2;
     }
 
     // Test digit character
-    u8 digit <- '0';
+    u8 digit <- (u8)'0';
     if (digit != 48) {
         return 3;
     }
 
     // Test space character
-    u8 space <- ' ';
+    u8 space <- (u8)' ';
     if (space != 32) {
         return 4;
     }
@@ -32,7 +32,7 @@ u32 main() {
     // ===== Comparison operations =====
 
     // Test equality comparison
-    u8 c <- 'X';
+    u8 c <- (u8)'X';
     if (c != (u8)'X') {
         return 5;
     }
@@ -53,8 +53,8 @@ u32 main() {
     }
 
     // Test comparison with variable
-    u8 first <- 'a';
-    u8 second <- 'b';
+    u8 first <- (u8)'a';
+    u8 second <- (u8)'b';
     if (first >= second) {
         return 9;
     }
@@ -62,7 +62,7 @@ u32 main() {
     // ===== Array element context =====
 
     // Test char literals in array initializer
-    u8[5] vowels <- ['a', 'e', 'i', 'o', 'u'];
+    u8[5] vowels <- [(u8)'a', (u8)'e', (u8)'i', (u8)'o', (u8)'u'];
     if (vowels[0] != (u8)'a') {
         return 10;
     }
@@ -81,9 +81,9 @@ u32 main() {
 
     // Test array element assignment with char literal
     mut u8[4] buffer;
-    buffer[0] <- 'H';
-    buffer[1] <- 'i';
-    buffer[2] <- '!';
+    buffer[0] <- (u8)'H';
+    buffer[1] <- (u8)'i';
+    buffer[2] <- (u8)'!';
     buffer[3] <- 0;
     if (buffer[0] != 72) {
         return 15; // 'H' = 72
@@ -98,7 +98,7 @@ u32 main() {
     // ===== Switch case context =====
 
     // Test switch with char literal cases
-    u8 grade <- 'B';
+    u8 grade <- (u8)'B';
     mut u32 points <- 0;
 
     switch (grade) {
@@ -120,7 +120,7 @@ u32 main() {
     }
 
     // Test another switch case
-    mut u8 dir <- 'N';
+    mut u8 dir <- (u8)'N';
     mut u32 heading <- 0;
 
     switch (dir) {
@@ -145,7 +145,7 @@ u32 main() {
     }
 
     // Test switch with 'S' direction
-    dir <- 'S';
+    dir <- (u8)'S';
     switch (dir) {
         case 'N' {
             heading <- 0;
@@ -170,14 +170,14 @@ u32 main() {
     // ===== Arithmetic with char literals =====
 
     // Test addition (useful for case conversion)
-    u8 upperA <- 'A';
+    u8 upperA <- (u8)'A';
     u8 lowerA <- upperA + 32; // Convert to lowercase
     if (lowerA != (u8)'a') {
         return 21;
     }
 
     // Test subtraction
-    u8 lowerZ <- 'z';
+    u8 lowerZ <- (u8)'z';
     u8 upperZ <- lowerZ - 32; // Convert to uppercase
     if (upperZ != (u8)'Z') {
         return 22;

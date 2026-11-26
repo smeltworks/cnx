@@ -122,6 +122,17 @@ describe("StringUtils.literalLength", () => {
     expect(StringUtils.literalLength('"say \\"hi\\""')).toBe(8);
   });
 
+  // #2484 review: C reads up to three octal digits and every hex digit
+  it.each([
+    ['"\\012"', 1],
+    ['"\\0a"', 2],
+    ['"\\1234"', 2],
+    ['"\\x41"', 1],
+    ['"\\x41g"', 2],
+  ])("counts %s as C does", (literal, length) => {
+    expect(StringUtils.literalLength(literal as string)).toBe(length);
+  });
+
   it("counts multiple escapes correctly", () => {
     expect(StringUtils.literalLength('"\\n\\t\\r"')).toBe(3);
   });
@@ -154,6 +165,13 @@ describe("StringUtils.characterAt", () => {
 
   it("is the terminator past the literal's end", () => {
     expect(StringUtils.characterAt('"A"', 1)).toBe("'\\0'");
+  });
+
+  // #2484 review: an octal or hex escape is one character, all its digits
+  it("keeps every digit of an octal or hex escape", () => {
+    expect(StringUtils.characterAt('"\\101"', 0)).toBe("'\\101'");
+    expect(StringUtils.characterAt('"\\x41B"', 0)).toBe("'\\x41B'");
+    expect(StringUtils.characterAt('"\\0129"', 1)).toBe("'9'");
   });
 });
 

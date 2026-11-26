@@ -22,6 +22,7 @@
  * only in the register map. ADR-034 says a bitmap is addressed by named field.
  */
 
+import BitFieldText from "../../utils/BitFieldText";
 import BindingSite from "../../utils/BindingSite";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import ProgramAccesses from "../../utils/ProgramAccesses";
@@ -29,19 +30,40 @@ import type IValuePositions from "../../types/IValuePositions";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import OperandTyper from "../../utils/OperandTyper";
+import ExpressionShape from "../../utils/ExpressionShape";
+import ConstantEvaluator from "../../utils/ConstantEvaluator";
 import BitmapFieldStep from "../../utils/BitmapFieldStep";
 import type IBitmapFieldTarget from "../../types/IBitmapFieldTarget";
 import type TExpressionOf from "../../types/syntax/TExpressionOf";
 import PROPERTY_NAMES from "../../utils/constants/PROPERTY_NAMES";
-import ConstantExpression from "./helpers/ConstantExpression";
 import IBitmapAccessError from "./types/IBitmapAccessError";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import SourceOrder from "../../utils/SourceOrder";
+import ValuePositions from "./helpers/ValuePositions";
+import StructInitializerType from "./helpers/StructInitializerType";
+import type IValuePosition from "../../types/IValuePosition";
+import type IOperandType from "../../types/IOperandType";
+import type ISourceSite from "../../types/ISourceSite";
+import BitFieldIntegerType from "../../utils/BitFieldIntegerType";
+
+/** The bits an assignment target holds: a bitmap field, or a C bit-field */
+type TFieldBits = {
+  readonly width: number;
+  readonly name: string;
+  readonly signed: boolean;
+  /** How the help says to make the field wider */
+  readonly widen: string;
+  /** The integer a constant written to it folds at; null for a cnx field */
+  readonly foldAs: string | null;
+};
 
 class BitmapAccessCheck {
   private readonly found: IBitmapAccessError[] = [];
 
-  public constructor(private readonly context: IAnalysisContext) {}
+  public constructor(
+    private readonly context: IAnalysisContext,
+    private readonly positions: ReadonlyMap<TExpression, IValuePosition>,
+  ) {}
 
   public errors(): IBitmapAccessError[] {
     return this.found;
@@ -49,25 +71,121 @@ class BitmapAccessCheck {
 
   public checkExpression(expr: TExpression): void {
     if (expr.kind === "postfix") this.checkChain(expr);
+    if (expr.kind === "structInitializer") this.checkInitializer(expr);
+  }
+
+  /** A header struct's bit-field written by `{ field: value }`, as by `<-` */
+  private checkInitializer(
+    expr: Extract<TExpression, { kind: "structInitializer" }>,
+  ): void {
+    const declaredAt = StructInitializerType.declarationOf(
+      ValuePositions.at(this.positions, expr),
+      expr.span,
+      this.context,
+    );
+    for (const field of expr.fields) {
+      const t = ValuePositions.at(this.positions, field.value).headerField;
+      const bits = BitmapAccessCheck.headerBits(t, field.name);
+      if (bits !== null) this.checkFits(declaredAt, bits, field.value);
+    }
   }
 
   public checkSite(site: IAssignmentSyntax): void {
     if (site.target.kind !== "postfix") return;
     const field = this.checkChain(site.target);
-    if (field === null) return;
+    // A one-bit bitmap field is a bool, so E0945 judges what it takes
+    if (field !== null && field.layout.width === 1) return;
+    const bits =
+      field === null
+        ? this.headerBitField(site.target)
+        : BitmapAccessCheck.bitmapBits(field);
+    if (bits === null) return;
+    this.checkFits(
+      BindingSite.ofChain(site.target, this.context),
+      bits,
+      site.value,
+    );
+  }
 
-    // E0881: the value must fit the field it is written to. Folded by the
-    // one binder, so a const is its value (#1760 second review: reading the
-    // literal text let `f.Mode <- BIG` truncate silently).
-    const value = ConstantExpression.valueAt(site.value, this.context);
-    const maximum = 2 ** field.layout.width - 1;
-    if (value === null || value <= maximum) return;
+  private static bitmapBits(field: IBitmapFieldTarget): TFieldBits {
+    return {
+      width: field.layout.width,
+      name: field.fieldName,
+      signed: false,
+      widen: "widen the field in the bitmap declaration",
+      foldAs: null,
+    };
+  }
+
+  /**
+   * A C header struct's bit-field holds its declared width, as a cnx bitmap
+   * field does (#1975), and takes a bitmap field's rules (ADR-072 ruling 19)
+   */
+  private headerBitField(target: TExpressionOf<"postfix">): TFieldBits | null {
+    if (!OperandTyper.chainOf(target, this.context).endsOnBitField) return null;
+    const name = target.ops.at(-1);
+    if (name?.kind !== "member") return null;
+    return BitmapAccessCheck.headerBits(
+      OperandTyper.typeOfTarget(target, this.context),
+      name.name,
+    );
+  }
+
+  private static headerBits(
+    t: IOperandType | null,
+    name: string,
+  ): TFieldBits | null {
+    if (t?.bitWidth == null) return null;
+    return {
+      width: t.bitWidth,
+      name,
+      signed: t.category === "signed",
+      widen: "widen the bit-field in its header",
+      foldAs: BitFieldIntegerType.of(t),
+    };
+  }
+
+  /**
+   * E0881: a known value must fit the field it is written to. A typed
+   * value is judged by its type, which E0869 owns (ADR-072 ruling 17), and a
+   * one-bit bitmap field is a bool, whose values E0945 judges (#2372). A
+   * ternary that does not fold is judged arm by arm, since each arm lands in
+   * the field (ADR-022); one that folds is judged by the arm it picks.
+   */
+  private checkFits(
+    declaredAt: ISourceSite | undefined,
+    field: TFieldBits,
+    expr: TExpression,
+  ): void {
+    const result = OperandTyper.constantResultOf(
+      expr,
+      this.context,
+      field.foldAs,
+    );
+    const inner = ExpressionShape.unparenthesized(expr);
+    if (result.kind !== "value" && inner.kind === "ternary") {
+      this.checkFits(declaredAt, field, inner.whenTrue);
+      this.checkFits(declaredAt, field, inner.whenFalse);
+      return;
+    }
+    if (result.kind !== "value") return;
+    if (result.typeName !== null) return;
+    const value = ConstantEvaluator.toNumber(result.value);
+    if (value === undefined) return;
+    const width = field.width;
+    const minimum = field.signed ? -(2 ** (width - 1)) : 0;
+    const maximum = field.signed ? 2 ** (width - 1) - 1 : 2 ** width - 1;
+    // A negative value written to an unsigned field is E0868's
+    if (value <= maximum && (value >= minimum || !field.signed)) return;
+    const bound = value > maximum ? "exceeds" : "is below";
+    const limit =
+      value > maximum ? `maximum of ${maximum}` : `minimum of ${minimum}`;
     this.found.push({
       code: "E0881",
-      span: site.value.span,
-      declaredAt: BindingSite.ofChain(site.target, this.context),
-      message: `Value ${value} exceeds ${field.layout.width}-bit field '${field.fieldName}' maximum of ${maximum}`,
-      helpText: `A ${field.layout.width}-bit field holds 0 through ${maximum}; widen the field in the bitmap declaration, or write a value that fits (ADR-034).`,
+      span: expr.span,
+      declaredAt,
+      message: `Value ${value} ${bound} ${width}-bit field '${field.name}' ${limit}`,
+      helpText: `${BitFieldText.opening(width)} holds ${minimum} through ${maximum}; ${field.widen}, or write a value that fits (ADR-034).`,
     });
   }
 
@@ -164,7 +282,7 @@ class BitmapAccessAnalyzer {
     program: IProgramSyntax,
     valuePositions: IValuePositions,
   ): IBitmapAccessError[] {
-    const check = new BitmapAccessCheck(this.context);
+    const check = new BitmapAccessCheck(this.context, valuePositions.positions);
     ProgramAccesses.checkReadsAndWrites(program, valuePositions, check);
     return check.errors().sort(SourceOrder.bySpan);
   }

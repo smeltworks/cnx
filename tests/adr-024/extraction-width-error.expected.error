@@ -1,0 +1,14 @@
+10:11 error[E0869]: Cannot assign a 16-bit extraction to u8 (narrowing)
+       help: Extract no more bits than the target holds: [start, 8]
+28:12 error[E0869]: Cannot assign a 16-bit extraction to u8 (narrowing)
+       help: Extract no more bits than the target holds: [start, 8]
+29:12 error[E0869]: Cannot assign a 16-bit extraction to i8 (narrowing)
+       help: Extract no more bits than the target holds: [start, 8]
+30:13 error[E0869]: Cannot assign a 32-bit extraction to u16 (narrowing)
+       help: Extract no more bits than the target holds: [start, 16]
+31:9 error[E0869]: Cannot assign a 16-bit extraction to u8 (narrowing)
+       help: Extract no more bits than the target holds: [start, 8]
+32:12 error[E0869]: Cannot cast a 16-bit extraction to u8 (narrowing)
+       help: Extract no more bits than the target holds: [start, 8]
+33:20 error[E0869]: Cannot assign a 16-bit extraction to u8 (narrowing)
+       help: Extract no more bits than the target holds: [start, 8]

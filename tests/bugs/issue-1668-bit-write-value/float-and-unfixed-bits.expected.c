@@ -76,7 +76,7 @@ int main(void) {
     if (hf != -8) {
         return 5U;
     }
-    hf = (int_fast16_t)((hf & ~((uintmax_t)0xFU << 0)) | ((0U & (uintmax_t)0xFU) << 0));
+    hf = (int_fast16_t)((hf & ~((uintmax_t)0xFU << 0)) | ((uintmax_t)0U << 0));
     if (hf != -16) {
         return 6U;
     }

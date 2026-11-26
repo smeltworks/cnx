@@ -780,6 +780,7 @@ class CodeGenWalker {
           step,
           floatBits: this.filePlan.floatBitReads.get(op) ?? null,
           narrowing,
+          maskedByWriter: this.filePlan.writerMaskedRanges.has(op),
         };
       }
       case "call": {
@@ -3790,6 +3791,7 @@ class CodeGenWalker {
       plannedWholeArray: this.filePlan.wholeArrayWrites.get(site) ?? null,
       plannedCompoundCast: this.filePlan.compoundCasts.get(site) ?? null,
       plannedRegisterAccess: this.filePlan.registerAccesses.get(site) ?? null,
+      plannedBitValue: this.filePlan.bitWriteValues.get(site) ?? null,
       state: this.host.state,
       // Already rendered once, above -- never again.
       generatedValue: () => value,

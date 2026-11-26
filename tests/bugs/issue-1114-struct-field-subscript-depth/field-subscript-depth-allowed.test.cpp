@@ -19,7 +19,7 @@ int main(void) {
     if (g.header != 16) {
         return 1U;
     }
-    g.header = (uint8_t)((g.header & ~(0xFU << 0)) | ((5U & 0xFU) << 0));
+    g.header = (uint8_t)((g.header & ~(0xFU << 0)) | (5U << 0));
     if (g.header != 21) {
         return 2U;
     }

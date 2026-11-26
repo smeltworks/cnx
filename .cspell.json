@@ -198,6 +198,7 @@
     "fshort",
     "fsyntax",
     "ftell",
+    "funsigned",
     "fval",
     "fwrapv",
     "fwrite",

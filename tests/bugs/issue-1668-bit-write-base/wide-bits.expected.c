@@ -24,7 +24,7 @@ int main(void) {
     if (gbig != 0x10000000000) {
         return 1U;
     }
-    gbig = (gbig & ~((uint64_t)0xFU << 40)) | ((3U & (uint64_t)0xFU) << 40);
+    gbig = (gbig & ~((uint64_t)0xFU << 40)) | ((uint64_t)3U << 40);
     if (gbig != 0x30000000000) {
         return 2U;
     }
@@ -40,7 +40,7 @@ int main(void) {
     if (w.bigs[1U] != 0x8000000000000000) {
         return 5U;
     }
-    w.big = (w.big & ~((uint64_t)0xFU << 44)) | ((5U & (uint64_t)0xFU) << 44);
+    w.big = (w.big & ~((uint64_t)0xFU << 44)) | ((uint64_t)5U << 44);
     if (w.big != 0x510000000000) {
         return 6U;
     }
