@@ -21,7 +21,7 @@ u32 floatGlobal <- reading[0, 8];
 scope Probe {
     // scope member
     u8 depthMember <- flags[4][3];
-    bool widthMember <- flags[0, 9];
+    u16 widthMember <- flags[0, 9];
     u32 floatMember <- reading[8, 8];
 
     // scope method

@@ -41,7 +41,7 @@ void mutate(Sample& s) {
 // disagreed with its own prototype in a single file, `(char*)` against
 // `(const char*)`, at transpile exit 0.
 void describeLocal(const char* label) {
-    witness = label[0U];
+    witness = static_cast<uint8_t>(label[0U]);
 }
 
 LocalHandlers LocalHandlers_init(void) {

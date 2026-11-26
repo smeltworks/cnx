@@ -42,17 +42,18 @@
 #include "lib/flags.h"
 
 #include <stdint.h>
+#include <stdbool.h>
 
 LocalFlags local = 0;
 
 int main(void) {
     shared = (uint8_t)((shared & ~(1U << 0)) | (1U << 0));
-    shared = (uint8_t)((shared & ~(0x7U << 2)) | ((5U & 0x7U) << 2));
-    sharedHolder.fl = (uint8_t)((sharedHolder.fl & ~(0x7U << 2)) | ((6U & 0x7U) << 2));
+    shared = (uint8_t)((shared & ~(0x7U << 2)) | (5U << 2));
+    sharedHolder.fl = (uint8_t)((sharedHolder.fl & ~(0x7U << 2)) | (6U << 2));
     sharedHolder.fls[1] = (uint8_t)((sharedHolder.fls[1] & ~(1U << 1)) | (1U << 1));
     sharedHolders[1].fl = (uint8_t)((sharedHolders[1].fl & ~(1U << 0)) | (1U << 0));
     local = (uint8_t)((local & ~(1U << 0)) | (1U << 0));
-    local = (uint8_t)((local & ~(0x7U << 1)) | ((3U & 0x7U) << 1));
+    local = (uint8_t)((local & ~(0x7U << 1)) | (3U << 1));
     if (((shared >> 0) & 1) != 1) {
         return 1U;
     }

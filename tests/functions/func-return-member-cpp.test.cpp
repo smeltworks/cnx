@@ -33,7 +33,7 @@ uint32_t testFuncReturnMember(void) {
     globalConfig.enabled = true;
     globalConfig.mode = MODE_AUTO;
     globalConfig.value = 42U;
-    crc = process(crc, getConfig().enabled);
+    crc = process(crc, static_cast<uint8_t>(getConfig().enabled));
     crc = process(crc, static_cast<uint8_t>(getConfig().mode));
     crc = process(crc, getConfig().value);
     return crc;

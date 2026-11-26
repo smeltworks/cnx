@@ -15,7 +15,7 @@ u32 floatGlobal <- sharedFloat[0, 8];
 scope Probe {
     // scope member
     u8 depthMember <- sharedFlags[4][3];
-    bool widthMember <- sharedFlags[0, 9];
+    u16 widthMember <- sharedFlags[0, 9];
     u32 floatMember <- sharedFloat[8, 8];
 
     // scope method

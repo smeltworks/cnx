@@ -1,0 +1,27 @@
+// test-execution
+// test-adr: 035
+// #2484 review: a header struct's array field takes a fill-all for its whole
+// size. A dimension is read as C reads it, so octal 010 is 8 slots.
+#include "header-bit-field.h"
+
+u32 main() {
+    CBank bank <- { data: [7*] };
+    if (bank.data[0] != 7) {
+        return 1;
+    }
+    if (bank.data[3] != 7) {
+        return 2;
+    }
+    CBank listed <- { data: [1, 2, 3, 4] };
+    if (listed.data[1] != 2) {
+        return 3;
+    }
+    if (listed.data[3] != 4) {
+        return 4;
+    }
+    CNamed named <- { octal: [5*] };
+    if (named.octal[7] != 5) {
+        return 5;
+    }
+    return 0;
+}

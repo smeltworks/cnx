@@ -49,7 +49,7 @@ scope A {
     // implicit resolution is still exercised by this file.
     public u8 firstOrdinal() {
         this.B current <- this.B.c;
-        return current;
+        return (u8)current;
     }
 }
 

@@ -1,3 +1,5 @@
+import CppModeHelper from "../../2-Plan/CppModeHelper";
+import mapType from "../../../utils/mapType";
 import PrivateConstSpelling from "../../2-Plan/PrivateConstSpelling";
 import type TranspileState from "../../TranspileState";
 import type IConstSpelling from "../../2-Plan/types/IConstSpelling";
@@ -64,7 +66,24 @@ class PrivateConstValue {
       transpileState,
       narrowing,
     );
-    return negative ? { ...output, code: `(-${output.code})` } : output;
+    if (negative) return { ...output, code: `(-${output.code})` };
+    // A cast character const keeps its declared type where it is inlined:
+    // `u32 C <- (u8)'A'` is a u32, so `C << 25` shifts no int (#2484 review)
+    const declared =
+      spelling.typeName === null ? null : mapType.mapType(spelling.typeName);
+    const casts =
+      spelling.casts.length > 0 &&
+      declared !== null &&
+      spelling.casts[0] !== declared
+        ? [declared, ...spelling.casts]
+        : spelling.casts;
+    return {
+      ...output,
+      code: casts.reduceRight(
+        (code, cType) => CppModeHelper.cast(cType, code, transpileState),
+        output.code,
+      ),
+    };
   }
 }
 

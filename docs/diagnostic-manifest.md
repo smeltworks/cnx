@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1051 fixture(s) assert a diagnostic; 1037 carry a code.
+1066 fixture(s) assert a diagnostic; 1052 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -210,6 +210,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-024/conversion-positions-imported-transitive-error.test.cnx                                     | E0869                             |
 | tests/adr-024/conversion-scope-imported-direct-error.test.cnx                                             | E0869                             |
 | tests/adr-024/conversion-scope-imported-transitive-error.test.cnx                                         | E0869                             |
+| tests/adr-024/extraction-width-error.test.cnx                                                             | E0869                             |
 | tests/adr-024/float-imported-direct-error.test.cnx                                                        | E0891                             |
 | tests/adr-024/float-imported-transitive-error.test.cnx                                                    | E0891                             |
 | tests/adr-024/float-same-file-error.test.cnx                                                              | E0891                             |
@@ -289,8 +290,18 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-034/bitmap-compound-imported-transitive-error.test.cnx                                          | E0857                             |
 | tests/adr-034/bitmap-compound-same-file-error.test.cnx                                                    | E0857                             |
 | tests/adr-034/bitmap-error-overflow.test.cnx                                                              | E0881                             |
+| tests/adr-034/bitmap-field-narrowing-error.test.cnx                                                       | E0869                             |
 | tests/adr-034/bitmap-unknown-field-error.test.cnx                                                         | E0882                             |
 | tests/adr-034/bitmap-unknown-field-through-chain-error.test.cnx                                           | E0881, E0882, E0883               |
+| tests/adr-034/header-array-field-short-error.test.cnx                                                     | E0866                             |
+| tests/adr-034/header-bit-field-compound-error.test.cnx                                                    | E0857                             |
+| tests/adr-034/header-bit-field-narrowing-error.test.cnx                                                   | E0869                             |
+| tests/adr-034/header-bit-field-overflow-error.test.cnx                                                    | E0881                             |
+| tests/adr-034/header-bit-field-sign-error.test.cnx                                                        | E0944                             |
+| tests/adr-034/header-bit-field-width-error.test.cnx                                                       | E0881                             |
+| tests/adr-034/header-bit-field-width-narrowing-error.test.cnx                                             | E0869, E0945                      |
+| tests/adr-034/header-bit-field-width-unread-error.test.cnx                                                | E0946                             |
+| tests/adr-034/header-char-array-string-error.test.cnx                                                     | E0864                             |
 | tests/adr-035/array-count-included-error.test.cnx                                                         | E0866                             |
 | tests/adr-035/array-count-transitive-error.test.cnx                                                       | E0866                             |
 | tests/adr-035/array-form-error.test.cnx                                                                   | E0866, E0876                      |
@@ -495,6 +506,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-072/register-address-past-pointer-error.test.cnx                                                | E0931                             |
 | tests/adr-072/register-address-undeclared-name-error.test.cnx                                             | E0427                             |
 | tests/adr-072/register-as-value-error.test.cnx                                                            | E0942                             |
+| tests/adr-072/register-bitmap-field-width-error.test.cnx                                                  | E0869                             |
 | tests/adr-072/register-callback-type-error.test.cnx                                                       | E0941                             |
 | tests/adr-072/register-instance-as-type-error.test.cnx                                                    | E0937                             |
 | tests/adr-072/register-local-instance-error.test.cnx                                                      | E0934                             |
@@ -963,6 +975,9 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-2341-included-scope-type-bare-use/no-scope-type.test.cnx                                 | E0426                             |
 | tests/bugs/issue-2354-bool-bit-index/bool-bit-index-error.test.cnx                                        | E0856                             |
 | tests/bugs/issue-2366-void-param-diagnostic/void-param.test.cnx                                           | E0926                             |
+| tests/bugs/issue-2372-category-conversion/category-error.test.cnx                                         | E0869, E0945                      |
+| tests/bugs/issue-2372-category-conversion/integer-macro-bool-arithmetic-error.test.cnx                    | E0807                             |
+| tests/bugs/issue-2372-category-conversion/integer-macro-bool-error.test.cnx                               | E0945                             |
 | tests/bugs/issue-2373-string-range-write/string-range-write-capacity-error.test.cnx                       | E0864                             |
 | tests/bugs/issue-2380-same-level-names/enum-beside-scope-error.test.cnx                                   | E0425                             |
 | tests/bugs/issue-2380-same-level-names/function-beside-scope-error.test.cnx                               | E0425                             |

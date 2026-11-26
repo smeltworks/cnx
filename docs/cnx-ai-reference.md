@@ -297,11 +297,11 @@ x[8, 8] <- hi_byte[0, 4];    // write 4-bit value into 8-bit field
                                // bits [8..11] get the value, [12..15] zeroed
 ```
 
-This eliminates the need to zero the variable first. The generated C clears the full target window via mask:
+This eliminates the need to zero the variable first. The generated C clears the full target window via mask, and masks the value once, at the source range's width (#2483):
 
 ```c
 // x[8,8] <- hi_byte[0,4] generates:
-x = (uint16_t)((x & ~(0xFFU << 8)) | ((((hi_byte) & 0x0F) & 0xFFU) << 8));
+x = (uint16_t)((x & ~(0xFFU << 8)) | (((hi_byte) & 0xFU) << 8));
 ```
 
 ## Type Casting Rules

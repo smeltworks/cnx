@@ -18,9 +18,9 @@ RGBColor color = 0;
 SensorConfig sensor = 0;
 
 int main(void) {
-    color = (color & ~((uint32_t)0xFFU << 0)) | ((255U & (uint32_t)0xFFU) << 0);
-    color = (color & ~((uint32_t)0xFFU << 8)) | ((128U & (uint32_t)0xFFU) << 8);
-    color = (color & ~((uint32_t)0xFFU << 16)) | ((64U & (uint32_t)0xFFU) << 16);
+    color = (color & ~((uint32_t)0xFFU << 0)) | ((uint32_t)255U << 0);
+    color = (color & ~((uint32_t)0xFFU << 8)) | ((uint32_t)128U << 8);
+    color = (color & ~((uint32_t)0xFFU << 16)) | ((uint32_t)64U << 16);
     if (((color >> 0) & 0xFF) != 255) {
         return 1U;
     }
@@ -30,7 +30,7 @@ int main(void) {
     if (((color >> 16) & 0xFF) != 64) {
         return 3U;
     }
-    color = (color & ~((uint32_t)0xFFU << 0)) | ((0U & (uint32_t)0xFFU) << 0);
+    color = (color & ~((uint32_t)0xFFU << 0)) | ((uint32_t)0U << 0);
     if (((color >> 0) & 0xFF) != 0) {
         return 4U;
     }
@@ -52,8 +52,8 @@ int main(void) {
     if (((sensor >> 2) & 1) != true) {
         return 9U;
     }
-    sensor = (sensor & ~((uint32_t)0xFFU << 8)) | ((100U & (uint32_t)0xFFU) << 8);
-    sensor = (sensor & ~((uint32_t)0xFFU << 16)) | ((50U & (uint32_t)0xFFU) << 16);
+    sensor = (sensor & ~((uint32_t)0xFFU << 8)) | ((uint32_t)100U << 8);
+    sensor = (sensor & ~((uint32_t)0xFFU << 16)) | ((uint32_t)50U << 16);
     if (((sensor >> 8) & 0xFF) != 100) {
         return 10U;
     }
@@ -68,16 +68,16 @@ int main(void) {
     if (thresh != 50) {
         return 13U;
     }
-    sensor = (sensor & ~((uint32_t)0xFFU << 8)) | ((200U & (uint32_t)0xFFU) << 8);
+    sensor = (sensor & ~((uint32_t)0xFFU << 8)) | ((uint32_t)200U << 8);
     if (((sensor >> 8) & 0xFF) != 200) {
         return 14U;
     }
     if (((sensor >> 16) & 0xFF) != 50) {
         return 15U;
     }
-    color = (color & ~((uint32_t)0xFFU << 0)) | ((255U & (uint32_t)0xFFU) << 0);
-    color = (color & ~((uint32_t)0xFFU << 8)) | ((255U & (uint32_t)0xFFU) << 8);
-    color = (color & ~((uint32_t)0xFFU << 16)) | ((255U & (uint32_t)0xFFU) << 16);
+    color = (color & ~((uint32_t)0xFFU << 0)) | ((uint32_t)255U << 0);
+    color = (color & ~((uint32_t)0xFFU << 8)) | ((uint32_t)255U << 8);
+    color = (color & ~((uint32_t)0xFFU << 16)) | ((uint32_t)255U << 16);
     if (((color >> 0) & 0xFF) != 255) {
         return 16U;
     }

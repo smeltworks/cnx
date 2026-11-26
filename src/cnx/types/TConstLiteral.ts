@@ -10,7 +10,12 @@ type TConstLiteral =
   | { readonly kind: "bool"; readonly text: string }
   /** An enum-typed const: the member of its enum that has its value */
   | { readonly kind: "member"; readonly cName: string }
-  | { readonly kind: "char"; readonly text: string }
+  /** `casts`: the C types of its written casts, outermost first (#2372) */
+  | {
+      readonly kind: "char";
+      readonly text: string;
+      readonly casts: readonly string[];
+    }
   /** A header macro named alone */
   | { readonly kind: "macro"; readonly name: string };
 

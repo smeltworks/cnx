@@ -118,7 +118,14 @@ function writeBits(ctx: IAssignmentContext): string {
   }
   invariant(width !== undefined, "a bit range has a width");
   return storeBits(ctx, base, (read, bits) =>
-    BitUtils.multiBitValue(read, start, width, bits, storage),
+    BitUtils.multiBitValue(
+      read,
+      start,
+      width,
+      bits,
+      storage,
+      ctx.plannedBitValue,
+    ),
   );
 }
 

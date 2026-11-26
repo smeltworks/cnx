@@ -112,7 +112,7 @@ uint32_t S__positions(const uint32_t flag) {
     acc = cnx_clamp_add_u32(acc, S__positions__parr[S__positions__pidx]);
     acc = cnx_clamp_add_u32(acc, 4);
     acc = cnx_clamp_add_u32(acc, 16);
-    S__positions__pbits = (uint8_t)((S__positions__pbits & ~(0xFU << 0)) | ((3U & 0xFU) << 0));
+    S__positions__pbits = (uint8_t)((S__positions__pbits & ~(0xFU << 0)) | (3U << 0));
     acc = cnx_clamp_add_u32(acc, S__positions__pbits);
     S__positions__pcfg.x = 7U;
     acc = cnx_clamp_add_u32(acc, S__positions__pcfg.x);

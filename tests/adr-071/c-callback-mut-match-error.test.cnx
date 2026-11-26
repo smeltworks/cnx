@@ -28,11 +28,11 @@ void logs(mut string<32> msg) {
 }
 
 void readsLog(string<32> msg) {
-    u8 c <- msg[0];
+    u8 c <- (u8)msg[0];
 }
 
 void wrongLog(string<32> msg) {
-    u8 c <- msg[0];
+    u8 c <- (u8)msg[0];
 }
 
 void wrongConstLog(mut string<32> msg) {

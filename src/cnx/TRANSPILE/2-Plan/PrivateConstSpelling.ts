@@ -14,6 +14,7 @@ const I64_MIN_SPELLED: IConstSpelling = {
   text: "(-9223372036854775807LL - 1)",
   typeName: null,
   verbatim: true,
+  casts: [],
 };
 
 /**
@@ -59,6 +60,7 @@ class PrivateConstSpelling {
     if (
       spelling === null ||
       spelling.verbatim ||
+      spelling.casts.length > 0 ||
       !spelling.text.startsWith("'") ||
       spelling.typeName === null
     ) {
@@ -84,12 +86,13 @@ class PrivateConstSpelling {
     }
     const settled = program.settledConstOf(cName);
     if (PrivateConstSpelling.isI64Min(settled)) return I64_MIN_SPELLED;
-    const text = ConstLiteral.textOf(program, symbol);
-    if (text === null) return null;
+    const literal = ConstLiteral.of(program, symbol);
+    if (literal === null) return null;
     return {
-      text,
+      text: ConstLiteral.spell(literal),
       typeName: ConstantFold.typeNameOf(symbol.type),
       verbatim: false,
+      casts: literal.kind === "char" ? literal.casts : [],
     };
   }
 
@@ -104,7 +107,9 @@ class PrivateConstSpelling {
   ): IConstSpelling | null {
     if (PrivateConstSpelling.isI64Min(settled)) return I64_MIN_SPELLED;
     const text = ConstLiteral.textOfValue(program, settled);
-    return text === null ? null : { text, typeName, verbatim: false };
+    return text === null
+      ? null
+      : { text, typeName, verbatim: false, casts: [] };
   }
 
   private static isI64Min(settled: TSettledConst | null): boolean {

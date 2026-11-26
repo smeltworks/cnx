@@ -2,6 +2,8 @@ import type TExpression from "../types/syntax/TExpression";
 import type TSyntaxPart from "../types/syntax/TSyntaxPart";
 import ExpressionChildren from "./ExpressionChildren";
 import TypeParts from "./TypeParts";
+import DeclarationParts from "./DeclarationParts";
+import type IProgramSyntax from "../types/syntax/IProgramSyntax";
 
 /**
  * Every expression in one part of 1.2's syntax, nested ones included, through
@@ -14,6 +16,13 @@ class ExpressionNodes {
     return part.kind === "type"
       ? TypeParts.of(part.type).flatMap(ExpressionNodes.of)
       : ExpressionNodes.expression(part.expression);
+  }
+
+  /** Every expression of every declaration in a program */
+  static ofProgram(program: IProgramSyntax): readonly TExpression[] {
+    return program.members.flatMap((member) =>
+      DeclarationParts.of(member.declaration).flatMap(ExpressionNodes.of),
+    );
   }
 
   /** `expr` and every expression nested in it, but not through a type */

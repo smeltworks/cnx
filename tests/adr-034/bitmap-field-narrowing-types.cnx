@@ -1,0 +1,9 @@
+// Declares the bitmap bitmap-field-narrowing-error writes through one include
+// away, so the rule is checked on a field whose type is imported.
+
+bitmap16 Ctrl {
+    Mode[3],
+    Wide[8],
+    Flag,
+    Rest[4]
+}

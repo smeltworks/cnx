@@ -124,15 +124,9 @@ class StringUtils {
    * an escape sequence counted as one; past its end, the terminator
    */
   static characterAt(literal: string, k: number): string {
-    const content = literal.slice(literal.indexOf('"') + 1, -1);
-    const characters: string[] = [];
-    let i = 0;
-    while (i < content.length) {
-      const width = content[i] === "\\" && i + 1 < content.length ? 2 : 1;
-      characters.push(content.slice(i, i + width));
-      i += width;
-    }
-    const character = characters[k];
+    const character = StringUtils.characters(
+      literal.slice(literal.indexOf('"') + 1, -1),
+    )[k];
     if (character === undefined) return C_NULL_CHAR;
     return character === "'" ? String.raw`'\''` : `'${character}'`;
   }
@@ -142,24 +136,28 @@ class StringUtils {
    * accounting for escape sequences like \n, \t, \\, etc.
    *
    * @param literal - The string literal including quotes (e.g., "hello\n")
-   * @returns The character count (escape sequences count as 1)
+   * @returns The character count (each escape sequence counts as 1)
    */
   static literalLength(literal: string): number {
-    // Remove surrounding quotes
-    const content = literal.slice(1, -1);
+    return StringUtils.characters(literal.slice(1, -1)).length;
+  }
 
-    let length = 0;
+  /**
+   * A literal's content as the characters C reads, each escape one (#2484
+   * review): an octal escape takes up to three digits and a hex one every
+   * hex digit after it, so "\101" and "\x41" are each one `A`
+   */
+  private static characters(content: string): string[] {
+    const escape = /^\\(?:[0-7]{1,3}|x[\da-fA-F]+|[\s\S])/;
+    const characters: string[] = [];
     let i = 0;
     while (i < content.length) {
-      if (content[i] === "\\" && i + 1 < content.length) {
-        // Escape sequence counts as 1 character
-        i += 2;
-      } else {
-        i += 1;
-      }
-      length += 1;
+      const match = escape.exec(content.slice(i));
+      const width = match === null ? 1 : match[0].length;
+      characters.push(content.slice(i, i + width));
+      i += width;
     }
-    return length;
+    return characters;
   }
 
   /**

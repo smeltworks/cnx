@@ -179,6 +179,7 @@ class CacheManager {
     structFields: Map<string, Map<string, IStructFieldInfo>>;
     needsStructKeyword: string[];
     enumBitWidth: Map<string, number>;
+    undefinedMacros: string[] | undefined;
     structState: TJsonSafe<Required<IStructSymbolState>>;
   } | null {
     if (!this.cache) return null;
@@ -230,6 +231,7 @@ class CacheManager {
       structFields,
       needsStructKeyword: cachedEntry.needsStructKeyword ?? [],
       enumBitWidth,
+      undefinedMacros: cachedEntry.undefinedMacros,
       structState,
     };
   }
@@ -249,6 +251,7 @@ class CacheManager {
       structState: TJsonSafe<Required<IStructSymbolState>>;
       needsStructKeyword?: string[];
       enumBitWidth?: Map<string, number>;
+      undefinedMacros?: readonly string[];
       reader?: string;
     },
   ): void {
@@ -291,6 +294,7 @@ class CacheManager {
       structFields: serializedFields,
       needsStructKeyword: options.needsStructKeyword,
       enumBitWidth: serializedEnumBitWidth,
+      undefinedMacros: options.undefinedMacros && [...options.undefinedMacros],
       structState: options.structState,
       reader: options.reader,
     };
@@ -313,6 +317,7 @@ class CacheManager {
         structState: record.structState,
         needsStructKeyword: record.needsStructKeyword,
         enumBitWidth: record.enumBitWidth,
+        undefinedMacros: record.undefinedMacros,
         reader,
       },
     );
@@ -335,11 +340,15 @@ class CacheManager {
       return null;
     }
     const entry = this.getSymbols(filePath);
-    if (!entry) {
+    // #2494 review: an entry written before headers recorded their `#undef`s
+    // would restore none, so it is a miss
+    if (!entry || !Array.isArray(entry.undefinedMacros)) {
       return null;
     }
     const symbols = CachedSymbolReader.read(entry.symbols);
-    return symbols === null ? null : { ...entry, symbols };
+    return symbols === null
+      ? null
+      : { ...entry, undefinedMacros: entry.undefinedMacros, symbols };
   }
 
   /**

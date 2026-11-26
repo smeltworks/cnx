@@ -21,10 +21,10 @@ DeviceStatus status = 0;
 Configuration config = 0;
 
 int main(void) {
-    ip = (ip & ~((uint32_t)0xFFU << 0)) | ((192U & (uint32_t)0xFFU) << 0);
-    ip = (ip & ~((uint32_t)0xFFU << 8)) | ((168U & (uint32_t)0xFFU) << 8);
-    ip = (ip & ~((uint32_t)0xFFU << 16)) | ((1U & (uint32_t)0xFFU) << 16);
-    ip = (ip & ~((uint32_t)0xFFU << 24)) | ((100U & (uint32_t)0xFFU) << 24);
+    ip = (ip & ~((uint32_t)0xFFU << 0)) | ((uint32_t)192U << 0);
+    ip = (ip & ~((uint32_t)0xFFU << 8)) | ((uint32_t)168U << 8);
+    ip = (ip & ~((uint32_t)0xFFU << 16)) | ((uint32_t)1U << 16);
+    ip = (ip & ~((uint32_t)0xFFU << 24)) | ((uint32_t)100U << 24);
     if (((ip >> 0) & 0xFF) != 192) {
         return 1U;
     }
@@ -53,9 +53,9 @@ int main(void) {
     if (((status >> 3) & 1) != true) {
         return 8U;
     }
-    status = (status & ~((uint32_t)0xFU << 4)) | ((7U & (uint32_t)0xFU) << 4);
-    status = (status & ~((uint32_t)0xFFU << 8)) | ((0x5AU & (uint32_t)0xFFU) << 8);
-    status = (status & ~((uint32_t)0xFFU << 16)) | ((12U & (uint32_t)0xFFU) << 16);
+    status = (status & ~((uint32_t)0xFU << 4)) | ((uint32_t)7U << 4);
+    status = (status & ~((uint32_t)0xFFU << 8)) | ((uint32_t)0x5AU << 8);
+    status = (status & ~((uint32_t)0xFFU << 16)) | ((uint32_t)12U << 16);
     if (((status >> 4) & 0xF) != 7) {
         return 9U;
     }
@@ -65,9 +65,9 @@ int main(void) {
     if (((status >> 16) & 0xFF) != 12) {
         return 11U;
     }
-    config = (config & ~((uint32_t)0xFFU << 0)) | ((0xFFU & (uint32_t)0xFFU) << 0);
-    config = (config & ~((uint32_t)0xFFFFU << 8)) | ((0x1234U & (uint32_t)0xFFFFU) << 8);
-    config = (config & ~((uint32_t)0xFFU << 24)) | ((0xABU & (uint32_t)0xFFU) << 24);
+    config = (config & ~((uint32_t)0xFFU << 0)) | ((uint32_t)0xFFU << 0);
+    config = (config & ~((uint32_t)0xFFFFU << 8)) | ((uint32_t)0x1234U << 8);
+    config = (config & ~((uint32_t)0xFFU << 24)) | ((uint32_t)0xABU << 24);
     if (((config >> 0) & 0xFF) != 0xFF) {
         return 12U;
     }
@@ -85,7 +85,7 @@ int main(void) {
     if (addr != 0x1234) {
         return 16U;
     }
-    ip = (ip & ~((uint32_t)0xFFU << 16)) | ((0U & (uint32_t)0xFFU) << 16);
+    ip = (ip & ~((uint32_t)0xFFU << 16)) | ((uint32_t)0U << 16);
     if (((ip >> 0) & 0xFF) != 192) {
         return 17U;
     }
@@ -98,8 +98,8 @@ int main(void) {
     if (((ip >> 24) & 0xFF) != 100) {
         return 20U;
     }
-    status = (status & ~((uint32_t)0xFU << 4)) | ((15U & (uint32_t)0xFU) << 4);
-    status = (status & ~((uint32_t)0xFFU << 8)) | ((255U & (uint32_t)0xFFU) << 8);
+    status = (status & ~((uint32_t)0xFU << 4)) | ((uint32_t)15U << 4);
+    status = (status & ~((uint32_t)0xFFU << 8)) | ((uint32_t)255U << 8);
     if (((status >> 4) & 0xF) != 15) {
         return 21U;
     }

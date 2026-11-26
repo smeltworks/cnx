@@ -43,7 +43,7 @@ int main(void) {
     const uint8_t e = static_cast<uint8_t>(((gs.w) & 0xFFU));
     const uint8_t f = static_cast<uint8_t>(((h) & 0xFFU));
     uint32_t word = 0U;
-    word = (word & ~((uint32_t)0xFFFFFFFFU << 0)) | ((0xFFFFFFFFU & (uint32_t)0xFFFFFFFFU) << 0);
+    word = (word & ~((uint32_t)0xFFFFFFFFU << 0)) | ((uint32_t)0xFFFFFFFFU << 0);
     if (a != 0x123456789A) {
         return 1U;
     }

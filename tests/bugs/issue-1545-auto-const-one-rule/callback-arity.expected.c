@@ -48,7 +48,7 @@ static inline uint8_t cnx_clamp_add_u8(uint8_t a, uint32_t b) {
 uint8_t arityWitness = 0U;
 
 void onShort(char* msg, const char* extra) {
-    arityWitness = msg[0U];
+    arityWitness = (uint8_t)msg[0U];
     arityWitness = cnx_clamp_add_u8(arityWitness, extra[0U]);
 }
 

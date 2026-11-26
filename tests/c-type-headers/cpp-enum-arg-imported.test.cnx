@@ -8,5 +8,5 @@
 
 void paintRed() {
     Color c <- Color.Red;
-    paint(c);
+    paint((u8)c);
 }
