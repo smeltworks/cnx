@@ -1,6 +1,6 @@
 17:28 error[E0715]: a for-loop header cannot hold this assignment: an atomic read-modify-write is more than one statement
        help: assign at the end of the loop body and write it as a while loop
-24:9 error[E0715]: a for-loop header cannot hold this assignment: a string copy, which ADR-068 keeps out of a header (#2234)
+24:9 error[E0715]: a for-loop header cannot hold this assignment: a string built from its parts is more than one statement
        help: assign before the loop and leave the init clause empty
 25:24 error[E0715]: a for-loop header cannot hold this assignment: a slice write is more than one statement
        help: assign at the end of the loop body and write it as a while loop

@@ -111,8 +111,7 @@ class InitializationWalk {
         this.variableParts(statement);
         return;
       case "assignment":
-        this.recordAssignment(statement);
-        this.assignmentParts(statement);
+        this.assignment(statement);
         return;
       case "if": {
         const stateBefore = this.analyzer.cloneScopeState();
@@ -154,21 +153,23 @@ class InitializationWalk {
   }
 
   private forStatement(loop: Extract<TStatement, { kind: "for" }>): void {
-    const stateBeforeLoop = this.analyzer.cloneScopeState();
-    // The init and update are not declarations or assignments this tracks;
-    // only what they read is checked
+    // The init runs once, before the condition, whether or not the body does:
+    // what it assigns is assigned after the loop (#2034). A declared init's
+    // variable is the loop's own, so only what it reads is checked
     if (loop.init?.kind === "variableDeclaration") {
       this.variableParts(loop.init);
     } else if (loop.init) {
-      this.assignmentParts(loop.init);
+      this.assignment(loop.init);
     }
+    const stateBeforeLoop = this.analyzer.cloneScopeState();
     if (loop.condition) {
       this.expression(loop.condition);
     }
-    if (loop.update) {
-      this.assignmentParts(loop.update);
-    }
     this.statement(loop.body);
+    // The update runs after the body, and only when the body did (#1726)
+    if (loop.update) {
+      this.assignment(loop.update);
+    }
     // A loop that certainly runs keeps what its body assigned
     if (InitializationWalk.isDeterministicForLoop(loop)) {
       this.analyzer.mergeInitializationState(stateBeforeLoop);
@@ -263,6 +264,12 @@ class InitializationWalk {
       this.analyzer.checkRead(key, name, assignment.span, fieldName);
     }
     this.analyzer.recordAssignment(key, fieldName);
+  }
+
+  /** An assignment reads its value before it writes its target */
+  private assignment(assignment: IAssignmentSyntax): void {
+    this.assignmentParts(assignment);
+    this.recordAssignment(assignment);
   }
 
   /** `s.field <- v` assigns that field; through a subscript, the whole variable */

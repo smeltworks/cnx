@@ -19,13 +19,13 @@ scope Link {
         }
     }
 
-    // ASSERTIONS 1-6 -- string member, slice member, atomic member (ADR-049
+    // ASSERTIONS 1-6 -- a substring into a string member, slice member, atomic member (ADR-049
     // Q7 makes `this.ticks +<- 1` an atomic read-modify-write, #1179),
     // a `global.` atomic, a bit write on a float member, and a plain store to
     // an atomic member.
     public void offenders() {
         u8 n <- 0;
-        for (this.label <- "x"; n < 2; n +<- 1) {
+        for (this.label <- this.label[0, 1]; n < 2; n +<- 1) {
             n +<- 1;
         }
         for (this.frame[0, 2] <- 0; n < 4; this.ticks +<- 1) {

@@ -23,6 +23,7 @@ import type IFunctionDeclarationSyntax from "../../types/syntax/IFunctionDeclara
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
+import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TStatement from "../../types/syntax/TStatement";
 import type TSyntaxPart from "../../types/syntax/TSyntaxPart";
 
@@ -325,15 +326,16 @@ class NullCheckWalk {
         this.inVariableDeclarationWithNullable = false;
         return;
       case "assignment":
-        this.assignment(statement);
-        this.ownParts(statement);
-        this.inVariableDeclarationWithNullable = false;
+        this.assignmentSite(statement);
         return;
       case "if":
         this.ifStatement(statement);
         return;
       case "while":
         this.whileStatement(statement);
+        return;
+      case "for":
+        this.forStatement(statement);
         return;
       case "return":
         // An `if` that returns is a guard clause when it checks `= NULL`
@@ -422,6 +424,31 @@ class NullCheckWalk {
       this.updateVariableState(check.varName, NullCheckState.CheckedNotNull);
     }
     this.statement(statement.body);
+  }
+
+  /**
+   * A `for` is a `while` with an init before it and an update after its
+   * body: each header assignment is the assignment a statement is (#1726)
+   */
+  private forStatement(loop: Extract<TStatement, { kind: "for" }>): void {
+    if (loop.init !== null) this.statement(loop.init);
+    const check =
+      loop.condition === null
+        ? null
+        : NullCheckWalk.nullCheckIn(loop.condition);
+    if (loop.condition !== null) this.expression(loop.condition);
+    if (check?.isNotNull) {
+      this.updateVariableState(check.varName, NullCheckState.CheckedNotNull);
+    }
+    this.statement(loop.body);
+    if (loop.update !== null) this.assignmentSite(loop.update);
+  }
+
+  private assignmentSite(assignment: IAssignmentSyntax): void {
+    this.assignment(assignment);
+    this.expression(assignment.target);
+    this.expression(assignment.value);
+    this.inVariableDeclarationWithNullable = false;
   }
 
   // ========================================================================
@@ -556,9 +583,7 @@ class NullCheckWalk {
     }
   }
 
-  private assignment(
-    statement: Extract<TStatement, { kind: "assignment" }>,
-  ): void {
+  private assignment(statement: IAssignmentSyntax): void {
     const funcName = NullCheckWalk.nullableCallIn(statement.value);
     if (funcName === null) return;
     const varName = statement.target.written;

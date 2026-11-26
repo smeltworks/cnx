@@ -33,6 +33,22 @@ class StringValueForm {
       : { kind: "copy", value: part.value };
   }
 
+  /**
+   * #2234, #2263: whether the value is built from its parts rather than
+   * copied whole by one `cnx_string_copy`: a concatenation, a substring, or
+   * a ternary with either as an arm (E0710 nests no ternary in another)
+   */
+  static isBuilt(value: TExpression, ctx: ITypingContext): boolean {
+    const unwrapped = StringValueForm.unwrapped(value);
+    if (unwrapped.kind === "ternary") {
+      return [unwrapped.whenTrue, unwrapped.whenFalse].some((arm) =>
+        StringValueForm.isBuilt(arm, ctx),
+      );
+    }
+    const kind = StringValueForm.of(unwrapped, ctx).kind;
+    return kind === "concat" || kind === "substring";
+  }
+
   private static partOf(value: TExpression, ctx: ITypingContext): TStringPart {
     if (value.kind !== "postfix" || !OperandTyper.isSubstring(value, ctx)) {
       return { kind: "whole", value };

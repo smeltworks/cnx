@@ -164,9 +164,9 @@ describe("LoopAnalyzer", () => {
         e.message,
       ]);
 
-    it("reads a string copy from the type the target writes", () => {
+    it("reads a string build from the type the target writes", () => {
       // #1731 review: E0715 asks the question 2.2's copy asks -- a field and
-      // an element of string<N> are copies; a byte element is one store
+      // an element of string<N> are string writes; a byte element is one store
       const source = [
         "struct Cfg { string<8> name; }",
         "void run() {",
@@ -174,18 +174,28 @@ describe("LoopAnalyzer", () => {
         "    Cfg c;",
         "    string<8>[2] names;",
         "    u8[4] buf;",
-        '    for (c.name <- "b"; n < 2; n +<- 1) { }',
-        '    for (names[0] <- "b"; n < 2; n +<- 1) { }',
+        "    for (c.name <- c.name[0, 1]; n < 2; n +<- 1) { }",
+        "    for (names[0] <- names[1][0, 1]; n < 2; n +<- 1) { }",
         "    for (buf[0] <- 1; n < 2; n +<- 1) { }",
         "}",
       ].join("\n");
       expect(codes(source)).toEqual([
-        ["E0715", 7, 9, expect.stringContaining("a string copy")],
-        ["E0715", 8, 9, expect.stringContaining("a string copy")],
+        [
+          "E0715",
+          7,
+          9,
+          expect.stringContaining("a string built from its parts"),
+        ],
+        [
+          "E0715",
+          8,
+          9,
+          expect.stringContaining("a string built from its parts"),
+        ],
       ]);
     });
 
-    it("reads a string copy of this.x and global.x from the variable", () => {
+    it("reads a string build into this.x and global.x from the variable", () => {
       // #1731 review: with no step, the variable's own type is what is written
       const source = [
         "string<8> label;",
@@ -193,37 +203,81 @@ describe("LoopAnalyzer", () => {
         "    string<8> name;",
         "    public void run() {",
         "        u8 n <- 0;",
-        '        for (this.name <- "b"; n < 2; n +<- 1) { }',
-        '        for (global.label <- "b"; n < 2; n +<- 1) { }',
+        "        for (this.name <- this.name[0, 1]; n < 2; n +<- 1) { }",
+        "        for (global.label <- global.label[0, 1]; n < 2; n +<- 1) { }",
         "    }",
         "}",
       ].join("\n");
       expect(codes(source)).toEqual([
-        ["E0715", 6, 13, expect.stringContaining("a string copy")],
-        ["E0715", 7, 13, expect.stringContaining("a string copy")],
+        [
+          "E0715",
+          6,
+          13,
+          expect.stringContaining("a string built from its parts"),
+        ],
+        [
+          "E0715",
+          7,
+          13,
+          expect.stringContaining("a string built from its parts"),
+        ],
       ]);
     });
 
-    it("rejects a string copy, a slice and any write to an atomic", () => {
+    it("rejects a string build, a slice and any write to an atomic", () => {
       const source = [
         "atomic u32 counter <- 0;",
         "void run() {",
         "    u8 n <- 0;",
         '    string<8> s <- "a";',
         "    u8[8] buf;",
-        '    for (s <- "b"; n < 2; buf[0, 2] <- n) { n +<- 1; }',
+        "    for (s <- s[0, 1]; n < 2; buf[0, 2] <- n) { n +<- 1; }",
         "    for (counter <- 0; n < 2; counter +<- 1) { n +<- 1; }",
         "}",
       ].join("\n");
       expect(codes(source)).toEqual([
-        ["E0715", 6, 9, expect.stringContaining("a string copy")],
-        ["E0715", 6, 26, expect.stringContaining("a slice write")],
+        [
+          "E0715",
+          6,
+          9,
+          expect.stringContaining("a string built from its parts"),
+        ],
+        ["E0715", 6, 30, expect.stringContaining("a slice write")],
         ["E0715", 7, 9, expect.stringContaining("an atomic store")],
         [
           "E0715",
           7,
           30,
           expect.stringContaining("an atomic read-modify-write"),
+        ],
+      ]);
+    });
+
+    it("accepts a string copied whole, and rejects one built from its parts (#2234)", () => {
+      const source = [
+        "struct Cfg { string<8> name; }",
+        "void run() {",
+        "    u8 n <- 0;",
+        '    string<4> a <- "ab";',
+        "    mut string<8> s <- a;",
+        "    Cfg c;",
+        '    for (s <- "b"; n < 2; s <- (n = 0) ? a : "c") { n +<- 1; }',
+        "    for (c.name <- a; n < 2; s <- a + a) { n +<- 1; }",
+        '    for (s <- (n = 0) ? a[0, 1] : "c"; n < 2; n +<- 1) { }',
+        "}",
+      ].join("\n");
+      expect(codes(source)).toEqual([
+        [
+          "E0715",
+          8,
+          29,
+          expect.stringContaining("a string built from its parts"),
+        ],
+        [
+          "E0715",
+          9,
+          9,
+          expect.stringContaining("a string built from its parts"),
         ],
       ]);
     });
