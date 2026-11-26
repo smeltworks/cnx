@@ -7,6 +7,8 @@ import Parse from "../../2-Parse/Parse";
 import noHeaderServices from "../../2-Parse/__testUtils__/noHeaderServices";
 import Declare from "../../3-Declare/Declare";
 import testSourceGraph from "../../1-Discover/__testUtils__/testSourceGraph";
+import TestSourceSpan from "../../../types/__testUtils__/testSourceSpan";
+import ESourceLanguage from "../../../utils/types/ESourceLanguage";
 
 describe("Resolve.program", () => {
   it("resolves the declared files and carries them on", async () => {
@@ -88,5 +90,71 @@ describe("Resolve.program", () => {
     expect(program.seesHeaderMacro("/p/a.cnx", "OTHER")).toBe(false);
     expect(program.hidesHeaderName("/p/a.cnx", "OTHER")).toBe(true);
     expect(program.hidesHeaderName("/p/b.cnx", "OTHER")).toBe(false);
+  });
+  it("reads a header's macro width and dimension through its includers' macros (#2510)", async () => {
+    const headerMacroDumps = new Map([
+      [
+        "/p/a.cnx",
+        {
+          dump: "#define SENSOR_COUNT 3\n#define WIDE 5\n#define N 8",
+          headerFiles: new Set(["/p/cfg.h"]),
+          complete: true,
+        },
+      ],
+    ]);
+    const graph = {
+      ...testSourceGraph([Discover.inMemoryFile("u32 a <- 0;", "/p/a.cnx")]),
+      headerMacroDumps,
+    };
+    const parsed = await Parse.sources(graph, noHeaderServices);
+    const declared = Declare.sources({
+      ...parsed,
+      discovery: { ...parsed.discovery, headerMacroDumps },
+    });
+    const header = {
+      sourceFile: "/p/cfg.h",
+      span: TestSourceSpan.at(1),
+      sourceLanguage: ESourceLanguage.C,
+      visibility: "public",
+    } as const;
+    const table = declared.symbolTable;
+    table.addCSymbol({
+      ...header,
+      kind: "variable",
+      name: "table",
+      type: "uint8_t",
+      arrayDimensions: ["SENSOR_COUNT"],
+    });
+    // an enumerator named N: C may read it, not the macro, so N stays unread
+    table.addCSymbol({
+      ...header,
+      kind: "enum_member",
+      name: "N",
+      value: 3,
+      parent: "Count",
+    });
+    table.addCSymbol({
+      ...header,
+      kind: "variable",
+      name: "shadowed",
+      type: "uint8_t",
+      arrayDimensions: ["N"],
+    });
+    table.addCSymbol({
+      ...header,
+      kind: "struct",
+      name: "Reg",
+      isUnion: false,
+    });
+    table.addStructField("Reg", "mode", "uint32_t", undefined, "WIDE");
+    Resolve.program(declared);
+
+    const dims = (name: string) => {
+      const symbol = table.getCSymbol(name);
+      return symbol?.kind === "variable" ? symbol.arrayDimensions : undefined;
+    };
+    expect(dims("table")).toEqual([3]);
+    expect(dims("shadowed")).toEqual(["N"]);
+    expect(table.getStructFields("Reg")?.get("mode")?.bitWidth).toBe(5);
   });
 });

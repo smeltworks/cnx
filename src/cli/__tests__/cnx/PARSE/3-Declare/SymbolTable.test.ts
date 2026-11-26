@@ -916,4 +916,82 @@ describe("SymbolTable", () => {
       expect(table.isCPointerTypedef("loop_a")).toBe(false);
     });
   });
+  describe("settleArrayDimensions (#2510)", () => {
+    const variable = (
+      name: string,
+      dims: ReadonlyArray<number | string>,
+    ): TCSymbol => ({
+      kind: "variable",
+      name,
+      sourceFile: "cfg.h",
+      span: TestSourceSpan.at(1),
+      sourceLanguage: ESourceLanguage.C,
+      visibility: "public",
+      type: "uint8_t",
+      arrayDimensions: dims,
+    });
+
+    it("settles a dimension it can read, and keeps one it cannot", () => {
+      symbolTable.addCSymbol(variable("table", ["SENSOR_COUNT"]));
+      symbolTable.addCSymbol(variable("odd", ["UNREAD"]));
+      symbolTable.addCSymbol(variable("fixed", [4]));
+      symbolTable.addCppSymbol({
+        kind: "variable",
+        name: "pins",
+        unqualifiedName: "pins",
+        sourceFile: "pins.hpp",
+        span: TestSourceSpan.at(1),
+        sourceLanguage: ESourceLanguage.Cpp,
+        visibility: "public",
+        type: "uint8_t",
+        arrayDimensions: ["SENSOR_COUNT"],
+      });
+      const asked: string[] = [];
+      symbolTable.settleArrayDimensions((text, header) => {
+        asked.push(`${header}:${text}`);
+        return text === "SENSOR_COUNT" ? 3 : null;
+      });
+
+      const dims = (name: string) => {
+        const symbol = symbolTable.getCSymbol(name);
+        return symbol?.kind === "variable" ? symbol.arrayDimensions : undefined;
+      };
+      expect(dims("table")).toEqual([3]);
+      expect(dims("odd")).toEqual(["UNREAD"]);
+      expect(dims("fixed")).toEqual([4]);
+      const pins = symbolTable.getCppSymbol("pins");
+      expect(pins?.kind === "variable" && pins.arrayDimensions).toEqual([3]);
+      // the fixed dimension is never asked about
+      expect(asked).not.toContain("cfg.h:4");
+      expect(asked).toContain("pins.hpp:SENSOR_COUNT");
+    });
+
+    it("settles a header struct's field by its header, and skips a struct no header declares", () => {
+      symbolTable.addCSymbol({
+        kind: "struct",
+        name: "Bank",
+        sourceFile: "bank.h",
+        span: TestSourceSpan.at(1),
+        sourceLanguage: ESourceLanguage.C,
+        visibility: "public",
+        isUnion: false,
+      });
+      symbolTable.addStructField("Bank", "data", "uint8_t", ["SENSOR_COUNT"]);
+      symbolTable.addStructField("Bank", "flags", "uint8_t");
+      symbolTable.addStructField("Loose", "data", "uint8_t", ["SENSOR_COUNT"]);
+      const headers: string[] = [];
+      symbolTable.settleArrayDimensions((_text, header) => {
+        headers.push(header);
+        return 3;
+      });
+
+      expect(
+        symbolTable.getStructFields("Bank")?.get("data")?.arrayDimensions,
+      ).toEqual([3]);
+      expect(
+        symbolTable.getStructFields("Loose")?.get("data")?.arrayDimensions,
+      ).toEqual(["SENSOR_COUNT"]);
+      expect(headers).toEqual(["bank.h"]);
+    });
+  });
 });
