@@ -1,0 +1,55 @@
+// test-execution
+// #2348 review: a NULL check narrows a C string where C evaluates only once
+// it held: the right side of '&&' after 'c_x != NULL', of '||' after
+// 'c_x = NULL', each branch of a ternary, the body of an if whose
+// '&&' checks several, and the code after a guard clause whose '||' does.
+#pragma target host
+#include <string.h>
+
+string<32> haystack <- "hello hello";
+
+u32 lengthAfterGuard() {
+    cstring c_a <- strstr(haystack, "lo");
+    cstring c_b <- strstr(haystack, "he");
+    if (c_a = NULL || c_b = NULL) {
+        return 0;
+    }
+    return (u32)(strlen(c_a) + strlen(c_b));
+}
+
+u32 main() {
+    cstring c_pos <- strstr(haystack, "lo");
+    cstring c_he <- strstr(haystack, "he");
+    bool hasText <- c_pos != NULL && strlen(c_pos) > 0;
+    if (hasText = false) {
+        return 1;
+    }
+    bool isEmpty <- c_pos = NULL || strlen(c_pos) = 0;
+    if (isEmpty = true) {
+        return 2;
+    }
+    u64 length <- (c_pos != NULL) ? strlen(c_pos) : 0;
+    if (length != 8) {
+        return 3;
+    }
+    u64 other <- (c_pos = NULL) ? 0 : strlen(c_pos);
+    if (other != 8) {
+        return 4;
+    }
+    mut u64 both <- 0;
+    if (c_pos != NULL && c_he != NULL) {
+        both <- strlen(c_pos) + strlen(c_he);
+    }
+    if (both != 19) {
+        return 5;
+    }
+    bool negated <- !(c_pos = NULL) && strlen(c_pos) = 8;
+    if (negated = false) {
+        return 6;
+    }
+    u32 guarded <- lengthAfterGuard();
+    if (guarded != 19) {
+        return 7;
+    }
+    return 0;
+}

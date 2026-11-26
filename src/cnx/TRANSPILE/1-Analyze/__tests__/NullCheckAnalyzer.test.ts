@@ -1362,4 +1362,64 @@ describe("NullCheckAnalyzer", () => {
       expect(errors).toHaveLength(0);
     });
   });
+
+  // #2348 review: a NULL check narrows only where its condition decided
+  // control reached
+  describe("E0908 - narrowing by && || ?: and its scope", () => {
+    const e0908Lines = (body: string): number[] => {
+      const code = `
+        string<8> s <- "hello";
+        mut u64 n;
+        mut bool b;
+        void main() {
+          cstring c_a <- strstr(s, "l");
+          cstring c_b <- strstr(s, "h");
+${body}
+        }
+      `;
+      const analyzer = new NullCheckAnalyzer();
+      return analyzer
+        .analyze(lowered(parse(code)))
+        .filter((e) => e.code === "E0908")
+        .map((e) => e.span.line);
+    };
+
+    it("narrows the right side of && and of ||", () => {
+      expect(
+        e0908Lines(`
+          b <- c_a != NULL && strlen(c_a) > 0;
+          b <- c_a = NULL || strlen(c_a) = 0;
+          b <- !(c_a = NULL) && strlen(c_a) > 0;`),
+      ).toEqual([]);
+    });
+
+    it("narrows each branch of a ternary by its own outcome", () => {
+      expect(
+        e0908Lines(`
+          n <- (c_a != NULL) ? strlen(c_a) : 0;
+          n <- (c_a = NULL) ? 0 : strlen(c_a);`),
+      ).toEqual([]);
+    });
+
+    it("narrows an if body and a guard clause by every && or || check", () => {
+      expect(
+        e0908Lines(`
+          if (c_a != NULL && c_b != NULL) { n <- strlen(c_a) + strlen(c_b); }
+          if (c_a = NULL || c_b = NULL) { return; }
+          n <- strlen(c_a) + strlen(c_b);`),
+      ).toEqual([]);
+    });
+
+    it("does not narrow where the check did not hold", () => {
+      expect(
+        e0908Lines(`
+          b <- c_a != NULL || strlen(c_a) > 0;
+          b <- c_a = NULL && strlen(c_a) > 0;
+          n <- (c_a != NULL) ? 0 : strlen(c_a);
+          if (c_a != NULL || n > 0) { n <- strlen(c_a); }
+          if (c_b != NULL) { n <- 0; } else { n <- strlen(c_b); }
+          n <- strlen(c_b);`),
+      ).toEqual([9, 10, 11, 12, 13, 14]);
+    });
+  });
 });

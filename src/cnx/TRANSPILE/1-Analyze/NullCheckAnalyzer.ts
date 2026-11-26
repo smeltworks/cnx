@@ -225,12 +225,8 @@ class NullCheckWalk {
   /** Current scope for tracking nullable variable states (E0908) */
   private currentScope: INullCheckScope | null = null;
 
-  /** The enclosing `if` statements, innermost last: what each one checks, and whether it returns */
-  private readonly ifStack: Array<{
-    varName: string | null;
-    isNullCheck: boolean;
-    hasReturn: boolean;
-  }> = [];
+  /** The enclosing `if` statements, innermost last: whether each one returns */
+  private readonly ifStack: Array<{ hasReturn: boolean }> = [];
 
   constructor(analyzer: NullCheckAnalyzer) {
     this.analyzer = analyzer;
@@ -382,46 +378,88 @@ class NullCheckWalk {
     return { varName: variable.name, isNotNull: operator === "!=" };
   }
 
-  private ifStatement(statement: Extract<TStatement, { kind: "if" }>): void {
-    const check = NullCheckWalk.nullCheckIn(statement.condition);
-    const ifInfo = {
-      varName: check?.varName ?? null,
-      isNullCheck: check !== null && !check.isNotNull,
-      hasReturn: false,
-    };
-    this.ifStack.push(ifInfo);
-    this.expression(statement.condition);
-    // The body of `if (c_var != NULL)` has the variable checked
-    if (check?.isNotNull) {
-      this.updateVariableState(check.varName, NullCheckState.CheckedNotNull);
+  /**
+   * The `c_` names `condition` proves not NULL when it evaluates to
+   * `outcome` (#2348 review): `c_x != NULL` when true, `c_x = NULL` when
+   * false, each operand of a true `&&` and of a false `||`, and a `!`'s
+   * operand the other way round. Anything else proves nothing.
+   */
+  private static narrowedBy(
+    condition: TExpression,
+    outcome: boolean,
+  ): readonly string[] {
+    if (condition.kind === "parenthesized") {
+      return NullCheckWalk.narrowedBy(condition.expression, outcome);
     }
-    this.statement(statement.whenTrue);
-    if (statement.whenFalse !== null) {
-      this.statement(statement.whenFalse);
+    if (condition.kind === "unary" && condition.operator === "!") {
+      return NullCheckWalk.narrowedBy(condition.operand, !outcome);
+    }
+    const check = NullCheckWalk.nullCheckIn(condition);
+    if (check !== null) {
+      return check.isNotNull === outcome ? [check.varName] : [];
+    }
+    if (
+      condition.kind === "binary" &&
+      condition.level === (outcome ? "and" : "or")
+    ) {
+      return condition.operands.flatMap((operand) =>
+        NullCheckWalk.narrowedBy(operand, outcome),
+      );
+    }
+    return [];
+  }
+
+  /**
+   * Walk `walk` with `names` checked, then unchecked again: a NULL check
+   * holds only where its condition decided control reached (#2348 review).
+   * One reassigned inside keeps the state its assignment gave it.
+   */
+  private withNarrowed(names: readonly string[], walk: () => void): void {
+    const narrowed = names.flatMap((name) => {
+      const state = this.lookupVariable(name);
+      if (state?.state !== NullCheckState.Unchecked) return [];
+      state.state = NullCheckState.CheckedNotNull;
+      return [state];
+    });
+    walk();
+    for (const state of narrowed) {
+      if (state.state === NullCheckState.CheckedNotNull) {
+        state.state = NullCheckState.Unchecked;
+      }
+    }
+  }
+
+  private ifStatement(statement: Extract<TStatement, { kind: "if" }>): void {
+    const condition = statement.condition;
+    const ifInfo = { hasReturn: false };
+    this.ifStack.push(ifInfo);
+    this.expression(condition);
+    this.withNarrowed(NullCheckWalk.narrowedBy(condition, true), () =>
+      this.statement(statement.whenTrue),
+    );
+    const whenFalse = statement.whenFalse;
+    if (whenFalse !== null) {
+      this.withNarrowed(NullCheckWalk.narrowedBy(condition, false), () =>
+        this.statement(whenFalse),
+      );
     }
     this.ifStack.pop();
-    // Guard clause: after `if (c_var = NULL) { return; }`, with no else, the
-    // variable is known to be not null
-    if (
-      ifInfo.varName !== null &&
-      ifInfo.isNullCheck &&
-      ifInfo.hasReturn &&
-      statement.whenFalse === null
-    ) {
-      this.updateVariableState(ifInfo.varName, NullCheckState.CheckedNotNull);
+    // Guard clause: after `if (c_var = NULL) { return; }`, with no else, what
+    // a false condition proves holds for the rest of the block
+    if (ifInfo.hasReturn && whenFalse === null) {
+      for (const name of NullCheckWalk.narrowedBy(condition, false)) {
+        this.updateVariableState(name, NullCheckState.CheckedNotNull);
+      }
     }
   }
 
   private whileStatement(
     statement: Extract<TStatement, { kind: "while" }>,
   ): void {
-    const check = NullCheckWalk.nullCheckIn(statement.condition);
     this.expression(statement.condition);
-    // The body of `while (c_var != NULL)` has the variable checked
-    if (check?.isNotNull) {
-      this.updateVariableState(check.varName, NullCheckState.CheckedNotNull);
-    }
-    this.statement(statement.body);
+    this.withNarrowed(NullCheckWalk.narrowedBy(statement.condition, true), () =>
+      this.statement(statement.body),
+    );
   }
 
   // ========================================================================
@@ -433,6 +471,7 @@ class NullCheckWalk {
   }
 
   private expression(expr: TExpression): void {
+    if (this.narrowingExpression(expr)) return;
     const isComparison =
       expr.kind === "binary" &&
       expr.operators.some((op) => op === "=" || op === "!=");
@@ -453,6 +492,38 @@ class NullCheckWalk {
       this.inEqualityComparison = false;
       this.equalityComparisonVarNames = [];
     }
+  }
+
+  /**
+   * `&&`, `||` and `?:` walk each operand with what the ones C evaluated
+   * before it proved (#2348 review): `c_x != NULL && strlen(c_x) > 0`,
+   * `c_x = NULL || strlen(c_x) = 0`, `c_x != NULL ? strlen(c_x) : 0`
+   */
+  private narrowingExpression(expr: TExpression): boolean {
+    if (expr.kind === "ternary") {
+      this.expression(expr.condition);
+      this.withNarrowed(NullCheckWalk.narrowedBy(expr.condition, true), () =>
+        this.expression(expr.whenTrue),
+      );
+      this.withNarrowed(NullCheckWalk.narrowedBy(expr.condition, false), () =>
+        this.expression(expr.whenFalse),
+      );
+      return true;
+    }
+    if (
+      expr.kind !== "binary" ||
+      (expr.level !== "and" && expr.level !== "or")
+    ) {
+      return false;
+    }
+    const reached = expr.level === "and";
+    expr.operands.forEach((operand, index) => {
+      const before = expr.operands
+        .slice(0, index)
+        .flatMap((earlier) => NullCheckWalk.narrowedBy(earlier, reached));
+      this.withNarrowed(before, () => this.expression(operand));
+    });
+    return true;
   }
 
   private postfix(expr: Extract<TExpression, { kind: "postfix" }>): void {

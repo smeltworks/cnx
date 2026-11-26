@@ -78,6 +78,38 @@ if (c_customer != NULL) {
 }
 ```
 
+### Where a NULL Check Holds
+
+A NULL check holds where its condition decided control reached, and nowhere
+else (#2348 review). `c_x != NULL` holds in the body of an `if` or `while` it
+is the condition of, on the right of an `&&` it is the left of, and in the
+first branch of a ternary. `c_x = NULL` holds the other way round: on the
+right of an `||`, in an `else`, in a ternary's second branch, and, as a guard
+clause, after an `if` with no `else` whose body returns. A true `&&` holds
+each of its operands' checks and a false `||` each of its operands', so one
+condition checks several variables; a `!` turns its operand's around.
+
+```cnx
+cstring c_a <- strstr(haystack, "lo");
+cstring c_b <- strstr(haystack, "he");
+bool hasText <- c_a != NULL && strlen(c_a) > 0;        // OK
+u64 length <- (c_a = NULL) ? 0 : strlen(c_a);         // OK
+if (c_a != NULL && c_b != NULL) {
+    n <- strlen(c_a) + strlen(c_b);                    // OK: both checked
+} else {
+    n <- strlen(c_a);                                  // ERROR E0908
+}
+n <- strlen(c_a);                                      // ERROR E0908
+if (c_a = NULL || c_b = NULL) {
+    return;
+}
+n <- strlen(c_a) + strlen(c_b);                        // OK: guard clause
+```
+
+Until then only a whole `if` or `while` condition of exactly `c_x != NULL`
+or `c_x = NULL` checked anything, `c_a != NULL && strlen(c_a) > 0` was E0908,
+and an `if (c_a != NULL)` left `c_a` checked in its `else` and after it.
+
 ### Operators on a C String
 
 A `cstring` is a C `char*`, and cnx has no pointer arithmetic (ADR-006), so

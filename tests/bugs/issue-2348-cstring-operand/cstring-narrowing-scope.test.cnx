@@ -1,0 +1,25 @@
+// test-error
+// #2348 review: a NULL check holds only where its condition decided control
+// reached. Until then 'if (c_pos != NULL)' left c_pos checked in its else
+// branch and after the if.
+#include <string.h>
+
+string<32> haystack <- "hello hello";
+mut u64 n;
+mut bool b;
+
+void main() {
+    cstring c_pos <- strstr(haystack, "lo");
+    if (c_pos != NULL) {
+        n <- strlen(c_pos);
+    } else {
+        n <- strlen(c_pos);
+    }
+    n <- strlen(c_pos);
+    b <- c_pos != NULL || strlen(c_pos) > 0;
+    b <- c_pos = NULL && strlen(c_pos) > 0;
+    n <- (c_pos != NULL) ? 0 : strlen(c_pos);
+    if (c_pos != NULL || n > 0) {
+        n <- strlen(c_pos);
+    }
+}
