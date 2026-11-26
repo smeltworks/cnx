@@ -282,6 +282,7 @@ class HeaderSources {
         [...counted].some((i) => {
           const header = alone[i];
           if (header.source === null) return false;
+          if (cRead && !openedBy([cReadings], i)) return false;
           // what a header the unit read opened is in the unit's reading
           const unitRead = cRead && cReadings.has(keyAt(i));
           const own = LineMarkers.byFile(header.preprocessed);
