@@ -4,6 +4,7 @@
 // long as its block, so passing one to a C function that returns a pointer,
 // which may point into it, is E0948.
 #include <string.h>
+#include "lib/text-search.h"
 
 string<8> s <- "abc";
 mut i32 order;
@@ -18,6 +19,8 @@ scope Finder {
 void main() {
     cstring c_at <- strstr(s + "de", "cd");
     cstring c_ch <- strchr(s[0, 2], 'b');
+    // A typedef of a pointer returns one too
+    cstring c_td <- first_b(s + "y");
     // Control: strcmp returns no pointer, and s passed whole is not built
     order <- strcmp(s + "d", "abcd");
     cstring c_whole <- strstr(s, "b");

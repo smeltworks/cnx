@@ -256,7 +256,8 @@ class CPointerArgumentCheck {
   /**
    * E0948 (#2348 review): a string built for a C function that returns a
    * pointer. The temporary lives only as long as the statement's block, and
-   * the pointer -- what `strstr` or `strchr` return -- may point into it.
+   * the pointer -- what `strstr` or `strchr` return, or a typedef of one --
+   * may point into it.
    */
   private rejectsPointerResult(
     arg: TExpression,
@@ -267,7 +268,16 @@ class CPointerArgumentCheck {
     const form = StringValueForm.of(arg, this.context);
     if (form.kind !== "concat" && form.kind !== "substring") return false;
     if (
-      !reached.some((signature) => signature.returnType?.includes("*") === true)
+      !reached.some(
+        (signature) =>
+          signature.returnType !== null &&
+          (signature.returnType.includes("*") ||
+            this.context.symbolTable.isCPointerTypedef(
+              signature.returnType
+                .replaceAll(/\b(?:const|volatile)\b/g, "")
+                .trim(),
+            )),
+      )
     ) {
       return false;
     }
