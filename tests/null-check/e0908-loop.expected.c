@@ -18,7 +18,7 @@ char buffer[257] = "";
 void testLoopPattern(void) {
     FILE* c_file = fopen("data.txt", "r");
     if (c_file != NULL) {
-        char* c_line = fgets(buffer, 257, c_file);
+        const char* c_line = fgets(buffer, 257, c_file);
         while (c_line != NULL) {
             (void)printf("%s", buffer);
             c_line = fgets(buffer, 257, c_file);

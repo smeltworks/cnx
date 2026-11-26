@@ -136,6 +136,7 @@ import SafeDivision from "../utils/SafeDivision";
 import helperGenerators from "./3-Render/codegen/generators/support/HelperGenerator";
 import includeGenerators from "./2-Plan/IncludeGenerator";
 import DeclaredTypeInfo from "../PARSE/3-Declare/DeclaredTypeInfo";
+import ConstQualifier from "../utils/ConstQualifier";
 import DeclaredPointer from "../utils/DeclaredPointer";
 import type TTypeInfo from "../types/TTypeInfo";
 import memberAccessChain from "./3-Render/codegen/memberAccessChain";
@@ -3046,7 +3047,9 @@ class CodeGenWalker {
       emittedName,
       // #1209: an array copied into is written after it is declared
       modifierPrefix: VariableModifierBuilder.toPrefix(
-        array.copy === null ? modifiers : { ...modifiers, const: "" },
+        array.copy === null && !ConstQualifier.isSpelled(type)
+          ? modifiers
+          : { ...modifiers, const: "" },
       ),
       type,
       array,

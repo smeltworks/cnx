@@ -13,7 +13,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-char haystack[33] = "hello world";
+const char haystack[33] = "hello world";
 
 bool same = false;
 
@@ -22,7 +22,7 @@ bool earlier = false;
 int32_t order = 0;
 
 int main(void) {
-    char* c_first = strstr(haystack, "o");
+    const char* c_first = strstr(haystack, "o");
     const char* c_last = strrchr(haystack, 'o');
     if (c_first != NULL) {
         if (c_last != NULL) {

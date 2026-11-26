@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /* External variables */
-extern char haystack[33];
+extern const char haystack[33];
 extern bool same;
 extern bool earlier;
 extern int32_t order;

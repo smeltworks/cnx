@@ -2,7 +2,7 @@
 // content (ADR-045), passed whole and reassigned from a call (ADR-046)
 #include <string.h>
 
-mut string<32> haystack <- "hello world";
+string<32> haystack <- "hello world";
 mut bool same;
 mut bool earlier;
 mut i32 order;

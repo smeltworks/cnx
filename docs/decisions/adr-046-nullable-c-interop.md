@@ -112,7 +112,7 @@ and an `if (c_a != NULL)` left `c_a` checked in its `else` and after it.
 
 ### Operators on a C String
 
-A `cstring` is a C `char*`, and cnx has no pointer arithmetic (ADR-006), so
+A `cstring` is a C pointer, and cnx has no pointer arithmetic (ADR-006), so
 no arithmetic, bitwise or shift operator takes one, nor a prefix `-` or `~`,
 nor a compound assignment (owner ruling, #2348). Each is E0925. Until then
 `c_pos + 1` was accepted at exit 0 and emitted as C pointer arithmetic.
@@ -131,6 +131,26 @@ c_pos <- strstr(haystack, "he");        // OK: reassigned from a call
 ```
 
 To reach a part of it, copy it into a `string<N>` and take a substring.
+
+### A C String's C Type
+
+A `cstring` is emitted as `const char*`, `mut` or not (#2311). Its characters
+are C's: a string literal, or what `strstr` returns for a read-only string.
+`mut` lets the pointer be reassigned; it never lets cnx write the characters,
+because no cnx form writes through a `cstring`. A read-only `cstring` adds no
+second `const`.
+
+```cnx
+mut cstring label <- "a";                   // const char* label = "a";
+label <- "b";                               // OK: the pointer is reassigned
+string<16> haystack <- "hello world";
+mut cstring c_at <- strstr(haystack, "lo"); // const char* c_at = strstr(...)
+cstring c_he <- strstr(haystack, "he");     // const char* c_he = strstr(...)
+```
+
+Until then a `mut cstring` was `char*`. ISO C++ rejects a string literal
+there, and `strstr` on a `const char[]` returns `const char*` in C++, so both
+failed to compile under `-Werror` while the transpiler exited 0.
 
 ## Error Codes
 

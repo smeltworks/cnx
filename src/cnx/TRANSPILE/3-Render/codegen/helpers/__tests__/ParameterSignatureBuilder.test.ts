@@ -486,4 +486,34 @@ describe("ParameterSignatureBuilder", () => {
       expect(result).toBe("uint8_t* buf");
     });
   });
+
+  describe("cstring parameters (#2311)", () => {
+    it("adds no second const to a read-only cstring", () => {
+      const input = createInput({
+        name: "c_s",
+        baseType: "cstring",
+        mappedType: "const char*",
+        isConst: true,
+      });
+
+      expect(ParameterSignatureBuilder.build(input, "*")).toBe(
+        "const char** c_s",
+      );
+    });
+
+    it("adds no second const to a cstring passed by value", () => {
+      const input = createInput({
+        name: "c_s",
+        baseType: "cstring",
+        mappedType: "const char*",
+        isConst: true,
+        isPassByValue: true,
+        isPassByReference: false,
+      });
+
+      expect(ParameterSignatureBuilder.build(input, "&")).toBe(
+        "const char* c_s",
+      );
+    });
+  });
 });

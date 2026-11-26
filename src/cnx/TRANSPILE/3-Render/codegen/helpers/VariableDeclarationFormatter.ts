@@ -13,6 +13,7 @@
  * This class is STATELESS - all decisions are pre-computed in IVariableFormatInput.
  */
 
+import ConstQualifier from "../../../../utils/ConstQualifier";
 import type IVariableFormatInput from "../types/IVariableFormatInput";
 
 /** Modifier flags for variable declarations */
@@ -26,9 +27,11 @@ class VariableDeclarationFormatter {
    * @returns Formatted declaration string (e.g., "extern const uint32_t count")
    */
   static format(input: IVariableFormatInput): string {
-    const modifierPrefix = VariableDeclarationFormatter.buildModifierPrefix(
-      input.modifiers,
-    );
+    const modifierPrefix = VariableDeclarationFormatter.buildModifierPrefix({
+      ...input.modifiers,
+      isConst:
+        input.modifiers.isConst && !ConstQualifier.isSpelled(input.mappedType),
+    });
     const arrayDimsStr = VariableDeclarationFormatter.buildArrayDimensions(
       input.arrayDimensions,
     );

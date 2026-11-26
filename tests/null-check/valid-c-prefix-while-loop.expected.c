@@ -17,7 +17,7 @@
 char buffer[65] = "";
 
 void testWhileLoop(void) {
-    char* c_line = fgets(buffer, 65, stdin);
+    const char* c_line = fgets(buffer, 65, stdin);
     while (c_line != NULL) {
         (void)printf("Read: %s", c_line);
         c_line = fgets(buffer, 65, stdin);
