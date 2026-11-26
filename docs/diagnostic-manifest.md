@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1070 fixture(s) assert a diagnostic; 1056 carry a code.
+1074 fixture(s) assert a diagnostic; 1060 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -456,6 +456,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/adr-068/for-header-multi-statement-imported-direct-error.test.cnx                                   | E0715                             |
 | tests/adr-068/for-header-multi-statement-imported-transitive-error.test.cnx                               | E0715                             |
 | tests/adr-068/for-header-multi-statement-in-scope-error.test.cnx                                          | E0715                             |
+| tests/adr-068/for-header-string-call-error.test.cnx                                                       | E0715                             |
 | tests/adr-068/forever-disguised-dowhile.test.cnx                                                          | E0707                             |
 | tests/adr-068/forever-disguised-for-cond.test.cnx                                                         | E0707                             |
 | tests/adr-068/forever-disguised-for-empty.test.cnx                                                        | E0707                             |
@@ -846,6 +847,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1702-declaration-position/fl-fn-error.test.cnx                                           | E0810                             |
 | tests/bugs/issue-1724-sibling-scope-type-not-included/frames-see-own-closure-error.test.cnx               | E0810                             |
 | tests/bugs/issue-1724-sibling-scope-type-not-included/typer-sees-own-closure-error.test.cnx               | E0428                             |
+| tests/bugs/issue-1726-for-header-assignment-sites/null-check-after-loop-error.test.cnx                    | E0908                             |
 | tests/bugs/issue-1728-leading-zero/leading-zero.test.cnx                                                  | E0912                             |
 | tests/bugs/issue-1735-static-initializer-arithmetic/static-not-constant.test.cnx                          | E0909                             |
 | tests/bugs/issue-1735-static-initializer-arithmetic/static-overflow-arithmetic.test.cnx                   | E0910                             |
@@ -1051,7 +1053,9 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/initialization/compound-assign-all-ops.test.cnx                                                     | E0381                             |
 | tests/initialization/compound-assign-struct-field.test.cnx                                                | E0381                             |
 | tests/initialization/compound-assign-use-before-init.test.cnx                                             | E0381                             |
+| tests/initialization/compound-call-argument-error.test.cnx                                                | E0381                             |
 | tests/initialization/for-init-reads-uninit-error.test.cnx                                                 | E0381                             |
+| tests/initialization/for-skipped-update-error.test.cnx                                                    | E0381                             |
 | tests/initialization/for-update-compound-uninit-error.test.cnx                                            | E0381                             |
 | tests/initialization/if-else-branches.test.cnx                                                            | E0381                             |
 | tests/initialization/partial-branch-init-error.test.cnx                                                   | E0381                             |
