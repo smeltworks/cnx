@@ -149,6 +149,26 @@ describe("detectCppSyntax", () => {
     });
   });
 
+  describe("one-line class bodies (#2504 review)", () => {
+    it.each([
+      ["a class body", "class Counter { public: uint8_t data[4]; };"],
+      ["a final class body", "class Leaf final { int x; };"],
+      [
+        "a struct body that opens with a label",
+        "struct S { private: int y; };",
+      ],
+    ])("detects %s", (_label, source) => {
+      expect(detectCppSyntax(source)).toBe(true);
+    });
+
+    it.each([
+      ["a C struct body", "struct S { int public_x; };"],
+      ["class as a C identifier", "int class; struct K { int class; };"],
+    ])("does not detect %s", (_label, source) => {
+      expect(detectCppSyntax(source)).toBe(false);
+    });
+  });
+
   describe("access specifier labels (S8786 scan)", () => {
     // These rows are the corpus the scan was checked against when it replaced
     // /^\s*(public|private|protected)\s*:/m. Kept as tests so the equivalence
@@ -170,12 +190,13 @@ describe("detectCppSyntax", () => {
       ["a label with code before it on the line", "x = public:"],
       ["a keyword with no colon", "public"],
       ["a bare colon", ":"],
-      // A label needs its own line: only whitespace may precede it. A one-line
-      // `class A { public: };` is therefore not detected by this check, and
-      // the inheritance check above wants `class A : public B`, so it misses
-      // too. That is the existing heuristic's boundary, unchanged by the scan
-      // that replaced the regex -- both agree here.
-      ["a label mid-line inside a one-line class body", "class A { public: };"],
+      // A label needs its own line: only whitespace may precede it, so a C
+      // goto label after a statement is not one.
+      [
+        "a C label after a statement",
+        "void f(void) { goto public; ; public: return; }",
+      ],
+      ["a label inside a string literal", 'const char *s = "{ public: }";'],
       ["empty input", ""],
     ])("does not treat %s as an access specifier", (_label, source) => {
       expect(detectCppSyntax(source)).toBe(false);

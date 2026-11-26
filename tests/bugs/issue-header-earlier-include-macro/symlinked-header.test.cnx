@@ -1,0 +1,23 @@
+// test-execution
+// lib/include-link is a symlink to lib/vendor/sdk, so board.h is one file
+// under two spellings. Its second opening reads only board_count, outside
+// its guard; that opening must not stand for either spelling's declarations.
+#include "lib/vendor/sdk/board.h"
+#include "linked-board.cnx"
+
+mut u8[board_count.type_element_count] counts;
+mut u8[board_pins.type_element_count] pins;
+
+u32 main() {
+    if (counts.type_element_count != 3) {
+        return 1;
+    }
+    if (pins.type_element_count != 4) {
+        return 2;
+    }
+    u8 linked <- linked_pins();
+    if (linked != 4) {
+        return 3;
+    }
+    return 0;
+}

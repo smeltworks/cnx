@@ -13,9 +13,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   mkdirSync,
+  readFileSync,
   mkdtempSync,
   writeFileSync,
   rmSync,
+  symlinkSync,
   utimesSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -176,6 +178,143 @@ describe("a header's language is decided once, in 1.1 (#1844)", () => {
       for (const result of runs) {
         expect(errorsOf(result)).toBe("");
         expect(emitted(result, ".cpp")).toBe(true);
+      }
+    });
+
+    // #2504 review: a file only preprocessing opens decides the mode before
+    // any reading is chosen, so a .h is read as the C++ compile reads it
+    const AUTO_CPP = (impl: string): Record<string, string> => ({
+      "impl.hpp": impl,
+      "cfg.h": '#define IMPL_HEADER "impl.hpp"\n#include IMPL_HEADER\n',
+      "api.h":
+        "#include <stdint.h>\n#ifdef __cplusplus\n" +
+        "extern uint8_t buffer[4];\n#else\nextern uint8_t buffer[2];\n#endif\n",
+    });
+    const AUTO_MAIN =
+      '#include "cfg.h"\n#include "api.h"\n\n' +
+      "u32 count() {\n    return buffer.type_element_count;\n}\n\n" +
+      "void main() {\n    (void)count();\n}\n";
+
+    it("reads a .h as C++ when only a macro-named .hpp include makes the run C++, cold and warm", async (ctx) => {
+      if (!preprocessorAvailable) ctx.skip();
+
+      const runs = await coldThenWarmMain(
+        AUTO_CPP("namespace Impl { int impl_v; }\n"),
+        AUTO_MAIN,
+      );
+
+      for (const result of runs) {
+        expect(errorsOf(result)).toBe("");
+        expect(emitted(result, ".cpp")).toBe(true);
+        expect(readFileSync(join(dir, "main.cpp"), "utf8")).toContain(
+          "return 4;",
+        );
+      }
+    });
+
+    it("control: without the .hpp include the run is C, and reads the C branch", async (ctx) => {
+      if (!preprocessorAvailable) ctx.skip();
+
+      const runs = await coldThenWarmMain(
+        { ...AUTO_CPP(""), "cfg.h": "#define IMPL_IS_C 1\n" },
+        AUTO_MAIN,
+      );
+
+      for (const result of runs) {
+        expect(errorsOf(result)).toBe("");
+        expect(emitted(result, ".c")).toBe(true);
+        expect(readFileSync(join(dir, "main.c"), "utf8")).toContain(
+          "return 2;",
+        );
+      }
+    });
+
+    // #2504 review: a header the walk reached is judged on the text C meets,
+    // and that one judgement is the run's mode
+    const LIB = join(
+      process.cwd(),
+      "tests/bugs/issue-header-earlier-include-macro/lib",
+    );
+    const fromLib = (...names: string[]): Record<string, string> =>
+      Object.fromEntries(
+        names.map((name) => [name, readFileSync(join(LIB, name), "utf8")]),
+      );
+    const including = (...names: string[]): string =>
+      `${names.map((name) => `#include "${name}"`).join("\n")}\n\nvoid main() { }\n`;
+
+    it("is C when an earlier include hides a header's class from C alone", async (ctx) => {
+      if (!preprocessorAvailable) ctx.skip();
+      const names = ["c-only-api-config.h", "cpp-api-in-cpp.h"];
+
+      const runs = await coldThenWarmMain(
+        fromLib(...names),
+        including(...names),
+      );
+
+      for (const result of runs) {
+        expect(errorsOf(result)).toBe("");
+        expect(emitted(result, ".c")).toBe(true);
+        expect(emitted(result, ".cpp")).toBe(false);
+      }
+    });
+
+    it("is C++ when an earlier include hides a header's class from C++ alone", async (ctx) => {
+      if (!preprocessorAvailable) ctx.skip();
+      const names = ["cpp-only-hide-config.h", "shown-in-c.h"];
+
+      const runs = await coldThenWarmMain(
+        fromLib(...names),
+        including(...names),
+      );
+
+      for (const result of runs) {
+        expect(errorsOf(result)).toBe("");
+        expect(emitted(result, ".cpp")).toBe(true);
+        expect(emitted(result, ".c")).toBe(false);
+      }
+    });
+
+    // #2504 review: one file under two spellings is one header, but each
+    // spelling keeps what its own spelling means
+    it("is C++ when a macro-named include opens a walked .h through a .hpp symlink", async (ctx) => {
+      if (!preprocessorAvailable) ctx.skip();
+      writeFileSync(join(dir, "api.h"), "int api_v;\n");
+      symlinkSync("api.h", join(dir, "api-link.hpp"));
+
+      const runs = await coldThenWarmMain(
+        { "cfg.h": '#define API_HEADER "api-link.hpp"\n#include API_HEADER\n' },
+        '#include "api.h"\n#include "cfg.h"\n\nvoid main() { }\n',
+      );
+
+      for (const result of runs) {
+        expect(errorsOf(result)).toBe("");
+        expect(emitted(result, ".cpp")).toBe(true);
+      }
+    });
+
+    it("is C when only an unopened symlink spelling's sibling include is C++", async (ctx) => {
+      if (!preprocessorAvailable) ctx.skip();
+      mkdirSync(join(dir, "real"));
+      mkdirSync(join(dir, "link"));
+      writeFileSync(join(dir, "real", "dep.h"), "int dep_v;\n");
+      writeFileSync(
+        join(dir, "link", "dep.h"),
+        "class Dep { public: int x; };\n",
+      );
+      writeFileSync(join(dir, "real", "a.h"), '#include "dep.h"\n');
+      symlinkSync(join("..", "real", "a.h"), join(dir, "link", "a.h"));
+
+      const runs = await coldThenWarmMain(
+        {
+          "wrap.h": '#ifdef NEVER\n#include "link/a.h"\n#endif\nint wrap_v;\n',
+        },
+        '#include "real/a.h"\n#include "wrap.h"\n\nvoid main() { }\n',
+      );
+
+      for (const result of runs) {
+        expect(errorsOf(result)).toBe("");
+        expect(emitted(result, ".c")).toBe(true);
+        expect(emitted(result, ".cpp")).toBe(false);
       }
     });
 

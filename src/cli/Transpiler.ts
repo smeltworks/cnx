@@ -391,10 +391,12 @@ class Transpiler {
           `[DEBUG]   Found ${header.record.symbols.length} symbols in ${header.path}`,
         );
       }
+      const reader = headers.readers.get(header.path);
+      invariant(reader !== undefined, "1.2 names what read each header");
       this.cacheManager?.setHeaderDeclarations(
         header.path,
         header.record,
-        headers.reader,
+        reader,
       );
     }
   }

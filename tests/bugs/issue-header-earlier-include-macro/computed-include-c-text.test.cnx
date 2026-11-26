@@ -1,0 +1,11 @@
+// test-execution
+// lib/pins-by-string.h opens lib/hidden-pins.h through a computed name,
+// PINS_STRING(hidden-pins.h), which discovery cannot follow. Its class is
+// judged on the text C meets after hide-class-config.h, which hides it, so the
+// run is C, and a C run does not fail with E0507.
+#include "lib/hide-class-config.h"
+#include "lib/pins-by-string.h"
+
+u32 main() {
+    return 0;
+}
