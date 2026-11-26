@@ -900,17 +900,23 @@ class SymbolTable implements IResolvedSymbols {
    * `MODE_BITS`, settled to the number C reads, where cnx can read it
    */
   settleBitFieldWidths(
-    widthOf: (text: string, structName: string) => number | IUnreadBitWidth,
+    widthOf: (
+      text: string,
+      structName: string,
+      header: string | undefined,
+    ) => number | IUnreadBitWidth,
   ): void {
     const settled = new Map<string, number | IUnreadBitWidth>();
     const settle = (
       structName: string,
       fields: Map<string, IStructFieldInfo>,
+      header?: string,
     ): void => {
       for (const [name, info] of fields) {
         if (typeof info.bitWidth !== "string") continue;
-        const key = `${structName}\0${info.bitWidth}`;
-        const width = settled.get(key) ?? widthOf(info.bitWidth, structName);
+        const key = JSON.stringify([structName, header, info.bitWidth]);
+        const width =
+          settled.get(key) ?? widthOf(info.bitWidth, structName, header);
         settled.set(key, width);
         fields.set(
           name,
@@ -923,9 +929,12 @@ class SymbolTable implements IResolvedSymbols {
     for (const [structName, fields] of this.structFields) {
       settle(structName, fields);
     }
-    // #2474: a file's view reads the fields its own header declares
+    // #2474: a file's view reads the fields its own header declares, whose
+    // width is read through the macros of the files that include that header
     for (const [structName, byFile] of this.structFieldsByFile) {
-      for (const fields of byFile.values()) settle(structName, fields);
+      for (const [header, fields] of byFile) {
+        settle(structName, fields, header);
+      }
     }
   }
 

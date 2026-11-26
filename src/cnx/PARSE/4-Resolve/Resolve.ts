@@ -52,8 +52,9 @@ class Resolve {
     // #2494: a bit-field's width is read once, as C reads it, before any
     // field is typed from the table -- through the macros of the files that
     // include the struct's header, which are the files whose C reads it
-    table.settleBitFieldWidths((text, structName) => {
+    table.settleBitFieldWidths((text, structName, declaredIn) => {
       const header =
+        declaredIn ??
         table.getCSymbol(structName)?.sourceFile ??
         table.getCppSymbol(structName)?.sourceFile;
       const including = macroReaders.filter(
