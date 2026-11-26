@@ -755,12 +755,13 @@ class FilePlanner {
             );
           continue;
         }
+        const typeName = this.lazyTernaryType(expr, expectedTypes);
         const cType = TypeGenerationHelper.generateByName(
-          this.lazyTernaryType(expr, expectedTypes),
+          typeName,
           this.typeGenerationDeps(),
         );
         cTypes.add(cType);
-        ternaries.set(expr, { kind: "value", cType });
+        ternaries.set(expr, { kind: "value", typeName, cType });
       }
     }
     if (operands.size > 0) cTypes.add("bool");
@@ -806,6 +807,31 @@ class FilePlanner {
   ): boolean {
     const call = ExpressionShape.postfixView(arm)?.ops.at(-1);
     return call !== undefined && calls.has(call);
+  }
+
+  /**
+   * MISRA 10.3 (#2348 review): a lowered ternary's arm is assigned to its
+   * variable, so an arm with no type of its own to be rendered against is
+   * rendered against the variable's -- a bit range beside an `f32` arm is
+   * cast to `float`, the conversion C's `?:` made without one
+   */
+  private static withLoweredArms(
+    expectedTypes: ReadonlyMap<TExpression, IPlannedExpectedType>,
+    ternaries: ReadonlyMap<TExpressionOf<"ternary">, TPlannedLazyTernary>,
+  ): ReadonlyMap<TExpression, IPlannedExpectedType> {
+    const withArms = new Map(expectedTypes);
+    for (const [expr, planned] of ternaries) {
+      if (planned.kind !== "value") continue;
+      for (const arm of [expr.whenTrue, expr.whenFalse]) {
+        if ((withArms.get(arm)?.type ?? null) === null) {
+          withArms.set(arm, {
+            type: planned.typeName,
+            suppressBareEnumResolution: false,
+          });
+        }
+      }
+    }
+    return withArms;
   }
 
   /**
@@ -1699,12 +1725,6 @@ class FilePlanner {
       types,
     );
     invariant(valuePositions !== null, "2.1 hands 2.2 where each value stands");
-    const narrowings = this.planNarrowings(
-      expectedTypes,
-      valuePositions.positions,
-      decidedCTypes,
-      FilePlanner.writtenExpressions(program, unwritten),
-    );
     const wholeArrayWrites = this.planWholeArrayWrites(
       valuePositions,
       decidedCTypes,
@@ -1738,6 +1758,12 @@ class FilePlanner {
       bufferCalls,
       expectedTypes,
       decidedCTypes,
+    );
+    const narrowings = this.planNarrowings(
+      FilePlanner.withLoweredArms(expectedTypes, lazy.ternaries),
+      valuePositions.positions,
+      decidedCTypes,
+      FilePlanner.writtenExpressions(program, unwritten),
     );
     const argumentPlans = this.planArguments(
       valuePositions,

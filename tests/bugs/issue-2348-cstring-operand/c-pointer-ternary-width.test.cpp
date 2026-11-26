@@ -79,7 +79,7 @@ int main(void) {
     /* C11 6.5.15p4, C++ [expr.cond]: each arm of `?:` built in its own branch (building both arms' temporaries before the statement would evaluate the calls of the arm that is not chosen). */
     float cnx_tmp5;
     if (pick == 1) {
-        cnx_tmp5 = ((count) & 0xFFFFFFFFFFFFFFFFU);
+        cnx_tmp5 = static_cast<float>(((count) & 0xFFFFFFFFFFFFFFFFU));
     } else {
         /* ADR-045 / Issue #2239: a concatenation or a substring argument is built into a string<N> before the call. */
         char cnx_tmp4[11] = "";

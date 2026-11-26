@@ -81,7 +81,7 @@ describe("2.2 plans the operands built only when they run (#2332)", () => {
     );
 
     expect([...planned.lazyTernaries.values()]).toEqual([
-      { kind: "value", cType: "float" },
+      { kind: "value", typeName: "f32", cType: "float" },
     ]);
   });
 
@@ -92,7 +92,7 @@ describe("2.2 plans the operands built only when they run (#2332)", () => {
     ]);
 
     expect([...planned.lazyTernaries.values()]).toEqual([
-      { kind: "value", cType: "uint32_t" },
+      { kind: "value", typeName: "u32", cType: "uint32_t" },
     ]);
   });
 
@@ -102,7 +102,7 @@ describe("2.2 plans the operands built only when they run (#2332)", () => {
     ]);
 
     expect([...planned.lazyTernaries.values()]).toEqual([
-      { kind: "value", cType: "Named" },
+      { kind: "value", typeName: "Named", cType: "Named" },
     ]);
   });
 });
