@@ -42,6 +42,7 @@
  * dimension (`u8[4][8]` in a `u8[4][4]` slot) is E0879 for both (#1619).
  */
 
+import type ICTypedefSymbol from "../../types/symbols/c/ICTypedefSymbol";
 import RegisterInstance from "../../utils/RegisterInstance";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import ProgramAccesses from "../../utils/ProgramAccesses";
@@ -64,7 +65,6 @@ import type IValuePosition from "../../types/IValuePosition";
 import SourceOrder from "../../utils/SourceOrder";
 import TypedefParamParser from "../../utils/TypedefParamParser";
 import CStringArgument from "../../utils/CStringArgument";
-import type ICTypedefSymbol from "../../types/symbols/c/ICTypedefSymbol";
 import type ILexicalFrame from "../../types/ILexicalFrame";
 
 /** The slot a value fills, for E0880's wording */
@@ -345,12 +345,12 @@ class CallbackAssignmentCheck {
     const program = this.context.program;
     const typedefs = program.callbackCompatibleFunctions();
     const visit = (frame: ILexicalFrame): void => {
-      const typedefName =
+      const typedef =
         frame.functionCName === null
           ? undefined
           : typedefs.get(frame.functionCName);
-      if (typedefName !== undefined) {
-        this.checkAgainstCTypedef(frame, typedefName);
+      if (typedef !== undefined) {
+        this.checkAgainstCTypedef(frame, typedef);
       }
       for (const child of frame.children) visit(child);
     };
@@ -359,10 +359,8 @@ class CallbackAssignmentCheck {
     );
   }
 
-  private checkAgainstCTypedef(frame: ILexicalFrame, typedefName: string) {
-    const typedef = this.context.symbolTable.getCSymbol(typedefName);
-    if (typedef?.kind !== "type") return;
-    this.checkCStringReturn(frame, typedefName, typedef);
+  private checkAgainstCTypedef(frame: ILexicalFrame, typedef: ICTypedefSymbol) {
+    this.checkCStringReturn(frame, typedef.name, typedef);
     const parameters = frame.declarations.filter(
       (declaration) => declaration.kind === "parameter",
     );
@@ -376,7 +374,7 @@ class CallbackAssignmentCheck {
       this.found.push({
         code: "E0879",
         span: parameter.span,
-        message: `Function '${frame.functionCName}' signature does not match callback type '${typedefName}': parameter '${parameter.name}' is ${parameter.isConst ? "read-only" : "`mut`"}, and the type's pointer is ${typedefConst ? "const" : "not const"}`,
+        message: `Function '${frame.functionCName}' signature does not match callback type '${typedef.name}': parameter '${parameter.name}' is ${parameter.isConst ? "read-only" : "`mut`"}, and the type's pointer is ${typedefConst ? "const" : "not const"}`,
         helpText:
           "A callback's parameter is `mut` exactly where its C type's pointer is not const (ADR-071).",
         ...(parameter.isConst && {

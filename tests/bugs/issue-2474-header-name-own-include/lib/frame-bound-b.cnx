@@ -1,0 +1,9 @@
+// Issue #2474 review helper: this file's Frame is b-struct.h's, so copy is
+// sized from its data, 8 bytes.
+#include "b-struct.h"
+
+mut u8[frame.data.type_element_count] bCopy;
+
+u32 bCopyCount() {
+    return bCopy.type_element_count;
+}

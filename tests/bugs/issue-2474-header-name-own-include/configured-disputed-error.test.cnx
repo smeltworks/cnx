@@ -1,0 +1,13 @@
+// test-error
+// Issue #2514: this file's compile reads configured-samples.h after
+// configured.h, so samples is 8; configured-reader.cnx's reads it alone, so
+// samples is 4. cnx reads a header once for every file that includes it, so
+// it cannot tell which count this file's compiler reads: E0867, not a guess.
+#include "lib/configured.h"
+#include "lib/configured-samples.h"
+#include "lib/configured-reader.cnx"
+
+u32 main() {
+    u32 n <- samples.type_element_count;
+    return n + readerFirst();
+}

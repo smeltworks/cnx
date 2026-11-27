@@ -1,0 +1,7 @@
+// Issue #2514 helper: includes configured-samples.h without configured.h, so
+// its compile reads samples as 4 where configured-disputed-error's reads 8.
+#include "configured-samples.h"
+
+u32 readerFirst() {
+    return 1;
+}

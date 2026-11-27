@@ -48,6 +48,7 @@ const NOTHING_SETTLED: TSettled = {
   unsettled: new Map(),
   opened: new Map(),
   cppBuild: false,
+  disputed: new Set(),
 };
 
 /**
@@ -246,6 +247,7 @@ class HeaderReading {
       recovered: settled.recovered,
       cppMode: read.cppMode,
       readers: read.readers,
+      disputed: settled.disputed,
       macroDumps,
       errors: this.errors,
     };

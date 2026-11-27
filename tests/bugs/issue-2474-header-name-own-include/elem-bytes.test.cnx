@@ -1,0 +1,18 @@
+// test-execution
+// Issue #2474: two headers give elem_t different widths, and each declares
+// buf[4] of it. Each file's buf.type_byte_length reads its own header's
+// elem_t, in either discovery order: 4 bytes in elem-a, 16 in elem-b.
+#include "lib/elem-a.cnx"
+#include "lib/elem-b.cnx"
+
+u32 main() {
+    u32 a <- aByteCount();
+    if (a != 4) {
+        return 1;
+    }
+    u32 b <- bByteCount();
+    if (b != 16) {
+        return 2;
+    }
+    return 0;
+}

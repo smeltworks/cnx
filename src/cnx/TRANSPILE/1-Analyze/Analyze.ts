@@ -78,7 +78,7 @@ class Analyze {
       context: {
         symbols,
         program,
-        symbolTable: program.symbolTable(),
+        symbolTable: program.symbolTableFor(sourcePath),
         includesForeignHeader: file.includesForeignHeader,
         sourceFile: sourcePath,
       },

@@ -540,6 +540,7 @@ describe("PostfixExpressionGenerator", () => {
         fullyQualifiedCName: `${scopePath}__${name}`,
       }),
       symbolTable: () => new SymbolTable(),
+      symbolTableFor: () => new SymbolTable(),
       symbolByCName: () => undefined,
       settledConstOf: () => null,
     } as unknown as IProgram;
@@ -798,6 +799,7 @@ describe("PostfixExpressionGenerator", () => {
           fullyQualifiedCName: `${scopePath}__${name}`,
         }),
         symbolTable: () => new SymbolTable(),
+        symbolTableFor: () => new SymbolTable(),
         symbolByCName: (cName: string) =>
           cName === "Motor__MAX_SPEED" ? constSymbol : undefined,
         settledConstOf: (cName: string) =>

@@ -15,7 +15,7 @@ import type ILexicalFrame from "../../../types/ILexicalFrame";
 import type TSymbol from "../../../types/symbols/TSymbol";
 import type IFileConstantFacts from "./IFileConstantFacts";
 import type IForeignSymbols from "./IForeignSymbols";
-import type IForeignValue from "./IForeignValue";
+import type IDeclaredForeignValue from "./IDeclaredForeignValue";
 import type ISettledConstants from "./ISettledConstants";
 import type IVisibilityInput from "./IVisibilityInput";
 import type TRunTarget from "../../../types/TRunTarget";
@@ -43,7 +43,10 @@ interface ISettledFiles {
   /** #1881: each file's foreign names, by its own header includes */
   readonly foreignNamesByFile: ReadonlyMap<string, ReadonlySet<string>>;
   /** The values the headers' constants and macros carry */
-  readonly foreignValues: ReadonlyMap<string, IForeignValue>;
+  readonly foreignValues: ReadonlyMap<
+    string,
+    ReadonlyArray<IDeclaredForeignValue>
+  >;
   /** What the C and C++ headers contributed, or none */
   readonly foreign: IForeignSymbols;
   /** Which cnx files each file includes, or none */

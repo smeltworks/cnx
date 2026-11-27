@@ -16,6 +16,7 @@
  * here as the classification rather than re-derived.
  */
 
+import type ICTypedefSymbol from "../../../../../types/symbols/c/ICTypedefSymbol";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import FunctionContextManager from "../FunctionContextManager";
 import ParameterInfoPlanner from "../../../../2-Plan/ParameterInfoPlanner";
@@ -162,16 +163,17 @@ function generatingFunction(stamps: Record<string, boolean> = {}): void {
             parameters: settledParameters(stamps),
           }
         : undefined,
-    callbackCompatibleFunctions: () => new Map<string, string>(),
+    callbackCompatibleFunctions: () => new Map<string, ICTypedefSymbol>(),
     passByValueParams: () => new Map<string, ReadonlySet<string>>(),
     knownEnums: () => new Set<string>(),
-    symbolTable: () => ({ getStructFields: () => undefined }),
+    symbolTableFor: () => ({ getStructFields: () => undefined }),
   } as unknown as IProgram;
 }
 
 describe("FunctionContextManager", () => {
   beforeEach(() => {
     state = new TranspileState();
+    state.sourcePath = "test.cnx";
     setupSymbols();
   });
 

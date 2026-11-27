@@ -1,0 +1,2 @@
+tests/bugs/issue-2474-header-name-own-include/lib/struct-a-bump.cnx:10:10 error[E0915]: cannot pass 'counter.count' to `mut` parameter 'n' of function 'bumpA': it is volatile, and 'bumpA' would write it through a plain pointer, so the volatile access would be lost
+       help: Copy it into a `mut` local, pass that, then assign the local back to 'counter.count' (ADR-071, #2238).
