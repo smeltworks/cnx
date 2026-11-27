@@ -21,6 +21,13 @@
  * Rows are keyed on their FIRST and LAST cell rather than on a fixed cell
  * count: E0807's description contains `|` characters and splits into six
  * cells, and a row this gate skipped would be a row it did not defend.
+ *
+ * #2521: the registry counts none of its rows. Its range table held a count
+ * per range and a total, and this gate required both to match -- so every
+ * pull request that registered a code rewrote the total, and any two of them
+ * conflicted on it or merged to a total that counted one of them. The gate
+ * counts the rows itself (`summary`) and refuses a registry that does
+ * (`countingRows`).
  */
 
 interface IRegistryRow {
@@ -29,11 +36,20 @@ interface IRegistryRow {
   readonly source: string;
 }
 
+/** A row of the range table that counts code rows: which, and the number. */
+interface ICountingRow {
+  readonly label: string;
+  readonly count: string;
+}
+
 class ErrorCodeRegistry {
   /** `E0424`, not the `E04xx` range-summary rows. */
   private static readonly CODE = /^E\d{4}$/;
 
   private static readonly RANGE = /^E(\d\d)xx$/;
+
+  /** A cell that is a number and nothing else, once its `**` is off. */
+  private static readonly COUNT = /^\d+$/;
 
   private static cells(line: string): string[] | null {
     const trimmed = line.trim();
@@ -61,29 +77,44 @@ class ErrorCodeRegistry {
     return rows;
   }
 
-  /** `{ "E04xx": 9 }` from the range-summary table at the top of the file. */
-  private static declaredCounts(markdown: string): Map<string, number> {
-    const declared = new Map<string, number>();
+  /**
+   * #2521: the rows of the range table that count code rows, each with the
+   * number it gives: a range row with a number in a cell, and a `**Total**`
+   * row. A count is refused whether or not it is right, because a right one
+   * is what the next registration has to rewrite.
+   */
+  private static countingRows(markdown: string): ICountingRow[] {
+    const counting: ICountingRow[] = [];
     for (const line of markdown.split("\n")) {
       const cells = ErrorCodeRegistry.cells(line);
-      if (cells === null || cells.length !== 3) continue;
-      if (!ErrorCodeRegistry.RANGE.test(cells[0])) continue;
-      const count = Number.parseInt(cells[2], 10);
-      if (!Number.isNaN(count)) declared.set(cells[0], count);
+      if (cells === null) continue;
+      const [label, ...rest] = cells.map((cell) =>
+        cell.replaceAll("*", "").trim(),
+      );
+      if (label !== "Total" && !ErrorCodeRegistry.RANGE.test(label)) continue;
+      const count = rest.find((cell) => ErrorCodeRegistry.COUNT.test(cell));
+      if (count !== undefined) counting.push({ label, count });
     }
-    return declared;
+    return counting;
   }
 
-  /** The number the `**Total**` summary row claims, or null if it has none. */
-  private static declaredTotal(markdown: string): number | null {
-    for (const line of markdown.split("\n")) {
-      const cells = ErrorCodeRegistry.cells(line);
-      if (cells === null || cells.length !== 3) continue;
-      if (cells[0].replaceAll("*", "").trim() !== "Total") continue;
-      const count = Number.parseInt(cells[2].replaceAll("*", "").trim(), 10);
-      return Number.isNaN(count) ? null : count;
+  /**
+   * #2521: the counts the range table used to hold, for the gate to print
+   * when it passes: `173 row(s): E00xx 1, E02xx 5, ...`. Read off the rows
+   * each time, so no pull request edits them.
+   */
+  static summary(markdown: string): string {
+    const perRange = new Map<string, number>();
+    const rows = ErrorCodeRegistry.rows(markdown);
+    for (const row of rows) {
+      const range = `${row.code.slice(0, 3)}xx`;
+      perRange.set(range, (perRange.get(range) ?? 0) + 1);
     }
-    return null;
+    const ranges = [...perRange]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([range, count]) => `${range} ${count}`);
+    const total = `${rows.length} row(s)`;
+    return ranges.length > 0 ? `${total}: ${ranges.join(", ")}` : total;
   }
 
   /**
@@ -143,25 +174,10 @@ class ErrorCodeRegistry {
       }
     }
 
-    const declared = ErrorCodeRegistry.declaredCounts(markdown);
-    for (const [range, count] of declared) {
-      const prefix = range.slice(0, 3);
-      const actual = codes.filter((code) => code.startsWith(prefix)).length;
-      if (actual !== count) {
-        errors.push(
-          `${range} declares ${count} code(s) and has ${actual} row(s)`,
-        );
-      }
-    }
-
-    // The **Total** row was the one cell in this table nothing checked, because
-    // it is not a range and so never matched RANGE. It read 57 while the ranges
-    // summed to 62 -- every range row correct and the total five behind, which
-    // is the failure mode a per-part check cannot see (#1322).
-    const total = ErrorCodeRegistry.declaredTotal(markdown);
-    if (total !== null && total !== codes.length) {
+    for (const { label, count } of ErrorCodeRegistry.countingRows(markdown)) {
+      const what = label === "Total" ? "the code rows" : `${label}'s rows`;
       errors.push(
-        `the **Total** row says ${total} and the table has ${codes.length} code row(s)`,
+        `the range table counts ${what} (${count}) -- every pull request that registers a code rewrites a count, so any two of them conflict on it (#2521); delete the cell, this check prints the counts`,
       );
     }
 
