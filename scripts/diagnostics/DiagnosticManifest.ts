@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { join, posix, relative, sep } from "node:path";
 
 import FileScanner from "../utils/FileScanner";
 import IManifestEntry from "../types/IManifestEntry";
@@ -47,25 +47,48 @@ class DiagnosticManifest {
   /** Shown in place of a code list for a fixture whose diagnostic carries none. */
   private static readonly UNCODED = "(uncoded)";
 
-  private static readonly HEADER = [
+  /** How many stale documents `check` names before it counts the rest. */
+  private static readonly STALE_SHOWN = 10;
+
+  /** A row as `documents` writes it: `- \`tests/a/b.test.cnx\`: E0422, E0900`. */
+  private static readonly ROW = /^- `([^`]+)`: (.+)$/;
+
+  /** The page that says what the manifest is, where its rows are, and why. */
+  static readonly INDEX = "docs/diagnostic-manifest.md";
+
+  /** Where the rows are: one document per fixture directory (#2518). */
+  static readonly DIRECTORY = "docs/diagnostic-manifest";
+
+  private static readonly GENERATED = [
     "<!-- GENERATED FILE - DO NOT EDIT.",
     "     Source: every .expected.error under tests/.",
     "     Regenerate: npm run diagnostics:manifest -->",
+  ];
+
+  private static readonly INDEX_TEXT = [
+    ...DiagnosticManifest.GENERATED,
     "",
     "# Diagnostic Manifest",
     "",
-    "Every fixture that asserts a diagnostic, and the codes it asserts. This file",
-    "exists so that losing an assertion is a reviewable diff rather than a silent",
-    "deletion -- `npm run diagnostics:manifest:check` fails when a listed fixture",
-    "loses its `.expected.error`, or stops asserting a code listed here.",
+    "Every fixture that asserts a diagnostic, and the codes it asserts. The",
+    "manifest exists so that losing an assertion is a reviewable diff rather than",
+    "a silent deletion -- `npm run diagnostics:manifest:check` fails when a listed",
+    "fixture loses its `.expected.error`, or stops asserting a code listed for it.",
+    "",
+    "The rows are in `docs/diagnostic-manifest/`, one document per fixture",
+    "directory: the fixtures of `tests/adr-034/` are listed in",
+    "`docs/diagnostic-manifest/tests/adr-034.md`.",
     "",
     "Removing a diagnostic on purpose means deleting its row in the same commit.",
     "Adding one, or promoting `(uncoded)` to a real code, is never a loss: regenerate",
     "to record it.",
     "",
-    "No line here counts the rows. A count changes in every pull request that adds",
-    "a fixture, so any two of them conflict on it (#2517). The check prints the",
-    "totals each time it passes.",
+    "One document per directory, because git cannot order two insertions at one",
+    "place. In a single list the rows of two new `tests/bugs/issue-NNNN-*`",
+    "directories sort next to each other, so two pull requests that each added one",
+    "conflicted (#2518). A new directory is now a new document. For the same reason",
+    "no line counts the rows (#2517): the check prints the totals each time it",
+    "passes.",
     "",
   ].join("\n");
 
@@ -143,33 +166,76 @@ class DiagnosticManifest {
       .sort((a, b) => a.localeCompare(b));
   }
 
-  /**
-   * The manifest as committed Markdown. Carries no timestamp, by #1150, and no
-   * total, by #2517: every line below the header is about one fixture, so two
-   * branches that add different fixtures change different lines and git can
-   * merge them. A line counting the rows is rewritten by both, and they then
-   * conflict, or merge to a count that matches neither. `checkOutcome` reports
-   * the totals instead, computed from the corpus on each run.
-   */
-  static render(entries: readonly IManifestEntry[]): string {
-    const rows = entries.map(
-      (entry) =>
-        `| ${entry.fixture} | ${entry.codes.length > 0 ? entry.codes.join(", ") : DiagnosticManifest.UNCODED} |`,
+  /** Whether a repository path is one of the manifest's documents. */
+  static isDocument(path: string): boolean {
+    return (
+      path === DiagnosticManifest.INDEX ||
+      (path.startsWith(`${DiagnosticManifest.DIRECTORY}/`) &&
+        path.endsWith(".md"))
     );
-    return [
-      DiagnosticManifest.HEADER,
-      "| Fixture | Codes |",
-      "| --- | --- |",
-      ...rows,
-      "",
-    ].join("\n");
   }
 
-  /** Reads back a rendered manifest. Must be lossless against `render`. */
+  /** The document a fixture's row is in: its directory's. */
+  private static documentOf(fixture: string): string {
+    return `${DiagnosticManifest.DIRECTORY}/${posix.dirname(fixture)}.md`;
+  }
+
+  /**
+   * The manifest as committed Markdown: every document by its repository path.
+   *
+   * One document per fixture directory, and the index (#2518). A branch that
+   * adds a directory adds a document, so two branches that add two
+   * directories change no path in common, wherever the directories sort. One
+   * sorted table of every fixture put their rows into the same gap, and git
+   * cannot order two insertions at one place.
+   *
+   * A row is a list item, not a table row: Prettier pads a table to its widest
+   * cell, so one longer path rewrote every row of it.
+   *
+   * No document carries a timestamp, by #1150, or a total, by #2517: a line
+   * counting the rows is rewritten by every branch that adds one, and two of
+   * them then conflict, or merge to a count that matches neither.
+   * `checkOutcome` reports the totals instead, computed on each run.
+   */
+  static documents(entries: readonly IManifestEntry[]): Map<string, string> {
+    const rows = new Map<string, string[]>();
+    for (const entry of entries) {
+      const path = DiagnosticManifest.documentOf(entry.fixture);
+      const codes =
+        entry.codes.length > 0
+          ? entry.codes.join(", ")
+          : DiagnosticManifest.UNCODED;
+      rows.set(path, [
+        ...(rows.get(path) ?? []),
+        `- \`${entry.fixture}\`: ${codes}`,
+      ]);
+    }
+    const documents = new Map([
+      [DiagnosticManifest.INDEX, DiagnosticManifest.INDEX_TEXT],
+    ]);
+    for (const [path, lines] of rows) {
+      documents.set(
+        path,
+        [...DiagnosticManifest.GENERATED, "", ...lines, ""].join("\n"),
+      );
+    }
+    return documents;
+  }
+
+  /**
+   * Reads back the rows of rendered documents: one, or several end to end.
+   * Must be lossless against `documents`.
+   *
+   * A table row is read as well as a list item. The manifest was one table
+   * until #2518, and `diagnostic-manifest-compare.ts` reads it at a base ref
+   * that can be older than that.
+   */
   static parse(markdown: string): IManifestEntry[] {
     const entries: IManifestEntry[] = [];
     for (const line of markdown.split("\n")) {
-      const cells = DiagnosticManifest.tableCells(line);
+      const cells =
+        DiagnosticManifest.listCells(line) ??
+        DiagnosticManifest.tableCells(line);
       if (cells === null || cells[0] === "Fixture") {
         continue;
       }
@@ -184,9 +250,16 @@ class DiagnosticManifest {
     return entries;
   }
 
+  /** The fixture and the codes of a row, or null for any other line. */
+  private static listCells(line: string): [string, string] | null {
+    const row = DiagnosticManifest.ROW.exec(line);
+    return row === null ? null : [row[1], row[2]];
+  }
+
   /**
-   * The two cells of a manifest row, or null for any other line -- prose, the
-   * header comment, and the `| --- |` separator alike.
+   * The two cells of a row of the table the manifest was until #2518, or null
+   * for any other line -- prose, the header comment, and the `| --- |`
+   * separator alike.
    */
   private static tableCells(line: string): [string, string] | null {
     const trimmed = line.trim();
@@ -246,11 +319,36 @@ class DiagnosticManifest {
     };
   }
 
-  /** Describes a `check` run without performing any of its I/O. */
+  /** The rows of a set of committed documents, whichever document holds them. */
+  private static rowsOf(
+    documents: ReadonlyMap<string, string>,
+  ): IManifestEntry[] {
+    return DiagnosticManifest.parse([...documents.values()].join("\n"));
+  }
+
+  /**
+   * The paths at which two sets of documents differ: a document whose text
+   * differs, one the generator writes and nothing has committed, and one that
+   * is committed for a directory that asserts nothing any more.
+   */
+  static stale(
+    committed: ReadonlyMap<string, string>,
+    fresh: ReadonlyMap<string, string>,
+  ): string[] {
+    return [...new Set([...committed.keys(), ...fresh.keys()])]
+      .filter((path) => committed.get(path) !== fresh.get(path))
+      .sort((a, b) => a.localeCompare(b));
+  }
+
+  /**
+   * Describes a `check` run without performing any of its I/O. `committed`
+   * and `fresh` are the manifest's documents by path, as they are on disk and
+   * as the generator writes them.
+   */
   static checkOutcome(
-    committedDocument: string | null,
+    committed: ReadonlyMap<string, string>,
     current: readonly IManifestEntry[],
-    freshDocument: string,
+    fresh: ReadonlyMap<string, string>,
     orphans: readonly string[] = [],
   ): IManifestOutcome {
     // Reported before anything else and independently of it: an orphan is not
@@ -266,12 +364,12 @@ class DiagnosticManifest {
             ...orphans.map((path) => `  ${path}`),
             "Write the fixture, or delete the assertion and its manifest row.",
           ];
-    if (committedDocument === null) {
+    if (committed.size === 0) {
       return {
         ok: false,
         errors: [
           ...orphanErrors,
-          "docs/diagnostic-manifest.md is missing. Run: npm run diagnostics:manifest",
+          `${DiagnosticManifest.INDEX} and ${DiagnosticManifest.DIRECTORY}/ are missing. Run: npm run diagnostics:manifest`,
         ],
         warnings: [],
         info: [],
@@ -279,7 +377,7 @@ class DiagnosticManifest {
     }
 
     const failures = DiagnosticManifest.diff(
-      DiagnosticManifest.parse(committedDocument),
+      DiagnosticManifest.rowsOf(committed),
       current,
     );
     if (failures.length > 0) {
@@ -296,22 +394,28 @@ class DiagnosticManifest {
           // is the commoner cause. Advising row deletion first would turn a
           // rename into the real loss the gate exists to catch.
           "\nIf the fixture was renamed or moved, regenerate: npm run diagnostics:manifest",
-          "If the diagnostic was removed on purpose, delete its row from",
-          "docs/diagnostic-manifest.md in the same commit so the loss is reviewed.",
+          "If the diagnostic was removed on purpose, delete its row from its document",
+          `under ${DiagnosticManifest.DIRECTORY}/ in the same commit so the loss is reviewed.`,
         ],
         warnings: [],
         info: [],
       };
     }
 
-    if (committedDocument !== freshDocument) {
+    const stale = DiagnosticManifest.stale(committed, fresh);
+    if (stale.length > 0) {
       // Growth alone reaches here: a new fixture or a promoted code. Not a
-      // failure of the guard, but the committed file must track it or the next
-      // real shrinkage diffs against a stale baseline.
+      // failure of the guard, but the committed documents must track it or the
+      // next real shrinkage diffs against a stale baseline.
+      const shown = stale.slice(0, DiagnosticManifest.STALE_SHOWN);
+      const more = stale.length - shown.length;
       return {
         ok: false,
         errors: [
-          "docs/diagnostic-manifest.md is stale. Run: npm run diagnostics:manifest",
+          `The diagnostic manifest is stale in ${stale.length} document(s):`,
+          ...shown.map((path) => `  ${path}`),
+          ...(more > 0 ? [`  and ${more} more`] : []),
+          "Run: npm run diagnostics:manifest",
         ],
         warnings: [],
         info: [],
@@ -345,16 +449,13 @@ class DiagnosticManifest {
    * rather than left to a one-line diff inside a GENERATED-FILE header.
    */
   static writeOutcome(
-    committedDocument: string | null,
+    committed: ReadonlyMap<string, string>,
     current: readonly IManifestEntry[],
   ): IManifestOutcome {
-    const lost =
-      committedDocument === null
-        ? []
-        : DiagnosticManifest.diff(
-            DiagnosticManifest.parse(committedDocument),
-            current,
-          );
+    const lost = DiagnosticManifest.diff(
+      DiagnosticManifest.rowsOf(committed),
+      current,
+    );
     return {
       ok: true,
       errors: [],

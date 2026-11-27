@@ -2374,7 +2374,7 @@ class TestUtils {
       // diagnostic migration runs repeatedly. The snapshot is still written so
       // an author who meant to remove the diagnostic can see the new output;
       // removing the assertion stays their explicit act, made by deleting the
-      // .expected.error and its docs/diagnostic-manifest.md row in the same commit.
+      // .expected.error and its row under docs/diagnostic-manifest/ in the same commit.
       // #1379: only for the #1316 case, where an assertion EXISTS and stopped
       // matching -- there the author may be removing a diagnostic on purpose
       // and wants to see the new output. With no assertion there is nothing to
@@ -2409,7 +2409,7 @@ class TestUtils {
             // not the diagnostic was ever implemented.
             "declares `// test-error` but produced no diagnostic -- nothing was asserted. Implement the diagnostic, or remove the marker if this fixture is not an error case."
           : updateMode
-            ? `test-error fixture no longer errors: .expected.error kept, wrote ${basename(expectedCFile)} for inspection. If intentional, delete the .expected.error and its docs/diagnostic-manifest.md row in the same commit.`
+            ? `test-error fixture no longer errors: .expected.error kept, wrote ${basename(expectedCFile)} for inspection. If intentional, delete the .expected.error and its row under docs/diagnostic-manifest/ in the same commit.`
             : "Expected errors but transpilation succeeded",
         expected: expectedErrors,
         actual: "(no errors)",
