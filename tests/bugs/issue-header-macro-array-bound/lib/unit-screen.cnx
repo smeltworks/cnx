@@ -1,0 +1,7 @@
+#include "unit-display.h"
+
+scope UnitScreen {
+    u32 width() {
+        return 320;
+    }
+}

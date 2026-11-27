@@ -78,6 +78,7 @@ const CHARACTER: THeaderMacro = { kind: "character" };
 interface IExpansionFailure {
   undefinedName: string | null;
   declaredName: string | null;
+  redefinedName: string | null;
 }
 
 interface IValueReader {
@@ -162,7 +163,13 @@ class HeaderMacros {
     // A file whose includes define none of its macros does not read it
     const files =
       names.length === 0
-        ? [{ file: "", bodies: new Map<string, string>() }]
+        ? [
+            {
+              file: "",
+              bodies: new Map<string, string>(),
+              redefinedNames: new Set<string>(),
+            },
+          ]
         : readers.filter((reader) =>
             names.every((name) => reader.bodies.has(name)),
           );
@@ -171,12 +178,17 @@ class HeaderMacros {
       const failure: IExpansionFailure = {
         undefinedName: null,
         declaredName: null,
+        redefinedName: null,
       };
       const expanded = HeaderMacros.expanded(
         tokens,
         reader.bodies,
         new Set(),
-        { undefinedNames, declaredNames },
+        {
+          undefinedNames,
+          declaredNames,
+          redefinedNames: reader.redefinedNames,
+        },
         failure,
       );
       if (failure.undefinedName !== null) {
@@ -184,6 +196,9 @@ class HeaderMacros {
       }
       if (failure.declaredName !== null) {
         return UnreadBitWidth.declaredMacro(failure.declaredName);
+      }
+      if (failure.redefinedName !== null) {
+        return UnreadBitWidth.redefinedMacro(failure.redefinedName);
       }
       const values = INT_BITS.map((bits) =>
         expanded === null
@@ -228,6 +243,7 @@ class HeaderMacros {
     names: {
       readonly undefinedNames: ReadonlySet<string>;
       readonly declaredNames: ReadonlySet<string>;
+      readonly redefinedNames: ReadonlySet<string>;
     },
     failure: IExpansionFailure,
   ): TMacroToken[] | null {
@@ -244,6 +260,10 @@ class HeaderMacros {
       }
       if (names.declaredNames.has(token.name)) {
         failure.declaredName = token.name;
+        return null;
+      }
+      if (names.redefinedNames.has(token.name)) {
+        failure.redefinedName = token.name;
         return null;
       }
       if (expanding.has(token.name)) return null;
@@ -332,8 +352,12 @@ class HeaderMacros {
       tokens,
       bodies,
       new Set(),
-      { undefinedNames: new Set(), declaredNames: new Set() },
-      { undefinedName: null, declaredName: null },
+      {
+        undefinedNames: new Set(),
+        declaredNames: new Set(),
+        redefinedNames: new Set(),
+      },
+      { undefinedName: null, declaredName: null, redefinedName: null },
     );
     // #2484 review: `(A && B)` is a Boolean, and so is a macro that expands
     // to one (`#define ALIAS READY`); `(2 + (A && B))` is not

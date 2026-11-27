@@ -1,0 +1,11 @@
+// test-error
+// named.h sizes packets with PACKET_N, an enumerator written inside struct
+// Packet, which C gives file scope, then defines a macro PACKET_N. C read the
+// enumerator, 3; the macro dump holds 8, so cnx does not guess.
+#include "lib/named.h"
+
+mut u8[packets.type_element_count] copy;
+
+void main() {
+    copy[0] <- 1;
+}

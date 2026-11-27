@@ -16,4 +16,10 @@ static uint8_t duo[PAIR_COUNT];
 typedef struct {
     uint32_t two : PAIR_COUNT;
 } duo_bits_t;
+typedef uint8_t buf_t[SENSOR_COUNT];
+static buf_t typed;
+/* An enum tag sizes nothing either, so KIND_COUNT is the macro's 2 */
+enum KIND_COUNT { KIND_ONE };
+#define KIND_COUNT 2
+static uint8_t kinds[KIND_COUNT];
 #endif

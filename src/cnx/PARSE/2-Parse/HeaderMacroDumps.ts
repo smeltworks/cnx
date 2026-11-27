@@ -45,7 +45,12 @@ class HeaderMacroDumps {
         dumps: new Map(
           withIncludes.map(({ file }) => [
             file.path,
-            { dump: null, headerFiles: new Set<string>(), complete: false },
+            {
+              dump: null,
+              headerFiles: new Set<string>(),
+              redefinedNames: new Set<string>(),
+              complete: false,
+            },
           ]),
         ),
         slices: new Map(),
@@ -67,6 +72,7 @@ class HeaderMacroDumps {
         const dump: IHeaderMacroDump = {
           dump: read?.dump ?? null,
           headerFiles: read?.headerFiles ?? new Set<string>(),
+          redefinedNames: read?.redefinedNames ?? new Set<string>(),
           complete: read?.complete === true,
         };
         return { path: file.path, dump, slices: read?.slices ?? null };

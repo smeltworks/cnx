@@ -1,0 +1,11 @@
+// test-error
+// respelled.h gives spot_reg_t.mode the width SPOTS, 3, then defines SPOTS
+// again as 8 without an #undef. C read 3 bits; cnx sees only the last
+// definition, so it does not guess: mode has no width here.
+#include "lib/respelled.h"
+
+mut spot_reg_t r;
+
+void main() {
+    r.mode <- 1;
+}

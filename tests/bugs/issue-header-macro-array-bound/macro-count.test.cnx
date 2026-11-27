@@ -3,7 +3,9 @@
 // SENSOR_COUNT (3), pairs (SENSOR_COUNT * 2) (6), and frame.data
 // SENSOR_COUNT + 1 (4). Each sizes a cnx array, and table's last element is
 // written through a constant index. duo and duo_bits_t.two read PAIR_COUNT,
-// a macro named like a struct tag, which sizes nothing: 2.
+// a macro named like a struct tag, which sizes nothing: 2. typed is a
+// buf_t, an array typedef of SENSOR_COUNT (3); kinds reads KIND_COUNT, a macro
+// named like an enum tag: 2.
 #include "lib/counted.h"
 
 mut u8[table.type_element_count] tableCopy;
@@ -11,6 +13,8 @@ mut u8[pairs.type_element_count] pairsCopy;
 mut u8[frame.data.type_element_count] dataCopy;
 mut u8[duo.type_element_count] duoCopy;
 mut duo_bits_t bits;
+mut u8[typed.type_element_count] typedCopy;
+mut u8[kinds.type_element_count] kindsCopy;
 
 u32 main() {
     if (tableCopy.type_element_count != 3) {
@@ -32,6 +36,12 @@ u32 main() {
     bits.two <- 3;
     if (bits.two != 3) {
         return 6;
+    }
+    if (typedCopy.type_element_count != 3) {
+        return 7;
+    }
+    if (kindsCopy.type_element_count != 2) {
+        return 8;
     }
     return 0;
 }

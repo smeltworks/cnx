@@ -392,10 +392,14 @@ class ConstantNames {
         : ConstantNames.ofMember({ type, dimensions: [] }, rest, walk);
     }
     if (rest.length === 0) return ConstantNames.without("variable", walk);
+    // The declaration's own dimensions lead: `buf_t two[2]` is `[2][3]`
     const result = ConstantNames.ofMember(
       {
         type: { kind: "external", name: value.type },
-        dimensions: value.dimensions,
+        dimensions: [
+          ...value.dimensions,
+          ...walk.facts.headerTypeDimensions(value.type),
+        ],
       },
       rest,
       walk,
@@ -517,7 +521,10 @@ class ConstantNames {
       const bitField = ForeignTypeFacts.bitFieldWidth(header);
       return {
         type: { kind: "external", name: header.type },
-        dimensions: header.arrayDimensions ?? [],
+        dimensions: [
+          ...(header.arrayDimensions ?? []),
+          ...walk.facts.headerTypeDimensions(header.type),
+        ],
         ...(bitField !== undefined && { bitField }),
       };
     }

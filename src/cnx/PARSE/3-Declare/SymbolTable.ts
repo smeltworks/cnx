@@ -986,7 +986,11 @@ class SymbolTable implements IResolvedSymbols {
         list.forEach((symbol, i) => (list[i] = settled(symbol)));
       }
     }
-    for (const index of [this.cppSymbols, this.cppSymbolsByFile]) {
+    for (const index of [
+      this.cppSymbols,
+      this.cppSymbolsByFile,
+      ...this.cppMembers.values(),
+    ]) {
       for (const list of index.values()) {
         list.forEach((symbol, i) => (list[i] = settled(symbol)));
       }
@@ -1337,9 +1341,13 @@ class SymbolTable implements IResolvedSymbols {
     return this.undefinedMacrosByFile.get(path) ?? [];
   }
 
-  /** #2494 review: macros some header `#undef`s */
-  undefinedMacros(): ReadonlySet<string> {
-    return new Set([...this.undefinedMacrosByFile.values()].flat());
+  /** #2494 review: macros a header `#undef`s, of the headers `counts` keeps */
+  undefinedMacros(counts: (path: string) => boolean): ReadonlySet<string> {
+    return new Set(
+      [...this.undefinedMacrosByFile].flatMap(([path, names]) =>
+        counts(path) ? names : [],
+      ),
+    );
   }
 
   /**

@@ -1,0 +1,2 @@
+7:7 error[E0909]: Array dimension must be known at compile time: 'packets.type_element_count' has no value known at compile time
+       help: An array's size is built from literals, read-only bindings that are not `volatile` (ADR-064), length properties (.type_byte_length) and casts (ADR-058). cnx has no variable-length arrays

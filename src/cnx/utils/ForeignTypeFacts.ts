@@ -584,6 +584,18 @@ class ForeignTypeFacts {
   });
 
   /**
+   * The dimensions the array typedefs a spelling passes through add:
+   * `[3]` for `buf_t` after `typedef uint8_t buf_t[3];`, none for `uint8_t`
+   */
+  static typedefDimensions(
+    cType: string,
+    lookup: IForeignSymbolLookup,
+    target: ITargetDescription | null,
+  ): ReadonlyArray<number | string> {
+    return ForeignTypeFacts.elementOf(cType, lookup, target)?.dimensions ?? [];
+  }
+
+  /**
    * The element type a spelling denotes, walking typedefs spelling-first, and
    * the array dimensions the typedefs it passed through add.
    */

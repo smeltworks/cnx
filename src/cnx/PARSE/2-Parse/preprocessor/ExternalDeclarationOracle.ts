@@ -174,6 +174,7 @@ class ExternalDeclarationOracle {
   ): Promise<{
     dump: string;
     headerFiles: ReadonlySet<string>;
+    redefinedNames: ReadonlySet<string>;
     complete: boolean;
     slices: ReadonlyMap<string, string>;
   } | null> {
@@ -200,13 +201,19 @@ class ExternalDeclarationOracle {
    * #1881: a `-dD` dump with line markers, reduced to the `#define`s still in
    * force at its end and the headers its markers name, as resolved paths.
    * The unit itself, `<built-in>` and `<command-line>` are not headers.
+   *
+   * #2510 review: and every name defined again to another body without an
+   * `#undef` between. C reads the first body before the second, and the end
+   * holds only the second.
    */
   static definesAndHeaders(content: string): {
     dump: string;
     headerFiles: ReadonlySet<string>;
+    redefinedNames: ReadonlySet<string>;
   } {
     const defines = new Map<string, string>();
     const headerFiles = new Set<string>();
+    const redefinedNames = new Set<string>();
     let unit: string | null = null;
     for (const line of content.split("\n")) {
       const marker = LINE_MARKER.exec(line);
@@ -221,10 +228,19 @@ class ExternalDeclarationOracle {
       const directive = DEFINE_OR_UNDEF.exec(line);
       if (directive === null) continue;
       const name = directive[2];
+      const held = defines.get(name);
       defines.delete(name);
-      if (directive[1] === "define") defines.set(name, line);
+      if (directive[1] !== "define") continue;
+      if (held !== undefined && held.trim() !== line.trim()) {
+        redefinedNames.add(name);
+      }
+      defines.set(name, line);
     }
-    return { dump: [...defines.values()].join("\n"), headerFiles };
+    return {
+      dump: [...defines.values()].join("\n"),
+      headerFiles,
+      redefinedNames,
+    };
   }
 
   /**

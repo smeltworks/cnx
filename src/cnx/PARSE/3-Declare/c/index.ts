@@ -147,6 +147,9 @@ class CResolver {
       },
     );
     if (structSymbol) ctx.symbols.push(structSymbol);
+    for (const memberEnum of struct.enums) {
+      CResolver.collectEnumSymbols(memberEnum, ctx);
+    }
   }
 
   /** The first declarator's name, else the first typedef name in the specifiers */

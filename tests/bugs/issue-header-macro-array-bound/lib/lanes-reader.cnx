@@ -1,0 +1,9 @@
+#include "lanes-b.h"
+
+scope LanesReader {
+    u8[laneB.d.type_element_count] copy;
+
+    u32 count() {
+        return copy.type_element_count;
+    }
+}

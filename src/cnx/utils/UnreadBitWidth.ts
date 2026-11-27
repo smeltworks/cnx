@@ -40,6 +40,18 @@ class UnreadBitWidth {
     };
   }
 
+  /**
+   * #2510 review: a macro a header defines again to another body without an
+   * `#undef` -- C reads the first body before the second, the dump only the
+   * second
+   */
+  static redefinedMacro(name: string): IUnreadBitWidth {
+    return {
+      why: `it reads ${name}, which a header defines again to another value, and cnx sees only the macro's last definition, not the one C read here`,
+      help: `Give the width a macro defined once, or write it as an integer constant (ADR-034).`,
+    };
+  }
+
   /** A value that depends on the target's `int` width */
   static intWidth(): IUnreadBitWidth {
     return {

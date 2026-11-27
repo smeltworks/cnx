@@ -578,6 +578,14 @@ class Program {
               headersFor(sourceFile),
               ResolvedTarget.of(target),
             ),
+      headerTypeDimensions: (sourceFile, cType) =>
+        headersFor === null
+          ? []
+          : ForeignTypeFacts.typedefDimensions(
+              cType,
+              headersFor(sourceFile),
+              ResolvedTarget.of(target),
+            ),
       headerFieldCount: (sourceFile, structName) =>
         headersFor === null
           ? null
@@ -1282,6 +1290,8 @@ class Program {
       headerStructFields: (structName) =>
         options.files.headerStructFields(file(), structName),
       headerTypeBits: (cType) => options.files.headerTypeBits(file(), cType),
+      headerTypeDimensions: (cType) =>
+        options.files.headerTypeDimensions(file(), cType),
       qualifiedTypeName: (written) =>
         options.files.qualifiedTypeName(file(), written),
       headerTypeHead: (name) => options.files.headerTypeHead(name),

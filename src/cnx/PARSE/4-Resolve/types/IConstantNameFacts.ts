@@ -55,6 +55,8 @@ interface IConstantNameFacts {
   ): ReadonlyMap<string, IStructFieldInfo> | undefined;
   /** #2076: `IFileConstantFacts.headerTypeBits`, for this file */
   headerTypeBits(cType: string): number | null;
+  /** `IFileConstantFacts.headerTypeDimensions`, for this file */
+  headerTypeDimensions(cType: string): ReadonlyArray<number | string>;
   /** #2116: `IFileConstantFacts.qualifiedTypeName`, for this file */
   qualifiedTypeName(written: string): string;
   /** #1975 review: `IFileConstantFacts.headerTypeHead` */

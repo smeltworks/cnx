@@ -1,4 +1,5 @@
 import type ICFieldSyntax from "./ICFieldSyntax";
+import type ICEnumSyntax from "./ICEnumSyntax";
 
 interface ICStructSyntax {
   readonly tag: string | null;
@@ -12,6 +13,12 @@ interface ICStructSyntax {
   readonly hasUnnamedMember: boolean;
   readonly hasBody: boolean;
   readonly fields: readonly ICFieldSyntax[];
+  /**
+   * #2510 review: each enum its body defines, a nested struct's too, whose
+   * constants C gives file scope (`struct P { enum { N = 3 } kind; };`
+   * declares `N`)
+   */
+  readonly enums: readonly ICEnumSyntax[];
 }
 
 export default ICStructSyntax;

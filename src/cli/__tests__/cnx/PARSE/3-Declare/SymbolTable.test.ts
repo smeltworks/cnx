@@ -1184,6 +1184,12 @@ describe("SymbolTable", () => {
       expect(dims("fixed")).toEqual([4]);
       const pins = symbolTable.getCppSymbol("pins");
       expect(pins?.kind === "variable" && pins.arrayDimensions).toEqual([3]);
+      // one settled symbol, whichever index is asked
+      expect(symbolTable.getCppSymbolsByFile("pins.hpp")[0]).toBe(pins);
+      expect(symbolTable.getCppMembers(undefined, "pins")[0]).toBe(pins);
+      expect(symbolTable.getCSymbolsByFile("cfg.h")[0]).toBe(
+        symbolTable.getCSymbol("table"),
+      );
       // the fixed dimension is never asked about
       expect(asked).not.toContain("cfg.h:4");
       expect(asked).toContain("pins.hpp:SENSOR_COUNT");
