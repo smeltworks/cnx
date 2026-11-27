@@ -6,10 +6,8 @@
 #include "callback-const-pointer.test.h"
 
 // test-execution
-// test-target-xfail: host cortex-m7 atmega328p cpp #2140 "invalid conversion from"
 // #2348 review: a callback typedef's `uint8_t* const buf` is a const pointer
-// to a writable byte, so a `mut u8 buf` callback matches it. C++ passes the
-// argument by value against the pointer parameter (#2140).
+// to a writable byte, so a `mut u8 buf` callback matches it.
 #include "const-pointer-cb.h"
 
 #include <stdint.h>
@@ -21,7 +19,7 @@ void fill(uint8_t* buf) {
 int main(void) {
     set_fill(fill);
     uint8_t b = 0U;
-    fill(&b);
+    run_fill(&b);
     if (b != 7) {
         return 1U;
     }
