@@ -17,6 +17,7 @@ extern const char haystack[33];
 
 /* Function prototypes */
 uint32_t lengthAfterGuard(void);
+uint32_t lengthAfterSpelledGuard(void);
 
 #ifdef __cplusplus
 }

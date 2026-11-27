@@ -63,6 +63,8 @@ import type IAnalysisContext from "./types/IAnalysisContext";
 import type IValuePosition from "../../types/IValuePosition";
 import SourceOrder from "../../utils/SourceOrder";
 import TypedefParamParser from "../../utils/TypedefParamParser";
+import CStringArgument from "../../utils/CStringArgument";
+import type ICTypedefSymbol from "../../types/symbols/c/ICTypedefSymbol";
 import type ILexicalFrame from "../../types/ILexicalFrame";
 
 /** The slot a value fills, for E0880's wording */
@@ -360,6 +362,7 @@ class CallbackAssignmentCheck {
   private checkAgainstCTypedef(frame: ILexicalFrame, typedefName: string) {
     const typedef = this.context.symbolTable.getCSymbol(typedefName);
     if (typedef?.kind !== "type") return;
+    this.checkCStringReturn(frame, typedefName, typedef);
     const parameters = frame.declarations.filter(
       (declaration) => declaration.kind === "parameter",
     );
@@ -384,6 +387,43 @@ class CallbackAssignmentCheck {
           },
         }),
       });
+    });
+  }
+
+  /**
+   * E0879 (#2348 review): a function returning `cstring`, which is
+   * `const char*` `mut` or not (ADR-046), given to a C type that returns a
+   * `char*` C may write the characters through
+   */
+  private checkCStringReturn(
+    frame: ILexicalFrame,
+    typedefName: string,
+    typedef: ICTypedefSymbol,
+  ): void {
+    const symbol =
+      frame.functionCName === null
+        ? undefined
+        : this.context.program.symbolByCName(frame.functionCName);
+    const parsed = TypedefParamParser.parse(typedef.type)?.returnType ?? null;
+    // 1.3 keeps a typedef's `const` specifier apart: it is its return's
+    const returned =
+      parsed === null
+        ? null
+        : `${typedef.isConst === true ? "const " : ""}${parsed}`;
+    if (
+      symbol?.kind !== "function" ||
+      returned === null ||
+      TypeResolver.getTypeName(symbol.returnType) !== "cstring" ||
+      !CStringArgument.isWritableCharPointer(returned, this.context.symbolTable)
+    ) {
+      return;
+    }
+    this.found.push({
+      code: "E0879",
+      span: frame.span,
+      message: `Function '${frame.functionCName}' signature does not match callback type '${typedefName}': it returns a cstring, which is const char*, and the type returns '${returned}'`,
+      helpText:
+        "A cstring is const char*, `mut` or not (ADR-046): declare the C type's return const char*.",
     });
   }
 }

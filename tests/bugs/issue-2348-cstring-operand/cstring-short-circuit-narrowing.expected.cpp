@@ -11,7 +11,8 @@
 // #2348 review: a NULL check narrows a C string where C evaluates only once
 // it held: the right side of '&&' after 'c_x != NULL', of '||' after
 // 'c_x = NULL', each branch of a ternary, the body of an if whose
-// '&&' checks several, and the code after a guard clause whose '||' does.
+// '&&' checks several, and the code after a guard clause whose '||' does,
+// each with the condition spelled 'x = false' as E0701 asks for '!x'.
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -35,6 +36,15 @@ uint32_t lengthAfterGuard(void) {
     const char* c_a = strstr(haystack, "lo");
     const char* c_b = strstr(haystack, "he");
     if (c_a == nullptr || c_b == nullptr) {
+        return 0U;
+    }
+    return static_cast<uint32_t>((cnx_clamp_add_u64(strlen(c_a), strlen(c_b))));
+}
+
+uint32_t lengthAfterSpelledGuard(void) {
+    const char* c_a = strstr(haystack, "lo");
+    const char* c_b = strstr(haystack, "he");
+    if ((c_a != nullptr && c_b != nullptr) == false) {
         return 0U;
     }
     return static_cast<uint32_t>((cnx_clamp_add_u64(strlen(c_a), strlen(c_b))));
@@ -73,6 +83,17 @@ int main(void) {
     const uint32_t guarded = lengthAfterGuard();
     if (guarded != 19) {
         return 7U;
+    }
+    uint64_t spelled = 0ULL;
+    if ((c_pos == nullptr) == false) {
+        spelled = strlen(c_pos);
+    }
+    if (spelled != 8) {
+        return 8U;
+    }
+    const uint32_t spelledGuard = lengthAfterSpelledGuard();
+    if (spelledGuard != 19) {
+        return 9U;
     }
     return 0U;
 }

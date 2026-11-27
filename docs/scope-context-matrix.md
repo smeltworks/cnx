@@ -1537,17 +1537,17 @@ Linked fixtures with no derivable context:
 | top-level function | ok        | -      | -          | warn        | warn       |
 | scope member       | -         | -      | -          | warn        | warn       |
 | scope method       | ok        | -      | -          | warn        | warn       |
-| for header         | -         | -      | -          | warn        | warn       |
+| for header         | ok        | -      | -          | warn        | warn       |
 
 ## ADR-045 E0948
 
 | Context            | same file | direct | transitive | from 1 away | thru chain |
 | ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
-| global variable    | -         | -      | -          | warn        | warn       |
+| global variable    | ok        | -      | -          | warn        | warn       |
 | top-level function | ok        | -      | -          | warn        | warn       |
-| scope member       | -         | -      | -          | warn        | warn       |
+| scope member       | ok        | -      | -          | warn        | warn       |
 | scope method       | ok        | -      | -          | warn        | warn       |
-| for header         | -         | -      | -          | warn        | warn       |
+| for header         | ok        | -      | -          | warn        | warn       |
 
 ## ADR-045 string-copy
 

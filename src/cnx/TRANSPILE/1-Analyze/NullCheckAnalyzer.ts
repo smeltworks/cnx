@@ -329,11 +329,11 @@ class NullCheckWalk {
         this.whileStatement(statement);
         return;
       case "for":
-      case "doWhile":
       case "forever":
       case "switch":
         // A loop may stop, and a switch take another case, before a guard
-        // inside it runs, so what one proves stays inside (#2348 review)
+        // inside it runs, so what one proves stays inside (#2348 review). A
+        // do-while body runs at least once, so its guards hold after it.
         this.ownParts(statement);
         this.withNarrowed([], () => {
           for (const child of StatementChildren.of(statement)) {
@@ -385,7 +385,9 @@ class NullCheckWalk {
    * The `c_` names `condition` proves not NULL when it evaluates to
    * `outcome` (#2348 review): `c_x != NULL` when true, `c_x = NULL` when
    * false, each operand of a true `&&` and of a false `||`, and a `!`'s
-   * operand the other way round. Anything else proves nothing.
+   * operand the other way round -- as `x = false` and `x != true` are, E0701's
+   * spelling of `!x`; `x = true` and `x != false` are `x`. Anything else
+   * proves nothing.
    */
   private static narrowedBy(
     condition: TExpression,
@@ -396,6 +398,13 @@ class NullCheckWalk {
     }
     if (condition.kind === "unary" && condition.operator === "!") {
       return NullCheckWalk.narrowedBy(condition.operand, !outcome);
+    }
+    const compared = NullCheckWalk.comparedWithBool(condition);
+    if (compared !== null) {
+      return NullCheckWalk.narrowedBy(
+        compared.operand,
+        compared.same ? outcome : !outcome,
+      );
     }
     const check = NullCheckWalk.nullCheckIn(condition);
     if (check !== null) {
@@ -410,6 +419,31 @@ class NullCheckWalk {
       );
     }
     return [];
+  }
+
+  /**
+   * `x = true` or `x != false` (`same`), and `x = false` or `x != true`
+   * (not): the bool `x` is compared with. Null for anything else.
+   */
+  private static comparedWithBool(
+    condition: TExpression,
+  ): { readonly operand: TExpression; readonly same: boolean } | null {
+    if (condition.kind !== "binary" || condition.operands.length !== 2) {
+      return null;
+    }
+    const operator = condition.operators[0];
+    const literal = condition.operands[1];
+    if (
+      (operator !== "=" && operator !== "!=") ||
+      literal.kind !== "literal" ||
+      (literal.literalKind !== "true" && literal.literalKind !== "false")
+    ) {
+      return null;
+    }
+    return {
+      operand: condition.operands[0],
+      same: (literal.literalKind === "true") === (operator === "="),
+    };
   }
 
   /** Every nullable variable visible here, innermost scope first */

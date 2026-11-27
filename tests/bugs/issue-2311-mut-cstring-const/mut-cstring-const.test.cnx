@@ -9,9 +9,15 @@ string<16> haystack <- "hello world";
 
 scope Board {
     mut cstring name;
+    // Read-only: one const, never `const const char*` (#2348 review)
+    cstring tag <- "tag";
 
     public void rename() {
         this.name <- "board";
+    }
+
+    public u64 tagLength() {
+        return strlen(this.tag);
     }
 
     public u64 nameLength() {
@@ -60,6 +66,10 @@ u32 main() {
     u64 boardLength <- Board.nameLength();
     if (boardLength != 5) {
         return 8;
+    }
+    u64 tagLength <- Board.tagLength();
+    if (tagLength != 3) {
+        return 9;
     }
     return 0;
 }

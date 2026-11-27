@@ -36,6 +36,12 @@ import MutArgument from "./helpers/MutArgument";
 import ArgumentQualifier from "./helpers/ArgumentQualifier";
 import CPointerParameter from "../../utils/CPointerParameter";
 import StringValueForm from "../../utils/StringValueForm";
+import CStringArgument from "../../utils/CStringArgument";
+import BuiltStringArgument from "./helpers/BuiltStringArgument";
+import StatementNodes from "../../utils/StatementNodes";
+import SourceOrder from "../../utils/SourceOrder";
+import ValuePositions from "./helpers/ValuePositions";
+import type IValuePositions from "../../types/IValuePositions";
 import ScanfFormat from "../../utils/ScanfFormat";
 import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
@@ -80,6 +86,10 @@ class CPointerArgumentCheck {
     const only = reached.length === 1 ? reached[0] : undefined;
     callee.arguments.forEach((arg, index) => {
       if (lost.has(index)) return;
+      if (BuiltStringArgument.forC(arg, reached, index, this.context)) {
+        this.checkBuilt(arg, callee, reached, index);
+        return;
+      }
       const parameter = only?.parameters[index];
       const pointee =
         parameter === undefined
@@ -97,21 +107,61 @@ class CPointerArgumentCheck {
         return;
       }
       if (pointee === null) return;
-      if (
-        pointee === "char" &&
-        (this.rejectsUnknownLength(arg, callee, index) ||
-          this.rejectsPointerResult(arg, callee, reached, index))
-      ) {
-        return;
-      }
-      this.found.push({
-        code: "E0896",
-        span: arg.span,
-        message: `cnx cannot see how '${callee.name}' uses parameter ${index + 1}, so passing '${arg.written}' to it is not memory safe`,
-        helpText: `Consider converting '${callee.name}' to cnx.`,
-        severity: "warning",
-      });
+      this.warnsNotMemorySafe(arg, callee, index);
     });
+  }
+
+  /** E0896: cnx cannot see how far C reads or writes through the pointer */
+  private warnsNotMemorySafe(
+    arg: TExpression,
+    callee: ICCallee,
+    index: number,
+  ): void {
+    this.found.push({
+      code: "E0896",
+      span: arg.span,
+      message: `cnx cannot see how '${callee.name}' uses parameter ${index + 1}, so passing '${arg.written}' to it is not memory safe`,
+      helpText: `Consider converting '${callee.name}' to cnx.`,
+      severity: "warning",
+    });
+  }
+
+  /** What a built argument needs: a const pointee, known parts, a result not into it */
+  private checkBuilt(
+    arg: TExpression,
+    callee: ICCallee,
+    reached: readonly ICCalleeSignature[],
+    index: number,
+  ): void {
+    if (
+      this.rejectsBuiltWrite(arg, callee, index) ||
+      this.rejectsUnknownLength(arg, callee, index) ||
+      this.rejectsPointerResult(arg, callee, reached, index)
+    ) {
+      return;
+    }
+    this.warnsNotMemorySafe(arg, callee, index);
+  }
+
+  /**
+   * E0915 (#2348 review): a built argument for a parameter C may write
+   * through (`CArgumentWrite`). The write lands in the temporary and is
+   * lost, as for a cnx `mut` parameter (ADR-071 Decision 2).
+   */
+  private rejectsBuiltWrite(
+    arg: TExpression,
+    callee: ICCallee,
+    index: number,
+  ): boolean {
+    if (!CArgumentWrite.mayWrite(callee, index, this.context)) return false;
+    this.found.push({
+      code: "E0915",
+      span: arg.span,
+      message: `cannot pass '${arg.written}' to parameter ${index + 1} of '${callee.name}', which '${callee.name}' may write through: it is not a variable, so the write would be lost`,
+      helpText: `A C pointer parameter that is not const writes its argument (ADR-071 Decision 2); copy '${arg.written}' into a \`mut\` string<N> and pass that, or declare the C parameter const char*.`,
+      severity: "error",
+    });
+    return true;
   }
 
   /** E0930: a scanf-family format that is not a string literal */
@@ -192,7 +242,8 @@ class CPointerArgumentCheck {
         ?.binding ?? null;
     if (
       !CArgumentWrite.mayWrite(callee, index, this.context) ||
-      BoundDeclaration.of(written)?.isConst !== true
+      (BoundDeclaration.of(written)?.isConst !== true &&
+        !this.isCString(callee.arguments[index]))
     ) {
       return false;
     }
@@ -215,6 +266,12 @@ class CPointerArgumentCheck {
   ): { readonly message: string; readonly helpText: string } {
     const arg = callee.arguments[index];
     const name = callee.name;
+    if (this.isCString(arg)) {
+      return {
+        message: `'${arg.written}' is a C string, whose characters cnx does not write, and argument ${index + 1} of '${name}' is one '${name}' may write through`,
+        helpText: `A cstring is const char* (ADR-046), \`mut\` or not: declare the C parameter const char*, or copy '${arg.written}' into a \`mut\` string<N> and pass that.`,
+      };
+    }
     if (callee.signatures.length > 1) {
       return {
         message: `'${arg.written}' is read-only, and every overload of '${name}' this call can reach may write through argument ${index + 1}`,
@@ -241,6 +298,77 @@ class CPointerArgumentCheck {
     };
   }
 
+  /** ADR-046: a C string, whose characters are C's and cnx never writes */
+  private isCString(value: TExpression): boolean {
+    return OperandTyper.typeOf(value, this.context)?.typeName === "cstring";
+  }
+
+  /**
+   * E0900 (#2348 review): a C string stored in a C struct's field C may write
+   * the characters through -- a `char*` that is not const -- by a struct
+   * initializer or an assignment. `mut` reassigns a `cstring`, and never
+   * writes its characters (ADR-046).
+   */
+  public checkFieldStore(
+    value: TExpression,
+    structType: string | null,
+    field: string | null,
+  ): void {
+    if (structType === null || field === null || !this.isCString(value)) {
+      return;
+    }
+    const fieldType = this.context.symbolTable
+      .getStructFieldTypes(structType)
+      ?.get(field);
+    if (
+      fieldType === undefined ||
+      !CStringArgument.isWritableCharPointer(
+        fieldType,
+        this.context.symbolTable,
+      )
+    ) {
+      return;
+    }
+    this.found.push({
+      code: "E0900",
+      span: value.span,
+      message: `'${value.written}' is a C string, whose characters cnx does not write, and field '${field}' of '${structType}' is a '${fieldType}' C may write through`,
+      helpText: `A cstring is const char* (ADR-046), \`mut\` or not: declare the C field const char*, or store a \`mut\` string<N> there.`,
+      severity: "error",
+    });
+  }
+
+  /** Each struct initializer's fields and assignment to a field, for `checkFieldStore` */
+  public checkFieldStores(
+    program: IProgramSyntax,
+    positions: IValuePositions,
+  ): void {
+    for (const member of program.members) {
+      for (const site of StatementNodes.assignments(member.declaration)) {
+        const last = OperandTyper.chainOf(site.target, this.context).steps.at(
+          -1,
+        );
+        this.checkFieldStore(
+          site.value,
+          last?.before?.typeName ?? null,
+          last?.member ?? null,
+        );
+      }
+      for (const part of DeclarationParts.of(member.declaration)) {
+        for (const node of ExpressionNodes.of(part)) {
+          if (node.kind !== "structInitializer") continue;
+          const structType = ValuePositions.at(
+            positions.positions,
+            node,
+          ).typeText;
+          for (const field of node.fields) {
+            this.checkFieldStore(field.value, structType, field.name);
+          }
+        }
+      }
+    }
+  }
+
   /** The C type of what an argument hands over */
   private objectTypeOf(arg: TExpression): string | null {
     return CPointerArgumentAnalyzer.cTypeOf(
@@ -249,15 +377,11 @@ class CPointerArgumentCheck {
   }
 
   /**
-   * E0947 (#2348 review): a concatenation or a substring passed to a C
-   * `char*` is built into a temporary at the sum of its parts' capacities
-   * (ADR-045), so each whole part needs one. A substring's length is E0922's.
-   */
-  /**
    * E0948 (#2348 review): a string built for a C function that returns a
-   * pointer. The temporary lives only as long as the statement's block, and
-   * the pointer -- what `strstr` or `strchr` return, or a typedef of one --
-   * may point into it.
+   * pointer that can point at characters (`CStringArgument.mayPointInto`).
+   * The temporary lives only as long as the statement's block, and the
+   * pointer -- what `strstr` or `strchr` return, or a typedef of one -- may
+   * point into it. A `FILE*` cannot.
    */
   private rejectsPointerResult(
     arg: TExpression,
@@ -265,18 +389,12 @@ class CPointerArgumentCheck {
     reached: readonly ICCalleeSignature[],
     index: number,
   ): boolean {
-    const form = StringValueForm.of(arg, this.context);
-    if (form.kind !== "concat" && form.kind !== "substring") return false;
     if (
-      !reached.some(
-        (signature) =>
-          signature.returnType !== null &&
-          (signature.returnType.includes("*") ||
-            this.context.symbolTable.isCPointerTypedef(
-              signature.returnType
-                .replaceAll(/\b(?:const|volatile)\b/g, "")
-                .trim(),
-            )),
+      !reached.some((signature) =>
+        CStringArgument.mayPointInto(
+          signature.returnType,
+          this.context.symbolTable,
+        ),
       )
     ) {
       return false;
@@ -291,6 +409,11 @@ class CPointerArgumentCheck {
     return true;
   }
 
+  /**
+   * E0947 (#2348 review): a concatenation or a substring passed to a C
+   * `char*` is built into a temporary at the sum of its parts' capacities
+   * (ADR-045), so each whole part needs one. A substring's length is E0922's.
+   */
   private rejectsUnknownLength(
     arg: TExpression,
     callee: ICCallee,
@@ -354,7 +477,10 @@ class CPointerArgumentCheck {
 class CPointerArgumentAnalyzer {
   constructor(private readonly context: IAnalysisContext) {}
 
-  public analyze(program: IProgramSyntax): IBaseAnalysisError[] {
+  public analyze(
+    program: IProgramSyntax,
+    positions: IValuePositions,
+  ): IBaseAnalysisError[] {
     const check = new CPointerArgumentCheck(this.context);
     for (const member of program.members) {
       for (const part of DeclarationParts.of(member.declaration)) {
@@ -362,7 +488,8 @@ class CPointerArgumentAnalyzer {
           check.checkExpression(expr);
       }
     }
-    return check.errors();
+    check.checkFieldStores(program, positions);
+    return check.errors().sort(SourceOrder.bySpan);
   }
 
   /** A declared value's C type -- an array's is its element's -- or null */

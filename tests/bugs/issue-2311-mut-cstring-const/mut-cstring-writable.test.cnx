@@ -1,0 +1,21 @@
+// test-error
+// #2348 review: a cstring is const char*, `mut` or not (ADR-046), so it
+// cannot land where C may write its characters: a char* or void* parameter
+// that is not const, or a char* field of a C struct. Each is E0900.
+#include "lib/texts.h"
+#include "lib/labels.h"
+
+u32 main() {
+    mut cstring c_text <- texts_get();
+    if (c_text = NULL) {
+        return 1;
+    }
+    texts_upper(c_text);
+    texts_keep(c_text);
+    mut Customer customer <- { name: c_text, tag: c_text, id: 1 };
+    customer.name <- c_text;
+    // Controls: a const char* parameter and field take a cstring
+    u32 length <- texts_length(c_text);
+    customer.tag <- c_text;
+    return length;
+}

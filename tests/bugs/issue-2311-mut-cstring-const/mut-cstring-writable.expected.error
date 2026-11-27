@@ -1,0 +1,10 @@
+18:31 warning[E0896]: cnx cannot see how 'texts_length' uses parameter 1, so passing 'c_text' to it is not memory safe
+       help: Consider converting 'texts_length' to cnx.
+13:16 error[E0900]: 'c_text' is a C string, whose characters cnx does not write, and argument 1 of 'texts_upper' is one 'texts_upper' may write through
+       help: A cstring is const char* (ADR-046), `mut` or not: declare the C parameter const char*, or copy 'c_text' into a `mut` string<N> and pass that.
+14:15 error[E0900]: 'c_text' is a C string, whose characters cnx does not write, and argument 1 of 'texts_keep' is one 'texts_keep' may write through
+       help: A cstring is const char* (ADR-046), `mut` or not: declare the C parameter const char*, or copy 'c_text' into a `mut` string<N> and pass that.
+15:36 error[E0900]: 'c_text' is a C string, whose characters cnx does not write, and field 'name' of 'Customer' is a 'char*' C may write through
+       help: A cstring is const char* (ADR-046), `mut` or not: declare the C field const char*, or store a `mut` string<N> there.
+16:21 error[E0900]: 'c_text' is a C string, whose characters cnx does not write, and field 'name' of 'Customer' is a 'char*' C may write through
+       help: A cstring is const char* (ADR-046), `mut` or not: declare the C field const char*, or store a `mut` string<N> there.

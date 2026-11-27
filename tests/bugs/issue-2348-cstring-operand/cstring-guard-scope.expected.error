@@ -1,8 +1,10 @@
-18:16 error[E0908]: Nullable variable 'c_a' used without NULL check
+19:16 error[E0908]: Nullable variable 'c_a' used without NULL check
        help: Check for NULL before use: if (c_a != NULL) { ... }
-26:16 error[E0908]: Nullable variable 'c_b' used without NULL check
+27:16 error[E0908]: Nullable variable 'c_b' used without NULL check
        help: Check for NULL before use: if (c_b != NULL) { ... }
-36:16 error[E0908]: Nullable variable 'c_c' used without NULL check
+37:16 error[E0908]: Nullable variable 'c_c' used without NULL check
        help: Check for NULL before use: if (c_c != NULL) { ... }
-44:16 error[E0908]: Nullable variable 'c_e' used without NULL check
+45:16 error[E0908]: Nullable variable 'c_e' used without NULL check
        help: Check for NULL before use: if (c_e != NULL) { ... }
+58:16 error[E0908]: Nullable variable 'c_f' used without NULL check
+       help: Check for NULL before use: if (c_f != NULL) { ... }

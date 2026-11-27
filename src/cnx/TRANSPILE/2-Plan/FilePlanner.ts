@@ -45,7 +45,7 @@ import type TLengthRule from "../../utils/types/TLengthRule";
 import LengthSubject from "../../utils/LengthSubject";
 import OperandTyper from "../../utils/OperandTyper";
 import TYPE_WIDTH from "../../types/TYPE_WIDTH";
-import CPointerParameter from "../../utils/CPointerParameter";
+import CStringArgument from "../../utils/CStringArgument";
 import ScanfFormat from "../../utils/ScanfFormat";
 import CharacterWrite from "../../utils/CharacterWrite";
 import StringValueForm from "../../utils/StringValueForm";
@@ -2099,11 +2099,9 @@ class FilePlanner {
               this.queries,
             );
       const cForm =
-        passing.mode !== "c"
-          ? null
-          : built === undefined
-            ? this.cArgumentForm(expression, passing.param, site)
-            : "as-written";
+        passing.mode === "c"
+          ? this.cArgumentForm(expression, passing.param, site)
+          : null;
       planned.set(expression, { passing, form, cForm, enumCast });
       const cType = form === null ? enumCast : ArgumentForm.cTypeOf(form);
       if (cType !== null) cTypes.add(cType);
@@ -2965,8 +2963,8 @@ class FilePlanner {
    * #2239: a concatenation or a substring passed to a `string<N>` parameter,
    * by the parameter's capacity -- built apart like an assignment's, by the
    * same value form. One passed to a C `char*` parameter is built the same
-   * way, at the sum of its parts' capacities, which 2.1's E0862 saw are
-   * known (#2348 review). Any other argument is passed as it is written.
+   * way, at the sum of its parts' capacities, which 2.1's E0947 saw are
+   * known, for the parameters `CStringArgument` names (#2348 review). Any other argument is passed as it is written.
    */
   private planStringArguments(
     valuePositions: IValuePositions | null,
@@ -2991,7 +2989,12 @@ class FilePlanner {
       const passing = this.argumentPassing(site);
       if (
         passing.mode !== "c" ||
-        CPointerParameter.pointee(passing.param?.baseType) !== "char"
+        !CStringArgument.isBuiltFor(
+          passing.param === undefined
+            ? undefined
+            : { type: passing.param.baseType, isArray: passing.param.isArray },
+          this.state.symbolTable,
+        )
       ) {
         continue;
       }

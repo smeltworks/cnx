@@ -80,17 +80,23 @@ if (c_customer != NULL) {
 
 ### Where a NULL Check Holds
 
-A NULL check holds where its condition decided control reached, and nowhere
-else (#2348 review). `c_x != NULL` holds in the body of an `if` or `while` it
+A NULL check holds where its condition decided control reached (#2348
+review). Two shapes still hold it further, and are open: a check made before
+a loop, in a later pass after the body reassigns the variable (#2524), and a
+guard clause on an inner `c_` local, for an outer one of the same name
+(#2525). `c_x != NULL` holds in the body of an `if` or `while` it
 is the condition of, on the right of an `&&` it is the left of, and in the
 first branch of a ternary. `c_x = NULL` holds the other way round: on the
 right of an `||`, in an `else`, in a ternary's second branch, and, as a guard
 clause, after an `if` with no `else` whose body returns on every path: a
 `return` inside a loop may never run, so it makes no guard clause. A guard
-clause inside a branch, a loop or a switch holds only inside it, since a path
-may skip it. A true `&&` holds
+clause inside a branch, a `for`, `while` or `forever` loop, or a switch holds
+only inside it, since a path may skip it; a do-while body runs at least once,
+so a guard at its top level holds after the loop. A true `&&` holds
 each of its operands' checks and a false `||` each of its operands', so one
-condition checks several variables; a `!` turns its operand's around.
+condition checks several variables; a `!` turns its operand's around, and so
+do `x = false` and `x != true`, E0701's spelling of `!x`, while `x = true` and
+`x != false` are `x`.
 
 ```cnx
 cstring c_a <- strstr(haystack, "lo");
@@ -141,7 +147,10 @@ A `cstring` is emitted as `const char*`, `mut` or not (#2311). Its characters
 are C's: a string literal, or what `strstr` returns for a read-only string.
 `mut` lets the pointer be reassigned; it never lets cnx write the characters,
 because no cnx form writes through a `cstring`. A read-only `cstring` adds no
-second `const`.
+second `const`. Nor can a `cstring` land where C may write its characters: a
+C pointer parameter that is not const, `char*` or `void*`, and a C struct's
+`char*` field are E0900, and a function returning `cstring` does not match a
+C function-pointer type that returns `char*` (E0879) (#2348 review).
 
 ```cnx
 mut cstring label <- "a";                   // const char* label = "a";
@@ -149,6 +158,7 @@ label <- "b";                               // OK: the pointer is reassigned
 string<16> haystack <- "hello world";
 mut cstring c_at <- strstr(haystack, "lo"); // const char* c_at = strstr(...)
 cstring c_he <- strstr(haystack, "he");     // const char* c_he = strstr(...)
+texts_upper(c_at);                          // ERROR E0900: texts_upper takes char*
 ```
 
 Until then a `mut cstring` was `char*`. ISO C++ rejects a string literal

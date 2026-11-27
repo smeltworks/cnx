@@ -1,0 +1,4 @@
+11:21 error[E0908]: Nullable variable 'c_a' used without NULL check
+       help: Check for NULL before use: if (c_a != NULL) { ... }
+20:17 error[E0908]: Nullable variable 'c_b' used without NULL check
+       help: Check for NULL before use: if (c_b != NULL) { ... }

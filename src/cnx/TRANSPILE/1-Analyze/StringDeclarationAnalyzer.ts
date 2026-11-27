@@ -193,17 +193,10 @@ class StringDeclarationCheck {
    */
   public substringBounds(node: TExpression): void {
     if (node.kind !== "postfix" || this.bounded.has(node)) return;
+    // A postfix is never a `+`, so its form is a substring or no string part
     const form = StringValueForm.of(node, this.context);
-    const parts =
-      form.kind === "concat"
-        ? form.parts
-        : form.kind === "substring"
-          ? [form.part]
-          : [];
-    for (const part of parts) {
-      if (part.kind === "substring" && part.chain === node) {
-        this.checkBounds(node, part);
-      }
+    if (form.kind === "substring" && form.part.chain === node) {
+      this.checkBounds(node, form.part);
     }
   }
 
@@ -379,7 +372,9 @@ class StringDeclarationCheck {
   private lengthOf(
     part: Extract<TStringPart, { kind: "substring" }>,
   ): number | null {
-    return part.length === null ? 1 : this.constantOf(part.length);
+    return StringValueForm.partCapacity(part, this.context, (length) =>
+      this.constantOf(length),
+    );
   }
 
   /** How to make a value fit: widen what it lands in, or `fix` the value */

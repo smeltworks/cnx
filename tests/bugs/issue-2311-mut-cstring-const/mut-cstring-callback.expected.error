@@ -1,0 +1,2 @@
+10:0 error[E0879]: Function 'label' signature does not match callback type 'label_fn': it returns a cstring, which is const char*, and the type returns 'char*'
+       help: A cstring is const char*, `mut` or not (ADR-046): declare the C type's return const char*.

@@ -18,6 +18,7 @@ extern const char haystack[17];
 
 /* Function prototypes */
 void Board__rename(void);
+uint64_t Board__tagLength(void);
 uint64_t Board__nameLength(void);
 
 #ifdef __cplusplus

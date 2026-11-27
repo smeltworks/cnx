@@ -1,0 +1,17 @@
+// test-error
+// #2348 review: a string built for a C char* that is not const would take
+// the callee's write and lose it, so it is E0915, as for a cnx `mut`
+// parameter (ADR-071 Decision 2).
+#include "lib/chars.h"
+
+mut string<8> buffer <- "hello";
+mut i32 first;
+
+u32 main() {
+    chars_upper(buffer + "!");
+    chars_upper(buffer[1, 3]);
+    // Controls: a const char* is built, and a whole string is passed
+    first <- chars_first(buffer + "!");
+    chars_upper(buffer);
+    return 0;
+}

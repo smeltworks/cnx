@@ -21,9 +21,14 @@ const char haystack[17] = "hello world";
 /* Scope: Board */
 /* MISRA C:2012 Rule 11.9: pointer declared without a value initialized to `NULL` (ADR-015's `{0}` would use the integer constant `0` as a null pointer constant, and the rule permits only `NULL`). */
 static const char* Board__name = NULL;
+static const char* Board__tag = "tag";
 
 void Board__rename(void) {
     Board__name = "board";
+}
+
+uint64_t Board__tagLength(void) {
+    return strlen(Board__tag);
 }
 
 uint64_t Board__nameLength(void) {
@@ -67,6 +72,10 @@ int main(void) {
     const uint64_t boardLength = Board__nameLength();
     if (boardLength != 5) {
         return 8U;
+    }
+    const uint64_t tagLength = Board__tagLength();
+    if (tagLength != 3) {
+        return 9U;
     }
     return 0U;
 }

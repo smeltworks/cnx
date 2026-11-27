@@ -1,0 +1,21 @@
+// test-error
+// #2060: a '!= NULL' check held past its if: in the else arm, where the
+// variable is NULL, and after the if, where it may be. Both are E0908.
+#include <stdio.h>
+
+void elseArm() {
+    FILE c_a <- fopen("a.txt", "r");
+    if (c_a != NULL) {
+        (void)fclose(c_a);
+    } else {
+        (void)fclose(c_a);
+    }
+}
+
+void afterIf() {
+    FILE c_b <- fopen("b.txt", "r");
+    if (c_b != NULL) {
+        (void)fclose(c_b);
+    }
+    (void)fclose(c_b);
+}

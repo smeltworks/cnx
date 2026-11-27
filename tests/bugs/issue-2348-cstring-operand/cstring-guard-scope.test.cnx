@@ -1,7 +1,8 @@
 // test-error
 // #2348 review: a guard clause proves its NULL check only where no path ran
 // around it. A return inside a loop may never run, and a guard nested in a
-// branch, a loop or a switch holds only inside it.
+// branch, a loop or a switch holds only inside it. A do-while body always
+// runs, so a guard at its top level holds after the loop.
 #include <string.h>
 
 string<32> haystack <- "hello hello";
@@ -42,6 +43,29 @@ u32 main() {
         }
     }
     n <- strlen(c_e);
+
+    cstring c_f <- strstr(haystack, "h");
+    switch (count) {
+        case 1 {
+            if (c_f = NULL) {
+                return 7;
+            }
+        }
+        default {
+            n <- 0;
+        }
+    }
+    n <- strlen(c_f);
+
+    // Control: a do-while body runs at least once, so its guard holds after
+    cstring c_g <- strstr(haystack, "e");
+    do {
+        if (c_g = NULL) {
+            return 8;
+        }
+        count +<- 1;
+    } while (count < 1);
+    n <- strlen(c_g);
 
     // Control: a guard whose two branches both return proves its check
     cstring c_d <- strstr(haystack, "ll");

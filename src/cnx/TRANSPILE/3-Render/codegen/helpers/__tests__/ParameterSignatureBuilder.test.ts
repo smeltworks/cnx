@@ -515,5 +515,20 @@ describe("ParameterSignatureBuilder", () => {
         "const char* c_s",
       );
     });
+
+    it("adds no second const to a cstring of no known passing", () => {
+      const input = createInput({
+        name: "c_s",
+        baseType: "cstring",
+        mappedType: "const char*",
+        isConst: true,
+        isPassByReference: false,
+        isPassByValue: false,
+      });
+
+      expect(ParameterSignatureBuilder.build(input, "*")).toBe(
+        "const char* c_s",
+      );
+    });
   });
 });

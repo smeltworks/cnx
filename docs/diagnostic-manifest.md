@@ -946,6 +946,7 @@ totals each time it passes.
 | tests/bugs/issue-2027-register-field-zero/register-field-zero.test.cnx                                    | E0872                             |
 | tests/bugs/issue-2046-duplicate-case-value/duplicate-by-value.test.cnx                                    | E0713                             |
 | tests/bugs/issue-2051-case-label-not-constant/case-label-not-constant.test.cnx                            | E0717                             |
+| tests/bugs/issue-2060-null-check-ends/null-check-ends.test.cnx                                            | E0908                             |
 | tests/bugs/issue-2073-for-header-forms/for-header-forms-cpp-error.test.cnx                                | E0917                             |
 | tests/bugs/issue-2073-for-header-forms/for-header-forms-error.test.cnx                                    | E0917                             |
 | tests/bugs/issue-2076-header-struct-dimension/header-pointer-dimension-error.test.cnx                     | E0909                             |
@@ -974,8 +975,12 @@ totals each time it passes.
 | tests/bugs/issue-2240-substring-constant-length/substring-runtime-length-error.test.cnx                   | E0922                             |
 | tests/bugs/issue-2251-bitmap-field-bit-index/field-bit-index-wo-zero-error.test.cnx                       | E0872                             |
 | tests/bugs/issue-2254-volatile-not-inlined/volatile-dimension-error.test.cnx                              | E0909                             |
+| tests/bugs/issue-2311-mut-cstring-const/mut-cstring-callback.test.cnx                                     | E0879                             |
+| tests/bugs/issue-2311-mut-cstring-const/mut-cstring-writable.test.cnx                                     | E0896, E0900                      |
 | tests/bugs/issue-2332-short-circuit-built-initializer/loop-condition-nested-call-error.test.cnx           | E0702                             |
 | tests/bugs/issue-2341-included-scope-type-bare-use/no-scope-type.test.cnx                                 | E0426                             |
+| tests/bugs/issue-2348-cstring-operand/c-pointer-built-write.test.cnx                                      | E0896, E0915                      |
+| tests/bugs/issue-2348-cstring-operand/c-pointer-overload-result.test.cnx                                  | E0948                             |
 | tests/bugs/issue-2348-cstring-operand/c-pointer-result.test.cnx                                           | E0896, E0948                      |
 | tests/bugs/issue-2348-cstring-operand/c-pointer-substring-bounds.test.cnx                                 | E0865                             |
 | tests/bugs/issue-2348-cstring-operand/c-pointer-unknown-length.test.cnx                                   | E0896, E0947                      |
@@ -996,6 +1001,7 @@ totals each time it passes.
 | tests/bugs/issue-2380-same-level-names/variable-beside-scope-error.test.cnx                               | E0425                             |
 | tests/bugs/issue-2380-same-level-names/variable-beside-struct-error.test.cnx                              | E0425                             |
 | tests/bugs/issue-2385-string-span-write/span-write-bounds-error.test.cnx                                  | E0860, E0861                      |
+| tests/bugs/issue-2402-for-update-built-string/for-update-built-string.test.cnx                            | E0715                             |
 | tests/bugs/issue-2473-chained-callback-mut-argument/chained-c-callee-discarded-error.test.cnx             | E0708                             |
 | tests/bugs/issue-2473-chained-callback-mut-argument/chained-c-callee-error.test.cnx                       | E0896, E0900                      |
 | tests/bugs/issue-2473-chained-callback-mut-argument/chained-c-callee-unwritten-error.test.cnx             | E0899                             |

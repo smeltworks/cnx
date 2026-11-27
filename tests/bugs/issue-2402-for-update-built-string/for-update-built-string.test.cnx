@@ -1,0 +1,26 @@
+// test-error
+// #2402: a string built before its statement, for a cnx string<N> parameter
+// or a C char pointer, was built once before a for loop when it stood in the
+// update, and every pass read what its parts held then. It is E0715.
+#include <string.h>
+
+u32 count(string<8> v) {
+    return v.value_char_count;
+}
+
+u32 main() {
+    mut string<4> a <- "a";
+    mut u32 steps <- 0;
+    for (mut u64 i <- 0; i < 10; i +<- strlen(a + "x")) {
+        a <- "abcd";
+        steps +<- 1;
+    }
+    for (mut u32 j <- 0; j < 10; j +<- count(a[0, 2])) {
+        steps +<- 1;
+    }
+    // Control: the init runs once, so building there once is right
+    for (mut u64 k <- strlen(a + "x"); k < 10; k +<- 1) {
+        steps +<- 1;
+    }
+    return steps;
+}

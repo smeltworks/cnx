@@ -1,0 +1,18 @@
+// test-error
+// test-cpp-only
+// #2348 review: E0948 judges every overload the call reaches. With two
+// reachable, the string was built for 'find_in' and no overload was judged,
+// so 'kept' pointed into a temporary after 'find' returned.
+#include "lib/overloaded-search.hpp"
+
+string<8> s <- "hello";
+mut cstring kept;
+
+void find() {
+    kept <- find_in(s + "!", "lo");
+}
+
+u32 main() {
+    find();
+    return 0;
+}
