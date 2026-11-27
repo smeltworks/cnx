@@ -72,7 +72,10 @@ import Write from "../../cnx/WRITE/1-Write/Write";
 // `const`, a function-pointer parameter records that it is one, and a
 // function-pointer variable is a variable, not a function, which decide where
 // a cstring may land; an entry written before has none of them.
-const CACHE_VERSION = 26;
+// 27: #2348 review -- a function-pointer parameter list keeps its words
+// apart (`char const* text`), where `charconst*text` read the same as a type
+// named `charconst`.
+const CACHE_VERSION = 27;
 
 const TRANSPILER_VERSION = packageJson.version;
 

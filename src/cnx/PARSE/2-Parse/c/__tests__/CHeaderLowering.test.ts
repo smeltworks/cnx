@@ -122,6 +122,14 @@ describe("CHeaderLowering", () => {
       });
     });
 
+    it("keeps a function pointer's parameter words apart", () => {
+      // #2348 review: `charconst` would read as a type of that name
+      const decl = declarations(`void (*g)(char const *text);`)[0];
+      expect(
+        decl.kind === "declaration" && decl.declarators?.[0],
+      ).toMatchObject({ functionPointerParams: "char const*text" });
+    });
+
     it("lowers a prototype's parameters", () => {
       const decl = declarations(`int add(const int a, int b[]);`)[0];
       expect(

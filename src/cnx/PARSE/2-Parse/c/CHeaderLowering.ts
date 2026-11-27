@@ -30,6 +30,7 @@ import DeclaratorTypes from "../shared/DeclaratorTypes";
 import ArrayDimensionText from "../../../utils/ArrayDimensionText";
 import LiteralUtils from "../../../utils/LiteralUtils";
 import ParserUtils from "../../../utils/ParserUtils";
+import SpacedText from "../shared/SpacedText";
 
 /** `DeclarationSpecifiersContext` and `DeclarationSpecifiers2Context` alike */
 interface IQualifiedSpecifiers {
@@ -183,7 +184,9 @@ class CHeaderLowering {
       hasPointer: declarator.pointer() !== null,
       pointerDepth: CHeaderLowering.pointerDepth(declarator),
       functionPointerParams: isFunctionPointer
-        ? (directDeclarator.parameterTypeList()?.getText() ?? "")
+        ? CHeaderLowering.parameterListText(
+            directDeclarator.parameterTypeList(),
+          )
         : null,
       parameters: CHeaderLowering.parameters(declarator),
       // `parameterList ',' '...'`: the ellipsis has no accessor of its own
@@ -199,6 +202,13 @@ class CHeaderLowering {
   }
 
   /** The generated accessor claims non-null; a recovery tree breaks that */
+  /** `char const* text`, not getText()'s `charconst*text` */
+  private static parameterListText(
+    list: ReturnType<DirectDeclaratorContext["parameterTypeList"]>,
+  ): string {
+    return list === null ? "" : SpacedText.of(list);
+  }
+
   private static directDeclaratorOf(
     declarator: DeclaratorContext | null,
   ): DirectDeclaratorContext | null {

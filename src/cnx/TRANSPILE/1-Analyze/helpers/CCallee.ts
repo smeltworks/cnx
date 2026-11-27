@@ -186,25 +186,17 @@ class CCallee {
   }
 
   /**
-   * `const uint8_t*` from a typedef parameter's text, which the grammar may
-   * run together, `const` with no space beside it: its words up to the last
-   * `*`, `const` apart. `char const*` is `const char*`: a `const` before the
-   * first `*`, on either side of the type, makes the characters read-only.
-   * Run together with no space, a trailing `const` is one unless a C type
-   * has the whole run-together name.
+   * `const uint8_t*` from a typedef parameter's text: its words up to the last
+   * `*`. `char const*` is `const char*`: a `const` before the first `*`, on
+   * either side of the type, makes the characters read-only.
    */
-  private static pointerType(text: string, context: IAnalysisContext): string {
+  private static pointerType(text: string): string {
     const head = text.slice(0, text.lastIndexOf("*") + 1);
     const stars = (head.match(/\*/g) ?? []).length;
-    const pointee = head.slice(0, head.indexOf("*")).trim();
-    const leading = /^const(?=\s|[A-Z_a-z])/.test(pointee);
-    const named = pointee.replace(/^const\s*/, "");
-    const trailing =
-      /\sconst$/.test(named) ||
-      (/\wconst$/.test(named) &&
-        context.symbolTable.getCSymbol(named)?.kind !== "type");
-    const base = trailing ? named.replace(/\s*const$/, "") : named;
-    return `${leading || trailing ? "const " : ""}${base}${"*".repeat(stars)}`;
+    const words = head.slice(0, head.indexOf("*")).trim().split(/\s+/);
+    const isConst = words.includes("const");
+    const base = words.filter((word) => word !== "const").join(" ");
+    return `${isConst ? "const " : ""}${base}${"*".repeat(stars)}`;
   }
 
   /**
@@ -307,7 +299,7 @@ class CCallee {
           // The text up to the last `*` (`uint8_t*buf` is how the grammar
           // spells `uint8_t *buf`), so a parameter's name is never its type
           type: param.isPointer
-            ? CCallee.pointerType(param.type, context)
+            ? CCallee.pointerType(param.type)
             : param.baseType,
           isConst: false,
           isArray: false,
