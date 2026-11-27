@@ -375,18 +375,20 @@ class SymbolTable implements IResolvedSymbols {
       if (known !== undefined) return known;
       if (seen.has(cls)) return null;
       const inner = new Set([...seen, cls]);
-      const names = [...(this.structScopedNames.get(keyOf(cls)) ?? [])];
+      // a set, as a name reached along every path of a diamond is one name
+      const names = new Set(this.structScopedNames.get(keyOf(cls)) ?? []);
       for (const base of cls.bases ?? []) {
         const found = this.baseClasses(base, cls.parent);
         if (found.length === 0) return null;
         for (const each of found) {
           const more = namesOf(each, inner);
           if (more === null) return null;
-          names.push(...more);
+          for (const name of more) names.add(name);
         }
       }
-      inherited.set(cls, names);
-      return names;
+      const unique = [...names];
+      inherited.set(cls, unique);
+      return unique;
     };
     const derived = [...this.cppSymbols.values()]
       .flat()

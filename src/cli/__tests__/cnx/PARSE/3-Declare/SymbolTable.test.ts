@@ -1306,6 +1306,13 @@ describe("SymbolTable", () => {
       symbolTable.addCppSymbol(cls("Clear", ["Plain"]));
       symbolTable.addCppSymbol(cls("Templated", ["TLimits<3>"]));
       symbolTable.addCppSymbol(cls("Loop", ["Loop"]));
+      // a diamond 30 deep reaches N along 2^30 paths, and holds it once
+      for (let depth = 0; depth < 30; depth++) {
+        const below = depth === 0 ? "cfg::Mid" : `L${depth - 1}`;
+        symbolTable.addCppSymbol(cls(`A${depth}`, [below]));
+        symbolTable.addCppSymbol(cls(`B${depth}`, [below]));
+        symbolTable.addCppSymbol(cls(`L${depth}`, [`A${depth}`, `B${depth}`]));
+      }
       symbolTable.scopeStructEnumerators(true);
       const scoped = (name: string) =>
         symbolTable.getStructScopedNames(name, "based.hpp");
@@ -1315,6 +1322,7 @@ describe("SymbolTable", () => {
       expect(scoped("Clear")).toEqual([]);
       expect(scoped("Templated")).toBeNull();
       expect(scoped("Loop")).toBeNull();
+      expect(scoped("L29")).toEqual(["N"]);
       expect(symbolTable.getStructScopedNames("Packet", "other.hpp")).toEqual(
         [],
       );
