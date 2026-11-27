@@ -187,17 +187,23 @@ class CCallee {
 
   /**
    * `const uint8_t*` from a typedef parameter's text, which the grammar may
-   * run together, `const` with no space after it: its words up to the last `*`, `const` apart
+   * run together, `const` with no space beside it: its words up to the last
+   * `*`, `const` apart. `char const*` is `const char*`: a `const` before the
+   * first `*`, on either side of the type, makes the characters read-only.
+   * Run together, `charconst` is `char const` unless a C type has that name.
    */
-  private static pointerType(text: string): string {
+  private static pointerType(text: string, context: IAnalysisContext): string {
     const head = text.slice(0, text.lastIndexOf("*") + 1);
     const stars = (head.match(/\*/g) ?? []).length;
-    const isConst = /^const(?=\s|[A-Z_a-z])/.test(head);
-    const base = head
-      .replace(/^const\s*/, "")
-      .replaceAll("*", "")
-      .trim();
-    return `${isConst ? "const " : ""}${base}${"*".repeat(stars)}`;
+    const pointee = head.slice(0, head.indexOf("*")).trim();
+    const leading = /^const(?=\s|[A-Z_a-z])/.test(pointee);
+    const named = pointee.replace(/^const\s*/, "");
+    const trailing =
+      /\sconst$/.test(named) ||
+      (/\wconst$/.test(named) &&
+        context.symbolTable.getCSymbol(named)?.kind !== "type");
+    const base = trailing ? named.replace(/\s*const$/, "") : named;
+    return `${leading || trailing ? "const " : ""}${base}${"*".repeat(stars)}`;
   }
 
   /**
@@ -300,7 +306,7 @@ class CCallee {
           // The text up to the last `*` (`uint8_t*buf` is how the grammar
           // spells `uint8_t *buf`), so a parameter's name is never its type
           type: param.isPointer
-            ? CCallee.pointerType(param.type)
+            ? CCallee.pointerType(param.type, context)
             : param.baseType,
           isConst: false,
           isArray: false,

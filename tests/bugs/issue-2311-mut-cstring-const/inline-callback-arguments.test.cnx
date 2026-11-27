@@ -10,8 +10,11 @@ u32 main() {
     }
     u32 put <- g_put(c_text);
     u32 element <- g_puts[1](c_text);
-    // Controls: a const char* parameter takes a cstring; void returns nothing
+    // Controls: a const char* or char const* parameter takes a cstring; void
+    // returns nothing
     u32 shown <- g_show(c_text);
+    u32 east <- g_east(c_text);
+    u32 typed <- t_east(c_text);
     g_done(put);
-    return put + element + shown;
+    return put + element + shown + east + typed;
 }
