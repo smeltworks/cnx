@@ -1,0 +1,15 @@
+// test-cpp-only
+// test-execution
+// #2348 review: where one overload takes char* and another const char*, C++
+// calls the const one with a cstring, so the cstring lands there and is not
+// E0900.
+#include "lib/const-overload.hpp"
+
+u32 main() {
+    cstring text <- "abc";
+    u32 n <- text_measure(text);
+    if (n != 3) {
+        return 1;
+    }
+    return 0;
+}

@@ -12,7 +12,7 @@ import type TExpressionOf from "../../../types/syntax/TExpressionOf";
 import type TValueSite from "../../../types/TValueSite";
 import OperandTyper from "../../../utils/OperandTyper";
 import TypeText from "../../../utils/TypeText";
-import CallReach from "../../../utils/CallReach";
+import CStringArgument from "../../../utils/CStringArgument";
 import TypedefParamParser from "../../../utils/TypedefParamParser";
 import CCallee from "./CCallee";
 import FunctionReference from "./FunctionReference";
@@ -20,6 +20,8 @@ import StructInitializerType from "./StructInitializerType";
 import ValuePositions from "./ValuePositions";
 import type IAnalysisContext from "../types/IAnalysisContext";
 import type ICCallee from "../types/ICCallee";
+import type ICParameterInfo from "../../../types/symbols/c/ICParameterInfo";
+import type ICppParameterInfo from "../../../types/symbols/cpp/ICppParameterInfo";
 
 /** The place, as C declares it */
 interface IPlace {
@@ -161,7 +163,12 @@ class CLandingType {
     );
   }
 
-  /** A C parameter, over every overload the call can reach; an array one is C's pointer */
+  /**
+   * A C parameter, over every overload the call can reach; an array one is
+   * C's pointer. Where one overload takes a `const char*` and another a
+   * `char*`, C++ calls the const one with a `cstring`, so the const one is
+   * the place (#2348 review).
+   */
   private static cParameterOf(
     call: TExpressionOf<"postfix">,
     op: number,
@@ -169,14 +176,27 @@ class CLandingType {
     context: IAnalysisContext,
   ): IPlace | null {
     const callee = CLandingType.cCalleeOf(call, op, context);
-    const parameter =
-      callee === null
-        ? undefined
-        : CallReach.shapedFor(
-            CCallee.reachable(callee).map((signature) => signature.parameters),
-            index,
-          );
-    if (parameter === undefined) return null;
+    const places = (callee === null ? [] : CCallee.reachable(callee))
+      .map((signature) => signature.parameters[index])
+      .filter((parameter) => parameter !== undefined)
+      .map(CLandingType.parameterPlace);
+    return (
+      places.find(
+        (place) =>
+          place.returnsType ||
+          !CStringArgument.isWritableCharPointer(
+            place.type,
+            context.symbolTable,
+          ),
+      ) ??
+      places[0] ??
+      null
+    );
+  }
+
+  private static parameterPlace(
+    parameter: ICParameterInfo | ICppParameterInfo,
+  ): IPlace {
     // `const char*` lowers to `char*` with `isConst`, which the type then spells
     const constness = parameter.isConst ? "const " : "";
     if ("isFunctionPointer" in parameter && parameter.isFunctionPointer) {
