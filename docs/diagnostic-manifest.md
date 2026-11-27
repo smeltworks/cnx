@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1075 fixture(s) assert a diagnostic; 1061 carry a code.
+1076 fixture(s) assert a diagnostic; 1062 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -998,8 +998,9 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-2473-chained-callback-mut-argument/cpp-member-template-error.test.cnx                    | E0895, E0896, E0900               |
 | tests/bugs/issue-2473-chained-callback-mut-argument/cpp-overload-discarded-error.test.cnx                 | E0708                             |
 | tests/bugs/issue-2473-chained-callback-mut-argument/cpp-overload-pointer-type-error.test.cnx              | E0895, E0896                      |
-| tests/bugs/issue-2474-header-name-own-include/configured-disputed-dimension-error.test.cnx                | E0867                             |
+| tests/bugs/issue-2474-header-name-own-include/configured-disputed-dimension-error.test.cnx                | E0909                             |
 | tests/bugs/issue-2474-header-name-own-include/configured-disputed-error.test.cnx                          | E0867                             |
+| tests/bugs/issue-2474-header-name-own-include/configured-disputed-row-error.test.cnx                      | E0909                             |
 | tests/bugs/issue-2474-header-name-own-include/helper-include-error.test.cnx                               | E0915                             |
 | tests/bugs/issue-2474-header-name-own-include/own-include-error.test.cnx                                  | E0915                             |
 | tests/bugs/issue-2474-header-name-own-include/redeclared-array-index-error.test.cnx                       | E0854                             |

@@ -48,7 +48,8 @@ type TConstResult =
         | "sizeofExpression"
         | "lengthRule"
         | "divisionByZero"
-        | "negativeShift";
+        | "negativeShift"
+        | "disputed";
       /** The offending part as the source spells it, for a message */
       readonly spelling: string;
       readonly at: ISourcePosition | null;
@@ -75,10 +76,9 @@ type TConstResult =
        * A name a header declares; a name no cnx declaration binds, in a
        * file that includes a header, which may be a macro (a `#define` never
        * reaches the symbol model); or a memory size the C compiler decides
-       * for the target (ADR-058 `.memory_*`); or an array's length in a
-       * header the files that include it read differently (#2514)
+       * for the target (ADR-058 `.memory_*`)
        */
-      readonly why: "header" | "maybeHeader" | "target" | "disputed";
+      readonly why: "header" | "maybeHeader" | "target";
       /** For a memory size: the C that measures it, `sizeof` (ADR-058) */
       readonly c?: string;
     };

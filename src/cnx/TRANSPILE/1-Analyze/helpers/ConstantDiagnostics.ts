@@ -41,6 +41,8 @@ const REASON: Readonly<
   divisionByZero: "divides by zero",
   negativeShift:
     "shifts by a negative amount, or shifts a negative value right",
+  disputed:
+    "is declared in a header the .cnx files that include it read differently, so cnx cannot tell which size the compiler reads (#2514)",
 };
 
 class ConstantDiagnostics {
@@ -56,7 +58,6 @@ class ConstantDiagnostics {
         header: `'${result.spelling}' is defined by a C or C++ header`,
         maybeHeader: `'${result.spelling}' is not declared in cnx, so only an included C or C++ header can define it`,
         target: `'${result.spelling}' is a memory size, which the C compiler decides for the target`,
-        disputed: `the .cnx files that include the header of '${result.spelling}' read it differently, so cnx cannot tell which size the compiler reads (#2514)`,
       }[result.why];
     }
     // A bare name nothing declares is E0427's, and a compile-time zero

@@ -847,9 +847,9 @@ describe("Program", () => {
     });
 
     it("leaves it unknown in a header its files read differently (#2514)", () => {
-      expect(dimensionOf([[""], [4]], ["/a.h"])).toEqual([
-        "samples.type_element_count",
-      ]);
+      // No size, as for any dimension without a value: 2.1 reports E0909,
+      // and the property never reaches C as text
+      expect(dimensionOf([[""], [4]], ["/a.h"])).toEqual([0]);
       // A first declaration with its size is that size there too
       expect(dimensionOf([[4], [""]], ["/a.h"])).toEqual([4]);
     });

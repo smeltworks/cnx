@@ -393,7 +393,7 @@ class ConstantNames {
     }
     if (rest.length === 0) return ConstantNames.without("variable", walk);
     if (value.disputed === true) {
-      return { kind: "foreign", spelling: walk.spelling, why: "disputed" };
+      return ConstantNames.without("disputed", walk);
     }
     return ConstantNames.ofMember(
       {
