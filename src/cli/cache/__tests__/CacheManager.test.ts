@@ -1868,7 +1868,15 @@ describe("CacheManager", () => {
       const content = mockFs.getWrittenContent("/project/.cnx/config.json");
       expect(content).toBeDefined();
       const newConfig = JSON.parse(content!);
-      expect(newConfig.version).toBe(29); // Current CACHE_VERSION (C pointer depth, #1668, #1760's volatile spellings, field declarators, #1653's plain-JSON symbols.json, then #1975's union and bit-field layout, its struct-level layouts, then its bit-field widths, then #2103's typedef-with-body tag alias, then #2116's C++ unqualified names, then #2473's C++ default arguments, then its member templates' names, then the arguments they take, then #2510's enums inside a C struct, then a C++ header's enum constants, then #2064's linkage blocks, then a class's bases)
+      // The number is stated once, in CacheManager.ts. A copy here is edited by
+      // every pull request that raises it, and two of them conflict on it (#2545).
+      const fresh = new MockFileSystem();
+      new CacheManager("/fresh", fresh).initialize();
+      const current = JSON.parse(
+        fresh.getWrittenContent("/fresh/.cnx/config.json")!,
+      ).version;
+      expect(newConfig.version).toBe(current);
+      expect(current).not.toBe(oldConfig.version);
     });
 
     it("should not cache files that do not exist in IFileSystem", () => {
