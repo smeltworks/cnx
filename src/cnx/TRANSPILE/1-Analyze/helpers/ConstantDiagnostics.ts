@@ -41,6 +41,8 @@ const REASON: Readonly<
   divisionByZero: "divides by zero",
   negativeShift:
     "shifts by a negative amount, or shifts a negative value right",
+  disputed:
+    "is declared in a header the .cnx files that include it read differently, so cnx cannot tell which size the compiler reads (#2514)",
 };
 
 class ConstantDiagnostics {

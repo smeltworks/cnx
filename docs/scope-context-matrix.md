@@ -2052,6 +2052,9 @@ Linked fixtures with no derivable context:
 - `bugs/issue-2238-qualified-mut-argument/header-volatile-error.test.cnx`
 - `bugs/issue-2473-chained-callback-mut-argument/cpp-defaulted-writer-runs.test.cnx`
 - `bugs/issue-2473-chained-callback-mut-argument/cpp-defaulted-writer.test.cnx`
+- `bugs/issue-2474-header-name-own-include/helper-order.test.cnx`
+- `bugs/issue-2474-header-name-own-include/own-include-error.test.cnx`
+- `bugs/issue-2474-header-name-own-include/own-include.test.cnx`
 
 ## ADR-071 E0879
 
@@ -2108,7 +2111,7 @@ Linked fixtures with no derivable context:
 | Context            | same file | direct | transitive | from 1 away | thru chain |
 | ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
 | global variable    | -         | -      | -          | -           | -          |
-| top-level function | ok        | -      | -          | -           | -          |
+| top-level function | ok        | -      | -          | ok          | -          |
 | scope member       | -         | -      | -          | -           | -          |
 | scope method       | ok        | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |

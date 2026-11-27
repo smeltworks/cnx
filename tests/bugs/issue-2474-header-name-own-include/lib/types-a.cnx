@@ -1,0 +1,8 @@
+// Issue #2474 review helper: this file's sample_t is a-types.h's u8, used
+// only inside a function body.
+#include "a-types.h"
+
+u8 readA() {
+    sample_t s <- 200;
+    return s;
+}

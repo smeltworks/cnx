@@ -181,6 +181,167 @@ describe("SymbolTable", () => {
     });
   });
 
+  describe("seenFrom (#2474)", () => {
+    const stateIn = (sourceFile: string, type: string): TCSymbol => ({
+      kind: "variable",
+      name: "state",
+      sourceFile,
+      span: TestSourceSpan.at(1),
+      sourceLanguage: ESourceLanguage.C,
+      visibility: "public",
+      type,
+      isConst: false,
+      isArray: false,
+    });
+    const classIn = (sourceFile: string): TCppSymbol => ({
+      kind: "class",
+      name: "Widget",
+      unqualifiedName: "Widget",
+      sourceFile,
+      span: TestSourceSpan.at(1),
+      sourceLanguage: ESourceLanguage.Cpp,
+      visibility: "public",
+    });
+
+    beforeEach(() => {
+      symbolTable.addCSymbol(stateIn("/a.h", "volatile uint32_t"));
+      symbolTable.addCSymbol(stateIn("/b.h", "uint32_t"));
+      symbolTable.addCppSymbol(classIn("/a.hpp"));
+      symbolTable.addCppSymbol(classIn("/b.hpp"));
+    });
+
+    it("resolves a name two headers declare to the reading file's own", () => {
+      const fromB = symbolTable.seenFrom(new Set(["/b.h", "/b.hpp"]));
+      expect(fromB.getCSymbol("state")?.sourceFile).toBe("/b.h");
+      expect(fromB.getCppSymbol("Widget")?.sourceFile).toBe("/b.hpp");
+      expect(fromB.getCOverloads("state").map((s) => s.sourceFile)).toEqual([
+        "/b.h",
+        "/a.h",
+      ]);
+      expect(fromB.getCppOverloads("Widget").map((s) => s.sourceFile)).toEqual([
+        "/b.hpp",
+        "/a.hpp",
+      ]);
+    });
+
+    it("leaves the run-wide table and a file that sees neither unchanged", () => {
+      symbolTable.seenFrom(new Set(["/b.h"]));
+      expect(symbolTable.getCSymbol("state")?.sourceFile).toBe("/a.h");
+      const fromNeither = symbolTable.seenFrom(new Set());
+      expect(fromNeither.getCSymbol("state")?.sourceFile).toBe("/a.h");
+    });
+
+    it("shares the table's indexes, so a later symbol is seen too", () => {
+      const fromC = symbolTable.seenFrom(new Set(["/c.h"]));
+      symbolTable.addCSymbol(stateIn("/c.h", "uint8_t"));
+      expect(fromC.getCSymbol("state")?.sourceFile).toBe("/c.h");
+    });
+
+    it("reads the table's struct state live, so a later mark is seen too", () => {
+      const fromB = symbolTable.seenFrom(new Set(["/b.h"]));
+      symbolTable.markOpaqueType("Handle");
+      symbolTable.markPointerTypedef("HandleRef");
+      expect(fromB.isOpaqueType("Handle")).toBe(true);
+      expect(fromB.isPointerTypedef("HandleRef")).toBe(true);
+    });
+  });
+
+  describe("indexBoundsOf (#2474)", () => {
+    const arrayIn = (
+      sourceFile: string,
+      arrayDimensions: ReadonlyArray<number | string> | undefined,
+    ): Extract<TCSymbol, { kind: "variable" }> => ({
+      kind: "variable",
+      name: "samples",
+      sourceFile,
+      span: TestSourceSpan.at(1),
+      sourceLanguage: ESourceLanguage.C,
+      visibility: "public",
+      type: "uint8_t",
+      isConst: false,
+      isArray: true,
+      arrayDimensions,
+    });
+
+    it("gives an unsized first declaration a redeclaration's bound", () => {
+      symbolTable.addCSymbol(arrayIn("/a.h", [""]));
+      symbolTable.addCSymbol(arrayIn("/a.h", [4]));
+      expect(symbolTable.indexBoundsOf("samples")).toEqual([4]);
+      const first = symbolTable.getCSymbol("samples");
+      expect(first?.kind === "variable" && first.arrayDimensions).toEqual([4]);
+    });
+
+    it("keeps a sized first declaration as written", () => {
+      const sized = arrayIn("/a.h", [4]);
+      symbolTable.addCSymbol(sized);
+      symbolTable.addCSymbol(arrayIn("/a.h", [""]));
+      expect(symbolTable.getCSymbol("samples")).toBe(sized);
+    });
+
+    it("leaves the value unsized in a header its files read differently (#2514)", () => {
+      symbolTable.addCSymbol(arrayIn("/a.h", [""]));
+      symbolTable.addCSymbol(arrayIn("/a.h", [4]));
+      symbolTable.markDisputedHeaders(new Set(["/a.h"]));
+      expect(symbolTable.getDisputedHeaders()).toEqual(new Set(["/a.h"]));
+      const first = symbolTable.getCSymbol("samples");
+      expect(first?.kind === "variable" && first.arrayDimensions).toEqual([""]);
+      expect(symbolTable.indexBoundsOf("samples")).toEqual([4]);
+    });
+
+    it("names a dispute only in the reading file's own headers (#2514)", () => {
+      symbolTable.addCSymbol(arrayIn("/a.h", [""]));
+      symbolTable.addCSymbol(arrayIn("/b.h", [""]));
+      symbolTable.markDisputedHeaders(new Set(["/a.h"]));
+      expect(
+        symbolTable.seenFrom(new Set(["/a.h"])).inDisputedHeader("samples"),
+      ).toBe(true);
+      expect(
+        symbolTable.seenFrom(new Set(["/b.h"])).inDisputedHeader("samples"),
+      ).toBe(false);
+      expect(symbolTable.inDisputedHeader("absent")).toBe(false);
+    });
+
+    it("composes only the reading file's own headers' declarations", () => {
+      symbolTable.addCSymbol(arrayIn("/a.h", [""]));
+      symbolTable.addCSymbol(arrayIn("/b.h", [""]));
+      symbolTable.addCSymbol(arrayIn("/b.h", [8]));
+      symbolTable.addCSymbol(arrayIn("/a.h", [4]));
+      expect(
+        symbolTable.seenFrom(new Set(["/b.h"])).indexBoundsOf("samples"),
+      ).toEqual([8]);
+      expect(
+        symbolTable.seenFrom(new Set(["/a.h"])).indexBoundsOf("samples"),
+      ).toEqual([4]);
+    });
+
+    it("reads a C++ header's array when no C header declares the name", () => {
+      symbolTable.addCppSymbol({
+        kind: "variable",
+        name: "frames",
+        unqualifiedName: "frames",
+        sourceFile: "/a.hpp",
+        span: TestSourceSpan.at(1),
+        sourceLanguage: ESourceLanguage.Cpp,
+        visibility: "public",
+        type: "uint8_t",
+        isConst: false,
+        isArray: true,
+        arrayDimensions: [3, 2],
+      });
+      expect(symbolTable.indexBoundsOf("frames")).toEqual([3, 2]);
+    });
+
+    it("has no bounds for a name that is not a header array", () => {
+      symbolTable.addCSymbol({
+        ...arrayIn("/a.h", undefined),
+        name: "count",
+        isArray: false,
+      });
+      expect(symbolTable.indexBoundsOf("count")).toBeUndefined();
+      expect(symbolTable.indexBoundsOf("missing")).toBeUndefined();
+    });
+  });
+
   // ========================================================================
   // TCppSymbol (C++) Operations
   // ========================================================================
@@ -334,8 +495,22 @@ describe("SymbolTable", () => {
 
   describe("struct fields", () => {
     it("should add and retrieve struct field information", () => {
-      symbolTable.addStructField("Point", "x", "int");
-      symbolTable.addStructField("Point", "y", "int");
+      symbolTable.addStructField(
+        "Point",
+        "x",
+        "int",
+        undefined,
+        undefined,
+        "test.h",
+      );
+      symbolTable.addStructField(
+        "Point",
+        "y",
+        "int",
+        undefined,
+        undefined,
+        "test.h",
+      );
 
       expect(symbolTable.getStructFields("Point")?.get("x")?.type).toBe("int");
       expect(symbolTable.getStructFields("Point")?.get("y")?.type).toBe("int");
@@ -349,10 +524,38 @@ describe("SymbolTable", () => {
 
     // #2494: a width written as an expression is settled once, where read
     it("settles a bit-field width it can read, and keeps one it cannot", () => {
-      symbolTable.addStructField("Reg", "sum", "uint32_t", undefined, "1+2");
-      symbolTable.addStructField("Reg", "odd", "uint32_t", undefined, "W");
-      symbolTable.addStructField("Reg", "lit", "uint32_t", undefined, 4);
-      symbolTable.addStructField("Reg", "whole", "uint32_t");
+      symbolTable.addStructField(
+        "Reg",
+        "sum",
+        "uint32_t",
+        undefined,
+        "1+2",
+        "reg.h",
+      );
+      symbolTable.addStructField(
+        "Reg",
+        "odd",
+        "uint32_t",
+        undefined,
+        "W",
+        "reg.h",
+      );
+      symbolTable.addStructField(
+        "Reg",
+        "lit",
+        "uint32_t",
+        undefined,
+        4,
+        "reg.h",
+      );
+      symbolTable.addStructField(
+        "Reg",
+        "whole",
+        "uint32_t",
+        undefined,
+        undefined,
+        "reg.h",
+      );
       const seen: string[] = [];
       symbolTable.settleBitFieldWidths((text) => {
         seen.push(text);
@@ -366,12 +569,32 @@ describe("SymbolTable", () => {
       );
       expect(fields?.get("lit")?.bitWidth).toBe(4);
       expect(fields?.get("whole")?.bitWidth).toBeUndefined();
-      expect(seen).toEqual(["1+2", "W"]);
+      // #2474: the declaring header's own entry, which a file's view reads
+      expect(
+        symbolTable.getStructFieldsDeclaredIn("Reg", "reg.h")?.get("sum")
+          ?.bitWidth,
+      ).toBe(3);
+      // each width once for the run-wide record, once for its own header
+      expect(seen).toEqual(["1+2", "W", "1+2", "W"]);
     });
 
     it("should get all fields for a struct", () => {
-      symbolTable.addStructField("Point", "x", "int");
-      symbolTable.addStructField("Point", "y", "int");
+      symbolTable.addStructField(
+        "Point",
+        "x",
+        "int",
+        undefined,
+        undefined,
+        "test.h",
+      );
+      symbolTable.addStructField(
+        "Point",
+        "y",
+        "int",
+        undefined,
+        undefined,
+        "test.h",
+      );
 
       const fields = symbolTable.getStructFields("Point");
       expect(fields?.size).toBe(2);
@@ -966,7 +1189,7 @@ describe("SymbolTable", () => {
       expect(asked).toContain("pins.hpp:SENSOR_COUNT");
     });
 
-    it("settles a header struct's field by its header, and skips a struct no header declares", () => {
+    it("settles a header struct's field by its header, and each header's own fields by that header", () => {
       symbolTable.addCSymbol({
         kind: "struct",
         name: "Bank",
@@ -976,13 +1199,39 @@ describe("SymbolTable", () => {
         visibility: "public",
         isUnion: false,
       });
-      symbolTable.addStructField("Bank", "data", "uint8_t", ["SENSOR_COUNT"]);
-      symbolTable.addStructField("Bank", "flags", "uint8_t");
-      symbolTable.addStructField("Loose", "data", "uint8_t", ["SENSOR_COUNT"]);
+      symbolTable.addCSymbol({
+        kind: "struct",
+        name: "Bank",
+        sourceFile: "wide-bank.h",
+        span: TestSourceSpan.at(1),
+        sourceLanguage: ESourceLanguage.C,
+        visibility: "public",
+        isUnion: false,
+      });
+      const field = (struct: string, name: string, header: string) =>
+        symbolTable.addStructField(
+          struct,
+          name,
+          "uint8_t",
+          ["SENSOR_COUNT"],
+          undefined,
+          header,
+        );
+      field("Bank", "data", "bank.h");
+      symbolTable.addStructField(
+        "Bank",
+        "flags",
+        "uint8_t",
+        undefined,
+        undefined,
+        "bank.h",
+      );
+      field("Bank", "data", "wide-bank.h");
+      field("Loose", "data", "loose.h");
       const headers: string[] = [];
       symbolTable.settleArrayDimensions((_text, header) => {
         headers.push(header);
-        return 3;
+        return header === "wide-bank.h" ? 8 : 3;
       });
 
       expect(
@@ -991,7 +1240,16 @@ describe("SymbolTable", () => {
       expect(
         symbolTable.getStructFields("Loose")?.get("data")?.arrayDimensions,
       ).toEqual(["SENSOR_COUNT"]);
-      expect(headers).toEqual(["bank.h"]);
+      // #2474: each header's own fields, by that header's macros
+      const declaredIn = (header: string) =>
+        symbolTable.getStructFieldsDeclaredIn("Bank", header)?.get("data")
+          ?.arrayDimensions;
+      expect(declaredIn("bank.h")).toEqual([3]);
+      expect(declaredIn("wide-bank.h")).toEqual([8]);
+      expect(
+        symbolTable.getStructFieldsDeclaredIn("Loose", "loose.h")?.get("data")
+          ?.arrayDimensions,
+      ).toEqual([3]);
     });
   });
 });

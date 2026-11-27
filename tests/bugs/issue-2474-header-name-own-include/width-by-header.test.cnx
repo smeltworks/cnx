@@ -1,0 +1,18 @@
+// test-execution
+// Issue #2474 review: two headers declare wreg_t with mode : REG_BITS, and
+// each defines REG_BITS itself, 3 in a-width.h and 5 in b-width.h. Each
+// header's own field takes its own width, in either discovery order.
+#include "lib/width-a.cnx"
+#include "lib/width-b.cnx"
+
+u32 main() {
+    u32 a <- aWidest();
+    if (a != 7) {
+        return 1;
+    }
+    u32 b <- bWidest();
+    if (b != 31) {
+        return 2;
+    }
+    return 0;
+}

@@ -111,12 +111,48 @@ class ArrayIndexBoundsCheck {
     if (typeof settled === "number" && settled !== UNRESOLVED_DIMENSION) {
       return settled;
     }
-    if (settled === "") return null; // an unsized `[]`
+    if (settled === "") {
+      return this.redeclaredBound(subscript, typing, chain);
+    }
     const declared = this.declaredDimensions(subscript, typing, chain);
     const expr = declared?.[subscript.dimension - 1] ?? null;
     return expr === null
       ? null
       : ElementCount.of(expr, this.context.program, this.context.sourceFile);
+  }
+
+  /**
+   * #2474: an unsized header array's bound, from a redeclaration that sizes
+   * it (`extern uint8_t t[]; extern uint8_t t[4];`), when the subscript
+   * indexes the header variable itself. Null for any other unsized `[]`.
+   */
+  private redeclaredBound(
+    subscript: ISubscript,
+    typing: IChainTyping,
+    chain: TChain,
+  ): number | null {
+    const root = typing.root;
+    const direct = ArrayIndexBoundsCheck.memberBefore(subscript, chain) === -1;
+    if (root?.kind !== "foreign" || !direct) return null;
+    const bound = this.context.symbolTable.indexBoundsOf(root.name)?.[
+      subscript.dimension - 1
+    ];
+    return typeof bound === "number" ? bound : null;
+  }
+
+  /**
+   * The last op before the subscript's run of subscripts that is not one, or
+   * -1 when the run indexes the chain's root
+   */
+  private static memberBefore(subscript: ISubscript, chain: TChain): number {
+    const ops = chain.ops;
+    const at = ops.length - 1 - subscript.opsAfter;
+    // A `this.`/`global.` root's first `.name` is the root itself
+    const first = chain.primary.kind === "root" ? 1 : 0;
+    for (let i = at - 1; i >= first; i -= 1) {
+      if (ops[i].kind !== "subscript") return i;
+    }
+    return -1;
   }
 
   /** The dimensions, as declared, of the array the subscript's run indexes */
@@ -126,16 +162,7 @@ class ArrayIndexBoundsCheck {
     chain: TChain,
   ): ReadonlyArray<TConstExpr | null> | undefined {
     const ops = chain.ops;
-    const at = ops.length - 1 - subscript.opsAfter;
-    // A `this.`/`global.` root's first `.name` is the root itself
-    const first = chain.primary.kind === "root" ? 1 : 0;
-    let member = -1;
-    for (let i = at - 1; i >= first; i -= 1) {
-      if (ops[i].kind !== "subscript") {
-        member = i;
-        break;
-      }
-    }
+    const member = ArrayIndexBoundsCheck.memberBefore(subscript, chain);
     if (member === -1) {
       const root = typing.root;
       if (root?.kind === "local") return root.declaration.arrayDimensionExprs;

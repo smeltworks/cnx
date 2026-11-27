@@ -146,7 +146,14 @@ describe("Resolve.program", () => {
       name: "Reg",
       isUnion: false,
     });
-    table.addStructField("Reg", "mode", "uint32_t", undefined, "WIDE");
+    table.addStructField(
+      "Reg",
+      "mode",
+      "uint32_t",
+      undefined,
+      "WIDE",
+      "/p/cfg.h",
+    );
     Resolve.program(declared);
 
     const dims = (name: string) => {

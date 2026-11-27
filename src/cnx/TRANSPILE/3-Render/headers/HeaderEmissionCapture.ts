@@ -111,6 +111,11 @@ class HeaderEmissionCapture {
       HeaderEmissionCapture.includeDirectivesSpelledBy(request),
       {
         typesDeclaredIn: (file: string) => program.typesDeclaredIn(file),
+        declaringHeader: (typeName: string) =>
+          (
+            state.symbolTable.getCSymbol(typeName) ??
+            state.symbolTable.getCppSymbol(typeName)
+          )?.sourceFile,
       },
     );
 

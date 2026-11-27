@@ -119,6 +119,7 @@ function testAnalysisContextFor(
         ]),
         macroNames: new Set(Object.keys(options.macros ?? {})),
         integerTypes: new Map(Object.entries(options.integerTypes ?? {})),
+        disputedHeaders: new Set<string>(),
         structTagsWithBodies: new Set(symbolTable.getAllStructTagsWithBodies()),
       },
       // #1881: the test source includes every header its C/C++ symbols name

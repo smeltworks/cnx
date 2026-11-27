@@ -1,0 +1,30 @@
+// test-execution
+// test-adr: 071
+// Issue #2474: lib/a-reader.cnx is discovered first, and its header declares
+// a volatile state and a 4-byte table. lib/b-bump.cnx includes plain-state.h
+// itself, so its state is plain and passing it to a mut parameter is allowed,
+// and its table holds 8. The build's first declaration used to answer for
+// b-bump too: a false E0915 at bumpB(state).
+#include "lib/a-reader.cnx"
+#include "lib/b-bump.cnx"
+
+u32 main() {
+    useB();
+    u32 b <- readB();
+    if (b != 1) {
+        return 1;
+    }
+    u32 a <- readA();
+    if (a != 0) {
+        return 2;
+    }
+    u32 bCount <- bCopyCount();
+    if (bCount != 8) {
+        return 3;
+    }
+    u32 aCount <- aCopyCount();
+    if (aCount != 4) {
+        return 4;
+    }
+    return 0;
+}

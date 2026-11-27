@@ -1732,7 +1732,14 @@ describe("CodeGenWalker Coverage Tests", () => {
       });
 
       // Register struct field type with underscore (simulates C++ imported struct)
-      symbolTable.addStructField("Outer", "dummy", "SeaDash_Parse_Result");
+      symbolTable.addStructField(
+        "Outer",
+        "dummy",
+        "SeaDash_Parse_Result",
+        undefined,
+        undefined,
+        "test.h",
+      );
 
       // #1445 box 3: the walk and the render-side services are two objects now.
       // The host is constructed here and injected, so assertions about the host.state
@@ -1780,7 +1787,14 @@ describe("CodeGenWalker Coverage Tests", () => {
       const symbols = TSymbolInfoAdapter.convert(tSymbols);
 
       // Register struct field type with underscore but NOT a C++ namespace
-      symbolTable.addStructField("Data", "value", "some_plain_type");
+      symbolTable.addStructField(
+        "Data",
+        "value",
+        "some_plain_type",
+        undefined,
+        undefined,
+        "test.h",
+      );
 
       // #1445 box 3: the walk and the render-side services are two objects now.
       // The host is constructed here and injected, so assertions about the host.state

@@ -62,6 +62,9 @@ interface IForeignSymbols {
    * `long unsigned int`)
    */
   readonly integerTypes: ReadonlyMap<string, string>;
+
+  /** #2514: the headers two cnx files' compiles read differently, by path */
+  readonly disputedHeaders: ReadonlySet<string>;
 }
 
 export default IForeignSymbols;

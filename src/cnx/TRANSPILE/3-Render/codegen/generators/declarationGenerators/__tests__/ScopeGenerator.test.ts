@@ -641,8 +641,9 @@ describe("ScopeGenerator", () => {
       expect(enumAt).toBeGreaterThan(-1);
       expect(structAt).toBeGreaterThan(-1);
       expect(enumAt).toBeLessThan(structAt);
-      // The generator reads the table off TranspileState rather than the plan.
-      expect(state.symbolTable).toBe(symbolTable);
+      // The generator reads the table off TranspileState rather than the
+      // plan: the generated file's view of it (#2474)
+      expect(Object.getPrototypeOf(state.symbolTable)).toBe(symbolTable);
     });
   });
 

@@ -1,0 +1,11 @@
+// Issue #2474 helper: this file's state is volatile-state.h's, so a mut
+// parameter may not take it, whichever header the build read first.
+#include "volatile-state.h"
+
+void bump(mut u32 n) {
+    n <- n + 1;
+}
+
+void bumpVolatile() {
+    bump(state);
+}

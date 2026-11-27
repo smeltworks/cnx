@@ -1,0 +1,10 @@
+// Issue #2474 helper: this file's state and table are plain-state.h's.
+#include "plain-state.h"
+
+u32 plainState() {
+    return state;
+}
+
+u32 plainTableCount() {
+    return table.type_element_count;
+}

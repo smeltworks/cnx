@@ -1,0 +1,10 @@
+// test-error
+// Issue #2474 review: b-width.h is discovered first and gives mode 5 bits.
+// a-width.h gives it 3, so a write of 8 there is E0881, not a value C cuts to 0.
+#include "lib/width-b.cnx"
+#include "lib/width-a-over.cnx"
+
+u32 main() {
+    aOver();
+    return bWidest();
+}

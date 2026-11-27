@@ -164,13 +164,7 @@ class StructCollector {
   ): ReadonlyMap<string, ICFieldInfo> {
     const fields = new Map<string, ICFieldInfo>();
     for (const field of structSpec.fields) {
-      StructCollector.processField(
-        field,
-        structName,
-        fields,
-        symbolTable,
-        warnings,
-      );
+      StructCollector.processField(field, structName, fields, warnings);
     }
     const layout = StructCollector.layoutOf(structSpec);
     if (symbolTable && layout !== null) {
@@ -190,7 +184,6 @@ class StructCollector {
     field: ICFieldSyntax,
     structName: string,
     fields: Map<string, ICFieldInfo>,
-    symbolTable: SymbolTable | null,
     warnings?: string[],
   ): void {
     const fieldName = field.declarator.name;
@@ -213,15 +206,6 @@ class StructCollector {
       arrayDimensions: dims,
       ...(bitWidth !== undefined && { bitWidth }),
     });
-    if (symbolTable) {
-      symbolTable.addStructField(
-        structName,
-        fieldName,
-        declaredType,
-        dims,
-        bitWidth,
-      );
-    }
   }
 }
 

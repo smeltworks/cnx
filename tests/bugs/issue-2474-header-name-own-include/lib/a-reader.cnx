@@ -1,0 +1,13 @@
+// Issue #2474 helper, discovered first: this file's state and table are
+// volatile-state.h's. It only reads state, and its copy holds 4.
+#include "volatile-state.h"
+
+mut u8[table.type_element_count] aCopy;
+
+u32 readA() {
+    return state;
+}
+
+u32 aCopyCount() {
+    return aCopy.type_element_count;
+}

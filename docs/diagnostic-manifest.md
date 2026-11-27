@@ -1001,6 +1001,13 @@ totals each time it passes.
 | tests/bugs/issue-2473-chained-callback-mut-argument/cpp-member-template-error.test.cnx                    | E0895, E0896, E0900               |
 | tests/bugs/issue-2473-chained-callback-mut-argument/cpp-overload-discarded-error.test.cnx                 | E0708                             |
 | tests/bugs/issue-2473-chained-callback-mut-argument/cpp-overload-pointer-type-error.test.cnx              | E0895, E0896                      |
+| tests/bugs/issue-2474-header-name-own-include/configured-disputed-dimension-error.test.cnx                | E0909                             |
+| tests/bugs/issue-2474-header-name-own-include/configured-disputed-error.test.cnx                          | E0867                             |
+| tests/bugs/issue-2474-header-name-own-include/helper-include-error.test.cnx                               | E0915                             |
+| tests/bugs/issue-2474-header-name-own-include/own-include-error.test.cnx                                  | E0915                             |
+| tests/bugs/issue-2474-header-name-own-include/redeclared-array-index-error.test.cnx                       | E0854                             |
+| tests/bugs/issue-2474-header-name-own-include/struct-fields-error.test.cnx                                | E0915                             |
+| tests/bugs/issue-2474-header-name-own-include/width-by-header-over-error.test.cnx                         | E0881                             |
 | tests/bugs/issue-2493-local-const-case-label/non-integer-label.test.cnx                                   | E0717                             |
 | tests/bugs/issue-2499-char-literal-integer-operand/char-literal-integer-error.test.cnx                    | E0810                             |
 | tests/bugs/issue-847-misra-17-7-lowering/bare-intra-scope-discard.test.cnx                                | E0708                             |
