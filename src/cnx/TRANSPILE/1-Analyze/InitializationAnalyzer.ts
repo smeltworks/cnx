@@ -185,6 +185,8 @@ class InitializationWalk {
     const init = loop.init;
     const condition = loop.condition;
     if (!init || !condition) return false;
+    // `i +<- 0` adds zero: only a plain `<-` sets the counter to zero
+    if (init.kind === "assignment" && init.operator !== "<-") return false;
     const start = init.kind === "assignment" ? init.value : init.initializer;
     if (!InitializationWalk.isLiteral(start, /^0$/)) return false;
     if (

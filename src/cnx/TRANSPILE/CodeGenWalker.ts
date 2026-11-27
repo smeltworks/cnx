@@ -190,6 +190,7 @@ import CTypeIncludes from "./2-Plan/CTypeIncludes";
 import WrittenCTypes from "./3-Render/codegen/helpers/WrittenCTypes";
 import invariant from "../utils/invariant";
 import StringUtils from "../utils/StringUtils";
+import StringValueForm from "../utils/StringValueForm";
 import AdrProvenance from "../instrumentation/AdrProvenance";
 import ExpressionNodes from "../utils/ExpressionNodes";
 import ParameterInputAdapter from "./3-Render/codegen/helpers/ParameterInputAdapter";
@@ -513,7 +514,8 @@ class CodeGenWalker {
       const form = this.filePlan.stringValueForms.get(arm);
       if (
         planned.type.kind === "string" &&
-        (form?.kind === "concat" || form?.kind === "substring")
+        form !== undefined &&
+        StringValueForm.builds(form)
       ) {
         // #2263: a concatenation or a substring arm is built in the buffer,
         // the calls of its parts run in its branch
@@ -3737,8 +3739,7 @@ class CodeGenWalker {
     // value as one C expression is never rendered
     const stringForm = this.filePlan.stringValueForms.get(site.value);
     const builtApart =
-      stringForm !== undefined &&
-      (stringForm.kind === "concat" || stringForm.kind === "substring");
+      stringForm !== undefined && StringValueForm.builds(stringForm);
     const character = this.filePlan.characterWrites.get(site);
     if (character !== undefined) {
       return this.renderCharacterWrite(site, character);

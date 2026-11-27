@@ -28,4 +28,9 @@ void main() {
     for (mut u32 j <- 0; j < 3; h.down <- wrongSignature) {
         j +<- 1;
     }
+
+    // #1726: the same writes as a `for` init
+    mut u32 k <- 0;
+    for (h.down <- onDown; k < 3; k +<- 1) {}
+    for (h.down <- wrongSignature; k < 6; k +<- 1) {}
 }

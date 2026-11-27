@@ -38,4 +38,15 @@ void main() {
     for (mut u32 j <- 0; j < 3; g.Mode <- 8) {
         j +<- 1;
     }
+
+    // #1726: the same writes as a `for` init, and a field the bitmap does not
+    // have in each form
+    mut u32 k <- 0;
+    for (g.Mode <- 7; k < 3; k +<- 1) {}
+    for (g.Mode <- 8; k < 6; k +<- 1) {}
+    g.Nope <- 1;
+    for (mut u32 n <- 0; n < 3; g.Nope <- 1) {
+        n +<- 1;
+    }
+    for (g.Nope <- 1; k < 9; k +<- 1) {}
 }

@@ -6,3 +6,7 @@
        help: Shift amount must be < 8 for 8-bit types; shifting by the width or more is undefined behavior (MISRA C:2012 Rule 12.2).
 31:28 error[E0805]: Shift operator '<<<-' not allowed on signed integer types
        help: Shift operations on signed integers have undefined (<<) or implementation-defined (>>) behavior. Use unsigned types (u8, u16, u32, u64) for bit manipulation.
+38:16 error[E0873]: Shift amount (9) exceeds type width (8 bits) for type 'u8' (expression: a <<<- 9)
+       help: Shift amount must be < 8 for 8-bit types; shifting by the width or more is undefined behavior (MISRA C:2012 Rule 12.2).
+39:9 error[E0805]: Shift operator '<<<-' not allowed on signed integer types
+       help: Shift operations on signed integers have undefined (<<) or implementation-defined (>>) behavior. Use unsigned types (u8, u16, u32, u64) for bit manipulation.

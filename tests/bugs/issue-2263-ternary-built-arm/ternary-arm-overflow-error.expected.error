@@ -2,3 +2,9 @@
        help: Widen the declaration to string<8>, or shorten the operands.
 9:38 error[E0864]: String concatenation requires capacity 8, but the declaration is string<4>
        help: Widen the declaration to string<8>, or shorten the operands.
+21:33 error[E0864]: String literal (7 chars) exceeds string<4> capacity
+       help: Widen the declaration to string<7>, or shorten the literal.
+22:37 error[E0864]: Cannot initialize string<4> from string<8> -- the source may not fit
+       help: Widen the declaration to string<8>, or extract a substring of the source.
+23:33 error[E0864]: Cannot initialize string<4> from string<16> -- the source may not fit
+       help: Widen the declaration to string<16>, or extract a substring of the source.

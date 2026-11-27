@@ -2,3 +2,5 @@
        help: Copying more bytes than the source holds would shift past its width, which is undefined behavior.
 26:36 error[E0860]: Slice assignment out of bounds: offset(6) + 4 element(s) = 10 exceeds buffer capacity(8) for 'buf'
        help: The offset is an element index and the capacity an element count, so the span is compared in elements, not bytes.
+33:13 error[E0860]: Slice assignment out of bounds: offset(6) + 4 element(s) = 10 exceeds buffer capacity(8) for 'buf'
+       help: The offset is an element index and the capacity an element count, so the span is compared in elements, not bytes.

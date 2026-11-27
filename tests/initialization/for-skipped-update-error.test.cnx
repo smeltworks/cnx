@@ -8,3 +8,14 @@ u32 skipped() {
     for (u32 i <- 0; j < 3; x <- 1) {}
     return x;
 }
+
+// `i +<- 0` adds zero to i, it does not set i to zero: pick(5) never enters
+// the loop, so x is read uninitialized.
+u32 pick(u32 start) {
+    mut u32 i <- start;
+    mut u32 x;
+    for (i +<- 0; i < 3; i +<- 1) {
+        x <- 7;
+    }
+    return x;
+}

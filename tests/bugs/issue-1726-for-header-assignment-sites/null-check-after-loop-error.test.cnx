@@ -16,3 +16,24 @@ void runWhile() {
     while (c_line != NULL) {}
     i32 r <- puts(c_line);
 }
+
+// A check before the loop does not outlive it: the loop still leaves only
+// when the variable is null.
+void runChecked() {
+    mut cstring c_line <- fgets(buffer, buffer.size, stdin);
+    if (c_line = NULL) {
+        return;
+    }
+    while (c_line != NULL) {
+        c_line <- fgets(buffer, buffer.size, stdin);
+    }
+    i32 r <- puts(c_line);
+}
+
+void runCheckedFor() {
+    mut cstring c_line <- fgets(buffer, buffer.size, stdin);
+    if (c_line != NULL) {
+        for (; c_line != NULL; c_line <- fgets(buffer, buffer.size, stdin)) {}
+        i32 r <- puts(c_line);
+    }
+}

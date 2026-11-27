@@ -2,3 +2,11 @@
        help: A 3-bit field holds 0 through 7; widen the field in the bitmap declaration, or write a value that fits (ADR-034).
 38:42 error[E0881]: Value 8 exceeds 3-bit field 'Mode' maximum of 7
        help: A 3-bit field holds 0 through 7; widen the field in the bitmap declaration, or write a value that fits (ADR-034).
+46:19 error[E0881]: Value 8 exceeds 3-bit field 'Mode' maximum of 7
+       help: A 3-bit field holds 0 through 7; widen the field in the bitmap declaration, or write a value that fits (ADR-034).
+47:4 error[E0882]: Unknown bitmap field 'Nope' on 'Global'
+       help: 'Global' declares 'Mode', 'Enable', 'Reserved' (ADR-034).
+48:32 error[E0882]: Unknown bitmap field 'Nope' on 'Global'
+       help: 'Global' declares 'Mode', 'Enable', 'Reserved' (ADR-034).
+51:9 error[E0882]: Unknown bitmap field 'Nope' on 'Global'
+       help: 'Global' declares 'Mode', 'Enable', 'Reserved' (ADR-034).

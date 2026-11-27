@@ -184,7 +184,8 @@ for (mut u32 i <- 0; i < 10; i +<- 1) {
 }
 // A header clause is one expression, so it cannot hold an assignment that is
 // more than one statement (E0715): a slice write, any write to an atomic,
-// or a bit write on a float, or a string built from its parts. Assign
+// a bit write on a float, a string built from its parts, or a string a
+// call returns (the call fills a temporary first). Assign
 // before the loop, or at the end of its body as a while loop. A string
 // copied whole is one call, so a header holds it (#2234).
 // for (name <- "x"; i < 10; i +<- 1) { }       // OK: a copy

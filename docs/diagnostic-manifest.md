@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1076 fixture(s) assert a diagnostic; 1062 carry a code.
+1077 fixture(s) assert a diagnostic; 1063 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -796,7 +796,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1668-int-float-clamp/mixed-int-float-rejected.test.cnx                                   | E0810                             |
 | tests/bugs/issue-1668-int-float-clamp/postfix-operands-rejected.test.cnx                                  | E0810                             |
 | tests/bugs/issue-1668-operand-typing/bit-subscript-sites.test.cnx                                         | E0856                             |
-| tests/bugs/issue-1668-operand-typing/bitmap-field-sites.test.cnx                                          | E0881                             |
+| tests/bugs/issue-1668-operand-typing/bitmap-field-sites.test.cnx                                          | E0881, E0882                      |
 | tests/bugs/issue-1668-operand-typing/bool-for-header-compound.test.cnx                                    | E0806, E0807                      |
 | tests/bugs/issue-1668-operand-typing/c-integer-categories.test.cnx                                        | E0810                             |
 | tests/bugs/issue-1668-operand-typing/callback-assign-sites.test.cnx                                       | E0879                             |
@@ -804,7 +804,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1668-operand-typing/enum-assign-sites.test.cnx                                           | E0428                             |
 | tests/bugs/issue-1668-operand-typing/float-modulo-shapes.test.cnx                                         | E0804                             |
 | tests/bugs/issue-1668-operand-typing/integer-conversion-sources.test.cnx                                  | E0869                             |
-| tests/bugs/issue-1668-operand-typing/register-write-sites.test.cnx                                        | E0871                             |
+| tests/bugs/issue-1668-operand-typing/register-write-sites.test.cnx                                        | E0870, E0871                      |
 | tests/bugs/issue-1668-operand-typing/rule-10-4-categories.test.cnx                                        | E0810                             |
 | tests/bugs/issue-1668-operand-typing/shift-operand-shapes.test.cnx                                        | E0805, E0873                      |
 | tests/bugs/issue-1668-operand-typing/slice-assign-sites.test.cnx                                          | E0860, E0861                      |
@@ -847,6 +847,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-1702-declaration-position/fl-fn-error.test.cnx                                           | E0810                             |
 | tests/bugs/issue-1724-sibling-scope-type-not-included/frames-see-own-closure-error.test.cnx               | E0810                             |
 | tests/bugs/issue-1724-sibling-scope-type-not-included/typer-sees-own-closure-error.test.cnx               | E0428                             |
+| tests/bugs/issue-1726-for-header-assignment-sites/integer-conversion-sites-error.test.cnx                 | E0868, E0869                      |
 | tests/bugs/issue-1726-for-header-assignment-sites/null-check-after-loop-error.test.cnx                    | E0908                             |
 | tests/bugs/issue-1728-leading-zero/leading-zero.test.cnx                                                  | E0912                             |
 | tests/bugs/issue-1735-static-initializer-arithmetic/static-not-constant.test.cnx                          | E0909                             |

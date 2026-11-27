@@ -31,4 +31,10 @@ void main() {
     for (u32 k <- 0; k < 3; p.v <<<- 1) {
         k +<- 1;
     }
+
+    // #1726: the same writes as a `for` init
+    mut u32 n <- 0;
+    for (a <<<- 1; n < 3; n +<- 1) {}
+    for (a <<<- 9; n < 6; n +<- 1) {}
+    for (p.v <<<- 1; n < 9; n +<- 1) {}
 }

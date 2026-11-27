@@ -15,4 +15,9 @@ void main() {
     for (u32 j <- 0; j < 3; flags[0] +<- 1) {
         j +<- 1;
     }
+
+    // #1726: the same writes as a `for` init
+    mut u32 k <- 0;
+    for (bytes[0] +<- 1; k < 3; k +<- 1) {}
+    for (flags[0] +<- 1; k < 6; k +<- 1) {}
 }

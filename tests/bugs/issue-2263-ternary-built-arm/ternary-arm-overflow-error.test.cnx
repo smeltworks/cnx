@@ -8,3 +8,17 @@ void fits(u8 flag) {
     string<4> t <- (flag = 1) ? a + b : "x";
     string<4> u <- (flag = 1) ? "x" : a + b;
 }
+
+string<16> wide() {
+    return "0123456789";
+}
+
+// A whole-string arm is checked the same way: a literal, a string variable
+// and a call's string that may not fit.
+void wholeArms(u8 flag) {
+    string<4> a <- "ab";
+    string<8> c <- "efgh";
+    string<4> t1 <- (flag = 1) ? "toolong" : a;
+    string<4> t2 <- (flag = 1) ? a : c;
+    string<4> t3 <- (flag = 1) ? wide() : a;
+}

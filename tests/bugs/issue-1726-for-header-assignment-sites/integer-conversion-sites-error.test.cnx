@@ -1,0 +1,31 @@
+// test-error
+// #1726: E0868 and E0869 read every assignment site, so a write in a `for`
+// header is checked as the same write as a statement is.
+void main() {
+    mut u8 x <- 0;
+    u8 small <- 7;
+    u32 big <- 300;
+    mut u32 k <- 0;
+
+    // NEGATIVE CONTROLS -- a value that fits, in each form
+    x <- 255;
+    x <- small;
+    for (mut u32 i <- 0; i < 3; x <- 255) {
+        i +<- 1;
+    }
+    for (x <- small; k < 3; k +<- 1) {}
+
+    // ASSERTIONS -- a literal out of range (E0868)
+    x <- 300;
+    for (mut u32 j <- 0; j < 3; x <- 300) {
+        j +<- 1;
+    }
+    for (x <- 300; k < 6; k +<- 1) {}
+
+    // ASSERTIONS -- a narrowing conversion (E0869)
+    x <- big;
+    for (mut u32 n <- 0; n < 3; x <- big) {
+        n +<- 1;
+    }
+    for (x <- big; k < 9; k +<- 1) {}
+}

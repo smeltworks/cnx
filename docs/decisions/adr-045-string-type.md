@@ -627,7 +627,7 @@ an arm that is not a call is copied in, so the value outlives the branch that
 set it and only the chosen arm's function runs. An arm that is a
 concatenation or a substring is built the same way (#2263): a ternary written
 whole into a `string<N>` with such an arm fills one buffer of the write's
-capacity, the built arm built into it from its parts and the other copied in,
+capacity (not yet for an argument in a `for` update: #2529), the built arm built into it from its parts and the other copied in,
 since as one C expression neither arm is a string (`a + b` is pointer
 arithmetic). Each arm is checked against that capacity, so either may be
 E0864. Fixtures: `tests/bugs/issue-2263-ternary-built-arm/`. A return type states its

@@ -1,0 +1,12 @@
+19:9 error[E0868]: Value 300 exceeds u8 range (0 to 255)
+       help: Widen the target type, or narrow the value.
+20:37 error[E0868]: Value 300 exceeds u8 range (0 to 255)
+       help: Widen the target type, or narrow the value.
+23:14 error[E0868]: Value 300 exceeds u8 range (0 to 255)
+       help: Widen the target type, or narrow the value.
+26:9 error[E0869]: Cannot assign u32 to u8 (narrowing)
+       help: Use bit indexing to say which bits you mean: value[0, 8]
+27:37 error[E0869]: Cannot assign u32 to u8 (narrowing)
+       help: Use bit indexing to say which bits you mean: value[0, 8]
+30:14 error[E0869]: Cannot assign u32 to u8 (narrowing)
+       help: Use bit indexing to say which bits you mean: value[0, 8]

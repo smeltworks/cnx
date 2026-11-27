@@ -45,8 +45,17 @@ class StringValueForm {
         StringValueForm.isBuilt(arm, ctx),
       );
     }
-    const kind = StringValueForm.of(unwrapped, ctx).kind;
-    return kind === "concat" || kind === "substring";
+    return StringValueForm.builds(StringValueForm.of(unwrapped, ctx));
+  }
+
+  /**
+   * The forms built from their parts, which are never one C expression: the
+   * one place that names them, for 2.1, 2.2 and 2.3 alike
+   */
+  static builds(
+    form: TStringValueForm,
+  ): form is Extract<TStringValueForm, { kind: "concat" | "substring" }> {
+    return form.kind === "concat" || form.kind === "substring";
   }
 
   private static partOf(value: TExpression, ctx: ITypingContext): TStringPart {

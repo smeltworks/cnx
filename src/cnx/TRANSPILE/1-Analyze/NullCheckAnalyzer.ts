@@ -421,8 +421,9 @@ class NullCheckWalk {
   }
 
   /**
-   * The body of `while (c_var != NULL)` has the variable checked, and the
-   * loop leaves when it is null: past the loop it is as it was before
+   * The body of `while (c_var != NULL)` has the variable checked. ADR-026
+   * has no `break`, so the loop leaves only when the variable is null: past
+   * the loop it is unchecked, whatever it was before
    */
   private loop(condition: TExpression | null, body: () => void): void {
     const check =
@@ -431,13 +432,12 @@ class NullCheckWalk {
     const checked = check?.isNotNull
       ? this.lookupVariable(check.varName)
       : null;
-    const before = checked?.state;
     if (checked) {
       this.updateVariableState(checked.name, NullCheckState.CheckedNotNull);
     }
     body();
-    if (checked && before !== undefined) {
-      this.updateVariableState(checked.name, before);
+    if (checked) {
+      this.updateVariableState(checked.name, NullCheckState.Unchecked);
     }
   }
 
