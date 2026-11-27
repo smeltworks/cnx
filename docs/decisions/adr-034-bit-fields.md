@@ -450,7 +450,14 @@ integer literals, arithmetic, bitwise and logical operators, parentheses, and th
 header's object-like macros of them, each substituted as its text, as the
 preprocessor does, so `W * 2` with `#define W 1 + 2` is 5 bits. A width
 that reads a macro some header `#undef`s is not read, because cnx sees only
-the final definition and C may have used an earlier one. A width cnx cannot read, such as
+the final definition and C may have used an earlier one. So is one that reads a
+macro defined again to another body with no `#undef` between, and one that
+reads a macro named like a value or a typedef a header declares: an
+enumerator (one inside a struct too, which C gives file scope), a variable, a
+function, or a typedef, which a width reads as a cast. cnx cannot tell which
+one C read there. A struct, enum, class or namespace tag names no value, so it
+does not stop a width. Only the headers the reading file's own compile opens
+count (#2510 review). A width cnx cannot read, such as
 `sizeof(uint8_t)`, gives the field no range a value could be judged by, so it
 is neither read nor written, by a chain or by `{ field: value }`. A width whose value would differ between the
 target's `int` widths, or between the macros of two files that include the
