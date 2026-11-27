@@ -58,6 +58,7 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/PARSE/3-Declare/cpp/collectors/ClassCollector.ts`              | `qualify(ctx.className, name)`                                         | 1      | encoder      |
 | `src/cnx/PARSE/3-Declare/cpp/collectors/ClassCollector.ts`              | `qualify(currentNamespace, name)`                                      | 1      | encoder      |
 | `src/cnx/PARSE/3-Declare/cpp/collectors/EnumCollector.ts`               | `qualify(currentNamespace, name)`                                      | 1      | encoder      |
+| `src/cnx/PARSE/3-Declare/cpp/collectors/EnumCollector.ts`               | `qualify(inStruct ?? currentNamespace, name)`                          | 1      | encoder      |
 | `src/cnx/PARSE/3-Declare/cpp/collectors/FunctionCollector.ts`           | `qualify(className, funcName)`                                         | 1      | encoder      |
 | `src/cnx/PARSE/3-Declare/cpp/collectors/FunctionCollector.ts`           | `qualify(currentNamespace, name)`                                      | 2      | encoder      |
 | `src/cnx/PARSE/3-Declare/cpp/collectors/NamespaceCollector.ts`          | `qualify(currentNamespace, name)`                                      | 2      | encoder      |
@@ -82,9 +83,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                           | `qualifyPathInScope([symbol.name], symbol.scopePath)`                  | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                       | `qualifyInScope(type.name, scopePath)`                                 | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                       | `qualifyScopeType(type.name, scopePath, deps.isScopeType)`             | 1      | encoder      |
-| **total**                                                               |                                                                        | **48** |              |
+| **total**                                                               |                                                                        | **49** |              |
 
-48 site(s) across 24 file(s).
+49 site(s) across 24 file(s).
 
 ## Why each site is not a scope join
 
@@ -108,6 +109,7 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/PARSE/3-Declare/cpp/collectors/ClassCollector.ts` `qualify(ctx.className, name)`: 3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)
 - `src/cnx/PARSE/3-Declare/cpp/collectors/ClassCollector.ts` `qualify(currentNamespace, name)`: 3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)
 - `src/cnx/PARSE/3-Declare/cpp/collectors/EnumCollector.ts` `qualify(currentNamespace, name)`: 3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)
+- `src/cnx/PARSE/3-Declare/cpp/collectors/EnumCollector.ts` `qualify(inStruct ?? currentNamespace, name)`: 3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116); an unscoped enum's constant inside a class is `Class::N` (#2510)
 - `src/cnx/PARSE/3-Declare/cpp/collectors/FunctionCollector.ts` `qualify(className, funcName)`: 3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)
 - `src/cnx/PARSE/3-Declare/cpp/collectors/FunctionCollector.ts` `qualify(currentNamespace, name)`: 3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)
 - `src/cnx/PARSE/3-Declare/cpp/collectors/NamespaceCollector.ts` `qualify(currentNamespace, name)`: 3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)
