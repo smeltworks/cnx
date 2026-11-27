@@ -228,6 +228,16 @@ describe("ScopeJoinSites", () => {
     ];
     const doc = ScopeJoinSites.render(population, verdicts);
 
+    it("renders a document that states no count of its rows (#2520)", () => {
+      // A line that counts the rows changes in every pull request that adds
+      // or removes a site, so two of them conflict on it. `check` prints it.
+      expect(doc).not.toContain("**total**");
+      expect(doc).not.toContain("site(s)");
+      expect(
+        ScopeJoinSites.checkOutcome(doc, population, doc, verdicts).info,
+      ).toContain("3 qualified-name site(s) across 2 file(s).");
+    });
+
     it("reports a missing document as a decision, not a CLI branch", () => {
       // `existsSync` used to sit in `main()`, so this branch was unreachable
       // from a test. Brought here with #1317's review.

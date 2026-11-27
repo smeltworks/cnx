@@ -98,10 +98,11 @@ class ParseTreeSites {
   }
 
   /**
-   * The per-layer tally both `render` and `check` report.
+   * The per-layer tally `check` reports.
    *
-   * Shared rather than computed twice -- the two must agree, and jscpd flags the
-   * copy the moment it exists (the lesson `ScopeJoinSites.summarize` records).
+   * The document does not hold it (#2520): a line that counts the rows changes
+   * in every pull request that changes the list, so two of them conflict on
+   * it, or merge to a count that matches neither.
    */
   static summarize(sites: readonly ISite[]): {
     readonly total: number;
@@ -147,7 +148,6 @@ class ParseTreeSites {
 
   /** The committed document body. No timestamp: it would churn every run (#1150). */
   static render(sites: readonly ISite[]): string {
-    const { total, byLayer } = ParseTreeSites.summarize(sites);
     return [
       "# Modules holding an ANTLR parse tree",
       "",
@@ -179,16 +179,12 @@ class ParseTreeSites {
       "helpers only they call, the host that hands them 1.2's artifact, and 1.1's",
       "lexer-only include scan. Nothing from 2.2 Plan on.",
       "",
-      "## By layer",
-      "",
-      "| Layer | Modules |",
-      "| --- | ---: |",
-      ...byLayer.map(([layer, count]) => `| \`${layer}\` | ${count} |`),
-      `| **total** | **${total}** |`,
-      "",
-      "`src/cnx/TRANSPILE/3-Render/` is the render layer, and its share is the number",
-      "the issue singles out: the render layer holding parse nodes is how a",
-      "diagnostic can originate there at all, which is what #1322 relocates.",
+      "`npm run parse-tree:check` prints how many modules the list holds, in all",
+      "and in each layer. `src/cnx/TRANSPILE/3-Render/` is the render layer, and",
+      "its share is the number the issue singles out: the render layer holding",
+      "parse nodes is how a diagnostic can originate there at all, which is what",
+      "#1322 relocates. This document states no count (#2520): a line that counts",
+      "the rows changes in every pull request that changes the list.",
       "",
       "## Modules",
       "",
@@ -197,8 +193,6 @@ class ParseTreeSites {
       ...sites.map(
         (site) => `| \`${site.module}\` | ${site.holds.join(", ")} |`,
       ),
-      "",
-      `${total} module(s).`,
       "",
     ].join("\n");
   }
@@ -243,6 +237,8 @@ class ParseTreeSites {
       0;
     const info = [
       `${total} module(s) hold a parse tree; ${renderLayer} in the render layer.`,
+      // The per-layer tally the document held before #2520
+      `By layer: ${byLayer.map(([layer, count]) => `${layer} ${count}`).join(", ") || "none"}.`,
     ];
 
     if (committedDocument === null) {

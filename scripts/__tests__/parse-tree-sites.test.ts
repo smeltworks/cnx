@@ -113,11 +113,15 @@ describe("ParseTreeSites.render", () => {
     violation("src/cnx/utils/B.ts", RUNTIME),
   ]);
 
-  it("states the total and the per-layer split", () => {
+  it("states no count of its rows", () => {
+    // #2520: a line that counts the rows changes in every pull request that
+    // changes the list, so two of them conflict on it. The check prints them.
     const document = ParseTreeSites.render(sites);
 
-    expect(document).toContain("| **total** | **2** |");
-    expect(document).toContain("| `src/cnx/TRANSPILE/3-Render/` | 1 |");
+    expect(document).not.toContain("**total**");
+    expect(document).not.toContain("module(s)");
+    expect(document).not.toContain("## By layer");
+    expect(document).not.toMatch(/\|\s*\d+\s*\|/);
   });
 
   it("emits no timestamp", () => {
@@ -233,6 +237,12 @@ describe("ParseTreeSites.checkOutcome", () => {
     expect(
       ParseTreeSites.checkOutcome(committed, sites, committed).info.join(),
     ).toContain("1 in the render layer");
+  });
+
+  it("reports the per-layer tally the document no longer holds (#2520)", () => {
+    expect(
+      ParseTreeSites.checkOutcome(committed, sites, committed).info,
+    ).toContain("By layer: src/cnx/TRANSPILE/3-Render/ 1, src/cnx/utils/ 1.");
   });
 
   it("reports an empty population alongside, not instead of, other errors", () => {

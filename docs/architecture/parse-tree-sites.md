@@ -28,21 +28,15 @@ at `error` (#1932): 1.2 Parse, 1.3 Declare, 2.1 Analyze, the shared
 helpers only they call, the host that hands them 1.2's artifact, and 1.1's
 lexer-only include scan. Nothing from 2.2 Plan on.
 
-## By layer
-
-| Layer            | Modules |
-| ---------------- | ------: |
-| `src/cnx/PARSE/` |       1 |
-| **total**        |   **1** |
-
-`src/cnx/TRANSPILE/3-Render/` is the render layer, and its share is the number
-the issue singles out: the render layer holding parse nodes is how a
-diagnostic can originate there at all, which is what #1322 relocates.
+`npm run parse-tree:check` prints how many modules the list holds, in all
+and in each layer. `src/cnx/TRANSPILE/3-Render/` is the render layer, and
+its share is the number the issue singles out: the render layer holding
+parse nodes is how a diagnostic can originate there at all, which is what
+#1322 relocates. This document states no count (#2520): a line that counts
+the rows changes in every pull request that changes the list.
 
 ## Modules
 
 | Module                                         | Holds             |
 | ---------------------------------------------- | ----------------- |
 | `src/cnx/PARSE/1-Discover/IncludeDiscovery.ts` | antlr4ng, grammar |
-
-1 module(s).

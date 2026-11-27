@@ -550,10 +550,11 @@ class ScopeJoinSites {
   }
 
   /**
-   * The totals both `render` and `check` report.
+   * The totals `check` reports.
    *
-   * Shared rather than computed twice: the two must agree, and jscpd caught the
-   * copy the moment it existed.
+   * The document does not hold them (#2520). A line that counts the rows
+   * changes in every pull request that adds or removes a site, so two of them
+   * conflict on it, or merge to a count that matches neither.
    */
   private static summarize(sites: readonly ISite[]): {
     total: number;
@@ -570,7 +571,6 @@ class ScopeJoinSites {
     sites: readonly ISite[],
     verdicts: readonly IAdjudication[] = ScopeJoinSites.ADJUDICATIONS,
   ): string {
-    const { total, files } = ScopeJoinSites.summarize(sites);
     const lines = [
       "# Qualified C name construction sites",
       "",
@@ -609,9 +609,6 @@ class ScopeJoinSites {
         const kind = verdict?.kind ?? "**UNADJUDICATED**";
         return `| \`${row.file}\` | \`${row.element.replace(/\|/g, "\\|")}\` | ${row.count} | ${kind} |`;
       }),
-      `| **total** | | **${total}** | |`,
-      "",
-      `${total} site(s) across ${files} file(s).`,
       "",
       "## Why each site is not a scope join",
       "",
@@ -742,7 +739,7 @@ class ScopeJoinSites {
     // could fail on the difference.
     //
     // The rows are not the whole document. Comparing only what the parser can
-    // read leaves the preamble, the header comment and the total row free to
+    // read leaves the preamble and the header comment free to
     // drift with the gate still green -- `diagnostic-manifest.ts` compares in
     // full for that reason. `render` emits no timestamp and Prettier is
     // deterministic, so equality holds.
@@ -758,8 +755,8 @@ class ScopeJoinSites {
     } else if (freshDocument !== committed) {
       errors.push(
         `docs/architecture/scope-join-sites.md does not match what the ` +
-          "generator produces, though the counts agree -- prose or the total " +
-          "row was edited by hand. Run `npm run scope-joins`.",
+          "generator produces, though the counts agree -- it was edited by " +
+          "hand. Run `npm run scope-joins`.",
       );
     }
 
