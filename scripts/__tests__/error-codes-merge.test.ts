@@ -28,7 +28,7 @@ import GeneratedMarkdown from "../utils/GeneratedMarkdown";
 import SourceModule from "../utils/SourceModule";
 import MergeTestHelpers from "./mergeTestHelpers";
 
-const { gitMerge } = MergeTestHelpers;
+const { gitMerge, inserted } = MergeTestHelpers;
 
 const REGISTRY_PATH = join("docs", "error-codes.md");
 
@@ -100,21 +100,6 @@ function registerSection(markdown: string, code: string): string {
     "",
   ].join("\n");
   return markdown.replace(AFTER_EVERY_CODE, section + AFTER_EVERY_CODE);
-}
-
-/**
- * The lines `after` holds beyond `before`'s, or null when a line of `before`
- * is changed or gone.
- */
-function inserted(before: string, after: string): string[] | null {
-  const kept = before.split("\n");
-  const added: string[] = [];
-  let at = 0;
-  for (const line of after.split("\n")) {
-    if (at < kept.length && line === kept[at]) at += 1;
-    else added.push(line);
-  }
-  return at === kept.length ? added : null;
 }
 
 describe("registering an error code merges (#2521)", () => {

@@ -14,9 +14,11 @@
  *
  *     npm run diagnostics:manifest:compare -- origin/main
  *
- * It reads the base manifest with `git show <ref>:docs/diagnostic-manifest.md`
- * and compares CODE SETS, not fixture paths, because this card also moves
- * fixtures into `tests/adr-NNN/`. See `DiagnosticManifest.compareToBase`.
+ * It reads the base manifest with `git show`, every document of it that the
+ * ref holds: the index and one document per fixture directory since #2518,
+ * the one table before. It compares CODE SETS, not fixture paths, because this
+ * card also moves fixtures into `tests/adr-NNN/`. See
+ * `DiagnosticManifest.compareToBase`.
  *
  * Not in `gate.sh`: it needs a base ref, and the right one is a property of the
  * branch rather than of the tree.
@@ -32,18 +34,38 @@ import DiagnosticManifest from "./diagnostics/DiagnosticManifest";
 
 const rootDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 
+/** One git command's output, as text. */
+function git(args: string[]): string {
+  return execFileSync("git", args, {
+    cwd: rootDir,
+    encoding: "utf-8",
+    maxBuffer: 64 * 1024 * 1024,
+  });
+}
+
 function baseManifest(ref: string): string {
   try {
-    return execFileSync("git", ["show", `${ref}:docs/diagnostic-manifest.md`], {
-      cwd: rootDir,
-      encoding: "utf-8",
-    });
+    const documents = git([
+      "ls-tree",
+      "-r",
+      "--name-only",
+      ref,
+      "--",
+      DiagnosticManifest.INDEX,
+      DiagnosticManifest.DIRECTORY,
+    ])
+      .split("\n")
+      .filter((path) => DiagnosticManifest.isDocument(path));
+    if (documents.length === 0) {
+      throw new Error(`no manifest at ${ref}`);
+    }
+    return git(["show", ...documents.map((path) => `${ref}:${path}`)]);
   } catch {
     // Reported rather than absorbed: an unreadable base makes every comparison
     // below vacuously true, which is the shape of a guard that cannot fail.
     console.error(
       chalk.red(
-        `Could not read docs/diagnostic-manifest.md at '${ref}'.\n` +
+        `Could not read the diagnostic manifest at '${ref}'.\n` +
           `Give a ref that exists, e.g. the merge base:\n` +
           `  npm run diagnostics:manifest:compare -- $(git merge-base origin/main HEAD)`,
       ),
