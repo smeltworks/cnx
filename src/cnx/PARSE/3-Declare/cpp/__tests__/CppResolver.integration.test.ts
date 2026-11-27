@@ -76,6 +76,21 @@ typedef struct opaque_t* handle_t;`;
     });
   });
 
+  describe("linkage specifications (#2064)", () => {
+    it("collects the declarations of an extern block and a single extern declaration", () => {
+      const source = `extern "C" { void start(void); enum { N = 3 }; }
+extern "C++" int stop();
+namespace io { extern "C" { int poll(void); } }`;
+      const tree = TestHelpers.parseCpp(source);
+      expect(tree).not.toBeNull();
+      const result = CppResolver.resolve(tree!, "test.hpp", symbolTable);
+
+      expect(result.symbols.map((symbol) => symbol.name)).toEqual(
+        expect.arrayContaining(["start", "N", "stop", "io", "io::poll"]),
+      );
+    });
+  });
+
   describe("class collection", () => {
     it("collects a simple class", () => {
       const source = `class MyClass { };`;

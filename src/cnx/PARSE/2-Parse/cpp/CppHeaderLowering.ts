@@ -57,6 +57,17 @@ class CppHeaderLowering {
   ): TCppDeclarationSyntax[] {
     const lowered: TCppDeclarationSyntax[] = [];
     for (const decl of decls) {
+      // #2064: `extern "C"` sets its declarations' linkage, not their scope
+      const linkage = decl.linkageSpecification();
+      if (linkage) {
+        const inner = linkage.declaration();
+        lowered.push(
+          ...CppHeaderLowering.declarations(
+            inner ? [inner] : (linkage.declarationseq()?.declaration() ?? []),
+          ),
+        );
+        continue;
+      }
       const one = CppHeaderLowering.declaration(decl);
       if (one) lowered.push(one);
     }

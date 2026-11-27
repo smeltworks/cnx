@@ -1,0 +1,14 @@
+// test-error
+// test-cpp-only
+// ltable is sized by LN, an enum constant declared in an extern "C" block,
+// and mtable by LM, one behind a single extern "C++". g++ reads each as 3
+// though the .hpp then defines macros of 8, so cnx folds neither count.
+#include "lib/linked.hpp"
+
+mut u8[ltable.type_element_count] lcopy;
+mut u8[mtable.type_element_count] mcopy;
+
+void main() {
+    lcopy[0] <- 1;
+    mcopy[0] <- 1;
+}
