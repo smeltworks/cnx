@@ -58,7 +58,7 @@ function main(): void {
 
   console.log(
     chalk.green(
-      `Error-code registry is consistent (${ErrorCodeRegistry.rows(markdown).length} row(s), ${emitted.size} emitted in src/).`,
+      `Error-code registry is consistent (${ErrorCodeRegistry.summary(markdown)}; ${emitted.size} emitted in src/).`,
     ),
   );
 }
