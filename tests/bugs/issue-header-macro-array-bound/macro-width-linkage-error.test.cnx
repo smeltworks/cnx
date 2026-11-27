@@ -1,0 +1,11 @@
+// test-error
+// test-cpp-only
+// mode's width is LW, an enum constant declared in an extern "C" block, and
+// kind's is MW, one behind a single extern "C++". g++ reads each as 3 bits
+// though the .hpp then defines macros of 4, so cnx reads neither (#2546).
+#include "lib/wlinked.hpp"
+
+void main() {
+    lreg.mode <- 1;
+    lreg.kind <- 1;
+}

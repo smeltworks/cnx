@@ -1,0 +1,4 @@
+9:8 error[E0946]: cnx cannot read the width of bit-field 'mode': it reads LW, which a header both declares and defines as a macro, and cnx cannot tell which one C read here
+       help: Give the macro a name no header declares, or write the width as an integer constant (ADR-034).
+10:8 error[E0946]: cnx cannot read the width of bit-field 'kind': it reads MW, which a header both declares and defines as a macro, and cnx cannot tell which one C read here
+       help: Give the macro a name no header declares, or write the width as an integer constant (ADR-034).
