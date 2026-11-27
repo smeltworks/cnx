@@ -397,7 +397,15 @@ class CallbackAssignmentCheck {
    */
   public checkCStringReturns(positions: IValuePositions): void {
     for (const [value, site] of positions.sites) {
-      if (!CLandingType.isLanding(site.site)) continue;
+      // A variable that shadows the function is a value of its own type
+      const root = OperandTyper.chainOf(value, this.context).root?.kind;
+      if (
+        !CLandingType.isLanding(site.site) ||
+        root === "local" ||
+        root === "variable"
+      ) {
+        continue;
+      }
       const returned = FunctionReference.ofValue(
         value,
         OperandTyper.scopePathAt(value.span, this.context),
