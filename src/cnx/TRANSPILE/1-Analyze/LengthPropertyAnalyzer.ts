@@ -148,11 +148,7 @@ class LengthPropertyCheck {
     const table = this.context.symbolTable;
     const subject =
       chain.primary.kind === "identifier" ? chain.primary.name : null;
-    const readDifferently =
-      subject !== null &&
-      [...table.getCOverloads(subject), ...table.getCppOverloads(subject)].some(
-        (symbol) => table.getDisputedHeaders().has(symbol.sourceFile),
-      );
+    const readDifferently = subject !== null && table.inDisputedHeader(subject);
     this.check(last, property, step, inFunction, declaredAt, readDifferently);
   }
 

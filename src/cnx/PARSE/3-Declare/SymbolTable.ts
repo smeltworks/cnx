@@ -391,6 +391,16 @@ class SymbolTable implements IResolvedSymbols {
     return this.disputedHeaders;
   }
 
+  /** #2514: whether a declaration of `name` this table's reader reads is in a disputed header */
+  inDisputedHeader(name: string): boolean {
+    const c = this.cSymbols.get(name) ?? [];
+    const pool: (TCSymbol | TCppSymbol)[] =
+      c.length > 0
+        ? this.poolOf(c)
+        : this.poolOf(this.cppSymbols.get(name) ?? []);
+    return pool.some((symbol) => this.disputedHeaders.has(symbol.sourceFile));
+  }
+
   /**
    * The declaration of a name this table's reader reads (#2474): the first
    * its own headers make (`ForeignRedeclaration.pool`), its array type the

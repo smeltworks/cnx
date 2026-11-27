@@ -288,6 +288,19 @@ describe("SymbolTable", () => {
       expect(symbolTable.indexBoundsOf("samples")).toEqual([4]);
     });
 
+    it("names a dispute only in the reading file's own headers (#2514)", () => {
+      symbolTable.addCSymbol(arrayIn("/a.h", [""]));
+      symbolTable.addCSymbol(arrayIn("/b.h", [""]));
+      symbolTable.markDisputedHeaders(new Set(["/a.h"]));
+      expect(
+        symbolTable.seenFrom(new Set(["/a.h"])).inDisputedHeader("samples"),
+      ).toBe(true);
+      expect(
+        symbolTable.seenFrom(new Set(["/b.h"])).inDisputedHeader("samples"),
+      ).toBe(false);
+      expect(symbolTable.inDisputedHeader("absent")).toBe(false);
+    });
+
     it("composes only the reading file's own headers' declarations", () => {
       symbolTable.addCSymbol(arrayIn("/a.h", [""]));
       symbolTable.addCSymbol(arrayIn("/b.h", [""]));
