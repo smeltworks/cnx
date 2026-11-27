@@ -1,0 +1,53 @@
+// test-error
+// test-adr: 024
+// #2499: a character literal is essentially character (ADR-024, owner
+// ruling on #1668: strict MISRA), not a u8. Beside an integer -- a local, a
+// parameter, an array element, a string<N> byte copied into a u8 -- every
+// comparison and `-` is E0810 (Rule 10.4), and the help names the cast that
+// says which is meant. A character compound target cannot be cast, so its
+// help writes the assignment out. CONTROL: a character beside a character,
+// MISRA's `+` exception, and a character cast to the integer's type stay
+// silent.
+u8[4] buf;
+string<8> s <- "ab";
+
+bool isColon(u8 c) {
+    return c = ':';
+}
+
+void main() {
+    u8 c <- 58;
+    u16 w <- 58;
+    i32 n <- 58;
+    u8 b <- (u8)s[0];
+    mut string<4> t <- "ab";
+
+    // NEGATIVE CONTROLS
+    bool ok1 <- s[0] = ':';
+    bool ok2 <- s[0] < 'z';
+    u8 ok3 <- c + '0';
+    bool ok4 <- c = (u8)':';
+    bool ok5 <- buf[0] >= (u8)'0';
+    bool ok6 <- w != (u16)':';
+    bool ok7 <- n <= (i32)'9';
+    bool ok8 <- (u8)s[0] = c;
+    u8 ok9 <- c - (u8)'0';
+    t[0] <- (u8)t[0] - c;
+
+    // ASSERTIONS
+    bool e1 <- c != ':';
+    bool e2 <- c < 'a';
+    bool e3 <- c > 'f';
+    bool e4 <- c <= '9';
+    bool e5 <- c >= '0';
+    bool e6 <- '0' <= c;
+    bool e7 <- buf[0] = ':';
+    bool e8 <- b = ':';
+    bool e9 <- w = ':';
+    bool e10 <- n = ':';
+    u8 e11 <- c - '0';
+    bool e12 <- s[0] = c;
+    u8 e13 <- (c = 0) ? c : ':';
+    // A compound's target cannot be cast, so the help writes it out
+    t[0] -<- c;
+}

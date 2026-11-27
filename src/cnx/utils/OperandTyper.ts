@@ -1258,12 +1258,7 @@ class OperandTyper {
     if (
       type.kind === "external" ||
       (OperandTyper.isNamedKind(type) &&
-        !OperandTyper.declaresNamedType(type.name, ctx) &&
-        ForeignTypeFacts.isForeignType(
-          type.name,
-          ctx.symbolTable,
-          OperandTyper.target(ctx),
-        ))
+        OperandTyper.namesHeaderType(type.name, ctx))
     ) {
       const foreign = ForeignTypeFacts.operandType(
         type.name,
@@ -1272,6 +1267,14 @@ class OperandTyper {
         dimensions,
       );
       if (foreign) return { ...foreign, form: DECLARED };
+      // #2497: one the typer cannot read -- `operandType`'s typedef walk
+      // stops at a `*`, so a pointer or function-pointer typedef, and a C++
+      // template's instance (`Vector<uint32_t>`)
+      return {
+        ...OperandTyper.plain(TypeResolver.getTypeName(type)),
+        dimensions,
+        unreadHeaderType: true,
+      };
     }
     if (type.kind === "array") {
       return OperandTyper.fromType(
@@ -1296,6 +1299,21 @@ class OperandTyper {
       default:
         return base;
     }
+  }
+
+  /**
+   * Whether a cnx declaration's type name is a header's type: no cnx struct,
+   * enum or bitmap this file sees, and a C type or a header's
+   */
+  private static namesHeaderType(name: string, ctx: ITypingContext): boolean {
+    return (
+      !OperandTyper.declaresNamedType(name, ctx) &&
+      ForeignTypeFacts.isForeignType(
+        name,
+        ctx.symbolTable,
+        OperandTyper.target(ctx),
+      )
+    );
   }
 
   private static isNamedKind(
@@ -2121,7 +2139,9 @@ class OperandTyper {
    * whose bits cnx can see, so a C or C++ header's scalar integer is one
    * (S25). A header's value that is NOT an integer -- a struct, a C++ type
    * with its own `operator[]` -- is left to C and C++: shown as unknown, so
-   * its subscript stays the element access it always was.
+   * its subscript stays the element access it always was. So is a cnx value
+   * whose type is a header's the typer cannot read, such as a C pointer
+   * typedef (#2497: `p[i]` was `((p >> i) & 0x1U)`, a bit of a pointer).
    */
   private static subscriptedShape(
     t: IOperandType | null,
@@ -2132,7 +2152,7 @@ class OperandTyper {
     // `double`'s subscript was read as an element) -- is bit-indexed as a
     // cnx one is (ADR-007); anything else there is untyped
     if (
-      t.form.kind === "foreign" &&
+      (t.form.kind === "foreign" || t.unreadHeaderType) &&
       !isArray &&
       !OperandTyper.hasWritableBits(t)
     ) {

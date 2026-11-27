@@ -35,7 +35,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-8 linked fixtures with no derivable context:
+Linked fixtures with no derivable context:
 
 - `adr-004/register-expression-address-mmio.test.cnx`
 - `adr-004/register-imported-bitmap-member.test.cnx`
@@ -86,7 +86,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-4 linked fixtures with no derivable context:
+Linked fixtures with no derivable context:
 
 - `bugs/issue-1203-non-addressable-mut-argument/c-pointer-parenthesized.test.cnx`
 - `bugs/issue-1203-non-addressable-mut-argument/parenthesized-chain-value.test.cnx`
@@ -113,7 +113,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-2 linked fixtures with no derivable context:
+Linked fixtures with no derivable context:
 
 - `adr-007/subscript-length-one-spellings.test.cnx`
 - `bugs/issue-1114-struct-field-subscript-depth/field-c-header-error.test.cnx`
@@ -218,7 +218,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | ok     | ok         | ok          | warn       |
 | for header         | -         | -      | -          | -           | -          |
 
-11 linked fixtures with no derivable context:
+Linked fixtures with no derivable context:
 
 - `bugs/issue-1133-guard-collision-diagnostic/guard-collision.test.cnx`
 - `bugs/issue-1833-miscased-cnx-extension/miscased-include-error.test.cnx`
@@ -292,7 +292,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-4 linked fixtures with no derivable context:
+Linked fixtures with no derivable context:
 
 - `bugs/issue-1545-auto-const-one-rule/auto-const-one-rule.test.cnx`
 - `bugs/issue-1545-auto-const-one-rule/callback-arity.test.cnx`
@@ -339,7 +339,7 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | -      | -          | warn        | warn       |
 | for header         | -         | -      | -          | -           | -          |
 
-21 linked fixtures with no derivable context:
+Linked fixtures with no derivable context:
 
 - `adr-014/struct-inferred-every-position.test.cnx`
 - `adr-014/struct-literal-argument-by-value-callback.test.cnx`
@@ -423,7 +423,7 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | -      | -          | ok          | ok         |
 | for header         | -         | -      | -          | -           | -          |
 
-6 linked fixtures with no derivable context:
+Linked fixtures with no derivable context:
 
 - `bugs/issue-1306-nested-scope-diagnostic/cross-file-nested.test.cnx`
 - `bugs/issue-2380-same-level-names/enum-beside-scope-error.test.cnx`
@@ -512,7 +512,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-16 linked fixtures with no derivable context:
+Linked fixtures with no derivable context:
 
 - `adr-017/bare-enum-struct-literal-argument.test.cnx`
 - `bugs/issue-1531-declaration-rejections/cross-file-enum.test.cnx`
@@ -671,7 +671,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-18 linked fixtures with no derivable context:
+Linked fixtures with no derivable context:
 
 - `bugs/issue-1268-qualified-zero-const/float-cast-bit-width.test.cnx`
 - `bugs/issue-1268-qualified-zero-const/float-cast-const-dimension.test.cnx`
@@ -691,6 +691,7 @@ cell is declared by the ADR that owns it.
 - `bugs/issue-1806-memory-length-u32/memory-length-imported-direct-narrowing-error.test.cnx`
 - `bugs/issue-1806-memory-length-u32/memory-length-imported-transitive-narrowing-error.test.cnx`
 - `bugs/issue-2372-category-conversion/integer-macro-bool-arithmetic-error.test.cnx`
+- `bugs/issue-2499-char-literal-integer-operand/char-literal-cast-control.test.cnx`
 
 ## ADR-024 E0807
 
@@ -812,7 +813,7 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | ok     | ok         | warn        | warn       |
 | for header         | -         | -      | -          | -           | -          |
 
-1 linked fixture with no derivable context:
+Linked fixtures with no derivable context:
 
 - `bugs/issue-2052-scope-enum-case-label/scope-enum-case-label.test.cnx`
 
@@ -886,7 +887,7 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | ok     | ok         | warn        | warn       |
 | for header         | -         | -      | -          | -           | -          |
 
-21 linked fixtures with no derivable context:
+Linked fixtures with no derivable context:
 
 - `adr-029/callback-assign.test.cnx`
 - `adr-029/callback-basic.test.cnx`
@@ -960,7 +961,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | ok     | warn       | warn        | warn       |
 | for header         | -         | -      | -          | -           | -          |
 
-12 linked fixtures with no derivable context:
+Linked fixtures with no derivable context:
 
 - `bugs/issue-1312-undefined-type-position/transitive-type-resolves.test.cnx`
 - `bugs/issue-1353-undeclared-value-position/declared-value-resolves.test.cnx`
@@ -1035,7 +1036,7 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | ok     | warn       | warn        | warn       |
 | for header         | -         | -      | -          | -           | -          |
 
-6 linked fixtures with no derivable context:
+Linked fixtures with no derivable context:
 
 - `adr-034/width-by-including-file-cpp/width-by-including-file-cpp.test.cnx`
 - `adr-034/width-by-including-file/width-by-including-file.test.cnx`
@@ -1154,7 +1155,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-21 linked fixtures with no derivable context:
+Linked fixtures with no derivable context:
 
 - `adr-034/header-array-field-fill.test.cnx`
 - `adr-034/header-array-field-short-error.test.cnx`
@@ -1238,7 +1239,7 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | ok     | ok         | warn        | warn       |
 | for header         | -         | -      | -          | -           | -          |
 
-1 linked fixture with no derivable context:
+Linked fixtures with no derivable context:
 
 - `bugs/issue-1768-variable-dimension/header-variable.test.cnx`
 
@@ -1312,7 +1313,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-6 linked fixtures with no derivable context:
+Linked fixtures with no derivable context:
 
 - `adr-037/conditional-compilation.test.cnx`
 - `adr-037/define-every-rejected-form-error.test.cnx`
@@ -1351,7 +1352,7 @@ cell is declared by the ADR that owns it.
 | scope method       | ok        | warn   | warn       | ok          | warn       |
 | for header         | -         | -      | -          | -           | -          |
 
-2 linked fixtures with no derivable context:
+Linked fixtures with no derivable context:
 
 - `bugs/issue-1669-enum-member-values/value-overflow.test.cnx`
 - `bugs/issue-2409-header-arithmetic/header-arithmetic.test.cnx`
@@ -1406,7 +1407,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-9 linked fixtures with no derivable context:
+Linked fixtures with no derivable context:
 
 - `bugs/issue-1209-string-array-return/callback-return.test.cnx`
 - `bugs/issue-1209-string-array-return/cross-file.test.cnx`
@@ -1698,7 +1699,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-3 linked fixtures with no derivable context:
+Linked fixtures with no derivable context:
 
 - `bugs/issue-1175-constant-dimensions/enum-zero-divisor.test.cnx`
 - `bugs/issue-1268-qualified-zero-const/length-property-divisor-imported.test.cnx`
@@ -1774,7 +1775,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-8 linked fixtures with no derivable context:
+Linked fixtures with no derivable context:
 
 - `adr-057/local-shadows-scope.test.cnx`
 - `adr-057/scope-variable-does-not-capture-type.test.cnx`
@@ -1885,7 +1886,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-13 linked fixtures with no derivable context:
+Linked fixtures with no derivable context:
 
 - `adr-058/kinds-contexts.test.cnx`
 - `adr-058/kinds-header.test.cnx`
@@ -1971,7 +1972,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-1 linked fixture with no derivable context:
+Linked fixtures with no derivable context:
 
 - `bugs/issue-2254-volatile-not-inlined/volatile-read-not-inlined.test.cnx`
 
@@ -1995,7 +1996,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-1 linked fixture with no derivable context:
+Linked fixtures with no derivable context:
 
 - `adr-068/forever-basic.test.cnx`
 
@@ -2039,7 +2040,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-2 linked fixtures with no derivable context:
+Linked fixtures with no derivable context:
 
 - `bugs/issue-2473-chained-callback-mut-argument/cpp-member-template-discarded-error.test.cnx`
 - `bugs/issue-2473-chained-callback-mut-argument/cpp-overload-discarded-error.test.cnx`
@@ -2064,7 +2065,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-15 linked fixtures with no derivable context:
+Linked fixtures with no derivable context:
 
 - `adr-071/c-callback-mut-match.test.cnx`
 - `adr-071/callback-initializer-wiring.test.cnx`
@@ -2162,7 +2163,7 @@ cell is declared by the ADR that owns it.
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
-16 linked fixtures with no derivable context:
+Linked fixtures with no derivable context:
 
 - `adr-072/cross-file-register-instance.test.cnx`
 - `adr-072/register-isr-member.test.cnx`

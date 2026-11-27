@@ -107,6 +107,13 @@ interface IOperandType {
    */
   readonly volatileAccess: boolean;
   /**
+   * A cnx declaration names a header's type the typer cannot read (#2497): a
+   * C pointer or function-pointer typedef, or a C++ template's instance
+   * (`Vector<uint32_t>`). Set once, where the declaration is typed, and kept
+   * through a field, a scope member and a call's result. Absent otherwise
+   */
+  readonly unreadHeaderType?: true;
+  /**
    * A header bit-field whose type says neither `signed` nor `unsigned`, so
    * the C compiler chooses whether it is signed (ADR-072 ruling 20)
    */

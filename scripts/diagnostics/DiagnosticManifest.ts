@@ -60,7 +60,12 @@ class DiagnosticManifest {
     "loses its `.expected.error`, or stops asserting a code listed here.",
     "",
     "Removing a diagnostic on purpose means deleting its row in the same commit.",
-    "Adding one, or promoting `(uncoded)` to a real code, never fails the gate.",
+    "Adding one, or promoting `(uncoded)` to a real code, is never a loss: regenerate",
+    "to record it.",
+    "",
+    "No line here counts the rows. A count changes in every pull request that adds",
+    "a fixture, so any two of them conflict on it (#2517). The check prints the",
+    "totals each time it passes.",
     "",
   ].join("\n");
 
@@ -118,8 +123,8 @@ class DiagnosticManifest {
    *
    * That is the worst state an assertion can be in: absent coverage is visible,
    * and coverage that cannot execute reads as green. It also silently inflates
-   * the fixture count in this manifest's header, which is a number #1322's
-   * definition of done is measured against.
+   * the fixture count the check reports, which is a number #1322's definition
+   * of done is measured against.
    *
    * This has to be its own failure rather than a case of `diff`, because an
    * orphan neither shrinks nor grows: the manifest can be perfectly in sync
@@ -138,17 +143,21 @@ class DiagnosticManifest {
       .sort((a, b) => a.localeCompare(b));
   }
 
-  /** The manifest as committed Markdown. Carries no timestamp, by #1150. */
+  /**
+   * The manifest as committed Markdown. Carries no timestamp, by #1150, and no
+   * total, by #2517: every line below the header is about one fixture, so two
+   * branches that add different fixtures change different lines and git can
+   * merge them. A line counting the rows is rewritten by both, and they then
+   * conflict, or merge to a count that matches neither. `checkOutcome` reports
+   * the totals instead, computed from the corpus on each run.
+   */
   static render(entries: readonly IManifestEntry[]): string {
     const rows = entries.map(
       (entry) =>
         `| ${entry.fixture} | ${entry.codes.length > 0 ? entry.codes.join(", ") : DiagnosticManifest.UNCODED} |`,
     );
-    const coded = entries.filter((entry) => entry.codes.length > 0).length;
     return [
       DiagnosticManifest.HEADER,
-      `${entries.length} fixture(s) assert a diagnostic; ${coded} carry a code.`,
-      "",
       "| Fixture | Codes |",
       "| --- | --- |",
       ...rows,
