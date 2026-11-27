@@ -336,7 +336,11 @@ class SymbolTable implements IResolvedSymbols {
       if (!scoped(symbol)) continue;
       const name =
         "unqualifiedName" in symbol ? symbol.unqualifiedName : symbol.name;
-      SymbolTable.appendToIndex(this.structScopedNames, symbol.inStruct, name);
+      SymbolTable.appendToIndex(
+        this.structScopedNames,
+        SymbolTable.dimensionKey(symbol.sourceFile, symbol.inStruct),
+        name,
+      );
     }
     for (const index of indexes) {
       for (const [key, list] of index) {
@@ -349,11 +353,15 @@ class SymbolTable implements IResolvedSymbols {
   }
 
   /**
-   * #2510 review: the enum constants a C++ run reads inside struct
+   * #2510 review: the enum constants a C++ run reads inside `header`'s struct
    * `structName` only, which its own fields' bounds and widths still read
    */
-  getStructScopedNames(structName: string): readonly string[] {
-    return this.structScopedNames.get(structName) ?? [];
+  getStructScopedNames(structName: string, header: string): readonly string[] {
+    return (
+      this.structScopedNames.get(
+        SymbolTable.dimensionKey(header, structName),
+      ) ?? []
+    );
   }
 
   addCSymbol(symbol: TCSymbol): void {

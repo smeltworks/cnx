@@ -118,7 +118,9 @@ class Resolve {
       // A C++ struct's own enum constants it alone reads, `data[N]` in
       // `struct P { enum { N = 3 } kind; uint8_t data[N]; };`
       const scoped =
-        structName === undefined ? [] : table.getStructScopedNames(structName);
+        structName === undefined || header === undefined
+          ? []
+          : table.getStructScopedNames(structName, header);
       return HeaderMacros.width(
         text,
         including,

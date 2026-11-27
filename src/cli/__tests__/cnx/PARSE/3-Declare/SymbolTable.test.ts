@@ -1227,8 +1227,12 @@ describe("SymbolTable", () => {
       expect(
         symbolTable.getCSymbolsByFile("packet.h").map((s) => s.name),
       ).toEqual(["TOP"]);
-      expect(symbolTable.getStructScopedNames("Packet")).toEqual(["N"]);
-      expect(symbolTable.getStructScopedNames("Other")).toEqual([]);
+      expect(symbolTable.getStructScopedNames("Packet", "packet.h")).toEqual([
+        "N",
+      ]);
+      // a same-named struct in another header scopes none of them
+      expect(symbolTable.getStructScopedNames("Packet", "other.h")).toEqual([]);
+      expect(symbolTable.getStructScopedNames("Other", "packet.h")).toEqual([]);
     });
 
     it("scopeStructEnumerators keeps a C struct's constants at file scope in a C run, and always scopes a C++ class's (#2510 review)", () => {
@@ -1261,8 +1265,12 @@ describe("SymbolTable", () => {
       expect(
         symbolTable.getCppSymbolsByFile("packet.hpp").map((s) => s.name),
       ).toEqual(["TOP"]);
-      expect(symbolTable.getStructScopedNames("Frame")).toEqual(["M"]);
-      expect(symbolTable.getStructScopedNames("Packet")).toEqual([]);
+      expect(symbolTable.getStructScopedNames("Frame", "packet.hpp")).toEqual([
+        "M",
+      ]);
+      expect(symbolTable.getStructScopedNames("Packet", "packet.h")).toEqual(
+        [],
+      );
     });
 
     it("settles a header struct's field by its header, and each header's own fields by that header", () => {
