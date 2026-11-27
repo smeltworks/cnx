@@ -1025,6 +1025,7 @@ totals each time it passes.
 | tests/bugs/issue-header-macro-array-bound/macro-count-int-width-error.test.cnx                            | E0909                             |
 | tests/bugs/issue-header-macro-array-bound/macro-count-member-enum-error.test.cnx                          | E0909                             |
 | tests/bugs/issue-header-macro-array-bound/macro-count-redefined-error.test.cnx                            | E0909                             |
+| tests/bugs/issue-header-macro-array-bound/macro-count-struct-enum-error.test.cnx                          | E0909                             |
 | tests/bugs/issue-header-macro-array-bound/macro-count-undef-error.test.cnx                                | E0909                             |
 | tests/bugs/issue-header-macro-array-bound/macro-count-zero-error.test.cnx                                 | E0909                             |
 | tests/bugs/issue-header-macro-array-bound/macro-width-declared-error.test.cnx                             | E0946                             |
