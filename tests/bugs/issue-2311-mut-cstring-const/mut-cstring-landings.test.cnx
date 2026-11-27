@@ -23,5 +23,7 @@ u32 main() {
     u32 a <- ptr_len(text);
     text_ptr p <- text;
     text_ptr[2] ptrs <- [text, text];
+    // A ternary's two C string arms are each reported once
+    g_name <- (a = 1) ? text : text;
     return a;
 }

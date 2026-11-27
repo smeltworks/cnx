@@ -326,7 +326,12 @@ class CPointerArgumentCheck {
    */
   public checkCStringLandings(positions: IValuePositions): void {
     for (const [value, site] of positions.sites) {
-      if (!CLandingType.isLanding(site.site) || !this.isCString(value)) {
+      // A ternary's arms are sites of their own: judging it too reports one write three times
+      if (
+        !CLandingType.isLanding(site.site) ||
+        value.kind === "ternary" ||
+        !this.isCString(value)
+      ) {
         continue;
       }
       const type = CLandingType.of(value, positions, this.context);
