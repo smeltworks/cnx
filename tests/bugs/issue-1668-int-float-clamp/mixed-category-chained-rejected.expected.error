@@ -7,4 +7,4 @@
 17:10 error[E0810]: Compound assignment combines a target and a value of different essential type categories (floating and character)
        help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Convert one operand explicitly, e.g. with a cast (ADR-024).
 19:19 error[E0810]: Binary operator combines operands of different essential type categories (unsigned and character)
-       help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Convert one operand explicitly, e.g. with a cast (ADR-024).
+       help: MISRA C:2012 Rule 10.4: both operands must share an essential type category. Cast the character to the integer operand's type, e.g. (u8)'A' (ADR-024).

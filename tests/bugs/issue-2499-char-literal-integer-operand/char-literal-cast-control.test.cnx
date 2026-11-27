@@ -1,0 +1,54 @@
+// test-execution
+// test-adr: 024
+// Control for #2499: what docs/cnx-ai-reference.md teaches about a char
+// literal beside a u8 compiles and gives the values it says. The block in its
+// Char literals section, copied as it stands there, runs with c = '7' and
+// s = ":7"; then its s[i] paragraph's `u8 b <- (u8)s[0]` and
+// `take((u8)s[0])` (ADR-024).
+u8 take(u8 v) {
+    return v;
+}
+
+u32 check(u8 c, string<8> s) {
+    // with u8 c, string<8> s
+    u8 ch <- (u8)'A'; // 65
+    bool colon <- c = (u8)':'; // a u8 beside a character: cast it
+    bool digit <- (c >= (u8)'0') && (c <= (u8)'9');
+    u8 value <- c - (u8)'0';
+    bool first <- s[0] = ':'; // character beside character: no cast
+    u8 lower <- c + 32;
+    // E0810, unsigned and character: bool bad <- c = ':';
+
+    u8 b <- (u8)s[0];
+    u8 taken <- take((u8)s[1]);
+    if (ch != 65) {
+        return 1;
+    }
+    if (colon != false) {
+        return 2;
+    }
+    if (digit != true) {
+        return 3;
+    }
+    if (value != 7) {
+        return 4;
+    }
+    if (first != true) {
+        return 5;
+    }
+    if (lower != 87) {
+        return 6;
+    }
+    if (b != 58) {
+        return 7;
+    }
+    if (taken != 55) {
+        return 8;
+    }
+    return 0;
+}
+
+u32 main() {
+    u32 result <- check(55, ":7");
+    return result;
+}
