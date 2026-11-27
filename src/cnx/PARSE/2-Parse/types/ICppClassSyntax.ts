@@ -11,6 +11,8 @@ interface ICppClassSyntax {
   /** #1975 review: the layout facts a length needs, `union`, `: Base`, ... */
   readonly isUnion: boolean;
   readonly hasBase: boolean;
+  /** #2510 review: each base as written, `cfg::Limits` or `Limits<3>` */
+  readonly bases: readonly string[];
   /** A virtual member function, so C++ adds a vtable pointer */
   readonly hasVirtual: boolean;
   readonly hasBitField: boolean;

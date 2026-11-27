@@ -91,6 +91,25 @@ namespace io { extern "C" { int poll(void); } }`;
     });
   });
 
+  describe("class bases (#2510 review)", () => {
+    it("records each base as written", () => {
+      const source = `struct A {}; struct B {};
+struct D : public A, protected ::B, TLimits<3> {};`;
+      const tree = TestHelpers.parseCpp(source);
+      expect(tree).not.toBeNull();
+      const result = CppResolver.resolve(tree!, "test.hpp", symbolTable);
+
+      const derived = result.symbols.find((symbol) => symbol.name === "D");
+      expect(derived?.kind === "class" && derived.bases).toEqual([
+        "A",
+        "::B",
+        "TLimits<3>",
+      ]);
+      const base = result.symbols.find((symbol) => symbol.name === "A");
+      expect(base?.kind === "class" && base.bases).toBeUndefined();
+    });
+  });
+
   describe("class collection", () => {
     it("collects a simple class", () => {
       const source = `class MyClass { };`;

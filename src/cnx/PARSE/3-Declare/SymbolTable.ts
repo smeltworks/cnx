@@ -21,6 +21,7 @@ import TJsonSafe from "../../utils/types/TJsonSafe";
 import TSymbol from "../../types/symbols/TSymbol";
 import TCSymbol from "../../types/symbols/c/TCSymbol";
 import TCppSymbol from "../../types/symbols/cpp/TCppSymbol";
+import type ICppClassSymbol from "../../types/symbols/cpp/ICppClassSymbol";
 import ForeignRedeclaration from "../../utils/ForeignRedeclaration";
 import TAnySymbol from "../../types/symbols/TAnySymbol";
 import IStructSymbol from "../../types/symbols/IStructSymbol";
@@ -168,9 +169,11 @@ class SymbolTable implements IResolvedSymbols {
 
   /** #2514: the headers two `.cnx` files' compiles read differently */
   private disputedHeaders: ReadonlySet<string> = new Set();
-  /** #2510 review: why a header array's macro dimension stayed unread, by `dimensionKey` */
   /** #2510 review: `SymbolTable.getStructScopedNames` */
   private readonly structScopedNames = new Map<string, string[]>();
+  /** #2510 review: the classes with a base cnx cannot see, by `dimensionKey` */
+  private readonly opaqueStructs = new Set<string>();
+  /** #2510 review: why a header array's macro dimension stayed unread, by `dimensionKey` */
   private readonly unreadDimensions = new Map<string, IUnreadBitWidth>();
 
   // ========================================================================
@@ -350,18 +353,83 @@ class SymbolTable implements IResolvedSymbols {
         else index.set(key, kept);
       }
     }
+    this.inheritScopedNames();
+  }
+
+  /**
+   * #2510 review: a C++ class's fields also read its bases' constants, so
+   * `uint8_t data[N]` in `struct Packet : Limits` reads `Limits::N`. A base
+   * cnx has no class for -- a template's, a nested class's, an alias -- may
+   * declare any name, so its class is opaque.
+   */
+  private inheritScopedNames(): void {
+    const keyOf = (cls: ICppClassSymbol): string =>
+      SymbolTable.dimensionKey(cls.sourceFile, cls.name);
+    const inherited = new Map<ICppClassSymbol, string[] | null>();
+    const namesOf = (
+      cls: ICppClassSymbol,
+      seen: ReadonlySet<ICppClassSymbol>,
+    ): string[] | null => {
+      const known = inherited.get(cls);
+      if (known !== undefined) return known;
+      if (seen.has(cls)) return null;
+      const inner = new Set([...seen, cls]);
+      const names = [...(this.structScopedNames.get(keyOf(cls)) ?? [])];
+      for (const base of cls.bases ?? []) {
+        const found = this.baseClasses(base, cls.parent);
+        if (found.length === 0) return null;
+        for (const each of found) {
+          const more = namesOf(each, inner);
+          if (more === null) return null;
+          names.push(...more);
+        }
+      }
+      inherited.set(cls, names);
+      return names;
+    };
+    const derived = [...this.cppSymbols.values()]
+      .flat()
+      .filter(
+        (symbol): symbol is ICppClassSymbol =>
+          symbol.kind === "class" && (symbol.bases?.length ?? 0) > 0,
+      );
+    const results = derived.map((cls) => namesOf(cls, new Set()));
+    derived.forEach((cls, i) => {
+      const names = results[i];
+      if (names === null) this.opaqueStructs.add(keyOf(cls));
+      else this.structScopedNames.set(keyOf(cls), names);
+    });
+  }
+
+  /** #2510 review: the classes base `base`, written in namespace `parent`, names */
+  private baseClasses(
+    base: string,
+    parent: string | undefined,
+  ): ICppClassSymbol[] {
+    const name = base.startsWith("::") ? base.slice(2) : base;
+    const scopes = parent?.split("::") ?? [];
+    for (let depth = scopes.length; depth >= 0; depth--) {
+      const qualified = [...scopes.slice(0, depth), name].join("::");
+      const found = (this.cppSymbols.get(qualified) ?? []).filter(
+        (symbol): symbol is ICppClassSymbol => symbol.kind === "class",
+      );
+      if (found.length > 0) return found;
+    }
+    return [];
   }
 
   /**
    * #2510 review: the enum constants a C++ run reads inside `header`'s struct
-   * `structName` only, which its own fields' bounds and widths still read
+   * `structName` only, which its own fields' bounds and widths still read,
+   * its bases' among them; null when a base cnx cannot see may declare any
    */
-  getStructScopedNames(structName: string, header: string): readonly string[] {
-    return (
-      this.structScopedNames.get(
-        SymbolTable.dimensionKey(header, structName),
-      ) ?? []
-    );
+  getStructScopedNames(
+    structName: string,
+    header: string,
+  ): readonly string[] | null {
+    const key = SymbolTable.dimensionKey(header, structName);
+    if (this.opaqueStructs.has(key)) return null;
+    return this.structScopedNames.get(key) ?? [];
   }
 
   addCSymbol(symbol: TCSymbol): void {

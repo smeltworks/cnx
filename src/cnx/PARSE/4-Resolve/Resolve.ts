@@ -116,11 +116,14 @@ class Resolve {
         unreadNames.set(key, names);
       }
       // A C++ struct's own enum constants it alone reads, `data[N]` in
-      // `struct P { enum { N = 3 } kind; uint8_t data[N]; };`
+      // `struct P { enum { N = 3 } kind; uint8_t data[N]; };`, its bases'
+      // among them. A base cnx cannot see may declare any name the text reads.
       const scoped =
         structName === undefined || header === undefined
           ? []
-          : table.getStructScopedNames(structName, header);
+          : (table.getStructScopedNames(structName, header) ??
+            text.match(/[A-Za-z_]\w*/g) ??
+            []);
       return HeaderMacros.width(
         text,
         including,

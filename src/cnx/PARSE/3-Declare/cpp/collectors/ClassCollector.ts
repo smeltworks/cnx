@@ -109,6 +109,7 @@ class ClassCollector {
       ...(classSyntax.templateMembers.length > 0 && {
         templateMethods: classSyntax.templateMembers,
       }),
+      ...(classSyntax.bases.length > 0 && { bases: classSyntax.bases }),
     };
 
     const enumMembers = ClassCollector._enumMembers(
@@ -179,6 +180,7 @@ class ClassCollector {
       ...(classSyntax.templateMembers.length > 0 && {
         templateMethods: classSyntax.templateMembers,
       }),
+      ...(classSyntax.bases.length > 0 && { bases: classSyntax.bases }),
     };
 
     const enumMembers = ClassCollector._enumMembers(

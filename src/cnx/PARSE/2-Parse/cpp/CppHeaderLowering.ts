@@ -196,6 +196,9 @@ class CppHeaderLowering {
       members: memberSpec ? CppHeaderLowering.members(decls) : null,
       isUnion: head.Union() !== null,
       hasBase: head.baseClause() !== null,
+      bases: (
+        head.baseClause()?.baseSpecifierList()?.baseSpecifier() ?? []
+      ).map((base) => base.baseTypeSpecifier()?.getText() ?? ""),
       hasVirtual: decls.some(
         (decl) =>
           CppHeaderLowering.isVirtual(decl.declSpecifierSeq()) ||

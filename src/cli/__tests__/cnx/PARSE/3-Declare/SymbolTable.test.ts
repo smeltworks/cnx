@@ -1273,6 +1273,53 @@ describe("SymbolTable", () => {
       );
     });
 
+    it("scopeStructEnumerators gives a derived class its bases' constants, and a base it cannot see none (#2510 review)", () => {
+      const cls = (
+        name: string,
+        bases?: string[],
+        parent?: string,
+      ): TCppSymbol => ({
+        kind: "class",
+        name: parent === undefined ? name : `${parent}::${name}`,
+        unqualifiedName: name,
+        sourceFile: "based.hpp",
+        span: TestSourceSpan.at(1),
+        sourceLanguage: ESourceLanguage.Cpp,
+        visibility: "public",
+        ...(parent !== undefined && { parent }),
+        ...(bases !== undefined && { bases }),
+      });
+      symbolTable.addCppSymbol({
+        kind: "enum_member",
+        name: "cfg::Limits::N",
+        unqualifiedName: "N",
+        sourceFile: "based.hpp",
+        span: TestSourceSpan.at(1),
+        sourceLanguage: ESourceLanguage.Cpp,
+        visibility: "public",
+        inStruct: "cfg::Limits",
+      });
+      symbolTable.addCppSymbol(cls("Limits", undefined, "cfg"));
+      symbolTable.addCppSymbol(cls("Mid", ["Limits"], "cfg"));
+      symbolTable.addCppSymbol(cls("Packet", ["::cfg::Mid"]));
+      symbolTable.addCppSymbol(cls("Plain"));
+      symbolTable.addCppSymbol(cls("Clear", ["Plain"]));
+      symbolTable.addCppSymbol(cls("Templated", ["TLimits<3>"]));
+      symbolTable.addCppSymbol(cls("Loop", ["Loop"]));
+      symbolTable.scopeStructEnumerators(true);
+      const scoped = (name: string) =>
+        symbolTable.getStructScopedNames(name, "based.hpp");
+      // Mid finds Limits in its own namespace; Packet reads it through Mid
+      expect(scoped("cfg::Mid")).toEqual(["N"]);
+      expect(scoped("Packet")).toEqual(["N"]);
+      expect(scoped("Clear")).toEqual([]);
+      expect(scoped("Templated")).toBeNull();
+      expect(scoped("Loop")).toBeNull();
+      expect(symbolTable.getStructScopedNames("Packet", "other.hpp")).toEqual(
+        [],
+      );
+    });
+
     it("settles a header struct's field by its header, and each header's own fields by that header", () => {
       symbolTable.addCSymbol({
         kind: "struct",

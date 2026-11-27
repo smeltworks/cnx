@@ -1,0 +1,15 @@
+// test-execution
+// test-cpp-only
+// PBased's base Plain declares no PN, so its data reads the macro PN, and
+// has 8 elements, as g++ reads it (macro-count-base-enum-error: a base that
+// declares the name).
+#include "lib/based.hpp"
+
+mut u8[pbased.data.type_element_count] copy;
+
+u32 main() {
+    if (copy.type_element_count != 8) {
+        return 1;
+    }
+    return 0;
+}
