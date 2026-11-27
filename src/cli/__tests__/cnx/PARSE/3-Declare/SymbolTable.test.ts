@@ -268,7 +268,24 @@ describe("SymbolTable", () => {
       symbolTable.addCSymbol(arrayIn("/a.h", [4]));
       expect(symbolTable.indexBoundsOf("samples")).toEqual([4]);
       const first = symbolTable.getCSymbol("samples");
+      expect(first?.kind === "variable" && first.arrayDimensions).toEqual([4]);
+    });
+
+    it("keeps a sized first declaration as written", () => {
+      const sized = arrayIn("/a.h", [4]);
+      symbolTable.addCSymbol(sized);
+      symbolTable.addCSymbol(arrayIn("/a.h", [""]));
+      expect(symbolTable.getCSymbol("samples")).toBe(sized);
+    });
+
+    it("leaves the value unsized in a header its files read differently (#2514)", () => {
+      symbolTable.addCSymbol(arrayIn("/a.h", [""]));
+      symbolTable.addCSymbol(arrayIn("/a.h", [4]));
+      symbolTable.markDisputedHeaders(new Set(["/a.h"]));
+      expect(symbolTable.getDisputedHeaders()).toEqual(new Set(["/a.h"]));
+      const first = symbolTable.getCSymbol("samples");
       expect(first?.kind === "variable" && first.arrayDimensions).toEqual([""]);
+      expect(symbolTable.indexBoundsOf("samples")).toEqual([4]);
     });
 
     it("composes only the reading file's own headers' declarations", () => {

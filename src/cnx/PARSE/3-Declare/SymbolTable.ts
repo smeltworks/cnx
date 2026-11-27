@@ -166,6 +166,9 @@ class SymbolTable implements IResolvedSymbols {
    */
   private visibleHeaders: ReadonlySet<string> | null = null;
 
+  /** #2514: the headers two `.cnx` files' compiles read differently */
+  private disputedHeaders: ReadonlySet<string> = new Set();
+
   // ========================================================================
   // cnx Symbol Methods (TSymbol)
   // ========================================================================
@@ -378,16 +381,54 @@ class SymbolTable implements IResolvedSymbols {
     return view;
   }
 
+  /** #2514: record the headers two `.cnx` files' compiles read differently */
+  markDisputedHeaders(paths: ReadonlySet<string>): void {
+    this.disputedHeaders = paths;
+  }
+
+  /** #2514: the headers two `.cnx` files' compiles read differently */
+  getDisputedHeaders(): ReadonlySet<string> {
+    return this.disputedHeaders;
+  }
+
   /**
    * The declaration of a name this table's reader reads (#2474): the first
-   * its own headers make (`ForeignRedeclaration.pool`), as written. A bound a
-   * redeclaration gives an unsized array is only `indexBoundsOf`'s, since the
-   * translation unit may see a different redeclaration than cnx read.
+   * its own headers make (`ForeignRedeclaration.pool`), its array type the
+   * one C composes from all of them (C11 6.2.7), since cnx reads each header
+   * as the translation unit does (#2504). Not where an including file reads
+   * one of them differently (#2514): which bound it reads, cnx cannot tell.
    */
   private chosen<T extends TCSymbol | TCppSymbol>(
     symbols: readonly T[],
   ): T | undefined {
-    return this.poolOf(symbols)[0];
+    const pool = this.poolOf(symbols);
+    const first = pool[0];
+    if (
+      first?.kind !== "variable" ||
+      first.arrayDimensions?.includes("") !== true ||
+      pool.some((symbol) => this.disputedHeaders.has(symbol.sourceFile))
+    ) {
+      return first;
+    }
+    return {
+      ...first,
+      arrayDimensions: SymbolTable.composed(first.arrayDimensions, pool),
+    };
+  }
+
+  /** `dimensions` as C composes them with each of `pool`'s array declarations */
+  private static composed(
+    dimensions: readonly (number | string)[],
+    pool: readonly (TCSymbol | TCppSymbol)[],
+  ): (number | string)[] {
+    return ForeignRedeclaration.dimensions(
+      dimensions,
+      pool.flatMap((symbol) =>
+        symbol.kind === "variable" && symbol.arrayDimensions
+          ? [symbol.arrayDimensions]
+          : [],
+      ),
+    );
   }
 
   /** A name's declarations its reader's headers make, else every one */
@@ -402,8 +443,8 @@ class SymbolTable implements IResolvedSymbols {
   /**
    * #2474: the dimensions an index into header array `name` is checked
    * against: an unsized `[]` takes the bound a redeclaration gives it, as C
-   * composes them. Only an index check reads it, where a bound can only
-   * reject an index; a value sized from it reads `getCSymbol`'s.
+   * composes them, even in a header its including files read differently
+   * (#2514), since a bound can only reject an index there.
    */
   indexBoundsOf(name: string): (number | string)[] | undefined {
     const c = this.cSymbols.get(name) ?? [];
@@ -413,12 +454,7 @@ class SymbolTable implements IResolvedSymbols {
         : this.poolOf(this.cppSymbols.get(name) ?? []);
     const first = pool[0];
     if (first?.kind !== "variable" || !first.arrayDimensions) return undefined;
-    const redeclared = pool.flatMap((symbol) =>
-      symbol.kind === "variable" && symbol.arrayDimensions
-        ? [symbol.arrayDimensions]
-        : [],
-    );
-    return ForeignRedeclaration.dimensions(first.arrayDimensions, redeclared);
+    return SymbolTable.composed(first.arrayDimensions, pool);
   }
 
   /** `symbols` with the reading file's headers' declarations first (#2474) */

@@ -65,6 +65,7 @@ class Parse {
     return {
       headers: Parse._headers(headers),
       headerReaders: headers.readers,
+      disputedHeaders: headers.disputed,
       recovered: Parse._recovered(headers.recovered),
       sources,
       errors: [...errors, ...headers.errors],

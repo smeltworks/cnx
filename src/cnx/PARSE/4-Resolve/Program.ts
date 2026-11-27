@@ -133,6 +133,7 @@ const NO_FOREIGN: IForeignSymbols = {
   visibleMacros: new Map(),
   macroNames: EMPTY_NAMES,
   integerTypes: new Map<string, string>(),
+  disputedHeaders: EMPTY_NAMES,
 };
 
 /** A program built without include information: each file sees only itself. */
@@ -1916,7 +1917,11 @@ class Program {
             : null;
       if (value === null) continue;
       const declared = values.get(symbol.name) ?? [];
-      declared.push({ origin: symbol, value });
+      declared.push({
+        origin: symbol,
+        value,
+        disputed: foreign.disputedHeaders.has(symbol.sourceFile),
+      });
       values.set(symbol.name, declared);
     }
     return values;
@@ -1944,10 +1949,10 @@ class Program {
   }
 
   /**
-   * #2474: the value `name` names in a file: the last of the declarations
-   * its own headers make (`ForeignRedeclaration.pool`), so a trailing
-   * `extern uint8_t t[];` leaves a bound unknown rather than folding one
-   * the translation unit may not have seen
+   * #2474: the value `name` names in a file: the first of the declarations
+   * its own headers make (`ForeignRedeclaration.pool`), its array bound the
+   * one C composes from all of them, as `SymbolTable.getCSymbol`'s is. Not
+   * in a header its including files read differently (#2514).
    */
   private static foreignValueIn(
     declared: ReadonlyArray<IDeclaredForeignValue> | undefined,
@@ -1956,7 +1961,22 @@ class Program {
     const pool = ForeignRedeclaration.pool(declared ?? [], (entry) =>
       sees(entry.origin),
     );
-    return pool.at(-1)?.value ?? null;
+    const first = pool[0];
+    if (first?.value.kind !== "variable") return first?.value ?? null;
+    if (pool.some((entry) => entry.disputed)) {
+      return first.value.dimensions.includes("")
+        ? { ...first.value, disputed: true }
+        : first.value;
+    }
+    return {
+      ...first.value,
+      dimensions: ForeignRedeclaration.dimensions(
+        first.value.dimensions,
+        pool.flatMap((entry) =>
+          entry.value.kind === "variable" ? [entry.value.dimensions] : [],
+        ),
+      ),
+    };
   }
 
   /**

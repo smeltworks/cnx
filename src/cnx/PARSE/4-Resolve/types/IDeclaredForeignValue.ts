@@ -8,6 +8,8 @@ import type IForeignValue from "./IForeignValue";
 interface IDeclaredForeignValue {
   readonly origin: IForeignOrigin;
   readonly value: IForeignValue;
+  /** #2514: its header is one two cnx files' compiles read differently */
+  readonly disputed: boolean;
 }
 
 export default IDeclaredForeignValue;

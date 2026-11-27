@@ -84,6 +84,7 @@ class Resolve {
           visibleMacros,
           macroNames,
           integerTypes,
+          disputedHeaders: table.getDisputedHeaders(),
         },
         // #1825: ADR-006's and ADR-029's derivations look callees and typedefs
         // up in it. 1.4 completes it with every file's resolved symbols and

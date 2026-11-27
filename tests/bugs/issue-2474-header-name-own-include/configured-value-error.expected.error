@@ -1,2 +1,0 @@
-10:20 error[E0867]: .type_element_count is not known for 'u8[]': it is first declared without a size, and cnx cannot yet tell which later size the compiler reads (#2504)
-       help: Give the array its size in its first declaration, so its length is the one the compiler reads (ADR-058).

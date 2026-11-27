@@ -154,6 +154,8 @@ class HeaderSources {
      * though the C++ unit it is parsed from may hold none of that C++
      */
     readonly cppBuild: boolean;
+    /** #2514: each header two files' compiles read differently, by `path` */
+    readonly disputed: ReadonlySet<string>;
   }> {
     invariant(
       headers.length === 0 || settings.preprocessor.isAvailable(),
@@ -323,6 +325,14 @@ class HeaderSources {
       file.type === EFileType.CppHeader || cppBuild;
     const readingsOf = (file: IDiscoveredFile): TReadings =>
       cppOf(file) ? cppReadings : cReadings;
+    // #2514: such a header keeps its own reading, which one of them differs from
+    const disputed = new Set(
+      headers.flatMap((file, i) =>
+        counted.has(i) && readingsOf(file).get(keyOf(file)) === null
+          ? [file.path]
+          : [],
+      ),
+    );
     // A header whose unit reading differs from its own, or that has none
     const fromUnit = headers.flatMap((file, i) => {
       if (!counted.has(i)) return [];
@@ -412,6 +422,7 @@ class HeaderSources {
       unsettled,
       opened,
       cppBuild,
+      disputed,
     };
   }
 

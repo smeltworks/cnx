@@ -392,6 +392,9 @@ class ConstantNames {
         : ConstantNames.ofMember({ type, dimensions: [] }, rest, walk);
     }
     if (rest.length === 0) return ConstantNames.without("variable", walk);
+    if (value.disputed === true) {
+      return { kind: "foreign", spelling: walk.spelling, why: "disputed" };
+    }
     return ConstantNames.ofMember(
       {
         type: { kind: "external", name: value.type },
