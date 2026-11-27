@@ -404,26 +404,32 @@ class SymbolTable implements IResolvedSymbols {
     });
   }
 
-  /** #2510 review: the classes base `base`, written in namespace `parent`, names */
+  /**
+   * #2510 review: the classes base `base`, written in namespace `parent`, may
+   * name. C++ takes the innermost scope declaring it, but a scope's class may
+   * be another unit's header's, which this one never reads -- so every
+   * enclosing scope's class is counted, and none of the real base's missed.
+   */
   private baseClasses(
     base: string,
     parent: string | undefined,
   ): ICppClassSymbol[] {
-    const name = base.startsWith("::") ? base.slice(2) : base;
-    const classesNamed = (qualified: string): ICppClassSymbol[] =>
-      (this.cppSymbols.get(qualified) ?? []).filter(
-        (symbol): symbol is ICppClassSymbol => symbol.kind === "class",
-      );
-    // innermost namespace out, as C++ looks the written name up
-    let scope = parent;
+    const global = base.startsWith("::");
+    const name = global ? base.slice(2) : base;
+    const found: ICppClassSymbol[] = [];
+    const add = (qualified: string): void => {
+      for (const symbol of this.cppSymbols.get(qualified) ?? []) {
+        if (symbol.kind === "class") found.push(symbol);
+      }
+    };
+    let scope = global ? undefined : parent;
     while (scope) {
-      const found = classesNamed(CppNamespaceUtils.qualify(scope, name));
-      if (found.length > 0) return found;
-      scope = this.cppSymbols
-        .get(scope)
-        ?.find((symbol) => symbol.kind === "namespace")?.parent;
+      add(CppNamespaceUtils.qualify(scope, name));
+      const outer = scope.lastIndexOf("::");
+      scope = outer < 0 ? undefined : scope.slice(0, outer);
     }
-    return classesNamed(name);
+    add(name);
+    return found;
   }
 
   /**

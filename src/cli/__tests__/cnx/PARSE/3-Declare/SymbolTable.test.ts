@@ -1306,6 +1306,19 @@ describe("SymbolTable", () => {
       symbolTable.addCppSymbol(cls("Clear", ["Plain"]));
       symbolTable.addCppSymbol(cls("Templated", ["TLimits<3>"]));
       symbolTable.addCppSymbol(cls("Loop", ["Loop"]));
+      // cfg::Plain may be another unit's: ::Plain's M still counts
+      symbolTable.addCppSymbol(cls("Plain", undefined, "cfg"));
+      symbolTable.addCppSymbol(cls("Near", ["Plain"], "cfg"));
+      symbolTable.addCppSymbol({
+        kind: "enum_member",
+        name: "Plain::M",
+        unqualifiedName: "M",
+        sourceFile: "based.hpp",
+        span: TestSourceSpan.at(1),
+        sourceLanguage: ESourceLanguage.Cpp,
+        visibility: "public",
+        inStruct: "Plain",
+      });
       // a diamond 30 deep reaches N along 2^30 paths, and holds it once
       for (let depth = 0; depth < 30; depth++) {
         const below = depth === 0 ? "cfg::Mid" : `L${depth - 1}`;
@@ -1319,9 +1332,10 @@ describe("SymbolTable", () => {
       // Mid finds Limits in its own namespace; Packet reads it through Mid
       expect(scoped("cfg::Mid")).toEqual(["N"]);
       expect(scoped("Packet")).toEqual(["N"]);
-      expect(scoped("Clear")).toEqual([]);
+      expect(scoped("Clear")).toEqual(["M"]);
       expect(scoped("Templated")).toBeNull();
       expect(scoped("Loop")).toBeNull();
+      expect(scoped("cfg::Near")).toEqual(["M"]);
       expect(scoped("L29")).toEqual(["N"]);
       expect(symbolTable.getStructScopedNames("Packet", "other.hpp")).toEqual(
         [],
