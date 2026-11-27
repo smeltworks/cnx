@@ -190,7 +190,8 @@ class CCallee {
    * run together, `const` with no space beside it: its words up to the last
    * `*`, `const` apart. `char const*` is `const char*`: a `const` before the
    * first `*`, on either side of the type, makes the characters read-only.
-   * Run together, `charconst` is `char const` unless a C type has that name.
+   * Run together with no space, a trailing `const` is one unless a C type
+   * has the whole run-together name.
    */
   private static pointerType(text: string, context: IAnalysisContext): string {
     const head = text.slice(0, text.lastIndexOf("*") + 1);
