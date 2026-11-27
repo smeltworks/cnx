@@ -82,11 +82,17 @@ u16 e <- 0xABCDu16;
 i32 f <- 100I32;
 ```
 
-**Char literals** are `u8` — the character's byte value — and work anywhere a `u8` does (init, comparison, array elements, `switch` cases, arithmetic):
+**Char literals** hold the character's byte value, but they are **essentially character**, not `u8` (MISRA C:2012's character category, ADR-024). A character compares directly with another character — a char literal, or one character of a `string<N>` (`s[0] = ':'`). Beside an integer operand (a `u8` local, parameter or array element) a comparison or `-` is `E0810` (unsigned and character): cast the literal to the integer's type. `+` is MISRA's exception and needs no cast, and a `switch` on a `u8` takes `case 'A'` labels. A character takes no other operator (`*`, `/`, `%`, bitwise, shifts: `E0925`, ADR-045).
 
 ```cnx
-u8 ch <- 'A';         // 65
-u8 lo <- 'A' + 32;    // 'a'
+// with u8 c, string<8> s
+u8 ch <- (u8)'A';                             // 65
+bool colon <- c = (u8)':';                    // a u8 beside a character: cast it
+bool digit <- (c >= (u8)'0') && (c <= (u8)'9');
+u8 value <- c - (u8)'0';
+bool first <- s[0] = ':';                     // character beside character: no cast
+u8 lower <- c + 32;
+// E0810, unsigned and character: bool bad <- c = ':';
 ```
 
 Standard char escape sequences work in `'...'` literals: newline (10), tab (9), carriage return (13), null (0), backslash (92), single-quote (39), double-quote (34).
@@ -177,7 +183,7 @@ string VERSION <- "1.0.0";          // read-only, auto-sized
 - **Concat (`+`) and substring (`s[off, len]`) emit runtime code (`cnx_string_copy`)** — they may only appear **inside a function**, never at global/initializer scope (a global string initializes from a literal).
 - Substring `s[off, len]` is bounds-checked at compile time: `off + len` must fit the source's capacity, and the destination string must be large enough to hold `len`.
 
-**Slice assignment into byte buffers:** `buf[byteOffset, byteCount] <- value` copies `byteCount` **little-endian** bytes of an integer `value` into any integer array (`u8[]`/`u16[]`/`u32[]`/`u64[]`) or string buffer. Offset and length must be **compile-time constants** — literals, read-only bindings with a literal value, or expressions of them (a runtime offset/length, or a zero length, is a compile error); the write is bounds-checked at compile time. On a byte _array_, `[off, len]` means BYTES; on a scalar/float, `[start, width]` means BITS. A **single** subscript `s[i]` accesses one element: a `u8` byte value in numeric context (`u8 b <- s[0]`, or passed to a `u8` parameter) and the target of a byte write (`s[i] <- 'X'`); assigned to a `string<1>` it instead yields a one-character substring.
+**Slice assignment into byte buffers:** `buf[byteOffset, byteCount] <- value` copies `byteCount` **little-endian** bytes of an integer `value` into any integer array (`u8[]`/`u16[]`/`u32[]`/`u64[]`) or string buffer. Offset and length must be **compile-time constants** — literals, read-only bindings with a literal value, or expressions of them (a runtime offset/length, or a zero length, is a compile error); the write is bounds-checked at compile time. On a byte _array_, `[off, len]` means BYTES; on a scalar/float, `[start, width]` means BITS. A **single** subscript `s[i]` accesses one element: a byte value in numeric context, cast to the integer type it is read as (`u8 b <- (u8)s[0]`, or `take((u8)s[0])` for a `u8` parameter) and the target of a byte write (`s[i] <- 'X'`); assigned to a `string<1>` it instead yields a one-character substring. Like a char literal it is essentially character: `s[i] = ':'` needs no cast, but `s[i] = b` with a `u8 b` is `E0810`, written `(u8)s[i] = b`.
 
 ```cnx
 mut u8[64] buf;

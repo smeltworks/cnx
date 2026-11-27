@@ -80,20 +80,37 @@ class EssentialCategory {
     return resolved;
   }
 
+  /** Whether a category is an integer one: signed or unsigned */
+  static isInteger(category: TCategory): boolean {
+    return category === "signed" || category === "unsigned";
+  }
+
+  /**
+   * Whether one category is a character and the other an integer, in either
+   * order: the pair MISRA's `+` exception admits, and the pair whose E0810
+   * help casts the character (ADR-024)
+   */
+  static isCharacterIntegerPair(left: TCategory, right: TCategory): boolean {
+    return (
+      (left === "character" && EssentialCategory.isInteger(right)) ||
+      (right === "character" && EssentialCategory.isInteger(left))
+    );
+  }
+
   /** Whether two categories may not be combined by `operator` */
   static differ(left: TCategory, right: TCategory, operator: string): boolean {
     if (left === null || right === null || left === right) return false;
-    const integer = (c: string) => c === "signed" || c === "unsigned";
     // ADR-024 (#1688): an unreadable macro needs a cast beside an integer
     // only; beside anything else it is C's to evaluate, as it always was
     const macro = EssentialCategory.UNREADABLE_MACRO;
     if (left === macro || right === macro) {
-      return integer(left) || integer(right);
+      return (
+        EssentialCategory.isInteger(left) || EssentialCategory.isInteger(right)
+      );
     }
     const characterExempt =
       CHARACTER_ARITHMETIC.has(operator) &&
-      ((left === "character" && integer(right)) ||
-        (right === "character" && integer(left)));
+      EssentialCategory.isCharacterIntegerPair(left, right);
     return !characterExempt;
   }
 

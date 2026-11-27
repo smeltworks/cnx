@@ -12,7 +12,7 @@ loses its `.expected.error`, or stops asserting a code listed here.
 Removing a diagnostic on purpose means deleting its row in the same commit.
 Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 
-1068 fixture(s) assert a diagnostic; 1054 carry a code.
+1069 fixture(s) assert a diagnostic; 1055 carry a code.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -999,6 +999,7 @@ Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
 | tests/bugs/issue-2473-chained-callback-mut-argument/cpp-overload-discarded-error.test.cnx                 | E0708                             |
 | tests/bugs/issue-2473-chained-callback-mut-argument/cpp-overload-pointer-type-error.test.cnx              | E0895, E0896                      |
 | tests/bugs/issue-2493-local-const-case-label/non-integer-label.test.cnx                                   | E0717                             |
+| tests/bugs/issue-2499-char-literal-integer-operand/char-literal-integer-error.test.cnx                    | E0810                             |
 | tests/bugs/issue-847-misra-17-7-lowering/bare-intra-scope-discard.test.cnx                                | E0708                             |
 | tests/bugs/issue-847-misra-17-7-lowering/cross-file-scope-discard.test.cnx                                | E0708                             |
 | tests/bugs/issue-847-misra-17-7-lowering/external-c-discard.test.cnx                                      | E0708                             |
