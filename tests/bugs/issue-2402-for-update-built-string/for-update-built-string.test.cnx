@@ -1,7 +1,8 @@
 // test-error
-// #2402: a string built before its statement, for a cnx string<N> parameter
-// or a C char pointer, was built once before a for loop when it stood in the
-// update, and every pass read what its parts held then. It is E0715.
+// #2402: a string built before its statement -- a concatenation or a
+// substring, for a cnx string<N> parameter or a C char pointer -- was built
+// once before a for loop when it stood in the update, and every pass read
+// what its parts held then. It is E0715.
 #include <string.h>
 
 u32 count(string<8> v) {
@@ -16,6 +17,12 @@ u32 main() {
         steps +<- 1;
     }
     for (mut u32 j <- 0; j < 10; j +<- count(a[0, 2])) {
+        steps +<- 1;
+    }
+    for (mut u32 m <- 0; m < 10; m +<- count(a + "b")) {
+        steps +<- 1;
+    }
+    for (mut u64 n <- 0; n < 10; n +<- strlen(a[0, 2])) {
         steps +<- 1;
     }
     // Control: the init runs once, so building there once is right
