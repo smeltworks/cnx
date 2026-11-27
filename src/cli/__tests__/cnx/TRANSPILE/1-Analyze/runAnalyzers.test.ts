@@ -312,8 +312,22 @@ describe("runAnalyzers", () => {
       // The header's struct fields reach 1.4, which builds the program the
       // analyzers read them from
       const headers = new SymbolTable();
-      headers.addStructField("ExternalStruct", "field1", "u32");
-      headers.addStructField("ExternalStruct", "field2", "u32");
+      headers.addStructField(
+        "ExternalStruct",
+        "field1",
+        "u32",
+        undefined,
+        undefined,
+        "test.h",
+      );
+      headers.addStructField(
+        "ExternalStruct",
+        "field2",
+        "u32",
+        undefined,
+        undefined,
+        "test.h",
+      );
 
       const errors = runAnalyzers(parsed, {
         context: contextWith(headers),
@@ -377,7 +391,14 @@ describe("runAnalyzers", () => {
         span: TestSourceSpan.at(1),
         visibility: "public",
       });
-      caller.addStructField("CppMessage", "pgn", "u16");
+      caller.addStructField(
+        "CppMessage",
+        "pgn",
+        "u16",
+        undefined,
+        undefined,
+        "test.h",
+      );
 
       const errors = runAnalyzers(parsed, {
         context: contextWith(caller),

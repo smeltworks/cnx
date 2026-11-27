@@ -16,17 +16,43 @@ import ExternalTypeHeaderBuilder from "../ExternalTypeHeaderBuilder";
 class MockTypeSource {
   private typesByFile: Map<string, Set<string>> = new Map();
 
+  private readHeaders: Map<string, string> = new Map();
+
   addTypes(filePath: string, typeNames: string[]): void {
     this.typesByFile.set(filePath, new Set(typeNames));
+  }
+
+  readsFrom(typeName: string, filePath: string): void {
+    this.readHeaders.set(typeName, filePath);
   }
 
   typesDeclaredIn(filePath: string): ReadonlySet<string> {
     return this.typesByFile.get(filePath) ?? new Set<string>();
   }
+
+  declaringHeader(typeName: string): string | undefined {
+    return this.readHeaders.get(typeName);
+  }
 }
 
 describe("ExternalTypeHeaderBuilder", () => {
   describe("build", () => {
+    it("#2474: includes a type from the header the file reads, not the first", () => {
+      const source = new MockTypeSource();
+      source.addTypes("/lib/a-types.h", ["sample_t"]);
+      source.addTypes("/lib/b-types.h", ["sample_t"]);
+      source.readsFrom("sample_t", "/lib/b-types.h");
+
+      const headerDirectives = new Map([
+        ["/lib/a-types.h", '#include "a-types.h"'],
+        ["/lib/b-types.h", '#include "b-types.h"'],
+      ]);
+
+      const result = ExternalTypeHeaderBuilder.build(headerDirectives, source);
+
+      expect(result.get("sample_t")).toBe('#include "b-types.h"');
+    });
+
     it("maps struct types to their include directives", () => {
       const source = new MockTypeSource();
       source.addTypes("/path/to/types.h", ["MyStruct"]);

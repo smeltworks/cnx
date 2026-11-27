@@ -1,0 +1,19 @@
+// test-execution
+// Issue #2474 review: a-struct.h's Frame holds 4 bytes and b-struct.h's 8,
+// and each helper sizes an array from its own frame.data, with
+// lib/frame-bound-b.cnx discovered first. The run-wide fields used to size
+// both from one header.
+#include "lib/frame-bound-b.cnx"
+#include "lib/frame-bound-a.cnx"
+
+u32 main() {
+    u32 a <- aCopyCount();
+    if (a != 4) {
+        return 1;
+    }
+    u32 b <- bCopyCount();
+    if (b != 8) {
+        return 2;
+    }
+    return 0;
+}

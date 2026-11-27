@@ -1,0 +1,22 @@
+// Issue #2474 helper, discovered second: this file's state and table are
+// plain-state.h's, so a mut parameter may take its state, and its copy
+// holds 8.
+#include "plain-state.h"
+
+mut u8[table.type_element_count] bCopy;
+
+void bumpB(mut u32 n) {
+    n <- n + 1;
+}
+
+void useB() {
+    bumpB(state);
+}
+
+u32 readB() {
+    return state;
+}
+
+u32 bCopyCount() {
+    return bCopy.type_element_count;
+}

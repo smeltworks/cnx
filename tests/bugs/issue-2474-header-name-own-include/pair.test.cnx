@@ -1,0 +1,18 @@
+// test-execution
+// Issue #2474 review: a-pair.h declares Pair a struct of two bytes, and
+// b-pair.h a u32. Each file's Pair.type_byte_length reads its own header's
+// Pair, 2 in pair-a and 4 in pair-b, with lib/pair-a.cnx discovered first.
+#include "lib/pair-a.cnx"
+#include "lib/pair-b.cnx"
+
+u32 main() {
+    u32 a <- pairBytesA();
+    if (a != 2) {
+        return 1;
+    }
+    u32 b <- pairBytesB();
+    if (b != 4) {
+        return 2;
+    }
+    return 0;
+}

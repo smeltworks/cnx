@@ -1,0 +1,19 @@
+// Issue #2474 review helper: this file's Counter and Frame are b-struct.h's,
+// a plain count and 8 bytes of data.
+#include "b-struct.h"
+
+void bumpB(mut u32 n) {
+    n <- n + 1;
+}
+
+void bumpCounterB() {
+    bumpB(counter.count);
+}
+
+u32 counterB() {
+    return counter.count;
+}
+
+u32 bFrameCount() {
+    return frame.data.type_element_count;
+}

@@ -1,0 +1,7 @@
+// Issue #2474 review helper: b-width.h reads REG_BITS as 5, so mode is 5 bits.
+#include "b-width.h"
+
+u32 bWidest() {
+    breg.mode <- 31;
+    return breg.mode;
+}

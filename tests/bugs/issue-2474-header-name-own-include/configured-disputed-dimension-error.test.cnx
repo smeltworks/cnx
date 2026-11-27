@@ -1,0 +1,14 @@
+// test-error
+// Issue #2514: as configured-disputed-error, the files that include
+// configured-samples.h read samples as 8 and 4, so a dimension sized by its
+// count is not known either: E0909, not a guess.
+#include "lib/configured.h"
+#include "lib/configured-samples.h"
+#include "lib/configured-reader.cnx"
+
+mut u8[samples.type_element_count] copy;
+
+u32 main() {
+    copy[0] <- 1;
+    return readerFirst();
+}

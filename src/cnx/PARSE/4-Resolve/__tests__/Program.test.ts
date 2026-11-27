@@ -60,6 +60,7 @@ const noForeign = {
   visibleMacros: new Map(),
   macroNames: new Set<string>(),
   integerTypes: new Map<string, string>(),
+  disputedHeaders: new Set<string>(),
   structTagsWithBodies: new Set<string>(),
 };
 
@@ -801,6 +802,59 @@ describe("Program", () => {
     });
   });
 
+  describe("a header array's composed bound (#2474)", () => {
+    const samples = (
+      arrayDimensions: ReadonlyArray<number | string>,
+    ): TCSymbol => ({
+      kind: "variable",
+      name: "samples",
+      sourceFile: "/a.h",
+      span: TestSourceSpan.at(1),
+      sourceLanguage: ESourceLanguage.C,
+      visibility: "public",
+      type: "uint8_t",
+      isConst: false,
+      isArray: true,
+      arrayDimensions,
+    });
+    const dimensionOf = (
+      declared: ReadonlyArray<ReadonlyArray<number | string>>,
+      disputed: readonly string[],
+    ) => {
+      const symbol = find(
+        Program.build(
+          [declare(`u8[samples.type_element_count] copy;`, "a.cnx")],
+          {
+            cppMode: false,
+            headerStructFields: new Map(),
+            headerPathsByFile: new Map([["a.cnx", new Set(["/a.h"])]]),
+            filesIncludingForeignHeaders: new Set(["a.cnx"]),
+            foreign: {
+              ...noForeign,
+              c: declared.map(samples),
+              disputedHeaders: new Set(disputed),
+            },
+          },
+        ).symbolsInFile("a.cnx"),
+        "copy",
+      );
+      return (symbol as IVariableSymbol).arrayDimensions;
+    };
+
+    it("sizes a dimension from every declaration, in either order", () => {
+      expect(dimensionOf([[""], [4]], [])).toEqual([4]);
+      expect(dimensionOf([[4], [""]], [])).toEqual([4]);
+    });
+
+    it("leaves it unknown in a header its files read differently (#2514)", () => {
+      // No size, as for any dimension without a value: 2.1 reports E0909,
+      // and the property never reaches C as text
+      expect(dimensionOf([[""], [4]], ["/a.h"])).toEqual([0]);
+      // A first declaration with its size is that size there too
+      expect(dimensionOf([[4], [""]], ["/a.h"])).toEqual([4]);
+    });
+  });
+
   describe("typesDeclaredIn", () => {
     // #1511: which kinds form a type used to be filtered inside
     // ExternalTypeHeaderBuilder, over whole symbols it was handed. The rule
@@ -906,6 +960,7 @@ describe("Program", () => {
             visibleMacros: new Map(),
             macroNames: new Set<string>(),
             integerTypes: new Map<string, string>(),
+            disputedHeaders: new Set<string>(),
             structTagsWithBodies: new Set(structTagsWithBodies),
           },
         },
@@ -1015,6 +1070,7 @@ describe("Program", () => {
           visibleMacros: new Map(),
           macroNames: new Set<string>(),
           integerTypes: new Map<string, string>(),
+          disputedHeaders: new Set<string>(),
           structTagsWithBodies: new Set(structTagsWithBodies),
         },
       });
@@ -1151,7 +1207,7 @@ scope Gauge {
         { cppMode: false, registry, symbolTable },
       );
 
-      expect(program.callbackCompatibleFunctions().get("on_point")).toBe(
+      expect(program.callbackCompatibleFunctions().get("on_point")?.name).toBe(
         "PointCallback",
       );
       expect(program.callbackCompatibleFunctions().has("counted")).toBe(false);
@@ -1301,6 +1357,7 @@ scope Gauge {
         "sourceFiles",
         "symbolByCName",
         "symbolTable",
+        "symbolTableFor",
         "symbolsInFile",
         "target",
         "typesDeclaredIn",

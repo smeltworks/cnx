@@ -16,10 +16,11 @@ class HeaderDeclarationRecord {
   static of(path: string, table: SymbolTable): IHeaderDeclarationRecord {
     const fileSymbols = table.getSymbolsByFile(path);
     const structNames = table.getStructNamesByFile(path);
-    const allFields = table.getAllStructFields();
     const structFields = new Map<string, Map<string, IStructFieldInfo>>();
     for (const name of structNames) {
-      const fields = allFields.get(name);
+      // #2474: this header's own fields, not another header's of that name;
+      // a forward declaration here has none
+      const fields = table.getStructFieldsDeclaredIn(name, path);
       if (fields) structFields.set(name, fields);
     }
     const needsKeyword = table.getAllNeedsStructKeyword();
@@ -58,7 +59,20 @@ class HeaderDeclarationRecord {
         table.addCppSymbol(symbol);
       }
     }
-    table.restoreStructFields(record.structFields);
+    // addCSymbol registered a C struct's fields; a C++ class's come from here
+    const cStructs = new Set(
+      record.symbols.flatMap((symbol) =>
+        symbol.sourceLanguage === ESourceLanguage.C &&
+        symbol.kind === "struct" &&
+        symbol.fields
+          ? [symbol.name]
+          : [],
+      ),
+    );
+    table.restoreStructFields(
+      new Map([...record.structFields].filter(([name]) => !cStructs.has(name))),
+      path,
+    );
     table.restoreNeedsStructKeyword(record.needsStructKeyword);
     table.restoreEnumBitWidths(record.enumBitWidth);
     table.markUndefinedMacros(path, record.undefinedMacros);

@@ -25,6 +25,7 @@
  * not declaring them on `IProgram`.
  */
 
+import type ICTypedefSymbol from "../../types/symbols/c/ICTypedefSymbol";
 import LexicalFrames from "./LexicalFrames";
 import type ILexicalFrame from "../../types/ILexicalFrame";
 import type ILocalDeclaration from "../../types/ILocalDeclaration";
@@ -66,6 +67,8 @@ import type IBindingFacts from "./types/IBindingFacts";
 import ConflictDetector from "./ConflictDetector";
 import type IForeignSymbols from "./types/IForeignSymbols";
 import type IForeignValue from "./types/IForeignValue";
+import type IDeclaredForeignValue from "./types/IDeclaredForeignValue";
+import ForeignRedeclaration from "../../utils/ForeignRedeclaration";
 import type IConflict from "../../types/IConflict";
 import CallbackCompatibility from "./CallbackCompatibility";
 import SymbolTable from "../3-Declare/SymbolTable";
@@ -130,6 +133,7 @@ const NO_FOREIGN: IForeignSymbols = {
   visibleMacros: new Map(),
   macroNames: EMPTY_NAMES,
   integerTypes: new Map<string, string>(),
+  disputedHeaders: EMPTY_NAMES,
 };
 
 /** A program built without include information: each file sees only itself. */
@@ -188,12 +192,16 @@ class Program {
     // and handed in. The orchestrator and the test harness both did, and the
     // harness's copy had already dropped the callback map.
     const symbolTable = inputs.symbolTable ?? new SymbolTable();
+    const symbolTableFor = Program.fileViews(
+      symbolTable,
+      inputs.headerPathsByFile,
+    );
     const functionParamLists = new Map(
       files.flatMap((file) => [...file.parameterLists]),
     );
     const callbackCompatibleFunctions = CallbackCompatibility.derive(
       files,
-      symbolTable,
+      symbolTableFor,
     );
     const callbackFunctions = CallbackCompatibility.usedAsCallback(files);
 
@@ -270,6 +278,7 @@ class Program {
     return Object.freeze({
       isScopeTypeVisibleFrom,
       symbolTable: (): IResolvedSymbols => symbolTable,
+      symbolTableFor,
       symbolByCName: (cName: string): TSymbol | undefined =>
         symbolsByCName.get(cName),
       memberOf: (scopePath: string, name: string): TSymbol | undefined =>
@@ -336,7 +345,7 @@ class Program {
         visibleByFile.get(sourceFile),
       passByValueParams: (): ReadonlyMap<string, ReadonlySet<string>> =>
         passByValueParams,
-      callbackCompatibleFunctions: (): ReadonlyMap<string, string> =>
+      callbackCompatibleFunctions: (): ReadonlyMap<string, ICTypedefSymbol> =>
         callbackCompatibleFunctions,
       callbackFunctions: (): ReadonlySet<string> => callbackFunctions,
       lexicalFrameAt: (sourceFile: string, at: TPosition): ILexicalFrame => {
@@ -517,6 +526,10 @@ class Program {
     const opaqueTypes = Program.deriveOpaqueTypes(foreign);
     const target = inputs.target ?? null;
     const headers = inputs.symbolTable ?? null;
+    const headersFor =
+      headers === null
+        ? null
+        : Program.fileViews(headers, inputs.headerPathsByFile);
     // #2116: each file's written `Scope.T` / `Ns.T`, as 1.3 spelled it for
     // that file -- kept per file, so two files' spellings never meet
     const qualifiedTypeNames = new Map(
@@ -555,19 +568,20 @@ class Program {
       seesHeaderMacro,
       seesForeignSymbol,
       hidesHeaderName,
-      headerStructFields: (structName) => headers?.getStructFields(structName),
-      headerTypeBits: (cType) =>
-        headers === null
+      headerStructFields: (sourceFile, structName) =>
+        headersFor?.(sourceFile).getStructFields(structName),
+      headerTypeBits: (sourceFile, cType) =>
+        headersFor === null
           ? null
           : ForeignTypeFacts.typeBits(
               cType,
-              headers,
+              headersFor(sourceFile),
               ResolvedTarget.of(target),
             ),
-      headerFieldCount: (structName) =>
-        headers === null
+      headerFieldCount: (sourceFile, structName) =>
+        headersFor === null
           ? null
-          : ForeignTypeFacts.fieldCount(structName, headers),
+          : ForeignTypeFacts.fieldCount(structName, headersFor(sourceFile)),
       headerNeedsStructKeyword: (structName) =>
         headers?.checkNeedsStructKeyword(structName) ?? false,
       headerTypeHead: (name) =>
@@ -1261,15 +1275,18 @@ class Program {
       hidesHeaderName: (name) => options.files.hidesHeaderName(file(), name),
       mayBeHeaderName: (root, name, at) =>
         Program.mayBeHeaderName(facts, options.files, file(), root, name, at),
-      foreignValue: (name) => facts.foreignValues.get(name) ?? null,
+      foreignValue: (name) =>
+        Program.foreignValueIn(facts.foreignValues.get(name), (origin) =>
+          options.files.seesForeignSymbol(file(), origin),
+        ),
       headerStructFields: (structName) =>
-        options.files.headerStructFields(structName),
-      headerTypeBits: (cType) => options.files.headerTypeBits(cType),
+        options.files.headerStructFields(file(), structName),
+      headerTypeBits: (cType) => options.files.headerTypeBits(file(), cType),
       qualifiedTypeName: (written) =>
         options.files.qualifiedTypeName(file(), written),
       headerTypeHead: (name) => options.files.headerTypeHead(name),
       headerFieldCount: (structName) =>
-        options.files.headerFieldCount(structName),
+        options.files.headerFieldCount(file(), structName),
       headerNeedsStructKeyword: (structName) =>
         options.files.headerNeedsStructKeyword(structName),
       constValue: (symbol) => {
@@ -1885,20 +1902,91 @@ class Program {
 
   private static foreignValues(
     foreign: IForeignSymbols,
-  ): ReadonlyMap<string, IForeignValue> {
-    const values = new Map<string, IForeignValue>();
+  ): ReadonlyMap<string, ReadonlyArray<IDeclaredForeignValue>> {
+    const values = new Map<string, IDeclaredForeignValue[]>();
     for (const symbol of [...foreign.c, ...foreign.cpp]) {
-      if (symbol.kind === "variable") {
-        values.set(symbol.name, {
-          kind: "variable",
-          type: symbol.type,
-          dimensions: symbol.arrayDimensions ?? [],
-        });
-      } else if (symbol.kind === "function") {
-        values.set(symbol.name, { kind: "function" });
-      }
+      const value: IForeignValue | null =
+        symbol.kind === "variable"
+          ? {
+              kind: "variable",
+              type: symbol.type,
+              dimensions: symbol.arrayDimensions ?? [],
+            }
+          : symbol.kind === "function"
+            ? { kind: "function" }
+            : null;
+      if (value === null) continue;
+      const declared = values.get(symbol.name) ?? [];
+      declared.push({
+        origin: symbol,
+        value,
+        disputed: foreign.disputedHeaders.has(symbol.sourceFile),
+      });
+      values.set(symbol.name, declared);
     }
     return values;
+  }
+
+  /**
+   * #2474: `table` as each file reads it, a view built on the file's first
+   * ask -- the one place a file's headers choose among same-named declarations
+   */
+  private static fileViews(
+    table: SymbolTable,
+    headerPathsByFile: ReadonlyMap<string, ReadonlySet<string>> | undefined,
+  ): (sourceFile: string) => IResolvedSymbols {
+    const views = new Map<string, IResolvedSymbols>();
+    return (sourceFile) => {
+      let view = views.get(sourceFile);
+      if (view === undefined) {
+        view = table.seenFrom(
+          headerPathsByFile?.get(sourceFile) ?? EMPTY_NAMES,
+        );
+        views.set(sourceFile, view);
+      }
+      return view;
+    };
+  }
+
+  /**
+   * #2474: the value `name` names in a file: the first of the declarations
+   * its own headers make (`ForeignRedeclaration.pool`), its array bound the
+   * one C composes from all of them, as `SymbolTable.getCSymbol`'s is. Not
+   * in a header its including files read differently (#2514).
+   */
+  private static foreignValueIn(
+    declared: ReadonlyArray<IDeclaredForeignValue> | undefined,
+    sees: (origin: IForeignOrigin) => boolean,
+  ): IForeignValue | null {
+    const pool = ForeignRedeclaration.pool(declared ?? [], (entry) =>
+      sees(entry.origin),
+    );
+    // One declared through an array typedef writes no dimensions: the one
+    // that writes them is its type, rather than its element type
+    const first =
+      pool[0]?.value.kind === "variable" &&
+      pool[0].value.dimensions.length === 0
+        ? (pool.find(
+            (entry) =>
+              entry.value.kind === "variable" &&
+              entry.value.dimensions.length > 0,
+          ) ?? pool[0])
+        : pool[0];
+    if (first?.value.kind !== "variable") return first?.value ?? null;
+    if (pool.some((entry) => entry.disputed)) {
+      return first.value.dimensions.includes("")
+        ? { ...first.value, disputed: true }
+        : first.value;
+    }
+    return {
+      ...first.value,
+      dimensions: ForeignRedeclaration.dimensions(
+        first.value.dimensions,
+        pool.flatMap((entry) =>
+          entry.value.kind === "variable" ? [entry.value.dimensions] : [],
+        ),
+      ),
+    };
   }
 
   /**

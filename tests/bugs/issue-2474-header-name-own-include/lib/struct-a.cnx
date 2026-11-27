@@ -1,0 +1,7 @@
+// Issue #2474 review helper: this file's Counter and Frame are a-struct.h's,
+// a volatile count and 4 bytes of data.
+#include "a-struct.h"
+
+u32 aFrameCount() {
+    return frame.data.type_element_count;
+}

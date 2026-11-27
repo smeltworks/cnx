@@ -1,0 +1,11 @@
+// test-transpile-only
+// Issue #2474: two headers declare handler_t, one taking a const pointer and
+// one a plain pointer. Each file's callback is checked against the handler_t
+// its own header declares, so onA and onB both match.
+#include "lib/handler-a.cnx"
+#include "lib/handler-b.cnx"
+
+void main() {
+    useA();
+    useB();
+}

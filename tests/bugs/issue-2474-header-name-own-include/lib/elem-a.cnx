@@ -1,0 +1,9 @@
+// Issue #2474 helper: this file's elem_t and buf are a-elem.h's, so buf
+// is 4 bytes.
+#include "a-elem.h"
+
+mut u8[buf.type_byte_length] aBytes;
+
+u32 aByteCount() {
+    return aBytes.type_element_count;
+}

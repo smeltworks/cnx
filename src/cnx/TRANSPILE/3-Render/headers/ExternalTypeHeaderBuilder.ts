@@ -20,6 +20,11 @@
  */
 interface ITypeSource {
   typesDeclaredIn(filePath: string): ReadonlySet<string>;
+  /**
+   * #2474: the header this file reads a foreign type from, by its own
+   * includes, or undefined when no header declares it
+   */
+  declaringHeader(typeName: string): string | undefined;
 }
 
 /**
@@ -42,12 +47,13 @@ class ExternalTypeHeaderBuilder {
   ): Map<string, string> {
     const typeHeaders = new Map<string, string>();
 
-    // Which header wins is decided HERE, by the order of the include
-    // directives -- first one wins. That ordering is an include-resolution
-    // fact, not a symbol fact, which is why it stayed behind when the rest
-    // moved to `Program` (#1511).
+    // #2474: a type two headers declare is included from the one the file
+    // reads, so its header never pulls in the other's conflicting typedef.
+    // Otherwise the first directive declaring it wins (#1511).
     for (const [headerPath, directive] of headerIncludeDirectives) {
       for (const typeName of typeSource.typesDeclaredIn(headerPath)) {
+        const reads = typeSource.declaringHeader(typeName);
+        if (reads !== undefined && reads !== headerPath) continue;
         if (!typeHeaders.has(typeName)) {
           typeHeaders.set(typeName, directive);
         }

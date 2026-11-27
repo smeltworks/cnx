@@ -48,7 +48,8 @@ type TConstResult =
         | "sizeofExpression"
         | "lengthRule"
         | "divisionByZero"
-        | "negativeShift";
+        | "negativeShift"
+        | "disputed";
       /** The offending part as the source spells it, for a message */
       readonly spelling: string;
       readonly at: ISourcePosition | null;

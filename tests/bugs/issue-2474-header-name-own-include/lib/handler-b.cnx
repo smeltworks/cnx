@@ -1,0 +1,11 @@
+// Issue #2474 helper: this file's handler_t is b-handler.h's, which may
+// write its argument through a plain pointer.
+#include "b-handler.h"
+
+void onB(mut u32 v) {
+    v <- v + 1;
+}
+
+void useB() {
+    global.registerB(onB);
+}

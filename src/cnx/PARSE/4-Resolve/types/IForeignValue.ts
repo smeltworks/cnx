@@ -11,6 +11,11 @@ type IForeignValue =
       readonly type: string;
       /** Empty for a scalar */
       readonly dimensions: ReadonlyArray<number | string>;
+      /**
+       * #2514: unsized here, in a header the files that include it read
+       * differently, so which bound C composes cnx cannot tell
+       */
+      readonly disputed?: true;
     }
   | { readonly kind: "function" };
 
