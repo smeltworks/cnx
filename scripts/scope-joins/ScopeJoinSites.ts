@@ -199,6 +199,12 @@ class ScopeJoinSites {
       why: "3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116); an unscoped enum's constant inside a class is `Class::N` (#2510)",
     },
     {
+      file: "src/cnx/PARSE/3-Declare/SymbolTable.ts",
+      element: "qualify(scope, name)",
+      kind: "encoder",
+      why: "3-Declare looking a class's written base up in each enclosing namespace by the `A::B` path the C++ collectors stored it under (#2116); its constants are the derived class's fields' (#2510)",
+    },
+    {
       file: "src/cnx/PARSE/3-Declare/cpp/collectors/FunctionCollector.ts",
       element: "qualify(className, funcName)",
       kind: "encoder",

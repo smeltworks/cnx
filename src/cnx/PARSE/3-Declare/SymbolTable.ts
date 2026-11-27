@@ -28,6 +28,7 @@ import IStructSymbol from "../../types/symbols/IStructSymbol";
 import TypeResolver from "../../utils/TypeResolver";
 import type ITargetDescription from "../../types/ITargetDescription";
 import invariant from "../../utils/invariant";
+import CppNamespaceUtils from "../../utils/CppNamespaceUtils";
 import type IResolvedSymbols from "../../types/IResolvedSymbols";
 
 // Enable immer support for Map and Set (must be called once at module scope)
@@ -407,15 +408,20 @@ class SymbolTable implements IResolvedSymbols {
     parent: string | undefined,
   ): ICppClassSymbol[] {
     const name = base.startsWith("::") ? base.slice(2) : base;
-    const scopes = parent?.split("::") ?? [];
-    for (let depth = scopes.length; depth >= 0; depth--) {
-      const qualified = [...scopes.slice(0, depth), name].join("::");
-      const found = (this.cppSymbols.get(qualified) ?? []).filter(
+    const classesNamed = (qualified: string): ICppClassSymbol[] =>
+      (this.cppSymbols.get(qualified) ?? []).filter(
         (symbol): symbol is ICppClassSymbol => symbol.kind === "class",
       );
+    // innermost namespace out, as C++ looks the written name up
+    let scope = parent;
+    while (scope) {
+      const found = classesNamed(CppNamespaceUtils.qualify(scope, name));
       if (found.length > 0) return found;
+      scope = this.cppSymbols
+        .get(scope)
+        ?.find((symbol) => symbol.kind === "namespace")?.parent;
     }
-    return [];
+    return classesNamed(name);
   }
 
   /**
