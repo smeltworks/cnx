@@ -44,7 +44,6 @@ import type TValueSite from "../../types/TValueSite";
 import SourceOrder from "../../utils/SourceOrder";
 import type IValuePositions from "../../types/IValuePositions";
 import ScanfFormat from "../../utils/ScanfFormat";
-import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import CNX_TO_C_TYPE_MAP from "../../utils/constants/TypeMappings";
 import type IOperandType from "../../types/IOperandType";
@@ -495,11 +494,8 @@ class CPointerArgumentAnalyzer {
   ): IBaseAnalysisError[] {
     const check = new CPointerArgumentCheck(this.context);
     check.checkCStringLandings(positions);
-    for (const member of program.members) {
-      for (const part of DeclarationParts.of(member.declaration)) {
-        for (const expr of ExpressionNodes.of(part))
-          check.checkExpression(expr);
-      }
+    for (const expr of ExpressionNodes.ofProgram(program)) {
+      check.checkExpression(expr);
     }
     return check.errors().sort(SourceOrder.bySpan);
   }
