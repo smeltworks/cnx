@@ -48,8 +48,12 @@ class CLandingType {
     positions: IValuePositions,
     context: IAnalysisContext,
   ): string | null {
-    const place = CLandingType.placeOf(value, positions, context);
-    return place === null || place.returnsType ? null : place.type;
+    return CLandingType.preferred(
+      CLandingType.placesOf(value, positions, context)
+        .filter((place) => !place.returnsType)
+        .map((place) => place.type),
+      context,
+    );
   }
 
   /**
@@ -62,8 +66,38 @@ class CLandingType {
     positions: IValuePositions,
     context: IAnalysisContext,
   ): string | null {
-    const place = CLandingType.placeOf(value, positions, context);
-    if (place === null) return null;
+    return CLandingType.preferred(
+      CLandingType.placesOf(value, positions, context)
+        .map((place) => CLandingType.returnOfPlace(place, context))
+        .filter((returned) => returned !== null),
+      context,
+    );
+  }
+
+  /**
+   * Of the types a value may land in -- one per C++ overload the call can
+   * reach -- the one C++ calls with a `cstring` or a function returning one:
+   * a type that is not a writable `char*`, where there is one (#2348 review)
+   */
+  private static preferred(
+    types: readonly string[],
+    context: IAnalysisContext,
+  ): string | null {
+    return (
+      types.find(
+        (type) =>
+          !CStringArgument.isWritableCharPointer(type, context.symbolTable),
+      ) ??
+      types[0] ??
+      null
+    );
+  }
+
+  /** A function-pointer place's return; null for any other place */
+  private static returnOfPlace(
+    place: IPlace,
+    context: IAnalysisContext,
+  ): string | null {
     if (place.returnsType) return place.type;
     const symbols = context.symbolTable;
     const typedef = symbols.getCSymbol(place.type);
@@ -86,16 +120,17 @@ class CLandingType {
     return callee === null ? null : { callee, index: site.argument };
   }
 
-  private static placeOf(
+  /** Each place `value` may land in: one, or a C++ overload set's parameters */
+  private static placesOf(
     value: TExpression,
     positions: IValuePositions,
     context: IAnalysisContext,
-  ): IPlace | null {
+  ): IPlace[] {
     const site = positions.sites.get(value)?.site;
-    const type = (text: string | null | undefined): IPlace | null =>
+    const type = (text: string | null | undefined): IPlace[] =>
       text === null || text === undefined
-        ? null
-        : { type: TypeText.withoutDimensions(text), returnsType: false };
+        ? []
+        : [{ type: TypeText.withoutDimensions(text), returnsType: false }];
     switch (site?.kind) {
       case "declaration":
         return type(site.declaration.type.text);
@@ -113,18 +148,20 @@ class CLandingType {
             context,
           ),
         );
-      case "argument":
-        // A C callee's parameter as its header writes it; a cnx one's from the walk
-        return (
-          CLandingType.cParameterOf(
-            site.call,
-            site.op,
-            site.argument,
-            context,
-          ) ?? type(ValuePositions.at(positions.positions, value).typeText)
+      case "argument": {
+        // A C callee's parameters as its header writes them; a cnx one's from the walk
+        const parameters = CLandingType.cParametersOf(
+          site.call,
+          site.op,
+          site.argument,
+          context,
         );
+        return parameters.length > 0
+          ? parameters
+          : type(ValuePositions.at(positions.positions, value).typeText);
+      }
       default:
-        return null;
+        return [];
     }
   }
 
@@ -163,35 +200,18 @@ class CLandingType {
     );
   }
 
-  /**
-   * A C parameter, over every overload the call can reach; an array one is
-   * C's pointer. Where one overload takes a `const char*` and another a
-   * `char*`, C++ calls the const one with a `cstring`, so the const one is
-   * the place (#2348 review).
-   */
-  private static cParameterOf(
+  /** A C parameter in every overload the call can reach; an array one is C's pointer */
+  private static cParametersOf(
     call: TExpressionOf<"postfix">,
     op: number,
     index: number,
     context: IAnalysisContext,
-  ): IPlace | null {
+  ): IPlace[] {
     const callee = CLandingType.cCalleeOf(call, op, context);
-    const places = (callee === null ? [] : CCallee.reachable(callee))
+    return (callee === null ? [] : CCallee.reachable(callee))
       .map((signature) => signature.parameters[index])
       .filter((parameter) => parameter !== undefined)
       .map(CLandingType.parameterPlace);
-    return (
-      places.find(
-        (place) =>
-          place.returnsType ||
-          !CStringArgument.isWritableCharPointer(
-            place.type,
-            context.symbolTable,
-          ),
-      ) ??
-      places[0] ??
-      null
-    );
   }
 
   private static parameterPlace(

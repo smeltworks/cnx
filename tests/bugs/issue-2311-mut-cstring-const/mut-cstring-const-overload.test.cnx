@@ -2,14 +2,24 @@
 // test-execution
 // #2348 review: where one overload takes char* and another const char*, C++
 // calls the const one with a cstring, so the cstring lands there and is not
-// E0900.
+// E0900; and where one takes a function returning char* and another one
+// returning const char*, a function returning a cstring lands in the second
+// and is not E0879.
 #include "lib/const-overload.hpp"
+
+cstring label() {
+    return "abcd";
+}
 
 u32 main() {
     cstring text <- "abc";
     u32 n <- text_measure(text);
     if (n != 3) {
         return 1;
+    }
+    u32 m <- make_measure(label);
+    if (m != 4) {
+        return 2;
     }
     return 0;
 }
