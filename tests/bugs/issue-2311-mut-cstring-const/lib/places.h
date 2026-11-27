@@ -6,6 +6,8 @@ typedef char* text_ptr;
 typedef struct { char* name; int id; } Customer;
 typedef struct { char* names[2]; int id; } Names;
 typedef struct { char* (*get)(void); int id; } Getter;
+static char* (*g_make)(void);
+static char* (*g_makers[2])(void);
 static char* g_name;
 static char* g_names[2];
 static inline uint32_t name_length(void) { return g_name ? (uint32_t) strlen(g_name) : 0U; }

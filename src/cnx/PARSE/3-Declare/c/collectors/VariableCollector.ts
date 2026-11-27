@@ -31,8 +31,9 @@ class VariableCollector {
     const arrayDimensions = declarator.arrayDimensions;
 
     // Issue #978: Detect pointer variables (e.g., `font_t *ptr`).
-    // C grammar puts `*` in the declarator, not the type specifier.
-    const resolvedType = DeclaratorTypes.pointerType(baseType, declarator);
+    // C grammar puts `*` in the declarator, not the type specifier. A
+    // function pointer is `char* (*)(void)`, as a field's is (#2348 review).
+    const resolvedType = DeclaratorTypes.declaredType(baseType, declarator);
 
     return {
       kind: "variable",

@@ -1,8 +1,8 @@
 // test-error
 // #2348 review: a function returning a cstring, which is const char*
 // (ADR-046), given where C calls one returning char* is E0879, through a
-// function-pointer field and a function-pointer parameter, each written
-// inline.
+// function-pointer field, a function-pointer parameter, a function-pointer
+// variable and an element of an array of them, each written inline.
 #include "lib/places.h"
 
 mut string<8> stored <- "abc";
@@ -15,5 +15,7 @@ cstring label() {
 u32 main() {
     Getter g <- { get: label, id: 1 };
     u32 n <- call_len(label);
+    g_make <- label;
+    g_makers[0] <- label;
     return n;
 }

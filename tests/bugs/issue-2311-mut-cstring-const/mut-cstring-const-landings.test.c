@@ -7,7 +7,8 @@
 
 // test-execution
 // #2348 review: the controls for mut-cstring-landings -- each place there,
-// declared const char*, takes a cstring.
+// declared const char*, takes a cstring -- and a header's function-pointer
+// variables, written inline or through a typedef, are called.
 #include "lib/const-places.h"
 
 #include <stdint.h>
@@ -38,6 +39,10 @@ int main(void) {
     const uint32_t c = const_getter_len(&g);
     const uint32_t d = label_len();
     const uint32_t e = const_len(ps[1U]);
+    g_cmake = label;
+    const uint32_t f = cmade();
+    const uint32_t h = g_op(4U);
+    const uint32_t k = g_top(5U);
     if (a != 3) {
         return 1U;
     }
@@ -55,6 +60,15 @@ int main(void) {
     }
     if (ls[1U].id != 2) {
         return 6U;
+    }
+    if (f != 3) {
+        return 7U;
+    }
+    if (h != 8) {
+        return 8U;
+    }
+    if (k != 10) {
+        return 9U;
     }
     return 0U;
 }

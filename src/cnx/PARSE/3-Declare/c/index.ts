@@ -195,7 +195,11 @@ class CResolver {
             ctx.isConst === true,
           ),
         );
-      } else if (declarator.isFunction) {
+      } else if (
+        declarator.isFunction &&
+        // `char* (*g_make)(void)` is a variable whose type is the pointer
+        declarator.functionPointerParams === null
+      ) {
         ctx.symbols.push(
           FunctionCollector.collectFromDeclaration(
             name,

@@ -281,10 +281,27 @@ class FunctionCallAnalyzer {
         this.isCallableType(binding.declaration.type)
       );
     }
+    if (binding?.kind === "foreign") {
+      return this.isCallableForeignVariable(binding.name);
+    }
     return (
       binding?.kind === "variable" &&
       !binding.symbol.isArray &&
       this.isCallableType(binding.symbol.type)
+    );
+  }
+
+  /**
+   * A header's variable of function-pointer type, written inline
+   * (`uint32_t (*g_op)(uint32_t)`) or through a typedef (#2348 review)
+   */
+  private isCallableForeignVariable(name: string): boolean {
+    const symbol = this.context.symbolTable.getCSymbol(name);
+    return (
+      symbol?.kind === "variable" &&
+      symbol.isArray !== true &&
+      (symbol.type.includes("(*)") ||
+        this.isCFunctionPointerTypedef(symbol.type))
     );
   }
 

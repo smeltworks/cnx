@@ -2,3 +2,7 @@
        help: A cstring is const char*, `mut` or not (ADR-046): declare the C function pointer's return const char*.
 17:22 error[E0879]: Function 'label' returns a cstring, which is const char*, and the place it is given to calls it as returning 'char*'
        help: A cstring is const char*, `mut` or not (ADR-046): declare the C function pointer's return const char*.
+18:14 error[E0879]: Function 'label' returns a cstring, which is const char*, and the place it is given to calls it as returning 'char*'
+       help: A cstring is const char*, `mut` or not (ADR-046): declare the C function pointer's return const char*.
+19:19 error[E0879]: Function 'label' returns a cstring, which is const char*, and the place it is given to calls it as returning 'char*'
+       help: A cstring is const char*, `mut` or not (ADR-046): declare the C function pointer's return const char*.

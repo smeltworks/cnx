@@ -69,8 +69,9 @@ import Write from "../../cnx/WRITE/1-Write/Write";
 // 25: #2473 review -- a member template records the arguments it takes, so
 // a call it cannot take is judged; an entry written before has names alone.
 // 26: #2348 review -- a C pointer variable's type spells its pointee's
-// `const`, and a function-pointer parameter records that it is one, which
-// decide where a cstring may land; an entry written before has neither.
+// `const`, a function-pointer parameter records that it is one, and a
+// function-pointer variable is a variable, not a function, which decide where
+// a cstring may land; an entry written before has none of them.
 const CACHE_VERSION = 26;
 
 const TRANSPILER_VERSION = packageJson.version;
