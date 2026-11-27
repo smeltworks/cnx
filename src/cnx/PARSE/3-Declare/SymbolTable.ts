@@ -395,25 +395,24 @@ class SymbolTable implements IResolvedSymbols {
    * The declaration of a name this table's reader reads (#2474): the first
    * its own headers make (`ForeignRedeclaration.pool`), its array type the
    * one C composes from all of them (C11 6.2.7), since cnx reads each header
-   * as the translation unit does (#2504). Not where an including file reads
-   * one of them differently (#2514): which bound it reads, cnx cannot tell.
+   * as the translation unit does (#2504). Where an including file reads one
+   * of them differently (#2514) no bound is known: the one cnx read may not
+   * be the one that file's compiler reads.
    */
   private chosen<T extends TCSymbol | TCppSymbol>(
     symbols: readonly T[],
   ): T | undefined {
     const pool = this.poolOf(symbols);
     const first = pool[0];
-    if (
-      first?.kind !== "variable" ||
-      first.arrayDimensions?.includes("") !== true ||
-      pool.some((symbol) => this.disputedHeaders.has(symbol.sourceFile))
-    ) {
-      return first;
-    }
-    return {
-      ...first,
-      arrayDimensions: SymbolTable.composed(first.arrayDimensions, pool),
-    };
+    if (first?.kind !== "variable" || !first.arrayDimensions) return first;
+    const arrayDimensions = pool.some((symbol) =>
+      this.disputedHeaders.has(symbol.sourceFile),
+    )
+      ? first.arrayDimensions.map(() => "")
+      : SymbolTable.composed(first.arrayDimensions, pool);
+    return arrayDimensions.every((d, k) => d === first.arrayDimensions![k])
+      ? first
+      : { ...first, arrayDimensions };
   }
 
   /** `dimensions` as C composes them with each of `pool`'s array declarations */

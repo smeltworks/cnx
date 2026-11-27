@@ -1951,8 +1951,9 @@ class Program {
   /**
    * #2474: the value `name` names in a file: the first of the declarations
    * its own headers make (`ForeignRedeclaration.pool`), its array bound the
-   * one C composes from all of them, as `SymbolTable.getCSymbol`'s is. Not
-   * in a header its including files read differently (#2514).
+   * one C composes from all of them, as `SymbolTable.getCSymbol`'s is. In a
+   * header its including files read differently none is known (#2514): the
+   * one cnx read may not be the one a file's compiler reads.
    */
   private static foreignValueIn(
     declared: ReadonlyArray<IDeclaredForeignValue> | undefined,
@@ -1964,9 +1965,7 @@ class Program {
     const first = pool[0];
     if (first?.value.kind !== "variable") return first?.value ?? null;
     if (pool.some((entry) => entry.disputed)) {
-      return first.value.dimensions.includes("")
-        ? { ...first.value, disputed: true }
-        : first.value;
+      return { ...first.value, disputed: true };
     }
     return {
       ...first.value,

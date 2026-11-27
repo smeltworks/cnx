@@ -1,0 +1,2 @@
+10:14 error[E0867]: .type_element_count is not known for 'u8[]': the .cnx files that include its header read it differently, so cnx cannot tell which size the compiler reads (#2514)
+       help: Include the same configuration before the header in every .cnx file that includes it, so each reads the size the compiler reads (ADR-058).
