@@ -1019,10 +1019,16 @@ totals each time it passes.
 | tests/bugs/issue-847-misra-17-7-lowering/transitive-scope-method-discard.test.cnx                         | E0708                             |
 | tests/bugs/issue-header-earlier-include-macro/h-in-c-build.test.cnx                                       | E0909                             |
 | tests/bugs/issue-header-macro-array-bound/macro-count-bound-error.test.cnx                                | E0854                             |
+| tests/bugs/issue-header-macro-array-bound/macro-count-cast-error.test.cnx                                 | E0909                             |
 | tests/bugs/issue-header-macro-array-bound/macro-count-declared-error.test.cnx                             | E0909                             |
 | tests/bugs/issue-header-macro-array-bound/macro-count-function-error.test.cnx                             | E0909                             |
+| tests/bugs/issue-header-macro-array-bound/macro-count-int-width-error.test.cnx                            | E0909                             |
+| tests/bugs/issue-header-macro-array-bound/macro-count-member-enum-error.test.cnx                          | E0909                             |
+| tests/bugs/issue-header-macro-array-bound/macro-count-redefined-error.test.cnx                            | E0909                             |
 | tests/bugs/issue-header-macro-array-bound/macro-count-undef-error.test.cnx                                | E0909                             |
+| tests/bugs/issue-header-macro-array-bound/macro-count-zero-error.test.cnx                                 | E0909                             |
 | tests/bugs/issue-header-macro-array-bound/macro-width-declared-error.test.cnx                             | E0946                             |
+| tests/bugs/issue-header-macro-array-bound/macro-width-redefined-error.test.cnx                            | E0946                             |
 | tests/c-interop/cpp14-header/crc32.test.cnx                                                               | E0859                             |
 | tests/c-interop/use-c-union-basic.test.cnx                                                                | (uncoded)                         |
 | tests/c-interop/use-c-union-typedef.test.cnx                                                              | (uncoded)                         |
