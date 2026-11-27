@@ -288,14 +288,6 @@ describe("SymbolTable", () => {
       expect(symbolTable.indexBoundsOf("samples")).toEqual([4]);
     });
 
-    it("knows no bound a sized first declaration gives in such a header (#2514)", () => {
-      symbolTable.addCSymbol(arrayIn("/a.h", [4]));
-      symbolTable.addCSymbol(arrayIn("/a.h", [""]));
-      symbolTable.markDisputedHeaders(new Set(["/a.h"]));
-      const first = symbolTable.getCSymbol("samples");
-      expect(first?.kind === "variable" && first.arrayDimensions).toEqual([""]);
-    });
-
     it("composes only the reading file's own headers' declarations", () => {
       symbolTable.addCSymbol(arrayIn("/a.h", [""]));
       symbolTable.addCSymbol(arrayIn("/b.h", [""]));

@@ -1,8 +1,0 @@
-// Issue #2514 helper: includes configured-trailing.h without configured.h, so
-// its compile reads samples as 4 where configured-trailing-disputed-error's
-// reads 8.
-#include "configured-trailing.h"
-
-u32 trailingFirst() {
-    return 1;
-}

@@ -12,8 +12,8 @@ type IForeignValue =
       /** Empty for a scalar */
       readonly dimensions: ReadonlyArray<number | string>;
       /**
-       * #2514: declared in a header the files that include it read
-       * differently, so which bound their compilers read cnx cannot tell
+       * #2514: unsized here, in a header the files that include it read
+       * differently, so which bound C composes cnx cannot tell
        */
       readonly disputed?: true;
     }

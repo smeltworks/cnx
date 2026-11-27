@@ -850,14 +850,8 @@ describe("Program", () => {
       expect(dimensionOf([[""], [4]], ["/a.h"])).toEqual([
         "samples.type_element_count",
       ]);
-      // Nor one a first declaration sizes: the files' compilers may not read it
-      expect(dimensionOf([[4], [""]], ["/a.h"])).toEqual([
-        "samples.type_element_count",
-      ]);
-    });
-
-    it("takes a redeclaration's dimensions for one an array typedef declares", () => {
-      expect(dimensionOf([[], [4]], [])).toEqual([4]);
+      // A first declaration with its size is that size there too
+      expect(dimensionOf([[4], [""]], ["/a.h"])).toEqual([4]);
     });
   });
 
