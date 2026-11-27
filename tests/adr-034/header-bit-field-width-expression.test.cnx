@@ -1,0 +1,22 @@
+// test-execution
+// #2474 review: a header bit-field whose width is an expression is settled
+// once, in every header's own field record too, so a file that reads the
+// header through its view writes each field's largest value without E0946.
+#include "header-bit-field-width.h"
+
+u32 main() {
+    mut WReg r;
+    r.sum <- 7;
+    r.five <- 31;
+    r.wide <- 127;
+    if (r.sum != 7) {
+        return 1;
+    }
+    if (r.five != 31) {
+        return 2;
+    }
+    if (r.wide != 127) {
+        return 3;
+    }
+    return 0;
+}

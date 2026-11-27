@@ -38,6 +38,9 @@ interface IReadHeaders {
    */
   readonly readers: ReadonlyMap<string, string>;
 
+  /** #2514: each header two files' compiles read differently, by `path` */
+  readonly disputed: ReadonlySet<string>;
+
   /** #1688: each cnx file with a C include, to its header macro dump */
   readonly macroDumps: ReadonlyMap<string, IHeaderMacroDump>;
 

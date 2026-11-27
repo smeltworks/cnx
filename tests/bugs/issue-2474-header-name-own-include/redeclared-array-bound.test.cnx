@@ -1,0 +1,40 @@
+// test-execution
+// Issue #2474 review: a header declares samples unsized, then sized 4, and
+// readings sized 4, then unsized. C composes one type from both declarations
+// (C11 6.2.7), in either order, so each array has 4 elements: as a value, as
+// a bit and byte length, and as a dimension.
+#include "lib/redeclared-array.h"
+
+mut u8[samples.type_element_count] copy;
+mut u8[readings.type_element_count] kept;
+
+u32 main() {
+    u32 n <- samples.type_element_count;
+    if (n != 4) {
+        return 1;
+    }
+    u32 bits <- samples.type_bit_length;
+    if (bits != 32) {
+        return 2;
+    }
+    u32 bytes <- samples.type_byte_length;
+    if (bytes != 4) {
+        return 3;
+    }
+    if (copy.type_element_count != 4) {
+        return 4;
+    }
+    u32 r <- readings.type_element_count;
+    if (r != 4) {
+        return 5;
+    }
+    if (kept.type_element_count != 4) {
+        return 6;
+    }
+    copy[3] <- 1;
+    kept[3] <- 2;
+    if (copy[3] + kept[3] != 3) {
+        return 7;
+    }
+    return 0;
+}

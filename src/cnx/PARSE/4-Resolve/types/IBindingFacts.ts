@@ -1,7 +1,7 @@
 import type SymbolRegistry from "../../3-Declare/SymbolRegistry";
 import type ILexicalFrame from "../../../types/ILexicalFrame";
 import type TSymbol from "../../../types/symbols/TSymbol";
-import type IForeignValue from "./IForeignValue";
+import type IDeclaredForeignValue from "./IDeclaredForeignValue";
 
 /**
  * What `Program.bindValue` reads to decide what a spelling means.
@@ -29,7 +29,10 @@ interface IBindingFacts {
    * #1175: the variables and functions among `foreignNames` -- what a
    * constant expression naming one is worth
    */
-  readonly foreignValues: ReadonlyMap<string, IForeignValue>;
+  readonly foreignValues: ReadonlyMap<
+    string,
+    ReadonlyArray<IDeclaredForeignValue>
+  >;
   /**
    * The files each file can see: itself and its include closure. A scope
    * member or global declared anywhere else binds nothing there (#1760

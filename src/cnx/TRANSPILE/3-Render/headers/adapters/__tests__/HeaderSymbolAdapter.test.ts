@@ -27,6 +27,7 @@ let state = new TranspileState();
 describe("HeaderSymbolAdapter", () => {
   beforeEach(() => {
     state = new TranspileState();
+    state.sourcePath = "test.cnx";
     TestSymbolTable.install(state);
   });
 
@@ -286,7 +287,7 @@ describe("HeaderSymbolAdapter", () => {
      */
     it("marks each parameter by the opaque-handle stamp it was settled with", () => {
       state.program = {
-        symbolTable: () => new SymbolTable(),
+        symbolTableFor: () => new SymbolTable(),
         isOpaqueType: () => false,
         symbolByCName: () => undefined,
       } as unknown as IProgram;

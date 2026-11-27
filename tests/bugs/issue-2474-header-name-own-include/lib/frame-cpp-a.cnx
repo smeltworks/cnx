@@ -1,0 +1,7 @@
+// Issue #2474 review helper: this file's Frame is a-frame.hpp's C++ struct,
+// whose data is 4 bytes.
+#include "a-frame.hpp"
+
+u32 aFrameCppCount() {
+    return frame.data.type_element_count;
+}

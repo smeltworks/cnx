@@ -21,6 +21,7 @@ import TJsonSafe from "../../utils/types/TJsonSafe";
 import TSymbol from "../../types/symbols/TSymbol";
 import TCSymbol from "../../types/symbols/c/TCSymbol";
 import TCppSymbol from "../../types/symbols/cpp/TCppSymbol";
+import ForeignRedeclaration from "../../utils/ForeignRedeclaration";
 import TAnySymbol from "../../types/symbols/TAnySymbol";
 import IStructSymbol from "../../types/symbols/IStructSymbol";
 import TypeResolver from "../../utils/TypeResolver";
@@ -120,6 +121,16 @@ class SymbolTable implements IResolvedSymbols {
     new Map();
 
   /**
+   * #2474: each struct's fields by the file that declared them, struct name ->
+   * (declaring file -> fields), so a view answers with the struct its file
+   * reads rather than the last header's
+   */
+  private readonly structFieldsByFile: Map<
+    string,
+    Map<string, Map<string, IStructFieldInfo>>
+  > = new Map();
+
+  /**
    * Issue #196 Bug 3: Track C struct names that need the 'struct' keyword
    * These are structs defined as 'struct Name { ... }' without typedef
    * In C, they must be referred to as 'struct Name', not just 'Name'
@@ -147,6 +158,16 @@ class SymbolTable implements IResolvedSymbols {
    * C++14 typed enums: enum Name : uint8_t { ... } have explicit bit widths
    */
   private readonly enumBitWidth: Map<string, number> = new Map();
+
+  /**
+   * #2474: the headers the reading file's own C includes bring in. A name two
+   * headers declare is the declaration one of these makes, not the build's
+   * first; null on the run-wide table, which prefers none.
+   */
+  private visibleHeaders: ReadonlySet<string> | null = null;
+
+  /** #2514: the headers two `.cnx` files' compiles read differently */
+  private disputedHeaders: ReadonlySet<string> = new Set();
 
   // ========================================================================
   // cnx Symbol Methods (TSymbol)
@@ -216,6 +237,8 @@ class SymbolTable implements IResolvedSymbols {
         fieldInfo.dimensions && fieldInfo.dimensions.length > 0
           ? fieldInfo.dimensions
           : undefined,
+        undefined,
+        struct.sourceFile,
       );
     }
   }
@@ -287,7 +310,7 @@ class SymbolTable implements IResolvedSymbols {
 
     // Issue #981: Register struct fields for the operand typer's field lookups
     if (symbol.kind === "struct" && symbol.fields) {
-      this.registerCStructFields(symbol.name, symbol.fields);
+      this.registerCStructFields(symbol.name, symbol.fields, symbol.sourceFile);
     }
   }
 
@@ -301,6 +324,7 @@ class SymbolTable implements IResolvedSymbols {
       string,
       import("../../types/symbols/c/ICFieldInfo").default
     >,
+    sourceFile: string,
   ): void {
     for (const [fieldName, fieldInfo] of fields) {
       this.addStructField(
@@ -309,6 +333,7 @@ class SymbolTable implements IResolvedSymbols {
         fieldInfo.type,
         fieldInfo.arrayDimensions,
         fieldInfo.bitWidth,
+        sourceFile,
       );
     }
   }
@@ -341,8 +366,118 @@ class SymbolTable implements IResolvedSymbols {
    * Get a C symbol by name (returns first match, or undefined)
    */
   getCSymbol(name: string): TCSymbol | undefined {
-    const symbols = this.cSymbols.get(name);
-    return symbols?.[0];
+    return this.chosen(this.cSymbols.get(name) ?? []);
+  }
+
+  /**
+   * This table as `sourceFile` reads it (#2474): a C or C++ name more than
+   * one header declares resolves to the declaration a header in `headers`
+   * makes. The view shares this table's indexes and never writes them.
+   */
+  seenFrom(headers: ReadonlySet<string>): IResolvedSymbols {
+    // A live view: it reads this table's fields through the prototype chain
+    const view: SymbolTable = Object.create(this);
+    view.visibleHeaders = headers;
+    return view;
+  }
+
+  /** #2514: record the headers two `.cnx` files' compiles read differently */
+  markDisputedHeaders(paths: ReadonlySet<string>): void {
+    this.disputedHeaders = paths;
+  }
+
+  /** #2514: the headers two `.cnx` files' compiles read differently */
+  getDisputedHeaders(): ReadonlySet<string> {
+    return this.disputedHeaders;
+  }
+
+  /** #2514: whether a declaration of `name` this table's reader reads is in a disputed header */
+  inDisputedHeader(name: string): boolean {
+    return this.readerPool(name).some((symbol) =>
+      this.disputedHeaders.has(symbol.sourceFile),
+    );
+  }
+
+  /**
+   * The declaration of a name this table's reader reads (#2474): the first
+   * its own headers make (`ForeignRedeclaration.pool`), its array type the
+   * one C composes from all of them (C11 6.2.7), since cnx reads each header
+   * as the translation unit does (#2504). Not where an including file reads
+   * one of them differently (#2514): which bound it reads, cnx cannot tell.
+   */
+  private chosen<T extends TCSymbol | TCppSymbol>(
+    symbols: readonly T[],
+  ): T | undefined {
+    const pool = this.poolOf(symbols);
+    const first = pool[0];
+    if (
+      first?.kind !== "variable" ||
+      first.arrayDimensions?.includes("") !== true ||
+      pool.some((symbol) => this.disputedHeaders.has(symbol.sourceFile))
+    ) {
+      return first;
+    }
+    return {
+      ...first,
+      arrayDimensions: SymbolTable.composed(first.arrayDimensions, pool),
+    };
+  }
+
+  /** `dimensions` as C composes them with each of `pool`'s array declarations */
+  private static composed(
+    dimensions: readonly (number | string)[],
+    pool: readonly (TCSymbol | TCppSymbol)[],
+  ): (number | string)[] {
+    return ForeignRedeclaration.dimensions(
+      dimensions,
+      pool.flatMap((symbol) =>
+        symbol.kind === "variable" && symbol.arrayDimensions
+          ? [symbol.arrayDimensions]
+          : [],
+      ),
+    );
+  }
+
+  /** A name's declarations its reader's headers make, else every one */
+  private poolOf<T extends TCSymbol | TCppSymbol>(symbols: readonly T[]): T[] {
+    const headers = this.visibleHeaders;
+    return ForeignRedeclaration.pool(
+      symbols,
+      (symbol) => headers?.has(symbol.sourceFile) ?? true,
+    );
+  }
+
+  /**
+   * #2474: the dimensions an index into header array `name` is checked
+   * against: an unsized `[]` takes the bound a redeclaration gives it, as C
+   * composes them, even in a header its including files read differently
+   * (#2514), since a bound can only reject an index there.
+   */
+  indexBoundsOf(name: string): (number | string)[] | undefined {
+    const pool = this.readerPool(name);
+    const first = pool[0];
+    if (first?.kind !== "variable" || !first.arrayDimensions) return undefined;
+    return SymbolTable.composed(first.arrayDimensions, pool);
+  }
+
+  /** The declarations of `name` this table's reader reads: its C ones, else its C++ ones */
+  private readerPool(name: string): (TCSymbol | TCppSymbol)[] {
+    const c = this.cSymbols.get(name) ?? [];
+    return c.length > 0
+      ? this.poolOf(c)
+      : this.poolOf(this.cppSymbols.get(name) ?? []);
+  }
+
+  /** `symbols` with the reading file's headers' declarations first (#2474) */
+  private visibleFirst<T extends { readonly sourceFile: string }>(
+    symbols: readonly T[],
+  ): T[] {
+    const headers = this.visibleHeaders;
+    if (headers === null) return [...symbols];
+    return [
+      ...symbols.filter((symbol) => headers.has(symbol.sourceFile)),
+      ...symbols.filter((symbol) => !headers.has(symbol.sourceFile)),
+    ];
   }
 
   /**
@@ -389,7 +524,7 @@ class SymbolTable implements IResolvedSymbols {
    * Get all C symbols with a given name
    */
   getCOverloads(name: string): TCSymbol[] {
-    return this.cSymbols.get(name) ?? [];
+    return this.visibleFirst(this.cSymbols.get(name) ?? []);
   }
 
   /**
@@ -442,15 +577,14 @@ class SymbolTable implements IResolvedSymbols {
    * Get a C++ symbol by name (returns first match, or undefined)
    */
   getCppSymbol(name: string): TCppSymbol | undefined {
-    const symbols = this.cppSymbols.get(name);
-    return symbols?.[0];
+    return this.chosen(this.cppSymbols.get(name) ?? []);
   }
 
   /**
    * Get all C++ symbols with a given name
    */
   getCppOverloads(name: string): TCppSymbol[] {
-    return this.cppSymbols.get(name) ?? [];
+    return this.visibleFirst(this.cppSymbols.get(name) ?? []);
   }
 
   /**
@@ -753,13 +887,15 @@ class SymbolTable implements IResolvedSymbols {
    * @param fieldType Type of the field (e.g., "uint32_t")
    * @param arrayDimensions Optional array dimensions - numbers for resolved, strings for macros
    * @param bitWidth A bit-field's declared width (#1975 review)
+   * @param sourceFile The file that declares the struct (#2474)
    */
   addStructField(
     structName: string,
     fieldName: string,
     fieldType: string,
-    arrayDimensions?: readonly (number | string)[],
-    bitWidth?: number | string,
+    arrayDimensions: readonly (number | string)[] | undefined,
+    bitWidth: number | string | undefined,
+    sourceFile: string,
   ): void {
     let fields = this.structFields.get(structName);
     if (!fields) {
@@ -768,11 +904,42 @@ class SymbolTable implements IResolvedSymbols {
     }
 
     // Copy to mutable array for storage
-    fields.set(fieldName, {
+    const info: IStructFieldInfo = {
       type: fieldType,
       arrayDimensions: arrayDimensions ? [...arrayDimensions] : undefined,
       ...(bitWidth !== undefined && { bitWidth }),
-    });
+    };
+    fields.set(fieldName, info);
+    this.fieldsDeclaredIn(structName, sourceFile).set(fieldName, info);
+  }
+
+  /** The fields `sourceFile` declares for `structName`, created empty (#2474) */
+  private fieldsDeclaredIn(
+    structName: string,
+    sourceFile: string,
+  ): Map<string, IStructFieldInfo> {
+    let byFile = this.structFieldsByFile.get(structName);
+    if (!byFile) {
+      byFile = new Map();
+      this.structFieldsByFile.set(structName, byFile);
+    }
+    let fields = byFile.get(sourceFile);
+    if (!fields) {
+      fields = new Map();
+      byFile.set(sourceFile, fields);
+    }
+    return fields;
+  }
+
+  /**
+   * The fields `sourceFile` itself declares for `structName` (#2474);
+   * undefined when it declares no such struct
+   */
+  getStructFieldsDeclaredIn(
+    structName: string,
+    sourceFile: string,
+  ): Map<string, IStructFieldInfo> | undefined {
+    return this.structFieldsByFile.get(structName)?.get(sourceFile);
   }
 
   /**
@@ -780,18 +947,40 @@ class SymbolTable implements IResolvedSymbols {
    * `MODE_BITS`, settled to the number C reads, where cnx can read it
    */
   settleBitFieldWidths(
-    widthOf: (text: string, structName: string) => number | IUnreadBitWidth,
+    widthOf: (
+      text: string,
+      structName: string,
+      header: string | undefined,
+    ) => number | IUnreadBitWidth,
   ): void {
-    for (const [structName, fields] of this.structFields) {
+    const settled = new Map<string, number | IUnreadBitWidth>();
+    const settle = (
+      structName: string,
+      fields: Map<string, IStructFieldInfo>,
+      header?: string,
+    ): void => {
       for (const [name, info] of fields) {
         if (typeof info.bitWidth !== "string") continue;
-        const width = widthOf(info.bitWidth, structName);
+        const key = JSON.stringify([structName, header, info.bitWidth]);
+        const width =
+          settled.get(key) ?? widthOf(info.bitWidth, structName, header);
+        settled.set(key, width);
         fields.set(
           name,
           typeof width === "number"
             ? { ...info, bitWidth: width }
             : { ...info, bitWidthUnread: width },
         );
+      }
+    };
+    for (const [structName, fields] of this.structFields) {
+      settle(structName, fields);
+    }
+    // #2474: a file's view reads the fields its own header declares, whose
+    // width is read through the macros of the files that include that header
+    for (const [structName, byFile] of this.structFieldsByFile) {
+      for (const [header, fields] of byFile) {
+        settle(structName, fields, header);
       }
     }
   }
@@ -807,8 +996,7 @@ class SymbolTable implements IResolvedSymbols {
     structName: string,
     fieldName: string,
   ): IStructFieldInfo | undefined {
-    const fields = this.structFields.get(structName);
-    return fields?.get(fieldName);
+    return this.getStructFields(structName)?.get(fieldName);
   }
 
   /**
@@ -820,6 +1008,24 @@ class SymbolTable implements IResolvedSymbols {
   getStructFields(
     structName: string,
   ): Map<string, IStructFieldInfo> | undefined {
+    // #2474: a view reads the struct a header it reads declares, as
+    // `getCOverloads` puts that header's declaration first
+    const headers = this.visibleHeaders;
+    const byFile = this.structFieldsByFile.get(structName);
+    if (headers !== null) {
+      for (const [file, fields] of byFile ?? []) {
+        if (headers.has(file)) return fields;
+      }
+      // A header it reads that names it otherwise (`typedef uint32_t Pair;`)
+      // says it is no struct here
+      const declared = [
+        ...(this.cSymbols.get(structName) ?? []),
+        ...(this.cppSymbols.get(structName) ?? []),
+      ];
+      if (declared.some((symbol) => headers.has(symbol.sourceFile))) {
+        return undefined;
+      }
+    }
     return this.structFields.get(structName);
   }
 
@@ -830,7 +1036,7 @@ class SymbolTable implements IResolvedSymbols {
    * @returns Map of field names to type strings, or undefined if struct not found
    */
   getStructFieldTypes(structName: string): Map<string, string> | undefined {
-    const fields = this.structFields.get(structName);
+    const fields = this.getStructFields(structName);
     if (!fields) return undefined;
 
     const result = new Map<string, string>();
@@ -852,9 +1058,11 @@ class SymbolTable implements IResolvedSymbols {
    * Restore struct fields from cache
    * Merges cached fields into the existing structFields map
    * @param fields Map of struct name -> (field name -> field info)
+   * @param sourceFile The header that declared them (#2474)
    */
   restoreStructFields(
     fields: Map<string, Map<string, IStructFieldInfo>>,
+    sourceFile: string,
   ): void {
     for (const [structName, fieldMap] of fields) {
       let existingFields = this.structFields.get(structName);
@@ -862,9 +1070,10 @@ class SymbolTable implements IResolvedSymbols {
         existingFields = new Map();
         this.structFields.set(structName, existingFields);
       }
-
+      const declared = this.fieldsDeclaredIn(structName, sourceFile);
       for (const [fieldName, fieldInfo] of fieldMap) {
         existingFields.set(fieldName, fieldInfo);
+        declared.set(fieldName, fieldInfo);
       }
     }
   }

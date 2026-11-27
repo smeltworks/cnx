@@ -143,7 +143,13 @@ class LengthPropertyCheck {
     // subject, and no property rule applies.
     if (step?.before == null) return; // unresolved -- another diagnostic's to report
 
-    this.check(last, property, step, inFunction, declaredAt);
+    // #2514: `samples` is declared in a header the files that include it
+    // read differently
+    const table = this.context.symbolTable;
+    const subject =
+      chain.primary.kind === "identifier" ? chain.primary.name : null;
+    const readDifferently = subject !== null && table.inDisputedHeader(subject);
+    this.check(last, property, step, inFunction, declaredAt, readDifferently);
   }
 
   private check(
@@ -152,6 +158,7 @@ class LengthPropertyCheck {
     step: IChainStep,
     inFunction: boolean,
     declaredAt: ISourceSite | undefined,
+    readDifferently = false,
   ): void {
     const typed = step.before!;
     const subject = LengthSubject.spelling(typed);
@@ -199,6 +206,22 @@ class LengthPropertyCheck {
         span: at.span,
         message: rule.message,
         helpText: rule.helpText,
+      });
+      return;
+    }
+    // #2474: a header array declared `[]` that no declaration sizes, or one
+    // in a header its including files read differently (#2514), has no count
+    // cnx knows; render had nothing to write (`n = ;`, `()`)
+    if (name.unit !== "char_count" && typed.dimensions[0] === "") {
+      this.report(declaredAt, {
+        code: "E0867",
+        span: at.span,
+        message: readDifferently
+          ? `.${property} is not known for '${subject}': the .cnx files that include its header read it differently, so cnx cannot tell which size the compiler reads (#2514)`
+          : `.${property} is not known for '${subject}', which is declared without a size`,
+        helpText: readDifferently
+          ? "Include the same configuration before the header in every .cnx file that includes it, so each reads the size the compiler reads (ADR-058)."
+          : "Declare the array with its size, so its length is the one the compiler reads (ADR-058).",
       });
       return;
     }

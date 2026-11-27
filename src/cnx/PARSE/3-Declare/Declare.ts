@@ -26,6 +26,7 @@ class Declare {
       parsed.headerReaders,
       symbolTable,
     );
+    symbolTable.markDisputedHeaders(parsed.disputedHeaders);
     Declare._recover(parsed.recovered, symbolTable);
     HeaderDeclarations.aliasTypedefChains(symbolTable);
     const registry = new SymbolRegistry();

@@ -39,6 +39,7 @@ let state = new TranspileState();
 describe("TranspileState", () => {
   beforeEach(() => {
     state = new TranspileState();
+    state.sourcePath = "test.cnx";
     TestSymbolTable.install(state);
   });
 
@@ -118,6 +119,7 @@ describe("TranspileState", () => {
   describe("C++ Mode Helpers", () => {
     it("getNextTempVarName returns incrementing names", () => {
       state = new TranspileState(); // Reset counter
+      state.sourcePath = "test.cnx";
       expect(state.getNextTempVarName()).toBe("cnx_tmp0");
       expect(state.getNextTempVarName()).toBe("cnx_tmp1");
       expect(state.getNextTempVarName()).toBe("cnx_tmp2");
@@ -267,7 +269,10 @@ describe("TranspileState", () => {
       structFields.set("Point", pointFields);
 
       // Use restoreStructFields to populate the symbol table
-      TestSymbolTable.of(state).restoreStructFields(structFields);
+      TestSymbolTable.of(state).restoreStructFields(
+        structFields,
+        "/test/types.h",
+      );
 
       state.program = Program.build([], {
         cppMode: false,
@@ -294,7 +299,10 @@ describe("TranspileState", () => {
       bufferFields.set("data", { type: "u8", arrayDimensions: [256] }); // Array
 
       structFields.set("Buffer", bufferFields);
-      TestSymbolTable.of(state).restoreStructFields(structFields);
+      TestSymbolTable.of(state).restoreStructFields(
+        structFields,
+        "/test/types.h",
+      );
 
       state.program = Program.build([], {
         cppMode: false,
@@ -321,7 +329,10 @@ describe("TranspileState", () => {
       arrayOnlyFields.set("values", { type: "i32", arrayDimensions: [5] });
 
       structFields.set("ArrayOnly", arrayOnlyFields);
-      TestSymbolTable.of(state).restoreStructFields(structFields);
+      TestSymbolTable.of(state).restoreStructFields(
+        structFields,
+        "/test/types.h",
+      );
 
       state.program = Program.build([], {
         cppMode: false,
@@ -357,7 +368,10 @@ describe("TranspileState", () => {
 
       structFields.set("Mixed", mixedFields);
       structFields.set("Simple", simpleFields);
-      TestSymbolTable.of(state).restoreStructFields(structFields);
+      TestSymbolTable.of(state).restoreStructFields(
+        structFields,
+        "/test/types.h",
+      );
 
       state.program = Program.build([], {
         cppMode: false,

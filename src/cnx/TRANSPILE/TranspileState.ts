@@ -518,15 +518,14 @@ class TranspileState {
   program: IProgram | null = null;
 
   /**
-   * The run's symbol table, read off 1.4's `Program` -- the only place a pass
-   * after 1.4 may take it from (#1991).
+   * The symbol table as the file being generated reads it, 1.4's
+   * `Program.symbolTableFor(sourcePath)` -- the only place a pass after 1.4
+   * may take it from (#1991). A header name two headers declare is the
+   * declaration this file's own includes bring in (#2474).
    */
   get symbolTable(): IResolvedSymbols {
-    invariant(
-      this.program !== null,
-      "1.4 Resolve built Program before a pass read its symbol table",
-    );
-    return this.program.symbolTable();
+    const bound = this.boundProgram();
+    return bound.program.symbolTableFor(bound.sourcePath);
   }
 
   // ===========================================================================
@@ -905,12 +904,7 @@ class TranspileState {
    * is the single place that question now has to be answered.
    */
   callbackTypedefTypeFor(functionName: string): string | undefined {
-    const typedefName = this.program
-      ?.callbackCompatibleFunctions()
-      .get(functionName);
-    if (!typedefName) return undefined;
-
-    return this.getTypedefType(typedefName);
+    return this.program?.callbackCompatibleFunctions().get(functionName)?.type;
   }
 
   getTypedefType(typedefName: string): string | undefined {

@@ -1,3 +1,4 @@
+import type ICTypedefSymbol from "./symbols/c/ICTypedefSymbol";
 import type IFunctionSymbol from "./symbols/IFunctionSymbol";
 import type IFoldedConstant from "./IFoldedConstant";
 import type TConstExpr from "./TConstExpr";
@@ -106,6 +107,11 @@ interface IProgram {
   symbolsInFile(sourceFile: string): ReadonlyArray<TSymbol>;
   /** The run's symbol table, complete: 1.3's header symbols plus the cnx ones 1.4 resolved (#1991). */
   symbolTable(): IResolvedSymbols;
+  /**
+   * The run's symbol table as `sourceFile` reads it (#2474): a header name
+   * two headers declare is the declaration the file's own C includes bring in.
+   */
+  symbolTableFor(sourceFile: string): IResolvedSymbols;
 
   /** Every file the program declared, in the order they were declared. */
   sourceFiles(): ReadonlyArray<string>;
@@ -248,9 +254,10 @@ interface IProgram {
    * shape, so it takes neither auto-const nor pass-by-value. The use can sit in
    * a different file from the declaration, which makes this cross-file — and it
    * was previously accumulated as files rendered, so an early file decided its
-   * signatures on a partial answer (#1511).
+   * signatures on a partial answer (#1511). The typedef is the declaration the
+   * using file sees (#2474), one answer for the definition and every call.
    */
-  callbackCompatibleFunctions(): ReadonlyMap<string, string>;
+  callbackCompatibleFunctions(): ReadonlyMap<string, ICTypedefSymbol>;
 
   /**
    * ADR-071: every cnx function used as a callback at all (a type, or a

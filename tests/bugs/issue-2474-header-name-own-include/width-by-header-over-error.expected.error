@@ -1,0 +1,2 @@
+tests/bugs/issue-2474-header-name-own-include/lib/width-a-over.cnx:5:17 error[E0881]: Value 8 exceeds 3-bit field 'mode' maximum of 7
+       help: A 3-bit field holds 0 through 7; widen the bit-field in its header, or write a value that fits (ADR-034).
