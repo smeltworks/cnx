@@ -70,7 +70,9 @@ import Write from "../../cnx/WRITE/1-Write/Write";
 // a call it cannot take is judged; an entry written before has names alone.
 // 26: #2510 review -- an enum defined inside a C struct records its
 // constants, which C gives file scope; an entry written before has none.
-const CACHE_VERSION = 26;
+// 27: #2510 review -- a C++ header records its unscoped enums' constants,
+// those of an enum inside a class scoped to it; an entry written before has none.
+const CACHE_VERSION = 27;
 
 const TRANSPILER_VERSION = packageJson.version;
 

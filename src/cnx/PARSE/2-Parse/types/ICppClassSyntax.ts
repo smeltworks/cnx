@@ -1,3 +1,4 @@
+import type ICppEnumSyntax from "./ICppEnumSyntax";
 import type TCppMemberSyntax from "./TCppMemberSyntax";
 import type ICppMemberTemplate from "../../../types/symbols/cpp/ICppMemberTemplate";
 
@@ -17,6 +18,8 @@ interface ICppClassSyntax {
   readonly hasUnnamedMember: boolean;
   /** #2473 review: its member templates, which 1.3 does not declare */
   readonly templateMembers: readonly ICppMemberTemplate[];
+  /** #2510 review: the enums its body defines, whose constants it scopes */
+  readonly enums: readonly ICppEnumSyntax[];
 }
 
 export default ICppClassSyntax;

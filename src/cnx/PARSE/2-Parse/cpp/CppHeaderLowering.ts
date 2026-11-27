@@ -205,6 +205,12 @@ class CppHeaderLowering {
           ),
       ),
       templateMembers: decls.flatMap(CppHeaderLowering.memberTemplates),
+      enums: decls.flatMap((decl) =>
+        (decl.declSpecifierSeq()?.declSpecifier() ?? []).flatMap((spec) => {
+          const enumSpec = spec.typeSpecifier()?.enumSpecifier();
+          return enumSpec ? [CppHeaderLowering.enumSpecifier(enumSpec)] : [];
+        }),
+      ),
     };
   }
 
@@ -336,6 +342,11 @@ class CppHeaderLowering {
     return {
       name: head.Identifier()?.getText() ?? null,
       baseType: head.enumbase()?.typeSpecifierSeq().getText() ?? null,
+      isScoped:
+        head.enumkey().Class() !== null || head.enumkey().Struct() !== null,
+      enumerators: (
+        enumSpec.enumeratorList()?.enumeratorDefinition() ?? []
+      ).map((definition) => definition.enumerator().Identifier().getText()),
     };
   }
 

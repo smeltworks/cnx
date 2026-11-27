@@ -9,6 +9,9 @@ interface ICppEnumMemberSymbol extends ICppBaseSymbol {
 
   /** Optional explicit value */
   readonly value?: number;
+
+  /** #2510 review: declared by an enum inside this class, which scopes it */
+  readonly inStruct?: string;
 }
 
 export default ICppEnumMemberSymbol;

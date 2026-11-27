@@ -309,28 +309,38 @@ class SymbolTable implements IResolvedSymbols {
    * Issue #981: Also register struct fields for type resolution
    */
   /**
-   * #2510 review: a C++ compile reads a C header's struct-scoped enum
-   * constant as `Packet::N`, not `N`, so a C++ run drops the file-scope ones
-   * 1.3 recorded (`ICEnumMemberSymbol.inStruct`), keeping each for its own
-   * struct's bounds and widths (`getStructScopedNames`)
+   * #2510 review: a C++ compile reads an enum constant declared inside a
+   * struct as `Packet::N`, not `N`. The C++ resolver's are always the class's;
+   * a C header's (`ICEnumMemberSymbol.inStruct`), which C gives file scope,
+   * are the struct's only in a C++ run. Each is dropped from the file-scope
+   * indexes and kept for its own struct's bounds and widths
+   * (`getStructScopedNames`).
    */
-  scopeStructEnumerators(): void {
-    const fileScoped = (symbol: TCSymbol): boolean =>
-      symbol.kind !== "enum_member" || symbol.inStruct === undefined;
-    for (const list of this.cSymbols.values()) {
-      for (const symbol of list) {
-        if (symbol.kind !== "enum_member" || symbol.inStruct === undefined) {
-          continue;
-        }
-        const names = this.structScopedNames.get(symbol.inStruct);
-        if (names === undefined) {
-          this.structScopedNames.set(symbol.inStruct, [symbol.name]);
-        } else names.push(symbol.name);
+  scopeStructEnumerators(cppMode: boolean): void {
+    const scoped = (symbol: TCSymbol | TCppSymbol): boolean =>
+      symbol.kind === "enum_member" &&
+      symbol.inStruct !== undefined &&
+      (cppMode || symbol.sourceLanguage === ESourceLanguage.Cpp);
+    const indexes: Map<string, Array<TCSymbol | TCppSymbol>>[] = [
+      this.cSymbols,
+      this.cSymbolsByFile,
+      this.cppSymbols,
+      this.cppSymbolsByFile,
+      ...this.cppMembers.values(),
+    ];
+    const all = [...this.cSymbols.values(), ...this.cppSymbols.values()];
+    for (const symbol of all.flat()) {
+      if (symbol.kind !== "enum_member" || symbol.inStruct === undefined) {
+        continue;
       }
+      if (!scoped(symbol)) continue;
+      const name =
+        "unqualifiedName" in symbol ? symbol.unqualifiedName : symbol.name;
+      SymbolTable.appendToIndex(this.structScopedNames, symbol.inStruct, name);
     }
-    for (const index of [this.cSymbols, this.cSymbolsByFile]) {
+    for (const index of indexes) {
       for (const [key, list] of index) {
-        const kept = list.filter(fileScoped);
+        const kept = list.filter((symbol) => !scoped(symbol));
         if (kept.length === list.length) continue;
         if (kept.length === 0) index.delete(key);
         else index.set(key, kept);

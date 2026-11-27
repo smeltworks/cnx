@@ -178,6 +178,14 @@ class CppResolver {
           ctx.symbolTable,
         );
         if (enumSymbol) ctx.symbols.push(enumSymbol);
+        ctx.symbols.push(
+          ...EnumCollector.members(
+            spec.enum,
+            ctx.sourceFile,
+            decl.span,
+            ctx.currentNamespace,
+          ),
+        );
         continue;
       }
       if (!spec.class.name) {
@@ -196,6 +204,7 @@ class CppResolver {
           result.classSymbol,
           ...result.memberFunctions,
           ...result.staticMembers,
+          ...result.enumMembers,
         );
         ctx.warnings.push(...result.warnings);
       }
@@ -235,6 +244,7 @@ class CppResolver {
           result.classSymbol,
           ...result.memberFunctions,
           ...result.staticMembers,
+          ...result.enumMembers,
         );
         ctx.warnings.push(...result.warnings);
         return;

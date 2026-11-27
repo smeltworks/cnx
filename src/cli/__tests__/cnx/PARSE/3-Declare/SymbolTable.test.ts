@@ -1221,7 +1221,7 @@ describe("SymbolTable", () => {
       });
       symbolTable.addCSymbol(member("N", "Packet"));
       symbolTable.addCSymbol(member("TOP"));
-      symbolTable.scopeStructEnumerators();
+      symbolTable.scopeStructEnumerators(true);
       expect(symbolTable.getCSymbol("N")).toBeUndefined();
       expect(symbolTable.getCSymbol("TOP")?.kind).toBe("enum_member");
       expect(
@@ -1229,6 +1229,40 @@ describe("SymbolTable", () => {
       ).toEqual(["TOP"]);
       expect(symbolTable.getStructScopedNames("Packet")).toEqual(["N"]);
       expect(symbolTable.getStructScopedNames("Other")).toEqual([]);
+    });
+
+    it("scopeStructEnumerators keeps a C struct's constants at file scope in a C run, and always scopes a C++ class's (#2510 review)", () => {
+      symbolTable.addCSymbol({
+        kind: "enum_member",
+        name: "N",
+        sourceFile: "packet.h",
+        span: TestSourceSpan.at(1),
+        sourceLanguage: ESourceLanguage.C,
+        visibility: "public",
+        parent: "",
+        inStruct: "Packet",
+      });
+      const cpp = (name: string, inStruct?: string): TCppSymbol => ({
+        kind: "enum_member",
+        name: inStruct === undefined ? name : `${inStruct}::${name}`,
+        unqualifiedName: name,
+        sourceFile: "packet.hpp",
+        span: TestSourceSpan.at(1),
+        sourceLanguage: ESourceLanguage.Cpp,
+        visibility: "public",
+        ...(inStruct !== undefined && { inStruct }),
+      });
+      symbolTable.addCppSymbol(cpp("M", "Frame"));
+      symbolTable.addCppSymbol(cpp("TOP"));
+      symbolTable.scopeStructEnumerators(false);
+      expect(symbolTable.getCSymbol("N")?.kind).toBe("enum_member");
+      expect(symbolTable.getCppSymbol("Frame::M")).toBeUndefined();
+      expect(symbolTable.getCppMembers(undefined, "M")).toEqual([]);
+      expect(
+        symbolTable.getCppSymbolsByFile("packet.hpp").map((s) => s.name),
+      ).toEqual(["TOP"]);
+      expect(symbolTable.getStructScopedNames("Frame")).toEqual(["M"]);
+      expect(symbolTable.getStructScopedNames("Packet")).toEqual([]);
     });
 
     it("settles a header struct's field by its header, and each header's own fields by that header", () => {

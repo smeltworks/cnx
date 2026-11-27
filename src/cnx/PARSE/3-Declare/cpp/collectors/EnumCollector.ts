@@ -5,6 +5,7 @@
 import ESourceLanguage from "../../../../utils/types/ESourceLanguage";
 import CppNamespaceUtils from "../../../../utils/CppNamespaceUtils";
 import ICppEnumSymbol from "../../../../types/symbols/cpp/ICppEnumSymbol";
+import ICppEnumMemberSymbol from "../../../../types/symbols/cpp/ICppEnumMemberSymbol";
 import SymbolTable from "../../SymbolTable";
 import SymbolUtils from "../../SymbolUtils";
 import type ICppEnumSyntax from "../../../2-Parse/types/ICppEnumSyntax";
@@ -46,6 +47,32 @@ class EnumCollector {
       parent: currentNamespace,
       bitWidth,
     };
+  }
+
+  /**
+   * #2510 review: the constants an unscoped enum declares, named where it
+   * stands -- inside class `inStruct` they are that class's (`Packet::N`).
+   * An `enum class`'s are read only through its name, so it declares none.
+   */
+  static members(
+    enumSyntax: ICppEnumSyntax,
+    sourceFile: string,
+    span: ISourceSpan,
+    currentNamespace?: string,
+    inStruct?: string,
+  ): ICppEnumMemberSymbol[] {
+    if (enumSyntax.isScoped) return [];
+    return enumSyntax.enumerators.map((name) => ({
+      kind: "enum_member",
+      name: CppNamespaceUtils.qualify(inStruct ?? currentNamespace, name),
+      unqualifiedName: name,
+      sourceFile,
+      span,
+      sourceLanguage: ESourceLanguage.Cpp,
+      visibility: "public",
+      parent: currentNamespace,
+      ...(inStruct !== undefined && { inStruct }),
+    }));
   }
 }
 

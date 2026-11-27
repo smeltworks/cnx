@@ -63,3 +63,15 @@ describe("CppHeaderLowering member templates", () => {
     ).toEqual([]);
   });
 });
+
+describe("CppHeaderLowering class enums (#2510 review)", () => {
+  it("records the enums a class body defines, and their enumerators", () => {
+    const cls = classOf(
+      "struct P { enum { N = 3, M } kind; enum class K { A }; int d[N]; };",
+    );
+    expect(cls.enums).toEqual([
+      { name: null, baseType: null, isScoped: false, enumerators: ["N", "M"] },
+      { name: "K", baseType: null, isScoped: true, enumerators: ["A"] },
+    ]);
+  });
+});

@@ -10,11 +10,13 @@ import CppNamespaceUtils from "../../../../utils/CppNamespaceUtils";
 import ICppClassSymbol from "../../../../types/symbols/cpp/ICppClassSymbol";
 import ICppFunctionSymbol from "../../../../types/symbols/cpp/ICppFunctionSymbol";
 import ICppVariableSymbol from "../../../../types/symbols/cpp/ICppVariableSymbol";
+import ICppEnumMemberSymbol from "../../../../types/symbols/cpp/ICppEnumMemberSymbol";
 import type TStructLayout from "../../../../types/TStructLayout";
 import ICppFieldInfo from "../../../../types/symbols/cpp/ICppFieldInfo";
 import SymbolTable from "../../SymbolTable";
 import SymbolUtils from "../../SymbolUtils";
 import DeclaratorTypes from "../../../2-Parse/shared/DeclaratorTypes";
+import EnumCollector from "./EnumCollector";
 import FunctionCollector from "./FunctionCollector";
 import type ISourceSpan from "../../../../types/ISourceSpan";
 import type ICppClassSyntax from "../../../2-Parse/types/ICppClassSyntax";
@@ -30,6 +32,8 @@ interface IClassCollectorResult {
   memberFunctions: ICppFunctionSymbol[];
   /** #1975 review: `static` data members, values rather than fields */
   staticMembers: ICppVariableSymbol[];
+  /** #2510 review: the constants of the enums its body defines */
+  enumMembers: ICppEnumMemberSymbol[];
   warnings: string[];
 }
 
@@ -107,7 +111,20 @@ class ClassCollector {
       }),
     };
 
-    return { classSymbol, memberFunctions, staticMembers, warnings };
+    const enumMembers = ClassCollector._enumMembers(
+      classSyntax,
+      fullName,
+      sourceFile,
+      span,
+      currentNamespace,
+    );
+    return {
+      classSymbol,
+      memberFunctions,
+      staticMembers,
+      enumMembers,
+      warnings,
+    };
   }
 
   /**
@@ -164,7 +181,38 @@ class ClassCollector {
       }),
     };
 
-    return { classSymbol, memberFunctions, staticMembers, warnings };
+    const enumMembers = ClassCollector._enumMembers(
+      classSyntax,
+      typedefName,
+      sourceFile,
+      span,
+      currentNamespace,
+    );
+    return {
+      classSymbol,
+      memberFunctions,
+      staticMembers,
+      enumMembers,
+      warnings,
+    };
+  }
+
+  private static _enumMembers(
+    classSyntax: ICppClassSyntax,
+    className: string,
+    sourceFile: string,
+    span: ISourceSpan,
+    currentNamespace: string | undefined,
+  ): ICppEnumMemberSymbol[] {
+    return classSyntax.enums.flatMap((memberEnum) =>
+      EnumCollector.members(
+        memberEnum,
+        sourceFile,
+        span,
+        currentNamespace,
+        className,
+      ),
+    );
   }
 
   /** #1975 review: why a class's fields do not sum to its length, if so */
