@@ -143,13 +143,16 @@ class LengthPropertyCheck {
     // subject, and no property rule applies.
     if (step?.before == null) return; // unresolved -- another diagnostic's to report
 
-    // #2514: `samples` is first declared `[]`, and a later declaration sizes
-    // it in a header the files that include it read differently
+    // #2514: `samples` is declared in a header the files that include it
+    // read differently
+    const table = this.context.symbolTable;
+    const subject =
+      chain.primary.kind === "identifier" ? chain.primary.name : null;
     const readDifferently =
-      chain.primary.kind === "identifier" &&
-      ops.length === 1 &&
-      (this.context.symbolTable.indexBoundsOf(chain.primary.name)?.[0] ??
-        "") !== "";
+      subject !== null &&
+      [...table.getCOverloads(subject), ...table.getCppOverloads(subject)].some(
+        (symbol) => table.getDisputedHeaders().has(symbol.sourceFile),
+      );
     this.check(last, property, step, inFunction, declaredAt, readDifferently);
   }
 
