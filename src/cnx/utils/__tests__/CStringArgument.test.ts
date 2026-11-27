@@ -13,7 +13,7 @@ const symbols = (): SymbolTable => {
     ["alias_t", "text_t", false],
     ["bytes_t", "uint8_t*", false],
     ["character", "char", false],
-    ["cchar", "char", true],
+    ["letter", "char", true],
   ] as const) {
     table.addCSymbol({
       name,
@@ -90,7 +90,7 @@ describe("CStringArgument", () => {
       "text_t",
       "alias_t",
       "uint8_t*",
-      "cchar*",
+      "letter*",
     ]) {
       expect(CStringArgument.isWritableCharPointer(type, table)).toBe(false);
     }
