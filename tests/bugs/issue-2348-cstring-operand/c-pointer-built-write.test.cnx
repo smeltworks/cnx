@@ -10,6 +10,8 @@ mut i32 first;
 u32 main() {
     chars_upper(buffer + "!");
     chars_upper(buffer[1, 3]);
+    // A typedef of char* is written through too
+    chars_lower(buffer + "!");
     // Controls: a const char* is built, and a whole string is passed
     first <- chars_first(buffer + "!");
     chars_upper(buffer);

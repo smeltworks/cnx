@@ -37,6 +37,7 @@ import ArgumentQualifier from "./helpers/ArgumentQualifier";
 import CPointerParameter from "../../utils/CPointerParameter";
 import StringValueForm from "../../utils/StringValueForm";
 import CStringArgument from "../../utils/CStringArgument";
+import CallReach from "../../utils/CallReach";
 import BuiltStringArgument from "./helpers/BuiltStringArgument";
 import StatementNodes from "../../utils/StatementNodes";
 import SourceOrder from "../../utils/SourceOrder";
@@ -134,7 +135,7 @@ class CPointerArgumentCheck {
     index: number,
   ): void {
     if (
-      this.rejectsBuiltWrite(arg, callee, index) ||
+      this.rejectsBuiltWrite(arg, callee, reached, index) ||
       this.rejectsUnknownLength(arg, callee, index) ||
       this.rejectsPointerResult(arg, callee, reached, index)
     ) {
@@ -151,9 +152,28 @@ class CPointerArgumentCheck {
   private rejectsBuiltWrite(
     arg: TExpression,
     callee: ICCallee,
+    reached: readonly ICCalleeSignature[],
     index: number,
   ): boolean {
-    if (!CArgumentWrite.mayWrite(callee, index, this.context)) return false;
+    // A typedef of `char*` is one too, which `CArgumentWrite` does not follow
+    const shaped = CallReach.shapedFor(
+      reached.map((signature) => signature.parameters),
+      index,
+    );
+    if (
+      !CArgumentWrite.mayWrite(callee, index, this.context) &&
+      !(
+        shaped !== undefined &&
+        shaped.isArray !== true &&
+        !CPointerParameter.pointsToConst(shaped) &&
+        CStringArgument.isWritableCharPointer(
+          shaped.type,
+          this.context.symbolTable,
+        )
+      )
+    ) {
+      return false;
+    }
     this.found.push({
       code: "E0915",
       span: arg.span,
