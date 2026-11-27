@@ -1,5 +1,5 @@
 // Issue #2514 helper: includes configured-grid.h without configured.h, so its
-// compile reads grid as 2 rows where configured-disputed-row-error's reads 4.
+// compile reads grid as 2 rows where configured-disputed-row's reads 4.
 #include "configured-grid.h"
 
 u32 gridReader() {

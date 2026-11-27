@@ -1,0 +1,27 @@
+// test-execution
+// Issue #2514: the files that include configured-grid.h read grid's rows as
+// 4 and 2, but both read a row as 3 elements, so a row's count is 3 as a
+// value and as a dimension; only the number of rows is unknown.
+#include "lib/configured.h"
+#include "lib/configured-grid.h"
+#include "lib/grid-reader.cnx"
+
+mut u8[grid[0].type_element_count] row;
+
+u32 main() {
+    u32 count <- grid[0].type_element_count;
+    if (count != 3) {
+        return 1;
+    }
+    if (row.type_element_count != 3) {
+        return 2;
+    }
+    if (grid[0].type_byte_length != 3) {
+        return 3;
+    }
+    if (grid[0][0].type_bit_length != 8) {
+        return 4;
+    }
+    row[0] <- 1;
+    return gridReader() - 1;
+}

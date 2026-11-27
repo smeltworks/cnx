@@ -392,10 +392,7 @@ class ConstantNames {
         : ConstantNames.ofMember({ type, dimensions: [] }, rest, walk);
     }
     if (rest.length === 0) return ConstantNames.without("variable", walk);
-    if (value.disputed === true) {
-      return ConstantNames.without("disputed", walk);
-    }
-    return ConstantNames.ofMember(
+    const result = ConstantNames.ofMember(
       {
         type: { kind: "external", name: value.type },
         dimensions: value.dimensions,
@@ -403,6 +400,13 @@ class ConstantNames {
       rest,
       walk,
     );
+    // #2514: only a length that needs the unsized dimension is unknown. One
+    // the declaration writes, a row's count, is as any header array's
+    return value.disputed === true &&
+      result.kind === "notConstant" &&
+      result.reason === "unfolded"
+      ? ConstantNames.without("disputed", walk)
+      : result;
   }
 
   /** One element's memory as C measures it; null for a type cnx cannot name */
