@@ -1,0 +1,17 @@
+// test-error
+// #2348 review: a call through a header's inline function-pointer variable,
+// or through an element of an array of them, checks its C arguments.
+#include "lib/callback-checks.h"
+
+u32 main() {
+    cstring c_text <- texts_name();
+    if (c_text = NULL) {
+        return 1;
+    }
+    u32 put <- g_put(c_text);
+    u32 element <- g_puts[1](c_text);
+    // Controls: a const char* parameter takes a cstring; void returns nothing
+    u32 shown <- g_show(c_text);
+    g_done(put);
+    return put + element + shown;
+}

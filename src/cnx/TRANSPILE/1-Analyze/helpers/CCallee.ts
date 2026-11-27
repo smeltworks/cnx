@@ -1,7 +1,9 @@
 import OperandTyper from "../../../utils/OperandTyper";
 import CallReach from "../../../utils/CallReach";
+import ExpressionShape from "../../../utils/ExpressionShape";
 import ForeignTypeFacts from "../../../utils/ForeignTypeFacts";
 import TypedefParamParser from "../../../utils/TypedefParamParser";
+import WrittenBinding from "./WrittenBinding";
 import type TExpression from "../../../types/syntax/TExpression";
 import type IAnalysisContext from "../types/IAnalysisContext";
 import type ICCallee from "../types/ICCallee";
@@ -217,7 +219,52 @@ class CCallee {
           null);
   }
 
-  /** A call through a value whose type is a C function-pointer typedef */
+  /**
+   * A header variable's declared type and the written op that calls it, for
+   * `g_op(a)` or `g_ops[0](a)`: cnx does not type a C variable, and an element
+   * shares its array's type, so the call follows one subscript per dimension
+   */
+  static foreignCall(
+    expr: TExpression,
+    context: IAnalysisContext,
+  ): { type: string; callAt: number; opCount: number } | null {
+    const written = WrittenBinding.ofExpression(expr, context);
+    if (written?.binding?.kind !== "foreign") return null;
+    const symbol = context.symbolTable.getCSymbol(written.binding.name);
+    const callAt = written.ops.findIndex((op) => op.kind !== "subscript");
+    return symbol?.kind === "variable" &&
+      written.ops[callAt]?.kind === "call" &&
+      callAt === (symbol.arrayDimensions?.length ?? 0)
+      ? { type: symbol.type, callAt, opCount: written.ops.length }
+      : null;
+  }
+
+  /** The type of the header variable `expr`'s last op calls */
+  private static foreignTypeOf(
+    expr: TPostfix,
+    context: IAnalysisContext,
+  ): string | null {
+    const call = CCallee.foreignCall(expr, context);
+    return call !== null && call.callAt === call.opCount - 1 ? call.type : null;
+  }
+
+  /**
+   * The function-pointer type a value's type spells: a typedef's, or the type
+   * itself when a header wrote it inline (`uint32_t (*g_op)(uint32_t)`)
+   */
+  static functionPointerType(
+    typeName: string,
+    context: IAnalysisContext,
+  ): string | null {
+    if (typeName.includes("(*)")) return typeName;
+    const typedef = context.symbolTable.getCSymbol(typeName);
+    return typedef?.kind === "type" &&
+      context.symbolTable.isCFunctionPointerTypedef(typeName)
+      ? typedef.type
+      : null;
+  }
+
+  /** A call through a value whose type is a C function pointer */
   private static typedefSignature(
     expr: TPostfix,
     context: IAnalysisContext,
@@ -227,18 +274,13 @@ class CCallee {
         ? expr.primary
         : { ...expr, ops: expr.ops.slice(0, -1) };
     const typeName =
+      CCallee.foreignTypeOf(expr, context) ??
       OperandTyper.typeOf(target, context)?.typeName ??
       CCallee.fieldTypeOf(expr, context);
-    if (
-      typeName === undefined ||
-      typeName === null ||
-      !context.symbolTable.isCFunctionPointerTypedef(typeName)
-    ) {
-      return null;
-    }
-    const typedef = context.symbolTable.getCSymbol(typeName);
+    if (typeName === undefined || typeName === null) return null;
+    const pointerType = CCallee.functionPointerType(typeName, context);
     const parsed =
-      typedef?.kind === "type" ? TypedefParamParser.parse(typedef.type) : null;
+      pointerType === null ? null : TypedefParamParser.parse(pointerType);
     if (parsed === null) return null;
     const declared = parsed.params.filter(
       (param) =>
@@ -246,7 +288,11 @@ class CCallee {
         !(param.baseType === "void" && !param.isPointer),
     );
     return {
-      name: typeName,
+      // an inline type is no name to report: name the callee as written
+      name:
+        pointerType === typeName
+          ? ExpressionShape.writtenThrough(expr, expr.ops.length - 1)
+          : typeName,
       signature: {
         returnType: parsed.returnType,
         parameters: declared.map((param, index) => ({

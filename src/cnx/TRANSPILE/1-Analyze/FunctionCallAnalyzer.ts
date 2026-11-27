@@ -33,6 +33,7 @@ import type IAnalysisContext from "./types/IAnalysisContext";
 import type TSymbol from "../../types/symbols/TSymbol";
 import invariant from "../../utils/invariant";
 import ESourceLanguage from "../../utils/types/ESourceLanguage";
+import CCallee from "./helpers/CCallee";
 
 /**
  * cnx built-in functions
@@ -273,35 +274,25 @@ class FunctionCallAnalyzer {
     expr: Extract<TExpression, { kind: "postfix" }>,
   ): boolean {
     const written = WrittenBinding.ofExpression(expr, this.context);
+    const binding = written?.binding;
+    if (binding?.kind === "foreign") {
+      const call = CCallee.foreignCall(expr, this.context);
+      return (
+        call !== null &&
+        CCallee.functionPointerType(call.type, this.context) !== null
+      );
+    }
     if (written?.ops[0]?.kind !== "call") return false;
-    const binding = written.binding;
     if (binding?.kind === "local") {
       return (
         binding.declaration.arrayDimensions.length === 0 &&
         this.isCallableType(binding.declaration.type)
       );
     }
-    if (binding?.kind === "foreign") {
-      return this.isCallableForeignVariable(binding.name);
-    }
     return (
       binding?.kind === "variable" &&
       !binding.symbol.isArray &&
       this.isCallableType(binding.symbol.type)
-    );
-  }
-
-  /**
-   * A header's variable of function-pointer type, written inline
-   * (`uint32_t (*g_op)(uint32_t)`) or through a typedef (#2348 review)
-   */
-  private isCallableForeignVariable(name: string): boolean {
-    const symbol = this.context.symbolTable.getCSymbol(name);
-    return (
-      symbol?.kind === "variable" &&
-      symbol.isArray !== true &&
-      (symbol.type.includes("(*)") ||
-        this.isCFunctionPointerTypedef(symbol.type))
     );
   }
 
