@@ -66,6 +66,7 @@ import SourceOrder from "../../utils/SourceOrder";
 import TypedefParamParser from "../../utils/TypedefParamParser";
 import CStringArgument from "../../utils/CStringArgument";
 import type ILexicalFrame from "../../types/ILexicalFrame";
+import type IResolvedSymbols from "../../types/IResolvedSymbols";
 
 /** The slot a value fills, for E0880's wording */
 interface ISlot {
@@ -389,6 +390,23 @@ class CallbackAssignmentCheck {
   }
 
   /**
+   * The headers of a file that includes this typedef's header (#2474): its
+   * return's alias is the one beside it, which the defining file need not see
+   */
+  private readerOf(typedef: ICTypedefSymbol): IResolvedSymbols {
+    const program = this.context.program;
+    if (program.seesForeignSymbol(this.context.sourceFile, typedef)) {
+      return this.context.symbolTable;
+    }
+    const reader = program
+      .sourceFiles()
+      .find((sourceFile) => program.seesForeignSymbol(sourceFile, typedef));
+    return reader === undefined
+      ? this.context.symbolTable
+      : program.symbolTableFor(reader);
+  }
+
+  /**
    * E0879 (#2348 review): a function returning `cstring`, which is
    * `const char*` `mut` or not (ADR-046), given to a C type that returns a
    * `char*` C may write the characters through
@@ -412,7 +430,7 @@ class CallbackAssignmentCheck {
       symbol?.kind !== "function" ||
       returned === null ||
       TypeResolver.getTypeName(symbol.returnType) !== "cstring" ||
-      !CStringArgument.isWritableCharPointer(returned, this.context.symbolTable)
+      !CStringArgument.isWritableCharPointer(returned, this.readerOf(typedef))
     ) {
       return;
     }
