@@ -192,3 +192,32 @@ describe("ExternalDeclarationOracle.definesAndHeaders (#1881)", () => {
     ]);
   });
 });
+
+describe("ExternalDeclarationOracle.definesAndHeaders redefinitions (#2510 review)", () => {
+  const read = ExternalDeclarationOracle.definesAndHeaders(
+    [
+      '# 1 "unit.c"',
+      '# 1 "/p/slots.h" 1',
+      "#define SLOTS 3",
+      "#define SLOTS 8",
+      "#define SAME 3",
+      "#define SAME 3",
+      "#define AGAIN 1",
+      "#undef AGAIN",
+      "#define AGAIN 2",
+      '# 2 "unit.c" 2',
+    ].join("\n"),
+  );
+
+  it("names a macro defined again to another body without #undef", () => {
+    expect([...read.redefinedNames]).toEqual(["SLOTS"]);
+  });
+
+  it("keeps each macro's last body", () => {
+    expect(read.dump.split("\n")).toEqual([
+      "#define SLOTS 8",
+      "#define SAME 3",
+      "#define AGAIN 2",
+    ]);
+  });
+});

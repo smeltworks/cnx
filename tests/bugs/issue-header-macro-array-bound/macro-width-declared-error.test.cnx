@@ -1,0 +1,11 @@
+// test-error
+// shadowed.h gives SReg.mode an enumerator's width, SHADOW_BITS, then defines
+// a macro of the same name. C read the enumerator, 3 bits; cnx's macro dump
+// holds only the macro, 8, so it does not guess: mode has no width here.
+#include "lib/shadowed.h"
+
+mut SReg r;
+
+void main() {
+    r.mode <- 1;
+}

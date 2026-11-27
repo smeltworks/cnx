@@ -68,7 +68,15 @@ import Write from "../../cnx/WRITE/1-Write/Write";
 // calls are not judged; an entry written before has none.
 // 25: #2473 review -- a member template records the arguments it takes, so
 // a call it cannot take is judged; an entry written before has names alone.
-const CACHE_VERSION = 25;
+// 26: #2510 review -- an enum defined inside a C struct records its
+// constants, which C gives file scope; an entry written before has none.
+// 27: #2510 review -- a C++ header records its unscoped enums' constants,
+// those of an enum inside a class scoped to it; an entry written before has none.
+// 28: #2064 -- a C++ header records the declarations of its `extern "C"`
+// blocks; an entry written before has none.
+// 29: #2510 review -- a C++ class records its bases, whose constants its
+// fields read; an entry written before has none.
+const CACHE_VERSION = 29;
 
 const TRANSPILER_VERSION = packageJson.version;
 

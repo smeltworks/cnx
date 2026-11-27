@@ -7,6 +7,8 @@ import Parse from "../../2-Parse/Parse";
 import noHeaderServices from "../../2-Parse/__testUtils__/noHeaderServices";
 import Declare from "../../3-Declare/Declare";
 import testSourceGraph from "../../1-Discover/__testUtils__/testSourceGraph";
+import TestSourceSpan from "../../../types/__testUtils__/testSourceSpan";
+import ESourceLanguage from "../../../utils/types/ESourceLanguage";
 
 describe("Resolve.program", () => {
   it("resolves the declared files and carries them on", async () => {
@@ -36,6 +38,7 @@ describe("Resolve.program", () => {
           {
             dump: "#define SCALE_F 2.5f",
             headerFiles: new Set<string>(),
+            redefinedNames: new Set<string>(),
             complete: false,
           },
         ],
@@ -62,6 +65,7 @@ describe("Resolve.program", () => {
     const own = (dump: string) => ({
       dump,
       headerFiles: new Set<string>(),
+      redefinedNames: new Set<string>(),
       complete: true,
     });
     const headerMacroDumps = new Map([
@@ -88,5 +92,172 @@ describe("Resolve.program", () => {
     expect(program.seesHeaderMacro("/p/a.cnx", "OTHER")).toBe(false);
     expect(program.hidesHeaderName("/p/a.cnx", "OTHER")).toBe(true);
     expect(program.hidesHeaderName("/p/b.cnx", "OTHER")).toBe(false);
+  });
+  it("reads a header's macro width and dimension through its including files' macros (#2510)", async () => {
+    const headerMacroDumps = new Map([
+      [
+        "/p/a.cnx",
+        {
+          dump: "#define SENSOR_COUNT 3\n#define WIDE 5\n#define N 8",
+          headerFiles: new Set(["/p/cfg.h"]),
+          redefinedNames: new Set<string>(),
+          complete: true,
+        },
+      ],
+    ]);
+    const graph = {
+      ...testSourceGraph([Discover.inMemoryFile("u32 a <- 0;", "/p/a.cnx")]),
+      headerMacroDumps,
+    };
+    const parsed = await Parse.sources(graph, noHeaderServices);
+    const declared = Declare.sources({
+      ...parsed,
+      discovery: { ...parsed.discovery, headerMacroDumps },
+    });
+    const header = {
+      sourceFile: "/p/cfg.h",
+      span: TestSourceSpan.at(1),
+      sourceLanguage: ESourceLanguage.C,
+      visibility: "public",
+    } as const;
+    const table = declared.symbolTable;
+    table.addCSymbol({
+      ...header,
+      kind: "variable",
+      name: "table",
+      type: "uint8_t",
+      arrayDimensions: ["SENSOR_COUNT"],
+    });
+    // an enumerator named N: C may read it, not the macro, so N stays unread
+    table.addCSymbol({
+      ...header,
+      kind: "enum_member",
+      name: "N",
+      value: 3,
+      parent: "Count",
+    });
+    table.addCSymbol({
+      ...header,
+      kind: "variable",
+      name: "shadowed",
+      type: "uint8_t",
+      arrayDimensions: ["N"],
+    });
+    table.addCSymbol({
+      ...header,
+      kind: "struct",
+      name: "Reg",
+      isUnion: false,
+    });
+    table.addStructField(
+      "Reg",
+      "mode",
+      "uint32_t",
+      undefined,
+      "WIDE",
+      "/p/cfg.h",
+    );
+    Resolve.program(declared);
+
+    const dims = (name: string) => {
+      const symbol = table.getCSymbol(name);
+      return symbol?.kind === "variable" ? symbol.arrayDimensions : undefined;
+    };
+    expect(dims("table")).toEqual([3]);
+    expect(dims("shadowed")).toEqual(["N"]);
+    expect(table.getStructFields("Reg")?.get("mode")?.bitWidth).toBe(5);
+  });
+
+  it("stops a reading only on names of the headers its own unit opened (#2510 review)", async () => {
+    const headerMacroDumps = new Map([
+      [
+        "/p/a.cnx",
+        {
+          dump: "#define WIDTH 3\n#define DEPTH 4\n#define SPAN 5\n#define word_t 2",
+          headerFiles: new Set(["/p/cfg.h"]),
+          redefinedNames: new Set<string>(),
+          complete: true,
+        },
+      ],
+      [
+        "/p/b.cnx",
+        {
+          dump: "#define DEPTH 9",
+          headerFiles: new Set(["/p/other.h"]),
+          redefinedNames: new Set<string>(),
+          complete: true,
+        },
+      ],
+    ]);
+    const graph = {
+      ...testSourceGraph([
+        Discover.inMemoryFile("u32 a <- 0;", "/p/a.cnx"),
+        Discover.inMemoryFile("u32 b <- 0;", "/p/b.cnx"),
+      ]),
+      headerMacroDumps,
+    };
+    const parsed = await Parse.sources(graph, noHeaderServices);
+    const declared = Declare.sources({
+      ...parsed,
+      discovery: { ...parsed.discovery, headerMacroDumps },
+    });
+    const at = (sourceFile: string) =>
+      ({
+        sourceFile,
+        span: TestSourceSpan.at(1),
+        sourceLanguage: ESourceLanguage.C,
+        visibility: "public",
+      }) as const;
+    const table = declared.symbolTable;
+    for (const [name, text] of [
+      ["wide", "WIDTH"],
+      ["deep", "DEPTH"],
+      ["spanned", "SPAN"],
+      ["cast", "(word_t)+3"],
+    ]) {
+      table.addCSymbol({
+        ...at("/p/cfg.h"),
+        kind: "variable",
+        name,
+        type: "uint8_t",
+        arrayDimensions: [text],
+      });
+    }
+    // only b.cnx's compile opens other.h: its WIDTH, its `#undef DEPTH` and
+    // the DEPTH it then defines are another unit's, and C never reads them
+    // where cfg.h is read
+    table.addCSymbol({
+      ...at("/p/other.h"),
+      kind: "enum_member",
+      name: "WIDTH",
+      value: 9,
+      parent: "Other",
+    });
+    table.markUndefinedMacros("/p/other.h", ["DEPTH"]);
+    // no compile is known to have opened unplaced.h, so its SPAN still stops
+    table.addCSymbol({
+      ...at("/p/unplaced.h"),
+      kind: "enum_member",
+      name: "SPAN",
+      value: 9,
+      parent: "Loose",
+    });
+    // cfg.h's own typedef: C read `(word_t)+3` as a cast, 3, not `(2)+3`
+    table.addCSymbol({
+      ...at("/p/cfg.h"),
+      kind: "type",
+      name: "word_t",
+      type: "uint32_t",
+    });
+    Resolve.program(declared);
+
+    const dims = (name: string) => {
+      const symbol = table.getCSymbol(name);
+      return symbol?.kind === "variable" ? symbol.arrayDimensions : undefined;
+    };
+    expect(dims("cast")).toEqual(["(word_t)+3"]);
+    expect(dims("wide")).toEqual([3]);
+    expect(dims("deep")).toEqual([4]);
+    expect(dims("spanned")).toEqual(["SPAN"]);
   });
 });

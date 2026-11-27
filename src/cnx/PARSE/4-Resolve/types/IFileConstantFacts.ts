@@ -32,6 +32,14 @@ interface IFileConstantFacts {
    * target, as `sourceFile` reads the headers (#2474)
    */
   headerTypeBits(sourceFile: string, cType: string): number | null;
+  /**
+   * `ForeignTypeFacts.typedefArray` of a header's C type, as `sourceFile`
+   * reads the headers (#2474)
+   */
+  headerTypeArray(
+    sourceFile: string,
+    cType: string,
+  ): { element: string; dimensions: ReadonlyArray<number | string> } | null;
   /** #1975 review: `TypeHead.header` over the run's headers */
   headerTypeHead(name: string): TType | null;
   /** #1975 review: `ForeignTypeFacts.fieldCount` over the headers `sourceFile` reads (#2474) */

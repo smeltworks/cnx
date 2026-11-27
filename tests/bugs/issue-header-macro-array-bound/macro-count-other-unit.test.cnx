@@ -1,0 +1,29 @@
+// test-execution
+// #2535: a name stops a reading only in the unit that holds it. unit-display.h
+// declares WIDTH and removes DEPTH with #undef, but only unit-screen.cnx's
+// compile opens it, so this file reads WIDTH as 3 and DEPTH as 4, as C does.
+// It also defines SPAN as 7, which spanTable, sized in unit-reg.h, does not
+// read: only this file includes unit-reg.h, and here SPAN is 2.
+#include "lib/unit-reg.h"
+#include "lib/unit-depth.h"
+#include "lib/unit-screen.cnx"
+
+mut unit_reg_t r;
+mut u8[widthTable.type_element_count] widthCopy;
+mut u8[depthTable.type_element_count] depthCopy;
+mut u8[spanTable.type_element_count] spanCopy;
+
+u32 main() {
+    r.mode <- 5;
+    if (widthCopy.type_element_count != 3) {
+        return 1;
+    }
+    if (depthCopy.type_element_count != 4) {
+        return 2;
+    }
+    if (spanCopy.type_element_count != 2) {
+        return 3;
+    }
+    u32 w <- UnitScreen.width();
+    return r.mode + w - 325;
+}

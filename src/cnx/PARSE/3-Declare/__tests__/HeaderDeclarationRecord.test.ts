@@ -71,7 +71,7 @@ describe("HeaderDeclarationRecord undefined macros (#2494 review)", () => {
     const recovered = new SymbolTable();
     recovered.markUndefinedMacros("a.h", ["LATE_BITS"]);
     recovered.markUndefinedMacros("a.h", []);
-    expect([...recovered.undefinedMacros()]).toEqual(["LATE_BITS"]);
+    expect([...recovered.undefinedMacros(() => true)]).toEqual(["LATE_BITS"]);
   });
 
   it("restores them for that header", () => {
@@ -81,6 +81,6 @@ describe("HeaderDeclarationRecord undefined macros (#2494 review)", () => {
       "a.h",
       fresh,
     );
-    expect([...fresh.undefinedMacros()]).toEqual(["LATE_BITS"]);
+    expect([...fresh.undefinedMacros(() => true)]).toEqual(["LATE_BITS"]);
   });
 });

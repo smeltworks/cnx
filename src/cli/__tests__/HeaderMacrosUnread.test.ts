@@ -57,6 +57,7 @@ describe("header macros a file's preprocessing could not read (#1688)", () => {
     vi.spyOn(ExternalDeclarationOracle, "macroDump").mockResolvedValue({
       dump: "",
       headerFiles: new Set<string>(),
+      redefinedNames: new Set<string>(),
       complete: false,
       slices: new Map<string, string>(),
     });
@@ -72,6 +73,7 @@ describe("header macros a file's preprocessing could not read (#1688)", () => {
     vi.spyOn(ExternalDeclarationOracle, "macroDump").mockResolvedValue({
       dump: "",
       headerFiles: new Set<string>(),
+      redefinedNames: new Set<string>(),
       complete: false,
       slices: new Map<string, string>(),
     });

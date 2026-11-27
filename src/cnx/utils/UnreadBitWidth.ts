@@ -29,6 +29,37 @@ class UnreadBitWidth {
     };
   }
 
+  /**
+   * #2510 review: a macro named like a header declaration -- C reads the
+   * declaration where the macro is defined later, and the dump holds the macro
+   */
+  static declaredMacro(name: string): IUnreadBitWidth {
+    return {
+      why: `it reads ${name}, which a header both declares and defines as a macro, and cnx cannot tell which one C read here`,
+      help: `Give the macro a name no header declares, or write the width as an integer constant (ADR-034).`,
+    };
+  }
+
+  /**
+   * #2510 review: a macro a header defines again to another body without an
+   * `#undef` -- C reads the first body before the second, the dump only the
+   * second
+   */
+  /** #2510 review: a header array's macro count C has no array of */
+  static notPositiveCount(count: number): IUnreadBitWidth {
+    return {
+      why: `it is ${count}, and a C array has one element or more (C99 6.7.5.2)`,
+      help: "Give the header's array a dimension of 1 or more (ADR-036).",
+    };
+  }
+
+  static redefinedMacro(name: string): IUnreadBitWidth {
+    return {
+      why: `it reads ${name}, which a header defines again to another value, and cnx sees only the macro's last definition, not the one C read here`,
+      help: `Give the width a macro defined once, or write it as an integer constant (ADR-034).`,
+    };
+  }
+
   /** A value that depends on the target's `int` width */
   static intWidth(): IUnreadBitWidth {
     return {

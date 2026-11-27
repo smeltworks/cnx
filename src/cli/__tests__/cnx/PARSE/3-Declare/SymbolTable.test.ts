@@ -1139,4 +1139,270 @@ describe("SymbolTable", () => {
       expect(table.isCPointerTypedef("loop_a")).toBe(false);
     });
   });
+  describe("settleArrayDimensions (#2510)", () => {
+    const variable = (
+      name: string,
+      dims: ReadonlyArray<number | string>,
+    ): TCSymbol => ({
+      kind: "variable",
+      name,
+      sourceFile: "cfg.h",
+      span: TestSourceSpan.at(1),
+      sourceLanguage: ESourceLanguage.C,
+      visibility: "public",
+      type: "uint8_t",
+      arrayDimensions: dims,
+    });
+
+    it("settles a dimension it can read, and keeps one it cannot", () => {
+      symbolTable.addCSymbol(variable("table", ["SENSOR_COUNT"]));
+      symbolTable.addCSymbol(variable("odd", ["UNREAD"]));
+      symbolTable.addCSymbol(variable("fixed", [4]));
+      symbolTable.addCppSymbol({
+        kind: "variable",
+        name: "pins",
+        unqualifiedName: "pins",
+        sourceFile: "pins.hpp",
+        span: TestSourceSpan.at(1),
+        sourceLanguage: ESourceLanguage.Cpp,
+        visibility: "public",
+        type: "uint8_t",
+        arrayDimensions: ["SENSOR_COUNT"],
+      });
+      const asked: string[] = [];
+      symbolTable.settleArrayDimensions((text, header) => {
+        asked.push(`${header}:${text}`);
+        return text === "SENSOR_COUNT"
+          ? 3
+          : { why: `it reads ${text}`, help: "" };
+      });
+
+      const dims = (name: string) => {
+        const symbol = symbolTable.getCSymbol(name);
+        return symbol?.kind === "variable" ? symbol.arrayDimensions : undefined;
+      };
+      expect(dims("table")).toEqual([3]);
+      expect(dims("odd")).toEqual(["UNREAD"]);
+      // the why a dimension stayed text is kept for its uses' E0909
+      expect(
+        symbolTable
+          .getUnreadDimensions()
+          .get(SymbolTable.dimensionKey("cfg.h", "UNREAD"))?.why,
+      ).toBe("it reads UNREAD");
+      expect(
+        symbolTable
+          .getUnreadDimensions()
+          .has(SymbolTable.dimensionKey("cfg.h", "SENSOR_COUNT")),
+      ).toBe(false);
+      expect(dims("fixed")).toEqual([4]);
+      const pins = symbolTable.getCppSymbol("pins");
+      expect(pins?.kind === "variable" && pins.arrayDimensions).toEqual([3]);
+      // one settled symbol, whichever index is asked
+      expect(symbolTable.getCppSymbolsByFile("pins.hpp")[0]).toBe(pins);
+      expect(symbolTable.getCppMembers(undefined, "pins")[0]).toBe(pins);
+      expect(symbolTable.getCSymbolsByFile("cfg.h")[0]).toBe(
+        symbolTable.getCSymbol("table"),
+      );
+      // the fixed dimension is never asked about
+      expect(asked).not.toContain("cfg.h:4");
+      expect(asked).toContain("pins.hpp:SENSOR_COUNT");
+    });
+
+    it("scopeStructEnumerators drops only the enum constants a struct declares (#2510 review)", () => {
+      const member = (name: string, inStruct?: string) => ({
+        kind: "enum_member" as const,
+        name,
+        sourceFile: "packet.h",
+        span: TestSourceSpan.at(1),
+        sourceLanguage: ESourceLanguage.C as const,
+        visibility: "public" as const,
+        parent: null,
+        ...(inStruct !== undefined && { inStruct }),
+      });
+      symbolTable.addCSymbol(member("N", "Packet"));
+      symbolTable.addCSymbol(member("TOP"));
+      symbolTable.scopeStructEnumerators(true);
+      expect(symbolTable.getCSymbol("N")).toBeUndefined();
+      expect(symbolTable.getCSymbol("TOP")?.kind).toBe("enum_member");
+      expect(
+        symbolTable.getCSymbolsByFile("packet.h").map((s) => s.name),
+      ).toEqual(["TOP"]);
+      expect(symbolTable.getStructScopedNames("Packet", "packet.h")).toEqual([
+        "N",
+      ]);
+      // a same-named struct in another header scopes none of them
+      expect(symbolTable.getStructScopedNames("Packet", "other.h")).toEqual([]);
+      expect(symbolTable.getStructScopedNames("Other", "packet.h")).toEqual([]);
+    });
+
+    it("scopeStructEnumerators keeps a C struct's constants at file scope in a C run, and always scopes a C++ class's (#2510 review)", () => {
+      symbolTable.addCSymbol({
+        kind: "enum_member",
+        name: "N",
+        sourceFile: "packet.h",
+        span: TestSourceSpan.at(1),
+        sourceLanguage: ESourceLanguage.C,
+        visibility: "public",
+        parent: "",
+        inStruct: "Packet",
+      });
+      const cpp = (name: string, inStruct?: string): TCppSymbol => ({
+        kind: "enum_member",
+        name: inStruct === undefined ? name : `${inStruct}::${name}`,
+        unqualifiedName: name,
+        sourceFile: "packet.hpp",
+        span: TestSourceSpan.at(1),
+        sourceLanguage: ESourceLanguage.Cpp,
+        visibility: "public",
+        ...(inStruct !== undefined && { inStruct }),
+      });
+      symbolTable.addCppSymbol(cpp("M", "Frame"));
+      symbolTable.addCppSymbol(cpp("TOP"));
+      symbolTable.scopeStructEnumerators(false);
+      expect(symbolTable.getCSymbol("N")?.kind).toBe("enum_member");
+      expect(symbolTable.getCppSymbol("Frame::M")).toBeUndefined();
+      expect(symbolTable.getCppMembers(undefined, "M")).toEqual([]);
+      expect(
+        symbolTable.getCppSymbolsByFile("packet.hpp").map((s) => s.name),
+      ).toEqual(["TOP"]);
+      expect(symbolTable.getStructScopedNames("Frame", "packet.hpp")).toEqual([
+        "M",
+      ]);
+      expect(symbolTable.getStructScopedNames("Packet", "packet.h")).toEqual(
+        [],
+      );
+    });
+
+    it("scopeStructEnumerators gives a derived class its bases' constants, and a base it cannot see none (#2510 review)", () => {
+      const cls = (
+        name: string,
+        bases?: string[],
+        parent?: string,
+      ): TCppSymbol => ({
+        kind: "class",
+        name: parent === undefined ? name : `${parent}::${name}`,
+        unqualifiedName: name,
+        sourceFile: "based.hpp",
+        span: TestSourceSpan.at(1),
+        sourceLanguage: ESourceLanguage.Cpp,
+        visibility: "public",
+        ...(parent !== undefined && { parent }),
+        ...(bases !== undefined && { bases }),
+      });
+      symbolTable.addCppSymbol({
+        kind: "enum_member",
+        name: "cfg::Limits::N",
+        unqualifiedName: "N",
+        sourceFile: "based.hpp",
+        span: TestSourceSpan.at(1),
+        sourceLanguage: ESourceLanguage.Cpp,
+        visibility: "public",
+        inStruct: "cfg::Limits",
+      });
+      symbolTable.addCppSymbol(cls("Limits", undefined, "cfg"));
+      symbolTable.addCppSymbol(cls("Mid", ["Limits"], "cfg"));
+      symbolTable.addCppSymbol(cls("Packet", ["::cfg::Mid"]));
+      symbolTable.addCppSymbol(cls("Plain"));
+      symbolTable.addCppSymbol(cls("Clear", ["Plain"]));
+      symbolTable.addCppSymbol(cls("Templated", ["TLimits<3>"]));
+      symbolTable.addCppSymbol(cls("Loop", ["Loop"]));
+      // cfg::Plain may be another unit's: ::Plain's M still counts
+      symbolTable.addCppSymbol(cls("Plain", undefined, "cfg"));
+      symbolTable.addCppSymbol(cls("Near", ["Plain"], "cfg"));
+      symbolTable.addCppSymbol({
+        kind: "enum_member",
+        name: "Plain::M",
+        unqualifiedName: "M",
+        sourceFile: "based.hpp",
+        span: TestSourceSpan.at(1),
+        sourceLanguage: ESourceLanguage.Cpp,
+        visibility: "public",
+        inStruct: "Plain",
+      });
+      // a diamond 30 deep reaches N along 2^30 paths, and holds it once
+      for (let depth = 0; depth < 30; depth++) {
+        const below = depth === 0 ? "cfg::Mid" : `L${depth - 1}`;
+        symbolTable.addCppSymbol(cls(`A${depth}`, [below]));
+        symbolTable.addCppSymbol(cls(`B${depth}`, [below]));
+        symbolTable.addCppSymbol(cls(`L${depth}`, [`A${depth}`, `B${depth}`]));
+      }
+      symbolTable.scopeStructEnumerators(true);
+      const scoped = (name: string) =>
+        symbolTable.getStructScopedNames(name, "based.hpp");
+      // Mid finds Limits in its own namespace; Packet reads it through Mid
+      expect(scoped("cfg::Mid")).toEqual(["N"]);
+      expect(scoped("Packet")).toEqual(["N"]);
+      expect(scoped("Clear")).toEqual(["M"]);
+      expect(scoped("Templated")).toBeNull();
+      expect(scoped("Loop")).toBeNull();
+      expect(scoped("cfg::Near")).toEqual(["M"]);
+      expect(scoped("L29")).toEqual(["N"]);
+      expect(symbolTable.getStructScopedNames("Packet", "other.hpp")).toEqual(
+        [],
+      );
+    });
+
+    it("settles a header struct's field by its header, and each header's own fields by that header", () => {
+      symbolTable.addCSymbol({
+        kind: "struct",
+        name: "Bank",
+        sourceFile: "bank.h",
+        span: TestSourceSpan.at(1),
+        sourceLanguage: ESourceLanguage.C,
+        visibility: "public",
+        isUnion: false,
+      });
+      symbolTable.addCSymbol({
+        kind: "struct",
+        name: "Bank",
+        sourceFile: "wide-bank.h",
+        span: TestSourceSpan.at(1),
+        sourceLanguage: ESourceLanguage.C,
+        visibility: "public",
+        isUnion: false,
+      });
+      const field = (struct: string, name: string, header: string) =>
+        symbolTable.addStructField(
+          struct,
+          name,
+          "uint8_t",
+          ["SENSOR_COUNT"],
+          undefined,
+          header,
+        );
+      field("Bank", "data", "bank.h");
+      symbolTable.addStructField(
+        "Bank",
+        "flags",
+        "uint8_t",
+        undefined,
+        undefined,
+        "bank.h",
+      );
+      field("Bank", "data", "wide-bank.h");
+      field("Loose", "data", "loose.h");
+      const headers: string[] = [];
+      symbolTable.settleArrayDimensions((_text, header) => {
+        headers.push(header);
+        return header === "wide-bank.h" ? 8 : 3;
+      });
+
+      expect(
+        symbolTable.getStructFields("Bank")?.get("data")?.arrayDimensions,
+      ).toEqual([3]);
+      expect(
+        symbolTable.getStructFields("Loose")?.get("data")?.arrayDimensions,
+      ).toEqual(["SENSOR_COUNT"]);
+      // #2474: each header's own fields, by that header's macros
+      const declaredIn = (header: string) =>
+        symbolTable.getStructFieldsDeclaredIn("Bank", header)?.get("data")
+          ?.arrayDimensions;
+      expect(declaredIn("bank.h")).toEqual([3]);
+      expect(declaredIn("wide-bank.h")).toEqual([8]);
+      expect(
+        symbolTable.getStructFieldsDeclaredIn("Loose", "loose.h")?.get("data")
+          ?.arrayDimensions,
+      ).toEqual([3]);
+    });
+  });
 });

@@ -61,6 +61,7 @@ const noForeign = {
   macroNames: new Set<string>(),
   integerTypes: new Map<string, string>(),
   disputedHeaders: new Set<string>(),
+  unreadDimensions: new Map(),
   structTagsWithBodies: new Set<string>(),
 };
 
@@ -833,6 +834,7 @@ describe("Program", () => {
               ...noForeign,
               c: declared.map(samples),
               disputedHeaders: new Set(disputed),
+              unreadDimensions: new Map(),
             },
           },
         ).symbolsInFile("a.cnx"),
@@ -961,6 +963,7 @@ describe("Program", () => {
             macroNames: new Set<string>(),
             integerTypes: new Map<string, string>(),
             disputedHeaders: new Set<string>(),
+            unreadDimensions: new Map(),
             structTagsWithBodies: new Set(structTagsWithBodies),
           },
         },
@@ -1071,6 +1074,7 @@ describe("Program", () => {
           macroNames: new Set<string>(),
           integerTypes: new Map<string, string>(),
           disputedHeaders: new Set<string>(),
+          unreadDimensions: new Map(),
           structTagsWithBodies: new Set(structTagsWithBodies),
         },
       });

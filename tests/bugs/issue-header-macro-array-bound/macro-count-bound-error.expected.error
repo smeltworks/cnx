@@ -1,0 +1,6 @@
+8:9 error[E0854]: Array index out of bounds: 3 >= 3 for 'table' dimension 1
+       help: The last valid index is 2 (ADR-036).
+9:9 error[E0854]: Array index out of bounds: 3 >= 3 for 'typed' dimension 1
+       help: The last valid index is 2 (ADR-036).
+10:9 error[E0854]: Array index out of bounds: 3 >= 3 for 'lanes' dimension 1
+       help: The last valid index is 2 (ADR-036).

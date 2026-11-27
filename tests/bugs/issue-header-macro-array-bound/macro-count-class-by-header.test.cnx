@@ -1,0 +1,16 @@
+// test-execution
+// test-cpp-only
+// frame-a.hpp and frame-b.hpp each declare a Frame. Only frame-a.hpp's has
+// an enum constant FN, and only frame-reader.cnx's compile reads it. So here
+// frame-b.hpp's d reads the macro FN, and has 4 elements, as g++ reads it.
+#include "lib/frame-b.hpp"
+#include "lib/frame-reader.cnx"
+
+mut u8[frameB.d.type_element_count] copy;
+
+u32 main() {
+    if (copy.type_element_count != 4) {
+        return 1;
+    }
+    return FrameReader.tag();
+}

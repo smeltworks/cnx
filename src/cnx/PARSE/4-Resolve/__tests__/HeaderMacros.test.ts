@@ -5,6 +5,7 @@
 import { describe, it, expect } from "vitest";
 import HeaderMacros from "../HeaderMacros";
 import UnreadBitWidth from "../../../utils/UnreadBitWidth";
+import type IUnreadBitWidth from "../../../types/IUnreadBitWidth";
 
 describe("HeaderMacros.collect", () => {
   const typeOf = (text: string, name: string) =>
@@ -363,8 +364,13 @@ function widthOf(
 ): number | null {
   const width = HeaderMacros.width(
     text,
-    bodiesByFile.map((bodies) => ({ file: "", bodies })),
+    bodiesByFile.map((bodies) => ({
+      file: "",
+      bodies,
+      redefinedNames: new Set<string>(),
+    })),
     undefinedNames,
+    new Set(),
   );
   return typeof width === "number" ? width : null;
 }
@@ -413,12 +419,12 @@ describe("HeaderMacros.width (#2494)", () => {
 
 describe("HeaderMacros.width with no includer's macros (#2484 review)", () => {
   it("names the macros it reads, not a form cnx cannot read", () => {
-    const width = HeaderMacros.width("MODE_BITS", [], new Set());
+    const width = HeaderMacros.width("MODE_BITS", [], new Set(), new Set());
     expect(width).toEqual(UnreadBitWidth.unreadMacros(["MODE_BITS"]));
   });
 
   it("still reads a width of literals", () => {
-    expect(HeaderMacros.width("1 + 2", [], new Set())).toBe(3);
+    expect(HeaderMacros.width("1 + 2", [], new Set(), new Set())).toBe(3);
   });
 });
 
@@ -437,6 +443,28 @@ describe("HeaderMacros.width and #undef (#2494 review)", () => {
   });
 });
 
+describe("HeaderMacros.width and a declared name (#2510 review)", () => {
+  const bodies = HeaderMacros.bodies(
+    ["#define N 8", "#define VIA (N + 1)", "#define KEPT 3"].join("\n"),
+  );
+  const read = (text: string): number | IUnreadBitWidth =>
+    HeaderMacros.width(
+      text,
+      [{ file: "", bodies, redefinedNames: new Set<string>() }],
+      new Set(),
+      new Set(["N", "plain"]),
+    );
+  it.each([
+    ["a macro named like a declaration", "N"],
+    ["a macro whose body reads one", "VIA"],
+  ])("does not read %s", (_label, text) => {
+    expect(read(text)).toEqual(UnreadBitWidth.declaredMacro("N"));
+  });
+  it("still reads a macro no header declares", () => {
+    expect(read("KEPT")).toBe(3);
+  });
+});
+
 describe("HeaderMacros.collect expands macros as text (#2494 review)", () => {
   it("reads a macro of an unparenthesized macro with C's precedence", () => {
     const macros = HeaderMacros.collect(
@@ -444,5 +472,28 @@ describe("HeaderMacros.collect expands macros as text (#2494 review)", () => {
     );
     const twice = macros.get("TWICE");
     expect(twice?.kind === "integer" && twice.valueByIntBits.get(32)).toBe(5);
+  });
+});
+
+describe("HeaderMacros.width and a redefined macro (#2510 review)", () => {
+  // `#define SLOTS 3`, `t[SLOTS]`, `#define SLOTS 8`: C read 3, the dump holds 8
+  const bodies = HeaderMacros.bodies(
+    ["#define SLOTS 8", "#define VIA (SLOTS + 1)", "#define KEPT 3"].join("\n"),
+  );
+  const read = (text: string): number | IUnreadBitWidth =>
+    HeaderMacros.width(
+      text,
+      [{ file: "", bodies, redefinedNames: new Set(["SLOTS"]) }],
+      new Set(),
+      new Set(),
+    );
+  it.each([
+    ["a macro defined twice", "SLOTS"],
+    ["a macro whose body reads one", "VIA"],
+  ])("refuses %s", (_case, text) => {
+    expect(read(text)).toEqual(UnreadBitWidth.redefinedMacro("SLOTS"));
+  });
+  it("control: a macro defined once is read", () => {
+    expect(read("KEPT + 1")).toBe(4);
   });
 });

@@ -28,6 +28,7 @@ class Declare {
     );
     symbolTable.markDisputedHeaders(parsed.disputedHeaders);
     Declare._recover(parsed.recovered, symbolTable);
+    symbolTable.scopeStructEnumerators(parsed.discovery.cppMode);
     HeaderDeclarations.aliasTypedefChains(symbolTable);
     const registry = new SymbolRegistry();
     const declared: IDeclaredSource[] = [];

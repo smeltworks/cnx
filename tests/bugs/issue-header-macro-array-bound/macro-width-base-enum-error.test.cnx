@@ -1,0 +1,13 @@
+// test-error
+// test-cpp-only
+// Each mode's width is a name its base class declares as an enum constant
+// of 3: WLimits, the class template TWLimits<3>, the nested class
+// WOuter::Inner. g++ reads each as 3 bits though the .hpp then defines a
+// macro of 4, so cnx reads none of them (#2546).
+#include "lib/wbased.hpp"
+
+void main() {
+    wbased.mode <- 1;
+    twbased.mode <- 1;
+    iwbased.mode <- 1;
+}

@@ -1,0 +1,11 @@
+// test-error
+// redefined.h sizes slots with SLOTS, then #undefs it and defines it again.
+// C read 3; cnx sees only the last definition, 8, so it does not guess:
+// slots.type_element_count stays unknown.
+#include "lib/redefined.h"
+
+mut u8[slots.type_element_count] copy;
+
+void main() {
+    copy[0] <- 1;
+}

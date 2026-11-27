@@ -10,6 +10,11 @@ interface IHeaderMacroDump {
    * included, as resolved paths: the headers whose names the file sees.
    */
   readonly headerFiles: ReadonlySet<string>;
+  /**
+   * #2510 review: each macro defined again to another body without an
+   * `#undef`, whose dump body is not the one C read before the second
+   */
+  readonly redefinedNames: ReadonlySet<string>;
   readonly complete: boolean;
 }
 

@@ -1,4 +1,5 @@
 import type ISourcePosition from "../utils/types/ISourcePosition";
+import type IUnreadBitWidth from "./IUnreadBitWidth";
 
 /**
  * What a `TConstExpr` is worth, by the one rule (#1175, #1669): the value the
@@ -49,11 +50,14 @@ type TConstResult =
         | "lengthRule"
         | "divisionByZero"
         | "negativeShift"
-        | "disputed";
+        | "disputed"
+        | "unreadMacro";
       /** The offending part as the source spells it, for a message */
       readonly spelling: string;
       readonly at: ISourcePosition | null;
       /** For an `unfolded` const: why its own initializer has no value */
+      /** For `unreadMacro`: why cnx did not read a header array's macro dimension */
+      readonly unread?: IUnreadBitWidth;
       readonly because?: Exclude<
         TConstResult,
         { readonly kind: "value" | "float" }

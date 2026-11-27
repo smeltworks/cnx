@@ -1,0 +1,15 @@
+// test-execution
+// twice.h defines TWICE as 4 twice. The same body twice is one value, so
+// twice has 4 elements and mode 4 bits, as C reads them.
+#include "lib/twice.h"
+
+mut u8[twice.type_element_count] copy;
+mut twice_reg_t r;
+
+u32 main() {
+    if (copy.type_element_count != 4) {
+        return 1;
+    }
+    r.mode <- 15;
+    return r.mode - 15;
+}

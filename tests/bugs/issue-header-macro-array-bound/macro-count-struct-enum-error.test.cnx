@@ -1,0 +1,12 @@
+// test-error
+// test-cpp-only
+// slot_t's data is sized by SLOT_N, an enum constant inside slot_t, which g++
+// reads there as 3 though the header then defines a macro SLOT_N of 8. cnx
+// cannot tell which one C read, so it does not fold the count.
+#include "lib/scoped.h"
+
+mut u8[slot.data.type_element_count] copy;
+
+void main() {
+    copy[0] <- 1;
+}

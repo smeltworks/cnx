@@ -1,0 +1,10 @@
+// test-error
+// zero.h sizes nothing with NO_SLOTS, 0. An array of no elements is not C,
+// so cnx reads no count from it.
+#include "lib/zero.h"
+
+mut u8[nothing.type_element_count] copy;
+
+void main() {
+    copy[0] <- 1;
+}

@@ -12,6 +12,12 @@ interface ICEnumMemberSymbol extends ICBaseSymbol {
 
   /** Optional explicit value */
   readonly value?: number;
+
+  /**
+   * #2510 review: declared by an enum inside a struct, which gives it file
+   * scope in C and the struct's scope in C++: that struct's name
+   */
+  readonly inStruct?: string;
 }
 
 export default ICEnumMemberSymbol;

@@ -1,0 +1,14 @@
+// test-error
+// test-cpp-only
+// packet.data is sized by N, an enum constant inside Packet, and table by
+// TOP_N, a file-scope one. g++ reads each as 3 though the .hpp then defines
+// macros of 8. cnx cannot tell which one C read, so it folds neither count.
+#include "lib/packet.hpp"
+
+mut u8[packet.data.type_element_count] copy;
+mut u8[table.type_element_count] tableCopy;
+
+void main() {
+    copy[0] <- 1;
+    tableCopy[0] <- 1;
+}

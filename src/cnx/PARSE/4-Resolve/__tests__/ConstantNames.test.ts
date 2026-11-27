@@ -61,6 +61,7 @@ function build(
         macroNames: new Set<string>(),
         integerTypes: new Map<string, string>(),
         disputedHeaders: new Set<string>(),
+        unreadDimensions: new Map(),
         structTagsWithBodies: new Set(),
       },
     },

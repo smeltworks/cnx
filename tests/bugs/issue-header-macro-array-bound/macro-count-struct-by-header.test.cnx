@@ -1,0 +1,19 @@
+// test-execution
+// lanes-a.h and lanes-b.h each declare a lanes_t whose field d is sized by
+// the header's own macro. Each file reads the lanes_t its header declares:
+// here d has LANES_A (2) elements, and in lanes-reader.cnx LANES_B (5).
+#include "lib/lanes-a.h"
+#include "lib/lanes-reader.cnx"
+
+mut u8[laneA.d.type_element_count] copy;
+
+u32 main() {
+    if (copy.type_element_count != 2) {
+        return 1;
+    }
+    u32 readerCount <- LanesReader.count();
+    if (readerCount != 5) {
+        return 2;
+    }
+    return 0;
+}

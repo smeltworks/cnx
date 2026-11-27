@@ -178,6 +178,14 @@ class CppResolver {
           ctx.symbolTable,
         );
         if (enumSymbol) ctx.symbols.push(enumSymbol);
+        ctx.symbols.push(
+          ...EnumCollector.members(
+            spec.enum,
+            ctx.sourceFile,
+            decl.span,
+            ctx.currentNamespace,
+          ),
+        );
         continue;
       }
       if (!spec.class.name) {
@@ -192,12 +200,7 @@ class CppResolver {
         ctx.symbolTable,
       );
       if (result) {
-        ctx.symbols.push(
-          result.classSymbol,
-          ...result.memberFunctions,
-          ...result.staticMembers,
-        );
-        ctx.warnings.push(...result.warnings);
+        CppResolver._addClass(ctx, result);
       }
     }
     return anonymousClass;
@@ -231,12 +234,7 @@ class CppResolver {
         ctx.symbolTable,
       );
       if (result) {
-        ctx.symbols.push(
-          result.classSymbol,
-          ...result.memberFunctions,
-          ...result.staticMembers,
-        );
-        ctx.warnings.push(...result.warnings);
+        CppResolver._addClass(ctx, result);
         return;
       }
     }
@@ -259,6 +257,19 @@ class CppResolver {
           ctx.currentNamespace,
         );
     if (symbol) ctx.symbols.push(symbol);
+  }
+
+  private static _addClass(
+    ctx: ICppDeclarationContext,
+    result: NonNullable<ReturnType<typeof ClassCollector.collect>>,
+  ): void {
+    ctx.symbols.push(
+      result.classSymbol,
+      ...result.memberFunctions,
+      ...result.staticMembers,
+      ...result.enumMembers,
+    );
+    ctx.warnings.push(...result.warnings);
   }
 }
 

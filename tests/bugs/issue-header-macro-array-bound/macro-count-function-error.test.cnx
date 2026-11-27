@@ -1,0 +1,13 @@
+// test-error
+// test-cpp-only
+// tested.hpp sizes tested by whether a function, probe, has an address, then
+// defines a macro of the same name. C++ read the function, 3; the macro dump
+// holds only the macro, 0, which gives 2, so cnx does not guess: tested has
+// no length here.
+#include "lib/tested.hpp"
+
+mut u8[tested.type_element_count] copy;
+
+void main() {
+    copy[0] <- 1;
+}

@@ -1,0 +1,19 @@
+// test-execution
+// test-cpp-only
+// tagged.hpp declares a class LANE_COUNT and a namespace SLOT_COUNT, then
+// defines macros of those names. A class or a namespace sizes nothing, so
+// lanes has the macro's 2 elements and spots5 5, as g++ reads them.
+#include "lib/tagged.hpp"
+
+mut u8[lanes.type_element_count] lanesCopy;
+mut u8[spots5.type_element_count] spotsCopy;
+
+u32 main() {
+    if (lanesCopy.type_element_count != 2) {
+        return 1;
+    }
+    if (spotsCopy.type_element_count != 5) {
+        return 2;
+    }
+    return 0;
+}

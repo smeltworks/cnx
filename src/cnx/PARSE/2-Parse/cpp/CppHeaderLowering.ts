@@ -57,6 +57,17 @@ class CppHeaderLowering {
   ): TCppDeclarationSyntax[] {
     const lowered: TCppDeclarationSyntax[] = [];
     for (const decl of decls) {
+      // #2064: `extern "C"` sets its declarations' linkage, not their scope
+      const linkage = decl.linkageSpecification();
+      if (linkage) {
+        const inner = linkage.declaration();
+        lowered.push(
+          ...CppHeaderLowering.declarations(
+            inner ? [inner] : (linkage.declarationseq()?.declaration() ?? []),
+          ),
+        );
+        continue;
+      }
       const one = CppHeaderLowering.declaration(decl);
       if (one) lowered.push(one);
     }
@@ -185,6 +196,9 @@ class CppHeaderLowering {
       members: memberSpec ? CppHeaderLowering.members(decls) : null,
       isUnion: head.Union() !== null,
       hasBase: head.baseClause() !== null,
+      bases: (
+        head.baseClause()?.baseSpecifierList()?.baseSpecifier() ?? []
+      ).map((base) => base.baseTypeSpecifier()?.getText() ?? ""),
       hasVirtual: decls.some(
         (decl) =>
           CppHeaderLowering.isVirtual(decl.declSpecifierSeq()) ||
@@ -205,6 +219,12 @@ class CppHeaderLowering {
           ),
       ),
       templateMembers: decls.flatMap(CppHeaderLowering.memberTemplates),
+      enums: decls.flatMap((decl) =>
+        (decl.declSpecifierSeq()?.declSpecifier() ?? []).flatMap((spec) => {
+          const enumSpec = spec.typeSpecifier()?.enumSpecifier();
+          return enumSpec ? [CppHeaderLowering.enumSpecifier(enumSpec)] : [];
+        }),
+      ),
     };
   }
 
@@ -336,6 +356,11 @@ class CppHeaderLowering {
     return {
       name: head.Identifier()?.getText() ?? null,
       baseType: head.enumbase()?.typeSpecifierSeq().getText() ?? null,
+      isScoped:
+        head.enumkey().Class() !== null || head.enumkey().Struct() !== null,
+      enumerators: (
+        enumSpec.enumeratorList()?.enumeratorDefinition() ?? []
+      ).map((definition) => definition.enumerator().Identifier().getText()),
     };
   }
 

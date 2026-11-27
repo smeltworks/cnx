@@ -76,6 +76,40 @@ typedef struct opaque_t* handle_t;`;
     });
   });
 
+  describe("linkage specifications (#2064)", () => {
+    it("collects the declarations of an extern block and a single extern declaration", () => {
+      const source = `extern "C" { void start(void); enum { N = 3 }; }
+extern "C++" int stop();
+namespace io { extern "C" { int poll(void); } }`;
+      const tree = TestHelpers.parseCpp(source);
+      expect(tree).not.toBeNull();
+      const result = CppResolver.resolve(tree!, "test.hpp", symbolTable);
+
+      expect(result.symbols.map((symbol) => symbol.name)).toEqual(
+        expect.arrayContaining(["start", "N", "stop", "io", "io::poll"]),
+      );
+    });
+  });
+
+  describe("class bases (#2510 review)", () => {
+    it("records each base as written", () => {
+      const source = `struct A {}; struct B {};
+struct D : public A, protected ::B, TLimits<3> {};`;
+      const tree = TestHelpers.parseCpp(source);
+      expect(tree).not.toBeNull();
+      const result = CppResolver.resolve(tree!, "test.hpp", symbolTable);
+
+      const derived = result.symbols.find((symbol) => symbol.name === "D");
+      expect(derived?.kind === "class" && derived.bases).toEqual([
+        "A",
+        "::B",
+        "TLimits<3>",
+      ]);
+      const base = result.symbols.find((symbol) => symbol.name === "A");
+      expect(base?.kind === "class" && base.bases).toBeUndefined();
+    });
+  });
+
   describe("class collection", () => {
     it("collects a simple class", () => {
       const source = `class MyClass { };`;
@@ -171,12 +205,36 @@ typedef struct opaque_t* handle_t;`;
       expect(tree).not.toBeNull();
       const result = CppResolver.resolve(tree!, "test.hpp", symbolTable);
 
-      expect(result.symbols).toHaveLength(1);
+      expect(result.symbols).toHaveLength(4);
       expect(result.symbols[0]).toMatchObject({
         kind: "enum",
         name: "Color",
         sourceFile: "test.hpp",
       });
+      // #2510 review: an unscoped enum's constants are file-scope names
+      expect(result.symbols.slice(1).map((s) => [s.kind, s.name])).toEqual([
+        ["enum_member", "RED"],
+        ["enum_member", "GREEN"],
+        ["enum_member", "BLUE"],
+      ]);
+    });
+
+    it("scopes a class enum's constants to the class, and records none for an enum class (#2510 review)", () => {
+      const source = `namespace ns { struct P { enum { N = 3 } kind; enum class K { A }; }; enum { TOP }; }`;
+      const tree = TestHelpers.parseCpp(source);
+      expect(tree).not.toBeNull();
+      const result = CppResolver.resolve(tree!, "test.hpp", symbolTable);
+      const members = result.symbols.filter((s) => s.kind === "enum_member");
+      expect(members).toEqual([
+        expect.objectContaining({
+          name: "ns::P::N",
+          unqualifiedName: "N",
+          parent: "ns",
+          inStruct: "ns::P",
+        }),
+        expect.objectContaining({ name: "ns::TOP", unqualifiedName: "TOP" }),
+      ]);
+      expect(members[1]).not.toHaveProperty("inStruct");
     });
 
     it("collects typed enum with bit width", () => {

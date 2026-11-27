@@ -7,6 +7,8 @@
  * artifact, not handed in by the host.
  */
 import type IMacroReader from "./types/IMacroReader";
+import type IUnreadBitWidth from "../../types/IUnreadBitWidth";
+import UnreadBitWidth from "../../utils/UnreadBitWidth";
 import type IDeclaredSources from "../3-Declare/types/IDeclaredSources";
 import HeaderMacros from "./HeaderMacros";
 import Program from "./Program";
@@ -40,6 +42,7 @@ class Resolve {
       macroReaders.push({
         file: path,
         bodies: macroBodies.at(-1)!,
+        redefinedNames: read.redefinedNames,
         headerFiles: new Set(read.headerFiles),
       });
       const names = HeaderMacros.names(read.dump);
@@ -52,15 +55,102 @@ class Resolve {
     // #2494: a bit-field's width is read once, as C reads it, before any
     // field is typed from the table -- through the macros of the files that
     // include the struct's header, which are the files whose C reads it
-    table.settleBitFieldWidths((text, structName, declaredIn) => {
-      const header =
-        declaredIn ??
-        table.getCSymbol(structName)?.sourceFile ??
-        table.getCppSymbol(structName)?.sourceFile;
+    // #2510 review: every name a header declares that a bound can read -- an
+    // enumerator, a variable, a function, whose address a C++ constant
+    // expression tests, or a typedef, which a bound reads as a cast
+    // (`[(word_t)+3]` is 3) -- which a macro of the same name may not stand
+    // for. A tag or a namespace names nothing an expression reads.
+    const tagOnly = new Set(["struct", "enum", "class", "namespace"]);
+    const declaredBy = new Map<string, string[]>();
+    const declare = (header: string, name: string): void => {
+      const names = declaredBy.get(header);
+      if (names === undefined) declaredBy.set(header, [name]);
+      else names.push(name);
+    };
+    for (const symbol of table.getAllCSymbols()) {
+      if (!tagOnly.has(symbol.kind)) declare(symbol.sourceFile, symbol.name);
+    }
+    for (const symbol of table.getAllCppSymbols()) {
+      if (!tagOnly.has(symbol.kind)) {
+        declare(symbol.sourceFile, symbol.unqualifiedName);
+      }
+    }
+    // A name stops a reading only in a translation unit that holds it. A
+    // header only OTHER files' compiles opened is another unit's: C never
+    // reads its declarations or its `#undef`s here. A header no compile is
+    // known to have opened still counts, since cnx cannot place it.
+    const opened = new Set(
+      macroReaders.flatMap((reader) => [...reader.headerFiles]),
+    );
+    const unreadNames = new Map<
+      string,
+      {
+        readonly undefinedNames: ReadonlySet<string>;
+        readonly declaredNames: ReadonlySet<string>;
+      }
+    >();
+    const read = (
+      text: string,
+      header: string | undefined,
+      structName?: string,
+    ): number | IUnreadBitWidth => {
       const including = macroReaders.filter(
         (reader) => header !== undefined && reader.headerFiles.has(header),
       );
-      return HeaderMacros.width(text, including, table.undefinedMacros());
+      const key = including.map((reader) => reader.file).join("\n");
+      let names = unreadNames.get(key);
+      if (names === undefined) {
+        const own = new Set(
+          including.flatMap((reader) => [...reader.headerFiles]),
+        );
+        const inUnit = (path: string): boolean =>
+          own.has(path) || !opened.has(path);
+        names = {
+          undefinedNames: table.undefinedMacros(inUnit),
+          declaredNames: new Set(
+            [...declaredBy].flatMap(([path, declared]) =>
+              inUnit(path) ? declared : [],
+            ),
+          ),
+        };
+        unreadNames.set(key, names);
+      }
+      // A C++ struct's own enum constants it alone reads, `data[N]` in
+      // `struct P { enum { N = 3 } kind; uint8_t data[N]; };`, its bases'
+      // among them. A base cnx cannot see may declare any name the text reads.
+      const scoped =
+        structName === undefined || header === undefined
+          ? []
+          : (table.getStructScopedNames(structName, header) ??
+            text.match(/[A-Za-z_]\w*/g) ??
+            []);
+      return HeaderMacros.width(
+        text,
+        including,
+        names.undefinedNames,
+        scoped.length === 0
+          ? names.declaredNames
+          : new Set([...names.declaredNames, ...scoped]),
+      );
+    };
+    table.settleBitFieldWidths((text, structName, declaredIn) =>
+      read(
+        text,
+        declaredIn ??
+          table.getCSymbol(structName)?.sourceFile ??
+          table.getCppSymbol(structName)?.sourceFile,
+        structName,
+      ),
+    );
+    // A header array's macro dimension, `table[SENSOR_COUNT]`, is read the
+    // same way, as C reads it: through the macros of the files that include
+    // the array's header, and not at all from a macro one of their headers
+    // `#undef`s
+    table.settleArrayDimensions((text, header, structName) => {
+      const count = read(text, header, structName);
+      return typeof count === "number" && count <= 0
+        ? UnreadBitWidth.notPositiveCount(count)
+        : count;
     });
     const program = Program.build(
       declared.map((entry) => entry.fileSymbols),
@@ -85,6 +175,7 @@ class Resolve {
           macroNames,
           integerTypes,
           disputedHeaders: table.getDisputedHeaders(),
+          unreadDimensions: table.getUnreadDimensions(),
         },
         // #1825: ADR-006's and ADR-029's derivations look callees and typedefs
         // up in it. 1.4 completes it with every file's resolved symbols and

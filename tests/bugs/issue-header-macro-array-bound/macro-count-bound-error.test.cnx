@@ -1,0 +1,11 @@
+// test-error
+// table is SENSOR_COUNT (3) elements, so a constant index of 3 is past its end.
+// typed is a buf_t, an array typedef of SENSOR_COUNT, so the same holds.
+// lanes shares its name with an enum tag inside a struct, which names no value.
+#include "lib/counted.h"
+
+void main() {
+    table[3] <- 1;
+    typed[3] <- 1;
+    lanes[3] <- 1;
+}

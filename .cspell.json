@@ -150,6 +150,7 @@
     "ENET",
     "enum",
     "enumbase",
+    "enumkey",
     "enums",
     "errcheck",
     "esac",

@@ -367,7 +367,37 @@ class CHeaderLowering {
       ),
       hasUnnamedMember: decls.some(CHeaderLowering.isUnnamedMember),
       fields: decls.flatMap((decl) => CHeaderLowering.fields(decl)),
+      enums: CHeaderLowering.memberEnums(decls),
     };
+  }
+
+  /** Every enum with a body among these members' specifiers, nested ones too */
+  private static memberEnums(
+    decls: readonly StructDeclarationContext[],
+  ): ICEnumSyntax[] {
+    const enums: ICEnumSyntax[] = [];
+    for (const decl of decls) {
+      for (
+        let list = decl.specifierQualifierList();
+        list !== null;
+        list = list.specifierQualifierList()
+      ) {
+        const typeSpec = list.typeSpecifier();
+        const enumSpec = typeSpec?.enumSpecifier();
+        if (enumSpec?.enumeratorList()) {
+          enums.push(CHeaderLowering.enum(enumSpec));
+        }
+        const nested = typeSpec
+          ?.structOrUnionSpecifier()
+          ?.structDeclarationList();
+        if (nested) {
+          enums.push(
+            ...CHeaderLowering.memberEnums(nested.structDeclaration()),
+          );
+        }
+      }
+    }
+    return enums;
   }
 
   private static fields(decl: StructDeclarationContext): ICFieldSyntax[] {

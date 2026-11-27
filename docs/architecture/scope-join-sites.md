@@ -58,11 +58,13 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/PARSE/3-Declare/cpp/collectors/ClassCollector.ts`              | `qualify(ctx.className, name)`                                         | 1      | encoder      |
 | `src/cnx/PARSE/3-Declare/cpp/collectors/ClassCollector.ts`              | `qualify(currentNamespace, name)`                                      | 1      | encoder      |
 | `src/cnx/PARSE/3-Declare/cpp/collectors/EnumCollector.ts`               | `qualify(currentNamespace, name)`                                      | 1      | encoder      |
+| `src/cnx/PARSE/3-Declare/cpp/collectors/EnumCollector.ts`               | `qualify(inStruct ?? currentNamespace, name)`                          | 1      | encoder      |
 | `src/cnx/PARSE/3-Declare/cpp/collectors/FunctionCollector.ts`           | `qualify(className, funcName)`                                         | 1      | encoder      |
 | `src/cnx/PARSE/3-Declare/cpp/collectors/FunctionCollector.ts`           | `qualify(currentNamespace, name)`                                      | 2      | encoder      |
 | `src/cnx/PARSE/3-Declare/cpp/collectors/NamespaceCollector.ts`          | `qualify(currentNamespace, name)`                                      | 2      | encoder      |
 | `src/cnx/PARSE/3-Declare/cpp/collectors/VariableCollector.ts`           | `qualify(currentNamespace, name)`                                      | 1      | encoder      |
 | `src/cnx/PARSE/3-Declare/cpp/index.ts`                                  | `qualify(ctx.currentNamespace, name)`                                  | 1      | encoder      |
+| `src/cnx/PARSE/3-Declare/SymbolTable.ts`                                | `qualify(scope, name)`                                                 | 1      | encoder      |
 | `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                              | `movedLocal(functionCName, name, 1)`                                   | 1      | owner-c-name |
 | `src/cnx/PARSE/4-Resolve/LexicalFrames.ts`                              | `movedLocal(functionCName, name, suffix)`                              | 1      | owner-c-name |
 | `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts` | `: "::"`                                                               | 1      | encoder      |
@@ -82,9 +84,9 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 | `src/cnx/utils/ScopeUtils.ts`                                           | `qualifyPathInScope([symbol.name], symbol.scopePath)`                  | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                       | `qualifyInScope(type.name, scopePath)`                                 | 1      | encoder      |
 | `src/cnx/utils/TypeNameLadder.ts`                                       | `qualifyScopeType(type.name, scopePath, deps.isScopeType)`             | 1      | encoder      |
-| **total**                                                               |                                                                        | **48** |              |
+| **total**                                                               |                                                                        | **50** |              |
 
-48 site(s) across 24 file(s).
+50 site(s) across 25 file(s).
 
 ## Why each site is not a scope join
 
@@ -108,11 +110,13 @@ one -- in source, in `ScopeJoinSites.ADJUDICATIONS`.
 - `src/cnx/PARSE/3-Declare/cpp/collectors/ClassCollector.ts` `qualify(ctx.className, name)`: 3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)
 - `src/cnx/PARSE/3-Declare/cpp/collectors/ClassCollector.ts` `qualify(currentNamespace, name)`: 3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)
 - `src/cnx/PARSE/3-Declare/cpp/collectors/EnumCollector.ts` `qualify(currentNamespace, name)`: 3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)
+- `src/cnx/PARSE/3-Declare/cpp/collectors/EnumCollector.ts` `qualify(inStruct ?? currentNamespace, name)`: 3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116); an unscoped enum's constant inside a class is `Class::N` (#2510)
 - `src/cnx/PARSE/3-Declare/cpp/collectors/FunctionCollector.ts` `qualify(className, funcName)`: 3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)
 - `src/cnx/PARSE/3-Declare/cpp/collectors/FunctionCollector.ts` `qualify(currentNamespace, name)`: 3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)
 - `src/cnx/PARSE/3-Declare/cpp/collectors/NamespaceCollector.ts` `qualify(currentNamespace, name)`: 3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)
 - `src/cnx/PARSE/3-Declare/cpp/collectors/VariableCollector.ts` `qualify(currentNamespace, name)`: 3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)
 - `src/cnx/PARSE/3-Declare/cpp/index.ts` `qualify(ctx.currentNamespace, name)`: 3-Declare's C++ collectors naming each header symbol once by its `A::B` path, the key the C++ index stores it under and every later layer reads (#2116)
+- `src/cnx/PARSE/3-Declare/SymbolTable.ts` `qualify(scope, name)`: 3-Declare looking a class's written base up in each enclosing namespace by the `A::B` path the C++ collectors stored it under (#2116); its constants are the derived class's fields' (#2510)
 - `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `movedLocal(functionCName, name, 1)`: 4-Resolve deciding, once, the C name a local moves to when it hides a file-scope name; stored on the settled local as emittedName
 - `src/cnx/PARSE/4-Resolve/LexicalFrames.ts` `movedLocal(functionCName, name, suffix)`: 4-Resolve deciding, once, the uniqueness-suffixed C name a local moves to when it shadows the enclosing local it reads (#1643); stored as emittedName
 - `src/cnx/TRANSPILE/3-Render/codegen/helpers/MemberSeparatorResolver.ts` `: "::"`: ACCESS_CPP, the `::` access step; only `MemberSeparatorResolver.join` spells a step, so this is the operator it writes, not a held separator

@@ -1,0 +1,14 @@
+// test-error
+// wide-count.h sizes wide with WIDE_SAMPLES, 40000. cnx reads a header
+// macro's count at every int width a target may have, and above 32767 a
+// 16-bit int reads it differently, so cnx reads no count from it. edge, at
+// 32767, is read on every int width.
+#include "lib/wide-count.h"
+
+mut u8[edge.type_element_count] edgeCopy;
+mut u8[wide.type_element_count] copy;
+
+void main() {
+    edgeCopy[0] <- 1;
+    copy[0] <- 1;
+}

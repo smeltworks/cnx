@@ -1,0 +1,7 @@
+#include "frame-a.hpp"
+
+scope FrameReader {
+    u32 tag() {
+        return frameA.tag;
+    }
+}

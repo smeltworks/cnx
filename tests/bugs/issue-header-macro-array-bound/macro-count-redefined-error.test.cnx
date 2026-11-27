@@ -1,0 +1,11 @@
+// test-error
+// respelled.h sizes spots with SPOTS, 3, then defines SPOTS again as 8
+// without an #undef. C read 3; cnx sees only the last definition, so it does
+// not guess: spots.type_element_count stays unknown.
+#include "lib/respelled.h"
+
+mut u8[spots.type_element_count] copy;
+
+void main() {
+    copy[0] <- 1;
+}

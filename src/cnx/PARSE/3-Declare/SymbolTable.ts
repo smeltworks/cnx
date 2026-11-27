@@ -21,12 +21,14 @@ import TJsonSafe from "../../utils/types/TJsonSafe";
 import TSymbol from "../../types/symbols/TSymbol";
 import TCSymbol from "../../types/symbols/c/TCSymbol";
 import TCppSymbol from "../../types/symbols/cpp/TCppSymbol";
+import type ICppClassSymbol from "../../types/symbols/cpp/ICppClassSymbol";
 import ForeignRedeclaration from "../../utils/ForeignRedeclaration";
 import TAnySymbol from "../../types/symbols/TAnySymbol";
 import IStructSymbol from "../../types/symbols/IStructSymbol";
 import TypeResolver from "../../utils/TypeResolver";
 import type ITargetDescription from "../../types/ITargetDescription";
 import invariant from "../../utils/invariant";
+import CppNamespaceUtils from "../../utils/CppNamespaceUtils";
 import type IResolvedSymbols from "../../types/IResolvedSymbols";
 
 // Enable immer support for Map and Set (must be called once at module scope)
@@ -168,6 +170,12 @@ class SymbolTable implements IResolvedSymbols {
 
   /** #2514: the headers two `.cnx` files' compiles read differently */
   private disputedHeaders: ReadonlySet<string> = new Set();
+  /** #2510 review: `SymbolTable.getStructScopedNames` */
+  private readonly structScopedNames = new Map<string, string[]>();
+  /** #2510 review: the classes with a base cnx cannot see, by `dimensionKey` */
+  private readonly opaqueStructs = new Set<string>();
+  /** #2510 review: why a header array's macro dimension stayed unread, by `dimensionKey` */
+  private readonly unreadDimensions = new Map<string, IUnreadBitWidth>();
 
   // ========================================================================
   // cnx Symbol Methods (TSymbol)
@@ -304,6 +312,140 @@ class SymbolTable implements IResolvedSymbols {
    * Add a C symbol to the table
    * Issue #981: Also register struct fields for type resolution
    */
+  /**
+   * #2510 review: a C++ compile reads an enum constant declared inside a
+   * struct as `Packet::N`, not `N`. The C++ resolver's are always the class's;
+   * a C header's (`ICEnumMemberSymbol.inStruct`), which C gives file scope,
+   * are the struct's only in a C++ run. Each is dropped from the file-scope
+   * indexes and kept for its own struct's bounds and widths
+   * (`getStructScopedNames`).
+   */
+  scopeStructEnumerators(cppMode: boolean): void {
+    const scoped = (symbol: TCSymbol | TCppSymbol): boolean =>
+      symbol.kind === "enum_member" &&
+      symbol.inStruct !== undefined &&
+      (cppMode || symbol.sourceLanguage === ESourceLanguage.Cpp);
+    const indexes: Map<string, Array<TCSymbol | TCppSymbol>>[] = [
+      this.cSymbols,
+      this.cSymbolsByFile,
+      this.cppSymbols,
+      this.cppSymbolsByFile,
+      ...this.cppMembers.values(),
+    ];
+    const all = [...this.cSymbols.values(), ...this.cppSymbols.values()];
+    for (const symbol of all.flat()) {
+      if (symbol.kind !== "enum_member" || symbol.inStruct === undefined) {
+        continue;
+      }
+      if (!scoped(symbol)) continue;
+      const name =
+        "unqualifiedName" in symbol ? symbol.unqualifiedName : symbol.name;
+      SymbolTable.appendToIndex(
+        this.structScopedNames,
+        SymbolTable.dimensionKey(symbol.sourceFile, symbol.inStruct),
+        name,
+      );
+    }
+    for (const index of indexes) {
+      for (const [key, list] of index) {
+        const kept = list.filter((symbol) => !scoped(symbol));
+        if (kept.length === list.length) continue;
+        if (kept.length === 0) index.delete(key);
+        else index.set(key, kept);
+      }
+    }
+    this.inheritScopedNames();
+  }
+
+  /**
+   * #2510 review: a C++ class's fields also read its bases' constants, so
+   * `uint8_t data[N]` in `struct Packet : Limits` reads `Limits::N`. A base
+   * cnx has no class for -- a template's, a nested class's, an alias -- may
+   * declare any name, so its class is opaque.
+   */
+  private inheritScopedNames(): void {
+    const keyOf = (cls: ICppClassSymbol): string =>
+      SymbolTable.dimensionKey(cls.sourceFile, cls.name);
+    const inherited = new Map<ICppClassSymbol, string[] | null>();
+    const namesOf = (
+      cls: ICppClassSymbol,
+      seen: ReadonlySet<ICppClassSymbol>,
+    ): string[] | null => {
+      const known = inherited.get(cls);
+      if (known !== undefined) return known;
+      if (seen.has(cls)) return null;
+      const inner = new Set([...seen, cls]);
+      // a set, as a name reached along every path of a diamond is one name
+      const names = new Set(this.structScopedNames.get(keyOf(cls)) ?? []);
+      for (const base of cls.bases ?? []) {
+        const found = this.baseClasses(base, cls.parent);
+        if (found.length === 0) return null;
+        for (const each of found) {
+          const more = namesOf(each, inner);
+          if (more === null) return null;
+          for (const name of more) names.add(name);
+        }
+      }
+      const unique = [...names];
+      inherited.set(cls, unique);
+      return unique;
+    };
+    const derived = [...this.cppSymbols.values()]
+      .flat()
+      .filter(
+        (symbol): symbol is ICppClassSymbol =>
+          symbol.kind === "class" && (symbol.bases?.length ?? 0) > 0,
+      );
+    const results = derived.map((cls) => namesOf(cls, new Set()));
+    derived.forEach((cls, i) => {
+      const names = results[i];
+      if (names === null) this.opaqueStructs.add(keyOf(cls));
+      else this.structScopedNames.set(keyOf(cls), names);
+    });
+  }
+
+  /**
+   * #2510 review: the classes base `base`, written in namespace `parent`, may
+   * name. C++ takes the innermost scope declaring it, but a scope's class may
+   * be another unit's header's, which this one never reads -- so every
+   * enclosing scope's class is counted, and none of the real base's missed.
+   */
+  private baseClasses(
+    base: string,
+    parent: string | undefined,
+  ): ICppClassSymbol[] {
+    const global = base.startsWith("::");
+    const name = global ? base.slice(2) : base;
+    const found: ICppClassSymbol[] = [];
+    const add = (qualified: string): void => {
+      for (const symbol of this.cppSymbols.get(qualified) ?? []) {
+        if (symbol.kind === "class") found.push(symbol);
+      }
+    };
+    let scope = global ? undefined : parent;
+    while (scope) {
+      add(CppNamespaceUtils.qualify(scope, name));
+      const outer = scope.lastIndexOf("::");
+      scope = outer < 0 ? undefined : scope.slice(0, outer);
+    }
+    add(name);
+    return found;
+  }
+
+  /**
+   * #2510 review: the enum constants a C++ run reads inside `header`'s struct
+   * `structName` only, which its own fields' bounds and widths still read,
+   * its bases' among them; null when a base cnx cannot see may declare any
+   */
+  getStructScopedNames(
+    structName: string,
+    header: string,
+  ): readonly string[] | null {
+    const key = SymbolTable.dimensionKey(header, structName);
+    if (this.opaqueStructs.has(key)) return null;
+    return this.structScopedNames.get(key) ?? [];
+  }
+
   addCSymbol(symbol: TCSymbol): void {
     SymbolTable.appendToIndex(this.cSymbols, symbol.name, symbol);
     SymbolTable.appendToIndex(this.cSymbolsByFile, symbol.sourceFile, symbol);
@@ -387,6 +529,16 @@ class SymbolTable implements IResolvedSymbols {
   }
 
   /** #2514: the headers two `.cnx` files' compiles read differently */
+  /** #2510 review: why each header array dimension `settleArrayDimensions` could not read stayed text */
+  getUnreadDimensions(): ReadonlyMap<string, IUnreadBitWidth> {
+    return this.unreadDimensions;
+  }
+
+  /** The key `getUnreadDimensions` holds a dimension's text by, in its header */
+  static dimensionKey(header: string, text: string): string {
+    return `${header}\n${text}`;
+  }
+
   getDisputedHeaders(): ReadonlySet<string> {
     return this.disputedHeaders;
   }
@@ -943,6 +1095,97 @@ class SymbolTable implements IResolvedSymbols {
   }
 
   /**
+   * A header array's dimension written with its header's macros,
+   * `table[SENSOR_COUNT]`, settled once to the count C reads, the way
+   * `settleBitFieldWidths` settles a width: `countOf` answers for the
+   * dimension's text and the header that declares it, or why cnx cannot
+   * read it, and then the text stays for C to fold and the why is kept for
+   * the error a use of the count earns.
+   */
+  settleArrayDimensions(
+    countOf: (
+      text: string,
+      header: string,
+      structName?: string,
+    ) => number | IUnreadBitWidth,
+  ): void {
+    const settle = (
+      dimensions: ReadonlyArray<number | string>,
+      header: string,
+      structName?: string,
+    ): ReadonlyArray<number | string> => {
+      if (!dimensions.some((d) => typeof d === "string" && d !== "")) {
+        return dimensions;
+      }
+      return dimensions.map((d) => {
+        if (typeof d !== "string" || d === "") return d;
+        const count = countOf(d, header, structName);
+        if (typeof count === "number") return count;
+        this.unreadDimensions.set(SymbolTable.dimensionKey(header, d), count);
+        return d;
+      });
+    };
+    const replaced = new Map<TCSymbol | TCppSymbol, TCSymbol | TCppSymbol>();
+    const settled = <T extends TCSymbol | TCppSymbol>(symbol: T): T => {
+      const known = replaced.get(symbol);
+      if (known !== undefined) return known as T;
+      let next: T = symbol;
+      if (
+        (symbol.kind === "variable" || symbol.kind === "type") &&
+        "arrayDimensions" in symbol &&
+        symbol.arrayDimensions !== undefined
+      ) {
+        const dimensions = settle(symbol.arrayDimensions, symbol.sourceFile);
+        if (dimensions !== symbol.arrayDimensions) {
+          next = { ...symbol, arrayDimensions: dimensions };
+        }
+      }
+      replaced.set(symbol, next);
+      return next;
+    };
+    for (const index of [this.cSymbols, this.cSymbolsByFile]) {
+      for (const list of index.values()) {
+        list.forEach((symbol, i) => (list[i] = settled(symbol)));
+      }
+    }
+    for (const index of [
+      this.cppSymbols,
+      this.cppSymbolsByFile,
+      ...this.cppMembers.values(),
+    ]) {
+      for (const list of index.values()) {
+        list.forEach((symbol, i) => (list[i] = settled(symbol)));
+      }
+    }
+    const settleFields = (
+      fields: Map<string, IStructFieldInfo>,
+      header: string,
+      structName: string,
+    ): void => {
+      for (const [name, info] of fields) {
+        if (info.arrayDimensions === undefined) continue;
+        const dimensions = settle(info.arrayDimensions, header, structName);
+        if (dimensions !== info.arrayDimensions) {
+          fields.set(name, { ...info, arrayDimensions: [...dimensions] });
+        }
+      }
+    };
+    for (const [structName, fields] of this.structFields) {
+      const header =
+        this.getCSymbol(structName)?.sourceFile ??
+        this.getCppSymbol(structName)?.sourceFile;
+      if (header !== undefined) settleFields(fields, header, structName);
+    }
+    // #2474: a file's view reads the fields its own header declares, sized
+    // through the macros of the files that include that header
+    for (const [structName, byFile] of this.structFieldsByFile) {
+      for (const [header, fields] of byFile) {
+        settleFields(fields, header, structName);
+      }
+    }
+  }
+
+  /**
    * #2494: each bit-field width written as an expression, `1 + 2` or
    * `MODE_BITS`, settled to the number C reads, where cnx can read it
    */
@@ -1263,9 +1506,13 @@ class SymbolTable implements IResolvedSymbols {
     return this.undefinedMacrosByFile.get(path) ?? [];
   }
 
-  /** #2494 review: macros some header `#undef`s */
-  undefinedMacros(): ReadonlySet<string> {
-    return new Set([...this.undefinedMacrosByFile.values()].flat());
+  /** #2494 review: macros a header `#undef`s, of the headers `counts` keeps */
+  undefinedMacros(counts: (path: string) => boolean): ReadonlySet<string> {
+    return new Set(
+      [...this.undefinedMacrosByFile].flatMap(([path, names]) =>
+        counts(path) ? names : [],
+      ),
+    );
   }
 
   /**
