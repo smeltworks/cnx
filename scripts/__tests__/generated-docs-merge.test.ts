@@ -20,42 +20,14 @@
  * gap of its own and is no wider than the base's rows.
  */
 
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
 import DiagnosticManifest from "../diagnostics/DiagnosticManifest";
 import MatrixRenderer from "../matrix/MatrixRenderer";
 import GeneratedMarkdown from "../utils/GeneratedMarkdown";
 import IManifestEntry from "../types/IManifestEntry";
 import MatrixTestHelpers from "./matrixTestHelpers";
+import MergeTestHelpers from "./mergeTestHelpers";
 
-/**
- * What `git merge` makes of two edits to `base`: the merged text, or null when
- * the edits conflict. `git merge-file` exits with the number of conflicts.
- */
-function gitMerge(base: string, ours: string, theirs: string): string | null {
-  const dir = mkdtempSync(join(tmpdir(), "cnx-generated-merge-"));
-  try {
-    writeFileSync(join(dir, "base"), base);
-    writeFileSync(join(dir, "ours"), ours);
-    writeFileSync(join(dir, "theirs"), theirs);
-    try {
-      return execFileSync(
-        "git",
-        ["merge-file", "-p", "ours", "base", "theirs"],
-        { cwd: dir, encoding: "utf8" },
-      );
-    } catch (error) {
-      const status = (error as { status?: number | null }).status;
-      if (typeof status === "number" && status > 0) return null;
-      throw error;
-    }
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-}
+const { gitMerge } = MergeTestHelpers;
 
 /** The manifest as it is committed: rendered, then formatted. */
 function manifest(entries: readonly IManifestEntry[]): Promise<string> {

@@ -14,11 +14,11 @@ import ErrorCodeRegistry from "../diagnostics/ErrorCodeRegistry";
  * would otherwise break it unnoticed.
  */
 const doc = (...lines: string[]): string =>
-  ["| Range | Category | Count |", "| --- | --- | --- |", ...lines].join("\n");
+  ["| Range | Category |", "| --- | --- |", ...lines].join("\n");
 
 describe("ErrorCodeRegistry.check", () => {
   const good = doc(
-    "| E04xx | Symbol Resolution | 2 |",
+    "| E04xx | Symbol Resolution |",
     "| E0424 | Unqualified enum member | Qualify it | `output/codegen/CodeGenerator.ts` |",
     "| E0429 | Register in a type position | Name the type | `output/codegen/TypeValidator.ts` |",
   );
@@ -48,7 +48,7 @@ describe("ErrorCodeRegistry.check", () => {
 
   it("accepts a row marked _(reserved)_ that no source emits", () => {
     const reserved = doc(
-      "| E04xx | Symbol Resolution | 2 |",
+      "| E04xx | Symbol Resolution |",
       "| E0424 | Unqualified enum member | Qualify it | `output/codegen/CodeGenerator.ts` |",
       "| E0428 | _(reserved)_ — cannot assign integer to enum | Not yet | `output/codegen/X.ts` |",
     );
@@ -57,7 +57,7 @@ describe("ErrorCodeRegistry.check", () => {
 
   it("accepts a row whose source cell says Planned and which no source emits", () => {
     const planned = doc(
-      "| E08xx | Arithmetic | 1 |",
+      "| E08xx | Arithmetic |",
       "| E0854 | Constant index out of bounds | Fix the index | Planned |",
     );
     expect(ErrorCodeRegistry.check(planned, new Set())).toEqual([]);
@@ -65,7 +65,7 @@ describe("ErrorCodeRegistry.check", () => {
 
   it("fails a code that has two rows", () => {
     const twice = doc(
-      "| E04xx | Symbol Resolution | 2 |",
+      "| E04xx | Symbol Resolution |",
       "| E0424 | One meaning | fix | `output/codegen/A.ts` |",
       "| E0424 | Another meaning | fix | `output/codegen/B.ts` |",
     );
@@ -79,7 +79,7 @@ describe("ErrorCodeRegistry.check", () => {
     // contributor appends to instead of reading -- the exact way `.cspell.json`
     // grew a second sorted island (#1309).
     const unsorted = doc(
-      "| E04xx | Symbol Resolution | 2 |",
+      "| E04xx | Symbol Resolution |",
       "| E0429 | Register in a type position | Name it | `output/codegen/TypeValidator.ts` |",
       "| E0424 | Unqualified enum member | Qualify it | `output/codegen/CodeGenerator.ts` |",
     );
@@ -88,48 +88,46 @@ describe("ErrorCodeRegistry.check", () => {
     ).toContain("out of order");
   });
 
-  it("fails a range whose declared count no longer matches its rows", () => {
-    const miscounted = doc(
-      "| E04xx | Symbol Resolution | 5 |",
-      "| E0424 | Unqualified enum member | Qualify it | `output/codegen/CodeGenerator.ts` |",
-    );
-    expect(
-      ErrorCodeRegistry.check(miscounted, new Set(["E0424"])).join("\n"),
-    ).toContain("declares 5");
+  it("fails a range row that counts its codes, right or wrong (#2521)", () => {
+    // A count is rewritten by every pull request that registers a code in the
+    // range, so any two of them conflict on it. A correct count is refused
+    // too: the next registration is what makes it a conflict.
+    const counted = (count: number): string =>
+      [
+        "| Range | Category | Count |",
+        "| --- | --- | --- |",
+        `| E04xx | Symbol Resolution | ${count} |`,
+        "| E0424 | Unqualified enum member | Qualify it | `a.ts` |",
+      ].join("\n");
+    for (const count of [1, 5]) {
+      const errors = ErrorCodeRegistry.check(
+        counted(count),
+        new Set(["E0424"]),
+      );
+      expect(errors).toHaveLength(1);
+      expect(errors[0]).toContain(`counts E04xx's rows (${count})`);
+    }
   });
 
-  it("fails a **Total** row that no longer matches the code rows", () => {
-    // The one cell in this table nothing checked: it is not a range, so it
-    // never matched the range pattern. It read 57 while the ranges summed to
-    // 62 -- every range row correct and the total five behind, which is the
-    // failure a per-part check cannot see.
-    const errors = ErrorCodeRegistry.check(
+  it("fails a **Total** row, right or wrong (#2521)", () => {
+    // Every registration rewrites a total, whatever its range. And two that
+    // write the same number merge without a conflict to a total that counts
+    // one of them: in the issue's reproduction it read 174 above 175 rows.
+    const totalled = (total: string): string =>
       doc(
-        "| E04xx | Symbol Resolution | 2 |",
-        "| **Total** | | **7** |",
+        "| E04xx | Symbol Resolution |",
+        `| **Total** | ${total} |`,
         "| E0424 | Unqualified enum member | Qualify it | `a.ts` |",
         "| E0429 | Register in a type position | Name the type | `b.ts` |",
-      ),
-      new Set(["E0424", "E0429"]),
-    );
-    expect(errors.join("\n")).toContain("**Total** row says 7");
-  });
-
-  it("accepts a **Total** row that matches, and a table with none", () => {
-    expect(
-      ErrorCodeRegistry.check(
-        doc(
-          "| E04xx | Symbol Resolution | 2 |",
-          "| **Total** | | **2** |",
-          "| E0424 | Unqualified enum member | Qualify it | `a.ts` |",
-          "| E0429 | Register in a type position | Name the type | `b.ts` |",
-        ),
+      );
+    for (const total of ["**2**", "**7**", "2"]) {
+      const errors = ErrorCodeRegistry.check(
+        totalled(total),
         new Set(["E0424", "E0429"]),
-      ),
-    ).toEqual([]);
-    expect(ErrorCodeRegistry.check(good, new Set(["E0424", "E0429"]))).toEqual(
-      [],
-    );
+      );
+      expect(errors).toHaveLength(1);
+      expect(errors[0]).toContain("counts the code rows");
+    }
   });
 
   it("reads the source cell of a row whose text contains its own pipes", () => {
@@ -138,10 +136,33 @@ describe("ErrorCodeRegistry.check", () => {
     // like that from being skipped -- and a row this gate silently skips is a
     // row it does not defend.
     const piped = doc(
-      "| E08xx | Arithmetic | 1 |",
+      "| E08xx | Arithmetic |",
       "| E0807 | bitwise `a | b` on a bool | Use `||` | `logic/analysis/BooleanOperandAnalyzer.ts` |",
     );
     expect(ErrorCodeRegistry.check(piped, new Set(["E0807"]))).toEqual([]);
+  });
+});
+
+describe("ErrorCodeRegistry.summary (#2521)", () => {
+  it("counts the rows of each range and all of them, in range order", () => {
+    // The numbers the range table held, printed by the check instead: read
+    // off the rows each time, so no pull request edits them.
+    const markdown = doc(
+      "| E04xx | Symbol Resolution |",
+      "| E08xx | Arithmetic |",
+      "| E0424 | Unqualified enum member | Qualify it | `a.ts` |",
+      "| E0429 | Register in a type position | Name the type | `b.ts` |",
+      "| E0854 | Constant index out of bounds | Fix the index | Planned |",
+    );
+    expect(ErrorCodeRegistry.summary(markdown)).toBe(
+      "3 row(s): E04xx 2, E08xx 1",
+    );
+  });
+
+  it("says so of a registry with no rows", () => {
+    expect(
+      ErrorCodeRegistry.summary(doc("| E04xx | Symbol Resolution |")),
+    ).toBe("0 row(s)");
   });
 });
 

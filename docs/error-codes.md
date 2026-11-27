@@ -10,18 +10,21 @@ codes that already have a fixture.
 
 ## Error Code Ranges
 
-| Range     | Category                                                                                                                                                                                                                                                 | Count   |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| E00xx     | Reserved/Test                                                                                                                                                                                                                                            | 1       |
-| E02xx     | Identifier/Param Naming                                                                                                                                                                                                                                  | 5       |
-| E03xx     | Struct Fields/Init                                                                                                                                                                                                                                       | 6       |
-| E04xx     | Symbol Resolution                                                                                                                                                                                                                                        | 16      |
-| E05xx     | Include/Preprocessor                                                                                                                                                                                                                                     | 19      |
-| E06xx     | Sizeof Expressions                                                                                                                                                                                                                                       | 3       |
-| E07xx     | Control Flow                                                                                                                                                                                                                                             | 15      |
-| E08xx     | Arithmetic/Array Safety                                                                                                                                                                                                                                  | 61      |
-| E09xx     | NULL Safety, Compile-Time Values, Literal Form, String Conversions, Interrupt Masking, `mut` Arguments, `for` Arrays, Config File Names, Environment Variables, Operator Operands, Parameter Lists, Member Access, Bit-Field Signedness, Type Categories | 47      |
-| **Total** |                                                                                                                                                                                                                                                          | **173** |
+| Range | Category                                                                    |
+| ----- | --------------------------------------------------------------------------- |
+| E00xx | Reserved/Test                                                               |
+| E02xx | Identifier/Param Naming                                                     |
+| E03xx | Struct Fields/Init                                                          |
+| E04xx | Symbol Resolution                                                           |
+| E05xx | Include/Preprocessor                                                        |
+| E06xx | Sizeof Expressions                                                          |
+| E07xx | Control Flow                                                                |
+| E08xx | Arithmetic/Array Safety                                                     |
+| E09xx | NULL Safety, and from E0909 other checks, each named by its section heading |
+
+No cell of this table changes when a code is registered. It counts no codes, and the E09xx row
+does not list that range's sections: a cell that every registration rewrites is a cell any two
+pull requests conflict on (#2521). `npm run error-codes:check` prints each range's count.
 
 ---
 
