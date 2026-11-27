@@ -165,28 +165,42 @@ describe("MatrixRenderer.renderDocument", () => {
         ],
       ]),
     );
-    expect(document).toContain("2 linked fixtures with no derivable context");
+    expect(document).toContain("Linked fixtures with no derivable context:");
     // Sorted, so the report does not churn on directory-walk order.
     expect(document.indexOf("a/first.test.cnx")).toBeLessThan(
       document.indexOf("b/second.test.cnx"),
     );
   });
 
-  it("uses the singular for a lone fixture with no derivable context", () => {
-    const document = MatrixRenderer.renderDocument(
-      new Map([["051", MatrixTestHelpers.declare("051", [])]]),
-      new Map([
-        [
-          "051",
-          {
-            adr: "051",
-            cells: new Map(),
-            fixturesWithoutContext: ["only/one.test.cnx"],
-            positions: new Map(),
-          },
-        ],
-      ]),
+  it("heads that list with the same line however many fixtures it holds (#2517)", () => {
+    // A count in the heading is rewritten by every branch that adds a fixture
+    // to the list, so two such branches conflict on it. Each fixture changes
+    // its own line and nothing else.
+    const headingOf = (fixturesWithoutContext: string[]): string => {
+      const document = MatrixRenderer.renderDocument(
+        new Map([["051", MatrixTestHelpers.declare("051", [])]]),
+        new Map([
+          [
+            "051",
+            {
+              adr: "051",
+              cells: new Map(),
+              fixturesWithoutContext,
+              positions: new Map(),
+            },
+          ],
+        ]),
+      );
+      return document
+        .split("\n")
+        .filter((line) => line.includes("no derivable context"))
+        .join("\n");
+    };
+    expect(headingOf(["only/one.test.cnx"])).toBe(
+      "Linked fixtures with no derivable context:",
     );
-    expect(document).toContain("1 linked fixture with no derivable context");
+    expect(headingOf(["a/first.test.cnx", "b/second.test.cnx"])).toBe(
+      headingOf(["only/one.test.cnx"]),
+    );
   });
 });
