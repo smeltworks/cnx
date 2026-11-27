@@ -36,7 +36,7 @@ const build = (source: string) => {
   });
   return new CallbackAssignmentAnalyzer(context).analyze(
     syntax,
-    ValuePositions.of(syntax, context).positions,
+    ValuePositions.of(syntax, context),
   );
 };
 
@@ -46,7 +46,7 @@ const findings = (source: string) => {
   const syntax = CnxSourceParser.parse(source).program;
   return new CallbackAssignmentAnalyzer(
     testAnalysisContext(new TranspileState()),
-  ).analyze(syntax, new Map());
+  ).analyze(syntax, { positions: new Map(), sites: new Map() });
 };
 
 describe("CallbackAssignmentAnalyzer", () => {
@@ -448,7 +448,7 @@ describe("CallbackAssignmentAnalyzer with a function a C header declares", () =>
       { symbolTable, integerTypes, cppMode },
     );
     return new CallbackAssignmentAnalyzer(context)
-      .analyze(syntax, ValuePositions.of(syntax, context).positions)
+      .analyze(syntax, ValuePositions.of(syntax, context))
       .map((e) => `${e.code} ${e.message}`);
   };
 

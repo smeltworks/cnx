@@ -500,7 +500,7 @@ function runAnalyzers(
       run: () =>
         new CallbackAssignmentAnalyzer(context).analyze(
           parsed.program,
-          positions().positions,
+          positions(),
         ),
     },
     {

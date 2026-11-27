@@ -1,0 +1,19 @@
+// test-error
+// #2348 review: a function returning a cstring, which is const char*
+// (ADR-046), given where C calls one returning char* is E0879, through a
+// function-pointer field and a function-pointer parameter, each written
+// inline.
+#include "lib/places.h"
+
+mut string<8> stored <- "abc";
+
+cstring label() {
+    cstring text <- stored;
+    return text;
+}
+
+u32 main() {
+    Getter g <- { get: label, id: 1 };
+    u32 n <- call_len(label);
+    return n;
+}

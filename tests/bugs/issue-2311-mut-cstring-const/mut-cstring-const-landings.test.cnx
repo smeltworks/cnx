@@ -1,0 +1,50 @@
+// test-execution
+// #2348 review: the controls for mut-cstring-landings -- each place there,
+// declared const char*, takes a cstring.
+#include "lib/const-places.h"
+
+mut string<8> stored <- "abc";
+
+cstring label() {
+    cstring text <- stored;
+    return text;
+}
+
+const_text_ptr give() {
+    cstring text <- stored;
+    return text;
+}
+
+u32 main() {
+    cstring text <- stored;
+    g_label <- text;
+    g_labels[0] <- text;
+    Label[2] ls <- [{ name: text, id: 1 }, { name: text, id: 2 }];
+    const_text_ptr p <- text;
+    const_text_ptr[2] ps <- [text, give()];
+    ConstGetter g <- { get: label, id: 1 };
+    u32 a <- const_len(p);
+    u32 b <- const_call_len(label);
+    u32 c <- const_getter_len(g);
+    u32 d <- label_len();
+    u32 e <- const_len(ps[1]);
+    if (a != 3) {
+        return 1;
+    }
+    if (b != 3) {
+        return 2;
+    }
+    if (c != 3) {
+        return 3;
+    }
+    if (d != 3) {
+        return 4;
+    }
+    if (e != 3) {
+        return 5;
+    }
+    if (ls[1].id != 2) {
+        return 6;
+    }
+    return 0;
+}

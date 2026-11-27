@@ -976,6 +976,8 @@ totals each time it passes.
 | tests/bugs/issue-2251-bitmap-field-bit-index/field-bit-index-wo-zero-error.test.cnx                       | E0872                             |
 | tests/bugs/issue-2254-volatile-not-inlined/volatile-dimension-error.test.cnx                              | E0909                             |
 | tests/bugs/issue-2311-mut-cstring-const/mut-cstring-callback.test.cnx                                     | E0879                             |
+| tests/bugs/issue-2311-mut-cstring-const/mut-cstring-landings.test.cnx                                     | E0900                             |
+| tests/bugs/issue-2311-mut-cstring-const/mut-cstring-return-landings.test.cnx                              | E0879                             |
 | tests/bugs/issue-2311-mut-cstring-const/mut-cstring-writable.test.cnx                                     | E0896, E0900                      |
 | tests/bugs/issue-2332-short-circuit-built-initializer/loop-condition-nested-call-error.test.cnx           | E0702                             |
 | tests/bugs/issue-2341-included-scope-type-bare-use/no-scope-type.test.cnx                                 | E0426                             |

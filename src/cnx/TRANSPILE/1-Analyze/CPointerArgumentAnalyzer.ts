@@ -39,9 +39,9 @@ import StringValueForm from "../../utils/StringValueForm";
 import CStringArgument from "../../utils/CStringArgument";
 import CallReach from "../../utils/CallReach";
 import BuiltStringArgument from "./helpers/BuiltStringArgument";
-import StatementNodes from "../../utils/StatementNodes";
+import CLandingType from "./helpers/CLandingType";
+import type TValueSite from "../../types/TValueSite";
 import SourceOrder from "../../utils/SourceOrder";
-import ValuePositions from "./helpers/ValuePositions";
 import type IValuePositions from "../../types/IValuePositions";
 import ScanfFormat from "../../utils/ScanfFormat";
 import DeclarationParts from "../../utils/DeclarationParts";
@@ -58,6 +58,8 @@ import type ICCalleeSignature from "./types/ICCalleeSignature";
 
 class CPointerArgumentCheck {
   private readonly found: IBaseAnalysisError[] = [];
+  /** The C strings `checkCStringLandings` reported, which no other rule judges again */
+  private readonly landed = new Set<TExpression>();
 
   public constructor(private readonly context: IAnalysisContext) {}
 
@@ -86,7 +88,7 @@ class CPointerArgumentCheck {
     const reached = CCallee.reachable(callee);
     const only = reached.length === 1 ? reached[0] : undefined;
     callee.arguments.forEach((arg, index) => {
-      if (lost.has(index)) return;
+      if (lost.has(index) || this.landed.has(arg)) return;
       if (BuiltStringArgument.forC(arg, reached, index, this.context)) {
         this.checkBuilt(arg, callee, reached, index);
         return;
@@ -262,8 +264,7 @@ class CPointerArgumentCheck {
         ?.binding ?? null;
     if (
       !CArgumentWrite.mayWrite(callee, index, this.context) ||
-      (BoundDeclaration.of(written)?.isConst !== true &&
-        !this.isCString(callee.arguments[index]))
+      BoundDeclaration.of(written)?.isConst !== true
     ) {
       return false;
     }
@@ -286,12 +287,6 @@ class CPointerArgumentCheck {
   ): { readonly message: string; readonly helpText: string } {
     const arg = callee.arguments[index];
     const name = callee.name;
-    if (this.isCString(arg)) {
-      return {
-        message: `'${arg.written}' is a C string, whose characters cnx does not write, and argument ${index + 1} of '${name}' is one '${name}' may write through`,
-        helpText: `A cstring is const char* (ADR-046), \`mut\` or not: declare the C parameter const char*, or copy '${arg.written}' into a \`mut\` string<N> and pass that.`,
-      };
-    }
     if (callee.signatures.length > 1) {
       return {
         message: `'${arg.written}' is read-only, and every overload of '${name}' this call can reach may write through argument ${index + 1}`,
@@ -324,68 +319,65 @@ class CPointerArgumentCheck {
   }
 
   /**
-   * E0900 (#2348 review): a C string stored in a C struct's field C may write
-   * the characters through -- a `char*` that is not const -- by a struct
-   * initializer or an assignment. `mut` reassigns a `cstring`, and never
-   * writes its characters (ADR-046).
+   * E0900 (#2348 review), the one decision: a C string landing where C may
+   * write its characters -- a place whose C type is a `char*` that is not
+   * const (`CLandingType`), or an argument a C callee may write through
+   * (`CArgumentWrite`: `void*`, `...`, every overload). `mut` reassigns a
+   * `cstring`, and never writes its characters (ADR-046).
    */
-  public checkFieldStore(
-    value: TExpression,
-    structType: string | null,
-    field: string | null,
-  ): void {
-    if (structType === null || field === null || !this.isCString(value)) {
-      return;
+  public checkCStringLandings(positions: IValuePositions): void {
+    for (const [value, site] of positions.sites) {
+      if (!CLandingType.isLanding(site.site) || !this.isCString(value)) {
+        continue;
+      }
+      const type = CLandingType.of(value, positions, this.context);
+      const argument = CLandingType.cArgumentOf(value, positions, this.context);
+      const writable =
+        type !== null &&
+        CStringArgument.isWritableCharPointer(type, this.context.symbolTable);
+      if (
+        !writable &&
+        (argument === null ||
+          !CArgumentWrite.mayWrite(
+            argument.callee,
+            argument.index,
+            this.context,
+          ))
+      ) {
+        continue;
+      }
+      const place = CPointerArgumentCheck.placeOf(
+        site.site,
+        argument?.callee.name ?? null,
+      );
+      this.landed.add(value);
+      this.found.push({
+        code: "E0900",
+        span: value.span,
+        message: writable
+          ? `'${value.written}' is a C string, whose characters cnx does not write, and ${place} is a '${type}' C may write through`
+          : `'${value.written}' is a C string, whose characters cnx does not write, and ${place} is one C may write through`,
+        helpText: `A cstring is const char* (ADR-046), \`mut\` or not: declare the C type const char*, or copy '${value.written}' into a \`mut\` string<N> and use that.`,
+        severity: "error",
+      });
     }
-    const fieldType = this.context.symbolTable
-      .getStructFieldTypes(structType)
-      ?.get(field);
-    if (
-      fieldType === undefined ||
-      !CStringArgument.isWritableCharPointer(
-        fieldType,
-        this.context.symbolTable,
-      )
-    ) {
-      return;
-    }
-    this.found.push({
-      code: "E0900",
-      span: value.span,
-      message: `'${value.written}' is a C string, whose characters cnx does not write, and field '${field}' of '${structType}' is a '${fieldType}' C may write through`,
-      helpText: `A cstring is const char* (ADR-046), \`mut\` or not: declare the C field const char*, or store a \`mut\` string<N> there.`,
-      severity: "error",
-    });
   }
 
-  /** Each struct initializer's fields and assignment to a field, for `checkFieldStore` */
-  public checkFieldStores(
-    program: IProgramSyntax,
-    positions: IValuePositions,
-  ): void {
-    for (const member of program.members) {
-      for (const site of StatementNodes.assignments(member.declaration)) {
-        const last = OperandTyper.chainOf(site.target, this.context).steps.at(
-          -1,
-        );
-        this.checkFieldStore(
-          site.value,
-          last?.before?.typeName ?? null,
-          last?.member ?? null,
-        );
-      }
-      for (const part of DeclarationParts.of(member.declaration)) {
-        for (const node of ExpressionNodes.of(part)) {
-          if (node.kind !== "structInitializer") continue;
-          const structType = ValuePositions.at(
-            positions.positions,
-            node,
-          ).typeText;
-          for (const field of node.fields) {
-            this.checkFieldStore(field.value, structType, field.name);
-          }
-        }
-      }
+  /** Where a value lands, as E0900 names it */
+  private static placeOf(site: TValueSite, cCallee: string | null): string {
+    switch (site.kind) {
+      case "declaration":
+        return `'${site.declaration.name}'`;
+      case "assignment":
+        return `'${site.assignment.target.written}'`;
+      case "return":
+        return `the return of '${site.function.name}'`;
+      case "field":
+        return `field '${site.field}'`;
+      case "argument":
+        return `argument ${site.argument + 1} of '${cCallee ?? site.call.primary.written}'`;
+      default:
+        return "its place";
     }
   }
 
@@ -502,13 +494,13 @@ class CPointerArgumentAnalyzer {
     positions: IValuePositions,
   ): IBaseAnalysisError[] {
     const check = new CPointerArgumentCheck(this.context);
+    check.checkCStringLandings(positions);
     for (const member of program.members) {
       for (const part of DeclarationParts.of(member.declaration)) {
         for (const expr of ExpressionNodes.of(part))
           check.checkExpression(expr);
       }
     }
-    check.checkFieldStores(program, positions);
     return check.errors().sort(SourceOrder.bySpan);
   }
 

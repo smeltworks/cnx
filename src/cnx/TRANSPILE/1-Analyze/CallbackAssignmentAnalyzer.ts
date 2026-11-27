@@ -65,8 +65,9 @@ import type IValuePosition from "../../types/IValuePosition";
 import SourceOrder from "../../utils/SourceOrder";
 import TypedefParamParser from "../../utils/TypedefParamParser";
 import CStringArgument from "../../utils/CStringArgument";
+import CLandingType from "./helpers/CLandingType";
+import type IValuePositions from "../../types/IValuePositions";
 import type ILexicalFrame from "../../types/ILexicalFrame";
-import type IResolvedSymbols from "../../types/IResolvedSymbols";
 
 /** The slot a value fills, for E0880's wording */
 interface ISlot {
@@ -361,7 +362,6 @@ class CallbackAssignmentCheck {
   }
 
   private checkAgainstCTypedef(frame: ILexicalFrame, typedef: ICTypedefSymbol) {
-    this.checkCStringReturn(frame, typedef.name, typedef);
     const parameters = frame.declarations.filter(
       (declaration) => declaration.kind === "parameter",
     );
@@ -390,57 +390,43 @@ class CallbackAssignmentCheck {
   }
 
   /**
-   * The headers of a file that includes this typedef's header (#2474): its
-   * return's alias is the one beside it, which the defining file need not see
+   * E0879 (#2348 review): a function returning a `cstring`, which is
+   * `const char*` (ADR-046), landing where C calls it through a pointer to a
+   * function returning a `char*` that is not const -- a typedef of one or one
+   * written inline, read through this file's headers, which pair the two.
    */
-  private readerOf(typedef: ICTypedefSymbol): IResolvedSymbols {
-    const program = this.context.program;
-    if (program.seesForeignSymbol(this.context.sourceFile, typedef)) {
-      return this.context.symbolTable;
+  public checkCStringReturns(positions: IValuePositions): void {
+    for (const [value, site] of positions.sites) {
+      if (!CLandingType.isLanding(site.site)) continue;
+      const returned = FunctionReference.ofValue(
+        value,
+        OperandTyper.scopePathAt(value.span, this.context),
+        this.context,
+      )?.returnType;
+      if (
+        returned === undefined ||
+        TypeResolver.getTypeName(returned) !== "cstring"
+      ) {
+        continue;
+      }
+      const cReturn = CLandingType.returnOf(value, positions, this.context);
+      if (
+        cReturn === null ||
+        !CStringArgument.isWritableCharPointer(
+          cReturn,
+          this.context.symbolTable,
+        )
+      ) {
+        continue;
+      }
+      this.found.push({
+        code: "E0879",
+        span: value.span,
+        message: `Function '${value.written}' returns a cstring, which is const char*, and the place it is given to calls it as returning '${cReturn}'`,
+        helpText:
+          "A cstring is const char*, `mut` or not (ADR-046): declare the C function pointer's return const char*.",
+      });
     }
-    const reader = program
-      .sourceFiles()
-      .find((sourceFile) => program.seesForeignSymbol(sourceFile, typedef));
-    return reader === undefined
-      ? this.context.symbolTable
-      : program.symbolTableFor(reader);
-  }
-
-  /**
-   * E0879 (#2348 review): a function returning `cstring`, which is
-   * `const char*` `mut` or not (ADR-046), given to a C type that returns a
-   * `char*` C may write the characters through
-   */
-  private checkCStringReturn(
-    frame: ILexicalFrame,
-    typedefName: string,
-    typedef: ICTypedefSymbol,
-  ): void {
-    const symbol =
-      frame.functionCName === null
-        ? undefined
-        : this.context.program.symbolByCName(frame.functionCName);
-    const parsed = TypedefParamParser.parse(typedef.type)?.returnType ?? null;
-    // 1.3 keeps a typedef's `const` specifier apart: it is its return's
-    const returned =
-      parsed === null
-        ? null
-        : `${typedef.isConst === true ? "const " : ""}${parsed}`;
-    if (
-      symbol?.kind !== "function" ||
-      returned === null ||
-      TypeResolver.getTypeName(symbol.returnType) !== "cstring" ||
-      !CStringArgument.isWritableCharPointer(returned, this.readerOf(typedef))
-    ) {
-      return;
-    }
-    this.found.push({
-      code: "E0879",
-      span: frame.span,
-      message: `Function '${frame.functionCName}' signature does not match callback type '${typedefName}': it returns a cstring, which is const char*, and the type returns '${returned}'`,
-      helpText:
-        "A cstring is const char*, `mut` or not (ADR-046): declare the C type's return const char*.",
-    });
   }
 }
 
@@ -450,11 +436,15 @@ class CallbackAssignmentAnalyzer {
   /** #1991: reads 1.2's syntax, not the parse tree */
   public analyze(
     program: IProgramSyntax,
-    positions: ReadonlyMap<TExpression, IValuePosition>,
+    positions: IValuePositions,
   ): ICallbackAssignmentError[] {
-    const check = new CallbackAssignmentCheck(this.context, positions);
+    const check = new CallbackAssignmentCheck(
+      this.context,
+      positions.positions,
+    );
     ProgramAccesses.checkEverything(program, check);
     check.checkCTypedefCallbacks();
+    check.checkCStringReturns(positions);
     return check.errors().sort(SourceOrder.bySpan);
   }
 }

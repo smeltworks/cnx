@@ -217,7 +217,8 @@ extern float nf;`);
     expect(varSymbol).toBeDefined();
     expect(varSymbol?.kind).toBe("variable");
     if (varSymbol?.kind === "variable") {
-      expect(varSymbol.type).toBe("point_t*");
+      // #2348 review: a pointer's `const` is its pointee's, which the type spells
+      expect(varSymbol.type).toBe("const point_t*");
     }
   });
 

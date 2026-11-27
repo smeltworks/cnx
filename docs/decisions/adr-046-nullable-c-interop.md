@@ -147,10 +147,17 @@ A `cstring` is emitted as `const char*`, `mut` or not (#2311). Its characters
 are C's: a string literal, or what `strstr` returns for a read-only string.
 `mut` lets the pointer be reassigned; it never lets cnx write the characters,
 because no cnx form writes through a `cstring`. A read-only `cstring` adds no
-second `const`. Nor can a `cstring` land where C may write its characters: a
-C pointer parameter that is not const, `char*` or `void*`, and a C struct's
-`char*` field are E0900, and a function returning `cstring` does not match a
-C function-pointer type that returns `char*` (E0879) (#2348 review).
+second `const`. Nor can a `cstring` land where C may write its characters.
+Where it lands is decided once, from the C type of the place, not from how
+the write is spelled (#2348 review): a declaration, an element of an
+initializer, a field, an element, a parameter, an assignment's target of any
+shape, or a return. A place whose type is a `char*` that is not const -- or a
+typedef of one, `typedef char* text_ptr` -- is E0900, and so is a C argument
+the callee may write through otherwise (`void*`, `...`). A function returning
+`cstring` given where C calls one returning `char*` -- through a
+function-pointer typedef or one written inline, as a field, a parameter or a
+variable -- is E0879. Each is read through the headers of the file that puts
+the value there.
 
 ```cnx
 mut cstring label <- "a";                   // const char* label = "a";

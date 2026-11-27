@@ -1,0 +1,20 @@
+13:11 error[E0900]: 'text' is a C string, whose characters cnx does not write, and the return of 'give' is a 'text_ptr' C may write through
+       help: A cstring is const char* (ADR-046), `mut` or not: declare the C type const char*, or copy 'text' into a `mut` string<N> and use that.
+18:14 error[E0900]: 'text' is a C string, whose characters cnx does not write, and 'g_name' is a 'char*' C may write through
+       help: A cstring is const char* (ADR-046), `mut` or not: declare the C type const char*, or copy 'text' into a `mut` string<N> and use that.
+19:18 error[E0900]: 'text' is a C string, whose characters cnx does not write, and 'g_names[0]' is a 'char*' C may write through
+       help: A cstring is const char* (ADR-046), `mut` or not: declare the C type const char*, or copy 'text' into a `mut` string<N> and use that.
+21:18 error[E0900]: 'text' is a C string, whose characters cnx does not write, and 'n.names[0]' is a 'char*' C may write through
+       help: A cstring is const char* (ADR-046), `mut` or not: declare the C type const char*, or copy 'text' into a `mut` string<N> and use that.
+22:31 error[E0900]: 'text' is a C string, whose characters cnx does not write, and field 'name' is a 'char*' C may write through
+       help: A cstring is const char* (ADR-046), `mut` or not: declare the C type const char*, or copy 'text' into a `mut` string<N> and use that.
+22:54 error[E0900]: 'text' is a C string, whose characters cnx does not write, and field 'name' is a 'char*' C may write through
+       help: A cstring is const char* (ADR-046), `mut` or not: declare the C type const char*, or copy 'text' into a `mut` string<N> and use that.
+23:21 error[E0900]: 'text' is a C string, whose characters cnx does not write, and argument 1 of 'ptr_len' is a 'text_ptr' C may write through
+       help: A cstring is const char* (ADR-046), `mut` or not: declare the C type const char*, or copy 'text' into a `mut` string<N> and use that.
+24:18 error[E0900]: 'text' is a C string, whose characters cnx does not write, and 'p' is a 'text_ptr' C may write through
+       help: A cstring is const char* (ADR-046), `mut` or not: declare the C type const char*, or copy 'text' into a `mut` string<N> and use that.
+25:25 error[E0900]: 'text' is a C string, whose characters cnx does not write, and 'ptrs' is a 'text_ptr' C may write through
+       help: A cstring is const char* (ADR-046), `mut` or not: declare the C type const char*, or copy 'text' into a `mut` string<N> and use that.
+25:31 error[E0900]: 'text' is a C string, whose characters cnx does not write, and 'ptrs' is a 'text_ptr' C may write through
+       help: A cstring is const char* (ADR-046), `mut` or not: declare the C type const char*, or copy 'text' into a `mut` string<N> and use that.

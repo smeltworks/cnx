@@ -334,11 +334,19 @@ class CHeaderLowering {
   ): {
     arrayDimensions?: string[];
     isNestedDeclarator?: true;
+    isFunctionPointer?: true;
     isVolatile?: true;
   } {
     const qualifiers = isVolatile ? { isVolatile: true as const } : {};
     if (directText.includes("(")) {
-      return { ...qualifiers, isNestedDeclarator: true };
+      return {
+        ...qualifiers,
+        isNestedDeclarator: true,
+        // `(*make)(void)`: a pointer to a function returning `type` (#2348 review)
+        ...(/^\(\*\w*\)\(/.test(directText) && {
+          isFunctionPointer: true as const,
+        }),
+      };
     }
     const open = directText.indexOf("[");
     if (open < 0) return qualifiers;
