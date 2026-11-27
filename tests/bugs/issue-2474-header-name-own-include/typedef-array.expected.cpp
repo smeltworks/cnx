@@ -8,12 +8,14 @@
 // test-execution
 // Issue #2474 review: frames is first declared through an array typedef, then
 // redeclared with its size written. Both give it 4 elements, as a value and
-// as a dimension.
+// as a dimension, and 4 bytes.
 #include "lib/typedef-array.h"
 
 #include <stdint.h>
 
 uint8_t copy[4] = {};
+
+uint8_t bytesCopy[4] = {};
 
 int main(void) {
     const uint32_t n = 4;
@@ -22,6 +24,13 @@ int main(void) {
     }
     if (4 != 4) {
         return 2U;
+    }
+    const uint32_t bytes = 4;
+    if (bytes != 4) {
+        return 3U;
+    }
+    if (4 != 4) {
+        return 4U;
     }
     return 0U;
 }

@@ -1962,7 +1962,17 @@ class Program {
     const pool = ForeignRedeclaration.pool(declared ?? [], (entry) =>
       sees(entry.origin),
     );
-    const first = pool[0];
+    // One declared through an array typedef writes no dimensions: the one
+    // that writes them is its type, rather than its element type
+    const first =
+      pool[0]?.value.kind === "variable" &&
+      pool[0].value.dimensions.length === 0
+        ? (pool.find(
+            (entry) =>
+              entry.value.kind === "variable" &&
+              entry.value.dimensions.length > 0,
+          ) ?? pool[0])
+        : pool[0];
     if (first?.value.kind !== "variable") return first?.value ?? null;
     if (pool.some((entry) => entry.disputed)) {
       return { ...first.value, disputed: true };
