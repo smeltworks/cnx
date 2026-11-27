@@ -2,19 +2,19 @@
        help: Consider converting 'strstr' to cnx.
 26:37 warning[E0896]: cnx cannot see how 'strstr' uses parameter 2, so passing '"cd"' to it is not memory safe
        help: Consider converting 'strstr' to cnx.
-31:20 warning[E0896]: cnx cannot see how 'strcmp' uses parameter 1, so passing 's + "d"' to it is not memory safe
+33:20 warning[E0896]: cnx cannot see how 'strcmp' uses parameter 1, so passing 's + "d"' to it is not memory safe
        help: Consider converting 'strcmp' to cnx.
-31:29 warning[E0896]: cnx cannot see how 'strcmp' uses parameter 2, so passing '"abcd"' to it is not memory safe
+33:29 warning[E0896]: cnx cannot see how 'strcmp' uses parameter 2, so passing '"abcd"' to it is not memory safe
        help: Consider converting 'strcmp' to cnx.
-32:30 warning[E0896]: cnx cannot see how 'strstr' uses parameter 1, so passing 's' to it is not memory safe
+34:30 warning[E0896]: cnx cannot see how 'strstr' uses parameter 1, so passing 's' to it is not memory safe
        help: Consider converting 'strstr' to cnx.
-32:33 warning[E0896]: cnx cannot see how 'strstr' uses parameter 2, so passing '"b"' to it is not memory safe
+34:33 warning[E0896]: cnx cannot see how 'strstr' uses parameter 2, so passing '"b"' to it is not memory safe
        help: Consider converting 'strstr' to cnx.
-34:29 warning[E0896]: cnx cannot see how 'fopen' uses parameter 1, so passing 's + ".txt"' to it is not memory safe
+36:29 warning[E0896]: cnx cannot see how 'fopen' uses parameter 1, so passing 's + ".txt"' to it is not memory safe
        help: Consider converting 'fopen' to cnx.
-34:41 warning[E0896]: cnx cannot see how 'fopen' uses parameter 2, so passing '"r"' to it is not memory safe
+36:41 warning[E0896]: cnx cannot see how 'fopen' uses parameter 2, so passing '"r"' to it is not memory safe
        help: Consider converting 'fopen' to cnx.
-36:21 warning[E0896]: cnx cannot see how 'fclose' uses parameter 1, so passing 'c_file' to it is not memory safe
+38:21 warning[E0896]: cnx cannot see how 'fclose' uses parameter 1, so passing 'c_file' to it is not memory safe
        help: Consider converting 'fclose' to cnx.
 13:28 error[E0948]: 'first_b' returns a pointer, which may point into the string built for 's + "g"', parameter 1; that string does not outlive its block
        help: ADR-045: copy 's + "g"' into a string<N> first, and pass that.
@@ -28,5 +28,7 @@
        help: ADR-045: copy 's[0, 2]' into a string<N> first, and pass that.
 29:28 error[E0948]: 'first_b' returns a pointer, which may point into the string built for 's + "y"', parameter 1; that string does not outlive its block
        help: ADR-045: copy 's + "y"' into a string<N> first, and pass that.
-39:35 error[E0948]: 'first_b' returns a pointer, which may point into the string built for 's + "f"', parameter 1; that string does not outlive its block
+31:31 error[E0948]: 'first_c' returns a pointer, which may point into the string built for 's + "z"', parameter 1; that string does not outlive its block
+       help: ADR-045: copy 's + "z"' into a string<N> first, and pass that.
+41:35 error[E0948]: 'first_b' returns a pointer, which may point into the string built for 's + "f"', parameter 1; that string does not outlive its block
        help: ADR-045: copy 's + "f"' into a string<N> first, and pass that.

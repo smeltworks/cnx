@@ -23,9 +23,15 @@ class CStringArgument {
   ): boolean {
     if (parameter === undefined) return false;
     if (parameter.isArray === true) {
-      return CStringArgument.unqualified(parameter.type) === "char";
+      return (
+        CStringArgument.baseOf(
+          CStringArgument.unqualified(parameter.type),
+          false,
+          symbols,
+        ).name === "char"
+      );
     }
-    return CStringArgument.pointee(parameter.type, symbols) === "char";
+    return CStringArgument.pointee(parameter.type, symbols)?.name === "char";
   }
 
   static mayPointInto(
@@ -33,7 +39,7 @@ class CStringArgument {
     symbols: IResolvedSymbols | null,
   ): boolean {
     if (returnType === null) return false;
-    const pointee = CStringArgument.pointee(returnType, symbols);
+    const pointee = CStringArgument.pointee(returnType, symbols)?.name;
     return (
       pointee === "char" ||
       pointee === "signed char" ||
@@ -51,21 +57,50 @@ class CStringArgument {
     type: string,
     symbols: IResolvedSymbols | null,
   ): boolean {
-    const pointer = CStringArgument.pointerOf(type, symbols);
-    return (
-      pointer !== null &&
-      CPointerParameter.pointee(pointer.text) === "char" &&
-      !pointer.pointeeConst
-    );
+    const pointee = CStringArgument.pointee(type, symbols);
+    return pointee?.name === "char" && !pointee.isConst;
   }
 
-  /** What a type of one pointer points to, typedefs followed; null for any other */
+  /**
+   * What a type of one pointer points to, and whether it is const, typedefs
+   * followed on both sides of the `*` (`character*` with `typedef char
+   * character` points to `char`); null for any other type
+   */
   private static pointee(
     type: string,
     symbols: IResolvedSymbols | null,
-  ): string | null {
+  ): { readonly name: string; readonly isConst: boolean } | null {
     const pointer = CStringArgument.pointerOf(type, symbols);
-    return pointer === null ? null : CPointerParameter.pointee(pointer.text);
+    const pointee =
+      pointer === null ? null : CPointerParameter.pointee(pointer.text);
+    return pointer === null || pointee === null
+      ? null
+      : CStringArgument.baseOf(pointee, pointer.pointeeConst, symbols);
+  }
+
+  /** A type name with its typedefs of a type that is no pointer followed */
+  private static baseOf(
+    name: string,
+    isConst: boolean,
+    symbols: IResolvedSymbols | null,
+  ): { readonly name: string; readonly isConst: boolean } {
+    const seen = new Set<string>();
+    let base = name;
+    let baseConst = isConst;
+    for (;;) {
+      const symbol = seen.has(base) ? undefined : symbols?.getCSymbol(base);
+      seen.add(base);
+      if (
+        symbol?.kind !== "type" ||
+        typeof symbol.type !== "string" ||
+        symbol.type.includes("*") ||
+        symbol.type.includes("(")
+      ) {
+        return { name: base, isConst: baseConst };
+      }
+      baseConst ||= symbol.isConst === true;
+      base = CStringArgument.unqualified(symbol.type);
+    }
   }
 
   /**

@@ -27,6 +27,8 @@ void main() {
     cstring c_ch <- strchr(s[0, 2], 'b');
     // A typedef of a pointer returns one too
     cstring c_td <- first_b(s + "y");
+    // So does a pointer to a typedef of char
+    cstring c_alias <- first_c(s + "z");
     // Control: strcmp returns no pointer, and s passed whole is not built
     order <- strcmp(s + "d", "abcd");
     cstring c_whole <- strstr(s, "b");

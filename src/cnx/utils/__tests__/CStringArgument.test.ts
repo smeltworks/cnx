@@ -12,6 +12,8 @@ const symbols = (): SymbolTable => {
     ["chars_t", "char*", false],
     ["alias_t", "text_t", false],
     ["bytes_t", "uint8_t*", false],
+    ["character", "char", false],
+    ["cchar", "char", true],
   ] as const) {
     table.addCSymbol({
       name,
@@ -30,11 +32,20 @@ const symbols = (): SymbolTable => {
 describe("CStringArgument", () => {
   it("builds for a char pointer, however it is spelled", () => {
     const table = symbols();
-    for (const type of ["char*", "const char *", "text_t", "alias_t"]) {
+    for (const type of [
+      "char*",
+      "const char *",
+      "text_t",
+      "alias_t",
+      "character*",
+    ]) {
       expect(CStringArgument.isBuiltFor({ type }, table)).toBe(true);
     }
     expect(
       CStringArgument.isBuiltFor({ type: "const char", isArray: true }, table),
+    ).toBe(true);
+    expect(
+      CStringArgument.isBuiltFor({ type: "character", isArray: true }, table),
     ).toBe(true);
   });
 
@@ -52,7 +63,13 @@ describe("CStringArgument", () => {
 
   it("finds a return that can point at characters", () => {
     const table = symbols();
-    for (const type of ["char*", "unsigned char*", "void*", "text_t"]) {
+    for (const type of [
+      "char*",
+      "unsigned char*",
+      "void*",
+      "text_t",
+      "character*",
+    ]) {
       expect(CStringArgument.mayPointInto(type, table)).toBe(true);
     }
     for (const type of ["FILE*", "int", "bytes_t"]) {
@@ -65,7 +82,16 @@ describe("CStringArgument", () => {
     const table = symbols();
     expect(CStringArgument.isWritableCharPointer("char*", table)).toBe(true);
     expect(CStringArgument.isWritableCharPointer("chars_t", table)).toBe(true);
-    for (const type of ["const char*", "text_t", "alias_t", "uint8_t*"]) {
+    expect(CStringArgument.isWritableCharPointer("character*", table)).toBe(
+      true,
+    );
+    for (const type of [
+      "const char*",
+      "text_t",
+      "alias_t",
+      "uint8_t*",
+      "cchar*",
+    ]) {
       expect(CStringArgument.isWritableCharPointer(type, table)).toBe(false);
     }
   });
