@@ -1,0 +1,12 @@
+16:20 error[E0908]: Nullable variable 'c_pos' used without NULL check
+       help: Check for NULL before use: if (c_pos != NULL) { ... }
+18:16 error[E0908]: Nullable variable 'c_pos' used without NULL check
+       help: Check for NULL before use: if (c_pos != NULL) { ... }
+19:33 error[E0908]: Nullable variable 'c_pos' used without NULL check
+       help: Check for NULL before use: if (c_pos != NULL) { ... }
+20:32 error[E0908]: Nullable variable 'c_pos' used without NULL check
+       help: Check for NULL before use: if (c_pos != NULL) { ... }
+21:38 error[E0908]: Nullable variable 'c_pos' used without NULL check
+       help: Check for NULL before use: if (c_pos != NULL) { ... }
+23:20 error[E0908]: Nullable variable 'c_pos' used without NULL check
+       help: Check for NULL before use: if (c_pos != NULL) { ... }

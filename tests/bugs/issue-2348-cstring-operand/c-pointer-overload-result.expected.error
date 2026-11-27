@@ -1,0 +1,2 @@
+12:20 error[E0948]: 'find_in' returns a pointer, which may point into the string built for 's + "!"', parameter 1; that string does not outlive its block
+       help: ADR-045: copy 's + "!"' into a string<N> first, and pass that.

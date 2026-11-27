@@ -39,6 +39,11 @@ import ExpressionNodes from "../../utils/ExpressionNodes";
 import ExpressionShape from "../../utils/ExpressionShape";
 import StatementNodes from "../../utils/StatementNodes";
 import ILoopError from "./types/ILoopError";
+import OperandTyper from "../../utils/OperandTyper";
+import BuiltStringArgument from "./helpers/BuiltStringArgument";
+import CCallee from "./helpers/CCallee";
+import FunctionReference from "./helpers/FunctionReference";
+import type IValuePositions from "../../types/IValuePositions";
 import type IAnalysisContext from "./types/IAnalysisContext";
 import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
@@ -63,7 +68,10 @@ interface ILiteralComparison {
 class LoopCheck {
   private readonly found: ILoopError[] = [];
 
-  public constructor(private readonly context: IAnalysisContext) {}
+  public constructor(
+    private readonly context: IAnalysisContext,
+    private readonly cnxBuilt: ReadonlySet<TExpression>,
+  ) {}
 
   public errors(): ILoopError[] {
     return this.found;
@@ -126,6 +134,7 @@ class LoopCheck {
     }
     if (statement.update !== null) {
       this.checkHeaderAssignment(statement.update, UPDATE_HELP);
+      this.checkBuiltInUpdate(statement.update);
     }
     // E0707: `for (;;)` is an infinite loop with the wrong spelling.
     if (statement.condition === null) {
@@ -151,6 +160,45 @@ class LoopCheck {
       aboutItsPosition: true,
       message: `a for-loop header cannot hold this assignment: ${form}`,
       helpText: help,
+    });
+  }
+
+  /**
+   * E0715 (#2402): a string built before its statement (`BuiltStringArgument`)
+   * in an update would be built once, before the loop, while the update runs
+   * every pass, so it would read its parts as they were before the loop
+   */
+  private checkBuiltInUpdate(update: IAssignmentSyntax): void {
+    const scopePath = OperandTyper.scopePathAt(update.span, this.context);
+    for (const node of [update.target, update.value].flatMap((expr) =>
+      ExpressionNodes.direct(expr),
+    )) {
+      if (this.cnxBuilt.has(node)) this.reportBuiltInUpdate(node);
+      if (node.kind !== "postfix") continue;
+      for (const call of FunctionReference.callsIn(
+        node,
+        scopePath,
+        this.context,
+      )) {
+        const callee = call.cCallee;
+        if (callee === null) continue;
+        const reached = CCallee.reachable(callee);
+        callee.arguments.forEach((arg, index) => {
+          if (BuiltStringArgument.forC(arg, reached, index, this.context)) {
+            this.reportBuiltInUpdate(arg);
+          }
+        });
+      }
+    }
+  }
+
+  private reportBuiltInUpdate(arg: TExpression): void {
+    this.found.push({
+      code: "E0715",
+      span: arg.span,
+      aboutItsPosition: true,
+      message: `a for-loop update cannot build '${arg.written}': it would be built once, before the loop, and read as it was there on every pass`,
+      helpText: UPDATE_HELP,
     });
   }
 
@@ -223,8 +271,14 @@ class LoopCheck {
 class LoopAnalyzer {
   constructor(private readonly context: IAnalysisContext) {}
 
-  public analyze(program: IProgramSyntax): ILoopError[] {
-    const check = new LoopCheck(this.context);
+  public analyze(
+    program: IProgramSyntax,
+    positions: IValuePositions,
+  ): ILoopError[] {
+    const check = new LoopCheck(
+      this.context,
+      BuiltStringArgument.forCnx(positions, this.context),
+    );
     for (const member of program.members) {
       check.declaration(member.declaration);
       for (const part of DeclarationParts.of(member.declaration)) {

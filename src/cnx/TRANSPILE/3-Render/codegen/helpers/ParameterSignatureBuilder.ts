@@ -9,6 +9,7 @@
  * - BaseHeaderGenerator (via ParameterInputAdapter.fromSymbol)
  */
 
+import ConstQualifier from "../../../../utils/ConstQualifier";
 import ParameterConst from "../../../../utils/ParameterConst";
 import IParameterInput from "../types/IParameterInput";
 
@@ -104,13 +105,10 @@ class ParameterSignatureBuilder {
    * Example: float value, ISR handler, Status s
    */
   private static _buildPassByValueParam(param: IParameterInput): string {
-    const constMod = ParameterConst.isWritten(
-      param.isConst,
-      param.baseType,
-      false,
-    )
-      ? "const "
-      : "";
+    const constMod = ConstQualifier.prefix(
+      param.mappedType,
+      ParameterConst.isWritten(param.isConst, param.baseType, false),
+    );
     return `${constMod}${param.mappedType} ${param.name}`;
   }
 
@@ -148,7 +146,7 @@ class ParameterSignatureBuilder {
    * Build unknown type parameter (pass by value, standard C semantics).
    */
   private static _buildUnknownParam(param: IParameterInput): string {
-    const constMod = param.isConst ? "const " : "";
+    const constMod = ConstQualifier.prefix(param.mappedType, param.isConst);
     return `${constMod}${param.mappedType} ${param.name}`;
   }
 
@@ -158,10 +156,10 @@ class ParameterSignatureBuilder {
    */
   private static _getConstPrefix(param: IParameterInput): string {
     // Any source of const results in "const " prefix
-    if (param.forceConst || param.isConst) {
-      return "const ";
-    }
-    return "";
+    return ConstQualifier.prefix(
+      param.mappedType,
+      param.forceConst === true || param.isConst,
+    );
   }
 }
 

@@ -17,7 +17,7 @@ char buffer[65] = "";
 
 // Read lines until fgets returns NULL (EOF)
 void readAllLines(void) {
-    char* c_result = fgets(buffer, 65, stdin);
+    const char* c_result = fgets(buffer, 65, stdin);
     while (c_result != NULL) {
         (void)printf("Line: %s", buffer);
         c_result = fgets(buffer, 65, stdin);
@@ -26,7 +26,7 @@ void readAllLines(void) {
 
 // Alternative pattern with = NULL check
 void readUntilEmpty(void) {
-    char* c_result = fgets(buffer, 65, stdin);
+    const char* c_result = fgets(buffer, 65, stdin);
     while (c_result == NULL) {
         (void)printf("Got NULL\n");
         c_result = fgets(buffer, 65, stdin);

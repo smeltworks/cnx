@@ -1,0 +1,16 @@
+// test-execution
+// test-cpp-only
+// #2348 review: E0948 judges the overloads a call can reach. `find(s + "!")`
+// reaches only the one-argument find, which returns no pointer, so the built
+// string is passed; the pointer-returning find takes two arguments.
+#include "lib/overloaded-find.hpp"
+
+string<8> s <- "abc";
+
+u32 main() {
+    u32 length <- find(s + "!");
+    if (length != 4) {
+        return 1;
+    }
+    return 0;
+}

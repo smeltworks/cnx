@@ -1,0 +1,75 @@
+// test-execution
+// #2311 (ADR-046): a cstring is const char*, so a mut cstring takes a string
+// literal and the result of strstr on a read-only string in C and C++ alike.
+// mut lets the pointer be reassigned; the characters stay C's.
+#include <string.h>
+
+mut cstring label <- "a";
+string<16> haystack <- "hello world";
+
+scope Board {
+    mut cstring name;
+    // Read-only: one const, never `const const char*` (#2348 review)
+    cstring tag <- "tag";
+
+    public void rename() {
+        this.name <- "board";
+    }
+
+    public u64 tagLength() {
+        return strlen(this.tag);
+    }
+
+    public u64 nameLength() {
+        if (this.name = NULL) {
+            return 0;
+        }
+        return strlen(this.name);
+    }
+}
+
+u32 main() {
+    label <- "bc";
+    u64 labelLength <- strlen(label);
+    if (labelLength != 2) {
+        return 1;
+    }
+
+    mut cstring c_found <- strstr(haystack, "world");
+    if (c_found = NULL) {
+        return 2;
+    }
+    u64 foundLength <- strlen(c_found);
+    if (foundLength != 5) {
+        return 3;
+    }
+
+    c_found <- strstr(haystack, "lo");
+    if (c_found = NULL) {
+        return 4;
+    }
+    u64 tailLength <- strlen(c_found);
+    if (tailLength != 8) {
+        return 5;
+    }
+
+    cstring c_fixed <- strstr(haystack, "hello");
+    if (c_fixed = NULL) {
+        return 6;
+    }
+    i32 order <- strcmp(c_fixed, haystack);
+    if (order != 0) {
+        return 7;
+    }
+
+    Board.rename();
+    u64 boardLength <- Board.nameLength();
+    if (boardLength != 5) {
+        return 8;
+    }
+    u64 tagLength <- Board.tagLength();
+    if (tagLength != 3) {
+        return 9;
+    }
+    return 0;
+}

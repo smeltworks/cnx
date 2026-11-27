@@ -1,0 +1,31 @@
+// test-error
+// test-adr: 045
+// #2348 review: a concatenation passed to a C char pointer parameter is built
+// at the sum of its parts' capacities, so a part whose length cnx cannot see,
+// such as main's unsized args element, is E0947.
+#include <string.h>
+
+mut u64 total;
+
+scope Names {
+    public u64 measure(string name) {
+        // ASSERTION -- scope method: an unsized string parameter has no length
+        return strlen(name + "!");
+    }
+}
+
+u64 count(string name) {
+    mut u64 total <- 0;
+    // ASSERTION -- for header
+    for (mut u64 i <- strlen(name + "!"); i < 3; i +<- 1) {
+        total +<- 1;
+    }
+    return total;
+}
+
+u32 main(string args[]) {
+    total <- strlen(args[0] + "!");
+    // Control: passed whole, it needs no length
+    total <- strlen(args[0]);
+    return 0;
+}

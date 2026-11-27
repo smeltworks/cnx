@@ -8,7 +8,12 @@ import type TPostfixOpSyntax from "../../../types/syntax/TPostfixOpSyntax";
  * copied into -- so the value outlives the branch that set it.
  */
 type TPlannedLazyTernary =
-  | { readonly kind: "value"; readonly cType: string }
+  | {
+      readonly kind: "value";
+      /** The cnx type the variable holds, which each arm is converted to */
+      readonly typeName: string;
+      readonly cType: string;
+    }
   | {
       readonly kind: "buffer";
       readonly type: TType;

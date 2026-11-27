@@ -36,6 +36,7 @@ import type TCppTypeSpecifierSyntax from "../types/TCppTypeSpecifierSyntax";
 import type IExtractedParameter from "../shared/IExtractedParameter";
 import type ISourceSpan from "../../../types/ISourceSpan";
 import DeclaratorTypes from "../shared/DeclaratorTypes";
+import SpacedText from "../shared/SpacedText";
 import ParameterExtractorUtils from "../shared/ParameterExtractorUtils";
 import ArrayDimensionText from "../../../utils/ArrayDimensionText";
 import LiteralUtils from "../../../utils/LiteralUtils";
@@ -354,7 +355,7 @@ class CppHeaderLowering {
         : 0,
       functionPointerParams:
         paramsAndQuals && CppHeaderLowering.isFunctionPointer(declarator)
-          ? paramsAndQuals.getText().slice(1, -1)
+          ? SpacedText.of(paramsAndQuals).slice(1, -1)
           : null,
       parameters: CppHeaderLowering.parameters(paramsAndQuals),
       isVariadic:

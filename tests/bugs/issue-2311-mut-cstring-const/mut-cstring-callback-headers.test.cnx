@@ -1,0 +1,15 @@
+// test-execution
+// #2348 review: a callback type's return is the alias beside it in its own
+// header. writable-names.cnx defines stored_name and reads a header where
+// name_text_t is char*, but name_fn's header makes it const char*, so the
+// cstring callback matches it.
+#include "lib/name-callback.h"
+#include "lib/writable-names.cnx"
+
+u32 main() {
+    u32 length <- name_length(stored_name);
+    if (length != 3) {
+        return 1;
+    }
+    return 0;
+}

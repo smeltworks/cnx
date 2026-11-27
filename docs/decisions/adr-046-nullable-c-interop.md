@@ -78,14 +78,109 @@ if (c_customer != NULL) {
 }
 ```
 
+### Where a NULL Check Holds
+
+A NULL check holds where its condition decided control reached (#2348
+review). Two shapes still hold it further, and are open: a check made before
+a loop, in a later pass after the body reassigns the variable (#2524), and a
+guard clause on an inner `c_` local, for an outer one of the same name
+(#2525). `c_x != NULL` holds in the body of an `if` or `while` it
+is the condition of, on the right of an `&&` it is the left of, and in the
+first branch of a ternary. `c_x = NULL` holds the other way round: on the
+right of an `||`, in an `else`, in a ternary's second branch, and, as a guard
+clause, after an `if` with no `else` whose body returns on every path: a
+`return` inside a loop may never run, so it makes no guard clause. A guard
+clause inside a branch, a `for`, `while` or `forever` loop, or a switch holds
+only inside it, since a path may skip it; a do-while body runs at least once,
+so a guard at its top level holds after the loop. A true `&&` holds
+each of its operands' checks and a false `||` each of its operands', so one
+condition checks several variables; a `!` turns its operand's around, and so
+do `x = false` and `x != true`, E0701's spelling of `!x`, while `x = true` and
+`x != false` are `x`.
+
+```cnx
+cstring c_a <- strstr(haystack, "lo");
+cstring c_b <- strstr(haystack, "he");
+bool hasText <- c_a != NULL && strlen(c_a) > 0;        // OK
+u64 length <- (c_a = NULL) ? 0 : strlen(c_a);         // OK
+if (c_a != NULL && c_b != NULL) {
+    n <- strlen(c_a) + strlen(c_b);                    // OK: both checked
+} else {
+    n <- strlen(c_a);                                  // ERROR E0908
+}
+n <- strlen(c_a);                                      // ERROR E0908
+if (c_a = NULL || c_b = NULL) {
+    return;
+}
+n <- strlen(c_a) + strlen(c_b);                        // OK: guard clause
+```
+
+Until then only a whole `if` or `while` condition of exactly `c_x != NULL`
+or `c_x = NULL` checked anything, `c_a != NULL && strlen(c_a) > 0` was E0908,
+and an `if (c_a != NULL)` left `c_a` checked in its `else` and after it.
+
+### Operators on a C String
+
+A `cstring` is a C pointer, and cnx has no pointer arithmetic (ADR-006), so
+no arithmetic, bitwise or shift operator takes one, nor a prefix `-` or `~`,
+nor a compound assignment (owner ruling, #2348). Each is E0925. Until then
+`c_pos + 1` was accepted at exit 0 and emitted as C pointer arithmetic.
+
+A C string is compared with `NULL`, compared and ordered by content (ADR-045),
+passed whole to a C function, and reassigned from a call:
+
+```cnx
+mut cstring c_pos <- strstr(haystack, "lo");
+if (c_pos != NULL) {
+    i32 order <- strcmp(c_pos, "lo");   // OK: passed whole
+    u32 next <- (u32)(c_pos + 1);       // ERROR E0925: '+' is not valid on a C string
+    c_pos +<- 1;                        // ERROR E0925
+}
+c_pos <- strstr(haystack, "he");        // OK: reassigned from a call
+```
+
+To reach a part of it, copy it into a `string<N>` and take a substring.
+
+### A C String's C Type
+
+A `cstring` is emitted as `const char*`, `mut` or not (#2311). Its characters
+are C's: a string literal, or what `strstr` returns for a read-only string.
+`mut` lets the pointer be reassigned; it never lets cnx write the characters,
+because no cnx form writes through a `cstring`. A read-only `cstring` adds no
+second `const`. Nor can a `cstring` land where C may write its characters.
+Where it lands is decided once, from the C type of the place, not from how
+the write is spelled (#2348 review): a declaration, an element of an
+initializer, a field, an element, a parameter, an assignment's target of any
+shape, or a return. A place whose type is a `char*` that is not const -- or a
+typedef of one, `typedef char* text_ptr` -- is E0900, and so is a C argument
+the callee may write through otherwise (`void*`, `...`). A function returning
+`cstring` given where C calls one returning `char*` -- through a
+function-pointer typedef or one written inline, as a field, a parameter or a
+variable -- is E0879. Each is read through the headers of the file that puts
+the value there.
+
+```cnx
+mut cstring label <- "a";                   // const char* label = "a";
+label <- "b";                               // OK: the pointer is reassigned
+string<16> haystack <- "hello world";
+mut cstring c_at <- strstr(haystack, "lo"); // const char* c_at = strstr(...)
+cstring c_he <- strstr(haystack, "he");     // const char* c_he = strstr(...)
+texts_upper(c_at);                          // ERROR E0900: texts_upper takes char*
+```
+
+Until then a `mut cstring` was `char*`. ISO C++ rejects a string literal
+there, and `strstr` on a `const char[]` returns `const char*` in C++, so both
+failed to compile under `-Werror` while the transpiler exited 0.
+
 ## Error Codes
 
-| Code  | Message                                  |
-| ----- | ---------------------------------------- |
-| E0905 | Missing `c_` prefix for nullable C type  |
-| E0906 | Invalid `c_` prefix on non-nullable type |
-| E0907 | NULL comparison on non-nullable variable |
-| E0908 | Missing NULL check before use            |
+| Code  | Message                                           |
+| ----- | ------------------------------------------------- |
+| E0925 | An operator other than a comparison on a C string |
+| E0905 | Missing `c_` prefix for nullable C type           |
+| E0906 | Invalid `c_` prefix on non-nullable type          |
+| E0907 | NULL comparison on non-nullable variable          |
+| E0908 | Missing NULL check before use                     |
 
 ### Retired Error Codes
 

@@ -10,6 +10,7 @@ import testAnalysisContextFor from "./testAnalysisContextFor";
 import SymbolTable from "../../../../../cnx/PARSE/3-Declare/SymbolTable";
 import TestSourceSpan from "../../../../../cnx/types/__testUtils__/testSourceSpan";
 import ESourceLanguage from "../../../../../cnx/utils/types/ESourceLanguage";
+import type IOperandType from "../../../../../cnx/types/IOperandType";
 
 function analyze(source: string) {
   const { syntax, context } = testAnalysisContextFor(source, {
@@ -541,11 +542,68 @@ describe("OperatorOperandAnalyzer -- operands outside the operator's set", () =>
     ]);
   });
 
-  it("leaves a cstring operand as it was (#2348)", () => {
-    const errors = analyze(
-      'mut string<8> h <- "ab"; void g() { cstring c <- h; cstring d <- c + 1; }',
-    );
-    expect(errors).toEqual([]);
+  describe("a C string (ADR-046, #2348)", () => {
+    const codes = (body: string) =>
+      analyze(
+        `mut string<8> h <- "ab"; void g() { mut cstring c <- h; cstring e <- h; ${body} }`,
+      ).map((e) => [e.code, e.message, e.helpText]);
+    const HELP =
+      "ADR-046: a C string is a C pointer, and cnx has no pointer arithmetic (ADR-006). Pass it whole, or copy it into a string<N> and take a substring of that.";
+
+    it.each([
+      ["+", "u32 d <- (u32)(c + 1);"],
+      ["+", "u32 d <- (u32)(1 + c);"],
+      ["-", "u32 d <- (u32)(c - 1);"],
+      ["*", "u32 d <- (u32)(c * 2);"],
+      ["&", "u32 d <- (u32)(c & 1);"],
+      ["<<", "u32 d <- (u32)(c << 1);"],
+      ["-", "u32 d <- (u32)(-c);"],
+      ["~", "u32 d <- (u32)(~c);"],
+      ["+<-", "c +<- 1;"],
+    ])("rejects one under %s: %s", (operator, body) => {
+      expect(codes(body)).toEqual([
+        ["E0925", `Operator '${operator}' is not valid on a C string`, HELP],
+      ]);
+    });
+
+    it("tells E0810 only the comparisons take one", () => {
+      const { context } = testAnalysisContextFor("", { cppMode: false });
+      const cstring = {
+        typeName: "cstring",
+        dimensions: [],
+        category: "none",
+        form: { kind: "declared" },
+      } as unknown as IOperandType;
+      const admits = (operator: string) =>
+        OperatorOperandAnalyzer.admits(operator, cstring, context);
+      expect(["<", ">=", "+", "-", "&", "<<"].map(admits)).toEqual([
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+      ]);
+    });
+
+    it("takes one under the comparisons (ADR-045)", () => {
+      expect(codes("bool r <- c < e;")).toEqual([]);
+      expect(codes("bool r <- c >= e;")).toEqual([]);
+    });
+  });
+
+  it.each([
+    ["a string beside an integer", "u32 r <- (u32)(s + 1);", "s"],
+    ["an integer beside a string", "u32 r <- (u32)(2 + s);", "s"],
+    ["a literal beside an integer", 'u32 r <- (u32)("ab" + n);', '"ab"'],
+  ])("rejects %s under + (ADR-045, #2348)", (_label, body, at) => {
+    const source = `string<4> s <- "ab"; void main() { u8 n <- 1; ${body} }`;
+    const errors = analyze(source);
+    expect(errors.map((e) => [e.code, e.message])).toEqual([
+      ["E0925", "Operator '+' is not valid on a string"],
+    ]);
+    // Reported at the string
+    expect(source.slice(errors[0].span.column).startsWith(at)).toBe(true);
   });
 
   it("reads a member of the enum being declared as an i32 (ADR-017)", () => {

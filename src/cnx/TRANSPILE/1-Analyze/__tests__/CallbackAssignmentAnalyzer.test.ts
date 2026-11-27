@@ -40,7 +40,7 @@ function analyze(body: string) {
   const context = testAnalysisContext(state);
   return new CallbackAssignmentAnalyzer(context).analyze(
     program,
-    ValuePositions.of(program, context).positions,
+    ValuePositions.of(program, context),
   );
 }
 

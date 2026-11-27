@@ -66,6 +66,8 @@ type TWrite =
 /** The declarations and assignments 1.2 returned, each whole-string value checked against its capacity */
 class StringDeclarationCheck {
   private readonly found: IStringDeclarationError[] = [];
+  /** The substrings a write's fit already bounded (E0865) */
+  private readonly bounded = new Set<TExpression>();
 
   public constructor(private readonly context: IAnalysisContext) {}
 
@@ -184,6 +186,20 @@ class StringDeclarationCheck {
     });
   }
 
+  /**
+   * #2348 review: E0865 for a substring no write's fit bounded -- one passed
+   * to a C function, compared, or concatenated there -- since its copy reads
+   * the source as surely as a declaration's does (ADR-045)
+   */
+  public substringBounds(node: TExpression): void {
+    if (node.kind !== "postfix" || this.bounded.has(node)) return;
+    // A postfix is never a `+`, so its form is a substring or no string part
+    const form = StringValueForm.of(node, this.context);
+    if (form.kind === "substring" && form.part.chain === node) {
+      this.checkBounds(node, form.part);
+    }
+  }
+
   /** E0864/E0865 for the form `StringValueForm` gives the value */
   private checkFit(
     value: TExpression,
@@ -199,7 +215,9 @@ class StringDeclarationCheck {
           ? [form.part]
           : [];
     for (const part of parts) {
-      if (part.kind === "substring" && this.checkBounds(value, part)) return;
+      if (part.kind !== "substring") continue;
+      this.bounded.add(part.chain);
+      if (this.checkBounds(value, part)) return;
     }
     switch (form.kind) {
       case "literal":
@@ -346,19 +364,17 @@ class StringDeclarationCheck {
    * string's among them.
    */
   private capacityOf(part: TStringPart): number | null {
-    if (part.kind === "substring") return this.lengthOf(part);
-    if (ExpressionShape.isStringLiteral(part.value)) {
-      return StringUtils.literalLength(part.value.written);
-    }
-    return OperandTyper.scalarStringCapacity(
-      OperandTyper.typeOf(part.value, this.context),
+    return StringValueForm.partCapacity(part, this.context, (length) =>
+      this.constantOf(length),
     );
   }
 
   private lengthOf(
     part: Extract<TStringPart, { kind: "substring" }>,
   ): number | null {
-    return part.length === null ? 1 : this.constantOf(part.length);
+    return StringValueForm.partCapacity(part, this.context, (length) =>
+      this.constantOf(length),
+    );
   }
 
   /** How to make a value fit: widen what it lands in, or `fix` the value */
@@ -466,7 +482,9 @@ class StringDeclarationAnalyzer {
     for (const node of ProgramExpressions.of(program).flatMap((expression) =>
       ExpressionNodes.direct(expression),
     )) {
-      if (!targets.has(node)) check.substringLength(node);
+      if (targets.has(node)) continue;
+      check.substringLength(node);
+      check.substringBounds(node);
     }
     return check.errors();
   }

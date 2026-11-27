@@ -36,6 +36,7 @@
  * ahead of them -- and in C++ that shifts `getNextTempVarName` allocation
  * between initializers and bodies, which renames temps in the emitted C.
  */
+import ConstQualifier from "../../../../../utils/ConstQualifier";
 import SettledCallback from "../../../../../utils/SettledCallback";
 import IGeneratorInput from "../IGeneratorInput";
 import IGeneratorState from "../IGeneratorState";
@@ -191,7 +192,7 @@ function renderRegularVariable(
   // no modifier for public; then volatile, then const.
   const staticPrefix = plan.isPrivate ? "static " : "";
   const volatilePrefix = plan.atomic || plan.volatile;
-  const constPrefix = plan.isConst ? "const " : "";
+  const constPrefix = ConstQualifier.prefix(type, plan.isConst);
 
   // Build declaration with all dimensions
   let decl = `${plan.note}${staticPrefix}${volatilePrefix}${constPrefix}${type} ${plan.fullName}`;

@@ -1,0 +1,18 @@
+11:28 error[E0925]: Operator '+' is not valid on a C string
+       help: ADR-046: a C string is a C pointer, and cnx has no pointer arithmetic (ADR-006). Pass it whole, or copy it into a string<N> and take a substring of that.
+12:33 error[E0925]: Operator '+' is not valid on a C string
+       help: ADR-046: a C string is a C pointer, and cnx has no pointer arithmetic (ADR-006). Pass it whole, or copy it into a string<N> and take a substring of that.
+13:27 error[E0925]: Operator '-' is not valid on a C string
+       help: ADR-046: a C string is a C pointer, and cnx has no pointer arithmetic (ADR-006). Pass it whole, or copy it into a string<N> and take a substring of that.
+14:27 error[E0925]: Operator '*' is not valid on a C string
+       help: ADR-046: a C string is a C pointer, and cnx has no pointer arithmetic (ADR-006). Pass it whole, or copy it into a string<N> and take a substring of that.
+15:25 error[E0925]: Operator '&' is not valid on a C string
+       help: ADR-046: a C string is a C pointer, and cnx has no pointer arithmetic (ADR-006). Pass it whole, or copy it into a string<N> and take a substring of that.
+16:29 error[E0925]: Operator '<<' is not valid on a C string
+       help: ADR-046: a C string is a C pointer, and cnx has no pointer arithmetic (ADR-006). Pass it whole, or copy it into a string<N> and take a substring of that.
+17:29 error[E0925]: Operator '-' is not valid on a C string
+       help: ADR-046: a C string is a C pointer, and cnx has no pointer arithmetic (ADR-006). Pass it whole, or copy it into a string<N> and take a substring of that.
+18:30 error[E0925]: Operator '~' is not valid on a C string
+       help: ADR-046: a C string is a C pointer, and cnx has no pointer arithmetic (ADR-006). Pass it whole, or copy it into a string<N> and take a substring of that.
+19:8 error[E0925]: Operator '+<-' is not valid on a C string
+       help: ADR-046: a C string is a C pointer, and cnx has no pointer arithmetic (ADR-006). Pass it whole, or copy it into a string<N> and take a substring of that.

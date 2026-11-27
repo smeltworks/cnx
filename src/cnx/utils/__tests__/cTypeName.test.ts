@@ -19,7 +19,7 @@ describe("cTypeName", () => {
     expect(cTypeName("u32", tagged())).toBe("uint32_t");
   });
 
-  it("maps cstring to char* (ADR-046)", () => {
-    expect(cTypeName("cstring", tagged())).toBe("char*");
+  it("maps cstring to const char* (ADR-046, #2311)", () => {
+    expect(cTypeName("cstring", tagged())).toBe("const char*");
   });
 });

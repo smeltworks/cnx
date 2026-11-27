@@ -127,7 +127,11 @@ describe("TypeGenerationHelper", () => {
         plan({ named: named("bare", "MyStruct") }),
         "MyStruct",
       ],
-      ["cstring as char*", plan({ named: named("bare", "cstring") }), "char*"],
+      [
+        "cstring as const char*",
+        plan({ named: named("bare", "cstring") }),
+        "const char*",
+      ],
       [
         "an unrecognized alternative, as its own text",
         plan({ text: "FlexCAN_T4<CAN1>" }),

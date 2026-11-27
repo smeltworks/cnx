@@ -44,6 +44,8 @@ import type ILengthName from "../../utils/types/ILengthName";
 import type TLengthRule from "../../utils/types/TLengthRule";
 import LengthSubject from "../../utils/LengthSubject";
 import OperandTyper from "../../utils/OperandTyper";
+import TYPE_WIDTH from "../../types/TYPE_WIDTH";
+import CStringArgument from "../../utils/CStringArgument";
 import ScanfFormat from "../../utils/ScanfFormat";
 import CharacterWrite from "../../utils/CharacterWrite";
 import StringValueForm from "../../utils/StringValueForm";
@@ -699,6 +701,7 @@ class FilePlanner {
       TStructInitializerForm
     >,
     stringFields: ReadonlyMap<TExpression, number>,
+    stringArguments: ReadonlyMap<TExpression, number>,
     bufferCalls: ReadonlyMap<TPostfixOpSyntax, TType>,
     expectedTypes: ReadonlyMap<TExpression, IPlannedExpectedType>,
     cTypes: Set<string>,
@@ -717,6 +720,7 @@ class FilePlanner {
           (node.kind === "structInitializer" &&
             (structInitializers.get(node) === "cppClass" ||
               node.fields.some((field) => stringFields.has(field.value)))) ||
+          stringArguments.has(node) ||
           ExpressionShape.headOf(node).ops.some((op) => bufferCalls.has(op)),
       );
     const retested = new Set(
@@ -751,12 +755,13 @@ class FilePlanner {
             );
           continue;
         }
+        const typeName = this.lazyTernaryType(expr, expectedTypes);
         const cType = TypeGenerationHelper.generateByName(
-          this.lazyTernaryType(expr, expectedTypes),
+          typeName,
           this.typeGenerationDeps(),
         );
         cTypes.add(cType);
-        ternaries.set(expr, { kind: "value", cType });
+        ternaries.set(expr, { kind: "value", typeName, cType });
       }
     }
     if (operands.size > 0) cTypes.add("bool");
@@ -805,21 +810,63 @@ class FilePlanner {
   }
 
   /**
+   * MISRA 10.3 (#2348 review): a lowered ternary's arm is assigned to its
+   * variable, so an arm with no type of its own to be rendered against is
+   * rendered against the variable's -- a bit range beside an `f32` arm is
+   * cast to `float`, the conversion C's `?:` made without one
+   */
+  private static withLoweredArms(
+    expectedTypes: ReadonlyMap<TExpression, IPlannedExpectedType>,
+    ternaries: ReadonlyMap<TExpressionOf<"ternary">, TPlannedLazyTernary>,
+  ): ReadonlyMap<TExpression, IPlannedExpectedType> {
+    const withArms = new Map(expectedTypes);
+    for (const [expr, planned] of ternaries) {
+      if (planned.kind !== "value") continue;
+      for (const arm of [expr.whenTrue, expr.whenFalse]) {
+        if ((withArms.get(arm)?.type ?? null) === null) {
+          withArms.set(arm, {
+            type: planned.typeName,
+            suppressBareEnumResolution: false,
+          });
+        }
+      }
+    }
+    return withArms;
+  }
+
+  /**
+   * The order C's usual arithmetic conversions take an arm to: any floating
+   * type over any integer (a bit range beside an `f32`), then the wider
+   */
+  private static conversionRank(typeName: string): number {
+    const floating = typeName === "f32" || typeName === "f64" ? 128 : 0;
+    return floating + (TYPE_WIDTH[typeName] ?? 0);
+  }
+
+  /**
    * #2332: the type a lowered ternary's variable holds -- its position's, and
-   * where none gives one (a comparison's operand) its typed arm's, which an
-   * unsuffixed literal arm (the typer's `int`) takes on as C's conversion would
+   * where none gives one (a comparison's operand) the typed arm C's
+   * conversion of the arms would take both to (#2348 review); an unsuffixed
+   * literal arm (the typer's `int`) takes on the other's
    */
   private lazyTernaryType(
     expr: TExpressionOf<"ternary">,
     expectedTypes: ReadonlyMap<TExpression, IPlannedExpectedType>,
   ): string {
     const typing = this.state.typingContext();
+    const typed = [expr.whenTrue, expr.whenFalse]
+      .map((arm) => OperandTyper.typeOf(arm, typing)?.typeName ?? null)
+      .filter((name): name is string => name !== null && name !== "int");
     const typeName =
       expectedTypes.get(expr)?.type ??
-      [expr.whenTrue, expr.whenFalse]
-        .map((arm) => OperandTyper.typeOf(arm, typing)?.typeName ?? null)
-        .find((name) => name !== null && name !== "int") ??
-      null;
+      typed.reduce<string | null>(
+        (wider, name) =>
+          wider !== null &&
+          FilePlanner.conversionRank(name) <= FilePlanner.conversionRank(wider)
+            ? wider
+            : name,
+        null,
+      );
     invariant(
       typeName !== null,
       `the ternary on line ${expr.span.line} has a typed arm: one holds a call or a struct initializer, which E0357 types from its position`,
@@ -1678,12 +1725,6 @@ class FilePlanner {
       types,
     );
     invariant(valuePositions !== null, "2.1 hands 2.2 where each value stands");
-    const narrowings = this.planNarrowings(
-      expectedTypes,
-      valuePositions.positions,
-      decidedCTypes,
-      FilePlanner.writtenExpressions(program, unwritten),
-    );
     const wholeArrayWrites = this.planWholeArrayWrites(
       valuePositions,
       decidedCTypes,
@@ -1713,9 +1754,16 @@ class FilePlanner {
       unwritten,
       structInitializers,
       stringCopies.fields,
+      stringCopies.arguments,
       bufferCalls,
       expectedTypes,
       decidedCTypes,
+    );
+    const narrowings = this.planNarrowings(
+      FilePlanner.withLoweredArms(expectedTypes, lazy.ternaries),
+      valuePositions.positions,
+      decidedCTypes,
+      FilePlanner.writtenExpressions(program, unwritten),
     );
     const argumentPlans = this.planArguments(
       valuePositions,
@@ -2830,7 +2878,7 @@ class FilePlanner {
       typing,
       forms,
     );
-    const builtArguments = FilePlanner.planStringArguments(
+    const builtArguments = this.planStringArguments(
       valuePositions,
       typing,
       forms,
@@ -2914,9 +2962,11 @@ class FilePlanner {
   /**
    * #2239: a concatenation or a substring passed to a `string<N>` parameter,
    * by the parameter's capacity -- built apart like an assignment's, by the
-   * same value form. Any other argument is passed as it is written.
+   * same value form. One passed to a C `char*` parameter is built the same
+   * way, at the sum of its parts' capacities, which 2.1's E0947 saw are
+   * known, for the parameters `CStringArgument` names (#2348 review). Any other argument is passed as it is written.
    */
-  private static planStringArguments(
+  private planStringArguments(
     valuePositions: IValuePositions | null,
     typing: ITypingContext,
     forms: Map<TExpression, TStringValueForm>,
@@ -2931,6 +2981,32 @@ class FilePlanner {
       if (form.kind !== "concat" && form.kind !== "substring") continue;
       forms.set(value, form);
       built.set(value, capacity);
+    }
+    for (const [expression, site] of FilePlanner.argumentSites(
+      valuePositions,
+    )) {
+      if (built.has(expression)) continue;
+      const passing = this.argumentPassing(site);
+      if (
+        passing.mode !== "c" ||
+        !CStringArgument.isBuiltFor(
+          passing.param === undefined
+            ? undefined
+            : { type: passing.param.baseType, isArray: passing.param.isArray },
+          this.state.symbolTable,
+        )
+      ) {
+        continue;
+      }
+      const form = StringValueForm.of(expression, typing);
+      const capacity = StringValueForm.builtCapacity(
+        form,
+        typing,
+        (length) => this.constantOf(length) ?? null,
+      );
+      if (capacity === null) continue;
+      forms.set(expression, form);
+      built.set(expression, capacity);
     }
     return built;
   }

@@ -55,6 +55,25 @@ describe("TypedefParamParser", () => {
       expect(result!.params[2].baseType).toBe("uint8_t");
     });
 
+    it("does not read a type named const... as const", () => {
+      // #2063: `constraint_t` begins with the letters of `const`
+      const result = TypedefParamParser.parse("void (*)(constraint_t*c)");
+
+      expect(result!.params[0].isConst).toBe(false);
+      expect(result!.params[0].baseType).toBe("constraint_t");
+    });
+
+    it("reads a const after the * as the pointer's, not the pointee's", () => {
+      // #2348 review: 1.2 keeps `uint8_t*const buf`'s words apart now
+      const result = TypedefParamParser.parse(
+        "void (*)(uint8_t*const buf, const uint8_t*const src)",
+      );
+
+      expect(result!.params[0].isConst).toBe(false);
+      expect(result!.params[0].baseType).toBe("uint8_t");
+      expect(result!.params[1].isConst).toBe(true);
+    });
+
     it("should parse callback without spaces (C grammar format)", () => {
       // This is the actual format from CResolver - getText() may strip spaces
       const result = TypedefParamParser.parse(

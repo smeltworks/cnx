@@ -1,0 +1,19 @@
+// test-error
+// #2348: a cstring passed whole to a C call is checked against NULL first
+// (E0908), inside an '=' or '!=' comparison too; only the NULL comparison
+// itself reads it unchecked.
+#include <string.h>
+
+string<32> haystack <- "hello hello";
+mut bool found;
+mut bool same;
+
+void main() {
+    cstring c_pos <- strstr(haystack, "lo");
+    found <- strcmp(c_pos, "lo") = 0;
+    same <- strcmp(c_pos, "lo") != 0;
+    // Negative control: the NULL comparison itself, and a checked call
+    if (c_pos != NULL) {
+        found <- strcmp(c_pos, "lo") = 0;
+    }
+}

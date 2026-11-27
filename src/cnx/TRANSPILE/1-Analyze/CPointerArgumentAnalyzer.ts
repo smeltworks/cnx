@@ -35,11 +35,19 @@ import BindingSite from "../../utils/BindingSite";
 import MutArgument from "./helpers/MutArgument";
 import ArgumentQualifier from "./helpers/ArgumentQualifier";
 import CPointerParameter from "../../utils/CPointerParameter";
+import StringValueForm from "../../utils/StringValueForm";
+import CStringArgument from "../../utils/CStringArgument";
+import CallReach from "../../utils/CallReach";
+import BuiltStringArgument from "./helpers/BuiltStringArgument";
+import CLandingType from "./helpers/CLandingType";
+import type TValueSite from "../../types/TValueSite";
+import SourceOrder from "../../utils/SourceOrder";
+import type IValuePositions from "../../types/IValuePositions";
 import ScanfFormat from "../../utils/ScanfFormat";
-import DeclarationParts from "../../utils/DeclarationParts";
 import ExpressionNodes from "../../utils/ExpressionNodes";
 import CNX_TO_C_TYPE_MAP from "../../utils/constants/TypeMappings";
 import type IOperandType from "../../types/IOperandType";
+import type TStringPart from "../../types/TStringPart";
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TExpression from "../../types/syntax/TExpression";
 import type IBaseAnalysisError from "./types/IBaseAnalysisError";
@@ -49,6 +57,8 @@ import type ICCalleeSignature from "./types/ICCalleeSignature";
 
 class CPointerArgumentCheck {
   private readonly found: IBaseAnalysisError[] = [];
+  /** The C strings `checkCStringLandings` reported, which no other rule judges again */
+  private readonly landed = new Set<TExpression>();
 
   public constructor(private readonly context: IAnalysisContext) {}
 
@@ -77,7 +87,11 @@ class CPointerArgumentCheck {
     const reached = CCallee.reachable(callee);
     const only = reached.length === 1 ? reached[0] : undefined;
     callee.arguments.forEach((arg, index) => {
-      if (lost.has(index)) return;
+      if (lost.has(index) || this.landed.has(arg)) return;
+      if (BuiltStringArgument.forC(arg, reached, index, this.context)) {
+        this.checkBuilt(arg, callee, reached, index);
+        return;
+      }
       const parameter = only?.parameters[index];
       const pointee =
         parameter === undefined
@@ -95,14 +109,80 @@ class CPointerArgumentCheck {
         return;
       }
       if (pointee === null) return;
-      this.found.push({
-        code: "E0896",
-        span: arg.span,
-        message: `cnx cannot see how '${callee.name}' uses parameter ${index + 1}, so passing '${arg.written}' to it is not memory safe`,
-        helpText: `Consider converting '${callee.name}' to cnx.`,
-        severity: "warning",
-      });
+      this.warnsNotMemorySafe(arg, callee, index);
     });
+  }
+
+  /** E0896: cnx cannot see how far C reads or writes through the pointer */
+  private warnsNotMemorySafe(
+    arg: TExpression,
+    callee: ICCallee,
+    index: number,
+  ): void {
+    this.found.push({
+      code: "E0896",
+      span: arg.span,
+      message: `cnx cannot see how '${callee.name}' uses parameter ${index + 1}, so passing '${arg.written}' to it is not memory safe`,
+      helpText: `Consider converting '${callee.name}' to cnx.`,
+      severity: "warning",
+    });
+  }
+
+  /** What a built argument needs: a const pointee, known parts, a result not into it */
+  private checkBuilt(
+    arg: TExpression,
+    callee: ICCallee,
+    reached: readonly ICCalleeSignature[],
+    index: number,
+  ): void {
+    if (
+      this.rejectsBuiltWrite(arg, callee, reached, index) ||
+      this.rejectsUnknownLength(arg, callee, index) ||
+      this.rejectsPointerResult(arg, callee, reached, index)
+    ) {
+      return;
+    }
+    this.warnsNotMemorySafe(arg, callee, index);
+  }
+
+  /**
+   * E0915 (#2348 review): a built argument for a parameter C may write
+   * through (`CArgumentWrite`). The write lands in the temporary and is
+   * lost, as for a cnx `mut` parameter (ADR-071 Decision 2).
+   */
+  private rejectsBuiltWrite(
+    arg: TExpression,
+    callee: ICCallee,
+    reached: readonly ICCalleeSignature[],
+    index: number,
+  ): boolean {
+    // A typedef of `char*` is one too, which `CArgumentWrite` does not follow
+    const shaped = CallReach.shapedFor(
+      reached.map((signature) => signature.parameters),
+      index,
+    );
+    if (
+      !CArgumentWrite.mayWrite(callee, index, this.context) &&
+      !(
+        shaped !== undefined &&
+        shaped.isArray !== true &&
+        !CPointerParameter.pointsToConst(shaped) &&
+        CStringArgument.isWritableCharPointer(
+          shaped.type,
+          this.context.symbolTable,
+        )
+      )
+    ) {
+      return false;
+    }
+    this.found.push({
+      code: "E0915",
+      span: arg.span,
+      message: `cannot pass '${arg.written}' to parameter ${index + 1} of '${callee.name}', which '${callee.name}' may write through: it is not a variable, so the write would be lost`,
+      helpText: `A C pointer parameter that is not const writes its argument (ADR-071 Decision 2); copy '${arg.written}' into a \`mut\` string<N> and pass that, or declare the C parameter const char*.`,
+      severity: "error",
+    });
+    return true;
   }
 
   /** E0930: a scanf-family format that is not a string literal */
@@ -232,11 +312,150 @@ class CPointerArgumentCheck {
     };
   }
 
+  /** ADR-046: a C string, whose characters are C's and cnx never writes */
+  private isCString(value: TExpression): boolean {
+    return OperandTyper.typeOf(value, this.context)?.typeName === "cstring";
+  }
+
+  /**
+   * E0900 (#2348 review), the one decision: a C string landing where C may
+   * write its characters -- a place whose C type is a `char*` that is not
+   * const (`CLandingType`), or an argument a C callee may write through
+   * (`CArgumentWrite`: `void*`, `...`, every overload). `mut` reassigns a
+   * `cstring`, and never writes its characters (ADR-046).
+   */
+  public checkCStringLandings(positions: IValuePositions): void {
+    for (const [value, site] of positions.sites) {
+      // A ternary's arms are sites of their own: judging it too reports one write three times
+      if (
+        !CLandingType.isLanding(site.site) ||
+        value.kind === "ternary" ||
+        !this.isCString(value)
+      ) {
+        continue;
+      }
+      const type = CLandingType.of(value, positions, this.context);
+      const argument = CLandingType.cArgumentOf(value, positions, this.context);
+      const writable =
+        type !== null &&
+        CStringArgument.isWritableCharPointer(type, this.context.symbolTable);
+      if (
+        !writable &&
+        (argument === null ||
+          !CArgumentWrite.mayWrite(
+            argument.callee,
+            argument.index,
+            this.context,
+          ))
+      ) {
+        continue;
+      }
+      const place = CPointerArgumentCheck.placeOf(
+        site.site,
+        argument?.callee.name ?? null,
+      );
+      this.landed.add(value);
+      this.found.push({
+        code: "E0900",
+        span: value.span,
+        message: writable
+          ? `'${value.written}' is a C string, whose characters cnx does not write, and ${place} is a '${type}' C may write through`
+          : `'${value.written}' is a C string, whose characters cnx does not write, and ${place} is one C may write through`,
+        helpText: `A cstring is const char* (ADR-046), \`mut\` or not: declare the C type const char*, or copy '${value.written}' into a \`mut\` string<N> and use that.`,
+        severity: "error",
+      });
+    }
+  }
+
+  /** Where a value lands, as E0900 names it */
+  private static placeOf(site: TValueSite, cCallee: string | null): string {
+    switch (site.kind) {
+      case "declaration":
+        return `'${site.declaration.name}'`;
+      case "assignment":
+        return `'${site.assignment.target.written}'`;
+      case "return":
+        return `the return of '${site.function.name}'`;
+      case "field":
+        return `field '${site.field}'`;
+      case "argument":
+        return `argument ${site.argument + 1} of '${cCallee ?? site.call.primary.written}'`;
+      default:
+        return "its place";
+    }
+  }
+
   /** The C type of what an argument hands over */
   private objectTypeOf(arg: TExpression): string | null {
     return CPointerArgumentAnalyzer.cTypeOf(
       OperandTyper.typeOf(arg, this.context),
     );
+  }
+
+  /**
+   * E0948 (#2348 review): a string built for a C function that returns a
+   * pointer that can point at characters (`CStringArgument.mayPointInto`).
+   * The temporary lives only as long as the statement's block, and the
+   * pointer -- what `strstr` or `strchr` return, or a typedef of one -- may
+   * point into it. A `FILE*` cannot.
+   */
+  private rejectsPointerResult(
+    arg: TExpression,
+    callee: ICCallee,
+    reached: readonly ICCalleeSignature[],
+    index: number,
+  ): boolean {
+    if (
+      !reached.some((signature) =>
+        CStringArgument.mayPointInto(
+          signature.returnType,
+          this.context.symbolTable,
+        ),
+      )
+    ) {
+      return false;
+    }
+    this.found.push({
+      code: "E0948",
+      span: arg.span,
+      aboutItsPosition: true,
+      message: `'${callee.name}' returns a pointer, which may point into the string built for '${arg.written}', parameter ${index + 1}; that string does not outlive its block`,
+      helpText: `ADR-045: copy '${arg.written}' into a string<N> first, and pass that.`,
+    });
+    return true;
+  }
+
+  /**
+   * E0947 (#2348 review): a concatenation or a substring passed to a C
+   * `char*` is built into a temporary at the sum of its parts' capacities
+   * (ADR-045), so each whole part needs one. A substring's length is E0922's.
+   */
+  private rejectsUnknownLength(
+    arg: TExpression,
+    callee: ICCallee,
+    index: number,
+  ): boolean {
+    const form = StringValueForm.of(arg, this.context);
+    const parts =
+      form.kind === "concat"
+        ? form.parts
+        : form.kind === "substring"
+          ? [form.part]
+          : [];
+    const unknown = parts.find(
+      (part): part is Extract<TStringPart, { kind: "whole" }> =>
+        part.kind === "whole" &&
+        StringValueForm.partCapacity(part, this.context, () => null) === null,
+    );
+    if (unknown === undefined) return false;
+    this.found.push({
+      code: "E0947",
+      span: arg.span,
+      aboutItsPosition: true,
+      message: `The length of '${unknown.value.written}' is not known, so '${arg.written}' cannot be built for parameter ${index + 1} of '${callee.name}'`,
+      helpText: `ADR-045: copy '${unknown.value.written}' into a string<N> first, and pass the concatenation of that.`,
+    });
+    return true;
   }
 
   /** E0895, when the argument is not what the pointer points to */
@@ -274,15 +493,16 @@ class CPointerArgumentCheck {
 class CPointerArgumentAnalyzer {
   constructor(private readonly context: IAnalysisContext) {}
 
-  public analyze(program: IProgramSyntax): IBaseAnalysisError[] {
+  public analyze(
+    program: IProgramSyntax,
+    positions: IValuePositions,
+  ): IBaseAnalysisError[] {
     const check = new CPointerArgumentCheck(this.context);
-    for (const member of program.members) {
-      for (const part of DeclarationParts.of(member.declaration)) {
-        for (const expr of ExpressionNodes.of(part))
-          check.checkExpression(expr);
-      }
+    check.checkCStringLandings(positions);
+    for (const expr of ExpressionNodes.ofProgram(program)) {
+      check.checkExpression(expr);
     }
-    return check.errors();
+    return check.errors().sort(SourceOrder.bySpan);
   }
 
   /** A declared value's C type -- an array's is its element's -- or null */
@@ -294,6 +514,8 @@ class CPointerArgumentAnalyzer {
     if (typed.stringCapacity !== null || typed.typeName === "string") {
       return "char";
     }
+    // ADR-046: a C string is the pointer to char itself (#2348)
+    if (typed.typeName === "cstring") return "char";
     return CNX_TO_C_TYPE_MAP[typed.typeName] ?? typed.typeName;
   }
 }

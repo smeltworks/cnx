@@ -1,0 +1,8 @@
+29:20 warning[E0896]: cnx cannot see how 'strlen' uses parameter 1, so passing 'args[0]' to it is not memory safe
+       help: Consider converting 'strlen' to cnx.
+13:22 error[E0947]: The length of 'name' is not known, so 'name + "!"' cannot be built for parameter 1 of 'strlen'
+       help: ADR-045: copy 'name' into a string<N> first, and pass the concatenation of that.
+20:29 error[E0947]: The length of 'name' is not known, so 'name + "!"' cannot be built for parameter 1 of 'strlen'
+       help: ADR-045: copy 'name' into a string<N> first, and pass the concatenation of that.
+27:20 error[E0947]: The length of 'args[0]' is not known, so 'args[0] + "!"' cannot be built for parameter 1 of 'strlen'
+       help: ADR-045: copy 'args[0]' into a string<N> first, and pass the concatenation of that.

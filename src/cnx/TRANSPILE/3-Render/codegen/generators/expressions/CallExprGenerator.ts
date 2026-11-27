@@ -50,7 +50,11 @@ const _generateCFunctionArg = (arg: IPlannedCallArgument): string => {
     invariant(arg.simpleIdentifier !== null, "a promoted handle is a name");
     return wrapWithCppEnumCast(arg.simpleIdentifier, arg);
   }
-  const code = arg.render();
+  // #2348 review: a string 2.2 planned built apart is passed as its temporary
+  const code =
+    arg.planned.form?.kind === "string-built"
+      ? arg.renderByReference()
+      : arg.render();
   return wrapWithCppEnumCast(cForm === "address-of" ? `&${code}` : code, arg);
 };
 

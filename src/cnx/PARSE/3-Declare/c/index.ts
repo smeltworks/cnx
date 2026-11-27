@@ -195,7 +195,11 @@ class CResolver {
             ctx.isConst === true,
           ),
         );
-      } else if (declarator.isFunction) {
+      } else if (
+        declarator.isFunction &&
+        // `char* (*g_make)(void)` is a variable whose type is the pointer
+        declarator.functionPointerParams === null
+      ) {
         ctx.symbols.push(
           FunctionCollector.collectFromDeclaration(
             name,
@@ -209,7 +213,14 @@ class CResolver {
         ctx.symbols.push(
           VariableCollector.collect(
             name,
-            CResolver.qualified(baseType, ctx),
+            CResolver.qualified(
+              // A pointer's `const` is its pointee's, which its type spells:
+              // `const char* g` is not `char*` (#2348 review)
+              ctx.isConst === true && declarator.pointerDepth > 0
+                ? `const ${baseType}`
+                : baseType,
+              ctx,
+            ),
             declarator,
             ctx.sourceFile,
             ctx.span,

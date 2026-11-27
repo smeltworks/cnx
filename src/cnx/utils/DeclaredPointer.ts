@@ -4,7 +4,7 @@
  * declaration's type info both read, so the two cannot disagree.
  *
  * A declaration whose C type is already a pointer (ADR-046's `cstring` is
- * `char*`) is one. Otherwise three arms decide, in order (they were
+ * `const char*`) is one. Otherwise three arms decide, in order (they were
  * `CodeGenWalker._inferVariableType`'s):
  *
  * 1. #958: a C header's typedef struct is always handled through a pointer.

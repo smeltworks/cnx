@@ -27,6 +27,12 @@ interface ICParameterInfo {
    */
   readonly isNestedDeclarator?: boolean;
 
+  /**
+   * #2348 review: the nested declarator is a pointer to a function
+   * (`(*make)(void)`), and `type` is what that function returns
+   */
+  readonly isFunctionPointer?: boolean;
+
   /** #1619: the pointee is `volatile`, which `type` does not spell */
   readonly isVolatile?: boolean;
 }

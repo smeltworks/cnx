@@ -34,14 +34,15 @@ class DeclaratorTypes {
 
   /**
    * The declared type: `base (*)(params)` for a function-pointer declarator,
-   * otherwise `pointerType`.
+   * otherwise `pointerType`. A function pointer's own `*`s before its
+   * parentheses are its return's: `char* (*)(void)` (#2348 review).
    */
   static declaredType(
     baseType: string,
     declarator: IHeaderDeclaratorSyntax,
   ): string {
     if (declarator.functionPointerParams !== null) {
-      return `${baseType} (*)(${declarator.functionPointerParams})`;
+      return `${DeclaratorTypes.pointerType(baseType, declarator)} (*)(${declarator.functionPointerParams})`;
     }
     return DeclaratorTypes.pointerType(baseType, declarator);
   }

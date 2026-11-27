@@ -26,7 +26,7 @@ const CNX_TO_C_TYPE_MAP: Record<string, string> = {
   bool: "bool",
   void: "void",
   ISR: "ISR", // ADR-040: Interrupt Service Routine function pointer
-  cstring: "char*", // ADR-046: C string pointer type (nullable)
+  cstring: "const char*", // ADR-046: C string pointer type (nullable, #2311)
 };
 
 export default CNX_TO_C_TYPE_MAP;

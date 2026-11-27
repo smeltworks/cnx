@@ -1,0 +1,8 @@
+15:46 error[E0715]: a for-loop update cannot build 'a + "x"': it would be built once, before the loop, and read as it was there on every pass
+       help: assign at the end of the loop body and write it as a while loop
+19:45 error[E0715]: a for-loop update cannot build 'a[0, 2]': it would be built once, before the loop, and read as it was there on every pass
+       help: assign at the end of the loop body and write it as a while loop
+22:45 error[E0715]: a for-loop update cannot build 'a + "b"': it would be built once, before the loop, and read as it was there on every pass
+       help: assign at the end of the loop body and write it as a while loop
+25:46 error[E0715]: a for-loop update cannot build 'a[0, 2]': it would be built once, before the loop, and read as it was there on every pass
+       help: assign at the end of the loop body and write it as a while loop

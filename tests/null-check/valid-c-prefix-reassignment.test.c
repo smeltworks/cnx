@@ -17,7 +17,7 @@
 char haystack[65] = "hello world";
 
 void testReassignment(void) {
-    char* c_found = strstr(haystack, "hello");
+    const char* c_found = strstr(haystack, "hello");
     if (c_found != NULL) {
         (void)printf("Found: %s\n", c_found);
     }

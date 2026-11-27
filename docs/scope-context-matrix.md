@@ -1509,6 +1509,16 @@ Linked fixtures with no derivable context:
 | scope method       | -         | -      | -          | -           | -          |
 | for header         | -         | -      | -          | -           | -          |
 
+## ADR-045 E0896
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | -           | -          |
+| top-level function | -         | -      | -          | -           | -          |
+| scope member       | -         | -      | -          | -           | -          |
+| scope method       | -         | -      | -          | -           | -          |
+| for header         | -         | -      | -          | -           | -          |
+
 ## ADR-045 E0929
 
 | Context            | same file | direct | transitive | from 1 away | thru chain |
@@ -1518,6 +1528,26 @@ Linked fixtures with no derivable context:
 | scope member       | ok        | -      | -          | -           | -          |
 | scope method       | ok        | -      | -          | -           | -          |
 | for header         | ok        | -      | -          | -           | -          |
+
+## ADR-045 E0947
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | -         | -      | -          | warn        | warn       |
+| top-level function | ok        | -      | -          | warn        | warn       |
+| scope member       | -         | -      | -          | warn        | warn       |
+| scope method       | ok        | -      | -          | warn        | warn       |
+| for header         | ok        | -      | -          | warn        | warn       |
+
+## ADR-045 E0948
+
+| Context            | same file | direct | transitive | from 1 away | thru chain |
+| ------------------ | --------- | ------ | ---------- | ----------- | ---------- |
+| global variable    | ok        | -      | -          | warn        | warn       |
+| top-level function | ok        | -      | -          | warn        | warn       |
+| scope member       | ok        | -      | -          | warn        | warn       |
+| scope method       | ok        | -      | -          | warn        | warn       |
+| for header         | ok        | -      | -          | warn        | warn       |
 
 ## ADR-045 string-copy
 

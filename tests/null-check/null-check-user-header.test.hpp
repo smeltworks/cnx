@@ -14,7 +14,7 @@ extern "C" {
 
 /* External variables */
 extern uint8_t witness;
-extern char* gname;
+extern const char* gname;
 
 /* Function prototypes */
 void Board__load(void);

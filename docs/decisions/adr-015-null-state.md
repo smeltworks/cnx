@@ -311,7 +311,7 @@ one indeterminate case still requires every reader to know which case it is.
 | `u8[256] buf;` | `uint8_t buf[256] = {0};` |
 | `Point p;`     | `Point p = {0};`          |
 | `UART u;`      | `UART u = {0};`           |
-| `cstring s;`   | `char* s = NULL;`         |
+| `cstring s;`   | `const char* s = NULL;`   |
 | `Dev d;`       | `Dev* d = NULL;`          |
 | `Handle h;`    | `Handle h = NULL;`        |
 

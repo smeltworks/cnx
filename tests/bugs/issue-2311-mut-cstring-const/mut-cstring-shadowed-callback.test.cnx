@@ -1,0 +1,19 @@
+// test-execution
+// #2348 review: a variable named like a function returning a cstring is a
+// value of its own type. 'label' here is a writable_get, which returns char*,
+// so it may land in a char* (*)(void) field, and is not E0879.
+#include "lib/shadowed-callback.h"
+
+cstring label() {
+    return "abc";
+}
+
+u32 main() {
+    writable_get label <- writable_name;
+    WritableHolder h <- { get: label, id: 1 };
+    u32 n <- holder_len(h);
+    if (n != 3) {
+        return 1;
+    }
+    return 0;
+}

@@ -1,0 +1,44 @@
+// test-error
+// test-adr: 045
+// #2348 review: a string built for a C char pointer parameter lives only as
+// long as its block, so passing one to a C function that returns a pointer,
+// which may point into it, is E0948.
+#include <stdio.h>
+#include <string.h>
+#include "lib/text-search.h"
+
+string<8> s <- "abc";
+mut i32 order;
+// ASSERTION -- global variable
+cstring c_global <- first_b(s + "g");
+
+scope Finder {
+    // ASSERTION -- scope member
+    cstring c_member <- first_b(s + "m");
+
+    public void find() {
+        // ASSERTION -- scope method
+        cstring c_in <- strstr(s + "x", "a");
+    }
+}
+
+void main() {
+    cstring c_at <- strstr(s + "de", "cd");
+    cstring c_ch <- strchr(s[0, 2], 'b');
+    // A typedef of a pointer returns one too
+    cstring c_td <- first_b(s + "y");
+    // So does a pointer to a typedef of char
+    cstring c_alias <- first_c(s + "z");
+    // Control: strcmp returns no pointer, and s passed whole is not built
+    order <- strcmp(s + "d", "abcd");
+    cstring c_whole <- strstr(s, "b");
+    // Control: a FILE* cannot point into the built name
+    mut FILE c_file <- fopen(s + ".txt", "r");
+    if (c_file != NULL) {
+        (void)fclose(c_file);
+    }
+    // ASSERTION -- for header
+    for (cstring c_loop <- first_b(s + "f"); order < 3; order +<- 1) {
+        order <- order;
+    }
+}

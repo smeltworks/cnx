@@ -217,6 +217,11 @@ string<38> message <- greeting + " World";  // OK: 38 >= 32 + 6
 
 This allows efficient concatenation with literals without over-allocating the destination.
 
+`+` joins two strings, so a string beside a number is no concatenation:
+`haystack + 1`, `2 + haystack` and `"hello" + n` are E0925, reported at the
+string (#2348). Until then each was accepted at exit 0, and C read it as
+arithmetic on the string's address.
+
 ### Capacity-Based Safety
 
 The destination must have capacity >= sum of source capacities:
@@ -425,6 +430,8 @@ the field like any string. At file scope only a literal can initialize one
 | E0862 | A string's capacity cannot be determined: none written, and none inferable        | `tests/adr-045/string-error-const-no-init.test.cnx`, `tests/adr-045/string-error-uncovered-forms.test.cnx`, `tests/adr-045/string-syntax-rules-*.test.cnx`                                                   |
 | E0863 | A string, or a string field, at file scope is initialized by other than a literal | `tests/adr-045/string-error-init-global.test.cnx`, `tests/adr-045/string-imported-global-error.test.cnx`, `tests/adr-045/string-syntax-rules-*.test.cnx`                                                     |
 | E0864 | A value written into a `string<N>` may not fit its capacity                       | `tests/adr-045/string-error-overflow.test.cnx`, `tests/adr-045/string-error-in-scope.test.cnx`, `tests/adr-045/string-fit-rules-imported-*.test.cnx`, `tests/adr-045/string-fit-rules-for-header-*.test.cnx` |
+| E0947 | A string built for a C `char*` parameter has a part of unknown length             | `tests/bugs/issue-2348-cstring-operand/c-pointer-unknown-length.test.cnx`                                                                                                                                    |
+| E0948 | A string built for a C `char*` parameter of a function that returns a pointer     | `tests/bugs/issue-2348-cstring-operand/c-pointer-result.test.cnx`                                                                                                                                            |
 | E0865 | A substring's bounds exceed its source's capacity                                 | `tests/adr-045/string-error-substring-bounds.test.cnx`, `tests/adr-045/string-fit-rules-*.test.cnx`                                                                                                          |
 
 ### No Silent Truncation
@@ -550,6 +557,41 @@ Strings can be passed to C functions expecting `char*` or `const char*`:
 ```cnx
 string<64> message <- "Hello";
 printf("%s\n", message);        // Works: string<N> is a char[]
+```
+
+A concatenation or a substring passed to a C parameter that points to `char`
+-- `const char*`, a typedef of one such as `text_t`, or a `const char[]`
+parameter, which C passes as a pointer -- is built into a temporary string
+before the call, as one passed to a `string<N>` parameter is (#2239), at the
+sum of its parts' capacities: a literal's length, a `string<N>`'s `N`, a
+substring's length (#2348 review). Every overload the call reaches is judged.
+A parameter that is not const, such as `char*`, would write the temporary
+and lose the write, so it is E0915, as for a `mut` cnx parameter (ADR-071
+Decision 2).
+Until then `strcmp(s + "!", "hello!")` reached C as pointer addition, and
+`strlen(s + s[0])` compiled as pointer arithmetic. A part whose length cnx
+cannot see, such as main's unsized `string args[]` element, is E0947; copy it
+into a `string<N>` first.
+
+The temporary lives as long as its block, so a C function that returns a
+pointer that can point at characters -- to `char` of any sign or to `void`,
+or a typedef of one -- such as `strstr` or `strchr`, may return one into it:
+passing it a built string is E0948. A `FILE*` from `fopen` cannot, so
+`fopen(stem + ".txt", "r")` is built. A `for` update runs on every pass with
+nothing written before it, so a string built there would be built once,
+before the loop, and is E0715 (#2402); a `for` init runs once, and builds it
+there. In the right operand of an `&&` or `||`, or in one arm
+of a ternary, the string is built only when that operand or arm runs. A
+substring's bounds stay within its source here as in a `string<N>` write
+(E0865), and so do a compared substring's.
+
+```cnx
+string<8> s <- "hello";
+i32 same <- strcmp(s + "!", "hello!");  // built into a char[10] first
+u64 n <- strlen(args[0] + "!");         // ERROR E0947: length of args[0] not known
+cstring c_at <- strstr(s + "!", "o");   // ERROR E0948: c_at may point into the temporary
+chars_upper(s + "!");                   // ERROR E0915: chars_upper takes char*
+i32 far <- strcmp(s[6, 4], "x");        // ERROR E0865: bounds exceed string<8>
 ```
 
 ### Read-only by Default (ADR-071, which supersedes ADR-013)
@@ -935,6 +977,75 @@ capacity correctly never rejects -- so the rule would go quiet across an
 include rather than fail. Two of the imported cells are `error` and occupied;
 the scope contexts are `off` as a stated obligation, not a claim they cannot
 exist.
+
+<!-- MATRIX-SEVERITY code: E0947 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | error    |
+| scope method       | same file               | error    |
+| global variable    | same file               | off      |
+| scope member       | same file               | off      |
+| for header         | same file               | error    |
+| top-level function | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| global variable    | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| top-level function | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| global variable    | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | warn     |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | warn     |
+
+<!-- MATRIX-SEVERITY code: E0948 -->
+
+| Context            | Relationship            | Severity |
+| ------------------ | ----------------------- | -------- |
+| top-level function | same file               | error    |
+| scope method       | same file               | error    |
+| global variable    | same file               | error    |
+| scope member       | same file               | error    |
+| for header         | same file               | error    |
+| top-level function | imported direct         | off      |
+| scope method       | imported direct         | off      |
+| global variable    | imported direct         | off      |
+| scope member       | imported direct         | off      |
+| for header         | imported direct         | off      |
+| top-level function | imported transitive     | off      |
+| scope method       | imported transitive     | off      |
+| global variable    | imported transitive     | off      |
+| scope member       | imported transitive     | off      |
+| for header         | imported transitive     | off      |
+| global variable    | exercised from one away | warn     |
+| top-level function | exercised from one away | warn     |
+| scope member       | exercised from one away | warn     |
+| scope method       | exercised from one away | warn     |
+| for header         | exercised from one away | warn     |
+| global variable    | exercised through chain | warn     |
+| top-level function | exercised through chain | warn     |
+| scope member       | exercised through chain | warn     |
+| scope method       | exercised through chain | warn     |
+| for header         | exercised through chain | warn     |
+
+E0947 and E0948 are about a C call's argument, and a call's argument is built
+into its temporary wherever the call is: a statement, a `for` header's init,
+and for E0948 a global's, a scope member's or a `for` header's declaration,
+where the returned pointer would outlive the built string too. A global's or
+a scope member's initializer holds no unsized string, so E0947 is `off` there.
+The imported cells are `off`: E0947 is about a part whose length is not in its
+type at all, which no include changes, and E0948 is about the C function,
+which a C header declares rather than a cnx include (#2348 review).
 
 ### The bounded copy
 

@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import userCType from "../userCType";
 
 describe("userCType", () => {
-  it("maps cstring to char*", () => {
-    expect(userCType("cstring", false)).toBe("char*");
+  it("maps cstring to const char* (#2311)", () => {
+    expect(userCType("cstring", false)).toBe("const char*");
   });
 
   it("adds struct keyword when needed", () => {

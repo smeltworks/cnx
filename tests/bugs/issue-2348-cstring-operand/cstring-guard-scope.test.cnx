@@ -1,0 +1,81 @@
+// test-error
+// #2348 review: a guard clause proves its NULL check only where no path ran
+// around it. A return inside a loop may never run, and a guard nested in a
+// branch, a loop or a switch holds only inside it. A do-while body always
+// runs, so a guard at its top level holds after the loop.
+#include <string.h>
+
+string<32> haystack <- "hello hello";
+mut u64 n;
+
+u32 main() {
+    mut u32 count <- 0;
+    cstring c_a <- strstr(haystack, "lo");
+    if (c_a = NULL) {
+        for (mut u32 i <- 0; i < count; i +<- 1) {
+            return 1;
+        }
+    }
+    n <- strlen(c_a);
+
+    cstring c_b <- strstr(haystack, "he");
+    if (count = 1) {
+        if (c_b = NULL) {
+            return 2;
+        }
+    }
+    n <- strlen(c_b);
+
+    cstring c_c <- strstr(haystack, "el");
+    while (count < 3) {
+        if (c_c = NULL) {
+            return 3;
+        }
+        n <- strlen(c_c);
+        count +<- 1;
+    }
+    n <- strlen(c_c);
+
+    cstring c_e <- strstr(haystack, "o");
+    for (mut u32 j <- 0; j < count; j +<- 1) {
+        if (c_e = NULL) {
+            return 6;
+        }
+    }
+    n <- strlen(c_e);
+
+    cstring c_f <- strstr(haystack, "h");
+    switch (count) {
+        case 1 {
+            if (c_f = NULL) {
+                return 7;
+            }
+        }
+        default {
+            n <- 0;
+        }
+    }
+    n <- strlen(c_f);
+
+    // Control: a do-while body runs at least once, so its guard holds after
+    cstring c_g <- strstr(haystack, "e");
+    do {
+        if (c_g = NULL) {
+            return 8;
+        }
+        count +<- 1;
+    } while (count < 1);
+    n <- strlen(c_g);
+
+    // Control: a guard whose two branches both return proves its check
+    cstring c_d <- strstr(haystack, "ll");
+    if (c_d = NULL) {
+        if (count = 0) {
+            return 4;
+        } else {
+            return 5;
+        }
+    }
+    n <- strlen(c_d);
+    return 0;
+}

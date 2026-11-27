@@ -11,7 +11,7 @@ extern "C" {
 #endif
 
 /* External variables */
-extern char haystack[65];
+extern char buffer[65];
 
 /* Function prototypes */
 void testWhileLoop(void);

@@ -1,0 +1,13 @@
+// test-error
+// #2348 review: a call through a header's inline function-pointer variable,
+// or through an element of an array of them, that discards a non-void result
+// is E0708.
+#include "lib/callback-checks.h"
+
+void main() {
+    g_count(1);
+    g_counts[0](1);
+    // Controls: the discard is explicit, or the callback returns void
+    (void)g_counts[1](1);
+    g_done(1);
+}

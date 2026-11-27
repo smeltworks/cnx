@@ -1,0 +1,26 @@
+// test-error
+// #2348 review: a function returning a cstring returns const char*, `mut`
+// or not (ADR-046), so it does not match a C function-pointer type that
+// returns char*: E0879.
+#include "lib/labels.h"
+
+mut string<8> stored <- "abc";
+mut string<8> other <- "xy";
+
+cstring label() {
+    mut cstring text <- other;
+    text <- stored;
+    return text;
+}
+
+// Control: a type returning const char* matches
+cstring view() {
+    cstring text <- stored;
+    return text;
+}
+
+u32 main() {
+    u32 made <- label_length(label);
+    u32 viewed <- label_view_length(view);
+    return made + viewed;
+}

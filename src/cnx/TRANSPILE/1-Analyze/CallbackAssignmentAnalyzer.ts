@@ -64,6 +64,9 @@ import type IAnalysisContext from "./types/IAnalysisContext";
 import type IValuePosition from "../../types/IValuePosition";
 import SourceOrder from "../../utils/SourceOrder";
 import TypedefParamParser from "../../utils/TypedefParamParser";
+import CStringArgument from "../../utils/CStringArgument";
+import CLandingType from "./helpers/CLandingType";
+import type IValuePositions from "../../types/IValuePositions";
 import type ILexicalFrame from "../../types/ILexicalFrame";
 
 /** The slot a value fills, for E0880's wording */
@@ -385,6 +388,54 @@ class CallbackAssignmentCheck {
       });
     });
   }
+
+  /**
+   * E0879 (#2348 review): a function returning a `cstring`, which is
+   * `const char*` (ADR-046), landing where C calls it through a pointer to a
+   * function returning a `char*` that is not const -- a typedef of one or one
+   * written inline, read through this file's headers, which pair the two.
+   */
+  public checkCStringReturns(positions: IValuePositions): void {
+    for (const [value, site] of positions.sites) {
+      // A variable that shadows the function is a value of its own type
+      const root = OperandTyper.chainOf(value, this.context).root?.kind;
+      if (
+        !CLandingType.isLanding(site.site) ||
+        root === "local" ||
+        root === "variable"
+      ) {
+        continue;
+      }
+      const returned = FunctionReference.ofValue(
+        value,
+        OperandTyper.scopePathAt(value.span, this.context),
+        this.context,
+      )?.returnType;
+      if (
+        returned === undefined ||
+        TypeResolver.getTypeName(returned) !== "cstring"
+      ) {
+        continue;
+      }
+      const cReturn = CLandingType.returnOf(value, positions, this.context);
+      if (
+        cReturn === null ||
+        !CStringArgument.isWritableCharPointer(
+          cReturn,
+          this.context.symbolTable,
+        )
+      ) {
+        continue;
+      }
+      this.found.push({
+        code: "E0879",
+        span: value.span,
+        message: `Function '${value.written}' returns a cstring, which is const char*, and the place it is given to calls it as returning '${cReturn}'`,
+        helpText:
+          "A cstring is const char*, `mut` or not (ADR-046): declare the C function pointer's return const char*.",
+      });
+    }
+  }
 }
 
 class CallbackAssignmentAnalyzer {
@@ -393,11 +444,15 @@ class CallbackAssignmentAnalyzer {
   /** #1991: reads 1.2's syntax, not the parse tree */
   public analyze(
     program: IProgramSyntax,
-    positions: ReadonlyMap<TExpression, IValuePosition>,
+    positions: IValuePositions,
   ): ICallbackAssignmentError[] {
-    const check = new CallbackAssignmentCheck(this.context, positions);
+    const check = new CallbackAssignmentCheck(
+      this.context,
+      positions.positions,
+    );
     ProgramAccesses.checkEverything(program, check);
     check.checkCTypedefCallbacks();
+    check.checkCStringReturns(positions);
     return check.errors().sort(SourceOrder.bySpan);
   }
 }

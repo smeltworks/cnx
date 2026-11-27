@@ -1,0 +1,4 @@
+8:4 error[E0708]: Return value of non-void function 'g_count' is discarded
+       help: Use the value, or discard it explicitly: (void) g_count(...);
+9:4 error[E0708]: Return value of non-void function 'g_counts[0]' is discarded
+       help: Use the value, or discard it explicitly: (void) g_counts[0](...);

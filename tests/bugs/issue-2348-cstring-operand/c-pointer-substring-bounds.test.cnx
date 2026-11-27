@@ -1,0 +1,16 @@
+// test-error
+// #2348 review: a substring passed to a C char pointer parameter, or compared,
+// copies from its source as one written into a string<N> does, so its bounds
+// must stay within the source (E0865).
+#include <string.h>
+
+string<4> s <- "abc";
+mut i32 order;
+mut bool same;
+
+void main() {
+    order <- strcmp(s[2, 6], "x");
+    same <- s[3, 4] = "x";
+    // Control: within the source
+    order <- strcmp(s[1, 3], "bc");
+}

@@ -4,6 +4,7 @@ import SymbolTable from "../../../../../cnx/PARSE/3-Declare/SymbolTable";
 import ESourceLanguage from "../../../../../cnx/utils/types/ESourceLanguage";
 import TestSourceSpan from "../../../../../cnx/types/__testUtils__/testSourceSpan";
 import testAnalysisContextFor from "./testAnalysisContextFor";
+import ValuePositions from "../../../../../cnx/TRANSPILE/1-Analyze/helpers/ValuePositions";
 
 /**
  * #1991: the check walks 1.2's syntax. A call by name to a C function with a
@@ -38,7 +39,7 @@ const at = (body: string[]): string[] => {
     cppMode: false,
   });
   return new CPointerArgumentAnalyzer(context)
-    .analyze(syntax)
+    .analyze(syntax, ValuePositions.of(syntax, context))
     .map((e) => `${e.code}@${e.span.line}:${e.span.column} ${e.message}`);
 };
 
@@ -105,7 +106,9 @@ describe("CPointerArgumentAnalyzer through `global.` (#2103)", () => {
       { symbolTable, cppMode: false },
     );
     expect(
-      new CPointerArgumentAnalyzer(context).analyze(syntax).map((e) => e.code),
+      new CPointerArgumentAnalyzer(context)
+        .analyze(syntax, ValuePositions.of(syntax, context))
+        .map((e) => e.code),
     ).toEqual(["E0896"]);
   });
 
@@ -151,7 +154,7 @@ describe("CPointerArgumentAnalyzer on a variadic C callee (#2117)", () => {
       cppMode: false,
     });
     return new CPointerArgumentAnalyzer(context)
-      .analyze(syntax)
+      .analyze(syntax, ValuePositions.of(syntax, context))
       .filter((e) => e.code !== "E0896")
       .map((e) => `${e.code}@${e.span.line}:${e.span.column}`);
   };

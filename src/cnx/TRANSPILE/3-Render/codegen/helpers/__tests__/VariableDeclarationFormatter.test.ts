@@ -47,6 +47,24 @@ describe("VariableDeclarationFormatter", () => {
       );
     });
 
+    it("adds no second const to a read-only cstring (#2311)", () => {
+      const input: IVariableFormatInput = {
+        name: "c_label",
+        cnxType: "cstring",
+        mappedType: "const char*",
+        modifiers: {
+          isConst: true,
+          isAtomic: false,
+          isVolatile: false,
+          isExtern: true,
+        },
+      };
+
+      expect(VariableDeclarationFormatter.format(input)).toBe(
+        "extern const char* c_label",
+      );
+    });
+
     it("formats extern variable", () => {
       const input: IVariableFormatInput = {
         name: "globalCounter",

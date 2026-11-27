@@ -8,16 +8,17 @@
 // ADR-046: Valid c_ prefix with while loop pattern
 // Tests that c_ prefixed variables work correctly in while loops.
 // The while condition provides the NULL check, and reassignment is allowed.
-#include <string.h>
 // cppcheck-suppress misra-c2012-21.6
 #include <stdio.h>
 
-char haystack[65] = "hello hello hello";
+#include <string.h>
+
+char buffer[65] = "";
 
 void testWhileLoop(void) {
-    char* c_pos = strstr(haystack, "hello");
-    while (c_pos != nullptr) {
-        static_cast<void>(printf("Found at: %s\n", c_pos));
-        c_pos = strstr(c_pos + 1, "hello");
+    const char* c_line = fgets(buffer, 65, stdin);
+    while (c_line != nullptr) {
+        static_cast<void>(printf("Read: %s", c_line));
+        c_line = fgets(buffer, 65, stdin);
     }
 }

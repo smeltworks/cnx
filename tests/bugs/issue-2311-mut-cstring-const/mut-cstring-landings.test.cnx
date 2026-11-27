@@ -1,0 +1,29 @@
+// test-error
+// #2348 review: a cstring is const char* (ADR-046), so wherever it lands the
+// place's C type decides it, and a char* C may write through is E0900: a C
+// variable, an element, an array field's element, a field in an array of
+// structs, and a typedef of char* as a parameter, a variable, an array and a
+// return. mut-cstring-return-landings has the functions.
+#include "lib/places.h"
+
+mut string<8> stored <- "abc";
+
+text_ptr give() {
+    cstring text <- stored;
+    return text;
+}
+
+u32 main() {
+    cstring text <- stored;
+    g_name <- text;
+    g_names[0] <- text;
+    mut Names n <- { names: [stored, stored], id: 1 };
+    n.names[0] <- text;
+    Customer[2] cs <- [{ name: text, id: 1 }, { name: text, id: 2 }];
+    u32 a <- ptr_len(text);
+    text_ptr p <- text;
+    text_ptr[2] ptrs <- [text, text];
+    // A ternary's two C string arms are each reported once
+    g_name <- (a = 1) ? text : text;
+    return a;
+}

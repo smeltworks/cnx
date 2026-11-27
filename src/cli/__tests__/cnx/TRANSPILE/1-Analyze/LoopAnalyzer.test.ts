@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import LoopAnalyzer from "../../../../../cnx/TRANSPILE/1-Analyze/LoopAnalyzer";
 import testAnalysisContextFor from "./testAnalysisContextFor";
+import ValuePositions from "../../../../../cnx/TRANSPILE/1-Analyze/helpers/ValuePositions";
 
 /**
  * #1322. ADR-068's loop rules -- E0705 (`forever` in a non-void function),
@@ -16,7 +17,10 @@ const errors = (source: string) => {
   const { syntax, context } = testAnalysisContextFor(source, {
     cppMode: false,
   });
-  return new LoopAnalyzer(context).analyze(syntax);
+  return new LoopAnalyzer(context).analyze(
+    syntax,
+    ValuePositions.of(syntax, context),
+  );
 };
 
 const inRun = (body: string): string =>

@@ -33,6 +33,7 @@ import type IAnalysisContext from "./types/IAnalysisContext";
 import type TSymbol from "../../types/symbols/TSymbol";
 import invariant from "../../utils/invariant";
 import ESourceLanguage from "../../utils/types/ESourceLanguage";
+import CCallee from "./helpers/CCallee";
 
 /**
  * cnx built-in functions
@@ -273,8 +274,15 @@ class FunctionCallAnalyzer {
     expr: Extract<TExpression, { kind: "postfix" }>,
   ): boolean {
     const written = WrittenBinding.ofExpression(expr, this.context);
+    const binding = written?.binding;
+    if (binding?.kind === "foreign") {
+      const call = CCallee.foreignCall(expr, this.context);
+      return (
+        call !== null &&
+        CCallee.functionPointerType(call.type, this.context) !== null
+      );
+    }
     if (written?.ops[0]?.kind !== "call") return false;
-    const binding = written.binding;
     if (binding?.kind === "local") {
       return (
         binding.declaration.arrayDimensions.length === 0 &&

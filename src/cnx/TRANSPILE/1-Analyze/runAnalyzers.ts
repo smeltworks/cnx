@@ -474,7 +474,7 @@ function runAnalyzers(
       // already guaranteed a comparison, as it did in codegen.
       label:
         "loops and break/continue (ADR-068/ADR-026, E0703/E0705/E0707/E0715)",
-      run: () => new LoopAnalyzer(context).analyze(parsed.program),
+      run: () => new LoopAnalyzer(context).analyze(parsed.program, positions()),
     },
     {
       label:
@@ -500,7 +500,7 @@ function runAnalyzers(
       run: () =>
         new CallbackAssignmentAnalyzer(context).analyze(
           parsed.program,
-          positions().positions,
+          positions(),
         ),
     },
     {
@@ -526,7 +526,11 @@ function runAnalyzers(
     },
     {
       label: "C pointer parameter arguments (#1977, E0895)",
-      run: () => new CPointerArgumentAnalyzer(context).analyze(parsed.program),
+      run: () =>
+        new CPointerArgumentAnalyzer(context).analyze(
+          parsed.program,
+          positions(),
+        ),
     },
     {
       label: "no sizeof (ADR-023, E0603)",

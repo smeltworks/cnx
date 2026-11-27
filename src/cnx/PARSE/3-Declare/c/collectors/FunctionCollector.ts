@@ -22,6 +22,7 @@ class FunctionCollector {
       isArray: p.isArray,
       ...(p.arrayDimensions && { arrayDimensions: p.arrayDimensions }),
       ...(p.isNestedDeclarator && { isNestedDeclarator: true }),
+      ...(p.isFunctionPointer && { isFunctionPointer: true }),
       ...(p.isVolatile && { isVolatile: true }),
     }));
   }

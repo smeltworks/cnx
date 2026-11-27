@@ -1,0 +1,21 @@
+// test-execution
+// #2348 review: a header's function-pointer variable written inline, and an
+// element of an array of them, is called like any C function pointer.
+#include "lib/callbacks.h"
+
+u32 main() {
+    u32 direct <- g_op(4);
+    if (direct != 8) {
+        return 1;
+    }
+    u32 element <- g_ops[1](4);
+    if (element != 12) {
+        return 2;
+    }
+    u32 typed <- t_ops[0](4);
+    if (typed != 12) {
+        return 3;
+    }
+    (void)g_ops[0](4);
+    return 0;
+}
