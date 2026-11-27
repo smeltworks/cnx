@@ -1,0 +1,12 @@
+// test-error
+// #2348 review: a header's function-pointer variable is called with one
+// subscript per array dimension, no more and no fewer.
+#include "lib/callbacks.h"
+
+void main() {
+    u32 whole <- g_ops(4);
+    u32 extra <- g_op[0](4);
+    u32 deeper <- g_ops[0][1](4);
+    // Control: one subscript per dimension
+    u32 element <- g_ops[1](4);
+}

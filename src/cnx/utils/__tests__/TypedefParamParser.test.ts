@@ -55,6 +55,14 @@ describe("TypedefParamParser", () => {
       expect(result!.params[2].baseType).toBe("uint8_t");
     });
 
+    it("does not read a type named const... as const", () => {
+      // #2063: `constraint_t` begins with the letters of `const`
+      const result = TypedefParamParser.parse("void (*)(constraint_t*c)");
+
+      expect(result!.params[0].isConst).toBe(false);
+      expect(result!.params[0].baseType).toBe("constraint_t");
+    });
+
     it("reads a const after the * as the pointer's, not the pointee's", () => {
       // #2348 review: 1.2 keeps `uint8_t*const buf`'s words apart now
       const result = TypedefParamParser.parse(

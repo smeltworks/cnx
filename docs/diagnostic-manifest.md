@@ -977,6 +977,7 @@ totals each time it passes.
 | tests/bugs/issue-2254-volatile-not-inlined/volatile-dimension-error.test.cnx                              | E0909                             |
 | tests/bugs/issue-2311-mut-cstring-const/inline-callback-arguments.test.cnx                                | E0896, E0900                      |
 | tests/bugs/issue-2311-mut-cstring-const/inline-callback-discarded.test.cnx                                | E0708                             |
+| tests/bugs/issue-2311-mut-cstring-const/inline-callback-subscripts.test.cnx                               | E0422                             |
 | tests/bugs/issue-2311-mut-cstring-const/mut-cstring-callback.test.cnx                                     | E0879                             |
 | tests/bugs/issue-2311-mut-cstring-const/mut-cstring-landings.test.cnx                                     | E0900                             |
 | tests/bugs/issue-2311-mut-cstring-const/mut-cstring-return-landings.test.cnx                              | E0879                             |
