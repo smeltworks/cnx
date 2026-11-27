@@ -393,12 +393,9 @@ class SymbolTable implements IResolvedSymbols {
 
   /** #2514: whether a declaration of `name` this table's reader reads is in a disputed header */
   inDisputedHeader(name: string): boolean {
-    const c = this.cSymbols.get(name) ?? [];
-    const pool: (TCSymbol | TCppSymbol)[] =
-      c.length > 0
-        ? this.poolOf(c)
-        : this.poolOf(this.cppSymbols.get(name) ?? []);
-    return pool.some((symbol) => this.disputedHeaders.has(symbol.sourceFile));
+    return this.readerPool(name).some((symbol) =>
+      this.disputedHeaders.has(symbol.sourceFile),
+    );
   }
 
   /**
@@ -457,14 +454,18 @@ class SymbolTable implements IResolvedSymbols {
    * (#2514), since a bound can only reject an index there.
    */
   indexBoundsOf(name: string): (number | string)[] | undefined {
-    const c = this.cSymbols.get(name) ?? [];
-    const pool: (TCSymbol | TCppSymbol)[] =
-      c.length > 0
-        ? this.poolOf(c)
-        : this.poolOf(this.cppSymbols.get(name) ?? []);
+    const pool = this.readerPool(name);
     const first = pool[0];
     if (first?.kind !== "variable" || !first.arrayDimensions) return undefined;
     return SymbolTable.composed(first.arrayDimensions, pool);
+  }
+
+  /** The declarations of `name` this table's reader reads: its C ones, else its C++ ones */
+  private readerPool(name: string): (TCSymbol | TCppSymbol)[] {
+    const c = this.cSymbols.get(name) ?? [];
+    return c.length > 0
+      ? this.poolOf(c)
+      : this.poolOf(this.cppSymbols.get(name) ?? []);
   }
 
   /** `symbols` with the reading file's headers' declarations first (#2474) */
