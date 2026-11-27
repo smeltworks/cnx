@@ -20,8 +20,8 @@ scope Logger {
 
 u8 main() {
     u8 n <- 0;
-    // ASSERTION -- top-level function context: string, slice, atomic, float bit.
-    for (sharedName <- "b"; n < 4; n +<- 1) {}
+    // ASSERTION -- top-level function context: a substring, slice, atomic, float bit.
+    for (sharedName <- sharedName[0, 1]; n < 4; n +<- 1) {}
     for (n <- 0; n < 2; sharedBuffer[0, 2] <- 0x0102) {}
     for (n <- 0; n < 2; sharedCounter +<- 1) {}
     for (sharedLevel[31] <- true; n < 2; n +<- 1) {}

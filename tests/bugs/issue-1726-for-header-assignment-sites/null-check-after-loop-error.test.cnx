@@ -1,0 +1,39 @@
+// test-error
+// #1726 review: a loop condition checks its variable for its body only; the
+// loop leaves when it is null, so past a for or a while it is unchecked.
+#include <stdio.h>
+
+mut string<64> buffer;
+
+void run() {
+    mut cstring c_line <- fgets(buffer, buffer.size, stdin);
+    for (mut u32 i <- 0; c_line != NULL; i +<- 1) {}
+    i32 r <- puts(c_line);
+}
+
+void runWhile() {
+    mut cstring c_line <- fgets(buffer, buffer.size, stdin);
+    while (c_line != NULL) {}
+    i32 r <- puts(c_line);
+}
+
+// A check before the loop does not outlive it: the loop still leaves only
+// when the variable is null.
+void runChecked() {
+    mut cstring c_line <- fgets(buffer, buffer.size, stdin);
+    if (c_line = NULL) {
+        return;
+    }
+    while (c_line != NULL) {
+        c_line <- fgets(buffer, buffer.size, stdin);
+    }
+    i32 r <- puts(c_line);
+}
+
+void runCheckedFor() {
+    mut cstring c_line <- fgets(buffer, buffer.size, stdin);
+    if (c_line != NULL) {
+        for (; c_line != NULL; c_line <- fgets(buffer, buffer.size, stdin)) {}
+        i32 r <- puts(c_line);
+    }
+}

@@ -1,2 +1,10 @@
-20:28 error[E0871]: cannot assign to read-only register member 'FLAGS' (STATUS_REG.FLAGS has 'ro' access modifier)
+21:28 error[E0871]: cannot assign to read-only register member 'FLAGS' (STATUS_REG.FLAGS has 'ro' access modifier)
        help: An `ro` register member is hardware that cannot be written (ADR-004); the generated C declares it `const`. Write the register's own writable member, or change the declaration if the hardware allows writes.
+28:9 error[E0871]: cannot assign to read-only register member 'FLAGS' (STATUS_REG.FLAGS has 'ro' access modifier)
+       help: An `ro` register member is hardware that cannot be written (ADR-004); the generated C declares it `const`. Write the register's own writable member, or change the declaration if the hardware allows writes.
+33:4 error[E0870]: cannot read from write-only register member 'WONLY' (STATUS_REG.WONLY has 'wo' access modifier)
+       help: A `wo` register member is hardware that returns nothing meaningful when read (ADR-004). Read the register's own readable member, or keep a shadow copy of what was written.
+34:28 error[E0870]: cannot read from write-only register member 'WONLY' (STATUS_REG.WONLY has 'wo' access modifier)
+       help: A `wo` register member is hardware that returns nothing meaningful when read (ADR-004). Read the register's own readable member, or keep a shadow copy of what was written.
+37:9 error[E0870]: cannot read from write-only register member 'WONLY' (STATUS_REG.WONLY has 'wo' access modifier)
+       help: A `wo` register member is hardware that returns nothing meaningful when read (ADR-004). Read the register's own readable member, or keep a shadow copy of what was written.

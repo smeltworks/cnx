@@ -111,8 +111,7 @@ class InitializationWalk {
         this.variableParts(statement);
         return;
       case "assignment":
-        this.recordAssignment(statement);
-        this.assignmentParts(statement);
+        this.assignment(statement);
         return;
       case "if": {
         const stateBefore = this.analyzer.cloneScopeState();
@@ -154,21 +153,23 @@ class InitializationWalk {
   }
 
   private forStatement(loop: Extract<TStatement, { kind: "for" }>): void {
-    const stateBeforeLoop = this.analyzer.cloneScopeState();
-    // The init and update are not declarations or assignments this tracks;
-    // only what they read is checked
+    // The init runs once, before the condition, whether or not the body does:
+    // what it assigns is assigned after the loop (#2034). A declared init's
+    // variable is the loop's own, so only what it reads is checked
     if (loop.init?.kind === "variableDeclaration") {
       this.variableParts(loop.init);
     } else if (loop.init) {
-      this.assignmentParts(loop.init);
+      this.assignment(loop.init);
     }
+    const stateBeforeLoop = this.analyzer.cloneScopeState();
     if (loop.condition) {
       this.expression(loop.condition);
     }
-    if (loop.update) {
-      this.assignmentParts(loop.update);
-    }
     this.statement(loop.body);
+    // The update runs after the body, and only when the body did (#1726)
+    if (loop.update) {
+      this.assignment(loop.update);
+    }
     // A loop that certainly runs keeps what its body assigned
     if (InitializationWalk.isDeterministicForLoop(loop)) {
       this.analyzer.mergeInitializationState(stateBeforeLoop);
@@ -184,6 +185,8 @@ class InitializationWalk {
     const init = loop.init;
     const condition = loop.condition;
     if (!init || !condition) return false;
+    // `i +<- 0` adds zero: only a plain `<-` sets the counter to zero
+    if (init.kind === "assignment" && init.operator !== "<-") return false;
     const start = init.kind === "assignment" ? init.value : init.initializer;
     if (!InitializationWalk.isLiteral(start, /^0$/)) return false;
     if (
@@ -195,8 +198,16 @@ class InitializationWalk {
     }
     const left = condition.operands[0];
     const bound = condition.operands[1];
+    // The condition tests the variable the init set to zero
+    const counter =
+      init.kind === "variableDeclaration"
+        ? init.name
+        : init.target.kind === "identifier"
+          ? init.target.name
+          : null;
     return (
       left.kind === "identifier" &&
+      left.name === counter &&
       InitializationWalk.isLiteral(bound, /^\d+$/) &&
       Number.parseInt(bound.written, 10) > 0
     );
@@ -245,7 +256,8 @@ class InitializationWalk {
     }
   }
 
-  private recordAssignment(assignment: IAssignmentSyntax): void {
+  /** The target's read (`reads`) or its write */
+  private targetAccess(assignment: IAssignmentSyntax, reads: boolean): void {
     const head = ExpressionShape.headOf(assignment.target);
     if (!head.identifier) return;
     const name = head.identifier.name;
@@ -258,11 +270,22 @@ class InitializationWalk {
     const fieldName = InitializationWalk.fieldOf(
       head.ops.slice(head.opsConsumed),
     );
-    // A compound assignment (`+<-`) reads the target first
-    if (assignment.operator !== "<-") {
+    if (reads) {
       this.analyzer.checkRead(key, name, assignment.span, fieldName);
+    } else {
+      this.analyzer.recordAssignment(key, fieldName);
     }
-    this.analyzer.recordAssignment(key, fieldName);
+  }
+
+  /**
+   * An assignment reads its value before it writes its target (#2035); a
+   * compound one (`+<-`) reads its target first, before a call in its value
+   * can count the target as written
+   */
+  private assignment(assignment: IAssignmentSyntax): void {
+    if (assignment.operator !== "<-") this.targetAccess(assignment, true);
+    this.assignmentParts(assignment);
+    this.targetAccess(assignment, false);
   }
 
   /** `s.field <- v` assigns that field; through a subscript, the whole variable */

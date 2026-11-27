@@ -1,10 +1,11 @@
 /**
  * ADR-068 (E0715, #1647): which assignment forms a `for` header clause cannot
- * hold. A clause is one C expression, and three forms lower to more than one
+ * hold. A clause is one C expression, and four forms lower to more than one
  * statement: a slice (one write per element), any write to an atomic (an
- * LDREX/STREX loop or a PRIMASK section, ADR-049 Q4/Q7), and a bit write on a
- * float (through a union). ADR-068 also rejects a string copy, which since
- * #2207 is one `cnx_string_copy` call; #2234 asks whether it still should.
+ * LDREX/STREX loop or a PRIMASK section, ADR-049 Q4/Q7), a bit write on a
+ * float (through a union), and a string built from its parts (ADR-045). A
+ * string copied whole is one `cnx_string_copy` call (#2207), so a header
+ * holds it (#2234) -- unless a call returns it, filling a temporary first.
  *
  * One decision, read off the operand typer: 2.1 reports it as E0715, and the
  * header renderer asserts it, so neither derives it again. Which writes are
@@ -15,7 +16,10 @@
 
 import AtomicOwner from "./AtomicOwner";
 import BitmapFieldStep from "./BitmapFieldStep";
+import ExpressionNodes from "./ExpressionNodes";
 import OperandTyper from "./OperandTyper";
+import ReturnBuffer from "./ReturnBuffer";
+import StringValueForm from "./StringValueForm";
 import type ITypingContext from "../types/ITypingContext";
 import type IAssignmentSyntax from "../types/syntax/IAssignmentSyntax";
 
@@ -43,9 +47,17 @@ class ForHeaderAssignment {
     if (steps.some((step) => step.subscript === "array_slice")) {
       return "a slice write is more than one statement";
     }
-    return OperandTyper.stringCopyCapacity(target, ctx) === null
-      ? null
-      : "a string copy, which ADR-068 keeps out of a header (#2234)";
+    if (OperandTyper.stringCopyCapacity(target, ctx) === null) return null;
+    if (StringValueForm.isBuilt(site.value, ctx)) {
+      return "a string built from its parts is more than one statement";
+    }
+    // #1209: the call fills a temporary declared before the statement
+    const fillsBuffer = ExpressionNodes.direct(site.value).some(
+      (node) => ReturnBuffer.callsOf(node, ctx).size > 0,
+    );
+    return fillsBuffer
+      ? "a string returned by a call is more than one statement"
+      : null;
   }
 }
 

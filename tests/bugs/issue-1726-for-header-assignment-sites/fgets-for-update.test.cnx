@@ -1,0 +1,14 @@
+// #1726: a for update that reassigns an fgets result is the assignment the
+// same statement is: the condition checks it, so it is not E0901.
+#include <stdio.h>
+
+mut string<64> buffer;
+
+u32 main() {
+    mut cstring c_line <- fgets(buffer, buffer.size, stdin);
+    mut u32 lines <- 0;
+    for (; c_line != NULL; c_line <- fgets(buffer, buffer.size, stdin)) {
+        lines +<- 1;
+    }
+    return 0;
+}

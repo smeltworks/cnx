@@ -1968,6 +1968,7 @@ Linked fixtures with no derivable context:
 
 Linked fixtures with no derivable context:
 
+- `adr-068/for-header-string-copy.test.cnx`
 - `adr-068/forever-basic.test.cnx`
 
 ## ADR-068 E0705

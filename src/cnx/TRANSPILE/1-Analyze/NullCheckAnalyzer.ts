@@ -23,6 +23,7 @@ import type IFunctionDeclarationSyntax from "../../types/syntax/IFunctionDeclara
 import type IProgramSyntax from "../../types/syntax/IProgramSyntax";
 import type TMemberDeclaration from "../../types/syntax/TMemberDeclaration";
 import type TExpression from "../../types/syntax/TExpression";
+import type IAssignmentSyntax from "../../types/syntax/IAssignmentSyntax";
 import type TStatement from "../../types/syntax/TStatement";
 import type TSyntaxPart from "../../types/syntax/TSyntaxPart";
 
@@ -325,15 +326,16 @@ class NullCheckWalk {
         this.inVariableDeclarationWithNullable = false;
         return;
       case "assignment":
-        this.assignment(statement);
-        this.ownParts(statement);
-        this.inVariableDeclarationWithNullable = false;
+        this.assignmentSite(statement);
         return;
       case "if":
         this.ifStatement(statement);
         return;
       case "while":
         this.whileStatement(statement);
+        return;
+      case "for":
+        this.forStatement(statement);
         return;
       case "return":
         // An `if` that returns is a guard clause when it checks `= NULL`
@@ -415,13 +417,47 @@ class NullCheckWalk {
   private whileStatement(
     statement: Extract<TStatement, { kind: "while" }>,
   ): void {
-    const check = NullCheckWalk.nullCheckIn(statement.condition);
-    this.expression(statement.condition);
-    // The body of `while (c_var != NULL)` has the variable checked
-    if (check?.isNotNull) {
-      this.updateVariableState(check.varName, NullCheckState.CheckedNotNull);
+    this.loop(statement.condition, () => this.statement(statement.body));
+  }
+
+  /**
+   * The body of `while (c_var != NULL)` has the variable checked. ADR-026
+   * has no `break`, so the loop leaves only when the variable is null: past
+   * the loop it is unchecked, whatever it was before
+   */
+  private loop(condition: TExpression | null, body: () => void): void {
+    const check =
+      condition === null ? null : NullCheckWalk.nullCheckIn(condition);
+    if (condition !== null) this.expression(condition);
+    const checked = check?.isNotNull
+      ? this.lookupVariable(check.varName)
+      : null;
+    if (checked) {
+      this.updateVariableState(checked.name, NullCheckState.CheckedNotNull);
     }
-    this.statement(statement.body);
+    body();
+    if (checked) {
+      this.updateVariableState(checked.name, NullCheckState.Unchecked);
+    }
+  }
+
+  /**
+   * A `for` is a `while` with an init before it and an update after its
+   * body: each header assignment is the assignment a statement is (#1726)
+   */
+  private forStatement(loop: Extract<TStatement, { kind: "for" }>): void {
+    if (loop.init !== null) this.statement(loop.init);
+    this.loop(loop.condition, () => {
+      this.statement(loop.body);
+      if (loop.update !== null) this.assignmentSite(loop.update);
+    });
+  }
+
+  private assignmentSite(assignment: IAssignmentSyntax): void {
+    this.assignment(assignment);
+    this.expression(assignment.target);
+    this.expression(assignment.value);
+    this.inVariableDeclarationWithNullable = false;
   }
 
   // ========================================================================
@@ -556,9 +592,7 @@ class NullCheckWalk {
     }
   }
 
-  private assignment(
-    statement: Extract<TStatement, { kind: "assignment" }>,
-  ): void {
+  private assignment(statement: IAssignmentSyntax): void {
     const funcName = NullCheckWalk.nullableCallIn(statement.value);
     if (funcName === null) return;
     const varName = statement.target.written;

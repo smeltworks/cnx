@@ -1,0 +1,7 @@
+// test-error
+// #1726: a compound assignment in a for update reads its target, so an
+// uninitialized target is E0381, as the same statement in the body is.
+void counts() {
+    mut u32 x;
+    for (u32 k <- 0; k < 3; x +<- 1) {}
+}

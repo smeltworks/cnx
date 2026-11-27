@@ -1,2 +1,4 @@
 15:28 error[E0857]: Compound assignment operators are not supported on a bit index
        help: A compound operator reads, modifies and writes back one storage location. Write the read and the write out separately.
+22:9 error[E0857]: Compound assignment operators are not supported on a bit index
+       help: A compound operator reads, modifies and writes back one storage location. Write the read and the write out separately.

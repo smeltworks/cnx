@@ -1,0 +1,118 @@
+// test-execution
+// #2263: a ternary arm that is a concatenation or a substring is built from
+// its parts into one buffer declared before the ternary's `if` (ADR-045), so
+// the chosen arm is the string written -- into a declaration, an assignment,
+// an argument, a struct field and a return. A ternary of whole strings is
+// the control, copied as one C expression.
+struct Packet {
+    string<16> name;
+}
+
+mut u32 calls <- 0;
+
+string<4> counted() {
+    calls +<- 1;
+    return "k";
+}
+
+u32 bump() {
+    calls +<- 1;
+    return 0;
+}
+
+bool isAbcd(string<16> s) {
+    return s = "abcd";
+}
+
+u32 lengthOf(string<16> s) {
+    return s.value_char_count;
+}
+
+string<16> pick(u8 flag, string<4> a, string<4> b) {
+    return (flag = 1) ? a + b : "r";
+}
+
+u32 main() {
+    string<4> a <- "ab";
+    string<4> b <- "cd";
+    string<8> c <- "ef";
+    u8 yes <- 1;
+    u8 no <- 0;
+
+    // CONTROL -- whole strings in both arms
+    string<16> w <- (yes = 1) ? c : "zz";
+    if (w != "ef") {
+        return 1;
+    }
+
+    // Declaration: a concatenation arm, taken and not taken
+    string<16> t <- (yes = 1) ? a + b : c;
+    if (t != "abcd") {
+        return 2;
+    }
+    string<16> t2 <- (no = 1) ? a + b : c;
+    if (t2 != "ef") {
+        return 3;
+    }
+
+    // Assignment: a substring arm, taken and not taken
+    mut string<16> u <- "";
+    u <- (yes = 1) ? a[0, 1] : c;
+    if (u != "a") {
+        return 4;
+    }
+    u <- (no = 1) ? a[0, 1] : c;
+    if (u != "ef") {
+        return 5;
+    }
+
+    // Assignment reading its own target in the built arm
+    u <- (yes = 1) ? u[0, 2] + a : c;
+    if (u != "efab") {
+        return 6;
+    }
+
+    // Argument
+    u32 n <- lengthOf((yes = 1) ? a + b + c : "x");
+    if (n != 6) {
+        return 7;
+    }
+
+    // Struct field
+    Packet p <- { name: (yes = 1) ? b[1, 1] : c };
+    if (p.name != "d") {
+        return 8;
+    }
+
+    // Return
+    string<16> r <- pick(yes, a, b);
+    if (r != "abcd") {
+        return 9;
+    }
+    string<16> r2 <- pick(no, a, b);
+    if (r2 != "r") {
+        return 10;
+    }
+
+    // A built arm's calls run only when it is chosen
+    string<16> v <- (yes = 1) ? a : counted() + b;
+    if (v != "ab" || calls != 0) {
+        return 11;
+    }
+    string<16> v2 <- (no = 1) ? a : counted() + b;
+    if (v2 != "kcd" || calls != 1) {
+        return 12;
+    }
+
+    // A built ternary in a short-circuit operand is built only when it runs
+    bool skipped <- (no = 1) && isAbcd((yes = 1) ? a[bump(), 2] : "x");
+    if (skipped = true || calls != 1) {
+        return 13;
+    }
+    bool taken <- (yes = 1) && isAbcd((yes = 1) ? a + b : counted());
+    if (taken = false || calls != 1) {
+        return 14;
+    }
+
+    return 0;
+}

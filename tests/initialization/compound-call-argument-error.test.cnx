@@ -1,0 +1,12 @@
+// test-error
+// #2035 review: a compound assignment reads its target before its value,
+// so a call in the value cannot count the target as written first.
+u32 identity(u32 v) {
+    return v;
+}
+
+u32 grows() {
+    mut u32 x;
+    x +<- identity(x);
+    return x;
+}

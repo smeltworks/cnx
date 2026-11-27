@@ -1,0 +1,7 @@
+// test-error
+// #2035: an assignment reads its value before it writes its target, so a
+// value that reads an uninitialized target is E0381.
+void grows() {
+    mut u32 x;
+    x <- x + 1;
+}

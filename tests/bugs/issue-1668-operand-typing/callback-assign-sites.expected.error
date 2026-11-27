@@ -1,2 +1,4 @@
 28:42 error[E0879]: Function 'wrongSignature' signature does not match callback type 'onDown'
        help: A callback must match its type's signature exactly: return type, parameter count, and each parameter's type, const-ness and array-ness (ADR-029).
+35:19 error[E0879]: Function 'wrongSignature' signature does not match callback type 'onDown'
+       help: A callback must match its type's signature exactly: return type, parameter count, and each parameter's type, const-ness and array-ness (ADR-029).

@@ -190,6 +190,7 @@ import CTypeIncludes from "./2-Plan/CTypeIncludes";
 import WrittenCTypes from "./3-Render/codegen/helpers/WrittenCTypes";
 import invariant from "../utils/invariant";
 import StringUtils from "../utils/StringUtils";
+import StringValueForm from "../utils/StringValueForm";
 import AdrProvenance from "../instrumentation/AdrProvenance";
 import ExpressionNodes from "../utils/ExpressionNodes";
 import ParameterInputAdapter from "./3-Render/codegen/helpers/ParameterInputAdapter";
@@ -510,6 +511,22 @@ class CodeGenWalker {
     invariant(declaration !== null, "a buffer ternary has a buffer");
     const indent = FormatUtils.indent(1);
     const fill = (arm: TExpression): string[] => {
+      const form = this.filePlan.stringValueForms.get(arm);
+      if (
+        planned.type.kind === "string" &&
+        form !== undefined &&
+        StringValueForm.builds(form)
+      ) {
+        // #2263: a concatenation or a substring arm is built in the buffer,
+        // the calls of its parts run in its branch
+        const capacity = planned.type.capacity;
+        const rendered = this.renderQueuing(() =>
+          StringUtils.build(temp, capacity, this.renderStringParts(form)),
+        );
+        return [...rendered.queued, ...rendered.code].map(
+          (line) => indent + line,
+        );
+      }
       const call = ExpressionShape.postfixView(arm)?.ops.at(-1);
       const inPlace =
         call !== undefined && FilePlanner.fillsInPlace(arm, planned.calls);
@@ -566,8 +583,10 @@ class CodeGenWalker {
    * #2332: render an operand that runs only sometimes, and hand back the
    * statements it queued to run before its statement instead of queuing them.
    */
-  private renderQueuing(render: () => string): {
-    code: string;
+  private renderQueuing<T = string>(
+    render: () => T,
+  ): {
+    code: T;
     queued: string[];
   } {
     const outer = this.host.state.pendingTempDeclarations;
@@ -3720,8 +3739,7 @@ class CodeGenWalker {
     // value as one C expression is never rendered
     const stringForm = this.filePlan.stringValueForms.get(site.value);
     const builtApart =
-      stringForm !== undefined &&
-      (stringForm.kind === "concat" || stringForm.kind === "substring");
+      stringForm !== undefined && StringValueForm.builds(stringForm);
     const character = this.filePlan.characterWrites.get(site);
     if (character !== undefined) {
       return this.renderCharacterWrite(site, character);

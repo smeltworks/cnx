@@ -6,6 +6,7 @@
 register StatusBlock {
     0x00 ro u32 FLAGS,
     0x04 rw u32 CTRL,
+    0x08 wo u32 WONLY,
 }
 
 StatusBlock STATUS_REG(0x40000000);
@@ -20,4 +21,18 @@ void main() {
     for (u32 j <- 0; j < 3; STATUS_REG.FLAGS <- 0xFF) {
         j +<- 1;
     }
+
+    // #1726: the same writes as a `for` init
+    mut u32 k <- 0;
+    for (STATUS_REG.CTRL <- 0xFF; k < 3; k +<- 1) {}
+    for (STATUS_REG.FLAGS <- 0xFF; k < 6; k +<- 1) {}
+
+    // A compound write reads its target, so on a write-only member it is
+    // E0870 in each form
+    STATUS_REG.WONLY <- 1;
+    STATUS_REG.WONLY +<- 1;
+    for (u32 m <- 0; m < 3; STATUS_REG.WONLY +<- 1) {
+        m +<- 1;
+    }
+    for (STATUS_REG.WONLY +<- 1; k < 9; k +<- 1) {}
 }

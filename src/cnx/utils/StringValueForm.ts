@@ -33,6 +33,31 @@ class StringValueForm {
       : { kind: "copy", value: part.value };
   }
 
+  /**
+   * #2234, #2263: whether the value is built from its parts rather than
+   * copied whole by one `cnx_string_copy`: a concatenation, a substring, or
+   * a ternary with either as an arm (E0710 nests no ternary in another)
+   */
+  static isBuilt(value: TExpression, ctx: ITypingContext): boolean {
+    const unwrapped = StringValueForm.unwrapped(value);
+    if (unwrapped.kind === "ternary") {
+      return [unwrapped.whenTrue, unwrapped.whenFalse].some((arm) =>
+        StringValueForm.isBuilt(arm, ctx),
+      );
+    }
+    return StringValueForm.builds(StringValueForm.of(unwrapped, ctx));
+  }
+
+  /**
+   * The forms built from their parts, which are never one C expression: the
+   * one place that names them, for 2.1, 2.2 and 2.3 alike
+   */
+  static builds(
+    form: TStringValueForm,
+  ): form is Extract<TStringValueForm, { kind: "concat" | "substring" }> {
+    return form.kind === "concat" || form.kind === "substring";
+  }
+
   private static partOf(value: TExpression, ctx: ITypingContext): TStringPart {
     if (value.kind !== "postfix" || !OperandTyper.isSubstring(value, ctx)) {
       return { kind: "whole", value };
@@ -47,7 +72,7 @@ class StringValueForm {
     };
   }
 
-  private static unwrapped(value: TExpression): TExpression {
+  static unwrapped(value: TExpression): TExpression {
     return value.kind === "parenthesized"
       ? StringValueForm.unwrapped(value.expression)
       : value;

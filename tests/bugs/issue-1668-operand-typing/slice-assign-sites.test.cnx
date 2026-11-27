@@ -26,4 +26,9 @@ void main() {
     for (mut u32 j <- 0; j < 3; buf[6, 4] <- w) {
         j +<- 1;
     }
+
+    // #1726: the same writes as a `for` init
+    mut u32 k <- 0;
+    for (buf[0, 4] <- w; k < 3; k +<- 1) {}
+    for (buf[6, 4] <- w; k < 6; k +<- 1) {}
 }

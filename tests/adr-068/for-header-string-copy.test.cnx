@@ -1,0 +1,65 @@
+// test-execution
+// test-adr: 068
+// #2234: a string copy is one cnx_string_copy call (#2207), so a for header
+// holds it, in the init and in the update alike: a literal, a string variable,
+// a ternary, through a struct field and through an array element.
+struct Packet {
+    string<8> name;
+}
+
+u32 main() {
+    mut u8 n <- 0;
+    mut string<8> s <- "";
+    string<4> other <- "zz";
+
+    // init: a literal; update: a literal
+    for (s <- "ab"; n < 3; s <- "xyz") {
+        if (n = 0) {
+            if (s != "ab") {
+                return 1;
+            }
+        } else {
+            if (s != "xyz") {
+                return 2;
+            }
+        }
+        n +<- 1;
+    }
+    if (s != "xyz") {
+        return 3;
+    }
+
+    // init: a string variable; update: a ternary between two strings
+    n <- 0;
+    for (s <- other; n < 2; s <- (n < 2) ? other : "q") {
+        n +<- 1;
+    }
+    if (s != "q") {
+        return 4;
+    }
+
+    // a struct field target
+    mut Packet p <- { name: "" };
+    n <- 0;
+    for (p.name <- "fld"; n < 2; p.name <- "end") {
+        n +<- 1;
+    }
+    if (p.name != "end") {
+        return 5;
+    }
+
+    // an array element target
+    mut string<8>[2] names <- ["", ""];
+    n <- 0;
+    for (names[1] <- "e1"; n < 1; names[1] <- "e2") {
+        if (names[1] != "e1") {
+            return 6;
+        }
+        n +<- 1;
+    }
+    if (names[1] != "e2") {
+        return 7;
+    }
+
+    return 0;
+}

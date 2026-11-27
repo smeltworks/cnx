@@ -14,4 +14,9 @@ void main() {
     for (mut u32 j <- 0; j < 3; x[1][2] <- true) {
         j +<- 1;
     }
+
+    // #1726: the same write as a `for` init -- a control, then the assertion
+    mut u32 k <- 0;
+    for (x[1] <- true; k < 3; k +<- 1) {}
+    for (x[1][2] <- true; k < 6; k +<- 1) {}
 }

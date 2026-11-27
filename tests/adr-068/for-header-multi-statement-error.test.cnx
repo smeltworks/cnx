@@ -1,9 +1,10 @@
 // test-error
 // test-adr: 068
 // #1647: a `for` header clause is one C expression, and four assignment forms
-// lower to more than one statement -- a string copy, a slice, any write to an
-// atomic, and a bit write on a float. Each is E0715, in the init and in the
-// update alike.
+// lower to more than one statement -- a string built from its parts, a slice,
+// any write to an atomic, and a bit write on a float. Each is E0715, in the
+// init and in the update alike. A string copied whole is one call, and legal
+// (#2234, for-header-string-copy.test.cnx).
 struct Packet {
     string<8> name;
 }
@@ -30,20 +31,24 @@ void controls() {
     for (buf[0, 1] <- n; n < 4; n +<- 1) {}
 }
 
-// ASSERTIONS 1-2 -- a string target, in the init and in the update.
+// ASSERTIONS 1-2 -- a string built from its parts: a concatenation in the
+// init, a substring in the update.
 void strings() {
     u8 n <- 0;
+    string<4> a <- "ab";
+    string<4> b <- "cd";
     string<8> s <- "a";
-    for (s <- "abc"; n < 2; s <- "de") {
+    for (s <- a + b; n < 2; s <- a[0, 1]) {
         n +<- 1;
     }
 }
 
-// ASSERTION 3 -- a string reached through a struct field.
+// ASSERTION 3 -- a ternary with a concatenation arm, into a struct field.
 void fields() {
     u8 n <- 0;
+    string<4> a <- "ab";
     Packet p;
-    for (p.name <- "a"; n < 2; n +<- 1) {
+    for (p.name <- (n = 0) ? a + "c" : a; n < 2; n +<- 1) {
         n +<- 1;
     }
 }

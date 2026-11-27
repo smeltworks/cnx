@@ -1,0 +1,8 @@
+11:18 error[E0908]: Nullable variable 'c_line' used without NULL check
+       help: Check for NULL before use: if (c_line != NULL) { ... }
+17:18 error[E0908]: Nullable variable 'c_line' used without NULL check
+       help: Check for NULL before use: if (c_line != NULL) { ... }
+30:18 error[E0908]: Nullable variable 'c_line' used without NULL check
+       help: Check for NULL before use: if (c_line != NULL) { ... }
+37:22 error[E0908]: Nullable variable 'c_line' used without NULL check
+       help: Check for NULL before use: if (c_line != NULL) { ... }

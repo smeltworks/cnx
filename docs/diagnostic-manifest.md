@@ -459,6 +459,7 @@ totals each time it passes.
 | tests/adr-068/for-header-multi-statement-imported-direct-error.test.cnx                                   | E0715                             |
 | tests/adr-068/for-header-multi-statement-imported-transitive-error.test.cnx                               | E0715                             |
 | tests/adr-068/for-header-multi-statement-in-scope-error.test.cnx                                          | E0715                             |
+| tests/adr-068/for-header-string-call-error.test.cnx                                                       | E0715                             |
 | tests/adr-068/forever-disguised-dowhile.test.cnx                                                          | E0707                             |
 | tests/adr-068/forever-disguised-for-cond.test.cnx                                                         | E0707                             |
 | tests/adr-068/forever-disguised-for-empty.test.cnx                                                        | E0707                             |
@@ -798,7 +799,7 @@ totals each time it passes.
 | tests/bugs/issue-1668-int-float-clamp/mixed-int-float-rejected.test.cnx                                   | E0810                             |
 | tests/bugs/issue-1668-int-float-clamp/postfix-operands-rejected.test.cnx                                  | E0810                             |
 | tests/bugs/issue-1668-operand-typing/bit-subscript-sites.test.cnx                                         | E0856                             |
-| tests/bugs/issue-1668-operand-typing/bitmap-field-sites.test.cnx                                          | E0881                             |
+| tests/bugs/issue-1668-operand-typing/bitmap-field-sites.test.cnx                                          | E0881, E0882                      |
 | tests/bugs/issue-1668-operand-typing/bool-for-header-compound.test.cnx                                    | E0806, E0807                      |
 | tests/bugs/issue-1668-operand-typing/c-integer-categories.test.cnx                                        | E0810                             |
 | tests/bugs/issue-1668-operand-typing/callback-assign-sites.test.cnx                                       | E0879                             |
@@ -806,7 +807,7 @@ totals each time it passes.
 | tests/bugs/issue-1668-operand-typing/enum-assign-sites.test.cnx                                           | E0428                             |
 | tests/bugs/issue-1668-operand-typing/float-modulo-shapes.test.cnx                                         | E0804                             |
 | tests/bugs/issue-1668-operand-typing/integer-conversion-sources.test.cnx                                  | E0869                             |
-| tests/bugs/issue-1668-operand-typing/register-write-sites.test.cnx                                        | E0871                             |
+| tests/bugs/issue-1668-operand-typing/register-write-sites.test.cnx                                        | E0870, E0871                      |
 | tests/bugs/issue-1668-operand-typing/rule-10-4-categories.test.cnx                                        | E0810                             |
 | tests/bugs/issue-1668-operand-typing/shift-operand-shapes.test.cnx                                        | E0805, E0873                      |
 | tests/bugs/issue-1668-operand-typing/slice-assign-sites.test.cnx                                          | E0860, E0861                      |
@@ -849,6 +850,8 @@ totals each time it passes.
 | tests/bugs/issue-1702-declaration-position/fl-fn-error.test.cnx                                           | E0810                             |
 | tests/bugs/issue-1724-sibling-scope-type-not-included/frames-see-own-closure-error.test.cnx               | E0810                             |
 | tests/bugs/issue-1724-sibling-scope-type-not-included/typer-sees-own-closure-error.test.cnx               | E0428                             |
+| tests/bugs/issue-1726-for-header-assignment-sites/integer-conversion-sites-error.test.cnx                 | E0868, E0869                      |
+| tests/bugs/issue-1726-for-header-assignment-sites/null-check-after-loop-error.test.cnx                    | E0908                             |
 | tests/bugs/issue-1728-leading-zero/leading-zero.test.cnx                                                  | E0912                             |
 | tests/bugs/issue-1735-static-initializer-arithmetic/static-not-constant.test.cnx                          | E0909                             |
 | tests/bugs/issue-1735-static-initializer-arithmetic/static-overflow-arithmetic.test.cnx                   | E0910                             |
@@ -974,6 +977,7 @@ totals each time it passes.
 | tests/bugs/issue-2240-substring-constant-length/substring-runtime-length-error.test.cnx                   | E0922                             |
 | tests/bugs/issue-2251-bitmap-field-bit-index/field-bit-index-wo-zero-error.test.cnx                       | E0872                             |
 | tests/bugs/issue-2254-volatile-not-inlined/volatile-dimension-error.test.cnx                              | E0909                             |
+| tests/bugs/issue-2263-ternary-built-arm/ternary-arm-overflow-error.test.cnx                               | E0864                             |
 | tests/bugs/issue-2332-short-circuit-built-initializer/loop-condition-nested-call-error.test.cnx           | E0702                             |
 | tests/bugs/issue-2341-included-scope-type-bare-use/no-scope-type.test.cnx                                 | E0426                             |
 | tests/bugs/issue-2354-bool-bit-index/bool-bit-index-error.test.cnx                                        | E0856                             |
@@ -1056,8 +1060,13 @@ totals each time it passes.
 | tests/initialization/compound-assign-all-ops.test.cnx                                                     | E0381                             |
 | tests/initialization/compound-assign-struct-field.test.cnx                                                | E0381                             |
 | tests/initialization/compound-assign-use-before-init.test.cnx                                             | E0381                             |
+| tests/initialization/compound-call-argument-error.test.cnx                                                | E0381                             |
+| tests/initialization/for-init-reads-uninit-error.test.cnx                                                 | E0381                             |
+| tests/initialization/for-skipped-update-error.test.cnx                                                    | E0381                             |
+| tests/initialization/for-update-compound-uninit-error.test.cnx                                            | E0381                             |
 | tests/initialization/if-else-branches.test.cnx                                                            | E0381                             |
 | tests/initialization/partial-branch-init-error.test.cnx                                                   | E0381                             |
+| tests/initialization/self-read-assignment-error.test.cnx                                                  | E0381                             |
 | tests/initialization/use-before-init.test.cnx                                                             | E0381                             |
 | tests/null-check/e0908-basic.test.cnx                                                                     | E0908                             |
 | tests/null-check/e0908-reassignment.test.cnx                                                              | E0908                             |
