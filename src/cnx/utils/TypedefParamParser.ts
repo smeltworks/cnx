@@ -193,8 +193,13 @@ class TypedefParamParser {
     const isPointer = trimmed.includes("*");
 
     // Check for const - handles both "const " (with space) and merged forms
-    // C grammar getText() strips spaces, so "const rect_t*" may appear merged
-    const isConst = /\bconst\b/.test(trimmed) || trimmed.startsWith("const");
+    // C grammar getText() strips spaces, so "const rect_t*" may appear merged.
+    // A pointer's is the pointee's, before its first `*`: `uint8_t* const
+    // buf` is a const pointer to writable bytes (#2348 review).
+    const pointee = isPointer
+      ? trimmed.slice(0, trimmed.indexOf("*"))
+      : trimmed;
+    const isConst = /\bconst\b/.test(pointee) || pointee.startsWith("const");
 
     // Extract base type (remove const, *, and param name if present)
     let baseType = trimmed

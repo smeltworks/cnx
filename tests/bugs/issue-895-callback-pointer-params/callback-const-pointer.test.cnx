@@ -1,0 +1,21 @@
+// test-execution
+// test-target-xfail: host cortex-m7 atmega328p cpp #2140 "invalid conversion from"
+// #2348 review: a callback typedef's `uint8_t* const buf` is a const pointer
+// to a writable byte, so a `mut u8 buf` callback matches it. C++ passes the
+// argument by value against the pointer parameter (#2140).
+
+#include "const-pointer-cb.h"
+
+void fill(mut u8 buf) {
+    buf <- 7;
+}
+
+u32 main() {
+    global.set_fill(fill);
+    mut u8 b <- 0;
+    fill(b);
+    if (b != 7) {
+        return 1;
+    }
+    return 0;
+}
