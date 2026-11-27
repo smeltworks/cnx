@@ -1,0 +1,26 @@
+// test-execution
+// Issue #2474 review: configured.h picks samples[8] for the translation unit.
+// configured-samples.h declares samples unsized, then sized by that branch,
+// and configured-trailing.h sized, then unsized. cnx reads each header as the
+// compile does (#2504), and C composes the declarations, so samples has the
+// 8 elements C reads, as a value and as a dimension.
+#include "lib/configured.h"
+#include "lib/configured-samples.h"
+#include "lib/configured-trailing.h"
+
+mut u8[samples.type_element_count] copy;
+
+u32 main() {
+    u32 n <- samples.type_element_count;
+    if (n != 8) {
+        return 1;
+    }
+    if (copy.type_element_count != 8) {
+        return 2;
+    }
+    copy[7] <- 1;
+    if (copy[7] != 1) {
+        return 3;
+    }
+    return 0;
+}

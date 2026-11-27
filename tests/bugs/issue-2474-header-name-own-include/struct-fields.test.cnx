@@ -1,0 +1,24 @@
+// test-execution
+// Issue #2474 review: two headers declare Counter and Frame differently, and
+// each helper reads the struct its own header declares. b's count is plain,
+// so a mut parameter takes it, and b's frame holds 8 where a's holds 4. The
+// fields of the header read last used to answer for every file.
+#include "lib/struct-b.cnx"
+#include "lib/struct-a.cnx"
+
+u32 main() {
+    bumpCounterB();
+    u32 count <- counterB();
+    if (count != 1) {
+        return 1;
+    }
+    u32 bData <- bFrameCount();
+    if (bData != 8) {
+        return 2;
+    }
+    u32 aData <- aFrameCount();
+    if (aData != 4) {
+        return 3;
+    }
+    return 0;
+}

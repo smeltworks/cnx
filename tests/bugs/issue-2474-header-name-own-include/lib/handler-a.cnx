@@ -1,0 +1,13 @@
+// Issue #2474 helper: this file's handler_t is a-handler.h's, which reads
+// its argument through a const pointer.
+#include "a-handler.h"
+
+mut u32 seenA;
+
+void onA(u32 v) {
+    seenA <- v;
+}
+
+void useA() {
+    global.registerA(onA);
+}

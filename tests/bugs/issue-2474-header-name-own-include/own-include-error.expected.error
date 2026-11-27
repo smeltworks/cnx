@@ -1,0 +1,2 @@
+14:9 error[E0915]: cannot pass 'state' to `mut` parameter 'n' of function 'bump': it is volatile, and 'bump' would write it through a plain pointer, so the volatile access would be lost
+       help: Copy it into a `mut` local, pass that, then assign the local back to 'state' (ADR-071, #2238).

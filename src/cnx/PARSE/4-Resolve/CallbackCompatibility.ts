@@ -27,30 +27,33 @@
  * at transpile exit 0.
  */
 
-import type SymbolTable from "../3-Declare/SymbolTable";
+import type IResolvedSymbols from "../../types/IResolvedSymbols";
+import type ICTypedefSymbol from "../../types/symbols/c/ICTypedefSymbol";
 import type IFileSymbols from "../../types/IFileSymbols";
 import type TCallbackUse from "../../types/TCallbackUse";
 
 class CallbackCompatibility {
   /**
    * @param files every file's `IFileSymbols`, in declaration order
-   * @param symbolTable the C and C++ header symbols, for the typedefs
-   * @returns function name to the callback typedef it is used as
+   * @param symbolTableFor the C and C++ header symbols as a file reads them,
+   *   for the typedefs (#2474)
+   * @returns function name to the callback typedef it is used as -- the
+   *   declaration the using file sees, so its definition and every call agree
    */
   static derive(
     files: ReadonlyArray<IFileSymbols>,
-    symbolTable: SymbolTable,
-  ): ReadonlyMap<string, string> {
+    symbolTableFor: (sourceFile: string) => IResolvedSymbols,
+  ): ReadonlyMap<string, ICTypedefSymbol> {
     const programFunctions = CallbackCompatibility.programFunctions(files);
 
     // In declaration order and source order: a later use of a function wins
     // the typedef an earlier one recorded.
-    const callbacks = new Map<string, string>();
+    const callbacks = new Map<string, ICTypedefSymbol>();
     for (const file of files) {
       for (const use of file.callbackUses) {
         const typedef = CallbackCompatibility.callbackTypedefOf(
           use,
-          symbolTable,
+          symbolTableFor(file.sourceFile),
         );
         if (typedef !== null && programFunctions.has(use.functionName)) {
           callbacks.set(use.functionName, typedef);
@@ -107,14 +110,15 @@ class CallbackCompatibility {
    */
   private static callbackTypedefOf(
     use: TCallbackUse,
-    symbolTable: SymbolTable,
-  ): string | null {
+    symbolTable: IResolvedSymbols,
+  ): ICTypedefSymbol | null {
     // ADR-071's uses say only that a function is a callback, not which typedef
     if (use.kind === "assignment" || use.kind === "type") return null;
     if (use.kind === "initializer") {
-      return symbolTable.isCFunctionPointerTypedef(use.typeName)
-        ? use.typeName
-        : null;
+      return CallbackCompatibility.functionPointerTypedef(
+        use.typeName,
+        symbolTable,
+      );
     }
 
     // Issue #895: an argument to a C function whose parameter at that
@@ -123,8 +127,20 @@ class CallbackCompatibility {
     if (cFunc?.kind !== "function" || !cFunc.parameters) return null;
     const param = cFunc.parameters[use.argIndex];
     if (!param) return null;
-    return symbolTable.isCFunctionPointerTypedef(param.type)
-      ? param.type
+    return CallbackCompatibility.functionPointerTypedef(
+      param.type,
+      symbolTable,
+    );
+  }
+
+  private static functionPointerTypedef(
+    typeName: string,
+    symbolTable: IResolvedSymbols,
+  ): ICTypedefSymbol | null {
+    const symbol = symbolTable.getCSymbol(typeName);
+    return symbol?.kind === "type" &&
+      symbolTable.isCFunctionPointerTypedef(typeName)
+      ? symbol
       : null;
   }
 }

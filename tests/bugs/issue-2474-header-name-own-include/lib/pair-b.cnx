@@ -1,0 +1,7 @@
+// Issue #2474 review helper: this file's Pair is b-pair.h's u32, no struct,
+// so a-pair.h's fields must not answer for it.
+#include "b-pair.h"
+
+u32 pairBytesB() {
+    return Pair.type_byte_length;
+}

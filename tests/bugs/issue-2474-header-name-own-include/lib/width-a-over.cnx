@@ -1,0 +1,6 @@
+// Issue #2474 review helper: a-width.h reads REG_BITS as 3, so 8 does not fit mode.
+#include "a-width.h"
+
+void aOver() {
+    areg.mode <- 8;
+}

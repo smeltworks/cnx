@@ -1,0 +1,2 @@
+9:7 error[E0909]: Array dimension must be known at compile time: 'samples.type_element_count' is declared in a header the .cnx files that include it read differently, so cnx cannot tell which size the compiler reads (#2514)
+       help: An array's size is built from literals, read-only bindings that are not `volatile` (ADR-064), length properties (.type_byte_length) and casts (ADR-058). cnx has no variable-length arrays

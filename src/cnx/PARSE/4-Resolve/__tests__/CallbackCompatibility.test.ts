@@ -15,12 +15,13 @@ import SymbolTable from "../../3-Declare/SymbolTable";
 import CallbackCompatibility from "../CallbackCompatibility";
 import ESourceLanguage from "../../../utils/types/ESourceLanguage";
 import TestSourceSpan from "../../../types/__testUtils__/testSourceSpan";
+import type ICTypedefSymbol from "../../../types/symbols/c/ICTypedefSymbol";
 
 /** The callbacks one program uses, its files given in declaration order. */
 function callbacksIn(
   sources: ReadonlyArray<string>,
   symbolTable: SymbolTable,
-): ReadonlyMap<string, string> {
+): ReadonlyMap<string, ICTypedefSymbol> {
   const registry = new SymbolRegistry();
   const files = sources.map((source, index) =>
     CnxResolver.resolve(
@@ -29,7 +30,7 @@ function callbacksIn(
       registry,
     ),
   );
-  return CallbackCompatibility.derive(files, symbolTable);
+  return CallbackCompatibility.derive(files, () => symbolTable);
 }
 
 /** A C typedef, of a function pointer or not. */
@@ -93,7 +94,7 @@ describe("CallbackCompatibility", () => {
       pointCallbackTable(),
     );
 
-    expect(callbacks.get("my_handler")).toBe("PointCallback");
+    expect(callbacks.get("my_handler")?.name).toBe("PointCallback");
   });
 
   it("does not recognize one assigned to a typedef of a plain value", () => {
@@ -199,7 +200,7 @@ describe("CallbackCompatibility", () => {
       pointCallbackTable(),
     );
 
-    expect(callbacks.get("my_handler")).toBe("PointCallback");
+    expect(callbacks.get("my_handler")?.name).toBe("PointCallback");
   });
 
   it("keys a scope-qualified function by its transpiled C name", () => {
@@ -219,7 +220,7 @@ describe("CallbackCompatibility", () => {
       pointCallbackTable(),
     );
 
-    expect(callbacks.get("Handlers__on_point")).toBe("PointCallback");
+    expect(callbacks.get("Handlers__on_point")?.name).toBe("PointCallback");
   });
 
   it("recognizes a function passed to a C function pointer parameter (Issue #895)", () => {
@@ -241,7 +242,7 @@ describe("CallbackCompatibility", () => {
       symbolTable,
     );
 
-    expect(callbacks.get("my_flush")).toBe("flush_cb_t");
+    expect(callbacks.get("my_flush")?.name).toBe("flush_cb_t");
     // The argument in the first position is not a callback position.
     expect(callbacks.has("w")).toBe(false);
   });
@@ -268,7 +269,7 @@ describe("CallbackCompatibility", () => {
       symbolTable,
     );
 
-    expect(callbacks.get("ScopeAP__cb")).toBe("flush_cb_t");
+    expect(callbacks.get("ScopeAP__cb")?.name).toBe("flush_cb_t");
   });
 
   it("resolves global.Scope.member (Issue #895 Bug A)", () => {
@@ -293,7 +294,7 @@ describe("CallbackCompatibility", () => {
       symbolTable,
     );
 
-    expect(callbacks.get("ScopeAP__cb")).toBe("flush_cb_t");
+    expect(callbacks.get("ScopeAP__cb")?.name).toBe("flush_cb_t");
   });
 
   it("recognizes a function wired in a file other than the one declaring it (#1544)", () => {
@@ -313,7 +314,7 @@ describe("CallbackCompatibility", () => {
       pointCallbackTable(),
     );
 
-    expect(callbacks.get("my_handler")).toBe("PointCallback");
+    expect(callbacks.get("my_handler")?.name).toBe("PointCallback");
   });
 
   it("lets a later use of a function win the typedef an earlier one recorded", () => {
@@ -339,6 +340,6 @@ describe("CallbackCompatibility", () => {
       symbolTable,
     );
 
-    expect(callbacks.get("my_handler")).toBe("OtherCallback");
+    expect(callbacks.get("my_handler")?.name).toBe("OtherCallback");
   });
 });

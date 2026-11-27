@@ -1,0 +1,7 @@
+// Issue #2474 review helper: a-width.h reads REG_BITS as 3, so mode is 3 bits.
+#include "a-width.h"
+
+u32 aWidest() {
+    areg.mode <- 7;
+    return areg.mode;
+}

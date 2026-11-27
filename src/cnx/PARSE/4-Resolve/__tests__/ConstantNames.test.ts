@@ -60,6 +60,7 @@ function build(
         visibleMacros: new Map(),
         macroNames: new Set<string>(),
         integerTypes: new Map<string, string>(),
+        disputedHeaders: new Set<string>(),
         structTagsWithBodies: new Set(),
       },
     },

@@ -1,0 +1,20 @@
+// test-error
+// Issue #2474 review: an index check takes the bound any of a header's
+// declarations gives an array, in either order, so samples and readings both
+// have 4 elements, and there is no element 6 of either.
+#include "lib/redeclared-array.h"
+
+u8 readSample() {
+    u8 s <- samples[6];
+    return s;
+}
+
+u8 readReading() {
+    u8 r <- readings[6];
+    return r;
+}
+
+void main() {
+    (void)readSample();
+    (void)readReading();
+}

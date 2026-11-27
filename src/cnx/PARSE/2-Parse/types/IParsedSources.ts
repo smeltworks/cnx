@@ -11,6 +11,8 @@ interface IParsedSources {
   readonly headers: readonly TParsedHeaderEntry[];
   /** `IReadHeaders.readers`: what read each of `headers`, for the host's cache */
   readonly headerReaders: ReadonlyMap<string, string>;
+  /** `IReadHeaders.disputed` */
+  readonly disputedHeaders: ReadonlySet<string>;
   /** #1991: issue #985's recovery slices, parsed; null when 1.1 had none */
   readonly recovered: IParsedRecovery | null;
   readonly sources: readonly IParsedSource[];

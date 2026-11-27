@@ -1,0 +1,31 @@
+// test-execution
+// test-adr: 071
+// Issue #2474: main includes plain-state.h itself, so its state is the plain
+// one, which a mut parameter may take, and its table holds 8.
+// volatile-user.cnx includes volatile-state.h, so its table holds 4; the
+// build's last declaration of table, 8, used to answer for it too.
+#include "lib/volatile-user.cnx"
+#include "lib/plain-state.h"
+
+void bump(mut u32 n) {
+    n <- n + 1;
+}
+
+u32 main() {
+    bump(state);
+    if (state != 1) {
+        return 1;
+    }
+    if (table.type_element_count != 8) {
+        return 2;
+    }
+    u32 other <- volatileState();
+    if (other != 0) {
+        return 3;
+    }
+    u32 otherCount <- volatileTableCount();
+    if (otherCount != 4) {
+        return 4;
+    }
+    return 0;
+}
