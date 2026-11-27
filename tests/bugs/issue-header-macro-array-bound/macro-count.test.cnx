@@ -14,6 +14,7 @@ mut u8[frame.data.type_element_count] dataCopy;
 mut u8[duo.type_element_count] duoCopy;
 mut duo_bits_t bits;
 mut u8[typed.type_element_count] typedCopy;
+mut u8[typed.type_byte_length] typedBytes;
 mut u8[kinds.type_element_count] kindsCopy;
 
 u32 main() {
@@ -39,6 +40,9 @@ u32 main() {
     }
     if (typedCopy.type_element_count != 3) {
         return 7;
+    }
+    if (typedBytes.type_element_count != 3) {
+        return 20;
     }
     if (kindsCopy.type_element_count != 2) {
         return 8;

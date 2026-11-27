@@ -45,6 +45,14 @@ class UnreadBitWidth {
    * `#undef` -- C reads the first body before the second, the dump only the
    * second
    */
+  /** #2510 review: a header array's macro count C has no array of */
+  static notPositiveCount(count: number): IUnreadBitWidth {
+    return {
+      why: `it is ${count}, and a C array has one element or more (C99 6.7.5.2)`,
+      help: "Give the header's array a dimension of 1 or more (ADR-036).",
+    };
+  }
+
   static redefinedMacro(name: string): IUnreadBitWidth {
     return {
       why: `it reads ${name}, which a header defines again to another value, and cnx sees only the macro's last definition, not the one C read here`,

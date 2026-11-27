@@ -147,8 +147,17 @@ class CResolver {
       },
     );
     if (structSymbol) ctx.symbols.push(structSymbol);
+    // Only the constants: C gives an enum inside a struct file scope, and its
+    // tag names no value, so it must not shadow a same-named variable
     for (const memberEnum of struct.enums) {
-      CResolver.collectEnumSymbols(memberEnum, ctx);
+      const { members } = EnumCollector.collect(
+        memberEnum,
+        ctx.sourceFile,
+        ctx.span,
+      );
+      ctx.symbols.push(
+        ...members.map((member) => ({ ...member, inStruct: true as const })),
+      );
     }
   }
 

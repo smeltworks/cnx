@@ -43,6 +43,7 @@ const REASON: Readonly<
     "shifts by a negative amount, or shifts a negative value right",
   disputed:
     "is declared in a header the .cnx files that include it read differently, so cnx cannot tell which size the compiler reads (#2514)",
+  unreadMacro: "has no value known at compile time",
 };
 
 class ConstantDiagnostics {
@@ -72,6 +73,9 @@ class ConstantDiagnostics {
       return null;
     }
     const subject = result.spelling === "" ? "it" : `'${result.spelling}'`;
+    if (result.reason === "unreadMacro" && result.unread) {
+      return `${subject} has no value known at compile time: its header writes the array's dimension with a macro, and ${result.unread.why}`;
+    }
     if (result.reason === "unfolded" && result.because) {
       return `${subject} has no value known at compile time: ${ConstantDiagnostics.cause(result.because)}`;
     }

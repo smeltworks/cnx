@@ -1172,7 +1172,9 @@ describe("SymbolTable", () => {
       const asked: string[] = [];
       symbolTable.settleArrayDimensions((text, header) => {
         asked.push(`${header}:${text}`);
-        return text === "SENSOR_COUNT" ? 3 : null;
+        return text === "SENSOR_COUNT"
+          ? 3
+          : { why: `it reads ${text}`, help: "" };
       });
 
       const dims = (name: string) => {
@@ -1181,6 +1183,17 @@ describe("SymbolTable", () => {
       };
       expect(dims("table")).toEqual([3]);
       expect(dims("odd")).toEqual(["UNREAD"]);
+      // the why a dimension stayed text is kept for its uses' E0909
+      expect(
+        symbolTable
+          .getUnreadDimensions()
+          .get(SymbolTable.dimensionKey("cfg.h", "UNREAD"))?.why,
+      ).toBe("it reads UNREAD");
+      expect(
+        symbolTable
+          .getUnreadDimensions()
+          .has(SymbolTable.dimensionKey("cfg.h", "SENSOR_COUNT")),
+      ).toBe(false);
       expect(dims("fixed")).toEqual([4]);
       const pins = symbolTable.getCppSymbol("pins");
       expect(pins?.kind === "variable" && pins.arrayDimensions).toEqual([3]);
@@ -1193,6 +1206,27 @@ describe("SymbolTable", () => {
       // the fixed dimension is never asked about
       expect(asked).not.toContain("cfg.h:4");
       expect(asked).toContain("pins.hpp:SENSOR_COUNT");
+    });
+
+    it("scopeStructEnumerators drops only the enum constants a struct declares (#2510 review)", () => {
+      const member = (name: string, inStruct: boolean) => ({
+        kind: "enum_member" as const,
+        name,
+        sourceFile: "packet.h",
+        span: TestSourceSpan.at(1),
+        sourceLanguage: ESourceLanguage.C,
+        visibility: "public" as const,
+        parent: null,
+        ...(inStruct && { inStruct: true as const }),
+      });
+      symbolTable.addCSymbol(member("N", true));
+      symbolTable.addCSymbol(member("TOP", false));
+      symbolTable.scopeStructEnumerators();
+      expect(symbolTable.getCSymbol("N")).toBeUndefined();
+      expect(symbolTable.getCSymbol("TOP")?.kind).toBe("enum_member");
+      expect(
+        symbolTable.getCSymbolsByFile("packet.h").map((s) => s.name),
+      ).toEqual(["TOP"]);
     });
 
     it("settles a header struct's field by its header, and each header's own fields by that header", () => {

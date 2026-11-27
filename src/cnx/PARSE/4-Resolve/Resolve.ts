@@ -8,6 +8,7 @@
  */
 import type IMacroReader from "./types/IMacroReader";
 import type IUnreadBitWidth from "../../types/IUnreadBitWidth";
+import UnreadBitWidth from "../../utils/UnreadBitWidth";
 import type IDeclaredSources from "../3-Declare/types/IDeclaredSources";
 import HeaderMacros from "./HeaderMacros";
 import Program from "./Program";
@@ -134,7 +135,9 @@ class Resolve {
     // `#undef`s
     table.settleArrayDimensions((text, header) => {
       const count = read(text, header);
-      return typeof count === "number" && count > 0 ? count : null;
+      return typeof count === "number" && count <= 0
+        ? UnreadBitWidth.notPositiveCount(count)
+        : count;
     });
     const program = Program.build(
       declared.map((entry) => entry.fileSymbols),
@@ -159,6 +162,7 @@ class Resolve {
           macroNames,
           integerTypes,
           disputedHeaders: table.getDisputedHeaders(),
+          unreadDimensions: table.getUnreadDimensions(),
         },
         // #1825: ADR-006's and ADR-029's derivations look callees and typedefs
         // up in it. 1.4 completes it with every file's resolved symbols and

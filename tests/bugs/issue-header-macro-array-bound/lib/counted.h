@@ -18,6 +18,11 @@ typedef struct {
 } duo_bits_t;
 typedef uint8_t buf_t[SENSOR_COUNT];
 static buf_t typed;
+/* an enum tag inside a struct names no value: lanes is the array */
+typedef struct {
+    enum lanes { LANE_A, LANE_B } which;
+} lane_pick_t;
+static uint8_t lanes[SENSOR_COUNT];
 /* An enum tag sizes nothing either, so KIND_COUNT is the macro's 2 */
 enum KIND_COUNT { KIND_ONE };
 #define KIND_COUNT 2

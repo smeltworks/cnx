@@ -1,2 +1,2 @@
-7:7 error[E0909]: Array dimension must be known at compile time: 'spots.type_element_count' has no value known at compile time
+7:7 error[E0909]: Array dimension must be known at compile time: 'spots.type_element_count' has no value known at compile time: its header writes the array's dimension with a macro, and it reads SPOTS, which a header defines again to another value, and cnx sees only the macro's last definition, not the one C read here
        help: An array's size is built from literals, read-only bindings that are not `volatile` (ADR-064), length properties (.type_byte_length) and casts (ADR-058). cnx has no variable-length arrays

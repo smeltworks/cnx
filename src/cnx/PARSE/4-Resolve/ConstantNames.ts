@@ -394,23 +394,46 @@ class ConstantNames {
     if (rest.length === 0) return ConstantNames.without("variable", walk);
     // The declaration's own dimensions lead: `buf_t two[2]` is `[2][3]`
     const result = ConstantNames.ofMember(
-      {
-        type: { kind: "external", name: value.type },
-        dimensions: [
-          ...value.dimensions,
-          ...walk.facts.headerTypeDimensions(value.type),
-        ],
-      },
+      ConstantNames.headerMeasured(value.type, value.dimensions, walk),
       rest,
       walk,
     );
     // #2514: only a length that needs the unsized dimension is unknown. One
     // the declaration writes, a row's count, is as any header array's
-    return value.disputed === true &&
-      result.kind === "notConstant" &&
-      result.reason === "unfolded"
-      ? ConstantNames.without("disputed", walk)
-      : result;
+    if (result.kind !== "notConstant" || result.reason !== "unfolded") {
+      return result;
+    }
+    if (value.disputed === true) return ConstantNames.without("disputed", walk);
+    // #2510 review: the macro to fix, which 1.4 knows, rather than a general text
+    return value.unread === undefined
+      ? result
+      : {
+          kind: "notConstant",
+          reason: "unreadMacro",
+          spelling: walk.spelling,
+          at: walk.at,
+          unread: value.unread,
+        };
+  }
+
+  /**
+   * A header value of C type `cType` as a measured walk starts it: through an
+   * array typedef, its element and the typedef's dimensions after the
+   * declaration's own (`buf_t two[2]` is `uint8_t[2][3]`), so neither the
+   * dimensions nor the element's bits count the typedef twice
+   */
+  private static headerMeasured(
+    cType: string,
+    dimensions: ReadonlyArray<number | string>,
+    walk: IWalk,
+  ): IMeasured {
+    const array = walk.facts.headerTypeArray(cType);
+    return array === null
+      ? { type: { kind: "external", name: cType }, dimensions }
+      : {
+          type: { kind: "external", name: array.element },
+          dimensions: [...dimensions, ...array.dimensions],
+        };
   }
 
   /** One element's memory as C measures it; null for a type cnx cannot name */
@@ -520,11 +543,11 @@ class ConstantNames {
       if (!header) return null;
       const bitField = ForeignTypeFacts.bitFieldWidth(header);
       return {
-        type: { kind: "external", name: header.type },
-        dimensions: [
-          ...(header.arrayDimensions ?? []),
-          ...walk.facts.headerTypeDimensions(header.type),
-        ],
+        ...ConstantNames.headerMeasured(
+          header.type,
+          header.arrayDimensions ?? [],
+          walk,
+        ),
         ...(bitField !== undefined && { bitField }),
       };
     }

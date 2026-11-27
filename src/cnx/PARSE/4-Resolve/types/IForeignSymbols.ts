@@ -1,6 +1,7 @@
 import type TCSymbol from "../../../types/symbols/c/TCSymbol";
 import type TCppSymbol from "../../../types/symbols/cpp/TCppSymbol";
 import type THeaderMacro from "../../../types/THeaderMacro";
+import type IUnreadBitWidth from "../../../types/IUnreadBitWidth";
 
 /**
  * The symbols this program's C and C++ headers declare.
@@ -65,6 +66,9 @@ interface IForeignSymbols {
 
   /** #2514: the headers two cnx files' compiles read differently, by path */
   readonly disputedHeaders: ReadonlySet<string>;
+
+  /** #2510 review: `SymbolTable.getUnreadDimensions` */
+  readonly unreadDimensions: ReadonlyMap<string, IUnreadBitWidth>;
 }
 
 export default IForeignSymbols;

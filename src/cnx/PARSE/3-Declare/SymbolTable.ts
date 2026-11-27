@@ -168,6 +168,8 @@ class SymbolTable implements IResolvedSymbols {
 
   /** #2514: the headers two `.cnx` files' compiles read differently */
   private disputedHeaders: ReadonlySet<string> = new Set();
+  /** #2510 review: why a header array's macro dimension stayed unread, by `dimensionKey` */
+  private readonly unreadDimensions = new Map<string, IUnreadBitWidth>();
 
   // ========================================================================
   // cnx Symbol Methods (TSymbol)
@@ -304,6 +306,24 @@ class SymbolTable implements IResolvedSymbols {
    * Add a C symbol to the table
    * Issue #981: Also register struct fields for type resolution
    */
+  /**
+   * #2510 review: a C++ compile reads a C header's struct-scoped enum
+   * constant as `Packet::N`, not `N`, so a C++ run drops the file-scope ones
+   * 1.3 recorded (`ICEnumMemberSymbol.inStruct`)
+   */
+  scopeStructEnumerators(): void {
+    const fileScoped = (symbol: TCSymbol): boolean =>
+      !(symbol.kind === "enum_member" && symbol.inStruct === true);
+    for (const index of [this.cSymbols, this.cSymbolsByFile]) {
+      for (const [key, list] of index) {
+        const kept = list.filter(fileScoped);
+        if (kept.length === list.length) continue;
+        if (kept.length === 0) index.delete(key);
+        else index.set(key, kept);
+      }
+    }
+  }
+
   addCSymbol(symbol: TCSymbol): void {
     SymbolTable.appendToIndex(this.cSymbols, symbol.name, symbol);
     SymbolTable.appendToIndex(this.cSymbolsByFile, symbol.sourceFile, symbol);
@@ -387,6 +407,16 @@ class SymbolTable implements IResolvedSymbols {
   }
 
   /** #2514: the headers two `.cnx` files' compiles read differently */
+  /** #2510 review: why each header array dimension `settleArrayDimensions` could not read stayed text */
+  getUnreadDimensions(): ReadonlyMap<string, IUnreadBitWidth> {
+    return this.unreadDimensions;
+  }
+
+  /** The key `getUnreadDimensions` holds a dimension's text by, in its header */
+  static dimensionKey(header: string, text: string): string {
+    return `${header}\n${text}`;
+  }
+
   getDisputedHeaders(): ReadonlySet<string> {
     return this.disputedHeaders;
   }
@@ -946,11 +976,12 @@ class SymbolTable implements IResolvedSymbols {
    * A header array's dimension written with its header's macros,
    * `table[SENSOR_COUNT]`, settled once to the count C reads, the way
    * `settleBitFieldWidths` settles a width: `countOf` answers for the
-   * dimension's text and the header that declares it, or null where cnx
-   * cannot read it, and then the text stays for C to fold.
+   * dimension's text and the header that declares it, or why cnx cannot
+   * read it, and then the text stays for C to fold and the why is kept for
+   * the error a use of the count earns.
    */
   settleArrayDimensions(
-    countOf: (text: string, header: string) => number | null,
+    countOf: (text: string, header: string) => number | IUnreadBitWidth,
   ): void {
     const settle = (
       dimensions: ReadonlyArray<number | string>,
@@ -959,9 +990,13 @@ class SymbolTable implements IResolvedSymbols {
       if (!dimensions.some((d) => typeof d === "string" && d !== "")) {
         return dimensions;
       }
-      return dimensions.map((d) =>
-        typeof d === "string" && d !== "" ? (countOf(d, header) ?? d) : d,
-      );
+      return dimensions.map((d) => {
+        if (typeof d !== "string" || d === "") return d;
+        const count = countOf(d, header);
+        if (typeof count === "number") return count;
+        this.unreadDimensions.set(SymbolTable.dimensionKey(header, d), count);
+        return d;
+      });
     };
     const replaced = new Map<TCSymbol | TCppSymbol, TCSymbol | TCppSymbol>();
     const settled = <T extends TCSymbol | TCppSymbol>(symbol: T): T => {

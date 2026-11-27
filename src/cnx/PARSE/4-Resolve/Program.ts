@@ -72,6 +72,7 @@ import ForeignRedeclaration from "../../utils/ForeignRedeclaration";
 import type IConflict from "../../types/IConflict";
 import CallbackCompatibility from "./CallbackCompatibility";
 import SymbolTable from "../3-Declare/SymbolTable";
+import type IUnreadBitWidth from "../../types/IUnreadBitWidth";
 import type ICodeGenSymbols from "../../types/ICodeGenSymbols";
 import type IProgramInputs from "./types/IProgramInputs";
 import type ISettledFiles from "./types/ISettledFiles";
@@ -134,6 +135,7 @@ const NO_FOREIGN: IForeignSymbols = {
   macroNames: EMPTY_NAMES,
   integerTypes: new Map<string, string>(),
   disputedHeaders: EMPTY_NAMES,
+  unreadDimensions: new Map(),
 };
 
 /** A program built without include information: each file sees only itself. */
@@ -578,10 +580,10 @@ class Program {
               headersFor(sourceFile),
               ResolvedTarget.of(target),
             ),
-      headerTypeDimensions: (sourceFile, cType) =>
+      headerTypeArray: (sourceFile, cType) =>
         headersFor === null
-          ? []
-          : ForeignTypeFacts.typedefDimensions(
+          ? null
+          : ForeignTypeFacts.typedefArray(
               cType,
               headersFor(sourceFile),
               ResolvedTarget.of(target),
@@ -1290,8 +1292,7 @@ class Program {
       headerStructFields: (structName) =>
         options.files.headerStructFields(file(), structName),
       headerTypeBits: (cType) => options.files.headerTypeBits(file(), cType),
-      headerTypeDimensions: (cType) =>
-        options.files.headerTypeDimensions(file(), cType),
+      headerTypeArray: (cType) => options.files.headerTypeArray(file(), cType),
       qualifiedTypeName: (written) =>
         options.files.qualifiedTypeName(file(), written),
       headerTypeHead: (name) => options.files.headerTypeHead(name),
@@ -1910,6 +1911,27 @@ class Program {
     );
   }
 
+  /** A header variable's value, with why a macro dimension stayed unread */
+  private static foreignVariable(
+    symbol: {
+      type: string;
+      arrayDimensions?: ReadonlyArray<number | string>;
+      sourceFile: string;
+    },
+    unreadDimensions: ReadonlyMap<string, IUnreadBitWidth>,
+  ): IForeignValue {
+    const dimensions = symbol.arrayDimensions ?? [];
+    const unread = dimensions
+      .filter((d): d is string => typeof d === "string" && d !== "")
+      .map((d) =>
+        unreadDimensions.get(SymbolTable.dimensionKey(symbol.sourceFile, d)),
+      )
+      .find((why) => why !== undefined);
+    return unread === undefined
+      ? { kind: "variable", type: symbol.type, dimensions }
+      : { kind: "variable", type: symbol.type, dimensions, unread };
+  }
+
   private static foreignValues(
     foreign: IForeignSymbols,
   ): ReadonlyMap<string, ReadonlyArray<IDeclaredForeignValue>> {
@@ -1917,11 +1939,7 @@ class Program {
     for (const symbol of [...foreign.c, ...foreign.cpp]) {
       const value: IForeignValue | null =
         symbol.kind === "variable"
-          ? {
-              kind: "variable",
-              type: symbol.type,
-              dimensions: symbol.arrayDimensions ?? [],
-            }
+          ? Program.foreignVariable(symbol, foreign.unreadDimensions)
           : symbol.kind === "function"
             ? { kind: "function" }
             : null;

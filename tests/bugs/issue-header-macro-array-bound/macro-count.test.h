@@ -20,6 +20,7 @@ extern uint8_t dataCopy[4];
 extern uint8_t duoCopy[2];
 extern duo_bits_t bits;
 extern uint8_t typedCopy[3];
+extern uint8_t typedBytes[9];
 extern uint8_t kindsCopy[2];
 
 #ifdef __cplusplus

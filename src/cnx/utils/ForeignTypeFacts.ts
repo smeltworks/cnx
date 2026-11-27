@@ -584,15 +584,20 @@ class ForeignTypeFacts {
   });
 
   /**
-   * The dimensions the array typedefs a spelling passes through add:
-   * `[3]` for `buf_t` after `typedef uint8_t buf_t[3];`, none for `uint8_t`
+   * The element and dimensions the array typedefs a spelling passes through
+   * give: `uint8_t` and `[3]` for `buf_t` after `typedef uint8_t buf_t[3];`;
+   * null for a spelling no array typedef names, or one of an element cnx
+   * cannot name
    */
-  static typedefDimensions(
+  static typedefArray(
     cType: string,
     lookup: IForeignSymbolLookup,
     target: ITargetDescription | null,
-  ): ReadonlyArray<number | string> {
-    return ForeignTypeFacts.elementOf(cType, lookup, target)?.dimensions ?? [];
+  ): { element: string; dimensions: ReadonlyArray<number | string> } | null {
+    const walked = ForeignTypeFacts.elementOf(cType, lookup, target);
+    return walked?.named && walked.dimensions.length > 0
+      ? { element: walked.named, dimensions: walked.dimensions }
+      : null;
   }
 
   /**

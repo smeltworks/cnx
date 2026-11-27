@@ -1,3 +1,5 @@
+import type IUnreadBitWidth from "../../../types/IUnreadBitWidth";
+
 /**
  * A value a C or C++ header declares, as 1.4 needs it for a constant
  * expression (#1175): a variable's element type and dimensions, which a
@@ -16,6 +18,11 @@ type IForeignValue =
        * differently, so which bound C composes cnx cannot tell
        */
       readonly disputed?: true;
+      /**
+       * #2510 review: why a dimension its header writes with a macro stayed
+       * text, `table[SLOTS]` with `SLOTS` `#undef`'d
+       */
+      readonly unread?: IUnreadBitWidth;
     }
   | { readonly kind: "function" };
 
