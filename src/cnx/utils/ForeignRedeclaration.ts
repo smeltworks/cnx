@@ -19,12 +19,17 @@ class ForeignRedeclaration {
   /**
    * An array's dimensions as C composes its redeclarations: an unsized
    * `extern uint8_t t[];` takes the bound `uint8_t t[4];` gives it, in
-   * either order
+   * either order. One declared through an array typedef writes none, so a
+   * redeclaration's written ones stand for it.
    */
   static dimensions(
-    first: TDimensions,
+    declared: TDimensions,
     redeclared: readonly TDimensions[],
   ): (number | string)[] {
+    const first =
+      declared.length > 0
+        ? declared
+        : (redeclared.find((other) => other.length > 0) ?? declared);
     return first.map(
       (dimension, k) =>
         (dimension === ""

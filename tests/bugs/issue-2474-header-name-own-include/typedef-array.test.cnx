@@ -1,0 +1,18 @@
+// test-execution
+// Issue #2474 review: frames is first declared through an array typedef, then
+// redeclared with its size written. Both give it 4 elements, as a value and
+// as a dimension.
+#include "lib/typedef-array.h"
+
+mut u8[frames.type_element_count] copy;
+
+u32 main() {
+    u32 n <- frames.type_element_count;
+    if (n != 4) {
+        return 1;
+    }
+    if (copy.type_element_count != 4) {
+        return 2;
+    }
+    return 0;
+}
