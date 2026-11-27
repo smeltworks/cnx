@@ -96,21 +96,15 @@ class ClassCollector {
     }
     ClassCollector._recordLayout(fullName, classSyntax, symbolTable ?? null);
 
-    const classSymbol: ICppClassSymbol = {
-      kind: "class",
-      name: fullName,
-      unqualifiedName: name,
+    const classSymbol = ClassCollector._classSymbol(
+      classSyntax,
+      fullName,
+      name,
+      currentNamespace,
       sourceFile,
       span,
-      sourceLanguage: ESourceLanguage.Cpp,
-      visibility: "public",
-      parent: currentNamespace,
-      fields: fields && fields.size > 0 ? fields : undefined,
-      ...(classSyntax.templateMembers.length > 0 && {
-        templateMethods: classSyntax.templateMembers,
-      }),
-      ...(classSyntax.bases.length > 0 && { bases: classSyntax.bases }),
-    };
+      fields,
+    );
 
     const enumMembers = ClassCollector._enumMembers(
       classSyntax,
@@ -125,6 +119,33 @@ class ClassCollector {
       staticMembers,
       enumMembers,
       warnings,
+    };
+  }
+
+  /** The class symbol of `classSyntax`, named `name` */
+  private static _classSymbol(
+    classSyntax: ICppClassSyntax,
+    name: string,
+    unqualifiedName: string,
+    parent: string | undefined,
+    sourceFile: string,
+    span: ISourceSpan,
+    fields: Map<string, ICppFieldInfo> | undefined,
+  ): ICppClassSymbol {
+    return {
+      kind: "class",
+      name,
+      unqualifiedName,
+      sourceFile,
+      span,
+      sourceLanguage: ESourceLanguage.Cpp,
+      visibility: "public",
+      parent,
+      fields: fields && fields.size > 0 ? fields : undefined,
+      ...(classSyntax.templateMembers.length > 0 && {
+        templateMethods: classSyntax.templateMembers,
+      }),
+      ...(classSyntax.bases.length > 0 && { bases: classSyntax.bases }),
     };
   }
 
@@ -167,21 +188,15 @@ class ClassCollector {
     ClassCollector._collectClassMembers(ctx, members);
     ClassCollector._recordLayout(typedefName, classSyntax, symbolTable);
 
-    const classSymbol: ICppClassSymbol = {
-      kind: "class",
-      name: typedefName,
+    const classSymbol = ClassCollector._classSymbol(
+      classSyntax,
+      typedefName,
       unqualifiedName,
+      currentNamespace,
       sourceFile,
       span,
-      sourceLanguage: ESourceLanguage.Cpp,
-      visibility: "public",
-      parent: currentNamespace,
-      fields: fields.size > 0 ? fields : undefined,
-      ...(classSyntax.templateMembers.length > 0 && {
-        templateMethods: classSyntax.templateMembers,
-      }),
-      ...(classSyntax.bases.length > 0 && { bases: classSyntax.bases }),
-    };
+      fields,
+    );
 
     const enumMembers = ClassCollector._enumMembers(
       classSyntax,
