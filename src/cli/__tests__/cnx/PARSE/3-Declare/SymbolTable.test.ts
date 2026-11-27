@@ -1209,24 +1209,26 @@ describe("SymbolTable", () => {
     });
 
     it("scopeStructEnumerators drops only the enum constants a struct declares (#2510 review)", () => {
-      const member = (name: string, inStruct: boolean) => ({
+      const member = (name: string, inStruct?: string) => ({
         kind: "enum_member" as const,
         name,
         sourceFile: "packet.h",
         span: TestSourceSpan.at(1),
-        sourceLanguage: ESourceLanguage.C,
+        sourceLanguage: ESourceLanguage.C as const,
         visibility: "public" as const,
         parent: null,
-        ...(inStruct && { inStruct: true as const }),
+        ...(inStruct !== undefined && { inStruct }),
       });
-      symbolTable.addCSymbol(member("N", true));
-      symbolTable.addCSymbol(member("TOP", false));
+      symbolTable.addCSymbol(member("N", "Packet"));
+      symbolTable.addCSymbol(member("TOP"));
       symbolTable.scopeStructEnumerators();
       expect(symbolTable.getCSymbol("N")).toBeUndefined();
       expect(symbolTable.getCSymbol("TOP")?.kind).toBe("enum_member");
       expect(
         symbolTable.getCSymbolsByFile("packet.h").map((s) => s.name),
       ).toEqual(["TOP"]);
+      expect(symbolTable.getStructScopedNames("Packet")).toEqual(["N"]);
+      expect(symbolTable.getStructScopedNames("Other")).toEqual([]);
     });
 
     it("settles a header struct's field by its header, and each header's own fields by that header", () => {

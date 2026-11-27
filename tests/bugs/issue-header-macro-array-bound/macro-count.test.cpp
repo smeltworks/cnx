@@ -29,7 +29,7 @@ duo_bits_t bits = {};
 
 uint8_t typedCopy[3] = {};
 
-uint8_t typedBytes[9] = {};
+uint8_t typedBytes[3] = {};
 
 uint8_t kindsCopy[2] = {};
 
@@ -57,7 +57,7 @@ int main(void) {
     if (3 != 3) {
         return 7U;
     }
-    if (9 != 3) {
+    if (3 != 3) {
         return 20U;
     }
     if (2 != 2) {

@@ -156,7 +156,10 @@ class CResolver {
         ctx.span,
       );
       ctx.symbols.push(
-        ...members.map((member) => ({ ...member, inStruct: true as const })),
+        ...members.map((member) => ({
+          ...member,
+          inStruct: structSymbol?.name ?? "",
+        })),
       );
     }
   }

@@ -169,6 +169,8 @@ class SymbolTable implements IResolvedSymbols {
   /** #2514: the headers two `.cnx` files' compiles read differently */
   private disputedHeaders: ReadonlySet<string> = new Set();
   /** #2510 review: why a header array's macro dimension stayed unread, by `dimensionKey` */
+  /** #2510 review: `SymbolTable.getStructScopedNames` */
+  private readonly structScopedNames = new Map<string, string[]>();
   private readonly unreadDimensions = new Map<string, IUnreadBitWidth>();
 
   // ========================================================================
@@ -309,11 +311,23 @@ class SymbolTable implements IResolvedSymbols {
   /**
    * #2510 review: a C++ compile reads a C header's struct-scoped enum
    * constant as `Packet::N`, not `N`, so a C++ run drops the file-scope ones
-   * 1.3 recorded (`ICEnumMemberSymbol.inStruct`)
+   * 1.3 recorded (`ICEnumMemberSymbol.inStruct`), keeping each for its own
+   * struct's bounds and widths (`getStructScopedNames`)
    */
   scopeStructEnumerators(): void {
     const fileScoped = (symbol: TCSymbol): boolean =>
-      !(symbol.kind === "enum_member" && symbol.inStruct === true);
+      symbol.kind !== "enum_member" || symbol.inStruct === undefined;
+    for (const list of this.cSymbols.values()) {
+      for (const symbol of list) {
+        if (symbol.kind !== "enum_member" || symbol.inStruct === undefined) {
+          continue;
+        }
+        const names = this.structScopedNames.get(symbol.inStruct);
+        if (names === undefined) {
+          this.structScopedNames.set(symbol.inStruct, [symbol.name]);
+        } else names.push(symbol.name);
+      }
+    }
     for (const index of [this.cSymbols, this.cSymbolsByFile]) {
       for (const [key, list] of index) {
         const kept = list.filter(fileScoped);
@@ -322,6 +336,14 @@ class SymbolTable implements IResolvedSymbols {
         else index.set(key, kept);
       }
     }
+  }
+
+  /**
+   * #2510 review: the enum constants a C++ run reads inside struct
+   * `structName` only, which its own fields' bounds and widths still read
+   */
+  getStructScopedNames(structName: string): readonly string[] {
+    return this.structScopedNames.get(structName) ?? [];
   }
 
   addCSymbol(symbol: TCSymbol): void {
@@ -981,18 +1003,23 @@ class SymbolTable implements IResolvedSymbols {
    * the error a use of the count earns.
    */
   settleArrayDimensions(
-    countOf: (text: string, header: string) => number | IUnreadBitWidth,
+    countOf: (
+      text: string,
+      header: string,
+      structName?: string,
+    ) => number | IUnreadBitWidth,
   ): void {
     const settle = (
       dimensions: ReadonlyArray<number | string>,
       header: string,
+      structName?: string,
     ): ReadonlyArray<number | string> => {
       if (!dimensions.some((d) => typeof d === "string" && d !== "")) {
         return dimensions;
       }
       return dimensions.map((d) => {
         if (typeof d !== "string" || d === "") return d;
-        const count = countOf(d, header);
+        const count = countOf(d, header, structName);
         if (typeof count === "number") return count;
         this.unreadDimensions.set(SymbolTable.dimensionKey(header, d), count);
         return d;
@@ -1033,10 +1060,11 @@ class SymbolTable implements IResolvedSymbols {
     const settleFields = (
       fields: Map<string, IStructFieldInfo>,
       header: string,
+      structName: string,
     ): void => {
       for (const [name, info] of fields) {
         if (info.arrayDimensions === undefined) continue;
-        const dimensions = settle(info.arrayDimensions, header);
+        const dimensions = settle(info.arrayDimensions, header, structName);
         if (dimensions !== info.arrayDimensions) {
           fields.set(name, { ...info, arrayDimensions: [...dimensions] });
         }
@@ -1046,12 +1074,14 @@ class SymbolTable implements IResolvedSymbols {
       const header =
         this.getCSymbol(structName)?.sourceFile ??
         this.getCppSymbol(structName)?.sourceFile;
-      if (header !== undefined) settleFields(fields, header);
+      if (header !== undefined) settleFields(fields, header, structName);
     }
     // #2474: a file's view reads the fields its own header declares, sized
     // through the macros of the files that include that header
-    for (const byFile of this.structFieldsByFile.values()) {
-      for (const [header, fields] of byFile) settleFields(fields, header);
+    for (const [structName, byFile] of this.structFieldsByFile) {
+      for (const [header, fields] of byFile) {
+        settleFields(fields, header, structName);
+      }
     }
   }
 

@@ -92,6 +92,7 @@ class Resolve {
     const read = (
       text: string,
       header: string | undefined,
+      structName?: string,
     ): number | IUnreadBitWidth => {
       const including = macroReaders.filter(
         (reader) => header !== undefined && reader.headerFiles.has(header),
@@ -114,11 +115,17 @@ class Resolve {
         };
         unreadNames.set(key, names);
       }
+      // A C++ struct's own enum constants it alone reads, `data[N]` in
+      // `struct P { enum { N = 3 } kind; uint8_t data[N]; };`
+      const scoped =
+        structName === undefined ? [] : table.getStructScopedNames(structName);
       return HeaderMacros.width(
         text,
         including,
         names.undefinedNames,
-        names.declaredNames,
+        scoped.length === 0
+          ? names.declaredNames
+          : new Set([...names.declaredNames, ...scoped]),
       );
     };
     table.settleBitFieldWidths((text, structName, declaredIn) =>
@@ -127,14 +134,15 @@ class Resolve {
         declaredIn ??
           table.getCSymbol(structName)?.sourceFile ??
           table.getCppSymbol(structName)?.sourceFile,
+        structName,
       ),
     );
     // A header array's macro dimension, `table[SENSOR_COUNT]`, is read the
     // same way, as C reads it: through the macros of the files that include
     // the array's header, and not at all from a macro one of their headers
     // `#undef`s
-    table.settleArrayDimensions((text, header) => {
-      const count = read(text, header);
+    table.settleArrayDimensions((text, header, structName) => {
+      const count = read(text, header, structName);
       return typeof count === "number" && count <= 0
         ? UnreadBitWidth.notPositiveCount(count)
         : count;
