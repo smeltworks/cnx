@@ -10,9 +10,12 @@ deletion -- `npm run diagnostics:manifest:check` fails when a listed fixture
 loses its `.expected.error`, or stops asserting a code listed here.
 
 Removing a diagnostic on purpose means deleting its row in the same commit.
-Adding one, or promoting `(uncoded)` to a real code, never fails the gate.
+Adding one, or promoting `(uncoded)` to a real code, is never a loss: regenerate
+to record it.
 
-1069 fixture(s) assert a diagnostic; 1055 carry a code.
+No line here counts the rows. A count changes in every pull request that adds
+a fixture, so any two of them conflict on it (#2517). The check prints the
+totals each time it passes.
 
 | Fixture                                                                                                   | Codes                             |
 | --------------------------------------------------------------------------------------------------------- | --------------------------------- |

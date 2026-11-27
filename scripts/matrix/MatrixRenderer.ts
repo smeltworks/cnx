@@ -112,10 +112,10 @@ function renderDocument(
 
     const pending = adrOccupancy?.fixturesWithoutContext ?? [];
     if (pending.length > 0) {
-      parts.push(
-        `${pending.length} linked fixture${pending.length === 1 ? "" : "s"} with no derivable context:`,
-        "",
-      );
+      // #2517: no count in this line. A count is rewritten by every branch
+      // that adds a fixture to the list, so any two of them conflict on it,
+      // or merge to a count that matches neither. The list is its own length.
+      parts.push("Linked fixtures with no derivable context:", "");
       for (const fixture of [...pending].sort()) parts.push(`- \`${fixture}\``);
       parts.push("");
     }
