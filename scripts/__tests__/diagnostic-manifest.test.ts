@@ -218,34 +218,102 @@ describe("DiagnosticManifest.orphans", () => {
   });
 });
 
-describe("DiagnosticManifest render/parse roundtrip", () => {
+/** Every document's text, end to end: what `parse` is given for the whole manifest. */
+const text = (documents: ReadonlyMap<string, string>): string =>
+  [...documents.values()].join("\n");
+
+describe("DiagnosticManifest documents/parse roundtrip", () => {
   it("reads back exactly what it rendered", () => {
     // The gate compares a parsed committed manifest against a fresh collect, so
     // a lossy roundtrip would report phantom shrinkage on every run.
     const entries = [
-      { fixture: "tests/a.test.cnx", codes: ["E0422", "MISRA-3.1"] },
-      { fixture: "tests/b.test.cnx", codes: [] },
+      { fixture: "tests/a/one.test.cnx", codes: ["E0422", "MISRA-3.1"] },
+      { fixture: "tests/a/two.test.cnx", codes: [] },
+      { fixture: "tests/b/deep/three.test.cnx", codes: ["E0900"] },
     ];
     expect(
-      DiagnosticManifest.parse(DiagnosticManifest.render(entries)),
+      DiagnosticManifest.parse(text(DiagnosticManifest.documents(entries))),
     ).toEqual(entries);
   });
 
   it("renders no timestamp", () => {
     // A timestamp churns every run and makes the staleness diff useless (#1150).
-    const rendered = DiagnosticManifest.render([
-      { fixture: "tests/a.test.cnx", codes: ["E0422"] },
+    const rendered = DiagnosticManifest.documents([
+      { fixture: "tests/a/one.test.cnx", codes: ["E0422"] },
     ]);
-    expect(rendered).not.toMatch(/\d{4}-\d{2}-\d{2}/);
+    expect(text(rendered)).not.toMatch(/\d{4}-\d{2}-\d{2}/);
+  });
+
+  it("gives each fixture directory a document of its own, and the index (#2518)", () => {
+    // A new directory is a new document: two branches that each add one
+    // change no path in common, wherever the two directories sort.
+    const rendered = DiagnosticManifest.documents([
+      { fixture: "tests/a/one.test.cnx", codes: ["E0422"] },
+      { fixture: "tests/a/two.test.cnx", codes: [] },
+      { fixture: "tests/b/deep/three.test.cnx", codes: ["E0900"] },
+    ]);
+    expect([...rendered.keys()]).toEqual([
+      "docs/diagnostic-manifest.md",
+      "docs/diagnostic-manifest/tests/a.md",
+      "docs/diagnostic-manifest/tests/b/deep.md",
+    ]);
+    expect(rendered.get("docs/diagnostic-manifest/tests/a.md")).toContain(
+      "- `tests/a/one.test.cnx`: E0422\n- `tests/a/two.test.cnx`: (uncoded)\n",
+    );
+    // The index holds no row: every fixture's line is in one document only.
+    expect(
+      DiagnosticManifest.parse(
+        rendered.get("docs/diagnostic-manifest.md") ?? "",
+      ),
+    ).toEqual([]);
+  });
+
+  it("names every document it writes as one of the manifest's, and nothing else", () => {
+    const rendered = DiagnosticManifest.documents([
+      { fixture: "tests/a/one.test.cnx", codes: ["E0422"] },
+    ]);
+    expect([...rendered.keys()].every(DiagnosticManifest.isDocument)).toBe(
+      true,
+    );
+    expect(DiagnosticManifest.isDocument("docs/diagnostic-manifest.md")).toBe(
+      true,
+    );
+    expect(
+      DiagnosticManifest.isDocument("docs/diagnostic-manifest-notes.md"),
+    ).toBe(false);
+    expect(
+      DiagnosticManifest.isDocument("docs/diagnostic-manifest/tests/a.txt"),
+    ).toBe(false);
+    expect(DiagnosticManifest.isDocument("docs/error-codes.md")).toBe(false);
+  });
+
+  it("reads the one table the manifest was before #2518", () => {
+    // `diagnostics:manifest:compare` reads the manifest at a base ref, and a
+    // base older than #2518 holds this shape. Unread, every code it lists
+    // would count as never asserted, and the comparison would pass on nothing.
+    const table = [
+      "| Fixture                 | Codes        |",
+      "| ----------------------- | ------------ |",
+      "| tests/a/one.test.cnx    | E0422, E0900 |",
+      "| tests/a/two.test.cnx    | (uncoded)    |",
+    ].join("\n");
+    expect(DiagnosticManifest.parse(table)).toEqual([
+      { fixture: "tests/a/one.test.cnx", codes: ["E0422", "E0900"] },
+      { fixture: "tests/a/two.test.cnx", codes: [] },
+    ]);
   });
 });
 
 describe("DiagnosticManifest.checkOutcome", () => {
   const entry = { fixture: "tests/a.test.cnx", codes: ["E0422"] };
-  const rendered = DiagnosticManifest.render([entry]);
+  const rendered = DiagnosticManifest.documents([entry]);
 
   it("fails when the manifest has never been written", () => {
-    const outcome = DiagnosticManifest.checkOutcome(null, [entry], rendered);
+    const outcome = DiagnosticManifest.checkOutcome(
+      new Map(),
+      [entry],
+      rendered,
+    );
     expect(outcome.ok).toBe(false);
     expect(outcome.errors.join("\n")).toContain("npm run diagnostics:manifest");
   });
@@ -264,15 +332,73 @@ describe("DiagnosticManifest.checkOutcome", () => {
     );
   });
 
-  it("fails as stale when the committed document is behind", () => {
+  it("fails as stale when a committed document is behind", () => {
     const grown = [entry, { fixture: "tests/b.test.cnx", codes: ["E0900"] }];
     const outcome = DiagnosticManifest.checkOutcome(
       rendered,
       grown,
-      DiagnosticManifest.render(grown),
+      DiagnosticManifest.documents(grown),
     );
     expect(outcome.ok).toBe(false);
     expect(outcome.errors.join("\n")).toContain("stale");
+    expect(outcome.errors.join("\n")).toContain(
+      "docs/diagnostic-manifest/tests.md",
+    );
+  });
+
+  it("fails as stale on a new directory whose document was never written (#2518)", () => {
+    const grown = [
+      entry,
+      { fixture: "tests/new/b.test.cnx", codes: ["E0900"] },
+    ];
+    const outcome = DiagnosticManifest.checkOutcome(
+      rendered,
+      grown,
+      DiagnosticManifest.documents(grown),
+    );
+    expect(outcome.ok).toBe(false);
+    expect(outcome.errors.join("\n")).toContain(
+      "docs/diagnostic-manifest/tests/new.md",
+    );
+  });
+
+  it("fails as stale on a document left behind by a directory that asserts nothing now (#2518)", () => {
+    // Its rows are gone from the corpus on purpose -- the fixtures moved, and
+    // their rows moved with them -- so nothing shrank. A document nobody
+    // regenerates away would still be read as rows at the next base comparison.
+    const moved = [{ fixture: "tests/there/a.test.cnx", codes: ["E0422"] }];
+    const committed = new Map([
+      ...DiagnosticManifest.documents(moved),
+      ["docs/diagnostic-manifest/tests/here.md", "<!-- left behind -->\n"],
+    ]);
+    const outcome = DiagnosticManifest.checkOutcome(
+      committed,
+      moved,
+      DiagnosticManifest.documents(moved),
+    );
+    expect(outcome.ok).toBe(false);
+    expect(outcome.errors.join("\n")).toContain(
+      "docs/diagnostic-manifest/tests/here.md",
+    );
+  });
+
+  it("names ten stale documents and counts the rest", () => {
+    // The first write after #2518 is stale in every document at once. A wall
+    // of 190 paths hides the one line that says what to run.
+    const many = Array.from({ length: 13 }, (_, index) => ({
+      fixture: `tests/d${String(index).padStart(2, "0")}/a.test.cnx`,
+      codes: ["E0422"],
+    }));
+    const outcome = DiagnosticManifest.checkOutcome(
+      new Map([["docs/diagnostic-manifest.md", ""]]),
+      many,
+      DiagnosticManifest.documents(many),
+    );
+    const lines = outcome.errors;
+    expect(lines[0]).toContain("stale in 14 document(s)");
+    expect(lines.filter((line) => line.startsWith("  docs/"))).toHaveLength(10);
+    expect(lines).toContain("  and 4 more");
+    expect(lines[lines.length - 1]).toContain("npm run diagnostics:manifest");
   });
 
   it("passes and states what was enforced", () => {
@@ -380,7 +506,7 @@ describe("DiagnosticManifest.compareToBase", () => {
 
 describe("DiagnosticManifest.writeOutcome", () => {
   const entry = { fixture: "tests/a.test.cnx", codes: ["E0422"] };
-  const rendered = DiagnosticManifest.render([entry]);
+  const rendered = DiagnosticManifest.documents([entry]);
 
   it("names what regenerating is about to erase", () => {
     // `write` is the command that performs the deletion and the check message
@@ -402,6 +528,8 @@ describe("DiagnosticManifest.writeOutcome", () => {
   });
 
   it("warns about nothing on a first-ever write", () => {
-    expect(DiagnosticManifest.writeOutcome(null, [entry]).warnings).toEqual([]);
+    expect(
+      DiagnosticManifest.writeOutcome(new Map(), [entry]).warnings,
+    ).toEqual([]);
   });
 });

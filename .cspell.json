@@ -720,6 +720,7 @@
     "docs/LANGUAGE-FEATURE-TESTING-RESEARCH.md",
     "grammar/**",
     "docs/diagnostic-manifest.md",
+    "docs/diagnostic-manifest/**",
     "GRAMMAR-COVERAGE.md",
     ".idea/**",
     ".claude/settings.local.json"

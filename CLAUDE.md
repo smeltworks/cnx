@@ -365,13 +365,17 @@ intentional fix were indistinguishable — on the one command a diagnostic migra
 repeatedly, across 287 fixtures. `--update` now **fails** on that transition, keeps the
 `.expected.error`, and writes the `.expected.c` for inspection only.
 
-**`docs/diagnostic-manifest.md`** is the committed record of which fixture asserts which
-codes, gated by `npm run diagnostics:manifest:check` in the **`lint`** job — not `test:all`,
-which must stay update-free to remain a gate. It fails when a listed fixture loses its
-`.expected.error` (`assertion-removed`) or stops asserting a code it used to
-(`code-removed` — the quieter one, since the fixture still errors and the suite stays
-green). Growth never fails it. Removing a diagnostic on purpose means deleting its row in
-the same commit. Regenerate with `npm run diagnostics:manifest`.
+**The diagnostic manifest** is the committed record of which fixture asserts which
+codes: `docs/diagnostic-manifest.md` says what it is, and the rows are in
+`docs/diagnostic-manifest/`, one document per fixture directory (`tests/adr-034/` is
+`docs/diagnostic-manifest/tests/adr-034.md`), so that two PRs that each add a directory
+change no file in common (#2518). It is gated by `npm run diagnostics:manifest:check` in
+the **`lint`** job — not `test:all`, which must stay update-free to remain a gate. It fails
+when a listed fixture loses its `.expected.error` (`assertion-removed`) or stops asserting
+a code it used to (`code-removed` — the quieter one, since the fixture still errors and
+the suite stays green). Growth never fails it. Removing a diagnostic on purpose means
+deleting its row in the same commit. Regenerate with `npm run diagnostics:manifest`, after
+a merge of main as well.
 
 **`docs/error-codes.md` is read in code order**: `error-codes:check` fails a new code placed
 in its thematic section out of sequence. Add it after the highest code, under its own
